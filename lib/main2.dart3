@@ -1,0 +1,876 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'dart:convert';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+
+void main() {
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Invoice Management Pro',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+        cardTheme: CardTheme(elevation: 4),
+        appBarTheme: AppBarTheme(
+          backgroundColor: Colors.blue[700],
+          foregroundColor: Colors.white,
+        ),
+      ),
+      home: LoginScreen(),
+    );
+  }
+}
+
+// Data Models
+class Customer {
+  String id;
+  String name;
+  String email;
+  String phone;
+  String address;
+  String? gst;
+  DateTime createdAt;
+
+  Customer({
+    required this.id,
+    required this.name,
+    required this.email,
+    required this.phone,
+    required this.address,
+    this.gst,
+    DateTime? createdAt,
+  }) : createdAt = createdAt ?? DateTime.now();
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'email': email,
+    'phone': phone,
+    'address': address,
+    'gst': gst,
+    'createdAt': createdAt.toIso8601String(),
+  };
+
+  factory Customer.fromJson(Map<String, dynamic> json) => Customer(
+    id: json['id'],
+    name: json['name'],
+    email: json['email'],
+    phone: json['phone'],
+    address: json['address'],
+    gst: json['gst'],
+    createdAt: DateTime.parse(json['createdAt']),
+  );
+}
+
+class Product {
+  String id;
+  String name;
+  String description;
+  double price;
+  int stock;
+  String category;
+  String? barcode;
+  DateTime createdAt;
+
+  Product({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.price,
+    required this.stock,
+    this.category = 'General',
+    this.barcode,
+    DateTime? createdAt,
+  }) : createdAt = createdAt ?? DateTime.now();
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'description': description,
+    'price': price,
+    'stock': stock,
+    'category': category,
+    'barcode': barcode,
+    'createdAt': createdAt.toIso8601String(),
+  };
+
+  factory Product.fromJson(Map<String, dynamic> json) => Product(
+    id: json['id'],
+    name: json['name'],
+    description: json['description'],
+    price: json['price'].toDouble(),
+    stock: json['stock'],
+    category: json['category'] ?? 'General',
+    barcode: json['barcode'],
+    createdAt: DateTime.parse(json['createdAt']),
+  );
+}
+
+class InvoiceItem {
+  Product product;
+  int quantity;
+  double discount;
+  double? tax;
+
+  InvoiceItem({
+    required this.product,
+    required this.quantity,
+    this.discount = 0.0,
+    this.tax = 0.0,
+  });
+
+  double get subtotal => product.price * quantity;
+  double get taxAmount => (subtotal - discount) * (tax ?? 0) / 100;
+  double get total => subtotal - discount + taxAmount;
+
+  Map<String, dynamic> toJson() => {
+    'product': product.toJson(),
+    'quantity': quantity,
+    'discount': discount,
+    'tax': tax,
+  };
+
+  factory InvoiceItem.fromJson(Map<String, dynamic> json) => InvoiceItem(
+    product: Product.fromJson(json['product']),
+    quantity: json['quantity'],
+    discount: json['discount'].toDouble(),
+    tax: json['tax']?.toDouble(),
+  );
+}
+
+class Invoice {
+  String id;
+  Customer customer;
+  List<InvoiceItem> items;
+  DateTime date;
+  String status;
+  String? notes;
+  double? additionalDiscount;
+
+  double get subtotal => items.fold(0.0, (sum, item) => sum + item.subtotal);
+  double get totalDiscount => items.fold(0.0, (sum, item) => sum + item.discount) + (additionalDiscount ?? 0);
+  double get totalTax => items.fold(0.0, (sum, item) => sum + item.taxAmount);
+  double get total => subtotal - totalDiscount + totalTax;
+
+  Invoice({
+    required this.id,
+    required this.customer,
+    required this.items,
+    required this.date,
+    this.status = 'Draft',
+    this.notes,
+    this.additionalDiscount,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'customer': customer.toJson(),
+    'items': items.map((item) => item.toJson()).toList(),
+    'date': date.toIso8601String(),
+    'status': status,
+    'notes': notes,
+    'additionalDiscount': additionalDiscount,
+  };
+
+  factory Invoice.fromJson(Map<String, dynamic> json) => Invoice(
+    id: json['id'],
+    customer: Customer.fromJson(json['customer']),
+    items: (json['items'] as List).map((item) => InvoiceItem.fromJson(item)).toList(),
+    date: DateTime.parse(json['date']),
+    status: json['status'] ?? 'Draft',
+    notes: json['notes'],
+    additionalDiscount: json['additionalDiscount']?.toDouble(),
+  );
+}
+
+// Data Service with Persistence
+class DataService {
+  static List<Customer> customers = [];
+  static List<Product> products = [];
+  static List<Invoice> invoices = [];
+
+  static Future<void> initializeData() async {
+    await loadData();
+    if (customers.isEmpty) {
+      _loadSampleData();
+    }
+  }
+
+  static void _loadSampleData() {
+    customers.addAll([
+      Customer(id: '1', name: 'John Doe', email: 'john@example.com', phone: '123-456-7890', address: '123 Main St'),
+      Customer(id: '2', name: 'Jane Smith', email: 'jane@example.com', phone: '098-765-4321', address: '456 Oak Ave'),
+      Customer(id: '3', name: 'Bob Johnson', email: 'bob@example.com', phone: '555-123-4567', address: '789 Pine Rd'),
+    ]);
+
+    products.addAll([
+      Product(id: '1', name: 'Laptop', description: 'High-performance laptop', price: 999.99, stock: 10, category: 'Electronics'),
+      Product(id: '2', name: 'Mouse', description: 'Wireless mouse', price: 25.99, stock: 50, category: 'Electronics'),
+      Product(id: '3', name: 'Keyboard', description: 'Mechanical keyboard', price: 79.99, stock: 25, category: 'Electronics'),
+      Product(id: '4', name: 'Monitor', description: '24-inch LED monitor', price: 199.99, stock: 15, category: 'Electronics'),
+      Product(id: '5', name: 'Desk Chair', description: 'Ergonomic office chair', price: 149.99, stock: 8, category: 'Furniture'),
+    ]);
+  }
+
+  static Future<String> get _localPath async {
+    final directory = await getApplicationDocumentsDirectory();
+    return directory.path;
+  }
+
+  static Future<File> get _customersFile async {
+    final path = await _localPath;
+    return File('$path/customers.json');
+  }
+
+  static Future<File> get _productsFile async {
+    final path = await _localPath;
+    return File('$path/products.json');
+  }
+
+  static Future<File> get _invoicesFile async {
+    final path = await _localPath;
+    return File('$path/invoices.json');
+  }
+
+  static Future<void> saveData() async {
+    try {
+      final customersFile = await _customersFile;
+      final productsFile = await _productsFile;
+      final invoicesFile = await _invoicesFile;
+
+      await customersFile.writeAsString(jsonEncode(customers.map((c) => c.toJson()).toList()));
+      await productsFile.writeAsString(jsonEncode(products.map((p) => p.toJson()).toList()));
+      await invoicesFile.writeAsString(jsonEncode(invoices.map((i) => i.toJson()).toList()));
+    } catch (e) {
+      print('Error saving data: $e');
+    }
+  }
+
+  static Future<void> loadData() async {
+    try {
+      final customersFile = await _customersFile;
+      final productsFile = await _productsFile;
+      final invoicesFile = await _invoicesFile;
+
+      if (await customersFile.exists()) {
+        final customersJson = await customersFile.readAsString();
+        final customersData = jsonDecode(customersJson) as List;
+        customers = customersData.map((c) => Customer.fromJson(c)).toList();
+      }
+
+      if (await productsFile.exists()) {
+        final productsJson = await productsFile.readAsString();
+        final productsData = jsonDecode(productsJson) as List;
+        products = productsData.map((p) => Product.fromJson(p)).toList();
+      }
+
+      if (await invoicesFile.exists()) {
+        final invoicesJson = await invoicesFile.readAsString();
+        final invoicesData = jsonDecode(invoicesJson) as List;
+        invoices = invoicesData.map((i) => Invoice.fromJson(i)).toList();
+      }
+    } catch (e) {
+      print('Error loading data: $e');
+    }
+  }
+
+  static String generateId() => DateTime.now().millisecondsSinceEpoch.toString();
+
+  static List<Customer> searchCustomers(String query) {
+    if (query.isEmpty) return customers;
+    return customers.where((c) =>
+    c.name.toLowerCase().contains(query.toLowerCase()) ||
+        c.email.toLowerCase().contains(query.toLowerCase()) ||
+        c.phone.contains(query)
+    ).toList();
+  }
+
+  static List<Product> searchProducts(String query) {
+    if (query.isEmpty) return products;
+    return products.where((p) =>
+    p.name.toLowerCase().contains(query.toLowerCase()) ||
+        p.description.toLowerCase().contains(query.toLowerCase()) ||
+        p.category.toLowerCase().contains(query.toLowerCase())
+    ).toList();
+  }
+
+  static List<Invoice> searchInvoices(String query) {
+    if (query.isEmpty) return invoices;
+    return invoices.where((i) =>
+    i.id.contains(query) ||
+        i.customer.name.toLowerCase().contains(query.toLowerCase()) ||
+        i.status.toLowerCase().contains(query.toLowerCase())
+    ).toList();
+  }
+
+  static Future<String> exportToCSV(String type) async {
+    final path = await _localPath;
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+
+    if (type == 'customers') {
+      final file = File('$path/customers_export_$timestamp.csv');
+      final csv = 'ID,Name,Email,Phone,Address,GST,Created At\n' +
+          customers.map((c) => '${c.id},${c.name},${c.email},${c.phone},"${c.address}",${c.gst ?? ''},${c.createdAt}').join('\n');
+      await file.writeAsString(csv);
+      return file.path;
+    } else if (type == 'products') {
+      final file = File('$path/products_export_$timestamp.csv');
+      final csv = 'ID,Name,Description,Price,Stock,Category,Barcode,Created At\n' +
+          products.map((p) => '${p.id},${p.name},"${p.description}",${p.price},${p.stock},${p.category},${p.barcode ?? ''},${p.createdAt}').join('\n');
+      await file.writeAsString(csv);
+      return file.path;
+    } else if (type == 'invoices') {
+      final file = File('$path/invoices_export_$timestamp.csv');
+      final csv = 'ID,Customer,Date,Status,Subtotal,Discount,Tax,Total,Notes\n' +
+          invoices.map((i) => '${i.id},${i.customer.name},${i.date},${i.status},${i.subtotal},${i.totalDiscount},${i.totalTax},${i.total},"${i.notes ?? ''}"').join('\n');
+      await file.writeAsString(csv);
+      return file.path;
+    }
+    return '';
+  }
+}
+
+// Login Screen
+class LoginScreen extends StatefulWidget {
+  @override
+  _LoginScreenState createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
+    await DataService.initializeData();
+  }
+
+  void _login() async {
+    if (_usernameController.text == 'admin' && _passwordController.text == 'admin') {
+      setState(() => _isLoading = true);
+      await Future.delayed(Duration(milliseconds: 500));
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => DashboardScreen()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Invalid credentials'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.blue[50],
+      body: Center(
+        child: Card(
+          elevation: 8,
+          child: Container(
+            width: 400,
+            padding: EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[100],
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                  child: Icon(Icons.business, size: 48, color: Colors.blue[700]),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'Invoice Management Pro',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Professional Invoice & Inventory System',
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
+                SizedBox(height: 32),
+                TextField(
+                  controller: _usernameController,
+                  decoration: InputDecoration(
+                    labelText: 'Username',
+                    prefixIcon: Icon(Icons.person),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                SizedBox(height: 16),
+                TextField(
+                  controller: _passwordController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    prefixIcon: Icon(Icons.lock),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                SizedBox(height: 24),
+                _isLoading
+                    ? CircularProgressIndicator()
+                    : ElevatedButton(
+                  onPressed: _login,
+                  child: Text('Login'),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: Size(double.infinity, 50),
+                    backgroundColor: Colors.blue[700],
+                  ),
+                ),
+                SizedBox(height: 16),
+                Text('Default: admin/admin', style: TextStyle(color: Colors.grey)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Dashboard Screen
+class DashboardScreen extends StatefulWidget {
+  @override
+  _DashboardScreenState createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  int _selectedIndex = 0;
+  final List<Widget> _screens = [
+    DashboardHome(),
+    CustomerManagement(),
+    ProductManagement(),
+    InvoiceManagement(),
+    InvoiceList(),
+    ReportsScreen(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Invoice Management Pro'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.backup),
+            onPressed: () async {
+              await DataService.saveData();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Data saved successfully!')),
+              );
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.logout),
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => LoginScreen()),
+              );
+            },
+          ),
+        ],
+      ),
+      body: Row(
+        children: [
+          NavigationRail(
+            selectedIndex: _selectedIndex,
+            onDestinationSelected: (index) {
+              setState(() {
+                _selectedIndex = index;
+              });
+            },
+            labelType: NavigationRailLabelType.all,
+            destinations: [
+              NavigationRailDestination(
+                icon: Icon(Icons.dashboard),
+                selectedIcon: Icon(Icons.dashboard),
+                label: Text('Dashboard'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.people),
+                selectedIcon: Icon(Icons.people),
+                label: Text('Customers'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.inventory),
+                selectedIcon: Icon(Icons.inventory),
+                label: Text('Products'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.receipt),
+                selectedIcon: Icon(Icons.receipt),
+                label: Text('New Invoice'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.list),
+                selectedIcon: Icon(Icons.list),
+                label: Text('Invoices'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.analytics),
+                selectedIcon: Icon(Icons.analytics),
+                label: Text('Reports'),
+              ),
+            ],
+          ),
+          VerticalDivider(thickness: 1, width: 1),
+          Expanded(child: _screens[_selectedIndex]),
+        ],
+      ),
+    );
+  }
+}
+
+// Enhanced Dashboard Home
+class DashboardHome extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final totalRevenue = DataService.invoices.fold(0.0, (sum, invoice) => sum + invoice.total);
+    final lowStockProducts = DataService.products.where((p) => p.stock < 10).length;
+    final pendingInvoices = DataService.invoices.where((i) => i.status == 'Pending').length;
+
+    return Padding(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Dashboard Overview',
+            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 20),
+          Row(
+            children: [
+              _buildStatCard('Total Customers', DataService.customers.length.toString(), Colors.blue, Icons.people),
+              SizedBox(width: 16),
+              _buildStatCard('Total Products', DataService.products.length.toString(), Colors.green, Icons.inventory),
+              SizedBox(width: 16),
+              _buildStatCard('Total Invoices', DataService.invoices.length.toString(), Colors.orange, Icons.receipt),
+              SizedBox(width: 16),
+              _buildStatCard('Revenue', '\$${totalRevenue.toStringAsFixed(2)}', Colors.purple, Icons.attach_money),
+            ],
+          ),
+          SizedBox(height: 20),
+          Row(
+            children: [
+              _buildStatCard('Low Stock Items', lowStockProducts.toString(), Colors.red, Icons.warning),
+              SizedBox(width: 16),
+              _buildStatCard('Pending Invoices', pendingInvoices.toString(), Colors.amber, Icons.pending),
+              SizedBox(width: 16),
+              _buildStatCard('Categories', DataService.products.map((p) => p.category).toSet().length.toString(), Colors.teal, Icons.category),
+            ],
+          ),
+          SizedBox(height: 30),
+          Text(
+            'Recent Activity',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 10),
+          Expanded(
+            child: Card(
+              child: ListView(
+                padding: EdgeInsets.all(16),
+                children: [
+                  _buildActivityItem('New customer added: ${DataService.customers.isNotEmpty ? DataService.customers.last.name : 'None'}', Icons.person_add),
+                  _buildActivityItem('Product updated: ${DataService.products.isNotEmpty ? DataService.products.last.name : 'None'}', Icons.edit),
+                  _buildActivityItem('Invoice created: ${DataService.invoices.isNotEmpty ? '#${DataService.invoices.last.id}' : 'None'}', Icons.receipt),
+                  _buildActivityItem('Low stock alert: ${lowStockProducts} items', Icons.warning),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard(String title, String value, Color color, IconData icon) {
+    return Expanded(
+      child: Card(
+        elevation: 4,
+        child: Container(
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            gradient: LinearGradient(
+              colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(title, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                  Icon(icon, color: color, size: 20),
+                ],
+              ),
+              SizedBox(height: 8),
+              Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActivityItem(String title, IconData icon) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: Colors.grey[600]),
+          SizedBox(width: 8),
+          Text(title, style: TextStyle(fontSize: 14)),
+        ],
+      ),
+    );
+  }
+}
+
+// Enhanced Customer Management
+class CustomerManagement extends StatefulWidget {
+  @override
+  _CustomerManagementState createState() => _CustomerManagementState();
+}
+
+class _CustomerManagementState extends State<CustomerManagement> {
+  final _searchController = TextEditingController();
+  List<Customer> _filteredCustomers = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredCustomers = DataService.customers;
+    _searchController.addListener(_filterCustomers);
+  }
+
+  void _filterCustomers() {
+    setState(() {
+      _filteredCustomers = DataService.searchCustomers(_searchController.text);
+    });
+  }
+
+  void _showCustomerDialog([Customer? customer]) {
+    final nameController = TextEditingController(text: customer?.name ?? '');
+    final emailController = TextEditingController(text: customer?.email ?? '');
+    final phoneController = TextEditingController(text: customer?.phone ?? '');
+    final addressController = TextEditingController(text: customer?.address ?? '');
+    final gstController = TextEditingController(text: customer?.gst ?? '');
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(customer == null ? 'Add Customer' : 'Edit Customer'),
+        content: Container(
+          width: 400,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(labelText: 'Name *', border: OutlineInputBorder()),
+                ),
+                SizedBox(height: 12),
+                TextField(
+                  controller: emailController,
+                  decoration: InputDecoration(labelText: 'Email *', border: OutlineInputBorder()),
+                ),
+                SizedBox(height: 12),
+                TextField(
+                  controller: phoneController,
+                  decoration: InputDecoration(labelText: 'Phone *', border: OutlineInputBorder()),
+                ),
+                SizedBox(height: 12),
+                TextField(
+                  controller: addressController,
+                  decoration: InputDecoration(labelText: 'Address *', border: OutlineInputBorder()),
+                  maxLines: 3,
+                ),
+                SizedBox(height: 12),
+                TextField(
+                  controller: gstController,
+                  decoration: InputDecoration(labelText: 'GST Number (Optional)', border: OutlineInputBorder()),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (nameController.text.isNotEmpty && emailController.text.isNotEmpty) {
+                if (customer == null) {
+                  DataService.customers.add(Customer(
+                    id: DataService.generateId(),
+                    name: nameController.text,
+                    email: emailController.text,
+                    phone: phoneController.text,
+                    address: addressController.text,
+                    gst: gstController.text.isNotEmpty ? gstController.text : null,
+                  ));
+                } else {
+                  customer.name = nameController.text;
+                  customer.email = emailController.text;
+                  customer.phone = phoneController.text;
+                  customer.address = addressController.text;
+                  customer.gst = gstController.text.isNotEmpty ? gstController.text : null;
+                }
+                DataService.saveData();
+                _filterCustomers();
+                Navigator.pop(context);
+              }
+            },
+            child: Text(customer == null ? 'Add' : 'Update'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Customer Management',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              Row(
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      final path = await DataService.exportToCSV('customers');
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Exported to: $path')),
+                      );
+                    },
+                    icon: Icon(Icons.download),
+                    label: Text('Export'),
+                  ),
+                  SizedBox(width: 8),
+                  ElevatedButton.icon(
+                    onPressed: () => _showCustomerDialog(),
+                    icon: Icon(Icons.add),
+                    label: Text('Add Customer'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          SizedBox(height: 16),
+          TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              labelText: 'Search customers...',
+              prefixIcon: Icon(Icons.search),
+              border: OutlineInputBorder(),
+            ),
+          ),
+          SizedBox(height: 16),
+          Expanded(
+            child: SingleChildScrollView(
+              child: DataTable(
+                columns: [
+                  DataColumn(label: Text('Name')),
+                  DataColumn(label: Text('Email')),
+                  DataColumn(label: Text('Phone')),
+                  DataColumn(label: Text('Address')),
+                  DataColumn(label: Text('GST')),
+                  DataColumn(label: Text('Actions')),
+                ],
+                rows: _filteredCustomers.map((customer) {
+                  return DataRow(cells: [
+                    DataCell(Text(customer.name)),
+                    DataCell(Text(customer.email)),
+                    DataCell(Text(customer.phone)),
+                    DataCell(Text(customer.address, overflow: TextOverflow.ellipsis)),
+                    DataCell(Text(customer.gst ?? 'N/A')),
+                    DataCell(
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.edit, color: Colors.blue),
+                            onPressed: () => _showCustomerDialog(customer),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.delete, color: Colors.red),
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: Text('Delete Customer'),
+                                  content: Text('Are you sure you want to delete ${customer.name}?'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: Text('Cancel'),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () {
+                                        DataService.customers.remove(customer);
+                                        DataService.saveData();
+                                        _filterCustomers();
+                                        Navigator.pop(context);
+                                      },
+                                      child: Text('Delete'),
+                                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ]);
+                }).toList(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Enhanced Product Management
+class ProductManagement extends StatefulWidget {
+  @override
+  _ProductManagementState createState() => _ProductManagementState();
+}
+
+class _ProductManagementState extends State<Product

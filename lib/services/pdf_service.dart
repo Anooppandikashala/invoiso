@@ -1,0 +1,234 @@
+import 'package:invoiceapp/config/const_config.dart';
+import 'package:flutter/material.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import 'package:flutter/services.dart' show rootBundle;
+
+import 'package:invoiceapp/models/invoice.dart';
+
+// PDF Generation Service
+class PDFService {
+  static Future<pw.Document> generateInvoicePDF(Invoice invoice) async {
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(40),
+        build: (pw.Context context) {
+          return [
+            // Header
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      CompanyInfo.name,
+                      style: pw.TextStyle(
+                        fontSize: 24,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
+                    pw.SizedBox(height: 8),
+                    pw.Text(CompanyInfo.address),
+                    pw.Text(CompanyInfo.phone),
+                    pw.Text(CompanyInfo.email),
+                  ],
+                ),
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
+                  children: [
+                    pw.Text(
+                      'INVOICE',
+                      style: pw.TextStyle(
+                        fontSize: 32,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.blue,
+                      ),
+                    ),
+                    pw.SizedBox(height: 8),
+                    pw.Text('Invoice #: ${invoice.id}'),
+                    pw.Text('Date: ${_formatDate(invoice.date)}'),
+                  ],
+                ),
+              ],
+            ),
+
+            pw.SizedBox(height: 40),
+
+            // Customer Information
+            pw.Row(
+              children: [
+                pw.Expanded(
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(
+                        'Bill To:',
+                        style: pw.TextStyle(
+                          fontSize: 16,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                      pw.SizedBox(height: 8),
+                      pw.Text(invoice.customer.name),
+                      pw.Text(invoice.customer.address),
+                      pw.Text(invoice.customer.phone),
+                      pw.Text(invoice.customer.email),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            pw.SizedBox(height: 30),
+
+            // Invoice Items Table
+            pw.Table(
+              border: pw.TableBorder.all(color: PdfColors.grey300),
+              columnWidths: {
+                0: const pw.FlexColumnWidth(3),
+                1: const pw.FlexColumnWidth(1),
+                2: const pw.FlexColumnWidth(1.5),
+                3: const pw.FlexColumnWidth(1.5),
+                4: const pw.FlexColumnWidth(1.5),
+              },
+              children: [
+                // Header
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+                  children: [
+                    _buildTableCell('Description', isHeader: true),
+                    _buildTableCell('Qty', isHeader: true),
+                    _buildTableCell('Price', isHeader: true),
+                    _buildTableCell('Discount', isHeader: true),
+                    _buildTableCell('Total', isHeader: true),
+                  ],
+                ),
+                // Items
+                ...invoice.items.map((item) => pw.TableRow(
+                  children: [
+                    _buildTableCell(item.product.name),
+                    _buildTableCell(item.quantity.toString()),
+                    _buildTableCell(
+                        '\$${item.product.price.toStringAsFixed(2)}'),
+                    _buildTableCell(
+                        '\$${item.discount.toStringAsFixed(2)}'),
+                    _buildTableCell('\$${item.total.toStringAsFixed(2)}'),
+                  ],
+                )),
+              ],
+            ),
+
+            pw.SizedBox(height: 20),
+
+            // Totals
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.end,
+              children: [
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
+                  children: [
+                    pw.Row(
+                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                      children: [
+                        pw.SizedBox(width: 100, child: pw.Text('Subtotal:')),
+                        pw.SizedBox(
+                            width: 80,
+                            child: pw.Text(
+                                '\$${invoice.subtotal.toStringAsFixed(2)}')),
+                      ],
+                    ),
+                    pw.SizedBox(height: 5),
+                    pw.Row(
+                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                      children: [
+                        pw.SizedBox(
+                            width: 100,
+                            child: pw.Text(
+                                'Tax (${(invoice.taxRate * 100).toStringAsFixed(0)}%):')),
+                        pw.SizedBox(
+                            width: 80,
+                            child:
+                            pw.Text('\$${invoice.tax.toStringAsFixed(2)}')),
+                      ],
+                    ),
+                    pw.SizedBox(height: 5),
+                    pw.Divider(),
+                    pw.Row(
+                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                      children: [
+                        pw.SizedBox(
+                          width: 100,
+                          child: pw.Text(
+                            'Total:',
+                            style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                          ),
+                        ),
+                        pw.SizedBox(
+                          width: 80,
+                          child: pw.Text(
+                            '\$${invoice.total.toStringAsFixed(2)}',
+                            style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+
+            pw.SizedBox(height: 40),
+
+            // Notes
+            if (invoice.notes != null && invoice.notes!.isNotEmpty) ...[
+              pw.Text(
+                'Notes:',
+                style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+              ),
+              pw.SizedBox(height: 8),
+              pw.Text(invoice.notes!),
+              pw.SizedBox(height: 20),
+            ],
+
+            // Footer
+            pw.Divider(),
+            pw.SizedBox(height: 20),
+            pw.Center(
+              child: pw.Text(
+                'Thank you for your business!',
+                style: pw.TextStyle(
+                  fontSize: 16,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.blue,
+                ),
+              ),
+            ),
+          ];
+        },
+      ),
+    );
+
+    return pdf;
+  }
+
+  static pw.Widget _buildTableCell(String text, {bool isHeader = false}) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.all(8),
+      child: pw.Text(
+        text,
+        style: pw.TextStyle(
+          fontWeight: isHeader ? pw.FontWeight.bold : pw.FontWeight.normal,
+        ),
+      ),
+    );
+  }
+
+  static String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
+}

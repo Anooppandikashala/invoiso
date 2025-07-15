@@ -1,0 +1,904 @@
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Invoice Management',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
+      home: LoginScreen(),
+    );
+  }
+}
+
+// Data Models
+class Customer {
+  String id;
+  String name;
+  String email;
+  String phone;
+  String address;
+
+  Customer({
+    required this.id,
+    required this.name,
+    required this.email,
+    required this.phone,
+    required this.address,
+  });
+}
+
+class Product {
+  String id;
+  String name;
+  String description;
+  double price;
+  int stock;
+
+  Product({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.price,
+    required this.stock,
+  });
+}
+
+class InvoiceItem {
+  Product product;
+  int quantity;
+  double discount;
+
+  InvoiceItem({
+    required this.product,
+    required this.quantity,
+    this.discount = 0.0,
+  });
+
+  double get total => (product.price * quantity) - discount;
+}
+
+class Invoice {
+  String id;
+  Customer customer;
+  List<InvoiceItem> items;
+  DateTime date;
+  double get total => items.fold(0.0, (sum, item) => sum + item.total);
+
+  Invoice({
+    required this.id,
+    required this.customer,
+    required this.items,
+    required this.date,
+  });
+}
+
+// Data Service
+class DataService {
+  static List<Customer> customers = [
+    Customer(id: '1', name: 'John Doe', email: 'john@example.com', phone: '123-456-7890', address: '123 Main St'),
+    Customer(id: '2', name: 'Jane Smith', email: 'jane@example.com', phone: '098-765-4321', address: '456 Oak Ave'),
+  ];
+
+  static List<Product> products = [
+    Product(id: '1', name: 'Laptop', description: 'High-performance laptop', price: 999.99, stock: 10),
+    Product(id: '2', name: 'Mouse', description: 'Wireless mouse', price: 25.99, stock: 50),
+    Product(id: '3', name: 'Keyboard', description: 'Mechanical keyboard', price: 79.99, stock: 25),
+  ];
+
+  static List<Invoice> invoices = [];
+
+  static String generateId() => DateTime.now().millisecondsSinceEpoch.toString();
+}
+
+// Login Screen
+class LoginScreen extends StatefulWidget {
+  @override
+  _LoginScreenState createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  void _login() {
+    if (_usernameController.text == 'admin' && _passwordController.text == 'admin') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => DashboardScreen()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Invalid credentials')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.blue[50],
+      body: Center(
+        child: Card(
+          elevation: 8,
+          child: Container(
+            width: 400,
+            padding: EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.business, size: 64, color: Colors.blue),
+                SizedBox(height: 16),
+                Text(
+                  'Invoice Management System',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 32),
+                TextField(
+                  controller: _usernameController,
+                  decoration: InputDecoration(
+                    labelText: 'Username',
+                    prefixIcon: Icon(Icons.person),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                SizedBox(height: 16),
+                TextField(
+                  controller: _passwordController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    prefixIcon: Icon(Icons.lock),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: _login,
+                  child: Text('Login'),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: Size(double.infinity, 50),
+                  ),
+                ),
+                SizedBox(height: 16),
+                Text('Default: admin/admin', style: TextStyle(color: Colors.grey)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Dashboard Screen
+class DashboardScreen extends StatefulWidget {
+  @override
+  _DashboardScreenState createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  int _selectedIndex = 0;
+  final List<Widget> _screens = [
+    DashboardHome(),
+    CustomerManagement(),
+    ProductManagement(),
+    InvoiceManagement(),
+    InvoiceList(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Invoice Management System'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.logout),
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => LoginScreen()),
+              );
+            },
+          ),
+        ],
+      ),
+      body: Row(
+        children: [
+          NavigationRail(
+            selectedIndex: _selectedIndex,
+            onDestinationSelected: (index) {
+              setState(() {
+                _selectedIndex = index;
+              });
+            },
+            labelType: NavigationRailLabelType.all,
+            destinations: [
+              NavigationRailDestination(
+                icon: Icon(Icons.dashboard),
+                selectedIcon: Icon(Icons.dashboard),
+                label: Text('Dashboard'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.people),
+                selectedIcon: Icon(Icons.people),
+                label: Text('Customers'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.inventory),
+                selectedIcon: Icon(Icons.inventory),
+                label: Text('Products'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.receipt),
+                selectedIcon: Icon(Icons.receipt),
+                label: Text('New Invoice'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.list),
+                selectedIcon: Icon(Icons.list),
+                label: Text('Invoices'),
+              ),
+            ],
+          ),
+          VerticalDivider(thickness: 1, width: 1),
+          Expanded(child: _screens[_selectedIndex]),
+        ],
+      ),
+    );
+  }
+}
+
+// Dashboard Home
+class DashboardHome extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Dashboard Overview',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 20),
+          Row(
+            children: [
+              _buildStatCard('Total Customers', DataService.customers.length.toString(), Colors.blue),
+              SizedBox(width: 16),
+              _buildStatCard('Total Products', DataService.products.length.toString(), Colors.green),
+              SizedBox(width: 16),
+              _buildStatCard('Total Invoices', DataService.invoices.length.toString(), Colors.orange),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard(String title, String value, Color color) {
+    return Expanded(
+      child: Card(
+        elevation: 4,
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: TextStyle(fontSize: 16, color: Colors.grey[600])),
+              SizedBox(height: 8),
+              Text(value, style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: color)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Customer Management
+class CustomerManagement extends StatefulWidget {
+  @override
+  _CustomerManagementState createState() => _CustomerManagementState();
+}
+
+class _CustomerManagementState extends State<CustomerManagement> {
+  void _showCustomerDialog([Customer? customer]) {
+    final nameController = TextEditingController(text: customer?.name ?? '');
+    final emailController = TextEditingController(text: customer?.email ?? '');
+    final phoneController = TextEditingController(text: customer?.phone ?? '');
+    final addressController = TextEditingController(text: customer?.address ?? '');
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(customer == null ? 'Add Customer' : 'Edit Customer'),
+        content: Container(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(labelText: 'Name'),
+              ),
+              TextField(
+                controller: emailController,
+                decoration: InputDecoration(labelText: 'Email'),
+              ),
+              TextField(
+                controller: phoneController,
+                decoration: InputDecoration(labelText: 'Phone'),
+              ),
+              TextField(
+                controller: addressController,
+                decoration: InputDecoration(labelText: 'Address'),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (customer == null) {
+                DataService.customers.add(Customer(
+                  id: DataService.generateId(),
+                  name: nameController.text,
+                  email: emailController.text,
+                  phone: phoneController.text,
+                  address: addressController.text,
+                ));
+              } else {
+                customer.name = nameController.text;
+                customer.email = emailController.text;
+                customer.phone = phoneController.text;
+                customer.address = addressController.text;
+              }
+              setState(() {});
+              Navigator.pop(context);
+            },
+            child: Text(customer == null ? 'Add' : 'Update'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Customer Management',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              ElevatedButton(
+                onPressed: () => _showCustomerDialog(),
+                child: Text('Add Customer'),
+              ),
+            ],
+          ),
+          SizedBox(height: 16),
+          Expanded(
+            child: SingleChildScrollView(
+              child: DataTable(
+                columns: [
+                  DataColumn(label: Text('Name')),
+                  DataColumn(label: Text('Email')),
+                  DataColumn(label: Text('Phone')),
+                  DataColumn(label: Text('Address')),
+                  DataColumn(label: Text('Actions')),
+                ],
+                rows: DataService.customers.map((customer) {
+                  return DataRow(cells: [
+                    DataCell(Text(customer.name)),
+                    DataCell(Text(customer.email)),
+                    DataCell(Text(customer.phone)),
+                    DataCell(Text(customer.address)),
+                    DataCell(
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.edit),
+                            onPressed: () => _showCustomerDialog(customer),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.delete),
+                            onPressed: () {
+                              setState(() {
+                                DataService.customers.remove(customer);
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ]);
+                }).toList(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Product Management
+class ProductManagement extends StatefulWidget {
+  @override
+  _ProductManagementState createState() => _ProductManagementState();
+}
+
+class _ProductManagementState extends State<ProductManagement> {
+  void _showProductDialog([Product? product]) {
+    final nameController = TextEditingController(text: product?.name ?? '');
+    final descriptionController = TextEditingController(text: product?.description ?? '');
+    final priceController = TextEditingController(text: product?.price.toString() ?? '');
+    final stockController = TextEditingController(text: product?.stock.toString() ?? '');
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(product == null ? 'Add Product' : 'Edit Product'),
+        content: Container(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(labelText: 'Name'),
+              ),
+              TextField(
+                controller: descriptionController,
+                decoration: InputDecoration(labelText: 'Description'),
+              ),
+              TextField(
+                controller: priceController,
+                decoration: InputDecoration(labelText: 'Price'),
+                keyboardType: TextInputType.number,
+              ),
+              TextField(
+                controller: stockController,
+                decoration: InputDecoration(labelText: 'Stock'),
+                keyboardType: TextInputType.number,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (product == null) {
+                DataService.products.add(Product(
+                  id: DataService.generateId(),
+                  name: nameController.text,
+                  description: descriptionController.text,
+                  price: double.parse(priceController.text),
+                  stock: int.parse(stockController.text),
+                ));
+              } else {
+                product.name = nameController.text;
+                product.description = descriptionController.text;
+                product.price = double.parse(priceController.text);
+                product.stock = int.parse(stockController.text);
+              }
+              setState(() {});
+              Navigator.pop(context);
+            },
+            child: Text(product == null ? 'Add' : 'Update'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Product Management',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              ElevatedButton(
+                onPressed: () => _showProductDialog(),
+                child: Text('Add Product'),
+              ),
+            ],
+          ),
+          SizedBox(height: 16),
+          Expanded(
+            child: SingleChildScrollView(
+              child: DataTable(
+                columns: [
+                  DataColumn(label: Text('Name')),
+                  DataColumn(label: Text('Description')),
+                  DataColumn(label: Text('Price')),
+                  DataColumn(label: Text('Stock')),
+                  DataColumn(label: Text('Actions')),
+                ],
+                rows: DataService.products.map((product) {
+                  return DataRow(cells: [
+                    DataCell(Text(product.name)),
+                    DataCell(Text(product.description)),
+                    DataCell(Text('\$${product.price.toStringAsFixed(2)}')),
+                    DataCell(Text(product.stock.toString())),
+                    DataCell(
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.edit),
+                            onPressed: () => _showProductDialog(product),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.delete),
+                            onPressed: () {
+                              setState(() {
+                                DataService.products.remove(product);
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ]);
+                }).toList(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Invoice Management
+class InvoiceManagement extends StatefulWidget {
+  @override
+  _InvoiceManagementState createState() => _InvoiceManagementState();
+}
+
+class _InvoiceManagementState extends State<InvoiceManagement> {
+  Customer? selectedCustomer;
+  List<InvoiceItem> invoiceItems = [];
+
+  void _showAddItemDialog() {
+    Product? selectedProduct;
+    final quantityController = TextEditingController(text: '1');
+    final discountController = TextEditingController(text: '0');
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text('Add Item'),
+          content: Container(
+            width: 400,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<Product>(
+                  value: selectedProduct,
+                  decoration: InputDecoration(labelText: 'Product'),
+                  items: DataService.products.map((product) {
+                    return DropdownMenuItem(
+                      value: product,
+                      child: Text('${product.name} - \$${product.price}'),
+                    );
+                  }).toList(),
+                  onChanged: (product) {
+                    setState(() {
+                      selectedProduct = product;
+                    });
+                  },
+                ),
+                TextField(
+                  controller: quantityController,
+                  decoration: InputDecoration(labelText: 'Quantity'),
+                  keyboardType: TextInputType.number,
+                ),
+                TextField(
+                  controller: discountController,
+                  decoration: InputDecoration(labelText: 'Discount'),
+                  keyboardType: TextInputType.number,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (selectedProduct != null) {
+                  invoiceItems.add(InvoiceItem(
+                    product: selectedProduct!,
+                    quantity: int.parse(quantityController.text),
+                    discount: double.parse(discountController.text),
+                  ));
+                  this.setState(() {});
+                  Navigator.pop(context);
+                }
+              },
+              child: Text('Add'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _createInvoice() {
+    if (selectedCustomer != null && invoiceItems.isNotEmpty) {
+      final invoice = Invoice(
+        id: DataService.generateId(),
+        customer: selectedCustomer!,
+        items: List.from(invoiceItems),
+        date: DateTime.now(),
+      );
+      DataService.invoices.add(invoice);
+      setState(() {
+        selectedCustomer = null;
+        invoiceItems.clear();
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Invoice created successfully!')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Create New Invoice',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<Customer>(
+                  value: selectedCustomer,
+                  decoration: InputDecoration(
+                    labelText: 'Select Customer',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: DataService.customers.map((customer) {
+                    return DropdownMenuItem(
+                      value: customer,
+                      child: Text(customer.name),
+                    );
+                  }).toList(),
+                  onChanged: (customer) {
+                    setState(() {
+                      selectedCustomer = customer;
+                    });
+                  },
+                ),
+              ),
+              SizedBox(width: 16),
+              ElevatedButton(
+                onPressed: _showAddItemDialog,
+                child: Text('Add Item'),
+              ),
+            ],
+          ),
+          SizedBox(height: 16),
+          Expanded(
+            child: Card(
+              child: Column(
+                children: [
+                  Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Invoice Items', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        Text('Total: \$${invoiceItems.fold(0.0, (sum, item) => sum + item.total).toStringAsFixed(2)}',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: invoiceItems.length,
+                      itemBuilder: (context, index) {
+                        final item = invoiceItems[index];
+                        return ListTile(
+                          title: Text(item.product.name),
+                          subtitle: Text('Qty: ${item.quantity}, Discount: \$${item.discount.toStringAsFixed(2)}'),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text('\$${item.total.toStringAsFixed(2)}'),
+                              IconButton(
+                                icon: Icon(Icons.delete),
+                                onPressed: () {
+                                  setState(() {
+                                    invoiceItems.removeAt(index);
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.all(16),
+                    child: ElevatedButton(
+                      onPressed: (selectedCustomer != null && invoiceItems.isNotEmpty) ? _createInvoice : null,
+                      child: Text('Create Invoice'),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: Size(double.infinity, 50),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Invoice List
+class InvoiceList extends StatefulWidget {
+  @override
+  _InvoiceListState createState() => _InvoiceListState();
+}
+
+class _InvoiceListState extends State<InvoiceList> {
+  void _showInvoiceDetails(Invoice invoice) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Invoice #${invoice.id}'),
+        content: Container(
+          width: 600,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Customer: ${invoice.customer.name}'),
+              Text('Date: ${invoice.date.toString().split(' ')[0]}'),
+              SizedBox(height: 16),
+              Text('Items:', style: TextStyle(fontWeight: FontWeight.bold)),
+              ...invoice.items.map((item) => Padding(
+                padding: EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('${item.product.name} x${item.quantity}'),
+                    Text('\$${item.total.toStringAsFixed(2)}'),
+                  ],
+                ),
+              )),
+              Divider(),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Total:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text('\$${invoice.total.toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Invoice List',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 16),
+          Expanded(
+            child: DataService.invoices.isEmpty
+                ? Center(
+              child: Text(
+                'No invoices created yet',
+                style: TextStyle(fontSize: 18, color: Colors.grey),
+              ),
+            )
+                : SingleChildScrollView(
+              child: DataTable(
+                columns: [
+                  DataColumn(label: Text('Invoice ID')),
+                  DataColumn(label: Text('Customer')),
+                  DataColumn(label: Text('Date')),
+                  DataColumn(label: Text('Total')),
+                  DataColumn(label: Text('Actions')),
+                ],
+                rows: DataService.invoices.map((invoice) {
+                  return DataRow(cells: [
+                    DataCell(Text('#${invoice.id}')),
+                    DataCell(Text(invoice.customer.name)),
+                    DataCell(Text(invoice.date.toString().split(' ')[0])),
+                    DataCell(Text('\$${invoice.total.toStringAsFixed(2)}')),
+                    DataCell(
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.visibility),
+                            onPressed: () => _showInvoiceDetails(invoice),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.delete),
+                            onPressed: () {
+                              setState(() {
+                                DataService.invoices.remove(invoice);
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ]);
+                }).toList(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
