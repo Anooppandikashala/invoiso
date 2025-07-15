@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:invoiceapp/screens/settings.dart';
 
 import 'customer_management.dart';
 import '../database/database_helper.dart';
@@ -21,6 +22,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ProductManagement(),
     InvoiceManagement(),
     InvoiceList(),
+    SettingsPage()
   ];
 
   @override
@@ -50,31 +52,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
               });
             },
             labelType: NavigationRailLabelType.all,
-            destinations: const [
+            destinations: [
               NavigationRailDestination(
-                icon: Icon(Icons.dashboard),
-                selectedIcon: Icon(Icons.dashboard),
-                label: Text('Dashboard'),
+                icon: const Icon(Icons.dashboard),
+                selectedIcon: Icon(Icons.dashboard,color: Colors.blue[900],),
+                label: const Text('Dashboard'),
               ),
               NavigationRailDestination(
-                icon: Icon(Icons.people),
-                selectedIcon: Icon(Icons.people),
-                label: Text('Customers'),
+                icon: const Icon(Icons.people),
+                selectedIcon: Icon(Icons.people,color: Colors.blue[900],),
+                label: const Text('Customers'),
               ),
               NavigationRailDestination(
-                icon: Icon(Icons.inventory),
-                selectedIcon: Icon(Icons.inventory),
-                label: Text('Products'),
+                icon: const Icon(Icons.inventory),
+                selectedIcon: Icon(Icons.inventory,color: Colors.blue[900],),
+                label: const Text('Products'),
               ),
               NavigationRailDestination(
-                icon: Icon(Icons.receipt),
-                selectedIcon: Icon(Icons.receipt),
-                label: Text('New Invoice'),
+                icon: const Icon(Icons.receipt),
+                selectedIcon: Icon(Icons.receipt,color: Colors.blue[900],),
+                label: const Text('New Invoice'),
               ),
               NavigationRailDestination(
-                icon: Icon(Icons.list),
-                selectedIcon: Icon(Icons.list),
-                label: Text('Invoices'),
+                icon: const Icon(Icons.list),
+                selectedIcon: Icon(Icons.list,color: Colors.blue[900],),
+                label: const Text('Invoices'),
+              ),
+              NavigationRailDestination(
+                icon: const Icon(Icons.settings),
+                selectedIcon: Icon(Icons.settings,color: Colors.blue[900],),
+                label: const Text('Settings'),
               ),
             ],
           ),

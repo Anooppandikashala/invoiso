@@ -7,6 +7,7 @@ import 'package:invoiceapp/models/product.dart';
 import 'package:invoiceapp/models/invoice.dart';
 import 'package:invoiceapp/models/invoice_item.dart';
 
+import '../models/company_info.dart';
 import '../models/user.dart';
 
 class DatabaseHelper {
@@ -82,6 +83,26 @@ class DatabaseHelper {
         password TEXT
       )
     ''');
+
+    await db.execute('''
+      CREATE TABLE company_info (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        address TEXT,
+        phone TEXT,
+        email TEXT,
+        website TEXT
+      )
+    ''');
+
+    // Insert dummy company info
+    await db.insert('company_info', {
+      'name': 'Your Company Name',
+      'address': '123 Business Street\nCity, State 12345',
+      'phone': '(555) 123-4567',
+      'email': 'info@yourcompany.com',
+      'website': 'www.yourcompany.com',
+    });
 
     // Insert default admin user (for first-time login)
     await db.insert('users', {
@@ -401,6 +422,32 @@ class DatabaseHelper {
     }
 
     return items;
+  }
+
+
+  Future<CompanyInfo?> getCompanyInfo() async {
+    final db = await database;
+    final List<Map<String, dynamic>> result = await db.query('company_info', limit: 1);
+
+    if (result.isNotEmpty) {
+      return CompanyInfo.fromMap(result.first);
+    }
+    return null;
+  }
+
+  Future<int> insertCompanyInfo(CompanyInfo info) async {
+    final db = await database;
+    return await db.insert('company_info', info.toMap());
+  }
+
+  Future<int> updateCompanyInfo(CompanyInfo info) async {
+    final db = await database;
+    return await db.update(
+      'company_info',
+      info.toMap(),
+      where: 'id = ?',
+      whereArgs: [info.id],
+    );
   }
 
   // ─────────────────────────────────────────────

@@ -1,8 +1,7 @@
-import 'package:invoiceapp/config/const_config.dart';
-import 'package:flutter/material.dart';
+import 'package:invoiceapp/database/database_helper.dart';
+import 'package:invoiceapp/models/company_info.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
 import 'package:invoiceapp/models/invoice.dart';
@@ -11,6 +10,8 @@ import 'package:invoiceapp/models/invoice.dart';
 class PDFService {
   static Future<pw.Document> generateInvoicePDF(Invoice invoice) async {
     final pdf = pw.Document();
+    final dbHelper = DatabaseHelper();
+    final company = await dbHelper.getCompanyInfo();
 
     pdf.addPage(
       pw.MultiPage(
@@ -26,16 +27,16 @@ class PDFService {
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
                     pw.Text(
-                      CompanyInfo.name,
+                      company?.name ?? '',
                       style: pw.TextStyle(
                         fontSize: 24,
                         fontWeight: pw.FontWeight.bold,
                       ),
                     ),
                     pw.SizedBox(height: 8),
-                    pw.Text(CompanyInfo.address),
-                    pw.Text(CompanyInfo.phone),
-                    pw.Text(CompanyInfo.email),
+                    pw.Text(company?.address ?? ''),
+                    pw.Text(company?.phone ?? ''),
+                    pw.Text(company?.email ?? ''),
                   ],
                 ),
                 pw.Column(
