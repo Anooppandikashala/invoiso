@@ -125,6 +125,21 @@ class DatabaseHelper {
     });
   }
 
+  Future<void> updateCustomer(Customer customer) async {
+    final db = await database;
+    await db.update(
+      'customers',
+      {
+        'name': customer.name,
+        'email': customer.email,
+        'phone': customer.phone,
+        'address': customer.address,
+      },
+      where: 'id = ?',
+      whereArgs: [customer.id],
+    );
+  }
+
   Future<Customer?> getCustomerById(String id) async {
     final db = await database;
     final maps = await db.query('customers', where: 'id = ?', whereArgs: [id]);

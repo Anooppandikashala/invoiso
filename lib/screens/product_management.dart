@@ -210,7 +210,6 @@ class _ProductManagementState extends State<ProductManagement> {
             ),
           ),
           const SizedBox(width: 16),
-
           // Right side with table and controls
           Expanded(
             child: Column(

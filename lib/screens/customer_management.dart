@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:invoiceapp/database/database_helper.dart';
 import 'package:invoiceapp/models/customer.dart';
 import 'package:uuid/uuid.dart';
@@ -66,7 +67,7 @@ class _CustomerManagementState extends State<CustomerManagement> {
     if (customer == null) {
       await dbHelper.insertCustomer(newCustomer);
     } else {
-      await dbHelper.insertCustomer(newCustomer);
+      await dbHelper.updateCustomer(newCustomer);
     }
 
     nameController.clear();
@@ -77,11 +78,53 @@ class _CustomerManagementState extends State<CustomerManagement> {
     await _loadCustomers();
   }
 
-  void _populateForm(Customer customer) {
-    nameController.text = customer.name;
-    emailController.text = customer.email;
-    phoneController.text = customer.phone;
-    addressController.text = customer.address;
+  void _showCustomerEditDialog(Customer customer) {
+    final nameCtrl = TextEditingController(text: customer.name);
+    final emailCtrl = TextEditingController(text: customer.email);
+    final phoneCtrl = TextEditingController(text: customer.phone);
+    final addressCtrl = TextEditingController(text: customer.address);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Customer'),
+        content: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name'),maxLength: 50,),
+              TextField(controller: emailCtrl, decoration: const InputDecoration(labelText: 'Email'),maxLength: 50,),
+              TextField(
+                controller: phoneCtrl,
+                decoration: const InputDecoration(labelText: 'Phone'),
+                maxLength: 12,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],),
+              TextField(controller: addressCtrl, decoration: const InputDecoration(labelText: 'Address'),maxLength: 100,),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              final updatedCustomer = Customer(
+                id: customer.id,
+                name: nameCtrl.text,
+                email: emailCtrl.text,
+                phone: phoneCtrl.text,
+                address: addressCtrl.text,
+              );
+              await dbHelper.updateCustomer(updatedCustomer);
+              await _loadCustomers();
+              Navigator.pop(context);
+            },
+            child: const Text('Update'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _deleteCustomer(Customer customer) async {
@@ -137,10 +180,13 @@ class _CustomerManagementState extends State<CustomerManagement> {
                 child: Column(
                   children: [
                     const Text('Add Customer', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Name')),
-                    TextField(controller: emailController, decoration: const InputDecoration(labelText: 'Email')),
-                    TextField(controller: phoneController, decoration: const InputDecoration(labelText: 'Phone')),
-                    TextField(controller: addressController, decoration: const InputDecoration(labelText: 'Address')),
+                    TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Name'),maxLength: 50,),
+                    TextField(controller: emailController, decoration: const InputDecoration(labelText: 'Email'),maxLength: 50,),
+                    TextField(controller: phoneController, decoration: const InputDecoration(labelText: 'Phone'),
+                      maxLength: 12,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],),
+                    TextField(controller: addressController, decoration: const InputDecoration(labelText: 'Address'),maxLength: 100,),
                     const SizedBox(height: 8),
                     ElevatedButton(
                       onPressed: () => _handleAddOrUpdateCustomer(),
@@ -239,7 +285,7 @@ class _CustomerManagementState extends State<CustomerManagement> {
                                 IconButton(
                                   icon: const Icon(Icons.edit),
                                   onPressed: () {
-                                    _populateForm(customer);
+                                    _showCustomerEditDialog(customer);
                                   },
                                 ),
                                 IconButton(

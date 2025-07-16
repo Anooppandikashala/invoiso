@@ -229,6 +229,196 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
     });
   }
 
+  Widget _customerSearchView()
+  {
+    return Card(
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: TextField(
+              controller: customerSearchController,
+              onChanged: _filterCustomers,
+              decoration: const InputDecoration(
+                labelText: 'Search Customer',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+          SizedBox(
+            height: 200,
+            child: ListView.builder(
+              itemCount: filteredCustomers.length > 5 ? 5 : filteredCustomers.length,
+              itemBuilder: (context, index) {
+                final customer = filteredCustomers[index];
+                return ListTile(
+                  title: Text(customer.name),
+                  subtitle: Text(customer.email),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.check),
+                    onPressed: () => _selectCustomer(customer),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _productSearchView()
+  {
+    return Card(
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: TextField(
+              controller: searchController,
+              onChanged: _filterProducts,
+              decoration: const InputDecoration(
+                labelText: 'Search Product',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+          SizedBox(
+            height: 500,
+            child: ListView.builder(
+              itemCount: filteredProducts.length > 5 ? 5 : filteredProducts.length,
+              itemBuilder: (context, index) {
+                final product = filteredProducts[index];
+                return ListTile(
+                  title: Text(product.name),
+                  subtitle: Text('Price: ${product.price.toStringAsFixed(2)}'),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.add),
+                    onPressed: () => addInvoiceProductPrompt(product),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _customerDetailsForm()
+  {
+    return Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(labelText: 'Customer Name', border: OutlineInputBorder()),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: emailController,
+                    decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder()),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: phoneController,
+                    decoration: const InputDecoration(labelText: 'Phone', border: OutlineInputBorder()),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: addressController,
+                    decoration: const InputDecoration(labelText: 'Address', border: OutlineInputBorder()),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+  }
+
+  Widget _invoiceItems(
+      double tax,
+      double subtotal,
+      double total)
+  {
+    return Card(
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Invoice Items', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text('Subtotal: ${subtotal.toStringAsFixed(2)}'),
+                    Text('Tax: ${tax.toStringAsFixed(2)}'),
+                    Text('Total: ${total.toStringAsFixed(2)}',
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 400,
+            child: ListView.builder(
+              itemCount: invoiceItems.length,
+              itemBuilder: (context, index) {
+                final item = invoiceItems[index];
+                return ListTile(
+                  title: Text(item.product.name),
+                  subtitle: Text('Qty: ${item.quantity}, Discount: ${item.discount.toStringAsFixed(2)}'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(item.total.toStringAsFixed(2)),
+                      IconButton(
+                        icon: const Icon(Icons.edit),
+                        onPressed: () => _editInvoiceItem(index),
+                        tooltip: 'Edit Item',
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete),
+                        onPressed: () {
+                          setState(() {
+                            invoiceItems.removeAt(index);
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: ElevatedButton(
+              onPressed: invoiceItems.isNotEmpty ? _createInvoice : null,
+              style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50)),
+              child: const Text('Create Invoice'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     double subtotal = invoiceItems.fold(0.0, (sum, item) => sum + item.total);
@@ -250,121 +440,27 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
                       flex: 1,
                       child: Column(
                         children: [
-                          Card(
-                            child: Column(
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.all(8),
-                                  child: TextField(
-                                    controller: customerSearchController,
-                                    onChanged: _filterCustomers,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Search Customer',
-                                      border: OutlineInputBorder(),
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(
-                                  height: 200,
-                                  child: ListView.builder(
-                                    itemCount: filteredCustomers.length,
-                                    itemBuilder: (context, index) {
-                                      final customer = filteredCustomers[index];
-                                      return ListTile(
-                                        title: Text(customer.name),
-                                        subtitle: Text(customer.email),
-                                        trailing: IconButton(
-                                          icon: const Icon(Icons.check),
-                                          onPressed: () => _selectCustomer(customer),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
+                          Flexible(
+                                flex: 1,
+                                child: _customerSearchView(),
                           ),
                           const SizedBox(height: 8),
-                          Card(
-                            child: Column(
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.all(8),
-                                  child: TextField(
-                                    controller: searchController,
-                                    onChanged: _filterProducts,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Search Product',
-                                      border: OutlineInputBorder(),
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(
-                                  height: 300,
-                                  child: ListView.builder(
-                                    itemCount: filteredProducts.length,
-                                    itemBuilder: (context, index) {
-                                      final product = filteredProducts[index];
-                                      return ListTile(
-                                        title: Text(product.name),
-                                        subtitle: Text('Price: ${product.price.toStringAsFixed(2)}'),
-                                        trailing: IconButton(
-                                          icon: const Icon(Icons.add),
-                                          onPressed: () => addInvoiceProductPrompt(product),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
+                          Flexible(
+                              flex: 2,
+                              child: _productSearchView()
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(width: 16),
                     Flexible(
-                      flex: 2,
+                      flex: 3,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text('Create New Invoice', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                           const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: nameController,
-                                  decoration: const InputDecoration(labelText: 'Customer Name', border: OutlineInputBorder()),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: TextField(
-                                  controller: emailController,
-                                  decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder()),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: phoneController,
-                                  decoration: const InputDecoration(labelText: 'Phone', border: OutlineInputBorder()),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: TextField(
-                                  controller: addressController,
-                                  decoration: const InputDecoration(labelText: 'Address', border: OutlineInputBorder()),
-                                ),
-                              ),
-                            ],
-                          ),
+                          _customerDetailsForm(),
                           const SizedBox(height: 8),
                           TextField(
                             controller: notesController,
@@ -390,72 +486,7 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
                             },
                           ),
                           const SizedBox(height: 8),
-                          SizedBox(
-                            height: 400,
-                            child: Card(
-                              child: Column(
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.all(16),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        const Text('Invoice Items', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                                        Column(
-                                          crossAxisAlignment: CrossAxisAlignment.end,
-                                          children: [
-                                            Text('Subtotal: ${subtotal.toStringAsFixed(2)}'),
-                                            Text('Tax: ${tax.toStringAsFixed(2)}'),
-                                            Text('Total: ${total.toStringAsFixed(2)}',
-                                                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: ListView.builder(
-                                      itemCount: invoiceItems.length,
-                                      itemBuilder: (context, index) {
-                                        final item = invoiceItems[index];
-                                        return ListTile(
-                                          title: Text(item.product.name),
-                                          subtitle: Text('Qty: ${item.quantity}, Discount: ${item.discount.toStringAsFixed(2)}'),
-                                          trailing: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text(item.total.toStringAsFixed(2)),
-                                              IconButton(
-                                                icon: const Icon(Icons.edit),
-                                                onPressed: () => _editInvoiceItem(index),
-                                                tooltip: 'Edit Item',
-                                              ),
-                                              IconButton(
-                                                icon: const Icon(Icons.delete),
-                                                onPressed: () {
-                                                  setState(() {
-                                                    invoiceItems.removeAt(index);
-                                                  });
-                                                },
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.all(16),
-                                    child: ElevatedButton(
-                                      onPressed: invoiceItems.isNotEmpty ? _createInvoice : null,
-                                      style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50)),
-                                      child: const Text('Create Invoice'),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
+                          _invoiceItems(tax,subtotal,total)
                         ],
                       ),
                     ),
