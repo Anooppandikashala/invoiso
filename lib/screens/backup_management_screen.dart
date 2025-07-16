@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:invoiceapp/database/database_helper.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:intl/intl.dart';
 
 import 'package:invoiceapp/backup/backup_manager.dart';
 
 class BackupManagementScreen extends StatefulWidget {
-  final Database database;
-
-  const BackupManagementScreen({Key? key, required this.database}) : super(key: key);
-
   @override
   State<BackupManagementScreen> createState() => _BackupManagementScreenState();
 }
@@ -41,8 +38,8 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
     setState(() => _isLoading = true);
 
     try {
+
       final result = await _backupManager.createBackup(
-        database: widget.database,
         type: type,
       );
 
@@ -71,7 +68,7 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
 
     try {
       final result = await _backupManager.restoreBackup(
-        database: widget.database,
+        database: await DatabaseHelper().database,
         backupPath: backup.filePath,
       );
 
@@ -115,7 +112,7 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
 
   Future<void> _shareBackup(BackupInfo backup) async {
     try {
-      await _backupManager.shareBackup(backup.filePath);
+      await _backupManager.downloadBackup(backup.filePath);
     } catch (e) {
       _showErrorDialog('Failed to share backup: ${e.toString()}');
     }
@@ -125,7 +122,7 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final result = await _backupManager.importBackup(widget.database);
+      final result = await _backupManager.importBackup(await DatabaseHelper().database);
 
       if (result.success) {
         _showSuccessDialog('Backup imported successfully!');
@@ -144,7 +141,11 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Backup Management'),
+        title: Padding(
+          padding: const EdgeInsets.only(left: 50),
+          child: const Text('Backup Management'),
+        ),
+        actionsPadding: EdgeInsets.only(right: 50),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -158,10 +159,11 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
         children: [
           // Action buttons
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.only(left: 50,right: 50,top: 16,bottom: 16),
             child: Column(
               children: [
                 Row(
+                  spacing: 30,
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
@@ -178,16 +180,14 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
                         label: const Text('Export JSON'),
                       ),
                     ),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: _importBackup,
+                        icon: const Icon(Icons.upload),
+                        label: const Text('Import Backup'),
+                      ),
+                    )
                   ],
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _importBackup,
-                    icon: const Icon(Icons.upload),
-                    label: const Text('Import Backup'),
-                  ),
                 ),
               ],
             ),
@@ -221,7 +221,7 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
     final dateFormat = DateFormat('MMM dd, yyyy HH:mm');
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 50, vertical: 10),
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: backup.type == BackupType.database
@@ -248,7 +248,7 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
               case 'restore':
                 _restoreBackup(backup);
                 break;
-              case 'share':
+              case 'download':
                 _shareBackup(backup);
                 break;
               case 'delete':
@@ -265,10 +265,10 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
               ),
             ),
             const PopupMenuItem(
-              value: 'share',
+              value: 'download',
               child: ListTile(
-                leading: Icon(Icons.share),
-                title: Text('Share'),
+                leading: Icon(Icons.download),
+                title: Text('Download'),
               ),
             ),
             const PopupMenuItem(

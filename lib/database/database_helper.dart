@@ -14,8 +14,11 @@ class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   factory DatabaseHelper() => _instance;
   DatabaseHelper._internal();
-
+  static String? _path;
+  static String? get path => _path;
   static Database? _database;
+
+
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -24,9 +27,9 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDB() async {
-    String path = join(await getDatabasesPath(), 'invoice_manager.db');
+    _path = join(await getDatabasesPath(), 'invoice_manager.db');
     return await openDatabase(
-      path,
+      _path!,
       version: 1,
       onCreate: _createDB,
     );

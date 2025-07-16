@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:invoiceapp/database/database_helper.dart';
-import 'package:invoiceapp/screens/login.dart';
+import 'package:invoiceapp/screens/login_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   @override

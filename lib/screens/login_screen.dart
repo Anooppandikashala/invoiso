@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../database/database_helper.dart';
-import 'dashboard.dart';
+import 'dashboard_screen.dart';
 
 
 // Login Screen

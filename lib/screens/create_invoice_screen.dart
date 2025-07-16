@@ -6,6 +6,7 @@ import '../models/customer.dart';
 import '../models/invoice.dart';
 import '../models/invoice_item.dart';
 import '../models/product.dart';
+import '../services/invoice_services.dart';
 
 class InvoiceManagement extends StatefulWidget {
   @override
@@ -29,6 +30,7 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
   final addressController = TextEditingController();
   final taxRateController = TextEditingController();
   double taxRate = 0.1;
+  Invoice? _invoice;
 
   @override
   void initState() {
@@ -93,6 +95,10 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
 
   void addInvoiceProduct(InvoiceItem invoiceItem) {
     final exists = invoiceItems.any((item) => item.product.id == invoiceItem.product.id);
+    setState(() {
+      invoiceItems.insert(0, invoiceItem);
+    });
+    return;
     if (exists) {
       showDialog(
         context: context,
@@ -135,6 +141,7 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
       await dbHelper.insertInvoice(invoice);
 
       setState(() {
+        _invoice = null;
         selectedCustomer = null;
         invoiceItems.clear();
         notesController.clear();
@@ -144,6 +151,7 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
         addressController.clear();
         taxRate = 0.1;
         taxRateController.text = (taxRate * 100).toStringAsFixed(1);
+        _invoice = invoice;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -286,7 +294,7 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
           SizedBox(
             height: 500,
             child: ListView.builder(
-              itemCount: filteredProducts.length > 5 ? 5 : filteredProducts.length,
+              itemCount: filteredProducts.length > 6 ? 6 : filteredProducts.length,
               itemBuilder: (context, index) {
                 final product = filteredProducts[index];
                 return ListTile(
@@ -374,44 +382,39 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
               ],
             ),
           ),
-          SizedBox(
-            height: 400,
-            child: ListView.builder(
-              itemCount: invoiceItems.length,
-              itemBuilder: (context, index) {
-                final item = invoiceItems[index];
-                return ListTile(
-                  title: Text(item.product.name),
-                  subtitle: Text('Qty: ${item.quantity}, Discount: ${item.discount.toStringAsFixed(2)}'),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(item.total.toStringAsFixed(2)),
-                      IconButton(
-                        icon: const Icon(Icons.edit),
-                        onPressed: () => _editInvoiceItem(index),
-                        tooltip: 'Edit Item',
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete),
-                        onPressed: () {
-                          setState(() {
-                            invoiceItems.removeAt(index);
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
           Padding(
-            padding: const EdgeInsets.all(16),
-            child: ElevatedButton(
-              onPressed: invoiceItems.isNotEmpty ? _createInvoice : null,
-              style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50)),
-              child: const Text('Create Invoice'),
+            padding: const EdgeInsets.all(8.0),
+            child: SizedBox(
+              height: 400,
+              child: ListView.builder(
+                itemCount: invoiceItems.length,
+                itemBuilder: (context, index) {
+                  final item = invoiceItems[index];
+                  return ListTile(
+                    title: Text(item.product.name),
+                    subtitle: Text('Qty: ${item.quantity}, Discount: ${item.discount.toStringAsFixed(2)}'),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(item.total.toStringAsFixed(2)),
+                        IconButton(
+                          icon: const Icon(Icons.edit),
+                          onPressed: () => _editInvoiceItem(index),
+                          tooltip: 'Edit Item',
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete),
+                          onPressed: () {
+                            setState(() {
+                              invoiceItems.removeAt(index);
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         ],
@@ -431,7 +434,7 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              constraints: BoxConstraints(minHeight: constraints.maxHeight-20),
               child: IntrinsicHeight(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -486,7 +489,45 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
                             },
                           ),
                           const SizedBox(height: 8),
-                          _invoiceItems(tax,subtotal,total)
+                          _invoiceItems(tax,subtotal,total),
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              children: [
+                                Flexible(
+                                  flex:3,
+                                  child: ElevatedButton(
+                                    onPressed: invoiceItems.isNotEmpty ? _createInvoice : null,
+                                    style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity,50)),
+                                    child: const Text('Create Invoice'),
+                                  ),
+                                ),
+                                Flexible(
+                                  flex: 1,
+                                  child: Center(
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        IconButton(icon: const Icon(Icons.visibility),
+                                            onPressed: _invoice != null
+                                                ? () => InvoiceServices.showInvoiceDetails(context, _invoice!) : null,
+                                            tooltip: 'View Details'),
+                                        SizedBox(width: 30,),
+                                        IconButton(icon: const Icon(Icons.picture_as_pdf),
+                                            onPressed: _invoice != null ? () => InvoiceServices.previewPDF(context,_invoice!) : null,
+                                            tooltip: 'Preview PDF'),
+                                        SizedBox(width: 30,),
+                                        IconButton(icon: const Icon(Icons.print),
+                                            onPressed: _invoice != null ? () => InvoiceServices.generatePDF(context,_invoice!) : null,
+                                            tooltip: 'Print PDF'),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                              ],
+                            ),
+                          )
+
                         ],
                       ),
                     ),

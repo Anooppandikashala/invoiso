@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:convert';
+import 'package:invoiceapp/database/database_helper.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
@@ -7,6 +8,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:crypto/crypto.dart';
+import 'package:downloads_path_provider_28/downloads_path_provider_28.dart';
 
 class BackupManager {
   static const String _backupExtension = '.invoicedb';
@@ -14,7 +16,6 @@ class BackupManager {
 
   // Create backup of the entire database
   Future<BackupResult> createBackup({
-    required Database database,
     String? customPath,
     BackupType type = BackupType.database,
   }) async {
@@ -33,9 +34,9 @@ class BackupManager {
       String backupPath;
 
       if (type == BackupType.database) {
-        backupPath = await _createDatabaseBackup(database, backupName, customPath);
+        backupPath = await _createDatabaseBackup(backupName, customPath);
       } else {
-        backupPath = await _createJsonBackup(database, backupName, customPath);
+        backupPath = await _createJsonBackup(backupName, customPath);
       }
 
       return BackupResult(
@@ -54,16 +55,12 @@ class BackupManager {
 
   // Create database file backup
   Future<String> _createDatabaseBackup(
-      Database database,
       String backupName,
       String? customPath,
       ) async {
-    final dbPath = database.path;
+    final dbPath = DatabaseHelper.path!;
     final backupDir = customPath ?? await _getBackupDirectory();
     final backupPath = join(backupDir, '$backupName$_backupExtension');
-
-    // Close database temporarily for backup
-    await database.close();
 
     // Copy database file
     final dbFile = File(dbPath);
@@ -77,7 +74,6 @@ class BackupManager {
 
   // Create JSON export backup
   Future<String> _createJsonBackup(
-      Database database,
       String backupName,
       String? customPath,
       ) async {
@@ -85,7 +81,7 @@ class BackupManager {
     final backupPath = join(backupDir, '$backupName$_jsonExtension');
 
     // Export all data to JSON
-    final backupData = await _exportDataToJson(database);
+    final backupData = await _exportDataToJson(await DatabaseHelper().database);
 
     // Write JSON file
     final backupFile = File(backupPath);
@@ -283,7 +279,7 @@ class BackupManager {
     // Check if we need to create a new backup
     if (backups.isEmpty ||
         DateTime.now().difference(backups.first.createdAt).inDays >= 7) {
-      await createBackup(database: database);
+      await createBackup();
 
       // Clean up old backups (keep only last 5)
       await _cleanupOldBackups();
@@ -330,6 +326,31 @@ class BackupManager {
     }
   }
 
+  // Download backup file to Downloads folder
+  Future<BackupResult> downloadBackup(String backupPath) async {
+    try {
+      final file = File(backupPath);
+      if (!await file.exists()) {
+        return BackupResult(success: false, message: 'Backup file not found');
+      }
+
+      final downloadsDir = await _getDownloadsDirectory();
+      final fileName = basename(backupPath);
+      final newPath = join(downloadsDir.path, fileName);
+
+      await file.copy(newPath);
+
+      return BackupResult(
+        success: true,
+        message: 'Backup downloaded to Downloads folder',
+        filePath: newPath,
+        timestamp: DateTime.now(),
+      );
+    } catch (e) {
+      return BackupResult(success: false, message: 'Download failed: ${e.toString()}');
+    }
+  }
+
   // Verify backup integrity
   Future<bool> verifyBackup(String backupPath) async {
     try {
@@ -366,6 +387,24 @@ class BackupManager {
     }
 
     return backupDir.path;
+  }
+
+  Future<Directory> _getDownloadsDirectory() async {
+    if (Platform.isAndroid) {
+      final dir = Directory('/storage/emulated/0/Download');
+      if (await dir.exists()) return dir;
+    }
+
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      final downloadsPath = join(
+        (await getDownloadsDirectory())?.path ?? '',
+      );
+      final dir = Directory(downloadsPath);
+      if (await dir.exists()) return dir;
+    }
+
+    // Fallback to app documents dir
+    return await getApplicationDocumentsDirectory();
   }
 
   // Request storage permission
