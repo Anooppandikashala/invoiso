@@ -1,0 +1,61 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+
+class PDFViewerScreen extends StatefulWidget {
+  final Uint8List pdfBytes;
+  final String invoiceId;
+
+  const PDFViewerScreen({
+    Key? key,
+    required this.pdfBytes,
+    required this.invoiceId,
+  }) : super(key: key);
+
+  @override
+  State<PDFViewerScreen> createState() => _PDFViewerScreenState();
+}
+
+class _PDFViewerScreenState extends State<PDFViewerScreen> {
+  final PdfViewerController _pdfViewerController = PdfViewerController();
+  double _zoomLevel = 1.0;
+
+  void _zoomIn() {
+    setState(() {
+      _zoomLevel = (_zoomLevel + 0.25).clamp(1.0, 5.0);
+      _pdfViewerController.zoomLevel = _zoomLevel;
+    });
+  }
+
+  void _zoomOut() {
+    setState(() {
+      _zoomLevel = (_zoomLevel - 0.25).clamp(1.0, 5.0);
+      _pdfViewerController.zoomLevel = _zoomLevel;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Invoice #${widget.invoiceId}'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.zoom_out),
+            onPressed: _zoomOut,
+            tooltip: 'Zoom Out',
+          ),
+          IconButton(
+            icon: const Icon(Icons.zoom_in),
+            onPressed: _zoomIn,
+            tooltip: 'Zoom In',
+          ),
+        ],
+      ),
+      body: SfPdfViewer.memory(
+        widget.pdfBytes,
+        controller: _pdfViewerController,
+      ),
+    );
+  }
+}
