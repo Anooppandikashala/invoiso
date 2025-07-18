@@ -7,6 +7,7 @@ import '../models/invoice.dart';
 import '../models/invoice_item.dart';
 import '../models/product.dart';
 import '../services/invoice_services.dart';
+import 'package:invoiceapp/constants.dart';
 
 class InvoiceManagement extends StatefulWidget {
   @override
@@ -29,7 +30,14 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
   final phoneController = TextEditingController();
   final addressController = TextEditingController();
   final taxRateController = TextEditingController();
-  double taxRate = 0.1;
+
+  final _customerScrollController = ScrollController();
+  final _productScrollController = ScrollController();
+  final _invoiceItemsScrollController = ScrollController();
+
+  bool isTaxEnabled = true;
+
+  double taxRate = 0.18;
   Invoice? _invoice;
 
   @override
@@ -37,6 +45,22 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
     super.initState();
     taxRateController.text = (taxRate * 100).toStringAsFixed(1);
     _loadCustomersAndProducts();
+  }
+
+  @override
+  void dispose() {
+    notesController.dispose();
+    searchController.dispose();
+    customerSearchController.dispose();
+    nameController.dispose();
+    emailController.dispose();
+    phoneController.dispose();
+    addressController.dispose();
+    taxRateController.dispose();
+    _customerScrollController.dispose();
+    _productScrollController.dispose();
+    _invoiceItemsScrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadCustomersAndProducts() async {
@@ -58,23 +82,36 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Add ${product.name}'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: quantityController,
-              decoration: const InputDecoration(labelText: 'Quantity'),
-              keyboardType: TextInputType.number,
-            ),
-            TextField(
-              controller: discountController,
-              decoration: const InputDecoration(labelText: 'Discount'),
-              keyboardType: TextInputType.number,
-            ),
-          ],
+        content: SizedBox(
+          width : MediaQuery.sizeOf(context).width *0.2,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: quantityController,
+                decoration: const InputDecoration(
+                  labelText: 'Quantity',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              AppSpacing.hMedium,
+              TextField(
+                controller: discountController,
+                decoration: const InputDecoration(
+                  labelText: 'Discount',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+            ],
+          ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
@@ -94,17 +131,16 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
   }
 
   void addInvoiceProduct(InvoiceItem invoiceItem) {
-    final exists = invoiceItems.any((item) => item.product.id == invoiceItem.product.id);
-    setState(() {
-      invoiceItems.insert(0, invoiceItem);
-    });
-    return;
+    final exists =
+        invoiceItems.any((item) => item.product.id == invoiceItem.product.id);
+
     if (exists) {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Duplicate Product'),
-          content: const Text('This product has already been added to the invoice.'),
+          content:
+              const Text('This product has already been added to the invoice.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -125,13 +161,14 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
       final invoiceId = const Uuid().v4();
       final invoice = Invoice(
         id: invoiceId,
-        customer: selectedCustomer ?? Customer(
-          id: const Uuid().v4(),
-          name: nameController.text,
-          email: emailController.text,
-          phone: phoneController.text,
-          address: addressController.text,
-        ),
+        customer: selectedCustomer ??
+            Customer(
+              id: const Uuid().v4(),
+              name: nameController.text,
+              email: emailController.text,
+              phone: phoneController.text,
+              address: addressController.text,
+            ),
         items: List.from(invoiceItems),
         date: DateTime.now(),
         notes: notesController.text.isNotEmpty ? notesController.text : null,
@@ -141,7 +178,7 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
       await dbHelper.insertInvoice(invoice);
 
       setState(() {
-        _invoice = null;
+        _invoice = invoice;
         selectedCustomer = null;
         invoiceItems.clear();
         notesController.clear();
@@ -151,7 +188,6 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
         addressController.clear();
         taxRate = 0.1;
         taxRateController.text = (taxRate * 100).toStringAsFixed(1);
-        _invoice = invoice;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -162,40 +198,58 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
 
   void _editInvoiceItem(int index) {
     final item = invoiceItems[index];
-    final quantityController = TextEditingController(text: item.quantity.toString());
-    final discountController = TextEditingController(text: item.discount.toString());
+    final quantityController =
+        TextEditingController(text: item.quantity.toString());
+    final discountController =
+        TextEditingController(text: item.discount.toString());
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Edit Item'),
+        title: const Text('Edit Item',style: TextStyle(fontSize: 16)),
         content: SizedBox(
-          width: 400,
+          width: MediaQuery.sizeOf(context).width*0.2,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(item.product.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(
+                item.product.name,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+              ),
+              AppSpacing.hMedium,
               TextField(
                 controller: quantityController,
-                decoration: const InputDecoration(labelText: 'Quantity'),
+                decoration: const InputDecoration(
+                  labelText: 'Quantity',
+                  border: OutlineInputBorder(),
+                ),
                 keyboardType: TextInputType.number,
               ),
+              AppSpacing.hMedium,
               TextField(
                 controller: discountController,
-                decoration: const InputDecoration(labelText: 'Discount'),
+                decoration: const InputDecoration(
+                  labelText: 'Discount',
+                  border: OutlineInputBorder(),
+                ),
                 keyboardType: TextInputType.number,
               ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             onPressed: () {
               final updatedItem = InvoiceItem(
                 product: item.product,
-                quantity: int.tryParse(quantityController.text) ?? item.quantity,
-                discount: double.tryParse(discountController.text) ?? item.discount,
+                quantity:
+                    int.tryParse(quantityController.text) ?? item.quantity,
+                discount:
+                    double.tryParse(discountController.text) ?? item.discount,
               );
 
               setState(() {
@@ -214,7 +268,8 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
   void _filterProducts(String query) {
     setState(() {
       filteredProducts = products
-          .where((product) => product.name.toLowerCase().contains(query.toLowerCase()))
+          .where((product) =>
+              product.name.toLowerCase().contains(query.toLowerCase()))
           .toList();
     });
   }
@@ -222,7 +277,8 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
   void _filterCustomers(String query) {
     setState(() {
       filteredCustomers = customers
-          .where((customer) => customer.name.toLowerCase().contains(query.toLowerCase()))
+          .where((customer) =>
+              customer.name.toLowerCase().contains(query.toLowerCase()))
           .toList();
     });
   }
@@ -237,181 +293,57 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
     });
   }
 
-  Widget _customerSearchView()
-  {
+  Widget _customerSearchView() {
     return Card(
+      elevation: 2,
       child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: TextField(
-              controller: customerSearchController,
-              onChanged: _filterCustomers,
-              decoration: const InputDecoration(
-                labelText: 'Search Customer',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ),
-          SizedBox(
-            height: 200,
-            child: ListView.builder(
-              itemCount: filteredCustomers.length > 5 ? 5 : filteredCustomers.length,
-              itemBuilder: (context, index) {
-                final customer = filteredCustomers[index];
-                return ListTile(
-                  title: Text(customer.name),
-                  subtitle: Text(customer.email),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.check),
-                    onPressed: () => _selectCustomer(customer),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _productSearchView()
-  {
-    return Card(
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: TextField(
-              controller: searchController,
-              onChanged: _filterProducts,
-              decoration: const InputDecoration(
-                labelText: 'Search Product',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ),
-          SizedBox(
-            height: 500,
-            child: ListView.builder(
-              itemCount: filteredProducts.length > 6 ? 6 : filteredProducts.length,
-              itemBuilder: (context, index) {
-                final product = filteredProducts[index];
-                return ListTile(
-                  title: Text(product.name),
-                  subtitle: Text('Price: ${product.price.toStringAsFixed(2)}'),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.add),
-                    onPressed: () => addInvoiceProductPrompt(product),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _customerDetailsForm()
-  {
-    return Column(
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: nameController,
-                    decoration: const InputDecoration(labelText: 'Customer Name', border: OutlineInputBorder()),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: emailController,
-                    decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder()),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: phoneController,
-                    decoration: const InputDecoration(labelText: 'Phone', border: OutlineInputBorder()),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: addressController,
-                    decoration: const InputDecoration(labelText: 'Address', border: OutlineInputBorder()),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        );
-  }
-
-  Widget _invoiceItems(
-      double tax,
-      double subtotal,
-      double total)
-  {
-    return Card(
-      child: Column(
-        children: [
-          Padding(
+          Container(
             padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Invoice Items', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text('Subtotal: ${subtotal.toStringAsFixed(2)}'),
-                    Text('Tax: ${tax.toStringAsFixed(2)}'),
-                    Text('Total: ${total.toStringAsFixed(2)}',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  ],
+                const Text(
+                  'Search Customer',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                AppSpacing.hSmall,
+                TextField(
+                  controller: customerSearchController,
+                  onChanged: _filterCustomers,
+                  decoration: const InputDecoration(
+                    labelText: 'Search Customer',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.search),
+                  ),
                 ),
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: SizedBox(
-              height: 400,
+          SizedBox(
+            height: MediaQuery.sizeOf(context).height*0.25,
+            child: Scrollbar(
+              controller: _customerScrollController,
+              thumbVisibility: true,
+              trackVisibility: true,
               child: ListView.builder(
-                itemCount: invoiceItems.length,
+                itemCount:
+                    filteredCustomers.length > 5 ? 5 : filteredCustomers.length,
+                controller: _customerScrollController,
                 itemBuilder: (context, index) {
-                  final item = invoiceItems[index];
+                  final customer = filteredCustomers[index];
                   return ListTile(
-                    title: Text(item.product.name),
-                    subtitle: Text('Qty: ${item.quantity}, Discount: ${item.discount.toStringAsFixed(2)}'),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(item.total.toStringAsFixed(2)),
-                        IconButton(
-                          icon: const Icon(Icons.edit),
-                          onPressed: () => _editInvoiceItem(index),
-                          tooltip: 'Edit Item',
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete),
-                          onPressed: () {
-                            setState(() {
-                              invoiceItems.removeAt(index);
-                            });
-                          },
-                        ),
-                      ],
+                    title: Text(customer.name),
+                    subtitle: Text(customer.email),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.check_circle),
+                      onPressed: () => _selectCustomer(customer),
+                      tooltip: 'Select Customer',
                     ),
+                    onTap: () => _selectCustomer(customer),
                   );
                 },
               ),
@@ -422,122 +354,497 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
     );
   }
 
+  Widget _productSearchView() {
+    return Card(
+      elevation: 2,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Search Products',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                AppSpacing.hSmall,
+                TextField(
+                  controller: searchController,
+                  onChanged: _filterProducts,
+                  decoration: const InputDecoration(
+                    labelText: 'Search Product',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.search),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            height: MediaQuery.sizeOf(context).height*0.35,
+            child: Scrollbar(
+              thumbVisibility: true,
+              trackVisibility: true,
+              controller: _productScrollController,
+              child: ListView.builder(
+                itemCount:
+                    filteredProducts.length > 8 ? 8 : filteredProducts.length,
+                controller: _productScrollController,
+                itemBuilder: (context, index) {
+                  final product = filteredProducts[index];
+                  return ListTile(
+                    title: Text(product.name),
+                    subtitle:
+                        Text('Price: ${product.price.toStringAsFixed(2)}'),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.add_circle),
+                      onPressed: () => addInvoiceProductPrompt(product),
+                      tooltip: 'Add to Invoice',
+                    ),
+                    onTap: () => addInvoiceProductPrompt(product),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _customerDetailsForm() {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Customer Details',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            AppSpacing.hMedium,
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Customer Name *',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                AppSpacing.wMedium,
+                Expanded(
+                  child: TextField(
+                    controller: emailController,
+                    decoration: const InputDecoration(
+                      labelText: 'Email',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            AppSpacing.hMedium,
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: phoneController,
+                    decoration: const InputDecoration(
+                      labelText: 'Phone',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                AppSpacing.wMedium,
+                Expanded(
+                  child: TextField(
+                    controller: addressController,
+                    decoration: const InputDecoration(
+                      labelText: 'Address',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _invoiceItems(double tax, double subtotal, double total) {
+    return Card(
+      elevation: 2,
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: const Text(
+                  'Invoice Items',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(
+            height: MediaQuery.sizeOf(context).height*0.4,
+            child: invoiceItems.isEmpty
+                ? const Center(
+                    child: Text(
+                      'No items added yet',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  )
+                : Scrollbar(
+                    controller: _invoiceItemsScrollController,
+                    child: ListView.builder(
+                      controller: _invoiceItemsScrollController,
+                      itemCount: invoiceItems.length,
+                      itemBuilder: (context, index) {
+                        final item = invoiceItems[index];
+                        return ListTile(
+                          title: Text(item.product.name),
+                          subtitle: Text(
+                            'Qty: ${item.quantity} | Discount: Rs ${item.discount.toStringAsFixed(2)}',
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Price : ${item.total.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              AppSpacing.hSmall,
+                              IconButton(
+                                icon: const Icon(Icons.edit),
+                                onPressed: () => _editInvoiceItem(index),
+                                tooltip: 'Edit Item',
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete),
+                                onPressed: () {
+                                  setState(() {
+                                    invoiceItems.removeAt(index);
+                                  });
+                                },
+                                tooltip: 'Remove Item',
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(4)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: notesController,
+                    decoration: const InputDecoration(
+                      labelText: 'Notes (Optional)',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 3,
+                  ),
+                ),
+                AppSpacing.wLarge,
+                Row(
+                  children: [
+                    const Text(
+                      'Enable Tax',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Switch(
+                      value: isTaxEnabled,
+                      onChanged: (value) {
+                        setState(() {
+                          isTaxEnabled = value;
+                        });
+                      },
+                    ),
+                    AppSpacing.wMedium,
+                    SizedBox(
+                      width: 100,
+                      child: TextField(
+                        controller: taxRateController,
+                        decoration: const InputDecoration(
+                          labelText: 'Tax Rate (%)',
+                          border: OutlineInputBorder(),
+                          suffixText: '%',
+                        ),
+                        keyboardType: TextInputType.number,
+                        onChanged: (value) {
+                          setState(() {
+                            taxRate =
+                                (double.tryParse(value) ?? (taxRate * 100)) / 100;
+                          });
+                        },
+                      ),
+                    )
+                  ],
+                ),
+                AppSpacing.wMedium,
+                SizedBox(
+                  width: MediaQuery.sizeOf(context).width*0.125,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text('Subtotal: Rs ${subtotal.toStringAsFixed(2)}',
+                        style: TextStyle(fontSize: 18),
+                      ),
+                      Text('Tax: Rs ${tax.toStringAsFixed(2)}',
+                        style: TextStyle(fontSize: 16),),
+                      AppSpacing.hSmall,
+                      Text(
+                        'Total: Rs ${total.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _actionButtons() {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Expanded(
+              flex: 2,
+              child: ElevatedButton(
+                onPressed: invoiceItems.isNotEmpty ? _createInvoice : null,
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50),
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text(
+                  'Create Invoice',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+            ),
+            AppSpacing.hMedium,
+            Expanded(
+              flex: 1,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.visibility),
+                    onPressed: _invoice != null
+                        ? () => InvoiceServices.showInvoiceDetails(
+                            context, _invoice!)
+                        : null,
+                    tooltip: 'View Details',
+                    iconSize: 28,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.picture_as_pdf),
+                    onPressed: _invoice != null
+                        ? () => InvoiceServices.previewPDF(context, _invoice!)
+                        : null,
+                    tooltip: 'Preview PDF',
+                    iconSize: 28,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.print),
+                    onPressed: _invoice != null
+                        ? () => InvoiceServices.generatePDF(context, _invoice!)
+                        : null,
+                    tooltip: 'Print PDF',
+                    iconSize: 28,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     double subtotal = invoiceItems.fold(0.0, (sum, item) => sum + item.total);
-    double tax = subtotal * taxRate;
+    double tax = isTaxEnabled ? subtotal * taxRate : 0.0;
     double total = subtotal + tax;
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Create New Invoice'),
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
       body: LayoutBuilder(
         builder: (context, constraints) {
+          // Responsive breakpoints
+          bool isDesktop = constraints.maxWidth > 1200;
+          bool isTablet =
+              constraints.maxWidth > 800 && constraints.maxWidth <= 1200;
+
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight-20),
-              child: IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Flexible(
-                      flex: 1,
-                      child: Column(
-                        children: [
-                          Flexible(
-                                flex: 1,
-                                child: _customerSearchView(),
-                          ),
-                          const SizedBox(height: 8),
-                          Flexible(
-                              flex: 2,
-                              child: _productSearchView()
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Flexible(
-                      flex: 3,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('Create New Invoice', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 16),
-                          _customerDetailsForm(),
-                          const SizedBox(height: 8),
-                          TextField(
-                            controller: notesController,
-                            decoration: const InputDecoration(
-                              labelText: 'Notes (Optional)',
-                              border: OutlineInputBorder(),
-                            ),
-                            maxLines: 2,
-                          ),
-                          const SizedBox(height: 8),
-                          TextField(
-                            controller: taxRateController,
-                            decoration: const InputDecoration(
-                              labelText: 'Tax Rate (%)',
-                              border: OutlineInputBorder(),
-                            ),
-                            keyboardType: TextInputType.number,
-                            onChanged: (value) {
-                              setState(() {
-                                taxRate = double.tryParse(value) ?? 10;
-                                taxRate = taxRate / 100;
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 8),
-                          _invoiceItems(tax,subtotal,total),
-                          Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Row(
-                              children: [
-                                Flexible(
-                                  flex:3,
-                                  child: ElevatedButton(
-                                    onPressed: invoiceItems.isNotEmpty ? _createInvoice : null,
-                                    style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity,50)),
-                                    child: const Text('Create Invoice'),
-                                  ),
-                                ),
-                                Flexible(
-                                  flex: 1,
-                                  child: Center(
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        IconButton(icon: const Icon(Icons.visibility),
-                                            onPressed: _invoice != null
-                                                ? () => InvoiceServices.showInvoiceDetails(context, _invoice!) : null,
-                                            tooltip: 'View Details'),
-                                        SizedBox(width: 30,),
-                                        IconButton(icon: const Icon(Icons.picture_as_pdf),
-                                            onPressed: _invoice != null ? () => InvoiceServices.previewPDF(context,_invoice!) : null,
-                                            tooltip: 'Preview PDF'),
-                                        SizedBox(width: 30,),
-                                        IconButton(icon: const Icon(Icons.print),
-                                            onPressed: _invoice != null ? () => InvoiceServices.generatePDF(context,_invoice!) : null,
-                                            tooltip: 'Print PDF'),
-                                      ],
-                                    ),
-                                  ),
-                                )
-                              ],
-                            ),
-                          )
-
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            child: Column(
+              children: [
+                if (isDesktop)
+                  _buildDesktopLayout(tax, subtotal, total)
+                else if (isTablet)
+                  _buildTabletLayout(tax, subtotal, total)
+                else
+                  _buildMobileLayout(tax, subtotal, total),
+              ],
             ),
           );
         },
       ),
+    );
+  }
+
+  Widget _buildDesktopLayout(double tax, double subtotal, double total) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Left sidebar
+        SizedBox(
+          width: MediaQuery.sizeOf(context).width*0.2,
+          child: Column(
+            children: [
+              _customerSearchView(),
+              AppSpacing.hMedium,
+              _productSearchView(),
+            ],
+          ),
+        ),
+        AppSpacing.wMedium,
+        // Main content
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _customerDetailsForm(),
+              AppSpacing.hMedium,
+              _invoiceItems(tax, subtotal, total),
+              AppSpacing.hMedium,
+              _actionButtons(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTabletLayout(double tax, double subtotal, double total) {
+    return Column(
+      children: [
+        const Text(
+          'Create New Invoice',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        AppSpacing.hLarge,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 1,
+              child: Column(
+                children: [
+                  _customerSearchView(),
+                  AppSpacing.hMedium,
+                  _productSearchView(),
+                ],
+              ),
+            ),
+            AppSpacing.hMedium,
+            Expanded(
+              flex: 2,
+              child: Column(
+                children: [
+                  _customerDetailsForm(),
+                  AppSpacing.hMedium,
+                  _invoiceItems(tax, subtotal, total),
+                  AppSpacing.hMedium,
+                  _actionButtons(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMobileLayout(double tax, double subtotal, double total) {
+    return Column(
+      children: [
+        const Text(
+          'Create New Invoice',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        AppSpacing.hMedium,
+        _customerSearchView(),
+        AppSpacing.hMedium,
+        _productSearchView(),
+        AppSpacing.hMedium,
+        _customerDetailsForm(),
+        AppSpacing.hMedium,
+        _invoiceItems(tax, subtotal, total),
+        AppSpacing.hMedium,
+        _actionButtons(),
+      ],
     );
   }
 }

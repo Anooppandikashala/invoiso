@@ -1,10 +1,14 @@
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:invoiceapp/database/database_helper.dart';
 import 'package:invoiceapp/models/company_info.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/foundation.dart';
 
 import 'package:invoiceapp/models/invoice.dart';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 
 // PDF Generation Service
 class PDFService {
@@ -231,5 +235,35 @@ class PDFService {
 
   static String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
+
+  static Future<void> showCenteredPDFViewer(BuildContext context, Uint8List pdfBytes, String invoiceId) async {
+    return showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        insetPadding: const EdgeInsets.all(24),
+        child: SizedBox(
+          width: 800,  // Adjust width for desktop
+          height: 600, // Adjust height for desktop
+          child: Column(
+            children: [
+              AppBar(
+                automaticallyImplyLeading: false,
+                title: Text('Invoice #$invoiceId'),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              Expanded(
+                child: SfPdfViewer.memory(pdfBytes),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

@@ -7,6 +7,9 @@ import 'package:path/path.dart';
 import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
 
+import '../database/database_helper.dart';
+import '../screens/pdf_view_screen.dart';
+
 class InvoiceServices
 {
   static Future<void>  generatePDF(BuildContext context,Invoice invoice) async {
@@ -18,12 +21,48 @@ class InvoiceServices
     }
   }
 
-  static Future<void>  previewPDF(BuildContext context,Invoice invoice) async {
+  static Future<void>  viewPDF(BuildContext context,Invoice invoice) async {
     try {
       final pdf = await PDFService.generateInvoicePDF(invoice);
-      await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => pdf.save());
+      final bytes = await pdf.save();
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PDFViewerScreen(pdfBytes: bytes, invoiceId: invoice.id),
+        ),
+      );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error previewing PDF: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error previewing PDF: $e')),
+      );
+    }
+  }
+
+  static Future<void> previewPDF(BuildContext context, Invoice invoice) async {
+    try {
+      final pdf = await PDFService.generateInvoicePDF(invoice);
+      final bytes = await pdf.save();
+      PDFService.showCenteredPDFViewer(context, bytes, invoice.id);
+      // Navigator.push(
+      //   context,
+      //   MaterialPageRoute(
+      //     builder: (context) => PDFViewerScreen(pdfBytes: bytes, invoiceId: invoice.id),
+      //   ),
+      // );
+
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error previewing PDF: $e')),
+      );
+    }
+  }
+
+  static Future<void> deleteInvoice(BuildContext context,Invoice invoice) async {
+    try {
+      final dbHelper = DatabaseHelper();
+      await dbHelper.deleteInvoice(invoice.id);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error deleting PDF: $e')));
     }
   }
 

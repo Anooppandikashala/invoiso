@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:invoiceapp/models/invoice.dart';
 import 'package:invoiceapp/screens/backup_management_screen.dart';
 import 'package:invoiceapp/screens/settings_screen.dart';
+import 'package:invoiceapp/services/invoice_services.dart';
 
 import 'customer_management_screen.dart';
 import '../database/database_helper.dart';
@@ -106,7 +108,7 @@ class _DashboardHomeState extends State<DashboardHome> {
   int totalProducts = 0;
   int totalInvoices = 0;
   double totalRevenue = 0.0;
-  List<Map<String, dynamic>> recentInvoices = [];
+  List<Invoice> recentInvoices = [];
 
   @override
   void initState() {
@@ -117,23 +119,16 @@ class _DashboardHomeState extends State<DashboardHome> {
   Future<void> _loadDashboardData() async {
     final customers = await dbHelper.getAllCustomers();
     final products = await dbHelper.getAllProducts();
-    final invoices = await dbHelper.getAllInvoices();
+    final List<Invoice> invoices = await dbHelper.getAllInvoices();
 
     setState(() {
       totalCustomers = customers.length;
       totalProducts = products.length;
       totalInvoices = invoices.length;
       totalRevenue = invoices.fold(0.0, (sum, inv) => sum + inv.total);
-      recentInvoices = invoices
-          .map((inv) => {
-        'id': inv.id,
-        'name': inv.customer.name,
-        'date': inv.date,
-        'total': inv.total,
-      })
-          .toList()
-          .take(5)
-          .toList();
+      recentInvoices = invoices.length > 5
+          ? invoices.sublist(0, 5)
+          : invoices;
     });
   }
 
@@ -161,27 +156,92 @@ class _DashboardHomeState extends State<DashboardHome> {
             ],
           ),
           const SizedBox(height: 30),
-          const Text(
-            'Recent Invoices',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          Divider(thickness: 3,),
+          const SizedBox(height: 30),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                'Recent Invoices',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           Expanded(
             child: recentInvoices.isEmpty
                 ? const Center(child: Text('No invoices yet'))
-                : ListView.builder(
-              itemCount: recentInvoices.length,
-              itemBuilder: (context, index) {
-                final invoice = recentInvoices[index];
-                return Card(
-                  child: ListTile(
-                    title: Text('Invoice #${invoice['id']}'),
-                    subtitle: Text('${invoice['name']} - ${invoice['date'].toString().split(' ')[0]}'),
-                    trailing: Text('\$${(invoice['total'] as double).toStringAsFixed(2)}'),
-                  ),
-                );
-              },
-            ),
+                : Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                                  width: MediaQuery.sizeOf(context).width*0.7,
+                      child: ListView.builder(
+                                    itemCount: recentInvoices.length,
+                                    itemBuilder: (context, index) {
+                      final invoice = recentInvoices[index];
+                      return Card(
+                        child: ListTile(
+                          title: Text('Invoice #${invoice.id}',style: TextStyle(fontSize: 20),),
+                          subtitle: Text('${invoice.customer.name} - ${invoice.date.toString().split(' ')[0]}',style: TextStyle(fontSize: 18),),
+                          trailing: SizedBox(
+                          width: MediaQuery.sizeOf(context).width*0.25, // adjust as needed
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Rs: ${(invoice.total).toStringAsFixed(2)}',style: TextStyle(fontSize: 24),),
+                              IconButton(
+                                icon: const Icon(Icons.visibility),
+                                onPressed: () => InvoiceServices.showInvoiceDetails(context, invoice),
+                                tooltip: 'View Details',
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.picture_as_pdf),
+                                onPressed: () => InvoiceServices.previewPDF(context, invoice),
+                                tooltip: 'Preview PDF',
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.print),
+                                onPressed: () => InvoiceServices.generatePDF(context, invoice),
+                                tooltip: 'Print PDF',
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete),
+                                onPressed: () => showDialog(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text('Delete Invoice'),
+                                    content: const Text('Are you sure you want to delete this invoice?'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                          InvoiceServices.deleteInvoice(context, invoice);
+                                        },
+                                        style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                        child: const Text('Delete'),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                tooltip: 'Delete',
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        ),
+                      );
+                                    },
+                                  ),
+                    ),
+                  ],
+                ),
           ),
         ],
       ),
