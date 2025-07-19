@@ -62,6 +62,7 @@ class DatabaseHelper {
         date TEXT,
         notes TEXT,
         taxRate REAL,
+        type TEXT,
         FOREIGN KEY (customer_id) REFERENCES customers(id)
       )
     ''');
@@ -303,6 +304,7 @@ class DatabaseHelper {
       'date': invoice.date.toIso8601String(),
       'notes': invoice.notes,
       'taxRate': invoice.taxRate,
+      'type':invoice.type
     });
 
     for (var item in invoice.items) {
@@ -355,6 +357,7 @@ class DatabaseHelper {
       date: DateTime.parse(i['date'] as String),
       notes: i['notes'] as String?,
       taxRate: i['taxRate'] as double,
+      type: i['type'] as String,
     );
   }
 
@@ -474,6 +477,7 @@ class DatabaseHelper {
       final dateString = map['date'] as String?;
       final notes = map['notes'] as String?;
       final taxRateRaw = map['tax_rate'];
+      final type = map['type'] as String;
 
       if (customerId == null || invoiceId == null || dateString == null) {
         continue; // skip malformed rows
@@ -492,6 +496,7 @@ class DatabaseHelper {
           date: DateTime.tryParse(dateString) ?? DateTime.now(),
           notes: notes ?? '',
           taxRate: (taxRateRaw is int) ? taxRateRaw.toDouble() : (taxRateRaw as double? ?? 0.0),
+          type: type
         ),
       );
     }
@@ -555,5 +560,6 @@ class DatabaseHelper {
     await db.delete('invoices');
     await db.delete('customers');
     await db.delete('products');
+    await db.delete('users');
   }
 }

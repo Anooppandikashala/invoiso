@@ -37,6 +37,8 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
 
   bool isTaxEnabled = true;
 
+  String invoiceType = 'Invoice'; // default value
+
   double taxRate = 0.18;
   Invoice? _invoice;
 
@@ -177,6 +179,7 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
         date: DateTime.now(),
         notes: notesController.text.isNotEmpty ? notesController.text : null,
         taxRate: taxRate,
+        type: invoiceType
       );
 
       await dbHelper.insertInvoice(invoice);
@@ -428,37 +431,73 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Invoice Details',
-              style: TextStyle(
+            Text(
+              '$invoiceType Details',
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
             ),
             AppSpacing.hMedium,
-            TextField(
-              controller: TextEditingController(text: currentInvoiceNumber),
-              readOnly: true,
-              enabled: false,
-              decoration: const InputDecoration(
-                labelText: 'Invoice Number',
-                border: OutlineInputBorder(),
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: TextEditingController(text: currentInvoiceNumber),
+                    readOnly: true,
+                    enabled: false,
+                    decoration: InputDecoration(
+                      labelText: '$invoiceType Number',
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                AppSpacing.wMedium,
+                Expanded(
+                  child: TextField(
+                    controller: TextEditingController(text: DateTime.now().toString().substring(0, 10)),
+                    readOnly: true,
+                    enabled: false,
+                    decoration: const InputDecoration(
+                      labelText: 'Invoice Date',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                )
+              ],
             ),
             AppSpacing.hMedium,
-            TextField(
-              controller: TextEditingController(text: DateTime.now().toString().substring(0, 10)),
-              readOnly: true,
-              //enabled: false,
+            DropdownButtonFormField<String>(
+              value: invoiceType,
               decoration: const InputDecoration(
-                labelText: 'Invoice Date',
+                labelText: 'Type',
                 border: OutlineInputBorder(),
               ),
-            ),
+              items: const [
+                DropdownMenuItem(value: 'Invoice', child: Text('Invoice')),
+                DropdownMenuItem(value: 'Quotation', child: Text('Quotation')),
+              ],
+              onChanged: (value) {
+                if (value != null)
+                {
+                  resetValues(value);
+                }
+              },
+            )
           ],
         ),
       ),
     );
+  }
+
+  Future<void> resetValues(String invoiceType_) async
+  {
+    final invType = await InvoiceServices.generateNextInvoiceNumber();
+    setState(() {
+      invoiceType = invoiceType_;
+      currentInvoiceNumber = invType;
+      _invoice = null;
+    });
   }
 
   Widget _customerDetailsForm() {
@@ -541,9 +580,9 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
             children: [
               Padding(
                 padding: const EdgeInsets.all(16),
-                child: const Text(
-                  'Invoice Items',
-                  style: TextStyle(
+                child: Text(
+                  '${invoiceType} Items',
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -710,9 +749,9 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
                   backgroundColor: Theme.of(context).primaryColor,
                   foregroundColor: Colors.white,
                 ),
-                child: const Text(
-                  'Create Invoice',
-                  style: TextStyle(fontSize: 16),
+                child: Text(
+                  'Create ${invoiceType.toString()}',
+                  style: const TextStyle(fontSize: 16),
                 ),
               ),
             ),
@@ -756,6 +795,81 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
     );
   }
 
+  Widget buildInvoiceSuccessScreen()
+  {
+     return Scaffold(
+       body: Center(
+         child: Card(
+           elevation: 4,
+           margin: const EdgeInsets.all(32),
+           child: Padding(
+             padding: const EdgeInsets.all(24),
+             child: Column(
+               mainAxisSize: MainAxisSize.min,
+               children: [
+                 const Icon(Icons.check_circle_outline, color: Colors.green, size: 80),
+                 AppSpacing.hXlarge,
+                 const Text(
+                   'Invoice Created Successfully!',
+                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                 ),
+                 AppSpacing.hSmall,
+                 Text('Invoice ID: ${_invoice?.id}'),
+                 AppSpacing.hXlarge,
+                 Row(
+                   mainAxisSize: MainAxisSize.min,
+                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                   children: [
+                     IconButton(
+                       icon: _invoice != null ? const Icon(Icons.visibility,color: Colors.green,) : const Icon(Icons.visibility),
+                       onPressed: _invoice != null
+                           ? () => InvoiceServices.showInvoiceDetails(
+                           context, _invoice!)
+                           : null,
+                       tooltip: 'View Details',
+                       iconSize: 28,
+                     ),
+                     AppSpacing.wXlarge,
+                     IconButton(
+                       icon: _invoice != null ? const Icon(Icons.picture_as_pdf,color: Colors.purple,) :  const Icon(Icons.picture_as_pdf),
+                       onPressed: _invoice != null
+                           ? () => InvoiceServices.previewPDF(context, _invoice!)
+                           : null,
+                       tooltip: 'Preview PDF',
+                       iconSize: 28,
+                     ),
+                     AppSpacing.wXlarge,
+                     IconButton(
+                       icon: _invoice != null ? const Icon(Icons.print,color: Colors.black,) : const Icon(Icons.print),
+                       onPressed: _invoice != null
+                           ? () => InvoiceServices.generatePDF(context, _invoice!)
+                           : null,
+                       tooltip: 'Print PDF',
+                       iconSize: 28,
+                     ),
+                   ],
+                 ),
+                 AppSpacing.hXlarge,
+                 ElevatedButton(
+                   style: ElevatedButton.styleFrom(
+                     minimumSize:  Size(MediaQuery.sizeOf(context).width*0.15 , 50),
+                     backgroundColor: Theme.of(context).primaryColor,
+                     foregroundColor: Colors.white,
+                   ),
+                   onPressed: () {
+                     // or navigate to home
+                     resetValues("Invoice");
+                   },
+                   child: const Text('Create New Invoice'),
+                 ),
+               ],
+             ),
+           ),
+         ),
+       ),
+     );
+  }
+
   @override
   Widget build(BuildContext context) {
     double subtotal = invoiceItems.fold(0.0, (sum, item) => sum + item.total);
@@ -764,12 +878,13 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create New Invoice'),
+        title: Text('Create New ${invoiceType}'),
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: LayoutBuilder(
+      body: _invoice != null ? buildInvoiceSuccessScreen() :
+      LayoutBuilder(
         builder: (context, constraints) {
           // Responsive breakpoints
           bool isDesktop = constraints.maxWidth > 1200;

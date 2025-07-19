@@ -19,6 +19,9 @@ class _SplashScreenState extends State<SplashScreen> {
     await DatabaseHelper().database;
     // safe check before using context
     if (!mounted) return;
+
+    print(DatabaseHelper.path);
+
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => const LoginScreen()),

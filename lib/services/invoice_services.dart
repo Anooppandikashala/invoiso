@@ -151,7 +151,7 @@ class InvoiceServices
 
     // Format to 8 digits
     final formatted = nextNumber.toString().padLeft(8, '0');
-    return "INV-$formatted";
+    return formatted;
   }
 
 }

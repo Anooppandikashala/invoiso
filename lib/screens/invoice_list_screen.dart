@@ -91,6 +91,7 @@ class _InvoiceListState extends State<InvoiceList> {
                   DataColumn(label: Text('Invoice ID',style: TextStyle(color: Colors.white,fontSize: 18),)),
                   DataColumn(label: Text('Customer',style: TextStyle(color: Colors.white,fontSize: 18),)),
                   DataColumn(label: Text('Date',style: TextStyle(color: Colors.white,fontSize: 18),)),
+                  DataColumn(label: Text('Type',style: TextStyle(color: Colors.white,fontSize: 18),)),
                   DataColumn(label: Text('Items',style: TextStyle(color: Colors.white,fontSize: 18),)),
                   DataColumn(label: Text('Total',style: TextStyle(color: Colors.white,fontSize: 18),)),
                   DataColumn(label: Text('Actions',style: TextStyle(color: Colors.white,fontSize: 18),)),
@@ -109,6 +110,7 @@ class _InvoiceListState extends State<InvoiceList> {
                     DataCell(Text('#${invoice.id}',style: TextStyle(color: Colors.black,fontSize: 16),)),
                     DataCell(Text(invoice.customer.name,style: TextStyle(color: Colors.black,fontSize: 16),)),
                     DataCell(Text(invoice.date.toString().split(' ')[0],style: TextStyle(color: Colors.black,fontSize: 16),)),
+                    DataCell(Text(invoice.type.toString(),style: TextStyle(color: Colors.black,fontSize: 16),)),
                     DataCell(Text(invoice.items.length.toString(),style: TextStyle(color: Colors.black,fontSize: 16),)),
                     DataCell(Text("Rs: ${invoice.total.toStringAsFixed(2)}",style: TextStyle(color: Colors.black,fontSize: 16),)),
                     DataCell(Row(
