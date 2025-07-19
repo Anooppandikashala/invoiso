@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:invoiceapp/constants.dart';
 import 'package:invoiceapp/database/database_helper.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:intl/intl.dart';
@@ -141,10 +142,9 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Padding(
-          padding: const EdgeInsets.only(left: 50),
-          child: const Text('Backup Management'),
-        ),
+        title: const Text('Backup Management'),
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Colors.white,
         actionsPadding: EdgeInsets.only(right: 50),
         actions: [
           IconButton(
@@ -172,7 +172,7 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
                         label: const Text('Create DB Backup'),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    AppSpacing.hSmall,
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: () => _createBackup(BackupType.json),

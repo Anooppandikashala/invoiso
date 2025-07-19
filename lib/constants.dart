@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 
 class AppSpacing {
-  static const baseValue = 5.0;
+  static const baseValue = 8.0;
   static const hSmall = SizedBox(height: baseValue);
   static const hMedium = SizedBox(height: 2*baseValue);
   static const hLarge = SizedBox(height: 3*baseValue);

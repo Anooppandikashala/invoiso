@@ -128,6 +128,32 @@ class InvoiceServices
     );
   }
 
+  static Future<String> generateNextInvoiceNumber() async {
+    final dbHelper = DatabaseHelper();
+    final db = await dbHelper.database;
+
+    // Fetch latest invoice ID (assumed to be stored as a string of digits or with a prefix)
+    final result = await db.rawQuery(
+        "SELECT id FROM invoices ORDER BY id DESC LIMIT 1"
+    );
+
+    int nextNumber = 1;
+
+    if (result.isNotEmpty) {
+      final lastNumberStr = result.first['id'] as String;
+
+      // Extract numeric part
+      final numericPart = int.tryParse(lastNumberStr.replaceAll(RegExp(r'\D'), ''));
+      if (numericPart != null) {
+        nextNumber = numericPart + 1;
+      }
+    }
+
+    // Format to 8 digits
+    final formatted = nextNumber.toString().padLeft(8, '0');
+    return "INV-$formatted";
+  }
+
 }
 
 

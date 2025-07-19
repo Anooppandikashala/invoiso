@@ -40,6 +40,8 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
   double taxRate = 0.18;
   Invoice? _invoice;
 
+  String currentInvoiceNumber = "";
+
   @override
   void initState() {
     super.initState();
@@ -66,11 +68,13 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
   Future<void> _loadCustomersAndProducts() async {
     final c = await dbHelper.getAllCustomers();
     final p = await dbHelper.getAllProducts();
+    final String invNumber = await InvoiceServices.generateNextInvoiceNumber();
     setState(() {
       customers = c;
       filteredCustomers = List.from(c);
       products = p;
       filteredProducts = List.from(p);
+      currentInvoiceNumber = invNumber;
     });
   }
 
@@ -158,7 +162,7 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
 
   Future<void> _createInvoice() async {
     if (invoiceItems.isNotEmpty) {
-      final invoiceId = const Uuid().v4();
+      final invoiceId = await InvoiceServices.generateNextInvoiceNumber();
       final invoice = Invoice(
         id: invoiceId,
         customer: selectedCustomer ??
@@ -416,6 +420,47 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
     );
   }
 
+  Widget _invoiceDetailsForm() {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Invoice Details',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            AppSpacing.hMedium,
+            TextField(
+              controller: TextEditingController(text: currentInvoiceNumber),
+              readOnly: true,
+              enabled: false,
+              decoration: const InputDecoration(
+                labelText: 'Invoice Number',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            AppSpacing.hMedium,
+            TextField(
+              controller: TextEditingController(text: DateTime.now().toString().substring(0, 10)),
+              readOnly: true,
+              //enabled: false,
+              decoration: const InputDecoration(
+                labelText: 'Invoice Date',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _customerDetailsForm() {
     return Card(
       elevation: 2,
@@ -485,6 +530,7 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
     );
   }
 
+
   Widget _invoiceItems(double tax, double subtotal, double total) {
     return Card(
       elevation: 2,
@@ -506,7 +552,7 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
             ],
           ),
           SizedBox(
-            height: MediaQuery.sizeOf(context).height*0.4,
+            height: MediaQuery.sizeOf(context).height*0.35,
             child: invoiceItems.isEmpty
                 ? const Center(
                     child: Text(
@@ -661,7 +707,7 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
                 onPressed: invoiceItems.isNotEmpty ? _createInvoice : null,
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 50),
-                  backgroundColor: Colors.blue,
+                  backgroundColor: Theme.of(context).primaryColor,
                   foregroundColor: Colors.white,
                 ),
                 child: const Text(
@@ -677,7 +723,7 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.visibility),
+                    icon: _invoice != null ? const Icon(Icons.visibility,color: Colors.green,) : const Icon(Icons.visibility),
                     onPressed: _invoice != null
                         ? () => InvoiceServices.showInvoiceDetails(
                             context, _invoice!)
@@ -686,7 +732,7 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
                     iconSize: 28,
                   ),
                   IconButton(
-                    icon: const Icon(Icons.picture_as_pdf),
+                    icon: _invoice != null ? const Icon(Icons.picture_as_pdf,color: Colors.purple,) :  const Icon(Icons.picture_as_pdf),
                     onPressed: _invoice != null
                         ? () => InvoiceServices.previewPDF(context, _invoice!)
                         : null,
@@ -694,7 +740,7 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
                     iconSize: 28,
                   ),
                   IconButton(
-                    icon: const Icon(Icons.print),
+                    icon: _invoice != null ? const Icon(Icons.print,color: Colors.black,) : const Icon(Icons.print),
                     onPressed: _invoice != null
                         ? () => InvoiceServices.generatePDF(context, _invoice!)
                         : null,
@@ -719,7 +765,7 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Create New Invoice'),
-        backgroundColor: Colors.blue,
+        backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
@@ -769,7 +815,21 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _customerDetailsForm(),
+              // Horizontal split for Invoice and Customer Details
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 1,
+                    child: _invoiceDetailsForm(),
+                  ),
+                  AppSpacing.wMedium,
+                  Expanded(
+                    flex: 2,
+                    child: _customerDetailsForm(),
+                  ),
+                ],
+              ),
               AppSpacing.hMedium,
               _invoiceItems(tax, subtotal, total),
               AppSpacing.hMedium,
@@ -784,13 +844,6 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
   Widget _buildTabletLayout(double tax, double subtotal, double total) {
     return Column(
       children: [
-        const Text(
-          'Create New Invoice',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
         AppSpacing.hLarge,
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -810,7 +863,21 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
               flex: 2,
               child: Column(
                 children: [
-                  _customerDetailsForm(),
+                  // Horizontal split for Invoice and Customer Details
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 1,
+                        child: _invoiceDetailsForm(),
+                      ),
+                      AppSpacing.wMedium,
+                      Expanded(
+                        flex: 2,
+                        child: _customerDetailsForm(),
+                      ),
+                    ],
+                  ),
                   AppSpacing.hMedium,
                   _invoiceItems(tax, subtotal, total),
                   AppSpacing.hMedium,
@@ -827,17 +894,13 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
   Widget _buildMobileLayout(double tax, double subtotal, double total) {
     return Column(
       children: [
-        const Text(
-          'Create New Invoice',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
         AppSpacing.hMedium,
         _customerSearchView(),
         AppSpacing.hMedium,
         _productSearchView(),
+        AppSpacing.hMedium,
+        // For mobile, keep vertical stack due to space constraints
+        _invoiceDetailsForm(),
         AppSpacing.hMedium,
         _customerDetailsForm(),
         AppSpacing.hMedium,

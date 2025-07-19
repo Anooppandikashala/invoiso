@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:invoiceapp/constants.dart';
 import 'package:invoiceapp/screens/backup_management_screen.dart';
+import 'package:invoiceapp/screens/user_management_screen.dart';
 import '../database/database_helper.dart';
 import '../models/company_info.dart';
+import '../models/user.dart';
 
 class SettingsPage extends StatefulWidget {
-  const SettingsPage({Key? key}) : super(key: key);
+  final User currentUser;
+  const SettingsPage({Key? key, required this.currentUser}) : super(key: key);
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -79,46 +84,90 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Widget _buildCompanyInfoForm() {
     return Scaffold(
-      appBar: AppBar(title: const Text("Company Info")),
-      body: Center(
-        child: SizedBox(
-          width: 500,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: 'Company Name'),
+      appBar: AppBar(
+        title: const Text('Company Info'),
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Card(
+            elevation: 2,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: SizedBox(
+                width: MediaQuery.sizeOf(context).width*0.3,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    TextField(
+                      controller: nameController,
+                      style: TextStyle(fontSize: 18),
+                      maxLength: 50,
+                      decoration: const InputDecoration(labelText: 'Company Name',),
+                    ),
+                    AppSpacing.hLarge,
+                    TextField(
+                      controller: addressController,
+                      style: TextStyle(fontSize: 18),
+                      maxLength: 100,
+                      decoration: const InputDecoration(labelText: 'Address'),
+                      maxLines: 3,
+                    ),
+                    AppSpacing.hLarge,
+                    TextField(
+                      controller: phoneController,
+                      maxLength: 12,
+                      style: const TextStyle(fontSize: 18),
+                      decoration: const InputDecoration(labelText: 'Phone'),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(12),
+                      ],
+                    ),
+                    AppSpacing.hLarge,
+                    TextField(
+                      controller: emailController,
+                      maxLength: 100,
+                      style: const TextStyle(fontSize: 18),
+                      decoration: const InputDecoration(labelText: 'Email'),
+                      keyboardType: TextInputType.emailAddress,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9@._\-]')),
+                      ],
+                    ),
+                    AppSpacing.hLarge,
+                    TextField(
+                      controller: websiteController,
+                      maxLength: 100,
+                      style: const TextStyle(fontSize: 18),
+                      decoration: const InputDecoration(labelText: 'Website'),
+                      keyboardType: TextInputType.url,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9:/.%-]')),
+                      ],
+                    ),
+                    AppSpacing.hLarge,
+                    ElevatedButton(
+                      onPressed: _saveCompanyInfo,
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 50),
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Save',style: TextStyle(fontSize: 18),),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: addressController,
-                decoration: const InputDecoration(labelText: 'Address'),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: phoneController,
-                decoration: const InputDecoration(labelText: 'Phone'),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: emailController,
-                decoration: const InputDecoration(labelText: 'Email'),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: websiteController,
-                decoration: const InputDecoration(labelText: 'Website'),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _saveCompanyInfo,
-                child: const Text('Save'),
-              ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -131,7 +180,7 @@ class _SettingsPageState extends State<SettingsPage> {
           mainAxisSize: MainAxisSize.min,
           children: const [
             Icon(Icons.backup, size: 64, color: Colors.blueGrey),
-            SizedBox(height: 16),
+            AppSpacing.hMedium,
             Text("Options coming soon...", style: TextStyle(fontSize: 18)),
           ],
         ),
@@ -145,6 +194,8 @@ class _SettingsPageState extends State<SettingsPage> {
         return _buildCompanyInfoForm();
       case 1:
         return BackupManagementScreen();
+      case 2:
+        return UserManagementScreen(currentUser: widget.currentUser,);
       default:
         return const Center(child: Text("Unknown tab"));
     }
@@ -171,6 +222,10 @@ class _SettingsPageState extends State<SettingsPage> {
               NavigationRailDestination(
                 icon: Icon(Icons.backup),
                 label: Text('Backup'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.people),
+                label: Text('Users'),
               ),
             ],
           ),

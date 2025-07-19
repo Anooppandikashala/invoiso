@@ -95,17 +95,19 @@ class PDFService {
             pw.Table(
               border: pw.TableBorder.all(color: PdfColors.grey300),
               columnWidths: {
-                0: const pw.FlexColumnWidth(3),
-                1: const pw.FlexColumnWidth(1),
-                2: const pw.FlexColumnWidth(1.5),
+                0: const pw.FlexColumnWidth(1),
+                1: const pw.FlexColumnWidth(3),
+                2: const pw.FlexColumnWidth(1),
                 3: const pw.FlexColumnWidth(1.5),
-                4: const pw.FlexColumnWidth(1.5),
+                5: const pw.FlexColumnWidth(1.5),
+                5: const pw.FlexColumnWidth(1.5),
               },
               children: [
                 // Header
                 pw.TableRow(
                   decoration: const pw.BoxDecoration(color: PdfColors.grey200),
                   children: [
+                    _buildTableCell('Sl No', isHeader: true),
                     _buildTableCell('Description', isHeader: true),
                     _buildTableCell('Qty', isHeader: true),
                     _buildTableCell('Price', isHeader: true),
@@ -114,17 +116,23 @@ class PDFService {
                   ],
                 ),
                 // Items
-                ...invoice.items.map((item) => pw.TableRow(
-                  children: [
-                    _buildTableCell(item.product.name),
-                    _buildTableCell(item.quantity.toString()),
-                    _buildTableCell(
-                        '\$${item.product.price.toStringAsFixed(2)}'),
-                    _buildTableCell(
-                        '\$${item.discount.toStringAsFixed(2)}'),
-                    _buildTableCell('\$${item.total.toStringAsFixed(2)}'),
-                  ],
-                )),
+                ...invoice.items.asMap().entries.map((entry)
+                {
+                    final index = entry.key;        // Serial number starts from 0
+                    final item = entry.value;
+                    return pw.TableRow(
+                    children: [
+                        _buildTableCell('${index + 1}'),
+                        _buildTableCell(item.product.name),
+                        _buildTableCell(item.quantity.toString()),
+                        _buildTableCell(
+                            '${item.product.price.toStringAsFixed(2)}'),
+                        _buildTableCell(
+                            '${item.discount.toStringAsFixed(2)}'),
+                        _buildTableCell('${item.total.toStringAsFixed(2)}'),
+                      ],
+                    );
+                }),
               ],
             ),
 
@@ -144,7 +152,7 @@ class PDFService {
                         pw.SizedBox(
                             width: 80,
                             child: pw.Text(
-                                '\$${invoice.subtotal.toStringAsFixed(2)}')),
+                                'Rs ${invoice.subtotal.toStringAsFixed(2)}')),
                       ],
                     ),
                     pw.SizedBox(height: 5),
@@ -158,7 +166,7 @@ class PDFService {
                         pw.SizedBox(
                             width: 80,
                             child:
-                            pw.Text('\$${invoice.tax.toStringAsFixed(2)}')),
+                            pw.Text('Rs ${invoice.tax.toStringAsFixed(2)}')),
                       ],
                     ),
                     pw.SizedBox(height: 5),
@@ -176,7 +184,7 @@ class PDFService {
                         pw.SizedBox(
                           width: 80,
                           child: pw.Text(
-                            '\$${invoice.total.toStringAsFixed(2)}',
+                            'Rs ${invoice.total.toStringAsFixed(2)}',
                             style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
                           ),
                         ),
@@ -243,8 +251,8 @@ class PDFService {
       builder: (context) => Dialog(
         insetPadding: const EdgeInsets.all(24),
         child: SizedBox(
-          width: 800,  // Adjust width for desktop
-          height: 600, // Adjust height for desktop
+          width: MediaQuery.sizeOf(context).width*0.75,  // Adjust width for desktop
+          height: MediaQuery.sizeOf(context).height*0.8, // Adjust height for desktop
           child: Column(
             children: [
               AppBar(

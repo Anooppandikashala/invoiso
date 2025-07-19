@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:invoiceapp/constants.dart';
 import 'package:uuid/uuid.dart';
 import 'package:csv/csv.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -22,6 +24,7 @@ class _ProductManagementState extends State<ProductManagement> {
   int _currentPage = 0;
   final int _pageSize = 10;
   int _totalProducts = 0;
+  int _allProdctsCount = 0;
 
   // Search and Sort
   String searchQuery = '';
@@ -47,9 +50,11 @@ class _ProductManagementState extends State<ProductManagement> {
       orderBy: sortBy,
     );
     final count = await dbHelper.getProductCount(searchQuery);
+    final allCount = await dbHelper.getTotalProductCount();
     setState(() {
       products = result;
       _totalProducts = count;
+      _allProdctsCount = allCount;
     });
   }
 
@@ -69,46 +74,105 @@ class _ProductManagementState extends State<ProductManagement> {
     stockController.clear();
   }
 
-  void _showProductDialog(Product product) {
+  void _showProductDialog(Product product, bool isViewOnly) {
     final nameCtrl = TextEditingController(text: product.name);
     final descriptionCtrl = TextEditingController(text: product.description);
     final priceCtrl = TextEditingController(text: product.price.toString());
     final stockCtrl = TextEditingController(text: product.stock.toString());
 
+    String? priceError;
+    String? stockError;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Product'),
-        content: SizedBox(
-          width: 400,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name')),
-              TextField(controller: descriptionCtrl, decoration: const InputDecoration(labelText: 'Description')),
-              TextField(controller: priceCtrl, decoration: const InputDecoration(labelText: 'Price'), keyboardType: TextInputType.number),
-              TextField(controller: stockCtrl, decoration: const InputDecoration(labelText: 'Stock'), keyboardType: TextInputType.number),
-            ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: isViewOnly ? const Text('View Product') : const Text('Edit Product'),
+          content: SizedBox(
+            width: MediaQuery.sizeOf(context).width * 0.3,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameCtrl,
+                  maxLines: 2,
+                  readOnly: isViewOnly ? true : false,
+                  decoration: const InputDecoration(labelText: 'Name'),
+                  maxLength: 100,
+                ),
+                TextField(
+                  controller: descriptionCtrl,
+                  readOnly: isViewOnly ? true : false,
+                  maxLines: 3,
+                  decoration: const InputDecoration(labelText: 'Description'),
+                  maxLength: 100,
+                ),
+                TextField(
+                  controller: priceCtrl,
+                  readOnly: isViewOnly ? true : false,
+                  decoration: InputDecoration(
+                    labelText: 'Price',
+                    errorText: priceError,
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}$')),
+                  ],
+                ),
+                TextField(
+                  controller: stockCtrl,
+                  readOnly: isViewOnly ? true : false,
+                  decoration: InputDecoration(
+                    labelText: 'Stock',
+                    errorText: stockError,
+                  ),
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d+$')),
+                  ],
+                ),
+              ],
+            ),
           ),
+          actions: !isViewOnly ? [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final price = double.tryParse(priceCtrl.text);
+                final stock = int.tryParse(stockCtrl.text);
+
+                setState(() {
+                  priceError = (price == null || price < 0) ? 'Enter valid non-negative price' : null;
+                  stockError = (stock == null || stock < 0) ? 'Enter valid non-negative stock' : null;
+                });
+
+                if (priceError != null || stockError != null) return;
+
+                final updatedProduct = Product(
+                  id: product.id,
+                  name: nameCtrl.text,
+                  description: descriptionCtrl.text,
+                  price: price!,
+                  stock: stock!,
+                );
+
+                await dbHelper.updateProduct(updatedProduct);
+                await _loadProducts();
+                Navigator.pop(context);
+              },
+              child: const Text('Update'),
+            ),
+          ] :
+          [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            )
+          ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () async {
-              final updatedProduct = Product(
-                id: product.id,
-                name: nameCtrl.text,
-                description: descriptionCtrl.text,
-                price: double.tryParse(priceCtrl.text) ?? 0.0,
-                stock: int.tryParse(stockCtrl.text) ?? 0,
-              );
-              await dbHelper.updateProduct(updatedProduct);
-              await _loadProducts();
-              Navigator.pop(context);
-            },
-            child: const Text('Update'),
-          ),
-        ],
       ),
     );
   }
@@ -181,123 +245,249 @@ class _ProductManagementState extends State<ProductManagement> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Add Product Form on the left
-          SizedBox(
-            width: 400,
-            child: Card(
-              elevation: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Product Management'),
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Row(
+          children: [
+            // Add Product Form on the left
+            SizedBox(
+              width: MediaQuery.sizeOf(context).width*0.18,
+              child: Card(
+                elevation: 2,
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Add Product', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 16),
-                    TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Name')),
-                    TextField(controller: descriptionController, decoration: const InputDecoration(labelText: 'Description')),
-                    TextField(controller: priceController, decoration: const InputDecoration(labelText: 'Price'), keyboardType: TextInputType.number),
-                    TextField(controller: stockController, decoration: const InputDecoration(labelText: 'Stock'), keyboardType: TextInputType.number),
-                    const SizedBox(height: 16),
-                    Center(child: ElevatedButton(onPressed: _addProduct, child: const Text('Add'))),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .primaryColor
+                            .withValues(alpha: 0.1),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(12),
+                          topRight: Radius.circular(12),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.person_add,
+                            color: Theme.of(context).primaryColor,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Add New Product',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    AppSpacing.hMedium,
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          TextField(controller: nameController,
+                              decoration: const InputDecoration(labelText: 'Name'),
+                              maxLength: 100 ,
+                              style: TextStyle(fontSize: 16,color: Colors.black)),
+                          TextField(controller: descriptionController,
+                              decoration: const InputDecoration(labelText: 'Description'),
+                              maxLength: 100 ,
+                              style: TextStyle(fontSize: 16,color: Colors.black)),
+                          TextField(controller: priceController,
+                            decoration: const InputDecoration(labelText: 'Price'),
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}$')),
+                            ],),
+                          TextField(controller: stockController,
+                            decoration: const InputDecoration(labelText: 'Stock'),
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(RegExp(r'^\d+$')),
+                            ],),
+                        ],
+                      ),
+                    ),
+                    AppSpacing.hXlarge,
+                    Center(
+                        child: ElevatedButton(
+                            onPressed: _addProduct,
+                            style: ElevatedButton.styleFrom(
+                              minimumSize: const Size(double.infinity, 50),
+                              backgroundColor: Theme.of(context).primaryColor,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Add Product'))),
                   ],
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 16),
-          // Right side with table and controls
-          Expanded(
-            child: Column(
-              children: [
-                // Header row with actions
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            AppSpacing.wMedium,
+            // Right side with table and controls
+            Expanded(
+              child: Card(
+                elevation: 2,
+                child: Column(
                   children: [
-                    const Text('Product Management',
-                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                    Row(
-                      children: [
-                        ElevatedButton.icon(icon: const Icon(Icons.download), label: const Text('Export CSV'), onPressed: _exportToCSV),
-                        const SizedBox(width: 8),
-                        ElevatedButton.icon(icon: const Icon(Icons.picture_as_pdf), label: const Text('Export PDF'), onPressed: _exportToPDF),
-                      ],
-                    )
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // Search & Sort
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        decoration: const InputDecoration(
-                          hintText: 'Search products...',
-                          prefixIcon: Icon(Icons.search),
-                          border: OutlineInputBorder(),
+                    // Header row with actions
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .primaryColor
+                            .withValues(alpha: 0.1),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(12),
+                          topRight: Radius.circular(12),
                         ),
-                        onChanged: _onSearchChanged,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Row(
+                              children: [
+                                Icon(Icons.people,
+                                    color: Theme.of(context).primaryColor),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Products ($_allProdctsCount)',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleLarge
+                                      ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8, right: 8),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                ElevatedButton.icon(icon: const Icon(Icons.download), label: const Text('Export CSV'), onPressed: _exportToCSV),
+                                AppSpacing.wMedium,
+                                ElevatedButton.icon(icon: const Icon(Icons.picture_as_pdf), label: const Text('Export PDF'), onPressed: _exportToPDF),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    DropdownButton<String>(
-                      value: sortBy,
-                      items: ['name', 'price', 'stock'].map((f) => DropdownMenuItem(value: f, child: Text('Sort by ${f[0].toUpperCase()}${f.substring(1)}'))).toList(),
-                      onChanged: _onSortChanged,
+                    // Search & Sort
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              decoration: const InputDecoration(
+                                hintText: 'Search products...',
+                                prefixIcon: Icon(Icons.search),
+                                border: OutlineInputBorder(),
+                              ),
+                              onChanged: _onSearchChanged,
+                            ),
+                          ),
+                          AppSpacing.wMedium,
+                          DropdownButton<String>(
+                            value: sortBy,
+                            items: ['name', 'price', 'stock'].map((f) => DropdownMenuItem(value: f, child: Text('Sort by ${f[0].toUpperCase()}${f.substring(1)}'))).toList(),
+                            onChanged: _onSortChanged,
+                          ),
+                          AppSpacing.wMedium,
+                        ],
+                      ),
                     ),
-                    const SizedBox(width: 16),
-                  ],
-                ),
-                const SizedBox(height: 16),
+                    AppSpacing.hMedium,
 
-                // Product Table
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: DataTable(
-                      columns: const [
-                        DataColumn(label: Text('Name')),
-                        DataColumn(label: Text('Description')),
-                        DataColumn(label: Text('Price')),
-                        DataColumn(label: Text('Stock')),
-                        DataColumn(label: Text('Actions')),
+                    // Product Table
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: DataTable(
+                          headingRowColor: WidgetStateProperty.resolveWith<Color>(
+                                (Set<WidgetState> states) {
+                              return Theme.of(context).primaryColor; // Set your desired color here
+                            },
+                          ),
+                          headingTextStyle: TextStyle(color: Colors.white),
+                          columns: const [
+                            DataColumn(label: Text('Sl. No')),
+                            DataColumn(label: Text('Name')),
+                            DataColumn(label: Text('Description')),
+                            DataColumn(label: Text('Price')),
+                            DataColumn(label: Text('Stock')),
+                            DataColumn(label: Text('Actions')),
+                          ],
+                          rows: List.generate(products.length, (index) {
+                            final p = products[index];
+                            final serialNumber = (_currentPage * _pageSize) + index + 1; // 👈 For paginated Sl. No
+                            return DataRow(
+                                color: WidgetStateProperty.resolveWith<Color>(
+                                      (Set<WidgetState> states) {
+                                    return (index+1).isEven ? Colors.grey.shade200 : Colors.white;
+                                  },
+                                ),
+                                cells: [
+                              DataCell(Text(serialNumber.toString())), // 👈 Serial number
+                              DataCell(Text(p.name)),
+                              DataCell(Text(
+                                p.description.length > 50
+                                  ? '${p.description.substring(0, 50)}...'
+                                  : p.description,
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1, // Show up to 2 lines, then truncate
+                                softWrap: true,)),
+                              DataCell(Text('Rs ${p.price.toStringAsFixed(2)}')),
+                              DataCell(Text(p.stock.toString())),
+                              DataCell(Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(icon: const Icon(Icons.visibility,color: Colors.green,), onPressed: () => _showProductDialog(p,true)),
+                                  IconButton(icon: const Icon(Icons.edit,color: Colors.blue,), onPressed: () => _showProductDialog(p,false)),
+                                  IconButton(icon: const Icon(Icons.delete,color: Colors.red,), onPressed: () => _deleteProduct(p)),
+                                ],
+                              )),
+                            ]);
+                          }),
+                        ),
+                      ),
+                    ),
+
+                    // Pagination controls
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        IconButton(onPressed: _prevPage, icon: const Icon(Icons.chevron_left)),
+                        Text('Page ${_currentPage + 1} of ${(_totalProducts / _pageSize).ceil()}'),
+                        IconButton(onPressed: _nextPage, icon: const Icon(Icons.chevron_right)),
                       ],
-                      rows: products.map((p) {
-                        return DataRow(cells: [
-                          DataCell(Text(p.name)),
-                          DataCell(Text(p.description)),
-                          DataCell(Text('\$${p.price.toStringAsFixed(2)}')),
-                          DataCell(Text(p.stock.toString())),
-                          DataCell(Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(icon: const Icon(Icons.edit), onPressed: () => _showProductDialog(p)),
-                              IconButton(icon: const Icon(Icons.delete), onPressed: () => _deleteProduct(p)),
-                            ],
-                          )),
-                        ]);
-                      }).toList(),
                     ),
-                  ),
-                ),
-
-                // Pagination controls
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(onPressed: _prevPage, icon: const Icon(Icons.chevron_left)),
-                    Text('Page ${_currentPage + 1} of ${(_totalProducts / _pageSize).ceil()}'),
-                    IconButton(onPressed: _nextPage, icon: const Icon(Icons.chevron_right)),
                   ],
                 ),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:invoiceapp/constants.dart';
 import 'package:invoiceapp/database/database_helper.dart';
 import 'package:invoiceapp/models/customer.dart';
 import 'package:uuid/uuid.dart';
@@ -19,7 +20,10 @@ class _CustomerManagementState extends State<CustomerManagement> {
   List<Customer> customers = [];
   List<Customer> filteredCustomers = [];
   String searchQuery = '';
-  String sortBy = 'name'; // default sort
+  String sortBy = 'name';
+  final int _pageSize = 10;
+  int _currentPage = 0;
+  int _totalCustomerCount = 0;
 
   final nameController = TextEditingController();
   final emailController = TextEditingController();
@@ -34,8 +38,10 @@ class _CustomerManagementState extends State<CustomerManagement> {
 
   Future<void> _loadCustomers() async {
     final data = await dbHelper.getAllCustomers();
+    final count = await dbHelper.getTotalCustomerCount();
     setState(() {
       customers = data;
+      _totalCustomerCount = count;
       _filterAndSort();
     });
   }
@@ -53,6 +59,22 @@ class _CustomerManagementState extends State<CustomerManagement> {
       if (sortBy == 'email') return a.email.compareTo(b.email);
       return 0;
     });
+  }
+
+  void _prevPage() {
+    if (_currentPage > 0) {
+      setState(() {
+        _currentPage--;
+      });
+    }
+  }
+
+  void _nextPage() {
+    if ((_currentPage + 1) * _pageSize < filteredCustomers.length) {
+      setState(() {
+        _currentPage++;
+      });
+    }
   }
 
   void _handleAddOrUpdateCustomer([Customer? customer]) async {
@@ -78,7 +100,7 @@ class _CustomerManagementState extends State<CustomerManagement> {
     await _loadCustomers();
   }
 
-  void _showCustomerEditDialog(Customer customer) {
+  void _showCustomerEditDialog(Customer customer, bool isViewOnly) {
     final nameCtrl = TextEditingController(text: customer.name);
     final emailCtrl = TextEditingController(text: customer.email);
     final phoneCtrl = TextEditingController(text: customer.phone);
@@ -87,43 +109,70 @@ class _CustomerManagementState extends State<CustomerManagement> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Edit Customer'),
-        content: SizedBox(
-          width: 400,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name'),maxLength: 50,),
-              TextField(controller: emailCtrl, decoration: const InputDecoration(labelText: 'Email'),maxLength: 50,),
-              TextField(
-                controller: phoneCtrl,
-                decoration: const InputDecoration(labelText: 'Phone'),
-                maxLength: 12,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],),
-              TextField(controller: addressCtrl, decoration: const InputDecoration(labelText: 'Address'),maxLength: 100,),
-            ],
+          title: isViewOnly
+              ? const Text('View Customer')
+              : const Text('Edit Customer'),
+          content: SizedBox(
+            width: MediaQuery.sizeOf(context).width * 0.3,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(labelText: 'Name'),
+                  maxLength: 50,
+                  readOnly: isViewOnly ? true : false,
+                ),
+                TextField(
+                  controller: emailCtrl,
+                  decoration: const InputDecoration(labelText: 'Email'),
+                  maxLength: 50,
+                  readOnly: isViewOnly ? true : false,
+                ),
+                TextField(
+                  controller: phoneCtrl,
+                  readOnly: isViewOnly ? true : false,
+                  decoration: const InputDecoration(labelText: 'Phone'),
+                  maxLength: 12,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                ),
+                TextField(
+                  controller: addressCtrl,
+                  decoration: const InputDecoration(labelText: 'Address'),
+                  maxLines: 3,
+                  maxLength: 100,
+                  readOnly: isViewOnly ? true : false,
+                ),
+              ],
+            ),
           ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () async {
-              final updatedCustomer = Customer(
-                id: customer.id,
-                name: nameCtrl.text,
-                email: emailCtrl.text,
-                phone: phoneCtrl.text,
-                address: addressCtrl.text,
-              );
-              await dbHelper.updateCustomer(updatedCustomer);
-              await _loadCustomers();
-              Navigator.pop(context);
-            },
-            child: const Text('Update'),
-          ),
-        ],
-      ),
+          actions: !isViewOnly
+              ? [
+                  TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel')),
+                  ElevatedButton(
+                    onPressed: () async {
+                      final updatedCustomer = Customer(
+                        id: customer.id,
+                        name: nameCtrl.text,
+                        email: emailCtrl.text,
+                        phone: phoneCtrl.text,
+                        address: addressCtrl.text,
+                      );
+                      await dbHelper.updateCustomer(updatedCustomer);
+                      await _loadCustomers();
+                      Navigator.pop(context);
+                    },
+                    child: const Text('Update'),
+                  ),
+                ]
+              : [
+                  TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel')),
+                ]),
     );
   }
 
@@ -153,7 +202,9 @@ class _CustomerManagementState extends State<CustomerManagement> {
         build: (pw.Context context) {
           return pw.Table.fromTextArray(
             headers: ['Name', 'Email', 'Phone', 'Address'],
-            data: filteredCustomers.map((c) => [c.name, c.email, c.phone, c.address]).toList(),
+            data: filteredCustomers
+                .map((c) => [c.name, c.email, c.phone, c.address])
+                .toList(),
           );
         },
       ),
@@ -167,143 +218,324 @@ class _CustomerManagementState extends State<CustomerManagement> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          // Add Customer form
-          Expanded(
-            flex: 1,
-            child: Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
+    final start = _currentPage * _pageSize;
+    final end = (_currentPage + 1) * _pageSize;
+    final currentPageCustomers = filteredCustomers.sublist(
+      start,
+      end > filteredCustomers.length ? filteredCustomers.length : end,
+    );
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Customer Management'),
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Row(
+          children: [
+            // Left form panel
+            Expanded(
+              flex: 1,
+              child: Card(
+                elevation: 2,
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('Add Customer', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Name'),maxLength: 50,),
-                    TextField(controller: emailController, decoration: const InputDecoration(labelText: 'Email'),maxLength: 50,),
-                    TextField(controller: phoneController, decoration: const InputDecoration(labelText: 'Phone'),
-                      maxLength: 12,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],),
-                    TextField(controller: addressController, decoration: const InputDecoration(labelText: 'Address'),maxLength: 100,),
-                    const SizedBox(height: 8),
-                    ElevatedButton(
-                      onPressed: () => _handleAddOrUpdateCustomer(),
-                      child: const Text('Add Customer'),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .primaryColor
+                            .withValues(alpha: 0.1),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(12),
+                          topRight: Radius.circular(12),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.person_add,
+                            color: Theme.of(context).primaryColor,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Add New Customer',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    AppSpacing.hMedium,
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextField(
+                              controller: nameController,
+                              decoration:
+                                  const InputDecoration(labelText: 'Name'),
+                              maxLength: 50,
+                              style:
+                                  TextStyle(fontSize: 16, color: Colors.black)),
+                          TextField(
+                              controller: emailController,
+                              decoration:
+                                  const InputDecoration(labelText: 'Email'),
+                              maxLength: 50,
+                              style:
+                                  TextStyle(fontSize: 16, color: Colors.black)),
+                          TextField(
+                            controller: phoneController,
+                            decoration:
+                                const InputDecoration(labelText: 'Phone'),
+                            maxLength: 12,
+                            style: TextStyle(fontSize: 16, color: Colors.black),
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly
+                            ],
+                          ),
+                          TextField(
+                              controller: addressController,
+                              decoration:
+                                  const InputDecoration(labelText: 'Address'),
+                              maxLength: 100,
+                              style:
+                                  TextStyle(fontSize: 16, color: Colors.black)),
+                          AppSpacing.hMedium,
+                          ElevatedButton(
+                            onPressed: () => _handleAddOrUpdateCustomer(),
+                            style: ElevatedButton.styleFrom(
+                              minimumSize: const Size(double.infinity, 50),
+                              backgroundColor: Theme.of(context).primaryColor,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Add Customer'),
+                          ),
+                        ],
+                      ),
+                    )
+                  ],
+                ),
+              ),
+            ),
+            AppSpacing.wMedium,
+            // Right table panel
+            Expanded(
+              flex: 4,
+              child: Card(
+                elevation: 2,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Header
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .primaryColor
+                            .withValues(alpha: 0.1),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(12),
+                          topRight: Radius.circular(12),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Row(
+                              children: [
+                                Icon(Icons.people,
+                                    color: Theme.of(context).primaryColor),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Customers ($_totalCustomerCount)',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleLarge
+                                      ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8, right: 8),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                ElevatedButton(
+                                    onPressed: _exportToCSV,
+                                    child: const Text('Export CSV')),
+                                AppSpacing.wSmall,
+                                ElevatedButton(
+                                    onPressed: _exportToPDF,
+                                    child: const Text('Export PDF')),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Search and Sort
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              decoration: const InputDecoration(
+                                labelText: 'Search',
+                                prefixIcon: Icon(Icons.search),
+                                border: OutlineInputBorder(),
+                              ),
+                              onChanged: (value) {
+                                setState(() {
+                                  searchQuery = value;
+                                  _filterAndSort();
+                                });
+                              },
+                            ),
+                          ),
+                          AppSpacing.wMedium,
+                          DropdownButton<String>(
+                            value: sortBy,
+                            onChanged: (value) {
+                              if (value != null) {
+                                setState(() {
+                                  sortBy = value;
+                                  _filterAndSort();
+                                });
+                              }
+                            },
+                            items: const [
+                              DropdownMenuItem(
+                                  value: 'name', child: Text('Sort by Name')),
+                              DropdownMenuItem(
+                                  value: 'email', child: Text('Sort by Email')),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    AppSpacing.hMedium,
+                    // Table
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: DataTable(
+                          headingRowColor:
+                              WidgetStateProperty.resolveWith<Color>(
+                            (Set<WidgetState> states) {
+                              return Theme.of(context)
+                                  .primaryColor; // Set your desired color here
+                            },
+                          ),
+                          headingTextStyle: TextStyle(color: Colors.white),
+                          columns: const [
+                            DataColumn(label: Text('Sl. No')),
+                            DataColumn(label: Text('Name')),
+                            DataColumn(label: Text('Email')),
+                            DataColumn(label: Text('Phone')),
+                            DataColumn(label: Text('Address')),
+                            DataColumn(label: Text('Actions')),
+                          ],
+                          rows: List.generate(currentPageCustomers.length,
+                              (index) {
+                            final customer = currentPageCustomers[index];
+                            final serial =
+                                (_currentPage * _pageSize) + index + 1;
+                            return DataRow(
+                                color: WidgetStateProperty.resolveWith<Color>(
+                                  (Set<WidgetState> states) {
+                                    return (index + 1).isEven
+                                        ? Colors.grey.shade200
+                                        : Colors.white;
+                                  },
+                                ),
+                                cells: [
+                                  DataCell(Text(serial.toString())),
+                                  DataCell(Text(customer.name)),
+                                  DataCell(Text(customer.email)),
+                                  DataCell(Text(customer.phone)),
+                                  DataCell(
+                                    Text(
+                                      customer.address.length > 50
+                                          ? '${customer.address.substring(0, 50)}...'
+                                          : customer.address,
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines:
+                                          1, // Show up to 2 lines, then truncate
+                                      softWrap: true,
+                                    ),
+                                  ),
+                                  DataCell(Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                          icon: const Icon(
+                                            Icons.visibility,
+                                            color: Colors.green,
+                                          ),
+                                          onPressed: () =>
+                                              _showCustomerEditDialog(
+                                                  customer, true)),
+                                      IconButton(
+                                          icon: const Icon(
+                                            Icons.edit,
+                                            color: Colors.blue,
+                                          ),
+                                          onPressed: () =>
+                                              _showCustomerEditDialog(
+                                                  customer, false)),
+                                      IconButton(
+                                          icon: const Icon(
+                                            Icons.delete,
+                                            color: Colors.red,
+                                          ),
+                                          onPressed: () =>
+                                              _deleteCustomer(customer)),
+                                    ],
+                                  )),
+                                ]);
+                          }),
+                        ),
+                      ),
+                    ),
+                    // Pagination Controls
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        IconButton(
+                            onPressed: _prevPage,
+                            icon: const Icon(Icons.chevron_left)),
+                        Text(
+                            'Page ${_currentPage + 1} of ${(filteredCustomers.length / _pageSize).ceil()}'),
+                        IconButton(
+                            onPressed: _nextPage,
+                            icon: const Icon(Icons.chevron_right)),
+                      ],
                     ),
                   ],
                 ),
               ),
             ),
-          ),
-
-          const SizedBox(width: 16),
-
-          // Customer table and controls
-          Expanded(
-            flex: 2,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Header Row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Customer Management',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                    ),
-                    Row(
-                      children: [
-                        ElevatedButton(onPressed: _exportToCSV, child: const Text('Export CSV')),
-                        const SizedBox(width: 8),
-                        ElevatedButton(onPressed: _exportToPDF, child: const Text('Export PDF')),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                // Search + Sort
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        decoration: const InputDecoration(
-                          labelText: 'Search',
-                          prefixIcon: Icon(Icons.search),
-                          border: OutlineInputBorder(),
-                        ),
-                        onChanged: (value) {
-                          setState(() {
-                            searchQuery = value;
-                            _filterAndSort();
-                          });
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    DropdownButton<String>(
-                      value: sortBy,
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() {
-                            sortBy = value;
-                            _filterAndSort();
-                          });
-                        }
-                      },
-                      items: const [
-                        DropdownMenuItem(value: 'name', child: Text('Sort by Name')),
-                        DropdownMenuItem(value: 'email', child: Text('Sort by Email')),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                // Table
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: DataTable(
-                      columns: const [
-                        DataColumn(label: Text('Name')),
-                        DataColumn(label: Text('Email')),
-                        DataColumn(label: Text('Phone')),
-                        DataColumn(label: Text('Address')),
-                        DataColumn(label: Text('Actions')),
-                      ],
-                      rows: filteredCustomers.map((customer) {
-                        return DataRow(cells: [
-                          DataCell(Text(customer.name)),
-                          DataCell(Text(customer.email)),
-                          DataCell(Text(customer.phone)),
-                          DataCell(Text(customer.address)),
-                          DataCell(
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.edit),
-                                  onPressed: () {
-                                    _showCustomerEditDialog(customer);
-                                  },
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete),
-                                  onPressed: () => _deleteCustomer(customer),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ]);
-                      }).toList(),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

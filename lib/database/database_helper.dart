@@ -17,8 +17,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-
-
+  final dbVersion = 3;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -30,7 +29,7 @@ class DatabaseHelper {
     _path = join(await getDatabasesPath(), 'invoice_manager.db');
     return await openDatabase(
       _path!,
-      version: 1,
+      version: dbVersion,
       onCreate: _createDB,
     );
   }
@@ -83,7 +82,8 @@ class DatabaseHelper {
       CREATE TABLE users (
         id TEXT PRIMARY KEY,
         username TEXT UNIQUE,
-        password TEXT
+        password TEXT,
+        user_type TEXT
       )
     ''');
 
@@ -112,6 +112,7 @@ class DatabaseHelper {
       'id': 'user-001',
       'username': 'admin',
       'password': 'admin',
+      'user_type': 'admin'
     });
   }
 
@@ -199,6 +200,20 @@ class DatabaseHelper {
         stock: maps[i]['stock'],
       );
     });
+  }
+
+  Future<int> getTotalProductCount() async {
+    final db = await database; // your initialized Database object
+    final result = await db.rawQuery('SELECT COUNT(*) FROM products');
+    int count = Sqflite.firstIntValue(result) ?? 0;
+    return count;
+  }
+
+  Future<int> getTotalCustomerCount() async {
+    final db = await database; // your initialized Database object
+    final result = await db.rawQuery('SELECT COUNT(*) FROM customers');
+    int count = Sqflite.firstIntValue(result) ?? 0;
+    return count;
   }
 
   Future<Product?> getProductById(String id) async {
@@ -353,15 +368,6 @@ class DatabaseHelper {
 
   // ─────────────────────────────────────────────
   // CRUD for User
-  Future<void> insertUser(User user) async {
-    final db = await database;
-    await db.insert('users', {
-      'id': user.id,
-      'username': user.username,
-      'password': user.password,
-    });
-  }
-
   Future<User?> getUser(String username, String password) async {
     final db = await database;
     final result = await db.query(
@@ -372,15 +378,88 @@ class DatabaseHelper {
 
     if (result.isNotEmpty) {
       final user = result.first;
-      return User(
-        id: user['id'] as String,
-        username: user['username'] as String,
-        password: user['password'] as String,
-      );
+      return User.fromMap(user);
     }
 
     return null;
   }
+
+  Future<List<User>> getAllUsers() async {
+    final db = await database;
+    final maps = await db.query('users');
+    return maps.map((map) => User.fromMap(map)).toList();
+  }
+
+  Future<void> insertUser(User user) async {
+    final db = await database;
+    await db.insert('users', user.toMap());
+  }
+
+  Future<void> updateUser(User user) async {
+    final db = await database;
+    await db.update('users', user.toMap(), where: 'id = ?', whereArgs: [user.id]);
+  }
+
+  Future<void> updatePassword(String id, String newPassword) async {
+    final db = await database;
+    await db.update('users', {'password': newPassword}, where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<bool> userExists(String userId) async {
+    final db = await database;
+
+    try {
+      final result = await db.query(
+        'users', // Replace with your actual table name
+        where: 'id = ?',
+        whereArgs: [userId],
+        limit: 1,
+      );
+
+      return result.isNotEmpty;
+    } catch (e) {
+      print('Error checking if user exists: $e');
+      return false;
+    }
+  }
+
+  Future<int> _deleteUser(String userId) async {
+    final db = await database;
+
+    try {
+      // Delete the user from the database
+      int result = await db.delete(
+        'users', // Replace with your actual table name
+        where: 'id = ?',
+        whereArgs: [userId],
+      );
+
+      print('User deleted successfully. Rows affected: $result');
+      return result;
+    } catch (e) {
+      print('Error deleting user: $e');
+      throw Exception('Failed to delete user: $e');
+    }
+  }
+
+  Future<bool> deleteUserSafely(String userId) async {
+    try {
+      // Check if user exists first
+      bool exists = await userExists(userId);
+      if (!exists) {
+        print('User with ID $userId does not exist');
+        return false;
+      }
+
+      // Delete the user
+      int result = await _deleteUser(userId);
+      return result > 0;
+    } catch (e) {
+      print('Error in safe delete: $e');
+      return false;
+    }
+  }
+
 
   // Get all invoices with customer and items
   Future<List<Invoice>> getAllInvoices() async {

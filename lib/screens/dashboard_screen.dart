@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:invoiceapp/constants.dart';
 import 'package:invoiceapp/models/invoice.dart';
 import 'package:invoiceapp/screens/backup_management_screen.dart';
 import 'package:invoiceapp/screens/settings_screen.dart';
 import 'package:invoiceapp/services/invoice_services.dart';
 
+import '../models/user.dart';
 import 'customer_management_screen.dart';
 import '../database/database_helper.dart';
 import 'create_invoice_screen.dart';
@@ -13,20 +15,36 @@ import 'login_screen.dart';
 
 // Dashboard Screen
 class DashboardScreen extends StatefulWidget {
+  final User loggedInUser;
+
+  DashboardScreen(this.loggedInUser, {super.key});
+
   @override
   _DashboardScreenState createState() => _DashboardScreenState();
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
-  final List<Widget> _screens = [
-    DashboardHome(),
-    CustomerManagement(),
-    ProductManagement(),
-    InvoiceManagement(),
-    InvoiceList(),
-    SettingsPage()
-  ];
+
+  Widget buildScreen()
+  {
+    switch (_selectedIndex) {
+      case 0:
+        return DashboardHome();
+      case 1:
+        return CustomerManagement();
+      case 2:
+        return ProductManagement();
+      case 3:
+        return InvoiceManagement();
+      case 4:
+        return InvoiceList();
+      case 5:
+        return SettingsPage(currentUser: widget.loggedInUser,);
+      default:
+        return const Center(child: Text("Unknown tab"));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +52,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: AppBar(
         title: const Text('Invoice Management System'),
         actions: [
+          Row(
+            children: [
+              Icon(Icons.person,color: Theme.of(context).primaryColor,),
+              AppSpacing.wSmall,
+              Text("Hi ${widget.loggedInUser.username}",style: TextStyle(fontSize: 18),),
+              AppSpacing.wMedium
+            ],
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
@@ -89,7 +115,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
           const VerticalDivider(thickness: 1, width: 1),
-          Expanded(child: _screens[_selectedIndex]),
+          Expanded(child: buildScreen() ),
         ],
       ),
     );
@@ -134,116 +160,121 @@ class _DashboardHomeState extends State<DashboardHome> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Dashboard Overview',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              _buildStatCard('Total Customers', totalCustomers.toString(), Colors.blue),
-              const SizedBox(width: 16),
-              _buildStatCard('Total Products', totalProducts.toString(), Colors.green),
-              const SizedBox(width: 16),
-              _buildStatCard('Total Invoices', totalInvoices.toString(), Colors.orange),
-              const SizedBox(width: 16),
-              _buildStatCard('Total Revenue', '\$${totalRevenue.toStringAsFixed(2)}', Colors.purple),
-            ],
-          ),
-          const SizedBox(height: 30),
-          Divider(thickness: 3,),
-          const SizedBox(height: 30),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text(
-                'Recent Invoices',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: recentInvoices.isEmpty
-                ? const Center(child: Text('No invoices yet'))
-                : Row(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Dashboard Overview'),
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppSpacing.hMedium,
+            Row(
+              children: [
+                _buildStatCard('Total Customers', totalCustomers.toString(), Colors.blue),
+                AppSpacing.wMedium,
+                _buildStatCard('Total Products', totalProducts.toString(), Colors.green),
+                AppSpacing.wMedium,
+                _buildStatCard('Total Invoices', totalInvoices.toString(), Colors.orange),
+                AppSpacing.wMedium,
+                _buildStatCard('Total Revenue', 'Rs ${totalRevenue.toStringAsFixed(2)}', Colors.purple),
+              ],
+            ),
+            AppSpacing.hMedium,
+            Divider(thickness: 3,),
+            AppSpacing.hMedium,
+            Row(
               mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                                  width: MediaQuery.sizeOf(context).width*0.7,
-                      child: ListView.builder(
-                                    itemCount: recentInvoices.length,
-                                    itemBuilder: (context, index) {
-                      final invoice = recentInvoices[index];
-                      return Card(
-                        child: ListTile(
-                          title: Text('Invoice #${invoice.id}',style: TextStyle(fontSize: 20),),
-                          subtitle: Text('${invoice.customer.name} - ${invoice.date.toString().split(' ')[0]}',style: TextStyle(fontSize: 18),),
-                          trailing: SizedBox(
-                          width: MediaQuery.sizeOf(context).width*0.25, // adjust as needed
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('Rs: ${(invoice.total).toStringAsFixed(2)}',style: TextStyle(fontSize: 24),),
-                              IconButton(
-                                icon: const Icon(Icons.visibility),
-                                onPressed: () => InvoiceServices.showInvoiceDetails(context, invoice),
-                                tooltip: 'View Details',
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.picture_as_pdf),
-                                onPressed: () => InvoiceServices.previewPDF(context, invoice),
-                                tooltip: 'Preview PDF',
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.print),
-                                onPressed: () => InvoiceServices.generatePDF(context, invoice),
-                                tooltip: 'Print PDF',
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete),
-                                onPressed: () => showDialog(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: const Text('Delete Invoice'),
-                                    content: const Text('Are you sure you want to delete this invoice?'),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context),
-                                        child: const Text('Cancel'),
-                                      ),
-                                      ElevatedButton(
-                                        onPressed: () {
-                                          Navigator.pop(context);
-                                          InvoiceServices.deleteInvoice(context, invoice);
-                                        },
-                                        style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                                        child: const Text('Delete'),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                tooltip: 'Delete',
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        ),
-                      );
-                                    },
-                                  ),
-                    ),
-                  ],
+              children: [
+                const Text(
+                  'Recent Invoices',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
-          ),
-        ],
+              ],
+            ),
+            AppSpacing.hMedium,
+            Expanded(
+              child: recentInvoices.isEmpty
+                  ? const Center(child: Text('No invoices yet'))
+                  : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: MediaQuery.sizeOf(context).width*0.7,
+                        child: ListView.builder(
+                                      itemCount: recentInvoices.length,
+                                      itemBuilder: (context, index) {
+                        final invoice = recentInvoices[index];
+                        return Card(
+                          child: ListTile(
+                            leading: Text("${index+1}",style: TextStyle(fontSize: 24),),
+                            title: Text('Invoice #${invoice.id}',style: TextStyle(fontSize: 20),),
+                            subtitle: Text('${invoice.customer.name} - ${invoice.date.toString().split(' ')[0]}',style: TextStyle(fontSize: 18),),
+                            trailing: SizedBox(
+                            width: MediaQuery.sizeOf(context).width*0.25, // adjust as needed
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text('Rs: ${(invoice.total).toStringAsFixed(2)}',style: TextStyle(fontSize: 24),),
+                                IconButton(
+                                  icon: const Icon(Icons.visibility,color: Colors.green,),
+                                  onPressed: () => InvoiceServices.showInvoiceDetails(context, invoice),
+                                  tooltip: 'View Details',
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.picture_as_pdf,color: Colors.purple),
+                                  onPressed: () => InvoiceServices.previewPDF(context, invoice),
+                                  tooltip: 'Preview PDF',
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.print,color: Colors.black),
+                                  onPressed: () => InvoiceServices.generatePDF(context, invoice),
+                                  tooltip: 'Print PDF',
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete,color: Colors.red,),
+                                  onPressed: () => showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Delete Invoice'),
+                                      content: const Text('Are you sure you want to delete this invoice?'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: const Text('Cancel'),
+                                        ),
+                                        ElevatedButton(
+                                          onPressed: () {
+                                            Navigator.pop(context);
+                                            InvoiceServices.deleteInvoice(context, invoice);
+                                          },
+                                          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                          child: const Text('Delete'),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  tooltip: 'Delete',
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          ),
+                        );
+                                      },
+                                    ),
+                      ),
+                    ],
+                  ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -259,7 +290,7 @@ class _DashboardHomeState extends State<DashboardHome> {
             children: [
               Text(title,
                   style: TextStyle(fontSize: 16, color: Colors.grey[600])),
-              const SizedBox(height: 8),
+              AppSpacing.hSmall,
               Text(value,
                   style: TextStyle(
                       fontSize: 32, fontWeight: FontWeight.bold, color: color)),

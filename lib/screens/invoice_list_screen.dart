@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:invoiceapp/constants.dart';
 import 'package:invoiceapp/models/invoice.dart';
+import 'package:invoiceapp/services/invoice_services.dart';
 import 'package:invoiceapp/services/pdf_service.dart';
 import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
@@ -44,135 +46,79 @@ class _InvoiceListState extends State<InvoiceList> {
     _loadInvoices();
   }
 
-  void _showInvoiceDetails(Invoice invoice) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Invoice #${invoice.id}'),
-        content: SizedBox(
-          width: 600,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Customer: ${invoice.customer.name}'),
-              Text('Date: ${invoice.date.toString().split(' ')[0]}'),
-              const SizedBox(height: 16),
-              const Text('Items:', style: TextStyle(fontWeight: FontWeight.bold)),
-              ...invoice.items.map((item) => Padding(
-                padding: EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('${item.product.name} x${item.quantity}'),
-                    Text(item.total.toStringAsFixed(2)),
-                  ],
-                ),
-              )),
-              const Divider(),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Subtotal:', style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text(invoice.subtotal.toStringAsFixed(2)),
-                ],
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Tax:', style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text(invoice.tax.toStringAsFixed(2)),
-                ],
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Total:', style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text(invoice.total.toStringAsFixed(2), style: const TextStyle(fontWeight: FontWeight.bold)),
-                ],
-              ),
-              if (invoice.notes != null && invoice.notes!.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                const Text('Notes:', style: TextStyle(fontWeight: FontWeight.bold)),
-                Text(invoice.notes!),
-              ],
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
-        ],
-      ),
-    );
-  }
-
-  void _generatePDF(Invoice invoice) async {
-    try {
-      final pdf = await PDFService.generateInvoicePDF(invoice);
-      await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => pdf.save());
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error generating PDF: $e')));
-    }
-  }
-
-  void _previewPDF(Invoice invoice) async {
-    try {
-      final pdf = await PDFService.generateInvoicePDF(invoice);
-      await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => pdf.save());
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error previewing PDF: $e')));
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final totalPages = (invoices.where((i) => i.customer.name.toLowerCase().contains(searchQuery.toLowerCase()) || i.id.toLowerCase().contains(searchQuery.toLowerCase())).length / pageSize).ceil();
-
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Invoice List'),
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Text('Invoice List', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-          TextField(
-            controller: searchController,
-            decoration: const InputDecoration(
-              labelText: 'Search by ID or Customer',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.search),
+          AppSpacing.hLarge,
+          SizedBox(
+            width: MediaQuery.sizeOf(context).width*0.6,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 30,right: 30),
+              child: TextField(
+                controller: searchController,
+                decoration: const InputDecoration(
+                  labelText: 'Search by ID or Customer',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.search),
+                ),
+                onChanged: (value) => setState(() => searchQuery = value),
+              ),
             ),
-            onChanged: (value) => setState(() => searchQuery = value),
           ),
-          const SizedBox(height: 16),
+          AppSpacing.hLarge,
           Expanded(
             child: paginatedInvoices.isEmpty
                 ? const Center(child: Text('No invoices found', style: TextStyle(fontSize: 18, color: Colors.grey)))
                 : SingleChildScrollView(
               child: DataTable(
+                headingRowColor: WidgetStateProperty.resolveWith<Color>(
+                      (Set<WidgetState> states) {
+                    return Theme.of(context).primaryColor; // Set your desired color here
+                  },
+                ),
+                headingTextStyle: TextStyle(color: Colors.white),
                 columns: const [
-                  DataColumn(label: Text('Invoice ID')),
-                  DataColumn(label: Text('Customer')),
-                  DataColumn(label: Text('Date')),
-                  DataColumn(label: Text('Items')),
-                  DataColumn(label: Text('Total')),
-                  DataColumn(label: Text('Actions')),
+                  DataColumn(label: Text('Invoice ID',style: TextStyle(color: Colors.white,fontSize: 18),)),
+                  DataColumn(label: Text('Customer',style: TextStyle(color: Colors.white,fontSize: 18),)),
+                  DataColumn(label: Text('Date',style: TextStyle(color: Colors.white,fontSize: 18),)),
+                  DataColumn(label: Text('Items',style: TextStyle(color: Colors.white,fontSize: 18),)),
+                  DataColumn(label: Text('Total',style: TextStyle(color: Colors.white,fontSize: 18),)),
+                  DataColumn(label: Text('Actions',style: TextStyle(color: Colors.white,fontSize: 18),)),
                 ],
-                rows: paginatedInvoices.map((invoice) {
-                  return DataRow(cells: [
-                    DataCell(Text('#${invoice.id}')),
-                    DataCell(Text(invoice.customer.name)),
-                    DataCell(Text(invoice.date.toString().split(' ')[0])),
-                    DataCell(Text(invoice.items.length.toString())),
-                    DataCell(Text(invoice.total.toStringAsFixed(2))),
+                rows: paginatedInvoices.asMap().entries.map((entry)
+                {
+                  final invoice  = entry.value;
+                  final index = entry.key+1;
+                  return DataRow(
+                      color: WidgetStateProperty.resolveWith<Color>(
+                            (Set<WidgetState> states) {
+                          return index.isEven ? Colors.grey.shade200 : Colors.white;
+                        },
+                      ),
+                      cells: [
+                    DataCell(Text('#${invoice.id}',style: TextStyle(color: Colors.black,fontSize: 16),)),
+                    DataCell(Text(invoice.customer.name,style: TextStyle(color: Colors.black,fontSize: 16),)),
+                    DataCell(Text(invoice.date.toString().split(' ')[0],style: TextStyle(color: Colors.black,fontSize: 16),)),
+                    DataCell(Text(invoice.items.length.toString(),style: TextStyle(color: Colors.black,fontSize: 16),)),
+                    DataCell(Text("Rs: ${invoice.total.toStringAsFixed(2)}",style: TextStyle(color: Colors.black,fontSize: 16),)),
                     DataCell(Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        IconButton(icon: const Icon(Icons.visibility), onPressed: () => _showInvoiceDetails(invoice), tooltip: 'View Details'),
-                        IconButton(icon: const Icon(Icons.picture_as_pdf), onPressed: () => _previewPDF(invoice), tooltip: 'Preview PDF'),
-                        IconButton(icon: const Icon(Icons.print), onPressed: () => _generatePDF(invoice), tooltip: 'Print PDF'),
+                        IconButton(icon: const Icon(Icons.visibility,color: Colors.green,), onPressed: () =>  InvoiceServices.showInvoiceDetails(context,invoice), tooltip: 'View Details'),
+                        IconButton(icon: const Icon(Icons.picture_as_pdf,color: Colors.purple,), onPressed: () => InvoiceServices.previewPDF(context,invoice), tooltip: 'Preview PDF'),
+                        IconButton(icon: const Icon(Icons.print,color: Colors.black,), onPressed: () => InvoiceServices.generatePDF(context,invoice), tooltip: 'Print PDF'),
                         IconButton(
-                          icon: const Icon(Icons.delete),
+                          icon: const Icon(Icons.delete,color: Colors.red,),
                           onPressed: () => showDialog(
                             context: context,
                             builder: (context) => AlertDialog(

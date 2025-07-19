@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:invoiceapp/database/database_helper.dart';
 import 'package:invoiceapp/screens/login_screen.dart';
+import 'package:invoiceapp/constants.dart';
 
 class SplashScreen extends StatefulWidget {
   @override
@@ -32,7 +33,7 @@ class _SplashScreenState extends State<SplashScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text('Initializing App...', style: TextStyle(fontSize: 18)),
-            SizedBox(height: 20),
+            AppSpacing.hXlarge,
             CircularProgressIndicator(),
           ],
         ),
