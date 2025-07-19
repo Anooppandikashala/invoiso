@@ -739,54 +739,18 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Expanded(
-              flex: 2,
-              child: ElevatedButton(
-                onPressed: invoiceItems.isNotEmpty ? _createInvoice : null,
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 50),
-                  backgroundColor: Theme.of(context).primaryColor,
-                  foregroundColor: Colors.white,
-                ),
-                child: Text(
-                  'Create ${invoiceType.toString()}',
-                  style: const TextStyle(fontSize: 16),
-                ),
+            ElevatedButton(
+              onPressed: invoiceItems.isNotEmpty ? _createInvoice : null,
+              style: ElevatedButton.styleFrom(
+                minimumSize: Size(MediaQuery.sizeOf(context).width*0.3, 50),
+                backgroundColor: Theme.of(context).primaryColor,
+                foregroundColor: Colors.white,
               ),
-            ),
-            AppSpacing.hMedium,
-            Expanded(
-              flex: 1,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  IconButton(
-                    icon: _invoice != null ? const Icon(Icons.visibility,color: Colors.green,) : const Icon(Icons.visibility),
-                    onPressed: _invoice != null
-                        ? () => InvoiceServices.showInvoiceDetails(
-                            context, _invoice!)
-                        : null,
-                    tooltip: 'View Details',
-                    iconSize: 28,
-                  ),
-                  IconButton(
-                    icon: _invoice != null ? const Icon(Icons.picture_as_pdf,color: Colors.purple,) :  const Icon(Icons.picture_as_pdf),
-                    onPressed: _invoice != null
-                        ? () => InvoiceServices.previewPDF(context, _invoice!)
-                        : null,
-                    tooltip: 'Preview PDF',
-                    iconSize: 28,
-                  ),
-                  IconButton(
-                    icon: _invoice != null ? const Icon(Icons.print,color: Colors.black,) : const Icon(Icons.print),
-                    onPressed: _invoice != null
-                        ? () => InvoiceServices.generatePDF(context, _invoice!)
-                        : null,
-                    tooltip: 'Print PDF',
-                    iconSize: 28,
-                  ),
-                ],
+              child: Text(
+                'Create ${invoiceType.toString()}',
+                style: const TextStyle(fontSize: 16),
               ),
             ),
           ],
