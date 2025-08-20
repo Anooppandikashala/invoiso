@@ -42,6 +42,15 @@ class _ProductManagementState extends State<ProductManagement> {
     _loadProducts();
   }
 
+  @override
+  void dispose() {
+    nameController.dispose();
+    descriptionController.dispose();
+    priceController.dispose();
+    stockController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadProducts() async {
     final result = await dbHelper.getProductsPaginated(
       offset: _currentPage * _pageSize,
@@ -257,8 +266,8 @@ class _ProductManagementState extends State<ProductManagement> {
         child: Row(
           children: [
             // Add Product Form on the left
-            SizedBox(
-              width: MediaQuery.sizeOf(context).width*0.18,
+            ConstrainedBox(
+              constraints: BoxConstraints(minWidth: 300,maxWidth: 300),
               child: Card(
                 elevation: 2,
                 child: Column(
@@ -321,19 +330,19 @@ class _ProductManagementState extends State<ProductManagement> {
                             inputFormatters: [
                               FilteringTextInputFormatter.allow(RegExp(r'^\d+$')),
                             ],),
+                          AppSpacing.hMedium,
+                          Center(
+                              child: ElevatedButton(
+                                  onPressed: _addProduct,
+                                  style: ElevatedButton.styleFrom(
+                                    minimumSize: const Size(double.infinity, 50),
+                                    backgroundColor: Theme.of(context).primaryColor,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  child: const Text('Add Product'))),
                         ],
                       ),
                     ),
-                    AppSpacing.hXlarge,
-                    Center(
-                        child: ElevatedButton(
-                            onPressed: _addProduct,
-                            style: ElevatedButton.styleFrom(
-                              minimumSize: const Size(double.infinity, 50),
-                              backgroundColor: Theme.of(context).primaryColor,
-                              foregroundColor: Colors.white,
-                            ),
-                            child: const Text('Add Product'))),
                   ],
                 ),
               ),

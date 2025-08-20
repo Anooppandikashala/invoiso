@@ -20,6 +20,13 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
   final PdfViewerController _pdfViewerController = PdfViewerController();
   double _zoomLevel = 1.0;
 
+
+  @override
+  void dispose() {
+    _pdfViewerController.dispose();
+    super.dispose();
+  }
+
   void _zoomIn() {
     setState(() {
       _zoomLevel = (_zoomLevel + 0.25).clamp(1.0, 5.0);

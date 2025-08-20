@@ -14,3 +14,18 @@ class AppSpacing {
   static const wLarge = SizedBox(width: 3*baseValue);
   static const wXlarge = SizedBox(width: 4*baseValue);
 }
+
+class AppFontSize
+{
+  static const small = 12;
+  static const medium = 14;
+  static const large = 16;
+  static const xlarge = 20;
+  static const xxlarge = 24;
+}
+
+class AppConfig
+{
+  static const name = "invoiso";
+  static const version = "1.0";
+}

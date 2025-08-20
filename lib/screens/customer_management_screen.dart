@@ -11,6 +11,8 @@ import 'dart:io';
 import 'package:share_plus/share_plus.dart';
 
 class CustomerManagement extends StatefulWidget {
+  const CustomerManagement({super.key});
+
   @override
   _CustomerManagementState createState() => _CustomerManagementState();
 }
@@ -34,6 +36,15 @@ class _CustomerManagementState extends State<CustomerManagement> {
   void initState() {
     super.initState();
     _loadCustomers();
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    phoneController.dispose();
+    addressController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadCustomers() async {
@@ -237,8 +248,8 @@ class _CustomerManagementState extends State<CustomerManagement> {
         child: Row(
           children: [
             // Left form panel
-            Expanded(
-              flex: 1,
+            ConstrainedBox(
+              constraints: BoxConstraints(minWidth: 300,maxWidth: 300),
               child: Card(
                 elevation: 2,
                 child: Column(
@@ -266,6 +277,7 @@ class _CustomerManagementState extends State<CustomerManagement> {
                           const SizedBox(width: 8),
                           Text(
                             'Add New Customer',
+                            overflow: TextOverflow.ellipsis,
                             style: Theme.of(context)
                                 .textTheme
                                 .titleLarge
@@ -315,14 +327,16 @@ class _CustomerManagementState extends State<CustomerManagement> {
                               style:
                                   TextStyle(fontSize: 16, color: Colors.black)),
                           AppSpacing.hMedium,
-                          ElevatedButton(
-                            onPressed: () => _handleAddOrUpdateCustomer(),
-                            style: ElevatedButton.styleFrom(
-                              minimumSize: const Size(double.infinity, 50),
-                              backgroundColor: Theme.of(context).primaryColor,
-                              foregroundColor: Colors.white,
+                          Center(
+                            child: ElevatedButton(
+                              onPressed: () => _handleAddOrUpdateCustomer(),
+                              style: ElevatedButton.styleFrom(
+                                minimumSize: const Size(double.infinity, 50),
+                                backgroundColor: Theme.of(context).primaryColor,
+                                foregroundColor: Colors.white,
+                              ),
+                              child: const Text('Add Customer'),
                             ),
-                            child: const Text('Add Customer'),
                           ),
                         ],
                       ),

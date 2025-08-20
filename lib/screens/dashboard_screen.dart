@@ -50,7 +50,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Invoice Management System'),
+        backgroundColor: Colors.white,
+        title: Image.asset(
+            'assets/images/logo.png',
+            width: 120,
+            height: 100,
+            fit: BoxFit.contain,
+          ),
         actions: [
           Row(
             children: [

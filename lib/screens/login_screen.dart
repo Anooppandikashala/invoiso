@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:invoiceapp/constants.dart';
 
 import '../database/database_helper.dart';
@@ -16,6 +17,13 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   void _login() async {
     final username = _usernameController.text.trim();
@@ -41,17 +49,24 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Center(
         child: Card(
           elevation: 8,
+          color: Colors.white,
           child: Container(
             width: MediaQuery.sizeOf(context).width*0.25,
             padding: const EdgeInsets.all(32),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.business, size: 88, color: Theme.of(context).primaryColor),
-                AppSpacing.hXlarge,
-                const Text(
-                  'Invoice Management System',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                // Icon(Icons.description, size: 88, color: Theme.of(context).primaryColor),
+                // AppSpacing.hXlarge,
+                // const Text(
+                //   AppConfig.name,
+                //   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                // ),
+                Image.asset(
+                  'assets/images/logo.png',
+                  width: 230,
+                  height: 100,
+                  fit: BoxFit.contain,
                 ),
                 AppSpacing.hXlarge,
                 TextField(

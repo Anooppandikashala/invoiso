@@ -21,6 +21,12 @@ class _InvoiceListState extends State<InvoiceList> {
   final TextEditingController searchController = TextEditingController();
 
   @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   void initState() {
     super.initState();
     _loadInvoices();

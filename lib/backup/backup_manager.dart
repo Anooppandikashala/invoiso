@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:convert';
+import 'package:invoiceapp/constants.dart';
 import 'package:invoiceapp/database/database_helper.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
@@ -110,7 +111,7 @@ class BackupManager {
     backupData['_metadata'] = {
       'created_at': DateTime.now().toIso8601String(),
       'version': '1.0',
-      'app_name': 'Invoice Manager',
+      'app_name': AppConfig.name,
       'backup_type': 'json_export',
       'record_count': backupData.length - 1,
     };
