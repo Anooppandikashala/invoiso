@@ -6,7 +6,11 @@ Create, send, and manage invoices effortlessly from your pc. Perfect for freelan
 
 ## Screenshots
 
-<img height="400" src="/screenshots/sc-1.png" width="800"/>
+<img height="600" src="/screenshots/sc-1.png" width="800"/>
+<img height="600" src="/screenshots/sc-2.png" width="800"/>
+<img height="600" src="/screenshots/sc-3.png" width="800"/>
+<img height="600" src="/screenshots/sc-4.png" width="800"/>
+<img height="600" src="/screenshots/sc-5.png" width="800"/>
 ![](/screenshots/sc-2.png)
 ![](/screenshots/sc-3.png)
 ![](/screenshots/sc-4.png)
