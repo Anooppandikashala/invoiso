@@ -313,17 +313,22 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
   Widget _buildUserTypeChip(String userType) {
     Color chipColor = userType == 'admin' ? Colors.purple : Colors.blue;
-    return Chip(
-      label: Text(
-        userType.toUpperCase(),
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
+    return Row(
+      children: [
+        Text("User Type : "),
+        Chip(
+          label: Text(
+            userType.toUpperCase(),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          backgroundColor: chipColor,
+          padding: const EdgeInsets.symmetric(horizontal: 4),
         ),
-      ),
-      backgroundColor: chipColor,
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+      ],
     );
   }
 
@@ -644,16 +649,29 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                 color: Colors.white,
                               ),
                             ),
-                            title: Text(
-                              user.username,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: isEditing
-                                    ? Theme.of(context).primaryColor
-                                    : null,
-                              ),
+                            title: Row(
+                              mainAxisSize: MainAxisSize.max,
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text("Username: "),
+                                    Text(
+                                      textAlign: TextAlign.center,
+                                      user.username,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: isEditing
+                                            ? Theme.of(context).primaryColor
+                                            : null,
+                                      ),
+                                    )
+                                  ],
+                                ),
+                                SizedBox(width: 20,),
+                                _buildUserTypeChip(user.userType),
+                              ],
                             ),
-                            subtitle: _buildUserTypeChip(user.userType),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [

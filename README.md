@@ -1,16 +1,19 @@
 # invoiceapp
 
-A new Flutter project.
+Invoiso - Smart Invoice Management SaaS
 
-## Getting Started
+Create, send, and manage invoices effortlessly from your pc. Perfect for freelancers and growing businesses.
 
-This project is a starting point for a Flutter application.
+## Screenshots
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+[](/screenshots/sc-1.png)
+[](/screenshots/sc-2.png)
+[](/screenshots/sc-3.png)
+[](/screenshots/sc-4.png)
+[](/screenshots/sc-5.png)
+[](/screenshots/sc-6.png)
+[](/screenshots/sc-7.png)
+[](/screenshots/sc-8.png)
+[](/screenshots/sc-9.png)
+[](/screenshots/sc-10.png)
+[](/screenshots/sc-11.png)
