@@ -9,12 +9,14 @@ import '../models/product.dart';
 import '../services/invoice_services.dart';
 import 'package:invoiceapp/constants.dart';
 
-class InvoiceManagement extends StatefulWidget {
+class CreateInvoiceScreen extends StatefulWidget {
+  const CreateInvoiceScreen({super.key});
+
   @override
-  _InvoiceManagementState createState() => _InvoiceManagementState();
+  _CreateInvoiceScreenState createState() => _CreateInvoiceScreenState();
 }
 
-class _InvoiceManagementState extends State<InvoiceManagement> {
+class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   final dbHelper = DatabaseHelper();
   Customer? selectedCustomer;
   List<Customer> customers = [];
@@ -302,6 +304,7 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
 
   Widget _customerSearchView() {
     return Card(
+      color: Colors.white,
       elevation: 2,
       child: Column(
         children: [
@@ -310,14 +313,6 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Search Customer',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                AppSpacing.hSmall,
                 TextField(
                   controller: customerSearchController,
                   onChanged: _filterCustomers,
@@ -363,6 +358,7 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
 
   Widget _productSearchView() {
     return Card(
+      color: Colors.white,
       elevation: 2,
       child: Column(
         children: [
@@ -371,14 +367,6 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Search Products',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                AppSpacing.hSmall,
                 TextField(
                   controller: searchController,
                   onChanged: _filterProducts,
@@ -425,6 +413,7 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
 
   Widget _invoiceDetailsForm() {
     return Card(
+      color: Colors.white,
       elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -502,6 +491,7 @@ class _InvoiceManagementState extends State<InvoiceManagement> {
 
   Widget _customerDetailsForm() {
     return Card(
+      color: Colors.white,
       elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(16),

@@ -7,15 +7,15 @@ import '../database/database_helper.dart';
 import '../models/company_info.dart';
 import '../models/user.dart';
 
-class SettingsPage extends StatefulWidget {
+class SettingsScreen extends StatefulWidget {
   final User currentUser;
-  const SettingsPage({Key? key, required this.currentUser}) : super(key: key);
+  const SettingsScreen({super.key, required this.currentUser});
 
   @override
-  State<SettingsPage> createState() => _SettingsPageState();
+  State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsPageState extends State<SettingsPage> {
+class _SettingsScreenState extends State<SettingsScreen> {
   int _selectedIndex = 0;
   final dbHelper = DatabaseHelper();
 
@@ -91,76 +91,86 @@ class _SettingsPageState extends State<SettingsPage> {
         elevation: 0,
       ),
       body: Center(
-        child: Card(
-          elevation: 2,
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: SizedBox(
-              width: MediaQuery.sizeOf(context).width*0.3,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  TextField(
-                    controller: nameController,
-                    style: TextStyle(fontSize: 18),
-                    maxLength: 50,
-                    decoration: const InputDecoration(labelText: 'Company Name',),
-                  ),
-                  AppSpacing.hLarge,
-                  TextField(
-                    controller: addressController,
-                    style: TextStyle(fontSize: 18),
-                    maxLength: 100,
-                    decoration: const InputDecoration(labelText: 'Address'),
-                    maxLines: 3,
-                  ),
-                  AppSpacing.hLarge,
-                  TextField(
-                    controller: phoneController,
-                    maxLength: 12,
-                    style: const TextStyle(fontSize: 18),
-                    decoration: const InputDecoration(labelText: 'Phone'),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(12),
-                    ],
-                  ),
-                  AppSpacing.hLarge,
-                  TextField(
-                    controller: emailController,
-                    maxLength: 100,
-                    style: const TextStyle(fontSize: 18),
-                    decoration: const InputDecoration(labelText: 'Email'),
-                    keyboardType: TextInputType.emailAddress,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9@._\-]')),
-                    ],
-                  ),
-                  AppSpacing.hLarge,
-                  TextField(
-                    controller: websiteController,
-                    maxLength: 100,
-                    style: const TextStyle(fontSize: 18),
-                    decoration: const InputDecoration(labelText: 'Website'),
-                    keyboardType: TextInputType.url,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9:/.%-]')),
-                    ],
-                  ),
-                  AppSpacing.hLarge,
-                  ElevatedButton(
-                    onPressed: _saveCompanyInfo,
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 50),
-                      backgroundColor: Theme.of(context).primaryColor,
-                      foregroundColor: Colors.white,
+        child: SingleChildScrollView(
+          child: Card(
+            color: Colors.white,
+            elevation: 2,
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: SizedBox(
+                width: MediaQuery.sizeOf(context).width*0.3,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Image.asset(
+                      'assets/images/logo.png',
+                      width: 230,
+                      height: 100,
+                      fit: BoxFit.contain,
                     ),
-                    child: const Text('Save',style: TextStyle(fontSize: 18),),
-                  ),
-                ],
+                    AppSpacing.hXlarge,
+                    TextField(
+                      controller: nameController,
+                      style: TextStyle(fontSize: 18),
+                      maxLength: 50,
+                      decoration: const InputDecoration(labelText: 'Company Name',),
+                    ),
+                    AppSpacing.hLarge,
+                    TextField(
+                      controller: addressController,
+                      style: TextStyle(fontSize: 18),
+                      maxLength: 100,
+                      decoration: const InputDecoration(labelText: 'Address'),
+                      maxLines: 3,
+                    ),
+                    AppSpacing.hLarge,
+                    TextField(
+                      controller: phoneController,
+                      maxLength: 12,
+                      style: const TextStyle(fontSize: 18),
+                      decoration: const InputDecoration(labelText: 'Phone'),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(12),
+                      ],
+                    ),
+                    AppSpacing.hLarge,
+                    TextField(
+                      controller: emailController,
+                      maxLength: 100,
+                      style: const TextStyle(fontSize: 18),
+                      decoration: const InputDecoration(labelText: 'Email'),
+                      keyboardType: TextInputType.emailAddress,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9@._\-]')),
+                      ],
+                    ),
+                    AppSpacing.hLarge,
+                    TextField(
+                      controller: websiteController,
+                      maxLength: 100,
+                      style: const TextStyle(fontSize: 18),
+                      decoration: const InputDecoration(labelText: 'Website'),
+                      keyboardType: TextInputType.url,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9:/.%-]')),
+                      ],
+                    ),
+                    AppSpacing.hLarge,
+                    ElevatedButton(
+                      onPressed: _saveCompanyInfo,
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 50),
+                        backgroundColor: Theme.of(context).primaryColor,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Save',style: TextStyle(fontSize: 18),),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

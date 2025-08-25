@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:invoiceapp/constants.dart';
 import 'package:invoiceapp/models/invoice.dart';
-import 'package:invoiceapp/screens/backup_management_screen.dart';
 import 'package:invoiceapp/screens/settings_screen.dart';
 import 'package:invoiceapp/services/invoice_services.dart';
 
@@ -10,14 +9,14 @@ import 'customer_management_screen.dart';
 import '../database/database_helper.dart';
 import 'create_invoice_screen.dart';
 import 'product_management_screen.dart';
-import 'invoice_list_screen.dart';
+import 'invoice_management_screen.dart';
 import 'login_screen.dart';
 
 // Dashboard Screen
 class DashboardScreen extends StatefulWidget {
   final User loggedInUser;
 
-  DashboardScreen(this.loggedInUser, {super.key});
+  const DashboardScreen(this.loggedInUser, {super.key});
 
   @override
   _DashboardScreenState createState() => _DashboardScreenState();
@@ -32,15 +31,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 0:
         return DashboardHome();
       case 1:
-        return CustomerManagement();
+        return CreateInvoiceScreen();
       case 2:
-        return ProductManagement();
+        return InvoiceManagementScreen();
       case 3:
-        return InvoiceManagement();
+        return CustomerManagementScreen();
       case 4:
-        return InvoiceList();
+        return ProductManagementScreen();
       case 5:
-        return SettingsPage(currentUser: widget.loggedInUser,);
+        return SettingsScreen(currentUser: widget.loggedInUser,);
       default:
         return const Center(child: Text("Unknown tab"));
     }
@@ -94,16 +93,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 label: const Text('Dashboard'),
               ),
               NavigationRailDestination(
-                icon: const Icon(Icons.people),
-                selectedIcon: Icon(Icons.people,color: Colors.blue[900],),
-                label: const Text('Customers'),
-              ),
-              NavigationRailDestination(
-                icon: const Icon(Icons.inventory),
-                selectedIcon: Icon(Icons.inventory,color: Colors.blue[900],),
-                label: const Text('Products'),
-              ),
-              NavigationRailDestination(
                 icon: const Icon(Icons.receipt),
                 selectedIcon: Icon(Icons.receipt,color: Colors.blue[900],),
                 label: const Text('New Invoice'),
@@ -112,6 +101,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 icon: const Icon(Icons.list),
                 selectedIcon: Icon(Icons.list,color: Colors.blue[900],),
                 label: const Text('Invoices'),
+              ),
+              NavigationRailDestination(
+                icon: const Icon(Icons.people),
+                selectedIcon: Icon(Icons.people,color: Colors.blue[900],),
+                label: const Text('Customers'),
+              ),
+              NavigationRailDestination(
+                icon: const Icon(Icons.inventory),
+                selectedIcon: Icon(Icons.inventory,color: Colors.blue[900],),
+                label: const Text('Products'),
               ),
               NavigationRailDestination(
                 icon: const Icon(Icons.settings),

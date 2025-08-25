@@ -7,12 +7,14 @@ import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
 import '../database/database_helper.dart';
 
-class InvoiceList extends StatefulWidget {
+class InvoiceManagementScreen extends StatefulWidget {
+  const InvoiceManagementScreen({super.key});
+
   @override
-  _InvoiceListState createState() => _InvoiceListState();
+  _InvoiceManagementScreenState createState() => _InvoiceManagementScreenState();
 }
 
-class _InvoiceListState extends State<InvoiceList> {
+class _InvoiceManagementScreenState extends State<InvoiceManagementScreen> {
   List<Invoice> invoices = [];
   final dbHelper = DatabaseHelper();
   int currentPage = 0;

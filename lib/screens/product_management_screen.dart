@@ -11,12 +11,14 @@ import 'package:open_file/open_file.dart';
 import '../models/product.dart';
 import '../database/database_helper.dart';
 
-class ProductManagement extends StatefulWidget {
+class ProductManagementScreen extends StatefulWidget {
+  const ProductManagementScreen({super.key});
+
   @override
-  _ProductManagementState createState() => _ProductManagementState();
+  _ProductManagementScreenState createState() => _ProductManagementScreenState();
 }
 
-class _ProductManagementState extends State<ProductManagement> {
+class _ProductManagementScreenState extends State<ProductManagementScreen> {
   final dbHelper = DatabaseHelper();
   List<Product> products = [];
 
@@ -269,6 +271,7 @@ class _ProductManagementState extends State<ProductManagement> {
             ConstrainedBox(
               constraints: BoxConstraints(minWidth: 300,maxWidth: 300),
               child: Card(
+                color: Colors.white,
                 elevation: 2,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,

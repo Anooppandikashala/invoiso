@@ -10,14 +10,14 @@ import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:share_plus/share_plus.dart';
 
-class CustomerManagement extends StatefulWidget {
-  const CustomerManagement({super.key});
+class CustomerManagementScreen extends StatefulWidget {
+  const CustomerManagementScreen({super.key});
 
   @override
-  _CustomerManagementState createState() => _CustomerManagementState();
+  _CustomerManagementScreenState createState() => _CustomerManagementScreenState();
 }
 
-class _CustomerManagementState extends State<CustomerManagement> {
+class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
   final dbHelper = DatabaseHelper();
   List<Customer> customers = [];
   List<Customer> filteredCustomers = [];
@@ -251,6 +251,7 @@ class _CustomerManagementState extends State<CustomerManagement> {
             ConstrainedBox(
               constraints: BoxConstraints(minWidth: 300,maxWidth: 300),
               child: Card(
+                color: Colors.white,
                 elevation: 2,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
