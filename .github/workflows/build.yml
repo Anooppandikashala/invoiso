@@ -1,0 +1,59 @@
+name: Build Flutter Desktop Installers
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+      - run: flutter pub get
+      - run: flutter build windows --release
+
+      # Install Inno Setup
+      - name: Install Inno Setup
+        run: choco install innosetup --yes
+
+      # Run Inno Setup
+      - name: Build Windows Installer
+        run: iscc installer.iss
+
+      - name: Upload Windows Installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: InvoiceApp-Windows-Installer
+          path: Output/InvoiceAppSetup.exe
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+      - run: sudo apt-get update -y
+      - run: sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
+      - run: flutter pub get
+      - run: flutter build linux --release
+
+      # Install AppImage Builder
+      - name: Install AppImage Builder
+        run: |
+          sudo apt-get install -y appstream file desktop-file-utils libfuse2
+          pip install appimage-builder
+
+      # Build AppImage
+      - name: Build Linux AppImage
+        run: appimage-builder --recipe AppImageBuilder.yml
+
+      - name: Upload Linux AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: InvoiceApp-Linux-AppImage
+          path: *.AppImage

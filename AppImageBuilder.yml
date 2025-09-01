@@ -1,0 +1,21 @@
+version: 1
+
+AppDir:
+  path: ./AppDir
+  app_info:
+    id: com.invoiceapp.desktop
+    name: InvoiceApp
+    icon: logo
+    version: 1.0.0
+    exec: invoiceapp
+  files:
+    include:
+      - build/linux/x64/release/bundle/**
+  runtime:
+    env:
+      PATH: $APPDIR/usr/bin:$PATH
+
+AppImage:
+  arch: x86_64
+  update-information: None
+  sign-key: None
