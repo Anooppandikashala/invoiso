@@ -6,32 +6,32 @@ on:
       - "v*"
 
 jobs:
-#  build-windows:
-#    runs-on: windows-latest
-#    steps:
-#      - uses: actions/checkout@v3
-#      - uses: subosito/flutter-action@v2
-#        with:
-#          flutter-version: '3.32.8'
-#      - run: flutter pub get
-#      - run: flutter build windows --release
-#
-#      # Install Inno Setup
-#      - name: Install Inno Setup
-#        run: choco install innosetup --yes
-#
-#      # Run Inno Setup (full path for reliability)
-#      - name: Build Windows Installer
-#        run: |
-#          VERSION=${GITHUB_REF#refs/tags/}
-#          echo "Building Windows installer version $VERSION"
-#          '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss /DMyAppVersion=$VERSION'
-#
-#      - name: Upload Windows Installer
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: InvoiceApp-Windows-Installer
-#          path: Output/InvoiceAppSetup.exe
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.8'
+      - run: flutter pub get
+      - run: flutter build windows --release
+
+      # Install Inno Setup
+      - name: Install Inno Setup
+        run: choco install innosetup --yes
+
+      # Run Inno Setup (full path for reliability)
+      - name: Build Windows Installer
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "Building Windows installer version $VERSION"
+          '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss /DMyAppVersion=$VERSION'
+
+      - name: Upload Windows Installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: InvoiceApp-Windows-Installer
+          path: Output/InvoiceAppSetup.exe
 
   build-linux:
     runs-on: ubuntu-latest
