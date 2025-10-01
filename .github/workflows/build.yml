@@ -42,26 +42,41 @@ jobs:
       - run: flutter pub get
       - run: flutter build linux --release
 
-      - name: Prepare AppDir
+      - name: Make make_deb.sh executable
+        run: chmod +x make_deb.sh
+
+      - name: Build Debian Package
         run: |
-          mkdir -p AppDir/usr/bin
-          cp -r build/linux/x64/release/bundle/* AppDir/usr/bin/
-          cp build/linux/x64/release/bundle/invoiceapp AppDir/invoiceapp
-          mkdir -p AppDir/usr/share/icons
-          pwd
-          ls -a
-          cp assets/deb/images/logo.png AppDir/usr/share/icons/logo.png
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "Building version $VERSION"
+          ./make_deb.sh -v "$VERSION"
 
-      - name: Install AppImage Builder
-        run: |
-          sudo apt-get install -y appstream file desktop-file-utils libfuse2
-          pip install appimage-builder
-
-      - name: Build Linux AppImage
-        run: appimage-builder --recipe AppImageBuilder.yml
-
-      - name: Upload Linux AppImage
+      - name: Upload Debian Package
         uses: actions/upload-artifact@v4
         with:
-          name: InvoiceApp-Linux-AppImage
-          path: "*.AppImage"
+          name: InvoiceApp-Deb
+          path: "*.deb"
+
+#      - name: Prepare AppDir
+#        run: |
+#          mkdir -p AppDir/usr/bin
+#          cp -r build/linux/x64/release/bundle/* AppDir/usr/bin/
+#          cp build/linux/x64/release/bundle/invoiceapp AppDir/invoiceapp
+#          mkdir -p AppDir/usr/share/icons
+#          pwd
+#          ls -a
+#          cp assets/deb/images/logo.png AppDir/usr/share/icons/logo.png
+#
+#      - name: Install AppImage Builder
+#        run: |
+#          sudo apt-get install -y appstream file desktop-file-utils libfuse2
+#          pip install appimage-builder
+#
+#      - name: Build Linux AppImage
+#        run: appimage-builder --recipe AppImageBuilder.yml
+#
+#      - name: Upload Linux AppImage
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: InvoiceApp-Linux-AppImage
+#          path: "*.AppImage"
