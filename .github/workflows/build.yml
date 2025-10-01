@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
+          flutter-version: '3.32.8'
       - run: flutter pub get
       - run: flutter build windows --release
 
@@ -20,9 +20,9 @@ jobs:
       - name: Install Inno Setup
         run: choco install innosetup --yes
 
-      # Run Inno Setup
+      # Run Inno Setup (full path for reliability)
       - name: Build Windows Installer
-        run: iscc installer.iss
+        run: '"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss'
 
       - name: Upload Windows Installer
         uses: actions/upload-artifact@v4
@@ -36,9 +36,9 @@ jobs:
       - uses: actions/checkout@v3
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
+          flutter-version: '3.32.8'
       - run: sudo apt-get update -y
-      - run: sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
+      - run: sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev patchelf squashfs-tools
       - run: flutter pub get
       - run: flutter build linux --release
 
@@ -47,6 +47,7 @@ jobs:
         run: |
           sudo apt-get install -y appstream file desktop-file-utils libfuse2
           pip install appimage-builder
+
       # Build AppImage
       - name: Build Linux AppImage
         run: appimage-builder --recipe AppImageBuilder.yml
@@ -56,4 +57,3 @@ jobs:
         with:
           name: InvoiceApp-Linux-AppImage
           path: "*.AppImage"
-
