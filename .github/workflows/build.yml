@@ -22,7 +22,10 @@ jobs:
 #
 #      # Run Inno Setup (full path for reliability)
 #      - name: Build Windows Installer
-#        run: '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss'
+#        run: |
+#          VERSION=${GITHUB_REF#refs/tags/}
+#          echo "Building Windows installer version $VERSION"
+#          '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss /DMyAppVersion=$VERSION'
 #
 #      - name: Upload Windows Installer
 #        uses: actions/upload-artifact@v4
@@ -48,8 +51,9 @@ jobs:
       - name: Build Debian Package
         run: |
           VERSION=${GITHUB_REF#refs/tags/}
+          VERSION=${VERSION#v}
           echo "Building version $VERSION"
-          ./make_deb.sh -v "$VERSION"
+          ./make_deb.sh -v "$VERSION" --reset-build
 
       - name: Upload Debian Package
         uses: actions/upload-artifact@v4
