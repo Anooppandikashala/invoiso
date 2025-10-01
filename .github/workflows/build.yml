@@ -22,10 +22,11 @@ jobs:
 
       # Run Inno Setup (full path for reliability)
       - name: Build Windows Installer
+        shell: pwsh
         run: |
-          VERSION=${GITHUB_REF#refs/tags/}
-          echo "Building Windows installer version $VERSION"
-          '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss /DMyAppVersion=$VERSION'
+          $VERSION = $env:GITHUB_REF -replace 'refs/tags/', ''
+          Write-Host "Building Windows installer version $VERSION"
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss /DMyAppVersion=$VERSION
 
       - name: Upload Windows Installer
         uses: actions/upload-artifact@v4
