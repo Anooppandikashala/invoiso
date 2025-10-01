@@ -5,9 +5,9 @@ AppDir:
   app_info:
     id: com.invoiceapp.desktop
     name: InvoiceApp
-    icon: logo
+    icon: usr/share/icons/logo.png
     version: 1.0.0
-    exec: invoiceapp
+    exec: usr/bin/invoiceapp
   files:
     include:
       - build/linux/x64/release/bundle/**

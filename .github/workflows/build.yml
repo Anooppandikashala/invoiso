@@ -47,6 +47,8 @@ jobs:
           mkdir -p AppDir/usr/bin
           cp -r build/linux/x64/release/bundle/* AppDir/usr/bin/
           cp build/linux/x64/release/bundle/invoiceapp AppDir/invoiceapp
+          mkdir -p AppDir/usr/share/icons
+          cp invoiso/assets/deb/images/logo.png AppDir/usr/share/icons/logo.png
 
       - name: Install AppImage Builder
         run: |
