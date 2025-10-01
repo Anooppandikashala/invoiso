@@ -5,7 +5,7 @@ AppDir:
   app_info:
     id: com.invoiceapp.desktop
     name: InvoiceApp
-    icon: usr/share/icons/logo.png
+    icon: AppDir/usr/share/icons/logo.png
     version: 1.0.0
     exec: invoiceapp
   files:
