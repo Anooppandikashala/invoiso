@@ -50,7 +50,7 @@ jobs:
       - name: Setup build deps
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev patchelf squashfs-tools appimage-builder
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev patchelf squashfs-tools
 
       - run: flutter pub get
       - run: flutter build linux --release
@@ -76,7 +76,7 @@ jobs:
         with:
           flutter-version: '3.32.8'
       - run: sudo apt-get update -y
-      - run: sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev patchelf squashfs-tools appimage-builder
+      - run: sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev patchelf squashfs-tools
 
       - run: flutter pub get
       - run: flutter build linux --release
@@ -90,6 +90,11 @@ jobs:
           pwd
           ls -a
           cp assets/deb/images/logo.png AppDir/usr/share/icons/logo.png
+
+      - name: Install AppImage Builder
+        run: |
+          sudo apt-get install -y appstream file desktop-file-utils libfuse2
+          pip install appimage-builder
 
       - name: Build AppImage
         run: |
