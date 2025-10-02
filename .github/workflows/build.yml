@@ -93,7 +93,7 @@ jobs:
 
       - name: Install AppImage Builder
         run: |
-          sudo apt-get install -y appstream file desktop-file-utils libfuse2
+          sudo apt-get install -y appstream file desktop-file-utils libfuse2 zsync
           pip install appimage-builder
 
       - name: Build AppImage
@@ -101,7 +101,8 @@ jobs:
           VERSION=${GITHUB_REF#refs/tags/}
           VERSION=${VERSION#v}
           # Replace only AppDir.app_info.version
-          sed -i "s/^\(\s*version:\s*\)[0-9.]\+$/\1$VERSION/" AppImageBuilder.yml
+          # sed -i "s/^\(\s*version:\s*\)[0-9.]\+$/\1$VERSION/" AppImageBuilder.yml
+          sed -i "/app_info:/,/^[^ ]/ s/^\(\s*version:\s*\)[0-9.]\+$/\1$VERSION/" AppImageBuilder.yml
           appimage-builder --recipe AppImageBuilder.yml --skip-test
 
       - name: Upload AppImage
