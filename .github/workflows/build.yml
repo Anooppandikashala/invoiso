@@ -100,7 +100,8 @@ jobs:
         run: |
           VERSION=${GITHUB_REF#refs/tags/}
           VERSION=${VERSION#v}
-          sed -i "s/version: .*/version: $VERSION/" AppImageBuilder.yml
+          # Replace only AppDir.app_info.version
+          sed -i "s/^\(\s*version:\s*\)[0-9.]\+$/\1$VERSION/" AppImageBuilder.yml
           appimage-builder --recipe AppImageBuilder.yml --skip-test
 
       - name: Upload AppImage
