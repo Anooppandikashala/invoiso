@@ -4,10 +4,10 @@ AppDir:
   path: ./AppDir
   app_info:
     id: com.invoiso.desktop
-    name: InvoiceApp
+    name: Invoiso
     icon: AppDir/usr/share/icons/logo.png
     version: 1.0.0
-    exec: invoiso
+    exec: AppDir/invoiso
   files:
     include:
       - build/linux/x64/release/bundle/**

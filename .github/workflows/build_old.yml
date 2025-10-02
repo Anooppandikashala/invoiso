@@ -1,0 +1,63 @@
+name: Build Flutter Desktop Installers
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.8'
+      - run: flutter pub get
+      - run: flutter build windows --release
+
+      # Install Inno Setup
+      - name: Install Inno Setup
+        run: choco install innosetup --yes
+
+      # Run Inno Setup (full path for reliability)
+      - name: Build Windows Installer
+        shell: pwsh
+        run: |
+          $VERSION = $env:GITHUB_REF -replace 'refs/tags/', ''
+          Write-Host "Building Windows installer version $VERSION"
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss /DMyAppVersion=$VERSION
+
+      - name: Upload Windows Installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: InvoiceApp-Windows-Installer
+          path: Output/InvoiceAppSetup.exe
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.8'
+      - run: sudo apt-get update -y
+      - run: sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev patchelf squashfs-tools
+      - run: flutter pub get
+      - run: flutter build linux --release
+
+      - name: Make make_deb.sh executable
+        run: chmod +x make_deb.sh
+
+      - name: Build Debian Package
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          VERSION=${VERSION#v}
+          echo "Building version $VERSION"
+          ./make_deb.sh -v "$VERSION" --reset-build
+
+      - name: Upload Debian Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: InvoiceApp-Deb
+          path: "*.deb"
