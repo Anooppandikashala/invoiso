@@ -1,13 +1,13 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:invoiceapp/database/database_helper.dart';
-import 'package:invoiceapp/models/company_info.dart';
+import 'package:invoiso/database/database_helper.dart';
+import 'package:invoiso/models/company_info.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/foundation.dart';
 
-import 'package:invoiceapp/models/invoice.dart';
+import 'package:invoiso/models/invoice.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 
 // PDF Generation Service

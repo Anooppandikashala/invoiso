@@ -4,7 +4,7 @@ set -e
 # -------------------------
 # CONFIG
 # -------------------------
-APP_NAME="invoiceapp"
+APP_NAME="invoiso"
 APP_VERSION="1.0.0"
 MAINTAINER="Anoop P <your@email.com>"
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:invoiceapp/database/database_helper.dart';
-import 'package:invoiceapp/screens/login_screen.dart';
-import 'package:invoiceapp/constants.dart';
+import 'package:invoiso/database/database_helper.dart';
+import 'package:invoiso/screens/login_screen.dart';
+import 'package:invoiso/constants.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});

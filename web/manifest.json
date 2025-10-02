@@ -1,11 +1,11 @@
 {
-    "name": "invoiceapp",
-    "short_name": "invoiceapp",
+    "name": "invoiso",
+    "short_name": "invoiso",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Invoice generating desktop app built with Flutter",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

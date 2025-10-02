@@ -1,8 +1,8 @@
 
 
 import 'package:flutter/material.dart';
-import 'package:invoiceapp/models/invoice.dart';
-import 'package:invoiceapp/services/pdf_service.dart';
+import 'package:invoiso/models/invoice.dart';
+import 'package:invoiso/services/pdf_service.dart';
 import 'package:path/path.dart';
 import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';

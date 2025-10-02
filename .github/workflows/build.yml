@@ -66,7 +66,7 @@ jobs:
 #        run: |
 #          mkdir -p AppDir/usr/bin
 #          cp -r build/linux/x64/release/bundle/* AppDir/usr/bin/
-#          cp build/linux/x64/release/bundle/invoiceapp AppDir/invoiceapp
+#          cp build/linux/x64/release/bundle/invoiso AppDir/invoiso
 #          mkdir -p AppDir/usr/share/icons
 #          pwd
 #          ls -a

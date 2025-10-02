@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:invoiceapp/constants.dart';
-import 'package:invoiceapp/models/invoice.dart';
-import 'package:invoiceapp/screens/settings_screen.dart';
-import 'package:invoiceapp/services/invoice_services.dart';
+import 'package:invoiso/constants.dart';
+import 'package:invoiso/models/invoice.dart';
+import 'package:invoiso/screens/settings_screen.dart';
+import 'package:invoiso/services/invoice_services.dart';
 
 import '../models/user.dart';
 import 'customer_management_screen.dart';

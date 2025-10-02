@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:convert';
-import 'package:invoiceapp/constants.dart';
-import 'package:invoiceapp/database/database_helper.dart';
+import 'package:invoiso/constants.dart';
+import 'package:invoiso/database/database_helper.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';

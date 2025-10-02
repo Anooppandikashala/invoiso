@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:invoiceapp/constants.dart';
-import 'package:invoiceapp/database/database_helper.dart';
-import 'package:invoiceapp/models/customer.dart';
+import 'package:invoiso/constants.dart';
+import 'package:invoiso/database/database_helper.dart';
+import 'package:invoiso/models/customer.dart';
 import 'package:uuid/uuid.dart';
 import 'package:csv/csv.dart';
 import 'package:pdf/widgets.dart' as pw;

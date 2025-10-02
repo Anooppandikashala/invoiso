@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:invoiceapp/constants.dart';
-import 'package:invoiceapp/screens/splash_screen.dart';
+import 'package:invoiso/constants.dart';
+import 'package:invoiso/screens/splash_screen.dart';
 import 'package:screen_retriever/screen_retriever.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:window_manager/window_manager.dart';

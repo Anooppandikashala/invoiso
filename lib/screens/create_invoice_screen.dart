@@ -7,7 +7,7 @@ import '../models/invoice.dart';
 import '../models/invoice_item.dart';
 import '../models/product.dart';
 import '../services/invoice_services.dart';
-import 'package:invoiceapp/constants.dart';
+import 'package:invoiso/constants.dart';
 
 class CreateInvoiceScreen extends StatefulWidget {
   const CreateInvoiceScreen({super.key});

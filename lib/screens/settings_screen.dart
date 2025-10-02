@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:invoiceapp/constants.dart';
-import 'package:invoiceapp/screens/backup_management_screen.dart';
-import 'package:invoiceapp/screens/user_management_screen.dart';
+import 'package:invoiso/constants.dart';
+import 'package:invoiso/screens/backup_management_screen.dart';
+import 'package:invoiso/screens/user_management_screen.dart';
 import '../database/database_helper.dart';
 import '../models/company_info.dart';
 import '../models/user.dart';

@@ -1,5 +1,5 @@
-name: invoiceapp
-description: "A new Flutter project."
+name: invoiso
+description: "Invoice generating desktop app built with Flutter"
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 environment:
@@ -37,9 +37,27 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  package_rename: ^1.10.0
 
 flutter:
   uses-material-design: true
   assets:
    - assets/images/logo.png
    - assets/images/logo.svg
+
+package_rename_config:
+  linux:
+    app_name: invoiso
+    package_name: invoiso
+    exe_name: invoiso
+
+  windows:
+    app_name: invoiso
+    organization: anoopp
+    copyright_notice: Copyright ©️ 2025 anoopp. All rights reserved.
+    exe_name: invoiso
+
+  web:
+    app_name: invoiso
+    short_app_name: invoiso
+    description: Invoice generating desktop app built with Flutter

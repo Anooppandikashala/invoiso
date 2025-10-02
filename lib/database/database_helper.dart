@@ -2,10 +2,10 @@ import 'dart:ffi';
 
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:invoiceapp/models/customer.dart';
-import 'package:invoiceapp/models/product.dart';
-import 'package:invoiceapp/models/invoice.dart';
-import 'package:invoiceapp/models/invoice_item.dart';
+import 'package:invoiso/models/customer.dart';
+import 'package:invoiso/models/product.dart';
+import 'package:invoiso/models/invoice.dart';
+import 'package:invoiso/models/invoice_item.dart';
 
 import '../models/company_info.dart';
 import '../models/user.dart';

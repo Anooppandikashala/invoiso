@@ -1,4 +1,4 @@
-import 'package:invoiceapp/models/product.dart';
+import 'package:invoiso/models/product.dart';
 
 class InvoiceItem {
   Product product;

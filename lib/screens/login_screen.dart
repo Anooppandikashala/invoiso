@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:invoiceapp/constants.dart';
+import 'package:invoiso/constants.dart';
 
 import '../database/database_helper.dart';
 import 'dashboard_screen.dart';

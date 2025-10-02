@@ -12,5 +12,5 @@ SolidCompression=yes
 Source: "build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: recursesubdirs
 
 [Icons]
-Name: "{group}\InvoiceApp"; Filename: "{app}\invoiceapp.exe"
-Name: "{commondesktop}\InvoiceApp"; Filename: "{app}\invoiceapp.exe"
+Name: "{group}\InvoiceApp"; Filename: "{app}\invoiso.exe"
+Name: "{commondesktop}\InvoiceApp"; Filename: "{app}\invoiso.exe"

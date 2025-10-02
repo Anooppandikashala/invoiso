@@ -1,4 +1,4 @@
-# invoiceapp
+# invoiso
 
 Invoiso - Smart Invoice Management SaaS
 
