@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:invoiso/constants.dart';
 import 'package:invoiso/screens/backup_management_screen.dart';
+import 'package:invoiso/screens/pdf_settings_screen.dart';
 import 'package:invoiso/screens/user_management_screen.dart';
 import '../database/database_helper.dart';
 import '../models/company_info.dart';
@@ -203,6 +204,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return BackupManagementScreen();
       case 2:
         return UserManagementScreen(currentUser: widget.currentUser,);
+      case 3:
+        return PdfSettingsScreen();
       default:
         return const Center(child: Text("Unknown tab"));
     }
@@ -233,6 +236,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               NavigationRailDestination(
                 icon: Icon(Icons.people),
                 label: Text('Users'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.settings),
+                label: Text('PDF Settings'),
               ),
             ],
           ),

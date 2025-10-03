@@ -23,4 +23,6 @@ class Invoice {
   double get subtotal => items.fold(0.0, (sum, item) => sum + item.total);
   double get tax => subtotal * taxRate;
   double get total => subtotal + tax;
+
+
 }

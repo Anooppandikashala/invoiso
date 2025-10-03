@@ -7,6 +7,7 @@ import 'package:invoiso/models/product.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/invoice_item.dart';
 
+import '../common.dart';
 import '../models/company_info.dart';
 import '../models/user.dart';
 
@@ -99,6 +100,13 @@ class DatabaseHelper {
       )
     ''');
 
+    await db.execute('''
+      CREATE TABLE settings (
+        key TEXT PRIMARY KEY,
+        value TEXT
+      )
+    ''');
+
     // Insert dummy company info
     await db.insert('company_info', {
       'name': 'Your Company Name',
@@ -114,6 +122,12 @@ class DatabaseHelper {
       'username': 'admin',
       'password': 'admin',
       'user_type': 'admin'
+    });
+
+    // Insert default template
+    await db.insert('settings', {
+      'key': 'invoice_template',
+      'value': 'classic'
     });
   }
 
@@ -550,6 +564,29 @@ class DatabaseHelper {
       where: 'id = ?',
       whereArgs: [info.id],
     );
+  }
+
+  Future<void> setInvoiceTemplate(InvoiceTemplate template) async {
+    final db = await database;
+    await db.insert(
+      'settings',
+      {'key': 'invoice_template', 'value': template.name},
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<InvoiceTemplate> getInvoiceTemplate() async {
+    final db = await database;
+    final result = await db.query('settings',
+        where: 'key = ?', whereArgs: ['invoice_template']);
+
+    if (result.isNotEmpty) {
+      return InvoiceTemplate.values.firstWhere(
+            (e) => e.name == result.first['value'],
+        orElse: () => InvoiceTemplate.classic,
+      );
+    }
+    return InvoiceTemplate.classic;
   }
 
   // ─────────────────────────────────────────────

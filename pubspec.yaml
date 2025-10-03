@@ -44,6 +44,9 @@ flutter:
   assets:
    - assets/images/logo.png
    - assets/images/logo.svg
+   - assets/templates/classic.png
+   - assets/templates/modern.png
+   - assets/templates/minimal.png
 
 package_rename_config:
   linux:
