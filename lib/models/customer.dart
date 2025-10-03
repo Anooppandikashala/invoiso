@@ -5,6 +5,7 @@ class Customer {
   String email;
   String phone;
   String address;
+  String gstin;
 
   Customer({
     required this.id,
@@ -12,5 +13,6 @@ class Customer {
     required this.email,
     required this.phone,
     required this.address,
+    required this.gstin
   });
 }

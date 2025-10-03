@@ -31,6 +31,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   final emailController = TextEditingController();
   final phoneController = TextEditingController();
   final addressController = TextEditingController();
+  final gstinController = TextEditingController();
   final taxRateController = TextEditingController();
 
   final _customerScrollController = ScrollController();
@@ -66,6 +67,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     _customerScrollController.dispose();
     _productScrollController.dispose();
     _invoiceItemsScrollController.dispose();
+    gstinController.dispose();
     super.dispose();
   }
 
@@ -165,6 +167,14 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   }
 
   Future<void> _createInvoice() async {
+    if(nameController.text.isEmpty)
+    {
+      //nameController.
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please give customer name')),
+      );
+      return;
+    }
     if (invoiceItems.isNotEmpty) {
       final invoiceId = await InvoiceServices.generateNextInvoiceNumber();
       final invoice = Invoice(
@@ -176,6 +186,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               email: emailController.text,
               phone: phoneController.text,
               address: addressController.text,
+              gstin: gstinController.text
             ),
         items: List.from(invoiceItems),
         date: DateTime.now(),
@@ -195,6 +206,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         emailController.clear();
         phoneController.clear();
         addressController.clear();
+        gstinController.clear();
         taxRate = 0.1;
         taxRateController.text = (taxRate * 100).toStringAsFixed(1);
       });
@@ -299,6 +311,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       emailController.text = customer?.email ?? '';
       phoneController.text = customer?.phone ?? '';
       addressController.text = customer?.address ?? '';
+      gstinController.text = customer?.gstin ?? '';
     });
   }
 
@@ -520,9 +533,19 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 AppSpacing.wMedium,
                 Expanded(
                   child: TextField(
-                    controller: emailController,
+                    controller: gstinController,
                     decoration: const InputDecoration(
-                      labelText: 'Email',
+                      labelText: 'GSTIN',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                AppSpacing.wMedium,
+                Expanded(
+                  child: TextField(
+                    controller: phoneController,
+                    decoration: const InputDecoration(
+                      labelText: 'Phone',
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -534,9 +557,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               children: [
                 Expanded(
                   child: TextField(
-                    controller: phoneController,
+                    controller: emailController,
                     decoration: const InputDecoration(
-                      labelText: 'Phone',
+                      labelText: 'Email',
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -551,6 +574,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     ),
                   ),
                 ),
+
               ],
             ),
           ],
@@ -600,13 +624,45 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                       itemBuilder: (context, index) {
                         final item = invoiceItems[index];
                         return ListTile(
-                          title: Text(item.product.name),
-                          subtitle: Text(
-                            'Qty: ${item.quantity} | Discount: Rs ${item.discount.toStringAsFixed(2)}',
-                          ),
+                          leading: Text("${index+1}", style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.normal,
+                          )),
+                          title: Text(item.product.name,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.normal,
+                              )),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            //crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
+                              Text(
+                                'HSN: ${item.product.hsncode}',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.normal,
+                                  ),
+                                textAlign: TextAlign.start,
+                              ),
+                              AppSpacing.wLarge,
+                              Text(
+                                'Qty: ${item.quantity}',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.normal,
+                                  )
+                              ),
+                              AppSpacing.wLarge,
+                              Text(
+                                  'Discount: Rs ${item.discount.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.normal,
+                                  )
+                              ),
+                              AppSpacing.wLarge,
                               Text(
                                 'Price : ${item.total.toStringAsFixed(2)}',
                                 style: const TextStyle(
@@ -614,14 +670,16 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              AppSpacing.hSmall,
+                              AppSpacing.wLarge,
                               IconButton(
                                 icon: const Icon(Icons.edit),
+                                color: Colors.blue,
                                 onPressed: () => _editInvoiceItem(index),
                                 tooltip: 'Edit Item',
                               ),
                               IconButton(
                                 icon: const Icon(Icons.delete),
+                                color: Colors.red,
                                 onPressed: () {
                                   setState(() {
                                     invoiceItems.removeAt(index);
@@ -694,7 +752,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 ),
                 AppSpacing.wMedium,
                 SizedBox(
-                  width: MediaQuery.sizeOf(context).width*0.125,
+                  width: MediaQuery.sizeOf(context).width*0.15,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -894,7 +952,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   ),
                   AppSpacing.wMedium,
                   Expanded(
-                    flex: 2,
+                    flex: 3,
                     child: _customerDetailsForm(),
                   ),
                 ],
@@ -942,7 +1000,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                       ),
                       AppSpacing.wMedium,
                       Expanded(
-                        flex: 2,
+                        flex: 3,
                         child: _customerDetailsForm(),
                       ),
                     ],

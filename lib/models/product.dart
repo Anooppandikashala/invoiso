@@ -4,6 +4,7 @@ class Product {
   String description;
   double price;
   int stock;
+  String hsncode;
 
   Product({
     required this.id,
@@ -11,5 +12,6 @@ class Product {
     required this.description,
     required this.price,
     required this.stock,
+    required this.hsncode
   });
 }

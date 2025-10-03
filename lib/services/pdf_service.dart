@@ -56,6 +56,7 @@ class PDFService {
                 pw.Text(company?.address ?? ''),
                 pw.Text(company?.phone ?? ''),
                 pw.Text(company?.email ?? ''),
+                pw.Text("GSTIN: ${company?.gstin ?? ''}"),
               ],
             ),
             pw.Text('INVOICE',
@@ -79,6 +80,7 @@ class PDFService {
                 pw.Text(invoice.customer.address),
                 pw.Text(invoice.customer.phone),
                 pw.Text(invoice.customer.email),
+                pw.Text("GSTIN: ${invoice.customer.gstin}",style: pw.TextStyle(fontStyle: pw.FontStyle.italic)),
               ]
             ),
             pw.Column(
@@ -138,6 +140,7 @@ class PDFService {
                   pw.Text(company?.address ?? '', style: pw.TextStyle(color: PdfColors.white)),
                   pw.Text(company?.phone ?? '', style: pw.TextStyle(color: PdfColors.white)),
                   pw.Text(company?.email ?? '', style: pw.TextStyle(color: PdfColors.white)),
+                  pw.Text("GSTIN: ${company?.gstin ?? ''}", style: pw.TextStyle(color: PdfColors.white,fontStyle: pw.FontStyle.italic)),
                 ],
               ),
               pw.Column(
@@ -169,6 +172,7 @@ class PDFService {
                   pw.Text(invoice.customer.address),
                   pw.Text(invoice.customer.phone),
                   pw.Text(invoice.customer.email),
+                  pw.Text("GSTIN: ${invoice.customer.gstin}",style: pw.TextStyle(fontStyle: pw.FontStyle.italic)),
                 ],
               ),
             ]
@@ -230,6 +234,7 @@ class PDFService {
                 pw.Text(company?.address ?? ''),
                 pw.Text(company?.phone ?? '',),
                 pw.Text(company?.email ?? '',),
+                pw.Text("GSTIN: ${company?.gstin ?? ''}",style: pw.TextStyle(fontStyle: pw.FontStyle.italic)),
               ],
             ),
             pw.Column(
@@ -249,6 +254,7 @@ class PDFService {
         pw.Text(invoice.customer.address),
         pw.Text(invoice.customer.phone),
         pw.Text(invoice.customer.email),
+        pw.Text("GSTIN: ${invoice.customer.gstin}",style: pw.TextStyle(fontStyle: pw.FontStyle.italic)),
         pw.SizedBox(height: 20),
 
         // Table (plain)

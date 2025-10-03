@@ -37,6 +37,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
   final descriptionController = TextEditingController();
   final priceController = TextEditingController();
   final stockController = TextEditingController();
+  final hsnCodeController = TextEditingController();
 
   @override
   void initState() {
@@ -76,6 +77,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
       description: descriptionController.text,
       price: double.tryParse(priceController.text) ?? 0.0,
       stock: int.tryParse(stockController.text) ?? 0,
+      hsncode: hsnCodeController.text
     );
     await dbHelper.insertProduct(newProduct);
     await _loadProducts();
@@ -83,6 +85,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
     descriptionController.clear();
     priceController.clear();
     stockController.clear();
+    hsnCodeController.clear();
   }
 
   void _showProductDialog(Product product, bool isViewOnly) {
@@ -90,6 +93,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
     final descriptionCtrl = TextEditingController(text: product.description);
     final priceCtrl = TextEditingController(text: product.price.toString());
     final stockCtrl = TextEditingController(text: product.stock.toString());
+    final hsnCodeCtrl = TextEditingController(text: product.hsncode.toString());
 
     String? priceError;
     String? stockError;
@@ -168,6 +172,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                   description: descriptionCtrl.text,
                   price: price!,
                   stock: stock!,
+                  hsncode: hsnCodeCtrl.text
                 );
 
                 await dbHelper.updateProduct(updatedProduct);
@@ -195,8 +200,8 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
 
   Future<void> _exportToCSV() async {
     List<List<dynamic>> rows = [
-      ['Name', 'Description', 'Price', 'Stock'],
-      ...products.map((p) => [p.name, p.description, p.price, p.stock])
+      ['Name', 'HSN Code' ,'Description', 'Price', 'Stock'],
+      ...products.map((p) => [p.name, p.hsncode ,p.description, p.price, p.stock])
     ];
     final csvData = const ListToCsvConverter().convert(rows);
     final dir = await getApplicationDocumentsDirectory();
@@ -212,8 +217,8 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
         build: (context) => pw.Table.fromTextArray(
           context: context,
           data: [
-            ['Name', 'Description', 'Price', 'Stock'],
-            ...products.map((p) => [p.name, p.description, p.price, p.stock]),
+            ['Name', 'HSN Code' ,'Description', 'Price', 'Stock'],
+            ...products.map((p) => [p.name,p.hsncode, p.description, p.price, p.stock]),
           ],
         ),
       ),
@@ -315,6 +320,10 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                         children: [
                           TextField(controller: nameController,
                               decoration: const InputDecoration(labelText: 'Name'),
+                              maxLength: 100 ,
+                              style: TextStyle(fontSize: 16,color: Colors.black)),
+                          TextField(controller: hsnCodeController,
+                              decoration: const InputDecoration(labelText: 'HSN Code'),
                               maxLength: 100 ,
                               style: TextStyle(fontSize: 16,color: Colors.black)),
                           TextField(controller: descriptionController,
@@ -445,6 +454,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                           columns: const [
                             DataColumn(label: Text('Sl. No')),
                             DataColumn(label: Text('Name')),
+                            DataColumn(label: Text('HSN Code')),
                             DataColumn(label: Text('Description')),
                             DataColumn(label: Text('Price')),
                             DataColumn(label: Text('Stock')),
@@ -462,6 +472,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                                 cells: [
                               DataCell(Text(serialNumber.toString())), // 👈 Serial number
                               DataCell(Text(p.name)),
+                              DataCell(Text(p.hsncode)),
                               DataCell(Text(
                                 p.description.length > 50
                                   ? '${p.description.substring(0, 50)}...'

@@ -31,6 +31,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
   final emailController = TextEditingController();
   final phoneController = TextEditingController();
   final addressController = TextEditingController();
+  final gstinController = TextEditingController();
 
   @override
   void initState() {
@@ -44,6 +45,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
     emailController.dispose();
     phoneController.dispose();
     addressController.dispose();
+    gstinController.dispose();
     super.dispose();
   }
 
@@ -95,6 +97,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
       email: emailController.text,
       phone: phoneController.text,
       address: addressController.text,
+      gstin: gstinController.text
     );
 
     if (customer == null) {
@@ -107,6 +110,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
     emailController.clear();
     phoneController.clear();
     addressController.clear();
+    gstinController.clear();
 
     await _loadCustomers();
   }
@@ -116,6 +120,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
     final emailCtrl = TextEditingController(text: customer.email);
     final phoneCtrl = TextEditingController(text: customer.phone);
     final addressCtrl = TextEditingController(text: customer.address);
+    final gstinCtrl = TextEditingController(text: customer.gstin);
 
     showDialog(
       context: context,
@@ -155,6 +160,12 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
                   maxLength: 100,
                   readOnly: isViewOnly ? true : false,
                 ),
+                TextField(
+                  controller: gstinCtrl,
+                  decoration: const InputDecoration(labelText: 'GSTIN'),
+                  maxLength: 50,
+                  readOnly: isViewOnly ? true : false,
+                ),
               ],
             ),
           ),
@@ -171,6 +182,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
                         email: emailCtrl.text,
                         phone: phoneCtrl.text,
                         address: addressCtrl.text,
+                        gstin: gstinCtrl.text
                       );
                       await dbHelper.updateCustomer(updatedCustomer);
                       await _loadCustomers();
@@ -195,8 +207,8 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
 
   Future<void> _exportToCSV() async {
     List<List<String>> csvData = [
-      ['Name', 'Email', 'Phone', 'Address'],
-      ...filteredCustomers.map((c) => [c.name, c.email, c.phone, c.address]),
+      ['Name', 'Email', 'Phone','GSTIN', 'Address'],
+      ...filteredCustomers.map((c) => [c.name, c.email, c.phone, c.gstin ,c.address]),
     ];
 
     String csv = const ListToCsvConverter().convert(csvData);
@@ -212,9 +224,9 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
       pw.Page(
         build: (pw.Context context) {
           return pw.Table.fromTextArray(
-            headers: ['Name', 'Email', 'Phone', 'Address'],
+            headers: ['Name', 'Email', 'Phone', 'GSTIN' ,'Address'],
             data: filteredCustomers
-                .map((c) => [c.name, c.email, c.phone, c.address])
+                .map((c) => [c.name, c.email, c.phone, c.gstin ,c.address])
                 .toList(),
           );
         },
@@ -327,6 +339,13 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
                               maxLength: 100,
                               style:
                                   TextStyle(fontSize: 16, color: Colors.black)),
+                          TextField(
+                              controller: gstinController,
+                              decoration:
+                              const InputDecoration(labelText: 'GSTIN'),
+                              maxLength: 50,
+                              style:
+                              TextStyle(fontSize: 16, color: Colors.black)),
                           AppSpacing.hMedium,
                           Center(
                             child: ElevatedButton(
@@ -466,6 +485,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
                             DataColumn(label: Text('Name')),
                             DataColumn(label: Text('Email')),
                             DataColumn(label: Text('Phone')),
+                            DataColumn(label: Text('GSTIN')),
                             DataColumn(label: Text('Address')),
                             DataColumn(label: Text('Actions')),
                           ],
@@ -487,6 +507,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
                                   DataCell(Text(customer.name)),
                                   DataCell(Text(customer.email)),
                                   DataCell(Text(customer.phone)),
+                                  DataCell(Text(customer.gstin)),
                                   DataCell(
                                     Text(
                                       customer.address.length > 50

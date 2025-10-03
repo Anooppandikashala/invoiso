@@ -42,7 +42,8 @@ class DatabaseHelper {
         name TEXT,
         email TEXT,
         phone TEXT,
-        address TEXT
+        address TEXT,
+        gstin TEXT
       )
     ''');
 
@@ -52,7 +53,8 @@ class DatabaseHelper {
         name TEXT,
         description TEXT,
         price REAL,
-        stock INTEGER
+        stock INTEGER,
+        hsncode TEXT
       )
     ''');
 
@@ -60,11 +62,15 @@ class DatabaseHelper {
       CREATE TABLE invoices (
         id TEXT PRIMARY KEY,
         customer_id TEXT,
+        customer_name TEXT,
+        customer_email TEXT,
+        customer_phone TEXT,
+        customer_address TEXT,
+        customer_gstin TEXT,
         date TEXT,
         notes TEXT,
-        taxRate REAL,
-        type TEXT,
-        FOREIGN KEY (customer_id) REFERENCES customers(id)
+        tax_rate REAL,
+        type TEXT
       )
     ''');
 
@@ -96,7 +102,8 @@ class DatabaseHelper {
         address TEXT,
         phone TEXT,
         email TEXT,
-        website TEXT
+        website TEXT,
+        gstin TEXT
       )
     ''');
 
@@ -114,6 +121,7 @@ class DatabaseHelper {
       'phone': '(555) 123-4567',
       'email': 'info@yourcompany.com',
       'website': 'www.yourcompany.com',
+      'gstin': ''
     });
 
     // Insert default admin user (for first-time login)
@@ -141,6 +149,7 @@ class DatabaseHelper {
       'email': customer.email,
       'phone': customer.phone,
       'address': customer.address,
+      'gstin':customer.gstin
     });
   }
 
@@ -153,6 +162,7 @@ class DatabaseHelper {
         'email': customer.email,
         'phone': customer.phone,
         'address': customer.address,
+        'gstin':customer.gstin
       },
       where: 'id = ?',
       whereArgs: [customer.id],
@@ -170,6 +180,7 @@ class DatabaseHelper {
         email: c['email'] as String,
         phone: c['phone'] as String,
         address: c['address'] as String,
+        gstin: c['gstin'] as String
       );
     }
     return null;
@@ -185,6 +196,7 @@ class DatabaseHelper {
               email: c['email'] as String,
               phone: c['phone'] as String,
               address: c['address'] as String,
+              gstin: c['gstin'] as String
             ))
         .toList();
   }
@@ -199,6 +211,7 @@ class DatabaseHelper {
       'description': product.description,
       'price': product.price,
       'stock': product.stock,
+      'hsncode': product.hsncode
     });
   }
 
@@ -213,6 +226,7 @@ class DatabaseHelper {
         description: maps[i]['description'],
         price: maps[i]['price'],
         stock: maps[i]['stock'],
+        hsncode: maps[i]['hsncode']
       );
     });
   }
@@ -242,6 +256,7 @@ class DatabaseHelper {
         description: p['description'] as String,
         price: p['price'] as double,
         stock: p['stock'] as int,
+        hsncode: p['hsncode'] as String
       );
     }
     return null;
@@ -256,6 +271,7 @@ class DatabaseHelper {
         'description': product.description,
         'price': product.price,
         'stock': product.stock,
+        'hsncode': product.hsncode
       },
       where: 'id = ?',
       whereArgs: [product.id],
@@ -284,6 +300,7 @@ class DatabaseHelper {
       description: map['description'] as String,
       price: map['price'] as double,
       stock: map['stock'] as int,
+      hsncode: map['hsncode'] as String
     )).toList();
   }
 
@@ -315,9 +332,14 @@ class DatabaseHelper {
     await db.insert('invoices', {
       'id': invoice.id,
       'customer_id': invoice.customer.id,
+      'customer_name': invoice.customer.name,
+      'customer_email': invoice.customer.email,
+      'customer_phone': invoice.customer.phone,
+      'customer_address': invoice.customer.address,
+      'customer_gstin': invoice.customer.gstin,
       'date': invoice.date.toIso8601String(),
       'notes': invoice.notes,
-      'taxRate': invoice.taxRate,
+      'tax_rate': invoice.taxRate,
       'type':invoice.type
     });
 
@@ -347,7 +369,14 @@ class DatabaseHelper {
     if (invoiceData.isEmpty) return null;
 
     final i = invoiceData.first;
-    final customer = await getCustomerById(i['customer_id'] as String);
+    final customer = Customer(
+        id: i['customer_id'] as String,
+        name: i['customer_name'] as String,
+        email: i['customer_email'] as String,
+        phone: i['customer_phone'] as String,
+        address: i['customer_address'] as String,
+        gstin: i['customer_gstin'] as String);
+    //await getCustomerById(i['customer_id'] as String);
 
     final itemRows = await db
         .query('invoice_items', where: 'invoice_id = ?', whereArgs: [id]);
@@ -366,11 +395,11 @@ class DatabaseHelper {
 
     return Invoice(
       id: id,
-      customer: customer!,
+      customer: customer,
       items: items,
       date: DateTime.parse(i['date'] as String),
       notes: i['notes'] as String?,
-      taxRate: i['taxRate'] as double,
+      taxRate: i['tax_rate'] as double,
       type: i['type'] as String,
     );
   }
@@ -486,19 +515,27 @@ class DatabaseHelper {
     List<Invoice> invoices = [];
 
     for (var map in invoiceMaps) {
-      final customerId = map['customer_id'] as String?;
+      //final customerId = map['customer_id'] as String?;
       final invoiceId = map['id'] as String?;
       final dateString = map['date'] as String?;
       final notes = map['notes'] as String?;
       final taxRateRaw = map['tax_rate'];
       final type = map['type'] as String;
 
-      if (customerId == null || invoiceId == null || dateString == null) {
+      print(invoiceId);
+
+      if (invoiceId == null || dateString == null)
+      {
         continue; // skip malformed rows
       }
 
-      final customer = await getCustomerById(customerId);
-      if (customer == null) continue;
+      final customer = Customer(
+          id: map['customer_id'] as String,
+          name: map['customer_name'] as String,
+          email: map['customer_email'] as String,
+          phone: map['customer_phone'] as String,
+          address: map['customer_address'] as String,
+          gstin: map['customer_gstin'] as String);
 
       final items = await getInvoiceItemsByInvoiceId(invoiceId);
 

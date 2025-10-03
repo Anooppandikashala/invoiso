@@ -25,6 +25,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final phoneController = TextEditingController();
   final emailController = TextEditingController();
   final websiteController = TextEditingController();
+  final gstinController = TextEditingController();
 
   CompanyInfo? _companyInfo;
 
@@ -44,6 +45,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         phoneController.text = info.phone;
         emailController.text = info.email;
         websiteController.text = info.website;
+        gstinController.text = info.gstin;
       });
     }
   }
@@ -56,6 +58,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       phone: phoneController.text,
       email: emailController.text,
       website: websiteController.text,
+      gstin: gstinController.text
     );
 
     if (_companyInfo == null) {
@@ -80,6 +83,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     phoneController.dispose();
     emailController.dispose();
     websiteController.dispose();
+    gstinController.dispose();
     super.dispose();
   }
 
@@ -159,6 +163,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       inputFormatters: [
                         FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9:/.%-]')),
                       ],
+                    ),
+                    AppSpacing.hXlarge,
+                    TextField(
+                      controller: gstinController,
+                      style: TextStyle(fontSize: 18),
+                      maxLength: 50,
+                      decoration: const InputDecoration(labelText: 'GSTIN',),
                     ),
                     AppSpacing.hLarge,
                     ElevatedButton(
