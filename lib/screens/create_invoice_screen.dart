@@ -10,7 +10,9 @@ import '../services/invoice_services.dart';
 import 'package:invoiso/constants.dart';
 
 class CreateInvoiceScreen extends StatefulWidget {
-  const CreateInvoiceScreen({super.key});
+
+  final Invoice? invoiceToEdit;
+  const CreateInvoiceScreen({super.key, this.invoiceToEdit});
 
   @override
   _CreateInvoiceScreenState createState() => _CreateInvoiceScreenState();
@@ -39,6 +41,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   final _invoiceItemsScrollController = ScrollController();
 
   bool isTaxEnabled = true;
+  bool isEditing = false;
 
   String invoiceType = 'Invoice'; // default value
   double taxRate = Tax.defaultTaxRate;
@@ -50,7 +53,24 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   void initState() {
     super.initState();
     taxRateController.text = (taxRate * 100).toStringAsFixed(1);
-    _loadCustomersAndProducts();
+    _loadCustomersAndProducts(widget.invoiceToEdit != null);
+    if (widget.invoiceToEdit != null)
+    {
+      _invoice = widget.invoiceToEdit;
+      isEditing = true;
+      selectedCustomer = _invoice!.customer;
+      invoiceItems = List.from(_invoice!.items);
+      nameController.text = _invoice!.customer.name;
+      emailController.text = _invoice!.customer.email;
+      phoneController.text = _invoice!.customer.phone;
+      addressController.text = _invoice!.customer.address;
+      gstinController.text = _invoice!.customer.gstin;
+      notesController.text = _invoice!.notes ?? '';
+      taxRate = _invoice!.taxRate;
+      taxRateController.text = (taxRate * 100).toStringAsFixed(1);
+      invoiceType = _invoice!.type;
+      currentInvoiceNumber = _invoice!.id;
+    }
   }
 
   @override
@@ -70,16 +90,27 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     super.dispose();
   }
 
-  Future<void> _loadCustomersAndProducts() async {
+  Future<void> _loadCustomersAndProducts(bool isEditing) async {
     final c = await dbHelper.getAllCustomers();
     final p = await dbHelper.getAllProducts();
-    final String invNumber = await InvoiceServices.generateNextInvoiceNumber();
+    final String? invNumber;
+    if(!isEditing)
+    {
+      invNumber = await InvoiceServices.generateNextInvoiceNumber();
+    }
+    else
+    {
+      invNumber = widget.invoiceToEdit?.id;
+    }
+
     setState(() {
       customers = c;
       filteredCustomers = List.from(c);
       products = p;
       filteredProducts = List.from(p);
-      currentInvoiceNumber = invNumber;
+      if(invNumber != null) {
+        currentInvoiceNumber = invNumber!;
+      }
     });
   }
 
@@ -481,7 +512,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               onChanged: (value) {
                 if (value != null)
                 {
-                  resetValues(value);
+                  resetInvoiceType(value);
                 }
               },
             )
@@ -489,6 +520,13 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> resetInvoiceType(String invoiceType_) async
+  {
+    setState(() {
+      invoiceType = invoiceType_;
+    });
   }
 
   Future<void> resetValues(String invoiceType_) async
@@ -781,6 +819,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   }
 
   Widget _actionButtons() {
+    final isEditing = widget.invoiceToEdit != null;
     return Card(
       elevation: 2,
       child: Padding(
@@ -789,20 +828,82 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             ElevatedButton(
-              onPressed: invoiceItems.isNotEmpty ? _createInvoice : null,
+              onPressed: invoiceItems.isNotEmpty
+                  ? (isEditing ? _updateInvoice : _createInvoice)
+                  : null,
               style: ElevatedButton.styleFrom(
                 minimumSize: Size(MediaQuery.sizeOf(context).width*0.3, 50),
                 backgroundColor: Theme.of(context).primaryColor,
                 foregroundColor: Colors.white,
               ),
               child: Text(
-                'Create ${invoiceType.toString()}',
+                isEditing ? 'Update $invoiceType' : 'Create $invoiceType',
                 style: const TextStyle(fontSize: 16),
               ),
+            ),
+            AppSpacing.wXlarge,
+            IconButton(
+              icon: _invoice != null ? const Icon(Icons.visibility,color: Colors.green,) : const Icon(Icons.visibility),
+              onPressed: _invoice != null
+                  ? () => InvoiceServices.showInvoiceDetails(
+                  context, _invoice!)
+                  : null,
+              tooltip: 'View Details',
+              iconSize: 28,
+            ),
+            AppSpacing.wXlarge,
+            IconButton(
+              icon: _invoice != null ? const Icon(Icons.picture_as_pdf,color: Colors.purple,) :  const Icon(Icons.picture_as_pdf),
+              onPressed: _invoice != null
+                  ? () => InvoiceServices.previewPDF(context, _invoice!)
+                  : null,
+              tooltip: 'Preview PDF',
+              iconSize: 28,
+            ),
+            AppSpacing.wXlarge,
+            IconButton(
+              icon: _invoice != null ? const Icon(Icons.print,color: Colors.black,) : const Icon(Icons.print),
+              onPressed: _invoice != null
+                  ? () => InvoiceServices.generatePDF(context, _invoice!)
+                  : null,
+              tooltip: 'Print PDF',
+              iconSize: 28,
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Future<void> _updateInvoice() async {
+    if (_invoice == null) return;
+
+    final updatedInvoice = Invoice(
+      id: _invoice!.id, // keep same ID
+      customer: selectedCustomer ??
+          Customer(
+            id: const Uuid().v4(),
+            name: nameController.text,
+            email: emailController.text,
+            phone: phoneController.text,
+            address: addressController.text,
+            gstin: gstinController.text,
+          ),
+      items: List.from(invoiceItems),
+      date: _invoice!.date, // keep original date
+      notes: notesController.text.isNotEmpty ? notesController.text : null,
+      taxRate: taxRate,
+      type: invoiceType,
+    );
+
+    await dbHelper.updateInvoice(updatedInvoice); // you need to implement this in your DB helper
+
+    setState(() {
+      _invoice = updatedInvoice;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Invoice updated successfully!')),
     );
   }
 
@@ -889,12 +990,12 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Create New ${invoiceType}'),
+        title: _invoice != null ? Text('Edit ${invoiceType}') : Text('Create New ${invoiceType}'),
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: _invoice != null ? buildInvoiceSuccessScreen() :
+      body: !isEditing && _invoice != null ? buildInvoiceSuccessScreen() :
       LayoutBuilder(
         builder: (context, constraints) {
           // Responsive breakpoints

@@ -25,15 +25,23 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
 
+  Invoice? invoiceToEdit;
+
   Widget buildScreen()
   {
+    if(_selectedIndex !=1)
+    {
+      setState(() {
+        invoiceToEdit = null;// Switch to "New Invoice" tab
+      });
+    }
     switch (_selectedIndex) {
       case 0:
-        return DashboardHome();
+        return DashboardHome(onEditInvoice: editInvoice);
       case 1:
-        return CreateInvoiceScreen();
+        return CreateInvoiceScreen(invoiceToEdit:invoiceToEdit,);
       case 2:
-        return InvoiceManagementScreen();
+        return InvoiceManagementScreen(onEditInvoice: editInvoice);
       case 3:
         return CustomerManagementScreen();
       case 4:
@@ -43,6 +51,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       default:
         return const Center(child: Text("Unknown tab"));
     }
+  }
+
+  void editInvoice(Invoice invoice) {
+    setState(() {
+      _selectedIndex = 1;
+      invoiceToEdit = invoice;// Switch to "New Invoice" tab
+    });
   }
 
   @override
@@ -129,6 +144,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
 // Dashboard Home
 class DashboardHome extends StatefulWidget {
+  final Function(Invoice) onEditInvoice;
+  const DashboardHome({required this.onEditInvoice, Key? key}) : super(key: key);
   @override
   _DashboardHomeState createState() => _DashboardHomeState();
 }
@@ -230,6 +247,11 @@ class _DashboardHomeState extends State<DashboardHome> {
                                   icon: const Icon(Icons.visibility,color: Colors.green,),
                                   onPressed: () => InvoiceServices.showInvoiceDetails(context, invoice),
                                   tooltip: 'View Details',
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.edit, color: Colors.blue),
+                                  onPressed: () => widget.onEditInvoice(invoice),
+                                  tooltip: 'Edit Invoice',
                                 ),
                                 IconButton(
                                   icon: const Icon(Icons.picture_as_pdf,color: Colors.purple),

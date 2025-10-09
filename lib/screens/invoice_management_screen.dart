@@ -8,7 +8,8 @@ import 'package:printing/printing.dart';
 import '../database/database_helper.dart';
 
 class InvoiceManagementScreen extends StatefulWidget {
-  const InvoiceManagementScreen({super.key});
+  final Function(Invoice) onEditInvoice;
+  const InvoiceManagementScreen({super.key, required this.onEditInvoice});
 
   @override
   _InvoiceManagementScreenState createState() => _InvoiceManagementScreenState();
@@ -124,6 +125,7 @@ class _InvoiceManagementScreenState extends State<InvoiceManagementScreen> {
                     DataCell(Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        IconButton(icon: const Icon(Icons.edit,color: Colors.blue,), onPressed: () =>  widget.onEditInvoice(invoice), tooltip: 'Edit Invoice'),
                         IconButton(icon: const Icon(Icons.visibility,color: Colors.green,), onPressed: () =>  InvoiceServices.showInvoiceDetails(context,invoice), tooltip: 'View Details'),
                         IconButton(icon: const Icon(Icons.picture_as_pdf,color: Colors.purple,), onPressed: () => InvoiceServices.previewPDF(context,invoice), tooltip: 'Preview PDF'),
                         IconButton(icon: const Icon(Icons.print,color: Colors.black,), onPressed: () => InvoiceServices.generatePDF(context,invoice), tooltip: 'Print PDF'),

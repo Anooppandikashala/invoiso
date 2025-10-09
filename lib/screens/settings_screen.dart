@@ -279,17 +279,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildDummySection() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.backup, size: 64, color: Colors.blueGrey),
-            AppSpacing.hMedium,
-            Text("Options coming soon...", style: TextStyle(fontSize: 18)),
-          ],
+  Widget _buildDummySection(String title) {
+    return Scaffold(
+      appBar: AppBar(
+          title: Text(title),
+          backgroundColor: Theme.of(context).primaryColor,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              Icon(Icons.add_circle_outline, size: 64, color: Colors.blueGrey),
+              AppSpacing.hMedium,
+              Text("Options coming soon...", style: TextStyle(fontSize: 18)),
+            ],
+          ),
         ),
       ),
     );
@@ -306,7 +314,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       case 3:
         return PdfSettingsScreen();
       default:
-        return const Center(child: Text("Coming Soon!"));
+        return _buildDummySection("Invoice Settings");
     }
   }
 

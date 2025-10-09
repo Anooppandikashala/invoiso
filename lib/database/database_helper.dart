@@ -321,6 +321,69 @@ class DatabaseHelper {
     }
   }
 
+  Future<void> updateInvoice(Invoice invoice) async {
+    final db = await database;
+
+    // 1️⃣ Update the main invoice table
+    await db.update(
+      'invoices',
+      {
+        'customer_id': invoice.customer.id,
+        'customer_name': invoice.customer.name,
+        'customer_email': invoice.customer.email,
+        'customer_phone': invoice.customer.phone,
+        'customer_address': invoice.customer.address,
+        'customer_gstin': invoice.customer.gstin,
+        'notes': invoice.notes,
+        'tax_rate': invoice.taxRate,
+        'type': invoice.type,
+        // You may keep 'date' as is or allow updating
+      },
+      where: 'id = ?',
+      whereArgs: [invoice.id],
+    );
+
+    // 2️⃣ Fetch existing invoice items to adjust stock
+    final oldItems = await db.query(
+      'invoice_items',
+      where: 'invoice_id = ?',
+      whereArgs: [invoice.id],
+    );
+
+    // 3️⃣ Restore stock for old items
+    for (var oldItem in oldItems) {
+      final product = await getProductById(oldItem['product_id'] as String);
+      if (product != null) {
+        final restoredStock = product.stock + (oldItem['quantity'] as int);
+        await updateProductStock(product.id, restoredStock);
+      }
+    }
+
+    // 4️⃣ Delete old items
+    await db.delete(
+      'invoice_items',
+      where: 'invoice_id = ?',
+      whereArgs: [invoice.id],
+    );
+
+    // 5️⃣ Insert new items and deduct stock
+    for (var item in invoice.items) {
+      await db.insert('invoice_items', {
+        'invoice_id': invoice.id,
+        'product_id': item.product.id,
+        'quantity': item.quantity,
+        'discount': item.discount,
+      });
+
+      final product = await getProductById(item.product.id);
+      if (product != null) {
+        final newStock = product.stock - item.quantity;
+        await updateProductStock(product.id, newStock);
+      }
+    }
+  }
+
+
   // ─────────────────────────────────────────────
   // Fetch Invoice with Items
   Future<Invoice?> getInvoiceById(String id) async {
