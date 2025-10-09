@@ -37,6 +37,11 @@ Future<void> main() async {
     });
   }
   runApp(MyApp());
+
+  // Properly clean up before exit
+  FlutterError.onError = (details) {
+    debugPrint(details.toString());
+  };
 }
 
 class MyApp extends StatelessWidget {
@@ -44,6 +49,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
     return MaterialApp(
       title: AppConfig.name,
       debugShowCheckedModeBanner: false,

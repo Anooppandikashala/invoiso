@@ -32,6 +32,7 @@ dependencies:
   window_manager: ^0.5.1
   screen_retriever: ^0.2.0
   flutter_svg: ^2.0.10+1
+  image: ^4.2.0
 
 dev_dependencies:
   flutter_test:

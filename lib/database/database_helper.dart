@@ -54,7 +54,8 @@ class DatabaseHelper {
         description TEXT,
         price REAL,
         stock INTEGER,
-        hsncode TEXT
+        hsncode TEXT,
+        tax_rate INTEGER
       )
     ''');
 
@@ -117,8 +118,8 @@ class DatabaseHelper {
     // Insert dummy company info
     await db.insert('company_info', {
       'name': 'Your Company Name',
-      'address': '123 Business Street\nCity, State 12345',
-      'phone': '(555) 123-4567',
+      'address': '123 Street \nCity, State 12345',
+      'phone': '9876543210',
       'email': 'info@yourcompany.com',
       'website': 'www.yourcompany.com',
       'gstin': ''
@@ -143,45 +144,37 @@ class DatabaseHelper {
   // CRUD for Customer
   Future<void> insertCustomer(Customer customer) async {
     final db = await database;
-    await db.insert('customers', {
-      'id': customer.id,
-      'name': customer.name,
-      'email': customer.email,
-      'phone': customer.phone,
-      'address': customer.address,
-      'gstin':customer.gstin
-    });
+    await db.insert(
+      'customers',
+      customer.toMap(),
+      //conflictAlgorithm: ConflictAlgorithm.replace, // optional, avoids duplicate ID errors
+    );
   }
 
   Future<void> updateCustomer(Customer customer) async {
     final db = await database;
+
+    // Create a map without 'id' for update
+    final updateMap = customer.toMap()..remove('id');
+
     await db.update(
       'customers',
-      {
-        'name': customer.name,
-        'email': customer.email,
-        'phone': customer.phone,
-        'address': customer.address,
-        'gstin':customer.gstin
-      },
+      updateMap,
       where: 'id = ?',
       whereArgs: [customer.id],
     );
   }
 
+
   Future<Customer?> getCustomerById(String id) async {
     final db = await database;
-    final maps = await db.query('customers', where: 'id = ?', whereArgs: [id]);
+    final maps = await db.query(
+      'customers',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
     if (maps.isNotEmpty) {
-      final c = maps.first;
-      return Customer(
-        id: c['id'] as String,
-        name: c['name'] as String,
-        email: c['email'] as String,
-        phone: c['phone'] as String,
-        address: c['address'] as String,
-        gstin: c['gstin'] as String
-      );
+      return Customer.fromMap(maps.first);
     }
     return null;
   }
@@ -189,46 +182,25 @@ class DatabaseHelper {
   Future<List<Customer>> getAllCustomers() async {
     final db = await database;
     final maps = await db.query('customers');
-    return maps
-        .map((c) => Customer(
-              id: c['id'] as String,
-              name: c['name'] as String,
-              email: c['email'] as String,
-              phone: c['phone'] as String,
-              address: c['address'] as String,
-              gstin: c['gstin'] as String
-            ))
-        .toList();
+    return maps.map((c) => Customer.fromMap(c)).toList();
   }
 
   // ─────────────────────────────────────────────
   // CRUD for Product
   Future<void> insertProduct(Product product) async {
     final db = await database;
-    await db.insert('products', {
-      'id': product.id,
-      'name': product.name,
-      'description': product.description,
-      'price': product.price,
-      'stock': product.stock,
-      'hsncode': product.hsncode
-    });
+    await db.insert(
+      'products',
+      product.toMap(),
+    );
   }
 
   Future<List<Product>> getAllProducts() async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query('products');
+    final maps = await db.query('products');
 
-    return List.generate(maps.length, (i) {
-      return Product(
-        id: maps[i]['id'],
-        name: maps[i]['name'],
-        description: maps[i]['description'],
-        price: maps[i]['price'],
-        stock: maps[i]['stock'],
-        hsncode: maps[i]['hsncode']
-      );
-    });
+    if (maps.isEmpty) return [];
+    return maps.map((p) => Product.fromMap(p)).toList();
   }
 
   Future<int> getTotalProductCount() async {
@@ -247,32 +219,27 @@ class DatabaseHelper {
 
   Future<Product?> getProductById(String id) async {
     final db = await database;
-    final maps = await db.query('products', where: 'id = ?', whereArgs: [id]);
+    final maps = await db.query(
+      'products',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
     if (maps.isNotEmpty) {
-      final p = maps.first;
-      return Product(
-        id: p['id'] as String,
-        name: p['name'] as String,
-        description: p['description'] as String,
-        price: p['price'] as double,
-        stock: p['stock'] as int,
-        hsncode: p['hsncode'] as String
-      );
+      return Product.fromMap(maps.first);
     }
     return null;
   }
 
   Future<void> updateProduct(Product product) async {
     final db = await database;
+
+    // Create a map without the 'id' field
+    final updateMap = product.toMap();
+    updateMap.remove('id');
+
     await db.update(
       'products',
-      {
-        'name': product.name,
-        'description': product.description,
-        'price': product.price,
-        'stock': product.stock,
-        'hsncode': product.hsncode
-      },
+      updateMap,
       where: 'id = ?',
       whereArgs: [product.id],
     );
@@ -285,6 +252,7 @@ class DatabaseHelper {
     String orderBy = 'name',
   }) async {
     final db = await database;
+
     final maps = await db.query(
       'products',
       where: query.isNotEmpty ? 'name LIKE ? OR description LIKE ?' : null,
@@ -294,14 +262,7 @@ class DatabaseHelper {
       offset: offset,
     );
 
-    return maps.map((map) => Product(
-      id: map['id'] as String,
-      name: map['name'] as String,
-      description: map['description'] as String,
-      price: map['price'] as double,
-      stock: map['stock'] as int,
-      hsncode: map['hsncode'] as String
-    )).toList();
+    return maps.map((map) => Product.fromMap(map)).toList();
   }
 
   Future<int> getProductCount([String query = '']) async {
@@ -364,22 +325,24 @@ class DatabaseHelper {
   // Fetch Invoice with Items
   Future<Invoice?> getInvoiceById(String id) async {
     final db = await database;
-    final invoiceData =
-        await db.query('invoices', where: 'id = ?', whereArgs: [id]);
+
+    // Fetch invoice
+    final invoiceData = await db.query('invoices', where: 'id = ?', whereArgs: [id]);
     if (invoiceData.isEmpty) return null;
-
     final i = invoiceData.first;
-    final customer = Customer(
-        id: i['customer_id'] as String,
-        name: i['customer_name'] as String,
-        email: i['customer_email'] as String,
-        phone: i['customer_phone'] as String,
-        address: i['customer_address'] as String,
-        gstin: i['customer_gstin'] as String);
-    //await getCustomerById(i['customer_id'] as String);
 
-    final itemRows = await db
-        .query('invoice_items', where: 'invoice_id = ?', whereArgs: [id]);
+    // Create Customer from invoice row
+    final customer = Customer.fromMap({
+      'id': i['customer_id'],
+      'name': i['customer_name'],
+      'email': i['customer_email'],
+      'phone': i['customer_phone'],
+      'address': i['customer_address'],
+      'gstin': i['customer_gstin'],
+    });
+
+    // Fetch invoice items
+    final itemRows = await db.query('invoice_items', where: 'invoice_id = ?', whereArgs: [id]);
     final items = <InvoiceItem>[];
 
     for (var row in itemRows) {
@@ -388,7 +351,9 @@ class DatabaseHelper {
         items.add(InvoiceItem(
           product: product,
           quantity: row['quantity'] as int,
-          discount: row['discount'] as double,
+          discount: (row['discount'] is int)
+              ? (row['discount'] as int).toDouble()
+              : (row['discount'] ?? 0.0) as double,
         ));
       }
     }
@@ -399,10 +364,13 @@ class DatabaseHelper {
       items: items,
       date: DateTime.parse(i['date'] as String),
       notes: i['notes'] as String?,
-      taxRate: i['tax_rate'] as double,
+      taxRate: (i['tax_rate'] is int)
+          ? (i['tax_rate'] as int).toDouble()
+          : (i['tax_rate'] ?? 0.0) as double,
       type: i['type'] as String,
     );
   }
+
 
   // ─────────────────────────────────────────────
   // Delete Invoice
@@ -510,33 +478,33 @@ class DatabaseHelper {
   // Get all invoices with customer and items
   Future<List<Invoice>> getAllInvoices() async {
     final db = await database;
+    final invoiceMaps = await db.query(
+      'invoices',
+      orderBy: 'id DESC',
+    );
 
-    final invoiceMaps = await db.query('invoices');
-    List<Invoice> invoices = [];
+    final invoices = <Invoice>[];
 
     for (var map in invoiceMaps) {
-      //final customerId = map['customer_id'] as String?;
       final invoiceId = map['id'] as String?;
       final dateString = map['date'] as String?;
-      final notes = map['notes'] as String?;
+      final type = map['type'] as String? ?? '';
+      final notes = map['notes'] as String? ?? '';
       final taxRateRaw = map['tax_rate'];
-      final type = map['type'] as String;
 
-      print(invoiceId);
+      if (invoiceId == null || dateString == null) continue;
 
-      if (invoiceId == null || dateString == null)
-      {
-        continue; // skip malformed rows
-      }
+      // Use fromMap for customer
+      final customer = Customer.fromMap({
+        'id': map['customer_id'],
+        'name': map['customer_name'],
+        'email': map['customer_email'],
+        'phone': map['customer_phone'],
+        'address': map['customer_address'],
+        'gstin': map['customer_gstin'],
+      });
 
-      final customer = Customer(
-          id: map['customer_id'] as String,
-          name: map['customer_name'] as String,
-          email: map['customer_email'] as String,
-          phone: map['customer_phone'] as String,
-          address: map['customer_address'] as String,
-          gstin: map['customer_gstin'] as String);
-
+      // Fetch items for this invoice
       final items = await getInvoiceItemsByInvoiceId(invoiceId);
 
       invoices.add(
@@ -545,15 +513,18 @@ class DatabaseHelper {
           customer: customer,
           items: items,
           date: DateTime.tryParse(dateString) ?? DateTime.now(),
-          notes: notes ?? '',
-          taxRate: (taxRateRaw is int) ? taxRateRaw.toDouble() : (taxRateRaw as double? ?? 0.0),
-          type: type
+          notes: notes,
+          taxRate: (taxRateRaw is int)
+              ? taxRateRaw.toDouble()
+              : (taxRateRaw as double? ?? 0.0),
+          type: type,
         ),
       );
     }
 
     return invoices;
   }
+
 
 
   Future<List<InvoiceItem>> getInvoiceItemsByInvoiceId(String invoiceId) async {
@@ -624,6 +595,21 @@ class DatabaseHelper {
       );
     }
     return InvoiceTemplate.classic;
+  }
+
+  Future<void> setCompanyLogo(String base64Logo) async {
+    final db = await database;
+    await db.insert(
+      'settings',
+      {'key': 'company_logo', 'value': base64Logo},
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<String?> getCompanyLogo() async {
+    final db = await database;
+    final result = await db.query('settings', where: 'key = ?', whereArgs: ['company_logo']);
+    return result.isNotEmpty ? result.first['value'] as String : null;
   }
 
   // ─────────────────────────────────────────────

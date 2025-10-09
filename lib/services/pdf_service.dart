@@ -285,10 +285,11 @@ class PDFService {
       columnWidths: {
         0: const pw.FlexColumnWidth(1),
         1: const pw.FlexColumnWidth(3),
-        2: const pw.FlexColumnWidth(1),
-        3: const pw.FlexColumnWidth(1.5),
+        2: const pw.FlexColumnWidth(2),
+        3: const pw.FlexColumnWidth(1),
         4: const pw.FlexColumnWidth(1.5),
         5: const pw.FlexColumnWidth(1.5),
+        6: const pw.FlexColumnWidth(1.5),
       },
       children: [
         pw.TableRow(
@@ -296,6 +297,7 @@ class PDFService {
           children: [
             _buildTableCell('Sl No', isHeader: true),
             _buildTableCell('Item Name', isHeader: true),
+            _buildTableCell('HSN Code', isHeader: true),
             _buildTableCell('Qty', isHeader: true),
             _buildTableCell('Price', isHeader: true),
             _buildTableCell('Discount', isHeader: true),
@@ -309,6 +311,7 @@ class PDFService {
             children: [
               _buildTableCell('${index + 1}'),
               _buildTableCell(item.product.name),
+              _buildTableCell(item.product.hsncode),
               _buildTableCell(item.quantity.toString()),
               _buildTableCell(item.product.price.toStringAsFixed(2)),
               _buildTableCell(item.discount.toStringAsFixed(2)),
@@ -341,7 +344,7 @@ class PDFService {
         child: pw.Table(
           columnWidths: {
             0: const pw.FlexColumnWidth(2), // label column
-            1: const pw.FlexColumnWidth(1), // value column
+            1: const pw.FlexColumnWidth(2), // value column
           },
           children: [
             // Subtotal
@@ -422,11 +425,12 @@ class PDFService {
   static pw.Widget _buildTableCell(String text, {bool isHeader = false})
   {
     return pw.Padding(
-      padding: const pw.EdgeInsets.all(8),
+      padding: const pw.EdgeInsets.all(6),
       child: pw.Text(
         text,
         style: pw.TextStyle(
           fontWeight: isHeader ? pw.FontWeight.bold : pw.FontWeight.normal,
+          fontSize: 10
         ),
       ),
     );
@@ -440,7 +444,7 @@ class PDFService {
     return showDialog(
       context: context,
       builder: (context) => Dialog(
-        insetPadding: const EdgeInsets.all(24),
+        insetPadding: const EdgeInsets.all(16),
         child: SizedBox(
           width: MediaQuery.sizeOf(context).width*0.75,  // Adjust width for desktop
           height: MediaQuery.sizeOf(context).height*0.8, // Adjust height for desktop

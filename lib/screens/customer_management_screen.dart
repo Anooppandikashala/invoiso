@@ -91,13 +91,26 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
   }
 
   void _handleAddOrUpdateCustomer([Customer? customer]) async {
+    final name = nameController.text.trim();
+    final email = emailController.text.trim();
+    final phone = phoneController.text.trim();
+    final address = addressController.text.trim();
+    final gstin = gstinController.text.trim();
+
+    // Optional: Basic validation
+    if (name.isEmpty)
+    {
+      _showError('Please enter a customer name.');
+      return;
+    }
+
     final newCustomer = Customer(
       id: customer?.id ?? const Uuid().v4(),
-      name: nameController.text,
-      email: emailController.text,
-      phone: phoneController.text,
-      address: addressController.text,
-      gstin: gstinController.text
+      name: name,
+      email: email,
+      phone: phone,
+      address: address,
+      gstin: gstin,
     );
 
     if (customer == null) {
@@ -106,13 +119,25 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
       await dbHelper.updateCustomer(newCustomer);
     }
 
+    // Clear controllers
     nameController.clear();
     emailController.clear();
     phoneController.clear();
     addressController.clear();
     gstinController.clear();
 
+    // Refresh UI after database update
     await _loadCustomers();
+
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
   }
 
   void _showCustomerEditDialog(Customer customer, bool isViewOnly) {

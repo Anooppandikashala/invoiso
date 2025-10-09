@@ -38,11 +38,13 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
   final priceController = TextEditingController();
   final stockController = TextEditingController();
   final hsnCodeController = TextEditingController();
+  final taxRateController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _loadProducts();
+    taxRateController.text = "18";
   }
 
   @override
@@ -51,6 +53,8 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
     descriptionController.dispose();
     priceController.dispose();
     stockController.dispose();
+    taxRateController.dispose();
+    hsnCodeController.dispose();
     super.dispose();
   }
 
@@ -71,21 +75,75 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
   }
 
   Future<void> _addProduct() async {
+    // Trim spaces from inputs
+    final name = nameController.text.trim();
+    final description = descriptionController.text.trim();
+    final priceText = priceController.text.trim();
+    final stockText = stockController.text.trim();
+    final hsnCode = hsnCodeController.text.trim();
+    final taxText = taxRateController.text.trim();
+
+    // Validation checks
+    if (name.isEmpty) {
+      _showError('Product name cannot be empty');
+      return;
+    }
+
+    if (priceText.isEmpty) {
+      _showError('Price cannot be empty');
+      return;
+    }
+
+    final price = double.tryParse(priceText);
+    if (price == null || price < 0) {
+      _showError('Enter a valid non-negative price');
+      return;
+    }
+
+    final stock = int.tryParse(stockText);
+    if (stock == null || stock < 0) {
+      _showError('Enter a valid non-negative stock');
+      return;
+    }
+
+    final taxRate = int.tryParse(taxText);
+    if (taxRate == null || taxRate < 0 || taxRate > 100) {
+      _showError('Enter a valid tax rate between 0 and 100');
+      return;
+    }
+
+    // ✅ Passed all checks — insert the product
     final newProduct = Product(
       id: const Uuid().v4(),
-      name: nameController.text,
-      description: descriptionController.text,
-      price: double.tryParse(priceController.text) ?? 0.0,
-      stock: int.tryParse(stockController.text) ?? 0,
-      hsncode: hsnCodeController.text
+      name: name,
+      description: description,
+      price: price,
+      stock: stock,
+      hsncode: hsnCode,
+      tax_rate: taxRate,
     );
+
     await dbHelper.insertProduct(newProduct);
     await _loadProducts();
+
+    // Clear inputs
     nameController.clear();
     descriptionController.clear();
     priceController.clear();
     stockController.clear();
     hsnCodeController.clear();
+    taxRateController.clear();
+    taxRateController.text = "18";
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Product added successfully!')),
+    );
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
   }
 
   void _showProductDialog(Product product, bool isViewOnly) {
@@ -94,9 +152,11 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
     final priceCtrl = TextEditingController(text: product.price.toString());
     final stockCtrl = TextEditingController(text: product.stock.toString());
     final hsnCodeCtrl = TextEditingController(text: product.hsncode.toString());
+    final taxRateCtrl = TextEditingController(text: product.tax_rate.toString());
 
     String? priceError;
     String? stockError;
+    String? taxError;
 
     showDialog(
       context: context,
@@ -135,6 +195,18 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                   ],
                 ),
                 TextField(
+                  controller: taxRateCtrl,
+                  readOnly: isViewOnly ? true : false,
+                  decoration: InputDecoration(
+                    labelText: 'Tax Rate',
+                    errorText: taxError,
+                  ),
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d+$')),
+                  ],
+                ),
+                TextField(
                   controller: stockCtrl,
                   readOnly: isViewOnly ? true : false,
                   decoration: InputDecoration(
@@ -158,13 +230,15 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
               onPressed: () async {
                 final price = double.tryParse(priceCtrl.text);
                 final stock = int.tryParse(stockCtrl.text);
+                final taxRate = int.tryParse(taxRateCtrl.text);
 
                 setState(() {
                   priceError = (price == null || price < 0) ? 'Enter valid non-negative price' : null;
                   stockError = (stock == null || stock < 0) ? 'Enter valid non-negative stock' : null;
+                  taxError = (taxRate == null || taxRate > 100 || taxRate < 0) ? 'Enter valid tax rate (0-100)%' : null;
                 });
 
-                if (priceError != null || stockError != null) return;
+                if (priceError != null || stockError != null || taxError != null) return;
 
                 final updatedProduct = Product(
                   id: product.id,
@@ -172,7 +246,8 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                   description: descriptionCtrl.text,
                   price: price!,
                   stock: stock!,
-                  hsncode: hsnCodeCtrl.text
+                  hsncode: hsnCodeCtrl.text,
+                  tax_rate: taxRate!
                 );
 
                 await dbHelper.updateProduct(updatedProduct);
@@ -200,8 +275,8 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
 
   Future<void> _exportToCSV() async {
     List<List<dynamic>> rows = [
-      ['Name', 'HSN Code' ,'Description', 'Price', 'Stock'],
-      ...products.map((p) => [p.name, p.hsncode ,p.description, p.price, p.stock])
+      ['Name', 'HSN Code' ,'Description', 'Price','Tax Rate', 'Stock'],
+      ...products.map((p) => [p.name, p.hsncode ,p.description, p.price, p.tax_rate, p.stock])
     ];
     final csvData = const ListToCsvConverter().convert(rows);
     final dir = await getApplicationDocumentsDirectory();
@@ -217,8 +292,8 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
         build: (context) => pw.Table.fromTextArray(
           context: context,
           data: [
-            ['Name', 'HSN Code' ,'Description', 'Price', 'Stock'],
-            ...products.map((p) => [p.name,p.hsncode, p.description, p.price, p.stock]),
+            ['Name', 'HSN Code' ,'Description', 'Price', 'Tax Rate', 'Stock'],
+            ...products.map((p) => [p.name,p.hsncode, p.description, p.price, p.tax_rate,p.stock]),
           ],
         ),
       ),
@@ -335,6 +410,12 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                             keyboardType: const TextInputType.numberWithOptions(decimal: true),
                             inputFormatters: [
                               FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}$')),
+                            ],),
+                          TextField(controller: taxRateController,
+                            decoration: const InputDecoration(labelText: 'Tax Rate'),
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(RegExp(r'^\d+$')),
                             ],),
                           TextField(controller: stockController,
                             decoration: const InputDecoration(labelText: 'Stock'),
@@ -457,6 +538,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                             DataColumn(label: Text('HSN Code')),
                             DataColumn(label: Text('Description')),
                             DataColumn(label: Text('Price')),
+                            DataColumn(label: Text('Tax Rate')),
                             DataColumn(label: Text('Stock')),
                             DataColumn(label: Text('Actions')),
                           ],
@@ -481,6 +563,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                                 maxLines: 1, // Show up to 2 lines, then truncate
                                 softWrap: true,)),
                               DataCell(Text('Rs ${p.price.toStringAsFixed(2)}')),
+                              DataCell(Text(p.tax_rate.toString())),
                               DataCell(Text(p.stock.toString())),
                               DataCell(Row(
                                 mainAxisSize: MainAxisSize.min,

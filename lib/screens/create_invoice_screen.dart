@@ -41,8 +41,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   bool isTaxEnabled = true;
 
   String invoiceType = 'Invoice'; // default value
-
-  double taxRate = 0.18;
+  double taxRate = Tax.defaultTaxRate;
   Invoice? _invoice;
 
   String currentInvoiceNumber = "";
@@ -207,7 +206,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         phoneController.clear();
         addressController.clear();
         gstinController.clear();
-        taxRate = 0.1;
+        taxRate = Tax.defaultTaxRate;
         taxRateController.text = (taxRate * 100).toStringAsFixed(1);
       });
 
@@ -631,7 +630,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                           title: Text(item.product.name,
                               style: const TextStyle(
                                 fontSize: 16,
-                                fontWeight: FontWeight.normal,
+                                fontWeight: FontWeight.bold,
                               )),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,

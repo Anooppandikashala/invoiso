@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:invoiso/constants.dart';
@@ -7,6 +8,9 @@ import 'package:invoiso/screens/user_management_screen.dart';
 import '../database/database_helper.dart';
 import '../models/company_info.dart';
 import '../models/user.dart';
+import 'dart:convert';
+import 'dart:io';
+import 'package:image/image.dart' as img;
 
 class SettingsScreen extends StatefulWidget {
   final User currentUser;
@@ -29,6 +33,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   CompanyInfo? _companyInfo;
 
+  File? _selectedLogoFile;
+  String? _base64Logo;
+
   @override
   void initState() {
     super.initState();
@@ -37,7 +44,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _loadCompanyInfo() async {
     final info = await dbHelper.getCompanyInfo();
-    if (info != null) {
+    if (info != null)
+    {
+      final base64Logo = await dbHelper.getCompanyLogo();
       setState(() {
         _companyInfo = info;
         nameController.text = info.name;
@@ -46,6 +55,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         emailController.text = info.email;
         websiteController.text = info.website;
         gstinController.text = info.gstin;
+        if (base64Logo != null && base64Logo.isNotEmpty) {
+          setState(() {
+            _base64Logo = base64Logo;
+          });
+        }
       });
     }
   }
@@ -65,6 +79,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await dbHelper.insertCompanyInfo(newInfo);
     } else {
       await dbHelper.updateCompanyInfo(newInfo);
+    }
+
+    if (_base64Logo != null) {
+      await dbHelper.setCompanyLogo(_base64Logo!);
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -87,7 +105,56 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.dispose();
   }
 
-  Widget _buildCompanyInfoForm() {
+  Future<void> _pickLogo() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['png', 'jpg', 'jpeg'],
+    );
+
+    if (result == null || result.files.single.path == null) return;
+
+    final file = File(result.files.single.path!);
+    final bytes = await file.readAsBytes();
+    final decodedImage = img.decodeImage(bytes);
+
+    if (decodedImage == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid image file.')),
+      );
+      return;
+    }
+
+    // Validate dimensions
+    if (decodedImage.width > 512 || decodedImage.height > 512) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Image must be max 512x512 pixels.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _selectedLogoFile = file;
+      _base64Logo = base64Encode(bytes);
+    });
+  }
+
+
+  Widget _buildCompanyInfoForm()
+  {
+    final logoWidget = _selectedLogoFile != null
+        ? Image.file(_selectedLogoFile!, fit: BoxFit.contain)
+        : (_base64Logo != null
+        ? Image.memory(base64Decode(_base64Logo!), fit: BoxFit.contain)
+        : const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.add_photo_alternate_outlined, size: 40, color: Colors.grey),
+          SizedBox(height: 8),
+          Text('Select Logo', style: TextStyle(color: Colors.grey)),
+        ],
+      ),
+    ));
     return Scaffold(
       appBar: AppBar(
         title: const Text('Company Info'),
@@ -172,6 +239,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       decoration: const InputDecoration(labelText: 'GSTIN',),
                     ),
                     AppSpacing.hLarge,
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Company Logo',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    AppSpacing.hSmall,
+                    GestureDetector(
+                      onTap: _pickLogo,
+                      child: Container(
+                        width: 150,
+                        height: 150,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade400),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: logoWidget
+                        ),
+                      ),
+                    AppSpacing.hSmall,
                     ElevatedButton(
                       onPressed: _saveCompanyInfo,
                       style: ElevatedButton.styleFrom(
@@ -218,7 +306,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       case 3:
         return PdfSettingsScreen();
       default:
-        return const Center(child: Text("Unknown tab"));
+        return const Center(child: Text("Coming Soon!"));
     }
   }
 
@@ -251,6 +339,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               NavigationRailDestination(
                 icon: Icon(Icons.settings),
                 label: Text('PDF Settings'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.file_present),
+                label: Text('Invoice Settings'),
               ),
             ],
           ),

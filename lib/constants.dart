@@ -29,3 +29,8 @@ class AppConfig
   static const name = "invoiso";
   static const version = "1.0";
 }
+
+class Tax
+{
+  static const defaultTaxRate = 0.18;
+}
