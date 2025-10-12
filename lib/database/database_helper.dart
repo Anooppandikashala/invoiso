@@ -1,6 +1,8 @@
 import 'dart:ffi';
+import 'dart:io';
 
 import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:invoiso/models/customer.dart';
 import 'package:invoiso/models/product.dart';
@@ -18,7 +20,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 3;
+  final dbVersion = 4;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -27,11 +29,15 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDB() async {
-    _path = join(await getDatabasesPath(), 'invoice_manager.db');
+    // _path = join(await getDatabasesPath(), 'invoice_manager.db');
+    // _path = join(Directory.current.path, 'invoice_manager.db');
+    final dbDir = await getApplicationSupportDirectory(); // from path_provider
+    _path = join(dbDir.path, 'invoice_manager.db');
     return await openDatabase(
       _path!,
       version: dbVersion,
       onCreate: _createDB,
+      onUpgrade: _upgradeDB,
     );
   }
 
@@ -138,6 +144,16 @@ class DatabaseHelper {
       'key': 'invoice_template',
       'value': 'classic'
     });
+  }
+
+  Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    print('Upgrading database from $oldVersion to $newVersion');
+
+    if (oldVersion < 4)
+    {
+
+    }
+
   }
 
   // ─────────────────────────────────────────────
@@ -673,6 +689,14 @@ class DatabaseHelper {
     final db = await database;
     final result = await db.query('settings', where: 'key = ?', whereArgs: ['company_logo']);
     return result.isNotEmpty ? result.first['value'] as String : null;
+  }
+
+  Future<void> close() async {
+    final db = _database;
+    if (db != null) {
+      await db.close();
+      _database = null;
+    }
   }
 
   // ─────────────────────────────────────────────

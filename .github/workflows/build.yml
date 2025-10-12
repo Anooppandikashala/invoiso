@@ -13,18 +13,22 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.32.8'
+      - run: dart pub global activate fastforge
       - run: flutter pub get
       - run: flutter build windows --release
 
       # Install Inno Setup
-      - name: Install Inno Setup
-        run: choco install innosetup --yes
+#      - name: Install Inno Setup
+#        run: choco install innosetup --yes
 
       - name: Build Windows Installer
-        shell: pwsh
-        run: |
-          $VERSION = $env:GITHUB_REF -replace 'refs/tags/', ''
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss /DMyAppVersion=$VERSION
+        run: fastforge package --platform windows --targets exe
+
+#      - name: Build Windows Installer
+#        shell: pwsh
+#        run: |
+#          $VERSION = $env:GITHUB_REF -replace 'refs/tags/', ''
+#          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss /DMyAppVersion=$VERSION
 
       - name: Upload Windows Installer
         uses: actions/upload-artifact@v4
@@ -51,16 +55,18 @@ jobs:
         run: |
           sudo apt-get update -y
           sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev patchelf squashfs-tools
-
+      - run: |
+           VERSION=${GITHUB_REF#refs/tags/}
+           VERSION=${VERSION#v}
+           sed -i "s/^\(\s*version:\s*\)[0-9.]\+$/\1$VERSION/" pubspec.yaml
+      - run: dart pub global activate fastforge
       - run: flutter pub get
       - run: flutter build linux --release
 
       - name: Build .deb Package
         run: |
-          VERSION=${GITHUB_REF#refs/tags/}
-          VERSION=${VERSION#v}
-          ./make_deb.sh -v "$VERSION" --reset-build
-          mv *.deb ${{ matrix.deb_name }}
+          fastforge package --platform linux --targets deb
+          mv dist/$VERSION/*.deb ${{ matrix.deb_name }}
 
       - name: Upload .deb
         uses: actions/upload-artifact@v4

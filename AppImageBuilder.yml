@@ -3,7 +3,7 @@ version: 1
 AppDir:
   path: ./AppDir
   app_info:
-    id: com.invoiso.desktop
+    id: com.invoiso
     name: Invoiso
     icon: logo
     version: 1.0.0

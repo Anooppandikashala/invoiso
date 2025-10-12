@@ -1,0 +1,32 @@
+display_name: Invoiso
+package_name: invoiso-2.2.2
+maintainer:
+  name: ANOOP P
+  email: anooppkrishnan96@gmail.com
+priority: optional
+section: x11
+installed_size: 6604
+essential: false
+icon: assets/deb/images/logo.png
+
+postinstall_scripts:
+  - echo "Installed Invoiso"
+postuninstall_scripts:
+  - echo "Surprised Pickachu face"
+
+#keywords:
+#  - Hello
+#  - World
+#  - Test
+#  - Application
+
+generic_name: Invoice Application
+
+categories:
+  - Invoice
+  - Accounting
+
+startup_notify: true
+# You can also specify [metainfo](https://freedesktop.org/software/appstream/docs/chap-Quickstart.html) file
+# which contains metadata of the app.
+# metainfo: linux/packaging/myappid.appdata.xml

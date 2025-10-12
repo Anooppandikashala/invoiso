@@ -1,192 +1,544 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Invoiso – Smart Invoice SaaS</title>
-    <style>
-        body {
-          font-family: "Poppins", sans-serif;
-          margin: 0;
-          padding: 0;
-          color: #222;
-          background: #f9fafc;
-        }
-        header {
-          background: #1d4ed8;
-          color: white;
-          padding: 20px 40px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        header h1 {
-          margin: 0;
-          font-size: 1.5rem;
-          letter-spacing: 1px;
-        }
-        nav a {
-          margin-left: 20px;
-          text-decoration: none;
-          color: white;
-          font-weight: 500;
-        }
-        section {
-          padding: 60px 20px;
-          max-width: 1100px;
-          margin: auto;
-        }
-        .hero {
-          text-align: center;
-          padding: 100px 20px;
-        }
-        .hero h2 {
-          font-size: 2.5rem;
-          margin-bottom: 20px;
-          color: #1d4ed8;
-        }
-        .hero p {
-          font-size: 1.2rem;
-          max-width: 600px;
-          margin: 0 auto 30px auto;
-          color: #444;
-        }
-        .hero button {
-          background: #1d4ed8;
-          color: white;
-          border: none;
-          padding: 12px 30px;
-          border-radius: 6px;
-          font-size: 1rem;
-          cursor: pointer;
-        }
-        .features {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-          gap: 30px;
-          text-align: center;
-        }
-        .feature {
-          background: white;
-          padding: 30px;
-          border-radius: 12px;
-          box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-        }
-        .pricing {
-          display: flex;
-          flex-wrap: wrap;
-          justify-content: center;
-          gap: 30px;
-          text-align: center;
-        }
-        .price-card {
-          background: white;
-          border-radius: 12px;
-          box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-          padding: 40px 30px;
-          width: 280px;
-        }
-        .price-card h3 {
-          margin: 0;
-          font-size: 1.3rem;
-          color: #1d4ed8;
-        }
-        .price-card p {
-          margin: 15px 0;
-          font-size: 1.1rem;
-        }
-        .price-card strong {
-          display: block;
-          font-size: 1.6rem;
-          margin: 15px 0;
-        }
-        .price-card button {
-          margin-top: 20px;
-          background: #1d4ed8;
-          color: white;
-          border: none;
-          padding: 10px 20px;
-          border-radius: 6px;
-          cursor: pointer;
-        }
-        footer {
-          background: #111827;
-          color: #ddd;
-          text-align: center;
-          padding: 30px 20px;
-          margin-top: 60px;
-        }
-        footer p {
-          margin: 5px 0;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Invoiso — Simple offline invoicing system for Windows and Linux." />
+  <title>Invoiso | Simple Offline Invoicing</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css" />
+  <style>
+    html {
+      scroll-behavior: smooth;
+    }
+    
+    body {
+      background: linear-gradient(to bottom, #ffffff 0%, #f9fafb 100%);
+    }
+    
+    .primary-bg { 
+      background: linear-gradient(135deg, #002E78 0%, #003d9e 100%);
+    }
+    
+    .primary-text { color: #002E78; }
+    .primary-border { border-color: #002E78; }
+    
+    .primary-hover:hover { 
+      background: linear-gradient(135deg, #001f55 0%, #002d75 100%);
+      transform: translateY(-2px);
+      transition: all 0.3s ease;
+    }
+    
+    .glass-card {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .feature-card {
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(0, 46, 120, 0.05), transparent);
+      transition: left 0.5s ease;
+    }
+    
+    .feature-card:hover::before {
+      left: 100%;
+    }
+    
+    .feature-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 40px rgba(0, 46, 120, 0.15);
+    }
+    
+    .hero-gradient {
+      background: linear-gradient(135deg, #002E78 0%, #0047ab 50%, #003d9e 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .hero-gradient::before {
+      content: '';
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+      top: -250px;
+      right: -250px;
+      animation: float 6s ease-in-out infinite;
+    }
+    
+    .hero-gradient::after {
+      content: '';
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+      bottom: -150px;
+      left: -150px;
+      animation: float 8s ease-in-out infinite reverse;
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-20px) rotate(5deg); }
+    }
+    
+    .btn-primary {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      background: white !important;
+      color: #002E78 !important;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(255, 255, 255, 0.4);
+    }
+    
+    .btn-secondary {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      background: transparent !important;
+      border: 2px solid white !important;
+      color: white !important;
+    }
+    
+    .btn-secondary:hover {
+      background: white !important;
+      color: #002E78 !important;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(255, 255, 255, 0.3);
+    }
+    
+    /* Swiper Custom Styles */
+    .screenshots-swiper {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px 80px 20px;
+    }
+    
+    .swiper-slide {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 0.4;
+      transition: opacity 0.3s ease;
+    }
+    
+    .swiper-slide-active {
+      opacity: 1;
+    }
+    
+    .swiper-slide img {
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      max-width: 100%;
+      height: auto;
+      display: block;
+    }
+    
+    .swiper-slide-active img {
+      transform: scale(1.25);
+      box-shadow: 0 25px 70px rgba(0, 46, 120, 0.3);
+    }
+    
+    .swiper-button-next,
+    .swiper-button-prev {
+      color: #002E78;
+      background: white;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      transition: all 0.3s ease;
+    }
+    
+    .swiper-button-next:hover,
+    .swiper-button-prev:hover {
+      background: #002E78;
+      color: white;
+      transform: scale(1.1);
+    }
+    
+    .swiper-button-next::after,
+    .swiper-button-prev::after {
+      font-size: 20px;
+      font-weight: bold;
+    }
+    
+    .swiper-pagination {
+      bottom: 20px !important;
+    }
+    
+    .swiper-pagination-bullet {
+      width: 12px;
+      height: 12px;
+      background: #002E78;
+      opacity: 0.3;
+      transition: all 0.3s ease;
+    }
+    
+    .swiper-pagination-bullet-active {
+      opacity: 1;
+      background: #002E78;
+      width: 30px;
+      border-radius: 6px;
+    }
+    
+    .section-title {
+      position: relative;
+      display: inline-block;
+      padding-bottom: 15px;
+    }
+    
+    .section-title::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80px;
+      height: 4px;
+      background: linear-gradient(90deg, #002E78, #0047ab);
+      border-radius: 2px;
+    }
+    
+    .navbar {
+      transition: all 0.3s ease;
+    }
+    
+    .navbar.scrolled {
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    input, textarea {
+      transition: all 0.3s ease;
+    }
+    
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #002E78;
+      box-shadow: 0 0 0 3px rgba(0, 46, 120, 0.1);
+    }
+    
+    .download-icon {
+      display: inline-block;
+      transition: transform 0.3s ease;
+      font-size: 1.1em;
+    }
+    
+    .btn-primary:hover .download-icon,
+    .btn-secondary:hover .download-icon {
+      transform: translateY(3px);
+    }
+    
+    footer a {
+      transition: all 0.3s ease;
+    }
+    
+    footer a:hover {
+      color: #60a5fa;
+    }
+    
+    @media (max-width: 768px) {
+      .hamburger {
+        display: block;
+        cursor: pointer;
+      }
+      
+      .mobile-menu {
+        display: none;
+      }
+      
+      .mobile-menu.active {
+        display: block;
+      }
+      
+      .swiper-button-next,
+      .swiper-button-prev {
+        width: 40px;
+        height: 40px;
+      }
+      
+      .swiper-button-next::after,
+      .swiper-button-prev::after {
+        font-size: 16px;
+      }
+    }
+  </style>
 </head>
-<body>
-<header>
-    <h1>Invoiso</h1>
-    <nav>
-        <a href="#features">Features</a>
-        <a href="#pricing">Pricing</a>
-        <a href="#contact">Contact</a>
+
+<body class="font-sans text-gray-800">
+
+  <!-- Navbar -->
+  <header class="navbar bg-white shadow-md fixed w-full z-50">
+    <nav class="container mx-auto flex justify-between items-center py-4 px-6">
+      <h1 class="text-2xl font-bold primary-text tracking-tight">Invoiso</h1>
+      <ul class="hidden md:flex space-x-8 text-gray-700 font-medium">
+        <li><a href="#home" class="hover:text-blue-800 transition">Home</a></li>
+        <li><a href="#features" class="hover:text-blue-800 transition">Features</a></li>
+        <li><a href="#about" class="hover:text-blue-800 transition">About</a></li>
+        <li><a href="#screenshots" class="hover:text-blue-800 transition">Screenshots</a></li>
+        <!-- <li><a href="#contact" class="hover:text-blue-800 transition">Contact</a></li> -->
+      </ul>
+      <!-- Mobile menu button -->
+      <button class="md:hidden hamburger text-gray-700" onclick="toggleMenu()">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+      </button>
     </nav>
-</header>
-
-<section class="hero">
-    <h2>Smart Invoices, Simplified</h2>
-    <p>Invoiso is your all-in-one invoicing solution. Create, send, and manage invoices effortlessly in the cloud.</p>
-    <button>Get Started</button>
-</section>
-
-<section id="features">
-    <h2 style="text-align:center; color:#1d4ed8;">Features</h2>
-    <div class="features">
-        <div class="feature">
-            <h3>💳 Easy Billing</h3>
-            <p>Create invoices in seconds and send to clients instantly.</p>
-        </div>
-        <div class="feature">
-            <h3>📊 Smart Reports</h3>
-            <p>Track payments, taxes, and expenses with real-time insights.</p>
-        </div>
-        <div class="feature">
-            <h3>☁️ Cloud Access</h3>
-            <p>Access your invoices anywhere, anytime, on any device.</p>
-        </div>
+    <!-- Mobile menu -->
+    <div class="mobile-menu md:hidden bg-white border-t">
+      <ul class="py-4 px-6 space-y-3">
+        <li><a href="#home" class="block hover:text-blue-800">Home</a></li>
+        <li><a href="#about" class="block hover:text-blue-800">About</a></li>
+        <li><a href="#features" class="block hover:text-blue-800">Features</a></li>
+        <li><a href="#screenshots" class="block hover:text-blue-800">Screenshots</a></li>
+        <!-- <li><a href="#contact" class="block hover:text-blue-800">Contact</a></li> -->
+      </ul>
     </div>
-</section>
+  </header>
 
-<section id="pricing">
-    <h2 style="text-align:center; color:#1d4ed8;">Pricing</h2>
-    <div class="pricing">
-        <div class="price-card">
-            <h3>Starter</h3>
-            <p>Perfect for freelancers</p>
-            <strong>$9/mo</strong>
-            <button>Choose Plan</button>
-        </div>
-        <div class="price-card">
-            <h3>Pro</h3>
-            <p>For growing businesses</p>
-            <strong>$29/mo</strong>
-            <button>Choose Plan</button>
-        </div>
-        <div class="price-card">
-            <h3>Enterprise</h3>
-            <p>Custom solution for teams</p>
-            <strong>Contact Us</strong>
-            <button>Contact Sales</button>
-        </div>
+  <!-- Hero Section -->
+  <section id="home" class="pt-32 pb-24 hero-gradient text-white text-center relative">
+    <div class="container mx-auto px-6 relative z-10">
+      <h2 class="text-5xl md:text-6xl font-bold mb-6 leading-tight">Simple. Fast. Offline.</h2>
+      <p class="text-lg md:text-xl mb-10 max-w-2xl mx-auto opacity-95 leading-relaxed">
+        Invoiso helps you create professional invoices, manage clients, and track payments — all offline, for Windows and Linux.
+      </p>
+      <div class="flex flex-col md:flex-row justify-center gap-5">
+        <a href="https://drive.google.com/file/d/1djohy1Pl37i2byISSBjxaILFE0yutqU1/view?usp=sharing" class="btn-primary font-semibold px-8 py-4 rounded-lg shadow-lg inline-flex items-center justify-center gap-3">
+          <i class="fas fa-download download-icon"></i> Download for Windows
+        </a>
+        <a href="https://drive.google.com/file/d/18Zw0blc5BFIz_H6h61uON9NMr1jdD4NZ/view?usp=sharing" class="btn-secondary font-semibold px-8 py-4 rounded-lg inline-flex items-center justify-center gap-3">
+          <i class="fas fa-download download-icon"></i> Download for Linux
+        </a>
+      </div>
     </div>
-</section>
+  </section>
 
-<section id="contact">
-    <h2 style="text-align:center; color:#1d4ed8;">Contact Us</h2>
-    <p style="text-align:center;">Email: support@invoiso.com | Phone: +1 (555) 123-4567</p>
-</section>
+  <!-- Features Section -->
+  <section id="features" class="py-24 bg-gradient-to-b from-gray-50 to-white">
+    <div class="container mx-auto px-6 text-center">
+      <h3 class="section-title text-4xl font-bold mb-16 primary-text">Key Features</h3>
+      <div class="grid md:grid-cols-3 gap-10 max-w-6xl mx-auto">
+        
+        <div class="feature-card bg-white p-10 rounded-2xl shadow-lg">
+          <div class="text-5xl mb-5">
+            <i class="fas fa-lock text-blue-600"></i>
+          </div>
+          <h4 class="text-2xl font-bold mb-4 primary-text">Offline & Secure</h4>
+          <p class="text-gray-600 leading-relaxed">All data stays on your device — no cloud, no worries. Complete privacy and security.</p>
+        </div>
+        
+        <div class="feature-card bg-white p-10 rounded-2xl shadow-lg">
+          <div class="text-5xl mb-5">
+            <i class="fas fa-file-invoice text-green-600"></i>
+          </div>
+          <h4 class="text-2xl font-bold mb-4 primary-text">Smart Invoice Management</h4>
+          <p class="text-gray-600 leading-relaxed">Create, edit, and export invoices as PDFs effortlessly with professional templates.</p>
+        </div>
+        
+        <div class="feature-card bg-white p-10 rounded-2xl shadow-lg">
+          <div class="text-5xl mb-5">
+            <i class="fas fa-users text-purple-600"></i>
+          </div>
+          <h4 class="text-2xl font-bold mb-4 primary-text">Customer & Product Tracking</h4>
+          <p class="text-gray-600 leading-relaxed">Store client and product info with built-in search, sort, and filtering capabilities.</p>
+        </div>
 
-<footer>
-    <p>&copy; 2025 Invoiso. All rights reserved.</p>
-    <p>Made with ❤️ for smarter invoicing</p>
-</footer>
+        
+      </div>
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <section id="about" class="py-24 bg-gradient-to-b from-gray-50 to-white">
+    <div class="container mx-auto px-6 text-center max-w-4xl">
+      <h3 class="section-title text-4xl font-bold mb-10 primary-text">About Invoiso</h3>
+      <p class="text-lg mb-6 text-gray-700 leading-relaxed">
+        Invoiso is a cross-platform desktop invoicing application built for simplicity and speed.  
+        Designed for freelancers and small businesses, it allows you to manage customers, products, and invoices seamlessly — even without internet access.
+      </p>
+      <p class="text-lg text-gray-700 leading-relaxed">
+        Available for <strong class="primary-text">Windows</strong> and <strong class="primary-text">Linux</strong>, Invoiso helps you stay productive wherever you work.
+      </p>
+    </div>
+  </section>
+
+  <!-- Screenshots Section -->
+  <section id="screenshots" class="py-24 bg-white">
+    <div class="container mx-auto px-6 text-center">
+      <h3 class="section-title text-4xl font-bold mb-8 primary-text">App Screenshots</h3>
+      <p class="text-gray-600 mb-6 max-w-2xl mx-auto">Explore the intuitive interface designed for seamless invoice management</p>
+      <div class="text-gray-800 mb-6 max-w-2xl font-bold mx-auto primary-text text-2xl" id="custom-bottom-text"></div>
+      <!-- Swiper Container -->
+      <div class="swiper screenshots-swiper">
+        <div class="swiper-wrapper">
+          <div class="swiper-slide" data-custom-text="Invoice Login Page">
+            <img src="assets/images/login.png" alt="Invoice Login" loading="lazy" />
+          </div>
+          <div class="swiper-slide" data-custom-text="Invoice Dashboard Page" >
+            <img src="assets/images/dashboard.png" alt="Invoice Dashboard" loading="lazy"/>
+          </div>
+          <div class="swiper-slide" data-custom-text="Create Invoice Page">
+            <img src="assets/images/create_invoice.png" alt="Create Invoice" loading="lazy"/>
+          </div>
+          <div class="swiper-slide" data-custom-text="Sample Invoice Pdf">
+            <img src="assets/images/invoice_pdf.png" alt="Invoice Pdf" loading="lazy"/>
+          </div>
+          <div class="swiper-slide" data-custom-text="Customer Management Page">
+            <img src="assets/images/customer.png" alt="Customer Management" loading="lazy" />
+          </div>
+          <div class="swiper-slide" data-custom-text="Product Management Page">
+            <img src="assets/images/product.png" alt="Product Management" loading="lazy"/>
+          </div>
+          <div class="swiper-slide" data-custom-text="User Management Page">
+            <img src="assets/images/users.png" alt="User Management" loading="lazy" />
+          </div>
+          <div class="swiper-slide" data-custom-text="Edit Your Organization Data">
+            <img src="assets/images/company.png" alt="Edit Your Organization Data" loading="lazy" />
+          </div>
+          <div class="swiper-slide" data-custom-text="Backup Your Data">
+            <img src="assets/images/backup.png" alt="Backup Your Data" loading="lazy" />
+          </div>
+
+          
+        </div>
+        
+        <!-- Navigation buttons -->
+        <div class="swiper-button-next"></div>
+        <div class="swiper-button-prev"></div>
+        <!-- Pagination dots -->
+        <div class="swiper-pagination"></div>
+      
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact Section -->
+  <!-- <section id="contact" class="py-24 bg-white">
+    <div class="container mx-auto px-6 text-center max-w-2xl">
+      <h3 class="section-title text-4xl font-bold mb-10 primary-text">Get in Touch</h3>
+      <p class="mb-10 text-lg text-gray-700">Have feedback or questions? We'd love to hear from you.</p>
+      <form action="https://formspree.io/f/your-form-id" method="POST" class="space-y-5">
+        <input type="text" name="name" placeholder="Your Name" class="w-full border-2 border-gray-300 rounded-lg px-5 py-3 text-gray-800" required>
+        <input type="email" name="email" placeholder="Your Email" class="w-full border-2 border-gray-300 rounded-lg px-5 py-3 text-gray-800" required>
+        <textarea name="message" placeholder="Your Message" class="w-full border-2 border-gray-300 rounded-lg px-5 py-3 h-40 text-gray-800 resize-none" required></textarea>
+        <button type="submit" class="primary-bg text-white px-8 py-3 rounded-lg primary-hover font-semibold text-lg">Send Message</button>
+      </form>
+    </div>
+  </section> -->
+
+  <!-- Footer -->
+  <footer class="primary-bg text-white text-center py-8">
+    <p class="text-lg mb-4">© 2025 Invoiso. All rights reserved.</p>
+    <div class="mt-3 space-x-6 text-base">
+      <a href="#" class="hover:underline"><i class="fab fa-github"></i> GitHub</a>
+      <a href="#" class="hover:underline"><i class="fab fa-youtube"></i> YouTube</a>
+      <a href="mailto:support@invoiso.com" class="hover:underline"><i class="fas fa-envelope"></i> Email</a>
+    </div>
+  </footer>
+  
+  <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
+  <script>
+    // Initialize Swiper after DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+      var swiper = new Swiper('.screenshots-swiper', {
+        effect: 'coverflow',
+        grabCursor: true,
+        centeredSlides: true,
+        slidesPerView: 'auto',
+        loop: true,
+        autoplay: {
+          delay: 3500,
+          disableOnInteraction: false,
+        },
+        coverflowEffect: {
+          rotate: 20,
+          stretch: 0,
+          depth: 200,
+          modifier: 1,
+          slideShadows: false,
+        },
+        pagination: {
+          el: '.swiper-pagination',
+          clickable: true,
+          dynamicBullets: true,
+        },
+        navigation: {
+          nextEl: '.swiper-button-next',
+          prevEl: '.swiper-button-prev',
+        },
+        breakpoints: {
+          640: {
+            slidesPerView: 1,
+          },
+          768: {
+            slidesPerView: 1.5,
+          },
+          1024: {
+            slidesPerView: 2,
+          },
+        },
+      });
+
+      const customBottomTextElement = document.getElementById('custom-bottom-text');
+
+    swiper.on('slideChange', function () {
+        const activeSlide = swiper.slides[swiper.activeIndex];
+        const customText = activeSlide.dataset.customText;
+        customBottomTextElement.textContent = customText;
+    });
+
+    // Initialize with the text of the first slide
+    const initialSlide = swiper.slides[swiper.activeIndex];
+    customBottomTextElement.textContent = initialSlide.dataset.customText;
+
+    });
+
+    
+    
+    // Mobile menu toggle
+    function toggleMenu() {
+      const menu = document.querySelector('.mobile-menu');
+      menu.classList.toggle('active');
+    }
+    
+    // Navbar scroll effect
+    window.addEventListener('scroll', function() {
+      const navbar = document.querySelector('.navbar');
+      if (window.scrollY > 50) {
+        navbar.classList.add('scrolled');
+      } else {
+        navbar.classList.remove('scrolled');
+      }
+    });
+    
+    // Close mobile menu when clicking a link
+    document.querySelectorAll('.mobile-menu a').forEach(link => {
+      link.addEventListener('click', function() {
+        document.querySelector('.mobile-menu').classList.remove('active');
+      });
+    });
+  </script>
+
 </body>
 </html>
