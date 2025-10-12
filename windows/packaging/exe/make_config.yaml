@@ -1,8 +1,8 @@
 # The value of AppId uniquely identifies this application.
 # Do not use the same AppId value in installers for other applications.
-#app_id: 5B599538-42B1-4826-A479-AF079F21A65D
+app_id: 78E9829EBA0F7AA1FEF92EB60916D9E4
 publisher: ANOOP P
-#publisher_url: https://github.com/leanflutter/fastforge
+publisher_url: https://github.com/Anooppandikashala
 display_name: Invoiso
 create_desktop_icon: true
 # See: https://jrsoftware.org/ishelp/index.php?topic=setup_defaultdirname

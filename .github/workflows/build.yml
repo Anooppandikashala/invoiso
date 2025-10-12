@@ -66,6 +66,8 @@ jobs:
       - name: Build .deb Package
         run: |
           fastforge package --platform linux --targets deb
+          VERSION=${GITHUB_REF#refs/tags/}
+          VERSION=${VERSION#v}
           mv dist/$VERSION/*.deb ${{ matrix.deb_name }}
 
       - name: Upload .deb
