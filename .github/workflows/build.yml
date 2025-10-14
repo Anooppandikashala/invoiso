@@ -34,7 +34,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Invoiso-Windows-Installer
-          path: Output/InvoiceAppSetup.exe
+          path: InvoiceAppSetup.exe
 
   build-linux:
     runs-on: ubuntu-latest

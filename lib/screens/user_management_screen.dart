@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:invoiso/database/user_service.dart';
 import '../models/user.dart';
 import '../database/database_helper.dart';
 
@@ -10,9 +11,8 @@ class UserManagementScreen extends StatefulWidget {
   State<UserManagementScreen> createState() => _UserManagementScreenState();
 }
 
-class _UserManagementScreenState extends State<UserManagementScreen> {
-  final dbHelper = DatabaseHelper();
-
+class _UserManagementScreenState extends State<UserManagementScreen>
+{
   List<User> _users = [];
 
   final _formKey = GlobalKey<FormState>();
@@ -31,7 +31,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   Future<void> _loadUsers() async {
     if(widget.currentUser.isAdmin())
     {
-      final users = await dbHelper.getAllUsers();
+      final users = await UserService.getAllUsers();
       setState(() {
         _users = users;
       });
@@ -55,10 +55,10 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       );
 
       if (_editingUserId == null) {
-        await dbHelper.insertUser(user);
+        await UserService.insertUser(user);
         _showSnackBar('User added successfully', Colors.green);
       } else {
-        await dbHelper.updateUser(user);
+        await UserService.updateUser(user);
         _showSnackBar('User updated successfully', Theme.of(context).primaryColor);
       }
 
@@ -236,7 +236,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       // Verify old password
                       final user = _users.firstWhere((u) => u.id == userId);
                       if (user.password == oldPasswordController.text) {
-                        await dbHelper.updatePassword(userId, newPasswordController.text);
+                        await UserService.updatePassword(userId, newPasswordController.text);
                         Navigator.of(context).pop();
                         _showSnackBar('Password changed successfully', Colors.green);
                         _loadUsers();
@@ -285,7 +285,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 foregroundColor: Colors.white,
               ),
               onPressed: () async {
-                await dbHelper.deleteUserSafely(user.id);
+                await UserService.deleteUserSafely(user.id);
                 Navigator.of(context).pop();
                 _showSnackBar('User deleted successfully', Colors.orange);
                 _loadUsers();

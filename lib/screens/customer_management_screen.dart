@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:invoiso/constants.dart';
+import 'package:invoiso/database/customer_service.dart';
 import 'package:invoiso/database/database_helper.dart';
 import 'package:invoiso/models/customer.dart';
 import 'package:uuid/uuid.dart';
@@ -18,7 +19,6 @@ class CustomerManagementScreen extends StatefulWidget {
 }
 
 class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
-  final dbHelper = DatabaseHelper();
   List<Customer> customers = [];
   List<Customer> filteredCustomers = [];
   String searchQuery = '';
@@ -50,8 +50,8 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
   }
 
   Future<void> _loadCustomers() async {
-    final data = await dbHelper.getAllCustomers();
-    final count = await dbHelper.getTotalCustomerCount();
+    final data = await CustomerService.getAllCustomers();
+    final count = await CustomerService.getTotalCustomerCount();
     setState(() {
       customers = data;
       _totalCustomerCount = count;
@@ -114,9 +114,9 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
     );
 
     if (customer == null) {
-      await dbHelper.insertCustomer(newCustomer);
+      await CustomerService.insertCustomer(newCustomer);
     } else {
-      await dbHelper.updateCustomer(newCustomer);
+      await CustomerService.updateCustomer(newCustomer);
     }
 
     // Clear controllers
@@ -209,7 +209,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
                         address: addressCtrl.text,
                         gstin: gstinCtrl.text
                       );
-                      await dbHelper.updateCustomer(updatedCustomer);
+                      await CustomerService.updateCustomer(updatedCustomer);
                       await _loadCustomers();
                       Navigator.pop(context);
                     },
@@ -224,9 +224,9 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
     );
   }
 
-  Future<void> _deleteCustomer(Customer customer) async {
-    final db = await dbHelper.database;
-    await db.delete('customers', where: 'id = ?', whereArgs: [customer.id]);
+  Future<void> _deleteCustomer(Customer customer) async 
+  {
+    await CustomerService.deleteCustomer(customer.id);
     await _loadCustomers();
   }
 

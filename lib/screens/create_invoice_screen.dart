@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:invoiso/database/customer_service.dart';
+import 'package:invoiso/database/product_service.dart';
 import 'package:uuid/uuid.dart';
 
 import '../database/database_helper.dart';
+import '../database/invoice_service.dart';
 import '../models/customer.dart';
 import '../models/invoice.dart';
 import '../models/invoice_item.dart';
 import '../models/product.dart';
-import '../services/invoice_services.dart';
+import '../services/invoice_pdf_services.dart';
 import 'package:invoiso/constants.dart';
 
 class CreateInvoiceScreen extends StatefulWidget {
@@ -18,8 +21,8 @@ class CreateInvoiceScreen extends StatefulWidget {
   _CreateInvoiceScreenState createState() => _CreateInvoiceScreenState();
 }
 
-class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
-  final dbHelper = DatabaseHelper();
+class _CreateInvoiceScreenState extends State<CreateInvoiceScreen>
+{
   Customer? selectedCustomer;
   List<Customer> customers = [];
   List<Customer> filteredCustomers = [];
@@ -91,12 +94,12 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   }
 
   Future<void> _loadCustomersAndProducts(bool isEditing) async {
-    final c = await dbHelper.getAllCustomers();
-    final p = await dbHelper.getAllProducts();
+    final c = await CustomerService.getAllCustomers();
+    final p = await ProductService.getAllProducts();
     final String? invNumber;
     if(!isEditing)
     {
-      invNumber = await InvoiceServices.generateNextInvoiceNumber();
+      invNumber = await InvoicePdfServices.generateNextInvoiceNumber();
     }
     else
     {
@@ -206,7 +209,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       return;
     }
     if (invoiceItems.isNotEmpty) {
-      final invoiceId = await InvoiceServices.generateNextInvoiceNumber();
+      final invoiceId = await InvoicePdfServices.generateNextInvoiceNumber();
       final invoice = Invoice(
         id: invoiceId,
         customer: selectedCustomer ??
@@ -225,7 +228,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         type: invoiceType
       );
 
-      await dbHelper.insertInvoice(invoice);
+      await InvoiceService.insertInvoice(invoice);
 
       setState(() {
         _invoice = invoice;
@@ -531,7 +534,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
   Future<void> resetValues(String invoiceType_) async
   {
-    final invType = await InvoiceServices.generateNextInvoiceNumber();
+    final invType = await InvoicePdfServices.generateNextInvoiceNumber();
     setState(() {
       invoiceType = invoiceType_;
       currentInvoiceNumber = invType;
@@ -845,7 +848,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
             IconButton(
               icon: _invoice != null ? const Icon(Icons.visibility,color: Colors.green,) : const Icon(Icons.visibility),
               onPressed: _invoice != null
-                  ? () => InvoiceServices.showInvoiceDetails(
+                  ? () => InvoicePdfServices.showInvoiceDetails(
                   context, _invoice!)
                   : null,
               tooltip: 'View Details',
@@ -855,7 +858,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
             IconButton(
               icon: _invoice != null ? const Icon(Icons.picture_as_pdf,color: Colors.purple,) :  const Icon(Icons.picture_as_pdf),
               onPressed: _invoice != null
-                  ? () => InvoiceServices.previewPDF(context, _invoice!)
+                  ? () => InvoicePdfServices.previewPDF(context, _invoice!)
                   : null,
               tooltip: 'Preview PDF',
               iconSize: 28,
@@ -864,7 +867,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
             IconButton(
               icon: _invoice != null ? const Icon(Icons.print,color: Colors.black,) : const Icon(Icons.print),
               onPressed: _invoice != null
-                  ? () => InvoiceServices.generatePDF(context, _invoice!)
+                  ? () => InvoicePdfServices.generatePDF(context, _invoice!)
                   : null,
               tooltip: 'Print PDF',
               iconSize: 28,
@@ -896,7 +899,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       type: invoiceType,
     );
 
-    await dbHelper.updateInvoice(updatedInvoice); // you need to implement this in your DB helper
+    await InvoiceService.updateInvoice(updatedInvoice); // you need to implement this in your DB helper
 
     setState(() {
       _invoice = updatedInvoice;
@@ -935,7 +938,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                      IconButton(
                        icon: _invoice != null ? const Icon(Icons.visibility,color: Colors.green,) : const Icon(Icons.visibility),
                        onPressed: _invoice != null
-                           ? () => InvoiceServices.showInvoiceDetails(
+                           ? () => InvoicePdfServices.showInvoiceDetails(
                            context, _invoice!)
                            : null,
                        tooltip: 'View Details',
@@ -945,7 +948,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                      IconButton(
                        icon: _invoice != null ? const Icon(Icons.picture_as_pdf,color: Colors.purple,) :  const Icon(Icons.picture_as_pdf),
                        onPressed: _invoice != null
-                           ? () => InvoiceServices.previewPDF(context, _invoice!)
+                           ? () => InvoicePdfServices.previewPDF(context, _invoice!)
                            : null,
                        tooltip: 'Preview PDF',
                        iconSize: 28,
@@ -954,7 +957,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                      IconButton(
                        icon: _invoice != null ? const Icon(Icons.print,color: Colors.black,) : const Icon(Icons.print),
                        onPressed: _invoice != null
-                           ? () => InvoiceServices.generatePDF(context, _invoice!)
+                           ? () => InvoicePdfServices.generatePDF(context, _invoice!)
                            : null,
                        tooltip: 'Print PDF',
                        iconSize: 28,

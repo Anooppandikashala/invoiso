@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:invoiso/database/invoice_service.dart';
+import 'package:invoiso/database/settings_service.dart';
 
 import '../common.dart';
 import '../database/database_helper.dart';
@@ -13,7 +15,6 @@ class PdfSettingsScreen extends StatefulWidget {
 class _PdfSettingsScreenState extends State<PdfSettingsScreen>
 {
   InvoiceTemplate _selectedTemplate = InvoiceTemplate.classic;
-  final dbHelper = DatabaseHelper();
 
   final templates = [
     {"template": InvoiceTemplate.classic, "name": "Classic", "image": "assets/templates/classic.png"},
@@ -28,7 +29,7 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen>
   }
 
   Future<void> _loadTemplate() async {
-    final savedTemplate = await dbHelper.getInvoiceTemplate();
+    final savedTemplate = await SettingsService.getInvoiceTemplate();
     setState(() {
       _selectedTemplate = savedTemplate;
     });
@@ -38,7 +39,7 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen>
     setState(() {
       _selectedTemplate = template;
     });
-    await dbHelper.setInvoiceTemplate(template);
+    await SettingsService.setInvoiceTemplate(template);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text("Template '${template.name}' selected")),
     );

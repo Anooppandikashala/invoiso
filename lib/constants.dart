@@ -27,7 +27,12 @@ class AppFontSize
 class AppConfig
 {
   static const name = "invoiso";
-  static const version = "1.0";
+  static const version = "v2.0.0";
+  static const developer = "ANOOP P";
+  static const supportEmail = "support@invoiso.app";
+  static const website = "https://invoiso.app";
+  static const license = "MIT";
+  static const description = "Invoiso is a modern invoice and quotation management app for freelancers and small businesses.";
 }
 
 class Tax

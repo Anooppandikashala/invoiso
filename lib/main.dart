@@ -26,7 +26,7 @@ Future<void> main() async {
       final screen = await screenRetriever.getPrimaryDisplay();
       final screenSize = screen.size;
 
-      final Size defaultSize = Size(screenSize.width * 0.8, screenSize.height * 0.8);
+      //final Size defaultSize = Size(screenSize.width * 0.8, screenSize.height * 0.8);
       final Size minSize = Size(screenSize.width * 0.75, screenSize.height * 0.75);
 
       //await windowManager.setSize(defaultSize);

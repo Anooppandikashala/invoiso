@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:invoiso/constants.dart';
+import 'package:invoiso/database/user_service.dart';
 
 import '../database/database_helper.dart';
 import 'dashboard_screen.dart';
@@ -28,7 +29,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void _login() async {
     final username = _usernameController.text.trim();
     final password = _passwordController.text;
-    final user = await DatabaseHelper().getUser(username, password);
+    final user = await UserService.getUser(username, password);
     if (!mounted) return;
     if (user != null) {
       Navigator.pushReplacement(

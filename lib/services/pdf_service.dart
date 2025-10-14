@@ -1,6 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:invoiso/database/company_info_service.dart';
 import 'package:invoiso/database/database_helper.dart';
+import 'package:invoiso/database/settings_service.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -18,9 +20,9 @@ class PDFService {
   {
     final pdf = pw.Document();
     final dbHelper = DatabaseHelper();
-    final company = await dbHelper.getCompanyInfo();
+    final company = await CompanyInfoService.getCompanyInfo();
 
-    final selectedTemplate = await dbHelper.getInvoiceTemplate();
+    final selectedTemplate = await SettingsService.getInvoiceTemplate();
 
     switch (selectedTemplate) {
       case InvoiceTemplate.classic:

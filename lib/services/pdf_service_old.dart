@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:invoiso/database/company_info_service.dart';
 import 'package:invoiso/database/database_helper.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:pdf/pdf.dart';
@@ -14,8 +15,7 @@ import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 class PDFServiceOld {
   static Future<pw.Document> generateInvoicePDF(Invoice invoice) async {
     final pdf = pw.Document();
-    final dbHelper = DatabaseHelper();
-    final company = await dbHelper.getCompanyInfo();
+    final company = await CompanyInfoService.getCompanyInfo();
 
     pdf.addPage(
       pw.MultiPage(

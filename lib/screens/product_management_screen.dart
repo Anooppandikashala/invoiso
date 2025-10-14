@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:invoiso/constants.dart';
+import 'package:invoiso/database/product_service.dart';
 import 'package:uuid/uuid.dart';
 import 'package:csv/csv.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -18,8 +19,8 @@ class ProductManagementScreen extends StatefulWidget {
   _ProductManagementScreenState createState() => _ProductManagementScreenState();
 }
 
-class _ProductManagementScreenState extends State<ProductManagementScreen> {
-  final dbHelper = DatabaseHelper();
+class _ProductManagementScreenState extends State<ProductManagementScreen>
+{
   List<Product> products = [];
 
   // Pagination
@@ -59,14 +60,14 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
   }
 
   Future<void> _loadProducts() async {
-    final result = await dbHelper.getProductsPaginated(
+    final result = await ProductService.getProductsPaginated(
       offset: _currentPage * _pageSize,
       limit: _pageSize,
       query: searchQuery,
       orderBy: sortBy,
     );
-    final count = await dbHelper.getProductCount(searchQuery);
-    final allCount = await dbHelper.getTotalProductCount();
+    final count = await ProductService.getProductCount(searchQuery);
+    final allCount = await ProductService.getTotalProductCount();
     setState(() {
       products = result;
       _totalProducts = count;
@@ -123,7 +124,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
       tax_rate: taxRate,
     );
 
-    await dbHelper.insertProduct(newProduct);
+    await ProductService.insertProduct(newProduct);
     await _loadProducts();
 
     // Clear inputs
@@ -250,7 +251,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                   tax_rate: taxRate!
                 );
 
-                await dbHelper.updateProduct(updatedProduct);
+                await ProductService.updateProduct(updatedProduct);
                 await _loadProducts();
                 Navigator.pop(context);
               },
@@ -269,7 +270,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
   }
 
   Future<void> _deleteProduct(Product product) async {
-    await dbHelper.deleteProduct(product.id);
+    await ProductService.deleteProduct(product.id);
     await _loadProducts();
   }
 

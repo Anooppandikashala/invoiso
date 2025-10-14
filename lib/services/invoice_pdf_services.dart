@@ -1,6 +1,7 @@
 
 
 import 'package:flutter/material.dart';
+import 'package:invoiso/database/invoice_service.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/services/pdf_service.dart';
 import 'package:path/path.dart';
@@ -10,7 +11,7 @@ import 'package:printing/printing.dart';
 import '../database/database_helper.dart';
 import '../screens/pdf_view_screen.dart';
 
-class InvoiceServices
+class InvoicePdfServices
 {
   static Future<void>  generatePDF(BuildContext context,Invoice invoice) async {
     try {
@@ -59,8 +60,7 @@ class InvoiceServices
 
   static Future<void> deleteInvoice(BuildContext context,Invoice invoice) async {
     try {
-      final dbHelper = DatabaseHelper();
-      await dbHelper.deleteInvoice(invoice.id);
+      await InvoiceService.deleteInvoice(invoice.id);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error deleting PDF: $e')));
     }

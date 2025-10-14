@@ -32,6 +32,20 @@ class Product {
     );
   }
 
+  factory Product.fromInvoiceItemsMap(Map<String, dynamic> map) {
+    return Product(
+      id: map['product_id'] ?? '',
+      name: map['product_name'] ?? '',
+      description: map['product_description'] ?? '',
+      price: (map['product_price'] is int)
+          ? (map['product_price'] as int).toDouble()
+          : (map['product_price'] ?? 0.0).toDouble(),
+      stock: map['product_stock'] ?? 0,
+      hsncode: map['product_hsn_code'] ?? '',
+      tax_rate: map['product_tax_rate'] ?? 0,
+    );
+  }
+
   // Convert a Product object into a Map
   Map<String, dynamic> toMap() {
     return {
