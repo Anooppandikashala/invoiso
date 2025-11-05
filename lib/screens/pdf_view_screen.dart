@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 
+// Not using now
 class PDFViewerScreen extends StatefulWidget {
   final Uint8List pdfBytes;
   final String invoiceId;
@@ -46,6 +47,7 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Invoice #${widget.invoiceId}'),
+        backgroundColor: Colors.red,
         actions: [
           IconButton(
             icon: const Icon(Icons.zoom_out),
@@ -53,7 +55,7 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
             tooltip: 'Zoom Out',
           ),
           IconButton(
-            icon: const Icon(Icons.zoom_in),
+            icon: const Icon(Icons.zoom_in,color: Colors.black,),
             onPressed: _zoomIn,
             tooltip: 'Zoom In',
           ),

@@ -18,7 +18,10 @@ class InvoicePdfServices
       final pdf = await PDFService.generateInvoicePDF(invoice);
       await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => pdf.save());
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error generating PDF: $e')));
+      if(context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error generating PDF: $e')));
+      }
     }
   }
 
@@ -26,43 +29,57 @@ class InvoicePdfServices
     try {
       final pdf = await PDFService.generateInvoicePDF(invoice);
       final bytes = await pdf.save();
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => PDFViewerScreen(pdfBytes: bytes, invoiceId: invoice.id),
-        ),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error previewing PDF: $e')),
-      );
+      if(context.mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                PDFViewerScreen(pdfBytes: bytes, invoiceId: invoice.id),
+          ),
+        );
+      }
+    } catch (e)
+    {
+      if(context.mounted)
+      {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error previewing PDF: $e')),
+        );
+      }
     }
   }
 
-  static Future<void> previewPDF(BuildContext context, Invoice invoice) async {
+  static Future<void> previewPDF(BuildContext context, Invoice invoice) async
+  {
     try {
       final pdf = await PDFService.generateInvoicePDF(invoice);
       final bytes = await pdf.save();
-      PDFService.showCenteredPDFViewer(context, bytes, invoice.id);
-      // Navigator.push(
-      //   context,
-      //   MaterialPageRoute(
-      //     builder: (context) => PDFViewerScreen(pdfBytes: bytes, invoiceId: invoice.id),
-      //   ),
-      // );
-
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error previewing PDF: $e')),
-      );
+      if(context.mounted)
+      {
+        PDFService.showCenteredPDFViewer(context, bytes, invoice.id);
+      }
+    } catch (e)
+    {
+      if(context.mounted)
+      {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error previewing PDF: $e')),
+        );
+      }
     }
   }
 
   static Future<void> deleteInvoice(BuildContext context,Invoice invoice) async {
     try {
       await InvoiceService.deleteInvoice(invoice.id);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error deleting PDF: $e')));
+    }
+    catch (e)
+    {
+      if(context.mounted)
+      {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error deleting PDF: $e')));
+      }
     }
   }
 

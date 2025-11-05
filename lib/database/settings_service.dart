@@ -44,4 +44,33 @@ class SettingsService
     final result = await db.query('settings', where: 'key = ?', whereArgs: ['company_logo']);
     return result.isNotEmpty ? result.first['value'] as String : null;
   }
+
+  // general services
+  static Future<void> setSetting(SettingKey key, String value) async
+  {
+    final db = await dbHelper.database;
+    await db.insert(
+      'settings',
+      {'key': key.key, 'value': value},
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  static Future<LogoPosition> getLogoPosition() async
+  {
+      String pos = await getSetting(SettingKey.logoPosition) ?? "left";
+      if(pos == "right")
+      {
+        return LogoPosition.right;
+      }
+      return LogoPosition.left;
+  }
+
+  static Future<String?> getSetting(SettingKey key) async
+  {
+    final db = await dbHelper.database;
+    final result =
+    await db.query('settings', where: 'key = ?', whereArgs: [key.key]);
+    return result.isNotEmpty ? result.first['value'] as String : null;
+  }
 }

@@ -1,6 +1,7 @@
 
 // constants.dart
 import 'package:flutter/material.dart';
+import 'package:invoiso/common.dart';
 
 class AppSpacing {
   static const baseValue = 8.0;
@@ -38,4 +39,11 @@ class AppConfig
 class Tax
 {
   static const defaultTaxRate = 0.18;
+}
+
+class DefaultTexts
+{
+  static const String additionalNote = "No return after 15 days.";
+  static const String thankYouNote = "Thank you for your business! | Visit us at [Your Website]";
+  static const LogoPosition logoPosition = LogoPosition.left;
 }

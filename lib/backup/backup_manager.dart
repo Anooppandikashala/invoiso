@@ -8,8 +8,10 @@ import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:crypto/crypto.dart';
-import 'package:downloads_path_provider_28/downloads_path_provider_28.dart';
+
+import '../common.dart';
+import '../models/backup_info.dart';
+import '../models/backup_results.dart';
 
 class BackupManager {
   static const String _backupExtension = '.invoicedb';
@@ -417,42 +419,3 @@ class BackupManager {
     return true; // iOS doesn't need explicit permission for app documents
   }
 }
-
-// Data classes
-class BackupResult {
-  final bool success;
-  final String message;
-  final String? filePath;
-  final DateTime? timestamp;
-
-  BackupResult({
-    required this.success,
-    required this.message,
-    this.filePath,
-    this.timestamp,
-  });
-}
-
-class BackupInfo {
-  final String fileName;
-  final String filePath;
-  final int size;
-  final DateTime createdAt;
-  final BackupType type;
-
-  BackupInfo({
-    required this.fileName,
-    required this.filePath,
-    required this.size,
-    required this.createdAt,
-    required this.type,
-  });
-
-  String get formattedSize {
-    if (size < 1024) return '${size}B';
-    if (size < 1024 * 1024) return '${(size / 1024).toStringAsFixed(1)}KB';
-    return '${(size / (1024 * 1024)).toStringAsFixed(1)}MB';
-  }
-}
-
-enum BackupType { database, json }

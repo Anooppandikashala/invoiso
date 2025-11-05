@@ -5,6 +5,7 @@ import 'package:invoiso/constants.dart';
 import 'package:invoiso/database/company_info_service.dart';
 import 'package:invoiso/database/settings_service.dart';
 import 'package:invoiso/screens/backup_management_screen.dart';
+import 'package:invoiso/screens/invoice_settings_screen.dart';
 import 'package:invoiso/screens/pdf_settings_screen.dart';
 import 'package:invoiso/screens/user_management_screen.dart';
 import '../database/database_helper.dart';
@@ -45,8 +46,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _loadCompanyInfo() async {
     final info = await CompanyInfoService.getCompanyInfo();
-    if (info != null)
-    {
+    if (info != null) {
       final base64Logo = await SettingsService.getCompanyLogo();
       setState(() {
         _companyInfo = info;
@@ -67,14 +67,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _saveCompanyInfo() async {
     final newInfo = CompanyInfo(
-      id: _companyInfo?.id,
-      name: nameController.text,
-      address: addressController.text,
-      phone: phoneController.text,
-      email: emailController.text,
-      website: websiteController.text,
-      gstin: gstinController.text
-    );
+        id: _companyInfo?.id,
+        name: nameController.text,
+        address: addressController.text,
+        phone: phoneController.text,
+        email: emailController.text,
+        website: websiteController.text,
+        gstin: gstinController.text);
 
     if (_companyInfo == null) {
       await CompanyInfoService.insertCompanyInfo(newInfo);
@@ -140,52 +139,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildCompanyInfoForm() {
+
     final logoWidget = _selectedLogoFile != null
         ? ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Image.file(_selectedLogoFile!, fit: BoxFit.contain),
-    )
+            borderRadius: BorderRadius.circular(8),
+            child: Image.file(_selectedLogoFile!, fit: BoxFit.contain),
+          )
         : (_base64Logo != null
-        ? ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Image.memory(base64Decode(_base64Logo!), fit: BoxFit.contain),
-    )
-        : Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.add_photo_alternate_outlined,
-              size: 40,
-              color: Theme.of(context).primaryColor,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Upload Logo',
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Click to browse',
-            style: TextStyle(
-              color: Colors.grey[400],
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    ));
+            ? ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.memory(base64Decode(_base64Logo!),
+                    fit: BoxFit.contain),
+              )
+            : Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).primaryColor.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.add_photo_alternate_outlined,
+                        size: 40,
+                        color: Theme.of(context).primaryColor,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Upload Logo',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Click to browse',
+                      style: TextStyle(
+                        color: Colors.grey[400],
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ));
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -301,13 +302,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 maxLength: 50,
                                 decoration: InputDecoration(
                                   labelText: 'Company Name',
-                                  prefixIcon: const Icon(Icons.business, size: 20),
+                                  prefixIcon:
+                                      const Icon(Icons.business, size: 20),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: Colors.grey[300]!),
+                                    borderSide:
+                                        BorderSide(color: Colors.grey[300]!),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
@@ -330,13 +333,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 maxLength: 50,
                                 decoration: InputDecoration(
                                   labelText: 'GSTIN',
-                                  prefixIcon: const Icon(Icons.receipt_long, size: 20),
+                                  prefixIcon:
+                                      const Icon(Icons.receipt_long, size: 20),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: Colors.grey[300]!),
+                                    borderSide:
+                                        BorderSide(color: Colors.grey[300]!),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
@@ -365,7 +370,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: Colors.grey[300]!),
+                                    borderSide:
+                                        BorderSide(color: Colors.grey[300]!),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
@@ -399,7 +405,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: Colors.grey[300]!),
+                                    borderSide:
+                                        BorderSide(color: Colors.grey[300]!),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
@@ -427,13 +434,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 style: const TextStyle(fontSize: 16),
                                 decoration: InputDecoration(
                                   labelText: 'Website',
-                                  prefixIcon: const Icon(Icons.language, size: 20),
+                                  prefixIcon:
+                                      const Icon(Icons.language, size: 20),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: Colors.grey[300]!),
+                                    borderSide:
+                                        BorderSide(color: Colors.grey[300]!),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
@@ -472,7 +481,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: Colors.grey[300]!),
+                                    borderSide:
+                                        BorderSide(color: Colors.grey[300]!),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
@@ -504,7 +514,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           backgroundColor: Theme.of(context).primaryColor,
                           foregroundColor: Colors.white,
                           elevation: 2,
-                          shadowColor: Theme.of(context).primaryColor.withOpacity(0.4),
+                          shadowColor:
+                              Theme.of(context).primaryColor.withOpacity(0.4),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -717,13 +728,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _infoTile(
-      String label,
-      String value,
-      double width,
-      IconData icon, {
-        int maxLines = 1,
-        bool isFullWidth = false,
-      }) {
+    String label,
+    String value,
+    double width,
+    IconData icon, {
+    int maxLines = 1,
+    bool isFullWidth = false,
+  }) {
     return SizedBox(
       width: width,
       child: Container(
@@ -807,11 +818,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildDummySection(String title) {
     return Scaffold(
       appBar: AppBar(
-          title: Text(title),
-          backgroundColor: Theme.of(context).primaryColor,
-          foregroundColor: Colors.white,
-          elevation: 0,
-          ),
+        title: Text(title),
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -835,13 +846,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       case 1:
         return BackupManagementScreen();
       case 2:
-        return UserManagementScreen(currentUser: widget.currentUser,);
+        return UserManagementScreen(
+          currentUser: widget.currentUser,
+        );
       case 3:
         return PdfSettingsScreen();
       case 4:
-        return _buildDummySection("Invoice Settings");
+        return InvoiceSettingsScreen();
       case 5:
-        return _buildAppInfoScreen() ;
+        return _buildAppInfoScreen();
       default:
         return _buildDummySection("Invoice Settings");
     }
@@ -888,13 +901,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ],
           ),
           const VerticalDivider(thickness: 1, width: 1),
-          Expanded(
-            child: _buildContent()
-            // Scaffold(
-            //   appBar: AppBar(title: const Text("Settings")),
-            //   body: _buildContent(),
-            //),
-          ),
+          Expanded(child: _buildContent()
+              // Scaffold(
+              //   appBar: AppBar(title: const Text("Settings")),
+              //   body: _buildContent(),
+              //),
+              ),
         ],
       ),
     );

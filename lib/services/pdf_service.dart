@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:invoiso/constants.dart';
 import 'package:invoiso/database/company_info_service.dart';
 import 'package:invoiso/database/database_helper.dart';
 import 'package:invoiso/database/settings_service.dart';
@@ -19,271 +22,492 @@ class PDFService {
   static Future<pw.Document> generateInvoicePDF(Invoice invoice) async
   {
     final pdf = pw.Document();
-    final dbHelper = DatabaseHelper();
     final company = await CompanyInfoService.getCompanyInfo();
 
     final selectedTemplate = await SettingsService.getInvoiceTemplate();
 
     switch (selectedTemplate) {
       case InvoiceTemplate.classic:
-        pdf.addPage(_buildClassicTemplate(invoice, company));
+        pdf.addPage(await _buildClassicTemplate(invoice, company));
         break;
       case InvoiceTemplate.modern:
-        pdf.addPage(_buildModernTemplate(invoice, company));
+        pdf.addPage(await _buildModernTemplate(invoice, company));
         break;
       case InvoiceTemplate.minimal:
-        pdf.addPage(_buildMinimalTemplate(invoice, company));
+        pdf.addPage(await _buildMinimalTemplate(invoice, company));
         break;
     }
 
     return pdf;
   }
 
-  static pw.MultiPage _buildClassicTemplate(Invoice invoice, CompanyInfo? company)
+  static Future<pw.MultiPage> _buildClassicTemplate(Invoice invoice, CompanyInfo? company) async
   {
+    final accentColor = PdfColors.indigo900; // Use a strong accent color
+    final LogoPosition logoPosition = await SettingsService.getLogoPosition(); DefaultTexts.logoPosition;//await SettingsService.getLogoPosition(); // "left" or "right"
+    final base64Logo = await SettingsService.getCompanyLogo();
+    final logoImage = pw.MemoryImage(base64Decode(base64Logo!));
+    final String thankyouNote = await SettingsService.getSetting(SettingKey.thankYouNote) ?? DefaultTexts.thankYouNote;
+
     return pw.MultiPage(
       pageFormat: PdfPageFormat.a4,
-      margin: const pw.EdgeInsets.all(40),
-      build: (context) => [
-        // Header
-        pw.Row(
-          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-          children: [
-            pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text(company?.name ?? '',
-                    style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold)),
-                pw.SizedBox(height: 4),
-                pw.Text(company?.address ?? ''),
-                pw.Text(company?.phone ?? ''),
-                pw.Text(company?.email ?? ''),
-                pw.Text("GSTIN: ${company?.gstin ?? ''}"),
-              ],
-            ),
-            pw.Text('INVOICE',
-                style: pw.TextStyle(
-                    fontSize: 30, fontWeight: pw.FontWeight.bold, color: PdfColors.blue)),
-          ],
+      margin: const pw.EdgeInsets.all(36),
+      footer: (context) => pw.Container(
+        alignment: pw.Alignment.centerRight,
+        margin: const pw.EdgeInsets.only(top: 20),
+        child: pw.Text(
+          "Page ${context.pageNumber} of ${context.pagesCount}",
+          style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
         ),
-        pw.SizedBox(height: 30),
-
-        // Customer
+      ),
+      build: (context) => [
+        // 1. Header with Logo and Company Details
         pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            pw.Column(
+            if (logoPosition == LogoPosition.left)
+              _buildCompanyLogo(logoImage),
+
+            // Company Info Block
+            pw.Container(
+              padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: pw.BoxDecoration(
+                // Subtle background for company info
+                color: PdfColors.grey100,
+                borderRadius: pw.BorderRadius.circular(4),
+                border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
+              ),
+              child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text("Bill To:", style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                pw.SizedBox(height: 4),
-                pw.Text(invoice.customer.name),
-                pw.Text(invoice.customer.address),
-                pw.Text(invoice.customer.phone),
-                pw.Text(invoice.customer.email),
-                pw.Text("GSTIN: ${invoice.customer.gstin}",style: pw.TextStyle(fontStyle: pw.FontStyle.italic)),
-              ]
+                children: [
+                  pw.Text(company?.name ?? '',
+                      style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold, color: accentColor)),
+                  pw.SizedBox(height: 4),
+                  pw.Text(company?.address ?? '', style: const pw.TextStyle(fontSize: 10)),
+                  pw.Text('Phone: ${company?.phone ?? ''}', style: const pw.TextStyle(fontSize: 10)),
+                  pw.Text('Email: ${company?.email ?? ''}', style: const pw.TextStyle(fontSize: 10)),
+                  pw.Text('GSTIN: ${company?.gstin ?? ''}', style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 10, color: PdfColors.grey700)),
+                ],
+              ),
             ),
+
+            if (logoPosition == LogoPosition.right)
+              _buildCompanyLogo(logoImage),
+          ],
+        ),
+
+        pw.SizedBox(height: 10),
+        pw.Divider(thickness: 1, color: accentColor),
+        pw.SizedBox(height: 10),
+
+        // 2. Invoice Title and Number/Date
+        pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.end,
+          children: [
+            // pw.Text('INVOICE',
+            //     style: pw.TextStyle(fontSize: 32, fontWeight: pw.FontWeight.bold, color: accentColor)),
             pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.end,
               children: [
-                pw.Text("Invoice #: ${invoice.id}"),
-                pw.Text("Date: ${_formatDate(invoice.date)}"),
+                pw.Text("Invoice #: ${invoice.id}", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
+                pw.Text("Date: ${_formatDate(invoice.date)}", style: const pw.TextStyle(fontSize: 10)),
               ],
             ),
-          ]
+          ],
         ),
 
-        pw.SizedBox(height: 30),
+        // pw.SizedBox(height: 20),
 
-        // Table
-        _buildInvoiceTable(invoice),
+        // 3. Customer Info
+        pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Container(
+              padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              color: PdfColors.grey200, // Background for the Bill To header
+              child: pw.Text("BILL TO", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: PdfColors.grey700)),
+            ),
+            pw.Padding(
+              padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.SizedBox(height: 5),
+                    pw.Text(invoice.customer.name, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11)),
+                    pw.Text(invoice.customer.address, style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text(invoice.customer.phone, style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text(invoice.customer.email, style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text("GSTIN: ${invoice.customer.gstin}", style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 10, color: PdfColors.grey600)),
+                  ]
+              )
+            )
+          ],
+        ),
+
+        pw.SizedBox(height: 25),
+
+        // 4. Items Table
+        _buildInvoiceTable(invoice, headerColor: accentColor, textColor: PdfColors.white), // Using accent color for table header
 
         pw.SizedBox(height: 20),
 
-        // Totals
+        // 5. Totals and Notes
         pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
             _buildAdditionalNotes(invoice),
-            _buildTotals(invoice),
-          ]
+            _buildEnhancedTotals(invoice, PdfColors.grey200, PdfColors.black, accentColor), // Totals with accent
+          ],
         ),
 
-
-        pw.Divider(),
+        pw.SizedBox(height: 30),
         pw.Center(
-          child: pw.Text("Thank you!",
-              style: pw.TextStyle(color: PdfColors.blue, fontSize: 14)),
+          child: pw.Text(thankyouNote,
+              style: pw.TextStyle(fontSize: 14, color: accentColor, fontStyle: pw.FontStyle.italic, fontWeight: pw.FontWeight.bold)),
         ),
       ],
     );
   }
 
-  static pw.MultiPage _buildModernTemplate(Invoice invoice, CompanyInfo? company)
+  static Future<pw.MultiPage> _buildMinimalTemplate(Invoice invoice, CompanyInfo? company) async
   {
+    final accentColor = PdfColors.grey700; // Use a strong, neutral accent
+    final LogoPosition logoPosition = await SettingsService.getLogoPosition();//await SettingsService.getLogoPosition(); // "left" or "right"
+    final base64Logo = await SettingsService.getCompanyLogo();
+    final logoImage = pw.MemoryImage(base64Decode(base64Logo!));
+    final String thankyouNote = await SettingsService.getSetting(SettingKey.thankYouNote) ?? "";
+
     return pw.MultiPage(
       pageFormat: PdfPageFormat.a4,
-      margin: const pw.EdgeInsets.all(0), // full bleed look
+      margin: const pw.EdgeInsets.all(45), // Increased margin for more whitespace
+      footer: (context) => pw.Container(
+        alignment: pw.Alignment.centerRight,
+        margin: const pw.EdgeInsets.only(top: 20),
+        child: pw.Text(
+          "Page ${context.pageNumber} of ${context.pagesCount}",
+          style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+        ),
+      ),
       build: (context) => [
-        // Header with color
+        // 1. Header (Invoice Title & Numbers)
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            if(logoPosition == LogoPosition.left) _buildCompanyLogo(logoImage),
+            pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text("Invoice #", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: accentColor)),
+                pw.Text(invoice.id, style: const pw.TextStyle(fontSize: 12)),
+                pw.SizedBox(height: 5),
+                pw.Text("DATE", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: accentColor)),
+                pw.Text(_formatDate(invoice.date), style: const pw.TextStyle(fontSize: 12)),
+              ],
+            ),
+            if(logoPosition == LogoPosition.right) _buildCompanyLogo(logoImage),
+          ],
+        ),
+
+        pw.SizedBox(height: 10),
+        pw.Divider(thickness: 0.5, color: PdfColors.grey400),
+        pw.SizedBox(height: 20),
+
+        // 2. Company Info (From) & Customer Info (Bill To)
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            // FROM (Company Info)
+            pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text("FROM", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11, color: accentColor)),
+                pw.SizedBox(height: 5),
+                pw.Text(company?.name ?? '', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
+                pw.Text(company?.address ?? '', style: const pw.TextStyle(fontSize: 10)),
+                pw.Text(company?.phone ?? '', style: const pw.TextStyle(fontSize: 10)),
+                pw.Text(company?.email ?? '', style: const pw.TextStyle(fontSize: 10)),
+                pw.Text("GSTIN: ${company?.gstin ?? ''}",style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 9)),
+              ],
+            ),
+
+            // BILL TO (Customer Info)
+            pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.end, // Align customer info to the right
+              children: [
+                pw.Text("BILL TO", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11, color: accentColor)),
+                pw.SizedBox(height: 5),
+                pw.Text(invoice.customer.name, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
+                pw.Text(invoice.customer.address, style: const pw.TextStyle(fontSize: 10)),
+                pw.Text(invoice.customer.phone, style: const pw.TextStyle(fontSize: 10)),
+                pw.Text(invoice.customer.email, style: const pw.TextStyle(fontSize: 10)),
+                pw.Text("GSTIN: ${invoice.customer.gstin}",style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 9)),
+              ],
+            ),
+          ],
+        ),
+
+        pw.SizedBox(height: 30),
+
+        // 3. Table (Clean, no external borders)
+        _buildInvoiceTable(invoice, headerColor: PdfColors.grey100, textColor: PdfColors.black),
+
+        pw.SizedBox(height: 20),
+
+        // 4. Notes + Totals
+        pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              _buildAdditionalNotes(invoice),
+              // Use the enhanced totals widget for a professional summary
+              _buildEnhancedTotals(invoice, PdfColors.grey200, PdfColors.black, accentColor),
+            ]
+        ),
+
+        pw.SizedBox(height: 30),
+
+        // 5. Footer
+        pw.Center(
+          child: pw.Text(thankyouNote,
+              style: pw.TextStyle(color: accentColor, fontSize: 14, fontWeight: pw.FontWeight.bold)),
+        ),
+      ],
+    );
+  }
+
+  static Future<pw.MultiPage> _buildModernTemplate(Invoice invoice, CompanyInfo? company) async
+  {
+    final accentColor = PdfColors.blue600;
+    final LogoPosition logoPosition = await SettingsService.getLogoPosition();//await SettingsService.getLogoPosition(); // "left" or "right"
+    final base64Logo = await SettingsService.getCompanyLogo();
+    final logoImage = pw.MemoryImage(base64Decode(base64Logo!));
+    final String thankyouNote = await SettingsService.getSetting(SettingKey.thankYouNote) ?? "";
+
+    return pw.MultiPage(
+      pageFormat: PdfPageFormat.a4,
+      margin: const pw.EdgeInsets.all(0),
+      footer: (context) => pw.Container(
+        padding: const pw.EdgeInsets.symmetric(horizontal: 30, vertical: 8),
+        alignment: pw.Alignment.centerRight,
+        child: pw.Text(
+          "Page ${context.pageNumber} of ${context.pagesCount} - Generated by Invoiso",
+          style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+        ),
+      ),
+      build: (context) => [
+        // 1. Header with Color Block
         pw.Container(
-          color: PdfColors.blue,
-          padding: const pw.EdgeInsets.all(20),
+          color: accentColor,
+          padding: const pw.EdgeInsets.all(30), // Increased padding
           child: pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text(company?.name ?? '',
-                      style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
-                  pw.Text(company?.address ?? '', style: pw.TextStyle(color: PdfColors.white)),
-                  pw.Text(company?.phone ?? '', style: pw.TextStyle(color: PdfColors.white)),
-                  pw.Text(company?.email ?? '', style: pw.TextStyle(color: PdfColors.white)),
-                  pw.Text("GSTIN: ${company?.gstin ?? ''}", style: pw.TextStyle(color: PdfColors.white,fontStyle: pw.FontStyle.italic)),
-                ],
+              if (logoPosition == LogoPosition.left) _buildCompanyLogo(logoImage),
+              // Company Info
+              pw.Expanded(
+                flex: 2,
+                fit: pw.FlexFit.loose,
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(company?.name ?? '',
+                        style: pw.TextStyle(
+                            fontSize: 20,
+                            fontWeight: pw.FontWeight.bold, // Use extraBold
+                            color: PdfColors.white)),
+                    pw.SizedBox(height: 8),
+                    pw.Text(company?.address ?? '',
+                        style: const pw.TextStyle(color: PdfColors.white, fontSize: 10)),
+                    pw.Text('Phone: ${company?.phone ?? ''}',
+                        style: const pw.TextStyle(color: PdfColors.white, fontSize: 10)),
+                    pw.Text('Email: ${company?.email ?? ''}',
+                        style: const pw.TextStyle(color: PdfColors.white, fontSize: 10)),
+                    pw.Text('GSTIN: ${company?.gstin ?? ''}',
+                        style: pw.TextStyle(
+                            color: PdfColors.white,
+                            fontStyle: pw.FontStyle.italic,
+                            fontSize: 10)),
+                  ],
+                ),
               ),
+              // Logo
+              if (logoPosition == LogoPosition.right) _buildCompanyLogo(logoImage),
+            ],
+          ),
+        ),
+
+        // 2. Invoice Title and Number/Date
+        pw.Padding(
+          padding: const pw.EdgeInsets.fromLTRB(30, 10, 30, 10), // Padding for this section
+          child: pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.end,
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              // Invoice Tag
+              // pw.Text('INVOICE',
+              //     style: pw.TextStyle(
+              //         fontSize: 30,
+              //         color: accentColor,
+              //         fontWeight: pw.FontWeight.bold)),
+
+              // Invoice Number and Date
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.end,
                 children: [
-                  pw.Text('INVOICE',
-                      style: pw.TextStyle(fontSize: 25, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
-                  pw.Text("Invoice #: ${invoice.id}"),
-                  pw.Text("Date: ${_formatDate(invoice.date)}"),
+                  pw.Text("Invoice #: ${invoice.id}",
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
+                  pw.Text("Date: ${_formatDate(invoice.date)}", style: const pw.TextStyle(fontSize: 10)),
                 ],
               ),
             ],
           ),
         ),
-        pw.SizedBox(height: 20),
-        // Customer info
+
+        // 3. Bill To section
         pw.Padding(
-          padding: const pw.EdgeInsets.symmetric(horizontal: 20),
+          padding: const pw.EdgeInsets.symmetric(horizontal: 30),
+          child: pw.Container(
+            decoration: pw.BoxDecoration(
+              color: PdfColors.grey100,
+              borderRadius: pw.BorderRadius.circular(6),
+            ),
+            padding: const pw.EdgeInsets.all(12),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text("BILL TO",
+                    style: pw.TextStyle(
+                        fontSize: 14,
+                        fontWeight: pw.FontWeight.bold,
+                        color: accentColor)),
+                pw.SizedBox(height: 6),
+                pw.Text(invoice.customer.name, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+                pw.Text(invoice.customer.address, style: const pw.TextStyle(fontSize: 10)),
+                pw.Text(invoice.customer.phone, style: const pw.TextStyle(fontSize: 10)),
+                pw.Text(invoice.customer.email, style: const pw.TextStyle(fontSize: 10)),
+                pw.Text("GSTIN: ${invoice.customer.gstin}",
+                    style: pw.TextStyle(
+                        fontSize: 10, fontStyle: pw.FontStyle.italic)),
+              ],
+            ),
+          ),
+        ),
+
+        pw.SizedBox(height: 25),
+
+        // 4. Table Section
+        pw.Padding(
+          padding: const pw.EdgeInsets.symmetric(horizontal: 30),
+          child: _buildInvoiceTable(invoice, headerColor: accentColor, textColor: PdfColors.white),
+        ),
+
+        pw.SizedBox(height: 25),
+
+        // 5. Notes + Totals
+        pw.Padding(
+          padding: const pw.EdgeInsets.symmetric(horizontal: 30),
           child: pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text("BILL TO", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
-                  pw.SizedBox(height: 5),
-                  pw.Text(invoice.customer.name),
-                  pw.Text(invoice.customer.address),
-                  pw.Text(invoice.customer.phone),
-                  pw.Text(invoice.customer.email),
-                  pw.Text("GSTIN: ${invoice.customer.gstin}",style: pw.TextStyle(fontStyle: pw.FontStyle.italic)),
-                ],
-              ),
-            ]
-          )
+              _buildAdditionalNotes(invoice),
+              // Updated totals box with strong accent color for total due
+              _buildEnhancedTotals(invoice, PdfColors.blue200, PdfColors.black, accentColor),
+            ],
+          ),
         ),
-        pw.SizedBox(height: 20),
 
-        // Table
-        pw.Padding(
-          padding: const pw.EdgeInsets.symmetric(horizontal: 20),
-          child: _buildInvoiceTable(invoice, headerColor: PdfColors.blue100),
+        pw.Spacer(),
+
+        // 6. Footer thank-you
+        pw.Container(
+          color: accentColor,
+          padding: const pw.EdgeInsets.all(18),
+          child: pw.Center(
+            child: pw.Text(thankyouNote,
+                style: pw.TextStyle(color: PdfColors.white, fontSize: 13, fontWeight: pw.FontWeight.bold)),
+          ),
         ),
-        pw.SizedBox(height: 20),
+      ],
+    );
+  }
 
-        // Totals aligned right
-        pw.Padding(
-          padding: const pw.EdgeInsets.symmetric(horizontal: 20),
-          child: pw.Row(
+  // Company Logo Builder
+  static pw.Widget _buildCompanyLogo(pw.MemoryImage image) {
+    return pw.Container(
+      width: 80,
+      height: 80,
+      child: pw.Image(image, fit: pw.BoxFit.contain),
+    );
+  }
+
+  // Enhanced totals with highlighted total - MODIFIED
+  static pw.Widget _buildEnhancedTotals(Invoice invoice, PdfColor accentRowColor, PdfColor primaryColor, PdfColor totalHighlightColor) {
+    return pw.Container(
+      width: 250, // Slightly wider total box
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: PdfColors.grey300),
+        borderRadius: pw.BorderRadius.circular(6),
+      ),
+      child: pw.Column(
+        children: [
+          _totalRow("Subtotal", "Rs ${invoice.subtotal.toStringAsFixed(2)}"),
+          _totalRow(
+              "Tax (${(invoice.taxRate * 100).toStringAsFixed(0)}%)",
+              "Rs ${invoice.tax.toStringAsFixed(2)}"),
+          pw.Container(
+            padding: const pw.EdgeInsets.all(8),
+            decoration: pw.BoxDecoration(
+              // Use totalHighlightColor for the total row background
+              color: totalHighlightColor,
+              borderRadius: const pw.BorderRadius.vertical(bottom: pw.Radius.circular(5)),
+            ),
+            child: pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
-                _buildAdditionalNotes(invoice),
-                _buildTotals(invoice),
-              ]
-          ),
-        ),
-
-        // Footer
-        pw.Spacer(),
-        pw.Container(
-          color: PdfColors.blue,
-          padding: const pw.EdgeInsets.all(16),
-          child: pw.Center(
-            child: pw.Text("Thank you!", style: pw.TextStyle(color: PdfColors.white, fontSize: 14)),
-          ),
-        ),
-      ],
-    );
-  }
-
-  static pw.MultiPage _buildMinimalTemplate(Invoice invoice, CompanyInfo? company)
-  {
-    return pw.MultiPage(
-      pageFormat: PdfPageFormat.a4,
-      margin: const pw.EdgeInsets.all(40),
-      build: (context) => [
-        pw.Text('Invoice',
-            style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
-        pw.SizedBox(height: 20),
-
-        // Company + Customer side by side
-        pw.Row(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-          children: [
-            pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text(company?.name ?? ''),
-                pw.Text(company?.address ?? ''),
-                pw.Text(company?.phone ?? '',),
-                pw.Text(company?.email ?? '',),
-                pw.Text("GSTIN: ${company?.gstin ?? ''}",style: pw.TextStyle(fontStyle: pw.FontStyle.italic)),
+                pw.Text("Total Due", // Changed "Total" to "Total Due"
+                    style: pw.TextStyle(
+                        fontSize: 12,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.white)), // White text on colored background
+                pw.Text("Rs ${invoice.total.toStringAsFixed(2)}",
+                    style: pw.TextStyle(
+                        fontSize: 12,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.white)),
               ],
             ),
-            pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.end,
-              children: [
-                pw.Text("Invoice #: ${invoice.id}"),
-                pw.Text("Date: ${_formatDate(invoice.date)}"),
-              ],
-            )
-          ],
-        ),
-        pw.SizedBox(height: 20),
-
-        // Customer
-        pw.Text("Bill To:", style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-        pw.Text(invoice.customer.name),
-        pw.Text(invoice.customer.address),
-        pw.Text(invoice.customer.phone),
-        pw.Text(invoice.customer.email),
-        pw.Text("GSTIN: ${invoice.customer.gstin}",style: pw.TextStyle(fontStyle: pw.FontStyle.italic)),
-        pw.SizedBox(height: 20),
-
-        // Table (plain)
-        _buildInvoiceTable(invoice, headerColor: PdfColors.grey200),
-
-        pw.SizedBox(height: 20),
-        pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-            children: [
-              _buildAdditionalNotes(invoice),
-              _buildTotals(invoice),
-            ]
-        ),
-
-        pw.SizedBox(height: 20),
-        pw.Center(
-          child: pw.Text("Thank you!",
-              style: pw.TextStyle(color: PdfColors.grey600, fontSize: 12)),
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 
-  static pw.Widget _buildInvoiceTable(Invoice invoice, {PdfColor headerColor = PdfColors.grey200})
+// Total Row helper - UNCHANGED
+  static pw.Widget _totalRow(String label, String value) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.all(8),
+      child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+        children: [
+          pw.Text(label, style: const pw.TextStyle(fontSize: 10)),
+          pw.Text(value, style: const pw.TextStyle(fontSize: 10)),
+        ],
+      ),
+    );
+  }
+
+  // Build Invoice Table - MODIFIED
+  static pw.Widget _buildInvoiceTable(Invoice invoice, {PdfColor headerColor = PdfColors.grey200, PdfColor textColor = PdfColors.black})
   {
     return pw.Table(
-      border: pw.TableBorder.all(color: PdfColors.grey300),
+      // Removed external border for a cleaner look
+      // border: pw.TableBorder.all(color: PdfColors.grey300),
       columnWidths: {
         0: const pw.FlexColumnWidth(1),
         1: const pw.FlexColumnWidth(3),
@@ -297,19 +521,20 @@ class PDFService {
         pw.TableRow(
           decoration: pw.BoxDecoration(color: headerColor),
           children: [
-            _buildTableCell('Sl No', isHeader: true),
-            _buildTableCell('Item Name', isHeader: true),
-            _buildTableCell('HSN Code', isHeader: true),
-            _buildTableCell('Qty', isHeader: true),
-            _buildTableCell('Price', isHeader: true),
-            _buildTableCell('Discount', isHeader: true),
-            _buildTableCell('Total', isHeader: true),
+            _buildTableCell('Sl No', isHeader: true, textColor: textColor),
+            _buildTableCell('Item Name', isHeader: true, textColor: textColor),
+            _buildTableCell('HSN Code', isHeader: true, textColor: textColor),
+            _buildTableCell('Qty', isHeader: true, textColor: textColor),
+            _buildTableCell('Price', isHeader: true, textColor: textColor),
+            _buildTableCell('Discount', isHeader: true, textColor: textColor),
+            _buildTableCell('Total', isHeader: true, textColor: textColor),
           ],
         ),
         ...invoice.items.asMap().entries.map((entry) {
           final index = entry.key;
           final item = entry.value;
           return pw.TableRow(
+            decoration: index % 2 == 0 ? const pw.BoxDecoration(color: PdfColors.white) : const pw.BoxDecoration(color: PdfColors.grey100), // Zebra striping
             children: [
               _buildTableCell('${index + 1}'),
               _buildTableCell(item.product.name),
@@ -321,7 +546,36 @@ class PDFService {
             ],
           );
         }),
+        // Add a bottom line for professional finish
+        pw.TableRow(
+            children: [
+              pw.Container(height: 1, color: PdfColors.grey400),
+              pw.Container(height: 1, color: PdfColors.grey400),
+              pw.Container(height: 1, color: PdfColors.grey400),
+              pw.Container(height: 1, color: PdfColors.grey400),
+              pw.Container(height: 1, color: PdfColors.grey400),
+              pw.Container(height: 1, color: PdfColors.grey400),
+              pw.Container(height: 1, color: PdfColors.grey400),
+            ]
+        )
       ],
+    );
+  }
+
+// Build Table Cell - MODIFIED
+  static pw.Widget _buildTableCell(String text, {bool isHeader = false, PdfColor textColor = PdfColors.black})
+  {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 8), // Increased vertical padding
+      child: pw.Text(
+        text,
+        textAlign: isHeader ? pw.TextAlign.center : pw.TextAlign.left,
+        style: pw.TextStyle(
+            fontWeight: isHeader ? pw.FontWeight.bold : pw.FontWeight.normal,
+            fontSize: 10,
+            color: textColor // Use the provided color for header text
+        ),
+      ),
     );
   }
 
@@ -330,110 +584,10 @@ class PDFService {
     return pw.Align(
       alignment: pw.Alignment.centerLeft,
       child: pw.Text(invoice.notes ?? '' ,
-          style: pw.TextStyle(fontStyle: pw.FontStyle.italic,
-          fontWeight: pw.FontWeight.normal,
-          fontSize: 10,
-          color: PdfColors.grey700),
-      ),
-    );
-  }
-
-  static pw.Widget _buildTotals(Invoice invoice) {
-    return pw.Align(
-      alignment: pw.Alignment.centerRight,
-      child: pw.Container(
-        width: 220, // adjust width to fit your layout
-        child: pw.Table(
-          columnWidths: {
-            0: const pw.FlexColumnWidth(2), // label column
-            1: const pw.FlexColumnWidth(2), // value column
-          },
-          children: [
-            // Subtotal
-            pw.TableRow(
-              children: [
-                pw.Padding(
-                  padding: const pw.EdgeInsets.symmetric(vertical: 4),
-                  child: pw.Text("Subtotal:"),
-                ),
-                pw.Padding(
-                  padding: const pw.EdgeInsets.symmetric(vertical: 4),
-                  child: pw.Align(
-                    alignment: pw.Alignment.centerRight,
-                    child: pw.Text("Rs ${invoice.subtotal.toStringAsFixed(2)}"),
-                  ),
-                ),
-              ],
-            ),
-            // Tax
-            pw.TableRow(
-              children: [
-                pw.Padding(
-                  padding: const pw.EdgeInsets.symmetric(vertical: 4),
-                  child: pw.Text("Tax (${(invoice.taxRate * 100).toStringAsFixed(0)}%):"),
-                ),
-                pw.Padding(
-                  padding: const pw.EdgeInsets.symmetric(vertical: 4),
-                  child: pw.Align(
-                    alignment: pw.Alignment.centerRight,
-                    child: pw.Text("Rs ${invoice.tax.toStringAsFixed(2)}"),
-                  ),
-                ),
-              ],
-            ),
-            // Divider before total
-            pw.TableRow(
-              children: [
-                pw.Padding(
-                  padding: const pw.EdgeInsets.only(top: 8),
-                  child: pw.Divider(thickness: 1),
-                ),
-                pw.Padding(
-                  padding: const pw.EdgeInsets.only(top: 8),
-                  child: pw.Divider(thickness: 1),
-                ),
-              ],
-            ),
-            // Total
-            pw.TableRow(
-              children: [
-                pw.Padding(
-                  padding: const pw.EdgeInsets.symmetric(vertical: 6),
-                  child: pw.Text(
-                    "Total:",
-                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-                  ),
-                ),
-                pw.Padding(
-                  padding: const pw.EdgeInsets.symmetric(vertical: 6),
-                  child: pw.Align(
-                    alignment: pw.Alignment.centerRight,
-                    child: pw.Text(
-                      "Rs ${invoice.total.toStringAsFixed(2)}",
-                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-
-
-  static pw.Widget _buildTableCell(String text, {bool isHeader = false})
-  {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.all(6),
-      child: pw.Text(
-        text,
-        style: pw.TextStyle(
-          fontWeight: isHeader ? pw.FontWeight.bold : pw.FontWeight.normal,
-          fontSize: 10
-        ),
+        style: pw.TextStyle(fontStyle: pw.FontStyle.italic,
+            fontWeight: pw.FontWeight.normal,
+            fontSize: 10,
+            color: PdfColors.grey700),
       ),
     );
   }

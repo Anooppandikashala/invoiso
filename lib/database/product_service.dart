@@ -58,19 +58,40 @@ class ProductService {
     );
   }
 
+  static Future<List<Product>> searchProducts(String query) async {
+    final db = await dbHelper.database;
+    if (query.isEmpty) {
+      final result = await db.query('products');
+      return result.map((e) => Product.fromMap(e)).toList();
+    } else {
+      final result = await db.query(
+        'products',
+        where: 'LOWER(name) LIKE ? OR hsncode LIKE ?',
+        whereArgs: [
+          '%${query.toLowerCase()}%',
+          '%$query%',
+        ],
+      );
+      return result.map((e) => Product.fromMap(e)).toList();
+    }
+  }
+
   static Future<List<Product>> getProductsPaginated({
     required int offset,
     required int limit,
     String query = '',
     String orderBy = 'name',
+    bool orderASC = true
   }) async {
     final db = await dbHelper.database;
+
+    final order = orderASC ? "ASC" : "DESC";
 
     final maps = await db.query(
       'products',
       where: query.isNotEmpty ? 'name LIKE ? OR description LIKE ?' : null,
       whereArgs: query.isNotEmpty ? ['%$query%', '%$query%'] : null,
-      orderBy: '$orderBy ASC',
+      orderBy: '$orderBy $order',
       limit: limit,
       offset: offset,
     );
