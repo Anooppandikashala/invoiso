@@ -661,49 +661,9 @@
         <h3 class="section-title text-4xl font-bold mb-4 primary-text">App Screenshots</h3>
         <p class="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">Explore the intuitive interface designed for seamless invoice management</p>
         <div class="text-gray-800 mb-8 max-w-2xl font-bold mx-auto primary-text text-2xl" id="custom-bottom-text"></div>
-        
+
         <div class="swiper screenshots-swiper">
-          <div class="swiper-wrapper">
-            <div class="swiper-slide" data-custom-text="Invoice Login Page">
-              <img src="assets/images/sc1.webp" alt="Invoice Login" loading="lazy" onclick="openPreview(0)" />
-            </div>
-            <div class="swiper-slide" data-custom-text="Invoice Dashboard Page">
-              <img src="assets/images/sc2.webp" alt="Invoice Dashboard" loading="lazy" onclick="openPreview(1)" />
-            </div>
-            <div class="swiper-slide" data-custom-text="Create Invoice Page">
-              <img src="assets/images/sc4.webp" alt="Create Invoice" loading="lazy" onclick="openPreview(2)" />
-            </div>
-            <div class="swiper-slide" data-custom-text="Edit Your Invoice">
-              <img src="assets/images/sc14.webp" alt="Edit Invoice" loading="lazy" onclick="openPreview(3)" />
-            </div>
-            <div class="swiper-slide" data-custom-text="Invoice Listing Page">
-              <img src="assets/images/sc5.webp" alt="Invoice Listing" loading="lazy" onclick="openPreview(4)" />
-            </div>
-            <div class="swiper-slide" data-custom-text="Sample Invoice Pdf">
-              <img src="assets/images/sc15.webp" alt="Invoice Pdf" loading="lazy" onclick="openPreview(5)" />
-            </div>
-            <div class="swiper-slide" data-custom-text="Customer Management Page">
-              <img src="assets/images/sc6.webp" alt="Customer Management" loading="lazy" onclick="openPreview(6)" />
-            </div>
-            <div class="swiper-slide" data-custom-text="Product Management Page">
-              <img src="assets/images/sc7.webp" alt="Product Management" loading="lazy" onclick="openPreview(7)" />
-            </div>
-            <div class="swiper-slide" data-custom-text="User Management Page">
-              <img src="assets/images/sc10.webp" alt="User Management" loading="lazy" onclick="openPreview(8)" />
-            </div>
-            <div class="swiper-slide" data-custom-text="Edit Your Organization Data">
-              <img src="assets/images/sc8.webp" alt="Edit Organization" loading="lazy" onclick="openPreview(9)" />
-            </div>
-            <div class="swiper-slide" data-custom-text="Invoice Templates">
-              <img src="assets/images/sc11.webp" alt="Invoice Templates" loading="lazy" onclick="openPreview(10)" />
-            </div>
-            <div class="swiper-slide" data-custom-text="Backup Your Data">
-              <img src="assets/images/sc9.webp" alt="Backup Data" loading="lazy" onclick="openPreview(11)" />
-            </div>
-            <div class="swiper-slide" data-custom-text="About Invoiso">
-              <img src="assets/images/sc12.webp" alt="About Invoiso" loading="lazy" onclick="openPreview(12)" />
-            </div>
-          </div>
+          <div class="swiper-wrapper" id="screenshots-wrapper"></div>
           <div class="swiper-button-next"></div>
           <div class="swiper-button-prev"></div>
           <div class="swiper-pagination"></div>
@@ -875,6 +835,53 @@
       });
     });
 
+    // 1. Define all your screenshots in one array
+    const screenshots = [
+      { src: "login.webp", text: "Invoice Login Page", alt: "Invoice Login" },
+      { src: "dashboard.webp", text: "Invoice Dashboard Page", alt: "Invoice Dashboard" },
+      { src: "new_invoice1.webp", text: "Create Invoice Page", alt: "Create Invoice" },
+      { src: "new_invoice2.webp", text: "Create Invoice Page with Products", alt: "Create Invoice" },
+      { src: "invoice_success.webp", text: "Create Invoice Success Page", alt: "Create Invoice" },
+      { src: "inoice_details_minimal.webp", text: "Invoice Details Minimal Page", alt: "Invoice Details Minimal Page" },
+      { src: "edit_invoice.webp", text: "Edit Your Invoice", alt: "Edit Invoice" },
+      { src: "edit_invoice2.webp", text: "Edit Your Invoice", alt: "Edit Invoice" },
+      { src: "invoice_list.webp", text: "Invoice Listing Page", alt: "Invoice Listing" },
+      { src: "invoice_pdf.webp", text: "Sample Invoice Pdf", alt: "Invoice Pdf" },
+      { src: "customer_management.webp", text: "Customer Management Page", alt: "Customer Management" },
+      { src: "customer_editing.webp", text: "Customer Editing Page", alt: "Customer Management" },
+      { src: "product_management.webp", text: "Product Management Page", alt: "Product Management" },
+      { src: "product_edit.webp", text: "Product Editing Page", alt: "Product Management" },
+      { src: "user_management.webp", text: "User Management Page", alt: "User Management" },
+      { src: "user_edit.webp", text: "User Editing Page", alt: "User Management" },
+      { src: "company_informations.webp", text: "Edit Your Organization Data", alt: "Edit Organization" },
+      { src: "invoice_settings.webp", text: "Invoice Settings", alt: "Edit Organization" },
+      { src: "pdf_templates.webp", text: "Invoice Templates", alt: "Invoice Templates" },
+      { src: "classic_pdf_template.webp", text: "Classic Invoice Templates", alt: "Invoice Templates" },
+      { src: "modern_pdf_template.webp", text: "Modern Invoice Templates", alt: "Invoice Templates" },
+      { src: "minimal_pdf_template.webp", text: "Minimal Invoice Templates", alt: "Invoice Templates" },
+      { src: "backup_management.webp", text: "Backup Your Data", alt: "Backup Data" },
+      { src: "application_information.webp", text: "About Invoiso", alt: "About Invoiso" }
+    ];
+
+    // 2. Get the wrapper element
+    const wrapper = document.getElementById("screenshots-wrapper");
+
+    // 3. Dynamically create slides
+    screenshots.forEach((item, index) => {
+      const slide = document.createElement("div");
+      slide.classList.add("swiper-slide");
+      slide.dataset.customText = item.text;
+
+      slide.innerHTML = `
+        <img src="assets/images/screenshots/${item.src}" 
+            alt="${item.text}" 
+            loading="lazy" 
+            onclick="openPreview(${index})" />
+      `;
+
+      wrapper.appendChild(slide);
+    });
+
     let currentImage = 0;
     const images = document.querySelectorAll('.swiper-wrapper img');
     const previewModal = document.getElementById('imagePreview');
@@ -906,6 +913,7 @@
     previewModal.addEventListener('click', function(e) {
       if (e.target === previewModal) closePreview();
     });
+
     </script>
   </body>
 </html>
