@@ -5,6 +5,7 @@ publisher: ANOOP P
 publisher_url: https://github.com/Anooppandikashala
 display_name: Invoiso
 create_desktop_icon: true
+output_base_filename: InvoiceAppSetup
 # See: https://jrsoftware.org/ishelp/index.php?topic=setup_defaultdirname
 # install_dir_name: "D:\\HELLO-WORLD"
 # This path is relative to the root directory of your project; The format of icon file must be ico, can not be png or others
