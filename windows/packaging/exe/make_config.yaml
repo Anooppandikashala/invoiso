@@ -9,6 +9,6 @@ output_base_filename: InvoiceAppSetup
 # See: https://jrsoftware.org/ishelp/index.php?topic=setup_defaultdirname
 # install_dir_name: "D:\\HELLO-WORLD"
 # This path is relative to the root directory of your project; The format of icon file must be ico, can not be png or others
-# setup_icon_file: windows\runner\resources\app_icon.ico
+setup_icon_file: assets\exe\images\logo.ico
 locales:
   - en
