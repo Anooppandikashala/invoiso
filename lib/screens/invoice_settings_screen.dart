@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:invoiso/common.dart';
 
+import '../constants.dart';
 import '../database/settings_service.dart';
 
 class InvoiceSettingsScreen extends StatefulWidget {
@@ -135,15 +136,15 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                 decoration: InputDecoration(
                                   labelText: 'Company Logo Position',
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                                   ),
                                   enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                                     borderSide:
                                     BorderSide(color: Colors.grey[300]!),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                                     borderSide: BorderSide(
                                       color: Theme.of(context).primaryColor,
                                       width: 2,
@@ -177,15 +178,15 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                   prefixIcon:
                                   const Icon(Icons.confirmation_number),
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                                   ),
                                   enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                                     borderSide:
                                     BorderSide(color: Colors.grey[300]!),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                                     borderSide: BorderSide(
                                       color: Theme.of(context).primaryColor,
                                       width: 2,
@@ -210,15 +211,15 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                   prefixIcon: const Icon(Icons.info_outline),
                                   alignLabelWithHint: true,
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                                   ),
                                   enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                                     borderSide:
                                     BorderSide(color: Colors.grey[300]!),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                                     borderSide: BorderSide(
                                       color: Theme.of(context).primaryColor,
                                       width: 2,
@@ -244,15 +245,15 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                   const Icon(Icons.favorite_outline),
                                   alignLabelWithHint: true,
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                                   ),
                                   enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                                     borderSide:
                                     BorderSide(color: Colors.grey[300]!),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                                     borderSide: BorderSide(
                                       color: Theme.of(context).primaryColor,
                                       width: 2,
@@ -284,7 +285,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                           shadowColor:
                           Theme.of(context).primaryColor.withOpacity(0.4),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                           ),
                         ),
                         child: const Row(

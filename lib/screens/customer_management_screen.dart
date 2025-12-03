@@ -166,7 +166,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
         ),
         backgroundColor: isError ? Colors.red.shade600 : Colors.green.shade600,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         duration: const Duration(seconds: 3),
       ),
     );
@@ -274,7 +274,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         filled: readOnly,
         fillColor: readOnly ? Colors.grey.shade100 : null,
       ),
@@ -524,7 +524,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         counterText: '',
       ),
       validator: required
@@ -659,7 +659,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
               decoration: InputDecoration(
                 labelText: 'Search customers...',
                 prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
                 filled: true,
                 fillColor: Colors.grey.shade50,
               ),
@@ -676,7 +676,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
               border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
               color: Colors.grey.shade50,
             ),
             child: DropdownButtonHideUnderline(

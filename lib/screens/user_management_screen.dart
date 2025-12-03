@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:invoiso/database/user_service.dart';
+import '../constants.dart';
 import '../models/user.dart';
 import '../database/database_helper.dart';
 
@@ -159,7 +160,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: Theme.of(context).primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                 ),
                 child: Row(
                   children: [
@@ -233,7 +234,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               },
                             ),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                             ),
                             filled: true,
                             fillColor: Colors.grey[50],
@@ -265,7 +266,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               },
                             ),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                             ),
                             filled: true,
                             fillColor: Colors.grey[50],
@@ -301,7 +302,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               },
                             ),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                             ),
                             filled: true,
                             fillColor: Colors.grey[50],
@@ -339,7 +340,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                     padding: const EdgeInsets.symmetric(
                         horizontal: 24, vertical: 12),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                     ),
                   ),
                   icon: const Icon(Icons.check_circle_outline),
@@ -383,7 +384,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: Colors.red.shade50,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
             ),
             child: Row(
               children: [
@@ -459,7 +460,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                 padding:
                 const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                 ),
               ),
               icon: const Icon(Icons.delete_forever),
@@ -497,7 +498,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
         backgroundColor: color,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
         ),
         margin: const EdgeInsets.all(16),
       ),
@@ -573,7 +574,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                   ),
                   child: Icon(
                     _editingUserId == null ? Icons.person_add : Icons.edit,
@@ -608,12 +609,12 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         hintText: 'Enter username',
                         prefixIcon: const Icon(Icons.person_outline),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                         ),
                         filled: true,
                         fillColor: Colors.grey[50],
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                           borderSide: BorderSide(
                               color: Theme.of(context).primaryColor, width: 2),
                         ),
@@ -648,12 +649,12 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           },
                         ),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                         ),
                         filled: true,
                         fillColor: Colors.grey[50],
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                           borderSide: BorderSide(
                               color: Theme.of(context).primaryColor, width: 2),
                         ),
@@ -679,12 +680,12 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         prefixIcon:
                         const Icon(Icons.admin_panel_settings_outlined),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                         ),
                         filled: true,
                         fillColor: Colors.grey[50],
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                           borderSide: BorderSide(
                               color: Theme.of(context).primaryColor, width: 2),
                         ),
@@ -792,7 +793,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           backgroundColor: Theme.of(context).primaryColor,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                           ),
                           elevation: 2,
                         ),
@@ -819,7 +820,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 color: Theme.of(context).primaryColor,
                                 width: 2),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                             ),
                           ),
                         ),
@@ -864,7 +865,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                       ),
                       child: const Icon(Icons.people,
                           color: Colors.white, size: 28),
@@ -901,7 +902,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       filled: true,
                       fillColor: Colors.white.withOpacity(0.2),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                         borderSide: BorderSide.none,
                       ),
                       contentPadding: const EdgeInsets.symmetric(
@@ -978,7 +979,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                           .primaryColor
                           .withOpacity(0.1)
                           : Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                       border: Border.all(
                         color: isEditing
                             ? Theme.of(context).primaryColor
@@ -1017,7 +1018,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 Colors.blue.shade600
                               ],
                             ),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                             boxShadow: [
                               BoxShadow(
                                 color: (isAdmin
@@ -1140,7 +1141,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     return Container(
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
       ),
       child: IconButton(
         icon: Icon(icon),
@@ -1583,7 +1584,7 @@ class _UserManagementScreenState1 extends State<UserManagementScreen1>
               margin: const EdgeInsets.fromLTRB(16, 16, 16, 16),
               elevation: 4,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
               ),
               child: Column(
                 children: [
@@ -1790,7 +1791,7 @@ class _UserManagementScreenState1 extends State<UserManagementScreen1>
               margin: const EdgeInsets.all(16),
               elevation: 4,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
               ),
               child: Column(
                 children: [

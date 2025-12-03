@@ -44,10 +44,10 @@ class PDFService {
   static Future<pw.MultiPage> _buildClassicTemplate(Invoice invoice, CompanyInfo? company) async
   {
     final accentColor = PdfColors.indigo900; // Use a strong accent color
-    final LogoPosition logoPosition = await SettingsService.getLogoPosition(); DefaultTexts.logoPosition;//await SettingsService.getLogoPosition(); // "left" or "right"
+    final LogoPosition logoPosition = await SettingsService.getLogoPosition(); DefaultValues.logoPosition;//await SettingsService.getLogoPosition(); // "left" or "right"
     final base64Logo = await SettingsService.getCompanyLogo();
-    final logoImage = pw.MemoryImage(base64Decode(base64Logo!));
-    final String thankyouNote = await SettingsService.getSetting(SettingKey.thankYouNote) ?? DefaultTexts.thankYouNote;
+    final logoImage = base64Logo != null ? pw.MemoryImage(base64Decode(base64Logo)) : null;
+    final String thankyouNote = await SettingsService.getSetting(SettingKey.thankYouNote) ?? DefaultValues.thankYouNote;
 
     return pw.MultiPage(
       pageFormat: PdfPageFormat.a4,
@@ -66,9 +66,7 @@ class PDFService {
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            if (logoPosition == LogoPosition.left)
-              _buildCompanyLogo(logoImage),
-
+            if (logoImage != null && logoPosition == LogoPosition.left) _buildCompanyLogo(logoImage),
             // Company Info Block
             pw.Container(
               padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -91,9 +89,7 @@ class PDFService {
                 ],
               ),
             ),
-
-            if (logoPosition == LogoPosition.right)
-              _buildCompanyLogo(logoImage),
+            if (logoImage != null && logoPosition == LogoPosition.right) _buildCompanyLogo(logoImage),
           ],
         ),
 
@@ -176,7 +172,7 @@ class PDFService {
     final accentColor = PdfColors.grey700; // Use a strong, neutral accent
     final LogoPosition logoPosition = await SettingsService.getLogoPosition();//await SettingsService.getLogoPosition(); // "left" or "right"
     final base64Logo = await SettingsService.getCompanyLogo();
-    final logoImage = pw.MemoryImage(base64Decode(base64Logo!));
+    final logoImage = base64Logo != null ? pw.MemoryImage(base64Decode(base64Logo)) : null;
     final String thankyouNote = await SettingsService.getSetting(SettingKey.thankYouNote) ?? "";
 
     return pw.MultiPage(
@@ -196,7 +192,7 @@ class PDFService {
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
-            if(logoPosition == LogoPosition.left) _buildCompanyLogo(logoImage),
+            if(logoImage != null && logoPosition == LogoPosition.left) _buildCompanyLogo(logoImage),
             pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
@@ -207,7 +203,7 @@ class PDFService {
                 pw.Text(_formatDate(invoice.date), style: const pw.TextStyle(fontSize: 12)),
               ],
             ),
-            if(logoPosition == LogoPosition.right) _buildCompanyLogo(logoImage),
+            if(logoImage != null && logoPosition == LogoPosition.right) _buildCompanyLogo(logoImage),
           ],
         ),
 
@@ -284,7 +280,7 @@ class PDFService {
     final accentColor = PdfColors.blue600;
     final LogoPosition logoPosition = await SettingsService.getLogoPosition();//await SettingsService.getLogoPosition(); // "left" or "right"
     final base64Logo = await SettingsService.getCompanyLogo();
-    final logoImage = pw.MemoryImage(base64Decode(base64Logo!));
+    final logoImage = base64Logo != null ? pw.MemoryImage(base64Decode(base64Logo)) : null;
     final String thankyouNote = await SettingsService.getSetting(SettingKey.thankYouNote) ?? "";
 
     return pw.MultiPage(
@@ -307,7 +303,7 @@ class PDFService {
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              if (logoPosition == LogoPosition.left) _buildCompanyLogo(logoImage),
+              if (logoImage != null && logoPosition == LogoPosition.left) _buildCompanyLogo(logoImage),
               // Company Info
               pw.Expanded(
                 flex: 2,
@@ -336,7 +332,7 @@ class PDFService {
                 ),
               ),
               // Logo
-              if (logoPosition == LogoPosition.right) _buildCompanyLogo(logoImage),
+              if (logoImage != null && logoPosition == LogoPosition.right) _buildCompanyLogo(logoImage),
             ],
           ),
         ),

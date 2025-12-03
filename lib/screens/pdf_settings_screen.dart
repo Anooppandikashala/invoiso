@@ -3,6 +3,7 @@ import 'package:invoiso/database/invoice_service.dart';
 import 'package:invoiso/database/settings_service.dart';
 
 import '../common.dart';
+import '../constants.dart';
 import '../database/database_helper.dart';
 
 class PdfSettingsScreen extends StatefulWidget {
@@ -87,7 +88,7 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen>
                         : Colors.grey,
                     width: 2,
                   ),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                 ),
                 child: Column(
                   children: [

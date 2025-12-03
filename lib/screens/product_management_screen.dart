@@ -138,7 +138,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
         ),
         backgroundColor: isError ? Colors.red.shade600 : Colors.green.shade600,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         duration: const Duration(seconds: 3),
       ),
     );
@@ -272,7 +272,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         filled: readOnly,
         fillColor: readOnly ? Colors.grey.shade100 : null,
         counterText: '',
@@ -579,7 +579,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         counterText: '',
       ),
       validator: (value) {
@@ -700,7 +700,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                 labelText: 'Search products...',
                 prefixIcon: const Icon(Icons.search),
                 border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
                 filled: true,
                 fillColor: Colors.grey.shade50,
               ),
@@ -712,7 +712,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
               border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
               color: Colors.grey.shade50,
             ),
             child: DropdownButtonHideUnderline(

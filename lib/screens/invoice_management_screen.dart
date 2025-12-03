@@ -125,14 +125,14 @@ class _InvoiceManagementScreenState extends State<InvoiceManagementScreen> {
                             )
                                 : null,
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                             ),
                             enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                               borderSide: BorderSide(color: Colors.grey[300]!),
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                               borderSide: BorderSide(
                                 color: Theme.of(context).primaryColor,
                                 width: 2,
@@ -215,7 +215,7 @@ class _InvoiceManagementScreenState extends State<InvoiceManagementScreen> {
                   elevation: 2,
                   shadowColor: Colors.black.withValues(alpha: 0.1),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                   ),
                   child: Column(
                     children: [

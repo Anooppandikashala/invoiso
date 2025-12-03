@@ -242,7 +242,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     width: 2,
                                     strokeAlign: BorderSide.strokeAlignInside,
                                   ),
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                                   boxShadow: [
                                     BoxShadow(
                                       color: Colors.black.withOpacity(0.05),
@@ -305,15 +305,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   prefixIcon:
                                       const Icon(Icons.business, size: 20),
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                                   ),
                                   enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                                     borderSide:
                                         BorderSide(color: Colors.grey[300]!),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                                     borderSide: BorderSide(
                                       color: Theme.of(context).primaryColor,
                                       width: 2,
@@ -336,15 +336,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   prefixIcon:
                                       const Icon(Icons.receipt_long, size: 20),
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                                   ),
                                   enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                                     borderSide:
                                         BorderSide(color: Colors.grey[300]!),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                                     borderSide: BorderSide(
                                       color: Theme.of(context).primaryColor,
                                       width: 2,
@@ -366,15 +366,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   labelText: 'Phone',
                                   prefixIcon: const Icon(Icons.phone, size: 20),
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                                   ),
                                   enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                                     borderSide:
                                         BorderSide(color: Colors.grey[300]!),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                                     borderSide: BorderSide(
                                       color: Theme.of(context).primaryColor,
                                       width: 2,
@@ -401,15 +401,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   labelText: 'Email',
                                   prefixIcon: const Icon(Icons.email, size: 20),
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                                   ),
                                   enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                                     borderSide:
                                         BorderSide(color: Colors.grey[300]!),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                                     borderSide: BorderSide(
                                       color: Theme.of(context).primaryColor,
                                       width: 2,
@@ -437,15 +437,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   prefixIcon:
                                       const Icon(Icons.language, size: 20),
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                                   ),
                                   enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                                     borderSide:
                                         BorderSide(color: Colors.grey[300]!),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                                     borderSide: BorderSide(
                                       color: Theme.of(context).primaryColor,
                                       width: 2,
@@ -477,15 +477,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   ),
                                   alignLabelWithHint: true,
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                                   ),
                                   enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                                     borderSide:
                                         BorderSide(color: Colors.grey[300]!),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                                     borderSide: BorderSide(
                                       color: Theme.of(context).primaryColor,
                                       width: 2,
@@ -517,7 +517,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           shadowColor:
                               Theme.of(context).primaryColor.withOpacity(0.4),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                           ),
                         ),
                         child: const Row(
@@ -693,7 +693,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                         border: Border.all(color: Colors.grey[200]!),
                       ),
                       child: Row(
@@ -748,7 +748,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Colors.grey[100]!,
             ],
           ),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
           border: Border.all(color: Colors.grey[200]!, width: 1.5),
         ),
         child: Column(

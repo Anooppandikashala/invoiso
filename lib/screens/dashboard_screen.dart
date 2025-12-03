@@ -358,7 +358,7 @@ class _DashboardHomeState extends State<DashboardHome> {
                                       shadowColor:
                                           Colors.black.withValues(alpha: 0.1),
                                       shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
+                                        borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                                       ),
                                       child: Padding(
                                         padding: const EdgeInsets.all(16),
@@ -381,7 +381,7 @@ class _DashboardHomeState extends State<DashboardHome> {
                                                   ],
                                                 ),
                                                 borderRadius:
-                                                    BorderRadius.circular(12),
+                                                    BorderRadius.circular(AppBorderRadius.xsmall),
                                               ),
                                               child: Center(
                                                 child: Text(
@@ -610,7 +610,7 @@ class _DashboardHomeState extends State<DashboardHome> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                     boxShadow: [
                       BoxShadow(
                         color: color.withOpacity(0.2),

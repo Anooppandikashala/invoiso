@@ -81,7 +81,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   {
     final addNote = widget.invoiceToEdit != null ?
         ( widget.invoiceToEdit!.notes != null ? widget.invoiceToEdit!.notes! : "") :
-        await SettingsService.getSetting(SettingKey.additionalInfo) ?? DefaultTexts.additionalNote;
+        await SettingsService.getSetting(SettingKey.additionalInfo) ?? DefaultValues.additionalNote;
     setState(() {
       notesController.text = addNote;
     });
@@ -159,7 +159,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
             Expanded(
               child: Text(
                 '${product.name} (Rs: ${product.price})',
-                style: const TextStyle(fontSize: 18),
+                style: const TextStyle(fontSize: AppFontSize.xlarge),
               ),
             ),
           ],
@@ -173,7 +173,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 controller: quantityController,
                 decoration: InputDecoration(
                   labelText: 'Quantity',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
                   prefixIcon: const Icon(Icons.numbers),
                   filled: true,
                   fillColor: Colors.grey[50],
@@ -185,7 +185,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 controller: discountController,
                 decoration: InputDecoration(
                   labelText: 'Discount',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
                   prefixIcon: const Icon(Icons.discount),
                   filled: true,
                   fillColor: Colors.grey[50],
@@ -237,7 +237,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
           ),
           backgroundColor: Colors.orange,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         ),
       );
     } else {
@@ -260,7 +260,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
           ),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         ),
       );
       return;
@@ -278,7 +278,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
           ),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         ),
       );
       return;
@@ -324,7 +324,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
           ),
           backgroundColor: Colors.green,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         ),
       );
     } catch (e) {
@@ -348,7 +348,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
           children: [
             Icon(Icons.edit, color: Colors.blue),
             SizedBox(width: 12),
-            Text('Edit Item', style: TextStyle(fontSize: 18)),
+            Text('Edit Item', style: TextStyle(fontSize: AppFontSize.xlarge)),
           ],
         ),
         content: SizedBox(
@@ -360,7 +360,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.blue.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                 ),
                 child: Row(
                   children: [
@@ -369,7 +369,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     Expanded(
                       child: Text(
                         item.product.name,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: AppFontSize.xlarge),
                       ),
                     ),
                   ],
@@ -380,7 +380,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 controller: quantityController,
                 decoration: InputDecoration(
                   labelText: 'Quantity',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
                   prefixIcon: const Icon(Icons.numbers),
                   filled: true,
                   fillColor: Colors.grey[50],
@@ -392,7 +392,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 controller: discountController,
                 decoration: InputDecoration(
                   labelText: 'Discount',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
                   prefixIcon: const Icon(Icons.discount),
                   filled: true,
                   fillColor: Colors.grey[50],
@@ -483,7 +483,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppPadding.medium),
             decoration: BoxDecoration(
               color: Theme.of(context).primaryColor.withValues(alpha: 0.05),
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
@@ -497,7 +497,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     const SizedBox(width: 8),
                     const Text(
                       'Customers',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(fontSize: AppFontSize.medium, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -507,11 +507,12 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   onChanged: _filterCustomers,
                   decoration: InputDecoration(
                     labelText: 'Search Customer',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    labelStyle: TextStyle(fontSize: AppFontSize.small),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
                     prefixIcon: const Icon(Icons.search),
                     filled: true,
                     fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: AppPadding.small, vertical: AppPadding.xsmall),
                   ),
                 ),
               ],
@@ -548,6 +549,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     child: ListTile(
                       leading: CircleAvatar(
                         backgroundColor: Theme.of(context).primaryColor,
+                        radius: AppFontSize.xlarge,
                         child: Text(
                           customer.name[0].toUpperCase(),
                           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
@@ -556,10 +558,12 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                       title: Text(
                         customer.name,
                         style: TextStyle(
+                          fontSize: AppFontSize.medium,
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                         ),
                       ),
-                      subtitle: Text(customer.phone),
+                      subtitle: Text(
+                          customer.phone),
                       trailing: IconButton(
                         icon: Icon(
                           isSelected ? Icons.check_circle : Icons.add_circle_outline,
@@ -587,7 +591,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppPadding.medium),
             decoration: BoxDecoration(
               color: Theme.of(context).primaryColor.withValues(alpha: 0.05),
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
@@ -601,7 +605,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     const SizedBox(width: 8),
                     const Text(
                       'Products',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(fontSize: AppFontSize.medium, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -611,11 +615,12 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   onChanged: _filterProducts,
                   decoration: InputDecoration(
                     labelText: 'Search Product',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    labelStyle: TextStyle(fontSize: AppFontSize.small),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
                     prefixIcon: const Icon(Icons.search),
                     filled: true,
                     fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: AppPadding.small, vertical: AppPadding.xsmall),
                   ),
                 ),
               ],
@@ -628,7 +633,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.search_off, size: 48, color: Colors.grey[400]),
+                  Icon(Icons.search_off, size: 40, color: Colors.grey[400]),
                   const SizedBox(height: 8),
                   Text('No products found', style: TextStyle(color: Colors.grey[600])),
                 ],
@@ -651,12 +656,15 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                           color: Colors.blue.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Icon(Icons.inventory_2, color: Colors.grey),
+                        child: const Icon(Icons.inventory_2, color: Colors.grey,size: AppFontSize.xlarge,),
                       ),
                       title: Text(
                         product.name,
                         maxLines: 5,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                          fontSize: AppFontSize.medium
+                        ),
                       ),
                       subtitle: Column(
                         //mainAxisAlignment: MainAxisAlignment.start,
@@ -665,7 +673,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                           Text(
                             'HSN: ${product.hsncode.toUpperCase()}',
                             maxLines: 2,
-                            style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.w400),
+                            style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.w400,fontSize: AppFontSize.small),
                           ),
                           Column(
                             mainAxisAlignment: MainAxisAlignment.start,
@@ -679,7 +687,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                               Text(
                                 '₹${product.price.toStringAsFixed(2)}  (Stock : ${product.stock})',
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                                style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold,fontSize: AppFontSize.medium),
                               )
                             ],
                           )
@@ -707,7 +715,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppPadding.medium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -717,7 +725,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 const SizedBox(width: 8),
                 Text(
                   '$invoiceType Details',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: AppFontSize.medium, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -732,7 +740,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 //     maxLines: 1,
                 //     decoration: InputDecoration(
                 //       labelText: '$invoiceType Number',
-                //       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                //       border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
                 //       filled: true,
                 //       fillColor: Colors.grey[100],
                 //     ),
@@ -744,9 +752,11 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     controller: dateController,
                     readOnly: true,
                     enabled: false,
+                    style: TextStyle(fontSize: AppFontSize.medium),
                     decoration: InputDecoration(
                       labelText: 'Date',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      labelStyle: TextStyle(fontSize: AppFontSize.medium),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
                       filled: true,
                       fillColor: Colors.grey[100],
                     ),
@@ -759,13 +769,13 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               value: invoiceType,
               decoration: InputDecoration(
                 labelText: 'Type',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
                 filled: true,
                 fillColor: Colors.white,
               ),
               items: const [
-                DropdownMenuItem(value: 'Invoice', child: Text('Invoice')),
-                DropdownMenuItem(value: 'Quotation', child: Text('Quotation')),
+                DropdownMenuItem(value: 'Invoice', child: Text('Invoice',style: TextStyle(fontSize: AppFontSize.medium),)),
+                DropdownMenuItem(value: 'Quotation', child: Text('Quotation',style: TextStyle(fontSize: AppFontSize.medium),)),
               ],
               onChanged: (value) {
                 if (value != null) {
@@ -809,7 +819,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppPadding.medium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -819,7 +829,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 const SizedBox(width: 8),
                 const Text(
                   'Customer Details',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: AppFontSize.medium, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -829,9 +839,11 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 Expanded(
                   child: TextField(
                     controller: nameController,
+                    style: TextStyle(fontSize: AppFontSize.medium),
                     decoration: InputDecoration(
                       labelText: 'Customer Name *',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      labelStyle: TextStyle(fontSize: AppFontSize.medium),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
                       filled: true,
                       fillColor: Colors.white,
                     ),
@@ -841,9 +853,11 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 Expanded(
                   child: TextField(
                     controller: gstinController,
+                    style: TextStyle(fontSize: AppFontSize.medium),
                     decoration: InputDecoration(
                       labelText: 'GSTIN',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      labelStyle: TextStyle(fontSize: AppFontSize.medium),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
                       filled: true,
                       fillColor: Colors.white,
                     ),
@@ -853,9 +867,11 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 Expanded(
                   child: TextField(
                     controller: phoneController,
+                    style: TextStyle(fontSize: AppFontSize.medium),
                     decoration: InputDecoration(
                       labelText: 'Phone',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      labelStyle: TextStyle(fontSize: AppFontSize.medium),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
                       filled: true,
                       fillColor: Colors.white,
                     ),
@@ -869,9 +885,11 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 Expanded(
                   child: TextField(
                     controller: emailController,
+                    style: TextStyle(fontSize: AppFontSize.medium),
                     decoration: InputDecoration(
                       labelText: 'Email',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      labelStyle: TextStyle(fontSize: AppFontSize.medium),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
                       filled: true,
                       fillColor: Colors.white,
                     ),
@@ -881,9 +899,11 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 Expanded(
                   child: TextField(
                     controller: addressController,
+                    style: TextStyle(fontSize: AppFontSize.medium),
                     decoration: InputDecoration(
                       labelText: 'Address',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      labelStyle: TextStyle(fontSize: AppFontSize.medium),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
                       filled: true,
                       fillColor: Colors.white,
                     ),
@@ -951,7 +971,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppPadding.medium),
             decoration: BoxDecoration(
               color: Theme.of(context).primaryColor.withValues(alpha: 0.05),
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
@@ -962,7 +982,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 const SizedBox(width: 8),
                 Text(
                   '$invoiceType Items',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: AppFontSize.medium, fontWeight: FontWeight.bold),
                 ),
                 const Spacer(),
                 Container(
@@ -990,12 +1010,12 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   const SizedBox(height: 16),
                   Text(
                     'No items added yet',
-                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Add products from the right panel',
-                    style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                   ),
                 ],
               ),
@@ -1008,19 +1028,19 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 itemBuilder: (context, index) {
                   final item = invoiceItems[index];
                   return Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    margin: const EdgeInsets.symmetric(horizontal: AppMargin.small, vertical: AppMargin.xxxsmall),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                       border: Border.all(color: Colors.grey[200]!),
                     ),
                     child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: AppPadding.medium, vertical: AppPadding.xxxsmall),
                       leading: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           color: Colors.blue.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                         ),
                         child: Text(
                           "${index + 1}",
@@ -1034,7 +1054,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                       title: Text(
                             item.product.name,
                             style: const TextStyle(
-                              fontSize: 16,
+                              fontSize: AppFontSize.medium,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -1095,7 +1115,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
             ),
           ),
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppPadding.medium),
             decoration: BoxDecoration(
               color: Colors.grey[50],
               borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
@@ -1105,19 +1125,19 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 Row(
                   children: [
                     Expanded(
-                      flex: 3,
+                      flex: 4,
                       child: TextField(
                         controller: notesController,
                         decoration: InputDecoration(
                           labelText: 'Notes (Optional)',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
                           filled: true,
                           fillColor: Colors.white,
                         ),
                         maxLines: 3,
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    AppSpacing.wSmall,
                     Expanded(
                       flex: 1,
                       child: Column(
@@ -1140,12 +1160,14 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           TextField(
                             controller: taxRateController,
+                            style: TextStyle(fontSize: AppFontSize.medium),
                             decoration: InputDecoration(
                               labelText: 'Tax Rate',
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              labelStyle: TextStyle(fontSize: AppFontSize.medium),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
                               suffixText: '%',
                               filled: true,
                               fillColor: Colors.white,
@@ -1160,23 +1182,26 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey[300]!),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          _buildTotalRow('Subtotal', subtotal, false),
-                          const SizedBox(height: 8),
-                          _buildTotalRow('Tax', tax, false),
-                          const Divider(height: 20),
-                          _buildTotalRow('Total', total, true),
-                        ],
+                    AppSpacing.wSmall,
+                    Expanded(
+                      flex: 2,
+                      child: Container(
+                        padding: const EdgeInsets.all(AppPadding.medium),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                          border: Border.all(color: Colors.grey[300]!),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            _buildTotalRow('Subtotal', subtotal, false),
+                            const SizedBox(height: 8),
+                            _buildTotalRow('Tax', tax, false),
+                            const SizedBox(height: 20),
+                            _buildTotalRow('Total', total, true),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -1200,7 +1225,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         Container(
           decoration: BoxDecoration(
             color: onPressed != null ? color.withValues(alpha: 0.1) : Colors.grey[200],
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
           ),
           child: IconButton(
             icon: Icon(icon),
@@ -1227,9 +1252,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     final isEditMode = widget.invoiceToEdit != null;
     return Card(
       elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppBorderRadius.medium)),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppPadding.medium),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -1241,7 +1266,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 minimumSize: Size(MediaQuery.of(context).size.width * 0.25, 56),
                 backgroundColor: Theme.of(context).primaryColor,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
                 elevation: 2,
               ),
               icon: isLoading
@@ -1309,7 +1334,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
           ),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         ),
       );
       return;
@@ -1354,7 +1379,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
           ),
           backgroundColor: Colors.green,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         ),
       );
     } catch (e) {
@@ -1490,7 +1515,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     minimumSize: Size(MediaQuery.of(context).size.width * 0.2, 56),
                     backgroundColor: Theme.of(context).primaryColor,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
                     elevation: 2,
                   ),
                   onPressed: () => resetValues("Invoice"),
@@ -1568,7 +1593,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
           return Container(
             color: Colors.grey[100],
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppPadding.xsmall),
               child: Column(
                 children: [
                   if (isDesktop)
@@ -1607,12 +1632,12 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
           child: Column(
             children: [
               _customerSearchView(),
-              const SizedBox(height: 16),
+              AppSpacing.hMedium,
               _productSearchView(),
             ],
           ),
         ),
-        const SizedBox(width: 16),
+        AppSpacing.wSmall,
         Expanded(
           flex: 4,
           child: Column(
@@ -1622,13 +1647,13 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(flex: 1, child: _invoiceDetailsForm()),
-                  const SizedBox(width: 16),
+                  AppSpacing.wSmall,
                   Expanded(flex: 3, child: _customerDetailsForm()),
                 ],
               ),
-              const SizedBox(height: 16),
+              AppSpacing.hSmall,
               _invoiceItems(tax, subtotal, total),
-              const SizedBox(height: 16),
+              AppSpacing.hSmall,
               _actionButtons(),
             ],
           ),
