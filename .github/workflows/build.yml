@@ -48,85 +48,85 @@ jobs:
           name: Invoiso-Windows-Installer
           path: dist/*/invoiso-*-windows-setup.exe
 
-#  build-linux:
-#    runs-on: ubuntu-latest
-#    strategy:
-#      matrix:
-#        include:
-#          - distro: ubuntu-18.04
-#            deb_name: Invoiso-Ubuntu18.deb
-#          - distro: ubuntu-22.04
-#            deb_name: Invoiso-Ubuntu22.deb
-#    steps:
-#      - uses: actions/checkout@v3
-#      - uses: subosito/flutter-action@v2
-#        with:
-#          flutter-version: '3.32.8'
-#
-#      - name: Setup build deps
-#        run: |
-#          sudo apt-get update -y
-#          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev patchelf squashfs-tools
-#      - run: |
-#           VERSION=${GITHUB_REF#refs/tags/}
-#           VERSION=${VERSION#v}
-#           sed -i "s/^\(\s*version:\s*\)[0-9.]\+$/\1$VERSION/" pubspec.yaml
-#      - run: dart pub global activate fastforge
-#      - run: flutter pub get
-#      - run: flutter build linux --release
-#
-#      - name: Build .deb Package
-#        run: |
-#          fastforge package --platform linux --targets deb
-#          VERSION=${GITHUB_REF#refs/tags/}
-#          VERSION=${VERSION#v}
-#          mv dist/$VERSION/*.deb ${{ matrix.deb_name }}
-#
-#      - name: Upload .deb
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: ${{ matrix.deb_name }}
-#          path: ${{ matrix.deb_name }}
-#
-#  build-appimage:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@v3
-#      - uses: subosito/flutter-action@v2
-#        with:
-#          flutter-version: '3.32.8'
-#      - run: sudo apt-get update -y
-#      - run: sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev patchelf squashfs-tools
-#
-#      - run: flutter pub get
-#      - run: flutter build linux --release
-#
-#      - name: Prepare AppDir
-#        run: |
-#          mkdir -p AppDir/usr/bin
-#          cp -r build/linux/x64/release/bundle/* AppDir/usr/bin/
-#          cp build/linux/x64/release/bundle/invoiso AppDir/invoiso
-#          mkdir -p AppDir/usr/share/icons
-#          pwd
-#          ls -a
-#          cp assets/deb/images/logo.png AppDir/usr/share/icons/logo.png
-#
-#      - name: Install AppImage Builder
-#        run: |
-#          sudo apt-get install -y appstream file desktop-file-utils libfuse2 zsync
-#          pip install appimage-builder
-#
-#      - name: Build AppImage
-#        run: |
-#          VERSION=${GITHUB_REF#refs/tags/}
-#          VERSION=${VERSION#v}
-#          # Replace only AppDir.app_info.version
-#          # sed -i "s/^\(\s*version:\s*\)[0-9.]\+$/\1$VERSION/" AppImageBuilder.yml
-#          sed -i "/app_info:/,/^[^ ]/ s/^\(\s*version:\s*\)[0-9.]\+$/\1$VERSION/" AppImageBuilder.yml
-#          appimage-builder --recipe AppImageBuilder.yml --skip-test
-#
-#      - name: Upload AppImage
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: Invoiso-AppImage
-#          path: "*.AppImage"
+  build-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - distro: ubuntu-18.04
+            deb_name: Invoiso-Ubuntu18.deb
+          - distro: ubuntu-22.04
+            deb_name: Invoiso-Ubuntu22.deb
+    steps:
+      - uses: actions/checkout@v3
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.8'
+
+      - name: Setup build deps
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev patchelf squashfs-tools
+      - run: |
+           VERSION=${GITHUB_REF#refs/tags/}
+           VERSION=${VERSION#v}
+           sed -i "s/^\(\s*version:\s*\)[0-9.]\+$/\1$VERSION/" pubspec.yaml
+      - run: dart pub global activate fastforge
+      - run: flutter pub get
+      - run: flutter build linux --release
+
+      - name: Build .deb Package
+        run: |
+          fastforge package --platform linux --targets deb
+          VERSION=${GITHUB_REF#refs/tags/}
+          VERSION=${VERSION#v}
+          mv dist/$VERSION/*.deb ${{ matrix.deb_name }}
+
+      - name: Upload .deb
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.deb_name }}
+          path: ${{ matrix.deb_name }}
+
+  build-appimage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.8'
+      - run: sudo apt-get update -y
+      - run: sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev patchelf squashfs-tools
+
+      - run: flutter pub get
+      - run: flutter build linux --release
+
+      - name: Prepare AppDir
+        run: |
+          mkdir -p AppDir/usr/bin
+          cp -r build/linux/x64/release/bundle/* AppDir/usr/bin/
+          cp build/linux/x64/release/bundle/invoiso AppDir/invoiso
+          mkdir -p AppDir/usr/share/icons
+          pwd
+          ls -a
+          cp assets/deb/images/logo.png AppDir/usr/share/icons/logo.png
+
+      - name: Install AppImage Builder
+        run: |
+          sudo apt-get install -y appstream file desktop-file-utils libfuse2 zsync
+          pip install appimage-builder
+
+      - name: Build AppImage
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          VERSION=${VERSION#v}
+          # Replace only AppDir.app_info.version
+          # sed -i "s/^\(\s*version:\s*\)[0-9.]\+$/\1$VERSION/" AppImageBuilder.yml
+          sed -i "/app_info:/,/^[^ ]/ s/^\(\s*version:\s*\)[0-9.]\+$/\1$VERSION/" AppImageBuilder.yml
+          appimage-builder --recipe AppImageBuilder.yml --skip-test
+
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: Invoiso-AppImage
+          path: "*.AppImage"
