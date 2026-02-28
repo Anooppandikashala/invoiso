@@ -7,6 +7,7 @@ import 'package:invoiso/services/pdf_service.dart';
 import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
 
+import '../common.dart';
 import '../database/database_helper.dart';
 import '../screens/pdf_view_screen.dart';
 
@@ -118,7 +119,7 @@ class InvoicePdfServices
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Tax:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text(_taxLabel(invoice), style: const TextStyle(fontWeight: FontWeight.bold)),
                   Text('${invoice.currencySymbol} ${invoice.tax.toStringAsFixed(2)}'),
                 ],
               ),
@@ -142,6 +143,17 @@ class InvoicePdfServices
         ],
       ),
     );
+  }
+
+  static String _taxLabel(Invoice invoice) {
+    switch (invoice.taxMode) {
+      case TaxMode.global:
+        return 'Tax (${(invoice.taxRate * 100).toStringAsFixed(0)}%):';
+      case TaxMode.perItem:
+        return 'Tax (per item):';
+      case TaxMode.none:
+        return 'Tax:';
+    }
   }
 
   static Future<String> generateNextInvoiceNumber() async {

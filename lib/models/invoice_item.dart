@@ -12,4 +12,6 @@ class InvoiceItem {
   });
 
   double get total => (product.price * quantity) - discount;
+
+  double get taxAmount => total * (product.tax_rate / 100);
 }

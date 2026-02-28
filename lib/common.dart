@@ -71,6 +71,30 @@ class SupportedCurrencies {
   }
 }
 
+enum TaxMode {
+  none,
+  global,
+  perItem,
+}
+
+extension TaxModeExtension on TaxMode {
+  String get key {
+    switch (this) {
+      case TaxMode.none:    return 'none';
+      case TaxMode.global:  return 'global';
+      case TaxMode.perItem: return 'per_item';
+    }
+  }
+
+  static TaxMode fromKey(String? key) {
+    switch (key) {
+      case 'none':     return TaxMode.none;
+      case 'per_item': return TaxMode.perItem;
+      default:         return TaxMode.global;
+    }
+  }
+}
+
 enum LogoPosition
 {
   left,

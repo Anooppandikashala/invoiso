@@ -1,3 +1,4 @@
+import 'package:invoiso/common.dart';
 import 'package:invoiso/database/invoice_item_service.dart';
 import 'package:invoiso/database/product_service.dart';
 import 'package:invoiso/models/invoice.dart';
@@ -28,6 +29,7 @@ class InvoiceService
       'type': invoice.type,
       'currency_code': invoice.currencyCode,
       'currency_symbol': invoice.currencySymbol,
+      'tax_mode': invoice.taxMode.key,
     });
 
     for (var item in invoice.items) {
@@ -57,6 +59,7 @@ class InvoiceService
         'notes': invoice.notes,
         'tax_rate': invoice.taxRate,
         'type': invoice.type,
+        'tax_mode': invoice.taxMode.key,
         // You may keep 'date' as is or allow updating
       },
       where: 'id = ?',
@@ -154,6 +157,7 @@ class InvoiceService
       type: i['type'] as String,
       currencyCode: i['currency_code'] as String? ?? 'INR',
       currencySymbol: i['currency_symbol'] as String? ?? '₹',
+      taxMode: TaxModeExtension.fromKey(i['tax_mode'] as String?),
     );
   }
 
@@ -201,6 +205,7 @@ class InvoiceService
           type: type,
           currencyCode: map['currency_code'] as String? ?? 'INR',
           currencySymbol: map['currency_symbol'] as String? ?? '₹',
+          taxMode: TaxModeExtension.fromKey(map['tax_mode'] as String?),
         ),
       );
     }

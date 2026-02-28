@@ -20,7 +20,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 5;
+  final dbVersion = 6;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -79,7 +79,8 @@ class DatabaseHelper {
         tax_rate REAL,
         type TEXT,
         currency_code TEXT DEFAULT 'INR',
-        currency_symbol TEXT DEFAULT '₹'
+        currency_symbol TEXT DEFAULT '₹',
+        tax_mode TEXT DEFAULT 'global'
       )
     ''');
 
@@ -173,6 +174,11 @@ class DatabaseHelper {
         'settings',
         {'key': 'currency', 'value': 'INR'},
         conflictAlgorithm: ConflictAlgorithm.ignore,
+      );
+    }
+    if (oldVersion < 6) {
+      await db.execute(
+        "ALTER TABLE invoices ADD COLUMN tax_mode TEXT DEFAULT 'global'"
       );
     }
   }
