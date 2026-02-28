@@ -66,7 +66,7 @@ class AppConfig
   static const name = "invoiso";
   static const version = "v2.0.5";
   static const developer = "ANOOP P";
-  static const supportEmail = "support@invoiso.app";
+  static const supportEmail = "anooppkrishnan96@gmail.com";
   static const website = "https://anooppandikashala.github.io/invoisoapp/";
   static const license = "MIT";
   static const description = "Invoiso is a modern invoice and quotation management app for freelancers and small businesses.";

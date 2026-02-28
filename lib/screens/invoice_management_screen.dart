@@ -467,7 +467,7 @@ class _InvoiceManagementScreenState extends State<InvoiceManagementScreen> {
               ),
               _buildTableCell(
                 Text(
-                  'Rs ${invoice.total.toStringAsFixed(2)}',
+                  '${invoice.currencySymbol} ${invoice.total.toStringAsFixed(2)}',
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,

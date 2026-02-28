@@ -3,6 +3,7 @@ import 'package:invoiso/constants.dart';
 import 'package:invoiso/database/customer_service.dart';
 import 'package:invoiso/database/invoice_service.dart';
 import 'package:invoiso/database/product_service.dart';
+import 'package:invoiso/database/settings_service.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/screens/settings_screen.dart';
 import 'package:invoiso/services/invoice_pdf_services.dart';
@@ -186,6 +187,7 @@ class _DashboardHomeState extends State<DashboardHome> {
   int totalInvoices = 0;
   double totalRevenue = 0.0;
   List<Invoice> recentInvoices = [];
+  String _currencySymbol = '₹';
   bool isLoading = true;
 
   @override
@@ -200,6 +202,7 @@ class _DashboardHomeState extends State<DashboardHome> {
     final customers = await CustomerService.getAllCustomers();
     final products = await ProductService.getAllProducts();
     final List<Invoice> invoices = await InvoiceService.getAllInvoices();
+    final currency = await SettingsService.getCurrency();
 
     setState(() {
       totalCustomers = customers.length;
@@ -207,6 +210,7 @@ class _DashboardHomeState extends State<DashboardHome> {
       totalInvoices = invoices.length;
       totalRevenue = invoices.fold(0.0, (sum, inv) => sum + inv.total);
       recentInvoices = invoices.length > 5 ? invoices.sublist(0, 5) : invoices;
+      _currencySymbol = currency.symbol;
       isLoading = false;
     });
   }
@@ -268,7 +272,7 @@ class _DashboardHomeState extends State<DashboardHome> {
                             const SizedBox(width: 16),
                             _buildStatCard(
                               'Total Revenue',
-                              'Rs ${totalRevenue.toStringAsFixed(2)}',
+                              '$_currencySymbol ${totalRevenue.toStringAsFixed(2)}',
                               Colors.purple,
                               Icons.account_balance_wallet,
                             ),
@@ -502,7 +506,7 @@ class _DashboardHomeState extends State<DashboardHome> {
                                                     BorderRadius.circular(8),
                                               ),
                                               child: Text(
-                                                'Rs ${invoice.total.toStringAsFixed(2)}',
+                                                '${invoice.currencySymbol} ${invoice.total.toStringAsFixed(2)}',
                                                 style: const TextStyle(
                                                   fontSize: 20,
                                                   fontWeight: FontWeight.bold,

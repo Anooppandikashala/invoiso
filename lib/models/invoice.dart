@@ -9,6 +9,8 @@ class Invoice {
   String? notes;
   double taxRate;
   String type;
+  String currencyCode;
+  String currencySymbol;
 
   Invoice({
     required this.id,
@@ -17,7 +19,9 @@ class Invoice {
     required this.date,
     required this.type,
     this.notes,
-    this.taxRate = 0.1, // 10% default tax
+    this.taxRate = 0.1,
+    this.currencyCode = 'INR',
+    this.currencySymbol = '₹',
   });
 
   double get subtotal => items.fold(0.0, (sum, item) => sum + item.total);
