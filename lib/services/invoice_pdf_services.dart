@@ -103,7 +103,7 @@ class InvoicePdfServices
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('${item.product.name} x${item.quantity}'),
-                    Text(item.total.toStringAsFixed(2)),
+                    Text('${invoice.currencySymbol} ${item.total.toStringAsFixed(2)}'),
                   ],
                 ),
               )),
@@ -112,21 +112,21 @@ class InvoicePdfServices
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text('Subtotal:', style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text(invoice.subtotal.toStringAsFixed(2)),
+                  Text('${invoice.currencySymbol} ${invoice.subtotal.toStringAsFixed(2)}'),
                 ],
               ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text('Tax:', style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text(invoice.tax.toStringAsFixed(2)),
+                  Text('${invoice.currencySymbol} ${invoice.tax.toStringAsFixed(2)}'),
                 ],
               ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text('Total:', style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text(invoice.total.toStringAsFixed(2), style: const TextStyle(fontWeight: FontWeight.bold)),
+                  Text('${invoice.currencySymbol} ${invoice.total.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold)),
                 ],
               ),
               if (invoice.notes != null && invoice.notes!.isNotEmpty) ...[
@@ -148,7 +148,6 @@ class InvoicePdfServices
     final dbHelper = DatabaseHelper();
     final db = await dbHelper.database;
 
-    // Fetch latest invoice ID (assumed to be stored as a string of digits or with a prefix)
     final result = await db.rawQuery(
         "SELECT id FROM invoices ORDER BY id DESC LIMIT 1"
     );
@@ -157,17 +156,13 @@ class InvoicePdfServices
 
     if (result.isNotEmpty) {
       final lastNumberStr = result.first['id'] as String;
-
-      // Extract numeric part
       final numericPart = int.tryParse(lastNumberStr.replaceAll(RegExp(r'\D'), ''));
       if (numericPart != null) {
         nextNumber = numericPart + 1;
       }
     }
 
-    // Format to 8 digits
-    final formatted = nextNumber.toString().padLeft(8, '0');
-    return formatted;
+    return nextNumber.toString().padLeft(8, '0');
   }
 
 }

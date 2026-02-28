@@ -25,7 +25,9 @@ class InvoiceService
       'date': invoice.date.toIso8601String(),
       'notes': invoice.notes,
       'tax_rate': invoice.taxRate,
-      'type':invoice.type
+      'type': invoice.type,
+      'currency_code': invoice.currencyCode,
+      'currency_symbol': invoice.currencySymbol,
     });
 
     for (var item in invoice.items) {
@@ -150,6 +152,8 @@ class InvoiceService
           ? (i['tax_rate'] as int).toDouble()
           : (i['tax_rate'] ?? 0.0) as double,
       type: i['type'] as String,
+      currencyCode: i['currency_code'] as String? ?? 'INR',
+      currencySymbol: i['currency_symbol'] as String? ?? '₹',
     );
   }
 
@@ -195,6 +199,8 @@ class InvoiceService
               ? taxRateRaw.toDouble()
               : (taxRateRaw as double? ?? 0.0),
           type: type,
+          currencyCode: map['currency_code'] as String? ?? 'INR',
+          currencySymbol: map['currency_symbol'] as String? ?? '₹',
         ),
       );
     }

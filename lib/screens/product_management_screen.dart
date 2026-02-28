@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:invoiso/common.dart';
 import 'package:invoiso/constants.dart';
 import 'package:invoiso/database/product_service.dart';
+import 'package:invoiso/database/settings_service.dart';
 import 'package:uuid/uuid.dart';
 import 'package:csv/csv.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -43,11 +45,21 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
   final _taxRateController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
+  String _currencySymbol = '₹';
+
   @override
   void initState() {
     super.initState();
     _taxRateController.text = "18";
     _loadProducts();
+    _loadCurrency();
+  }
+
+  Future<void> _loadCurrency() async {
+    final currency = await SettingsService.getCurrency();
+    setState(() {
+      _currencySymbol = currency.symbol;
+    });
   }
 
   @override
@@ -192,7 +204,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                       readOnly: !isEdit, maxLines: 3, maxLength: 100),
                   const SizedBox(height: 16),
                   _buildDialogTextField(
-                      priceCtrl, 'Price (₹)', Icons.currency_rupee,
+                      priceCtrl, 'Price ($_currencySymbol)', Icons.attach_money,
                       readOnly: !isEdit,
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
@@ -507,7 +519,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                       maxLines: 3, maxLength: 100, required: false),
                   const SizedBox(height: 16),
                   _buildFormField(
-                      _priceController, 'Price (₹)', Icons.currency_rupee,
+                      _priceController, 'Price ($_currencySymbol)', Icons.attach_money,
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
                       isPrice: true),
@@ -831,7 +843,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  '₹${p.price.toStringAsFixed(2)}',
+                  '$_currencySymbol${p.price.toStringAsFixed(2)}',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Colors.green.shade700,

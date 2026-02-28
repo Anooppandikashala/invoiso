@@ -51,6 +51,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   double taxRate = Tax.defaultTaxRate;
   Invoice? _invoice;
   String currentInvoiceNumber = "";
+  String _currencyCode = 'INR';
+  String _currencySymbol = '₹';
 
   @override
   void initState() {
@@ -117,6 +119,18 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         invNumber = widget.invoiceToEdit?.id;
       }
 
+      // Use the existing invoice's currency when editing, otherwise use the current setting
+      final String loadedCurrencyCode;
+      final String loadedCurrencySymbol;
+      if (isEditing && widget.invoiceToEdit != null) {
+        loadedCurrencyCode = widget.invoiceToEdit!.currencyCode;
+        loadedCurrencySymbol = widget.invoiceToEdit!.currencySymbol;
+      } else {
+        final currency = await SettingsService.getCurrency();
+        loadedCurrencyCode = currency.code;
+        loadedCurrencySymbol = currency.symbol;
+      }
+
       setState(() {
         customers = c;
         filteredCustomers = List.from(c);
@@ -125,6 +139,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         if (invNumber != null) {
           currentInvoiceNumber = invNumber;
         }
+        _currencyCode = loadedCurrencyCode;
+        _currencySymbol = loadedCurrencySymbol;
         isLoading = false;
       });
     } catch (e) {
@@ -304,6 +320,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         notes: notesController.text.isNotEmpty ? notesController.text : null,
         taxRate: taxRate,
         type: invoiceType,
+        currencyCode: _currencyCode,
+        currencySymbol: _currencySymbol,
       );
 
       await InvoiceService.insertInvoice(invoice);
@@ -685,7 +703,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                               //   style: const TextStyle(color: Colors.black, fontWeight: FontWeight.normal),
                               // ),
                               Text(
-                                '₹${product.price.toStringAsFixed(2)}  (Stock : ${product.stock})',
+                                '$_currencySymbol${product.price.toStringAsFixed(2)}  (Stock : ${product.stock})',
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold,fontSize: AppFontSize.medium),
                               )
@@ -953,7 +971,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         ),
         const SizedBox(width: 24),
         Text(
-          '₹${amount.toStringAsFixed(2)}',
+          '$_currencySymbol${amount.toStringAsFixed(2)}',
           style: TextStyle(
             fontSize: isTotal ? 20 : 14,
             fontWeight: FontWeight.bold,
@@ -1067,7 +1085,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                             _buildItemDetail('Price', item.product.price.toString()),
                             _buildItemDetail('HSN', item.product.hsncode.toString()),
                             _buildItemDetail('Qty', item.quantity.toString()),
-                            _buildItemDetail('Discount', '₹${item.discount.toStringAsFixed(2)}'),
+                            _buildItemDetail('Discount', '$_currencySymbol${item.discount.toStringAsFixed(2)}'),
                           ],
                         ),
                       ),
@@ -1081,7 +1099,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              '₹${item.total.toStringAsFixed(2)}',
+                              '$_currencySymbol${item.total.toStringAsFixed(2)}',
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -1359,6 +1377,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         notes: notesController.text.isNotEmpty ? notesController.text : null,
         taxRate: taxRate,
         type: invoiceType,
+        currencyCode: _currencyCode,
+        currencySymbol: _currencySymbol,
       );
 
       await InvoiceService.updateInvoice(updatedInvoice);

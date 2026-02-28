@@ -23,25 +23,27 @@ class PDFService {
   {
     final pdf = pw.Document();
     final company = await CompanyInfoService.getCompanyInfo();
-
     final selectedTemplate = await SettingsService.getInvoiceTemplate();
+    final currencySymbol = invoice.currencySymbol;
+    final rawPrefix = await SettingsService.getSetting(SettingKey.invoicePrefix) ?? 'INV';
+    final invoicePrefix = rawPrefix.isNotEmpty ? '$rawPrefix-' : '';
 
     switch (selectedTemplate) {
       case InvoiceTemplate.classic:
-        pdf.addPage(await _buildClassicTemplate(invoice, company));
+        pdf.addPage(await _buildClassicTemplate(invoice, company, currencySymbol, invoicePrefix));
         break;
       case InvoiceTemplate.modern:
-        pdf.addPage(await _buildModernTemplate(invoice, company));
+        pdf.addPage(await _buildModernTemplate(invoice, company, currencySymbol, invoicePrefix));
         break;
       case InvoiceTemplate.minimal:
-        pdf.addPage(await _buildMinimalTemplate(invoice, company));
+        pdf.addPage(await _buildMinimalTemplate(invoice, company, currencySymbol, invoicePrefix));
         break;
     }
 
     return pdf;
   }
 
-  static Future<pw.MultiPage> _buildClassicTemplate(Invoice invoice, CompanyInfo? company) async
+  static Future<pw.MultiPage> _buildClassicTemplate(Invoice invoice, CompanyInfo? company, String currencySymbol, String invoicePrefix) async
   {
     final accentColor = PdfColors.indigo900; // Use a strong accent color
     final LogoPosition logoPosition = await SettingsService.getLogoPosition(); DefaultValues.logoPosition;//await SettingsService.getLogoPosition(); // "left" or "right"
@@ -106,7 +108,7 @@ class PDFService {
             pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.end,
               children: [
-                pw.Text("Invoice #: ${invoice.id}", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
+                pw.Text("Invoice #: $invoicePrefix${invoice.id}", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
                 pw.Text("Date: ${_formatDate(invoice.date)}", style: const pw.TextStyle(fontSize: 10)),
               ],
             ),
@@ -154,7 +156,7 @@ class PDFService {
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
             _buildAdditionalNotes(invoice),
-            _buildEnhancedTotals(invoice, PdfColors.grey200, PdfColors.black, accentColor), // Totals with accent
+            _buildEnhancedTotals(invoice, PdfColors.grey200, PdfColors.black, accentColor, currencySymbol),
           ],
         ),
 
@@ -167,7 +169,7 @@ class PDFService {
     );
   }
 
-  static Future<pw.MultiPage> _buildMinimalTemplate(Invoice invoice, CompanyInfo? company) async
+  static Future<pw.MultiPage> _buildMinimalTemplate(Invoice invoice, CompanyInfo? company, String currencySymbol, String invoicePrefix) async
   {
     final accentColor = PdfColors.grey700; // Use a strong, neutral accent
     final LogoPosition logoPosition = await SettingsService.getLogoPosition();//await SettingsService.getLogoPosition(); // "left" or "right"
@@ -197,7 +199,7 @@ class PDFService {
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
                 pw.Text("Invoice #", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: accentColor)),
-                pw.Text(invoice.id, style: const pw.TextStyle(fontSize: 12)),
+                pw.Text("$invoicePrefix${invoice.id}", style: const pw.TextStyle(fontSize: 12)),
                 pw.SizedBox(height: 5),
                 pw.Text("DATE", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: accentColor)),
                 pw.Text(_formatDate(invoice.date), style: const pw.TextStyle(fontSize: 12)),
@@ -260,7 +262,7 @@ class PDFService {
             children: [
               _buildAdditionalNotes(invoice),
               // Use the enhanced totals widget for a professional summary
-              _buildEnhancedTotals(invoice, PdfColors.grey200, PdfColors.black, accentColor),
+              _buildEnhancedTotals(invoice, PdfColors.grey200, PdfColors.black, accentColor, currencySymbol),
             ]
         ),
 
@@ -275,7 +277,7 @@ class PDFService {
     );
   }
 
-  static Future<pw.MultiPage> _buildModernTemplate(Invoice invoice, CompanyInfo? company) async
+  static Future<pw.MultiPage> _buildModernTemplate(Invoice invoice, CompanyInfo? company, String currencySymbol, String invoicePrefix) async
   {
     final accentColor = PdfColors.blue600;
     final LogoPosition logoPosition = await SettingsService.getLogoPosition();//await SettingsService.getLogoPosition(); // "left" or "right"
@@ -355,7 +357,7 @@ class PDFService {
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.end,
                 children: [
-                  pw.Text("Invoice #: ${invoice.id}",
+                  pw.Text("Invoice #: $invoicePrefix${invoice.id}",
                       style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
                   pw.Text("Date: ${_formatDate(invoice.date)}", style: const pw.TextStyle(fontSize: 10)),
                 ],
@@ -413,7 +415,7 @@ class PDFService {
             children: [
               _buildAdditionalNotes(invoice),
               // Updated totals box with strong accent color for total due
-              _buildEnhancedTotals(invoice, PdfColors.blue200, PdfColors.black, accentColor),
+              _buildEnhancedTotals(invoice, PdfColors.blue200, PdfColors.black, accentColor, currencySymbol),
             ],
           ),
         ),
@@ -443,35 +445,34 @@ class PDFService {
   }
 
   // Enhanced totals with highlighted total - MODIFIED
-  static pw.Widget _buildEnhancedTotals(Invoice invoice, PdfColor accentRowColor, PdfColor primaryColor, PdfColor totalHighlightColor) {
+  static pw.Widget _buildEnhancedTotals(Invoice invoice, PdfColor accentRowColor, PdfColor primaryColor, PdfColor totalHighlightColor, String currencySymbol) {
     return pw.Container(
-      width: 250, // Slightly wider total box
+      width: 250,
       decoration: pw.BoxDecoration(
         border: pw.Border.all(color: PdfColors.grey300),
         borderRadius: pw.BorderRadius.circular(6),
       ),
       child: pw.Column(
         children: [
-          _totalRow("Subtotal", "Rs ${invoice.subtotal.toStringAsFixed(2)}"),
+          _totalRow("Subtotal", "$currencySymbol ${invoice.subtotal.toStringAsFixed(2)}"),
           _totalRow(
               "Tax (${(invoice.taxRate * 100).toStringAsFixed(0)}%)",
-              "Rs ${invoice.tax.toStringAsFixed(2)}"),
+              "$currencySymbol ${invoice.tax.toStringAsFixed(2)}"),
           pw.Container(
             padding: const pw.EdgeInsets.all(8),
             decoration: pw.BoxDecoration(
-              // Use totalHighlightColor for the total row background
               color: totalHighlightColor,
               borderRadius: const pw.BorderRadius.vertical(bottom: pw.Radius.circular(5)),
             ),
             child: pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
-                pw.Text("Total Due", // Changed "Total" to "Total Due"
+                pw.Text("Total Due",
                     style: pw.TextStyle(
                         fontSize: 12,
                         fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.white)), // White text on colored background
-                pw.Text("Rs ${invoice.total.toStringAsFixed(2)}",
+                        color: PdfColors.white)),
+                pw.Text("$currencySymbol ${invoice.total.toStringAsFixed(2)}",
                     style: pw.TextStyle(
                         fontSize: 12,
                         fontWeight: pw.FontWeight.bold,
@@ -565,7 +566,7 @@ class PDFService {
       padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 8), // Increased vertical padding
       child: pw.Text(
         text,
-        textAlign: isHeader ? pw.TextAlign.center : pw.TextAlign.left,
+        textAlign: isHeader ? pw.TextAlign.left : pw.TextAlign.left,
         style: pw.TextStyle(
             fontWeight: isHeader ? pw.FontWeight.bold : pw.FontWeight.normal,
             fontSize: 10,

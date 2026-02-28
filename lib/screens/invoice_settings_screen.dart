@@ -18,6 +18,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
   final TextEditingController thankYouController = TextEditingController();
 
   String _selectedLogoPosition = 'left';
+  String _selectedCurrencyCode = 'INR';
   bool _isLoading = true;
 
   @override
@@ -31,9 +32,11 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     final prefix = await SettingsService.getSetting(SettingKey.invoicePrefix);
     final info = await SettingsService.getSetting(SettingKey.additionalInfo);
     final thanks = await SettingsService.getSetting(SettingKey.thankYouNote);
+    final currency = await SettingsService.getCurrency();
 
     setState(() {
       _selectedLogoPosition = position ?? 'left';
+      _selectedCurrencyCode = currency.code;
       invoicePrefixController.text = prefix ?? 'INV';
       additionalInfoController.text = info ?? '';
       thankYouController.text = thanks ?? '';
@@ -46,6 +49,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     await SettingsService.setSetting(SettingKey.invoicePrefix, invoicePrefixController.text);
     await SettingsService.setSetting(SettingKey.additionalInfo, additionalInfoController.text);
     await SettingsService.setSetting(SettingKey.thankYouNote, thankYouController.text);
+    await SettingsService.setCurrency(_selectedCurrencyCode);
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -196,6 +200,45 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                   fillColor: Colors.grey[50],
                                   counterText: '',
                                 ),
+                              ),
+                            ),
+
+                            // Currency
+                            SizedBox(
+                              width: fieldWidth,
+                              child: DropdownButtonFormField<String>(
+                                value: _selectedCurrencyCode,
+                                decoration: InputDecoration(
+                                  labelText: 'Currency',
+                                  prefixIcon: const Icon(Icons.attach_money),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderSide: BorderSide(color: Colors.grey[300]!),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderSide: BorderSide(
+                                      color: Theme.of(context).primaryColor,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.grey[50],
+                                ),
+                                items: SupportedCurrencies.all.map((c) {
+                                  return DropdownMenuItem<String>(
+                                    value: c.code,
+                                    child: Text('${c.symbol}  ${c.name} (${c.code})'),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedCurrencyCode = value!;
+                                  });
+                                },
                               ),
                             ),
 

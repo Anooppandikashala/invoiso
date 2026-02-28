@@ -3,6 +3,7 @@ import 'package:sqflite/sqflite.dart';
 import '../common.dart';
 import 'database_helper.dart';
 
+
 class SettingsService
 {
   static final dbHelper = DatabaseHelper();
@@ -72,5 +73,14 @@ class SettingsService
     final result =
     await db.query('settings', where: 'key = ?', whereArgs: [key.key]);
     return result.isNotEmpty ? result.first['value'] as String : null;
+  }
+
+  static Future<void> setCurrency(String currencyCode) async {
+    await setSetting(SettingKey.currency, currencyCode);
+  }
+
+  static Future<CurrencyOption> getCurrency() async {
+    final code = await getSetting(SettingKey.currency) ?? 'INR';
+    return SupportedCurrencies.fromCode(code);
   }
 }

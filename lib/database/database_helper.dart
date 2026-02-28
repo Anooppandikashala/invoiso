@@ -20,7 +20,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 4;
+  final dbVersion = 5;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -77,7 +77,9 @@ class DatabaseHelper {
         date TEXT,
         notes TEXT,
         tax_rate REAL,
-        type TEXT
+        type TEXT,
+        currency_code TEXT DEFAULT 'INR',
+        currency_symbol TEXT DEFAULT '₹'
       )
     ''');
 
@@ -148,14 +150,31 @@ class DatabaseHelper {
       'key': 'invoice_template',
       'value': 'classic'
     });
+
+    // Insert default currency
+    await db.insert('settings', {
+      'key': 'currency',
+      'value': 'INR'
+    });
   }
 
   Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async
   {
     print('Upgrading database from $oldVersion to $newVersion');
 
-    // TODO
-
+    if (oldVersion < 5) {
+      await db.execute(
+        "ALTER TABLE invoices ADD COLUMN currency_code TEXT DEFAULT 'INR'"
+      );
+      await db.execute(
+        "ALTER TABLE invoices ADD COLUMN currency_symbol TEXT DEFAULT '₹'"
+      );
+      await db.insert(
+        'settings',
+        {'key': 'currency', 'value': 'INR'},
+        conflictAlgorithm: ConflictAlgorithm.ignore,
+      );
+    }
   }
 
   // ─────────────────────────────────────────────

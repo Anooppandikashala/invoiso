@@ -4,8 +4,9 @@
     <!-- Basic Metadata -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Invoiso — Simple, fast, and offline invoicing software for Windows and Linux. Create invoices effortlessly, no internet required." />
-    <meta name="keywords" content="invoice app, invoicing software, offline invoicing, billing software, invoice generator, Linux invoicing, Windows invoicing, Invoiso" />
+
+    <meta name="description" content="Invoiso — Simple, fast, and offline invoicing software for Windows and Linux. Create professional invoices effortlessly with no internet required." />
+    <meta name="keywords" content="invoice software, invoice generator, offline invoicing, billing software, invoicing app, Linux invoice app, Windows invoicing app, Invoiso" />
     <meta name="author" content="Invoiso" />
 
     <!-- Title -->
@@ -14,6 +15,9 @@
     <!-- Canonical URL -->
     <link rel="canonical" href="https://anooppandikashala.github.io/invoisoapp/" />
 
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#3b82f6" />
+
     <!-- Open Graph / Facebook -->
     <meta property="og:title" content="Invoiso — Simple Offline Invoicing for Windows & Linux" />
     <meta property="og:description" content="Create invoices easily, without the internet. Lightweight and powerful offline invoicing app for Windows and Linux." />
@@ -21,20 +25,33 @@
     <meta property="og:url" content="https://anooppandikashala.github.io/invoisoapp/" />
     <meta property="og:type" content="website" />
 
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Invoiso — Simple Offline Invoicing" />
+    <meta name="twitter:description" content="Simple and fast offline invoicing software for Windows & Linux." />
+    <meta name="twitter:image" content="https://anooppandikashala.github.io/invoisoapp/assets/images/invoiso-banner.webp" />
+
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="assets/images/logo.svg" />
+
+    <!-- Preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- Preload Fonts -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" as="style" />
+
+    <!-- Fonts -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" />
 
     <!-- CSS Libraries -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css" />
 
-    <!-- Preconnect for faster font/icon loading -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" />
+    <link rel="stylesheet" href="style.css" />
 
-    <!-- Optional structured data for rich snippets -->
+    <!-- Structured Data -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -57,441 +74,19 @@
       }
     }
     </script>
-    <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      "name": "Invoiso Offline Invoicing App",
+      "downloadUrl": "https://github.com/Anooppandikashala/invoiso/releases/latest",
+      "operatingSystem": "Windows, Linux"
     }
-    
-    html {
-      scroll-behavior: smooth;
-      overflow-x: hidden;
-    }
-    
-    body {
-      background: #ffffff;
-      overflow-x: hidden;
-    }
-    
-    .primary-bg { 
-      background: linear-gradient(135deg, #002E78 0%, #0047ab 100%);
-    }
-    
-    .primary-text { color: #002E78; }
-    
-    .hero-gradient {
-      background: linear-gradient(135deg, #001f55 0%, #002E78 25%, #0047ab 75%, #003d9e 100%);
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .hero-gradient::before {
-      content: '';
-      position: absolute;
-      width: 500px;
-      height: 500px;
-      background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
-      top: -250px;
-      right: -250px;
-      animation: float 8s ease-in-out infinite;
-    }
-    
-    .hero-gradient::after {
-      content: '';
-      position: absolute;
-      width: 300px;
-      height: 300px;
-      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-      bottom: -150px;
-      left: -150px;
-      animation: float 10s ease-in-out infinite reverse;
-    }
-    
-    @keyframes float {
-      0%, 100% { transform: translate(0, 0) rotate(0deg); }
-      33% { transform: translate(30px, -30px) rotate(5deg); }
-      66% { transform: translate(-20px, 20px) rotate(-5deg); }
-    }
-    
-    @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-    
-    @keyframes scaleIn {
-      from {
-        opacity: 0;
-        transform: scale(0.9);
-      }
-      to {
-        opacity: 1;
-        transform: scale(1);
-      }
-    }
-    
-    .fade-in-up {
-      animation: fadeInUp 0.6s ease-out forwards;
-    }
-    
-    .glass-card {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-    }
-    
-    .feature-card {
-      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-      position: relative;
-      overflow: hidden;
-      background: white;
-    }
-    
-    .feature-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(0, 46, 120, 0.03), transparent);
-      transition: left 0.6s ease;
-    }
-    
-    .feature-card:hover::before {
-      left: 100%;
-    }
-    
-    .feature-card:hover {
-      transform: translateY(-10px) scale(1.02);
-      box-shadow: 0 25px 50px rgba(0, 46, 120, 0.2);
-    }
-    
-    .navbar {
-      transition: all 0.3s ease;
-      background: rgba(255, 255, 255, 0.98);
-      backdrop-filter: blur(10px);
-    }
-    
-    .navbar.scrolled {
-      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-      background: rgba(255, 255, 255, 1);
-    }
-    
-    .btn-primary {
-      position: relative;
-      overflow: hidden;
-      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-      background: white !important;
-      color: #002E78 !important;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-    }
-    
-    .btn-primary::before {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 0;
-      height: 0;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.2);
-      transform: translate(-50%, -50%);
-      transition: width 0.6s, height 0.6s;
-    }
-    
-    .btn-primary:hover::before {
-      width: 300px;
-      height: 300px;
-    }
-    
-    .btn-primary:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 15px 35px rgba(255, 255, 255, 0.5);
-      border-color: white;
-    }
-    
-    .btn-secondary {
-      position: relative;
-      overflow: hidden;
-      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-      background: transparent !important;
-      border: 2px solid white !important;
-      color: white !important;
-    }
-    
-    .btn-secondary::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: white;
-      transition: left 0.4s ease;
-      z-index: -1;
-    }
-    
-    .btn-secondary:hover::before {
-      left: 0;
-    }
-    
-    .btn-secondary:hover {
-      color: #002E78 !important;
-      transform: translateY(-3px);
-      box-shadow: 0 15px 35px rgba(255, 255, 255, 0.4);
-    }
-    
-    .section-title {
-      position: relative;
-      display: inline-block;
-      padding-bottom: 20px;
-    }
-    
-    .section-title::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 100px;
-      height: 5px;
-      background: linear-gradient(90deg, #002E78, #0047ab, #002E78);
-      border-radius: 10px;
-    }
-    
-    .screenshots-swiper {
-      width: 100%;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 50px 20px 90px 20px;
-    }
-    
-    .swiper-slide {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      opacity: 0.3;
-      transition: opacity 0.5s ease;
-    }
-    
-    .swiper-slide-active {
-      opacity: 1;
-    }
-    
-    .swiper-slide img {
-      border-radius: 20px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-      max-width: 100%;
-      height: auto;
-      display: block;
-      cursor: pointer;
-    }
-    
-    .swiper-slide-active img {
-      transform: scale(1.15);
-      box-shadow: 0 30px 80px rgba(0, 46, 120, 0.35);
-    }
-    
-    .swiper-button-next,
-    .swiper-button-prev {
-      color: #002E78;
-      background: white;
-      width: 55px;
-      height: 55px;
-      border-radius: 50%;
-      box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
-      transition: all 0.3s ease;
-    }
-    
-    .swiper-button-next:hover,
-    .swiper-button-prev:hover {
-      background: #002E78;
-      color: white;
-      transform: scale(1.15);
-      box-shadow: 0 8px 30px rgba(0, 46, 120, 0.3);
-    }
-    
-    .swiper-button-next::after,
-    .swiper-button-prev::after {
-      font-size: 22px;
-      font-weight: bold;
-    }
-    
-    .swiper-pagination-bullet {
-      width: 12px;
-      height: 12px;
-      background: #002E78;
-      opacity: 0.3;
-      transition: all 0.3s ease;
-    }
-    
-    .swiper-pagination-bullet-active {
-      opacity: 1;
-      background: #002E78;
-      width: 35px;
-      border-radius: 6px;
-    }
-    
-    .preview-modal {
-      display: none;
-      position: fixed;
-      z-index: 9999;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.95);
-      align-items: center;
-      justify-content: center;
-      backdrop-filter: blur(5px);
-    }
-    
-    .preview-modal img {
-      max-width: 90%;
-      max-height: 90%;
-      border-radius: 12px;
-      box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
-    }
-    
-    .close-btn {
-      position: absolute;
-      top: 25px;
-      right: 35px;
-      background: rgba(255, 255, 255, 0.1);
-      color: white;
-      font-size: 32px;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      padding: 8px 16px;
-      border-radius: 8px;
-      cursor: pointer;
-      z-index: 10000;
-      transition: all 0.3s ease;
-      backdrop-filter: blur(10px);
-    }
-    
-    .close-btn:hover {
-      background: rgba(255, 255, 255, 0.2);
-      transform: scale(1.1);
-    }
-    
-    .nav-btn {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      background: rgba(255, 255, 255, 0.1);
-      color: white;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      padding: 15px 22px;
-      border-radius: 50%;
-      cursor: pointer;
-      font-size: 24px;
-      z-index: 10000;
-      transition: all 0.3s ease;
-      backdrop-filter: blur(10px);
-    }
-    
-    .nav-btn:hover {
-      background: rgba(255, 255, 255, 0.2);
-      transform: translateY(-50%) scale(1.1);
-    }
-    
-    .nav-btn.prev { left: 50px; }
-    .nav-btn.next { right: 50px; }
-    
-    .download-icon {
-      display: inline-block;
-      transition: transform 0.3s ease;
-      font-size: 1.1em;
-    }
-    
-    .btn-primary:hover .download-icon,
-    .btn-secondary:hover .download-icon {
-      transform: translateY(3px);
-    }
-    
-    footer {
-      background: linear-gradient(135deg, #001f55 0%, #002E78 50%, #003d9e 100%);
-      position: relative;
-      overflow: hidden;
-    }
-    
-    footer::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-    }
-    
-    footer a {
-      transition: all 0.3s ease;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-    }
-    
-    footer a:hover {
-      color: #60a5fa;
-      transform: translateY(-2px);
-    }
-    
-    .stat-card {
-      background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(249,250,251,0.95) 100%);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(0, 46, 120, 0.1);
-      transition: all 0.4s ease;
-    }
-    
-    .stat-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 15px 40px rgba(0, 46, 120, 0.15);
-      border-color: rgba(0, 46, 120, 0.2);
-    }
-    
-    .icon-wrapper {
-      transition: all 0.4s ease;
-    }
-    
-    .feature-card:hover .icon-wrapper {
-      transform: scale(1.1) rotate(5deg);
-    }
-    
-    @media (max-width: 768px) {
-      .swiper-button-next,
-      .swiper-button-prev {
-        width: 45px;
-        height: 45px;
-      }
-      
-      .swiper-button-next::after,
-      .swiper-button-prev::after {
-        font-size: 18px;
-      }
-      
-      .nav-btn.prev { left: 20px; }
-      .nav-btn.next { right: 20px; }
-      
-      .close-btn {
-        top: 15px;
-        right: 15px;
-        font-size: 28px;
-      }
-      
-      .hero-gradient h2 {
-        font-size: 2.5rem;
-      }
-    }
-  </style>
+    </script>
   </head>
 
-  <body class="font-sans text-gray-800">
+  <body class="font-sans text-gray-800" data-theme="dark">
     <!-- Image Preview Modal -->
     <div id="imagePreview" class="preview-modal">
       <span class="close-btn" onclick="closePreview()">×</span>
@@ -502,6 +97,7 @@
 
     <!-- Navbar -->
     <header class="navbar fixed w-full z-50 ">
+      
       <nav class="container mx-auto flex justify-between items-center py-4 px-6 max-w-7xl ">
         <h1 class="flex items-center text-3xl font-bold primary-text tracking-tight">
           <img src="assets/images/logo.svg" alt="Invoiso Logo" class="w-8 h-8 mr-2" />
@@ -514,12 +110,14 @@
           <li><a href="#screenshots" class="hover:text-blue-800 transition-colors duration-300">Screenshots</a></li>
           <li><a href="#contact" class="hover:text-blue-800 transition-colors duration-300">Contact</a></li>
         </ul>
+
         <button class="md:hidden text-gray-700" onclick="toggleMenu()">
           <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
           </svg>
         </button>
       </nav>
+      
       <div class="mobile-menu hidden md:hidden bg-white border-t shadow-lg">
         <ul class="py-4 px-6 space-y-3">
           <li><a href="#home" class="block hover:text-blue-800 py-2 transition-colors">Home</a></li>
@@ -543,11 +141,11 @@
             Invoiso helps you create professional invoices, manage clients, and track payments — all offline.
           </p>
           <div class="flex flex-col md:flex-row justify-center gap-6 mb-16">
-            <a href="#" class="btn-primary font-semi-bold px-8 py-4 rounded-lg shadow-2xl inline-flex items-center justify-center gap-3 text-lg">
-              <i class="fab fa-windows download-icon"></i> Download for Windows
+            <a href="https://github.com/Anooppandikashala/invoiso/releases/latest" target="_blank" class="btn-primary font-semi-bold px-8 py-4 rounded-lg shadow-2xl inline-flex items-center justify-center gap-3 text-lg">
+              <i class="fab fa-windows download-icon"></i> <i class="fab fa-linux download-icon"></i> Download
             </a>
-            <a href="#" class="btn-secondary font-semi-bold px-8 py-4 rounded-lg inline-flex items-center justify-center gap-3 text-lg">
-              <i class="fab fa-linux download-icon"></i> Download for Linux
+            <a href="https://github.com/Anooppandikashala/invoiso" target="_blank" class="btn-secondary font-semi-bold px-8 py-4 rounded-lg inline-flex items-center justify-center gap-3 text-lg">
+              <i class="fab fa-github download-icon"></i> GitHub Repository
             </a>
           </div>
           
@@ -729,13 +327,13 @@
         </div> -->
         
         <div class="flex flex-wrap justify-center gap-8 text-lg mb-8">
-          <a href="#" class="hover:underline">
+          <a href="https://github.com/Anooppandikashala/invoiso" class="hover:underline">
             <i class="fab fa-github mr-2"></i>GitHub
           </a>
-          <a href="#" class="hover:underline">
+          <!-- <a href="#" class="hover:underline">
             <i class="fab fa-youtube mr-2"></i>YouTube
-          </a>
-          <a href="mailto:support@invoiso.com" class="hover:underline">
+          </a> -->
+          <a href="mailto:anooppkrishnan96@gmail.com" class="hover:underline">
             <i class="fas fa-envelope mr-2"></i>Email
           </a>
         </div>
@@ -913,7 +511,6 @@
     previewModal.addEventListener('click', function(e) {
       if (e.target === previewModal) closePreview();
     });
-
     </script>
   </body>
 </html>
