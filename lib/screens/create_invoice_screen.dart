@@ -43,7 +43,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   final _productScrollController = ScrollController();
   final _invoiceItemsScrollController = ScrollController();
 
-  bool isTaxEnabled = true;
+  bool _isTaxEnabled = true;
+  bool _isPerItem = false;
   bool isEditing = false;
   bool isLoading = false;
 
@@ -53,6 +54,11 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   String currentInvoiceNumber = "";
   String _currencyCode = 'INR';
   String _currencySymbol = '₹';
+
+  TaxMode get _taxMode {
+    if (!_isTaxEnabled) return TaxMode.none;
+    return _isPerItem ? TaxMode.perItem : TaxMode.global;
+  }
 
   @override
   void initState() {
@@ -73,6 +79,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       gstinController.text = _invoice!.customer.gstin;
       taxRate = _invoice!.taxRate;
       taxRateController.text = (taxRate * 100).toStringAsFixed(1);
+      _isTaxEnabled = _invoice!.taxMode != TaxMode.none;
+      _isPerItem    = _invoice!.taxMode == TaxMode.perItem;
       invoiceType = _invoice!.type;
       currentInvoiceNumber = _invoice!.id;
       dateController.text = DateFormat('dd/MM/yyyy').format(_invoice!.date);
@@ -318,10 +326,11 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         items: List.from(invoiceItems),
         date: DateTime.now(),
         notes: notesController.text.isNotEmpty ? notesController.text : null,
-        taxRate: taxRate,
+        taxRate: _taxMode == TaxMode.global ? taxRate : 0.0,
         type: invoiceType,
         currencyCode: _currencyCode,
         currencySymbol: _currencySymbol,
+        taxMode: _taxMode,
       );
 
       await InvoiceService.insertInvoice(invoice);
@@ -1086,6 +1095,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                             _buildItemDetail('HSN', item.product.hsncode.toString()),
                             _buildItemDetail('Qty', item.quantity.toString()),
                             _buildItemDetail('Discount', '$_currencySymbol${item.discount.toStringAsFixed(2)}'),
+                            if (_taxMode == TaxMode.perItem)
+                              _buildItemDetail('Tax', '${item.product.tax_rate}%'),
                           ],
                         ),
                       ),
@@ -1161,6 +1172,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // Enable Tax toggle
                           Row(
                             children: [
                               const Text(
@@ -1169,34 +1181,86 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                               ),
                               const Spacer(),
                               Switch(
-                                value: isTaxEnabled,
+                                value: _isTaxEnabled,
                                 onChanged: (value) {
                                   setState(() {
-                                    isTaxEnabled = value;
+                                    _isTaxEnabled = value;
                                   });
                                 },
                               ),
                             ],
                           ),
-                          const SizedBox(height: 6),
-                          TextField(
-                            controller: taxRateController,
-                            style: TextStyle(fontSize: AppFontSize.medium),
-                            decoration: InputDecoration(
-                              labelText: 'Tax Rate',
-                              labelStyle: TextStyle(fontSize: AppFontSize.medium),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
-                              suffixText: '%',
-                              filled: true,
-                              fillColor: Colors.white,
+                          if (_isTaxEnabled) ...[
+                            const SizedBox(height: 8),
+                            // Global / Per Item selector
+                            SegmentedButton<bool>(
+                              segments: const [
+                                ButtonSegment<bool>(
+                                  value: false,
+                                  label: Text('Global Rate'),
+                                  icon: Icon(Icons.percent, size: 16),
+                                ),
+                                ButtonSegment<bool>(
+                                  value: true,
+                                  label: Text('Per Item'),
+                                  icon: Icon(Icons.list_alt, size: 16),
+                                ),
+                              ],
+                              selected: {_isPerItem},
+                              onSelectionChanged: (selection) {
+                                setState(() {
+                                  _isPerItem = selection.first;
+                                });
+                              },
+                              style: ButtonStyle(
+                                textStyle: WidgetStateProperty.all(
+                                  const TextStyle(fontSize: 12),
+                                ),
+                              ),
                             ),
-                            keyboardType: TextInputType.number,
-                            onChanged: (value) {
-                              setState(() {
-                                taxRate = (double.tryParse(value) ?? (taxRate * 100)) / 100;
-                              });
-                            },
-                          ),
+                            const SizedBox(height: 8),
+                            // Global rate input (only when global selected)
+                            if (!_isPerItem)
+                              TextField(
+                                controller: taxRateController,
+                                style: TextStyle(fontSize: AppFontSize.medium),
+                                decoration: InputDecoration(
+                                  labelText: 'Tax Rate',
+                                  labelStyle: TextStyle(fontSize: AppFontSize.medium),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                                  suffixText: '%',
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                ),
+                                keyboardType: TextInputType.number,
+                                onChanged: (value) {
+                                  setState(() {
+                                    taxRate = (double.tryParse(value) ?? (taxRate * 100)) / 100;
+                                  });
+                                },
+                              )
+                            else
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withValues(alpha: 0.05),
+                                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                  border: Border.all(color: Colors.blue.withValues(alpha: 0.2)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.info_outline, size: 14, color: Colors.blue[700]),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        'Tax rate from each product',
+                                        style: TextStyle(fontSize: 12, color: Colors.blue[700]),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
                         ],
                       ),
                     ),
@@ -1375,10 +1439,11 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         items: List.from(invoiceItems),
         date: _invoice!.date,
         notes: notesController.text.isNotEmpty ? notesController.text : null,
-        taxRate: taxRate,
+        taxRate: _taxMode == TaxMode.global ? taxRate : 0.0,
         type: invoiceType,
         currencyCode: _currencyCode,
         currencySymbol: _currencySymbol,
+        taxMode: _taxMode,
       );
 
       await InvoiceService.updateInvoice(updatedInvoice);
@@ -1576,7 +1641,18 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     }
 
     double subtotal = invoiceItems.fold(0.0, (sum, item) => sum + item.total);
-    double tax = isTaxEnabled ? subtotal * taxRate : 0.0;
+    double tax;
+    switch (_taxMode) {
+      case TaxMode.global:
+        tax = subtotal * taxRate;
+        break;
+      case TaxMode.perItem:
+        tax = invoiceItems.fold(0.0, (sum, item) => sum + item.taxAmount);
+        break;
+      case TaxMode.none:
+        tax = 0.0;
+        break;
+    }
     double total = subtotal + tax;
 
     return Scaffold(

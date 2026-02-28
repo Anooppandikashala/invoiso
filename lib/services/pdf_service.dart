@@ -456,7 +456,7 @@ class PDFService {
         children: [
           _totalRow("Subtotal", "$currencySymbol ${invoice.subtotal.toStringAsFixed(2)}"),
           _totalRow(
-              "Tax (${(invoice.taxRate * 100).toStringAsFixed(0)}%)",
+              _taxLabel(invoice),
               "$currencySymbol ${invoice.tax.toStringAsFixed(2)}"),
           pw.Container(
             padding: const pw.EdgeInsets.all(8),
@@ -485,6 +485,17 @@ class PDFService {
     );
   }
 
+  static String _taxLabel(Invoice invoice) {
+    switch (invoice.taxMode) {
+      case TaxMode.global:
+        return "Tax (${(invoice.taxRate * 100).toStringAsFixed(0)}%)";
+      case TaxMode.perItem:
+        return "Tax (per item)";
+      case TaxMode.none:
+        return "Tax";
+    }
+  }
+
 // Total Row helper - UNCHANGED
   static pw.Widget _totalRow(String label, String value) {
     return pw.Padding(
@@ -502,10 +513,21 @@ class PDFService {
   // Build Invoice Table - MODIFIED
   static pw.Widget _buildInvoiceTable(Invoice invoice, {PdfColor headerColor = PdfColors.grey200, PdfColor textColor = PdfColors.black})
   {
+    final bool showItemTax = invoice.taxMode == TaxMode.perItem;
+
     return pw.Table(
       // Removed external border for a cleaner look
       // border: pw.TableBorder.all(color: PdfColors.grey300),
-      columnWidths: {
+      columnWidths: showItemTax ? {
+        0: const pw.FlexColumnWidth(1),
+        1: const pw.FlexColumnWidth(3),
+        2: const pw.FlexColumnWidth(2),
+        3: const pw.FlexColumnWidth(1),
+        4: const pw.FlexColumnWidth(1.5),
+        5: const pw.FlexColumnWidth(1),   // Tax %
+        6: const pw.FlexColumnWidth(1.5),
+        7: const pw.FlexColumnWidth(1.5),
+      } : {
         0: const pw.FlexColumnWidth(1),
         1: const pw.FlexColumnWidth(3),
         2: const pw.FlexColumnWidth(2),
@@ -523,6 +545,7 @@ class PDFService {
             _buildTableCell('HSN Code', isHeader: true, textColor: textColor),
             _buildTableCell('Qty', isHeader: true, textColor: textColor),
             _buildTableCell('Price', isHeader: true, textColor: textColor),
+            if (showItemTax) _buildTableCell('Tax %', isHeader: true, textColor: textColor),
             _buildTableCell('Discount', isHeader: true, textColor: textColor),
             _buildTableCell('Total', isHeader: true, textColor: textColor),
           ],
@@ -538,6 +561,7 @@ class PDFService {
               _buildTableCell(item.product.hsncode),
               _buildTableCell(item.quantity.toString()),
               _buildTableCell(item.product.price.toStringAsFixed(2)),
+              if (showItemTax) _buildTableCell('${item.product.tax_rate}%'),
               _buildTableCell(item.discount.toStringAsFixed(2)),
               _buildTableCell(item.total.toStringAsFixed(2)),
             ],
@@ -551,6 +575,7 @@ class PDFService {
               pw.Container(height: 1, color: PdfColors.grey400),
               pw.Container(height: 1, color: PdfColors.grey400),
               pw.Container(height: 1, color: PdfColors.grey400),
+              if (showItemTax) pw.Container(height: 1, color: PdfColors.grey400),
               pw.Container(height: 1, color: PdfColors.grey400),
               pw.Container(height: 1, color: PdfColors.grey400),
             ]
