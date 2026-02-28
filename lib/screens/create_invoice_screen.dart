@@ -174,7 +174,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                '${product.name} (Rs: ${product.price})',
+                '${product.name} ($_currencySymbol ${product.price})',
                 style: const TextStyle(fontSize: AppFontSize.xlarge),
               ),
             ),
