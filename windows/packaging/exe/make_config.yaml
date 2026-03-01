@@ -1,5 +1,6 @@
 # The value of AppId uniquely identifies this application.
 # Do not use the same AppId value in installers for other applications.
+script_template: setup_template.iss
 app_id: 78E9829EBA0F7AA1FEF92EB60916D9E4
 publisher: ANOOP P
 publisher_url: https://github.com/Anooppandikashala
