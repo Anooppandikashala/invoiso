@@ -52,7 +52,7 @@ class CurrencyOption {
 
 class SupportedCurrencies {
   static const List<CurrencyOption> all = [
-    CurrencyOption(code: 'INR', symbol: '₹',   name: 'Indian Rupee'),
+    CurrencyOption(code: 'INR', symbol: 'Rs.',   name: 'Indian Rupee'),
     CurrencyOption(code: 'USD', symbol: '\$',   name: 'US Dollar'),
     CurrencyOption(code: 'EUR', symbol: '€',   name: 'Euro'),
     CurrencyOption(code: 'GBP', symbol: '£',   name: 'British Pound'),
