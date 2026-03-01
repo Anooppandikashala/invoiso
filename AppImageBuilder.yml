@@ -8,9 +8,6 @@ AppDir:
     icon: logo
     version: 1.0.0
     exec: invoiso
-  files:
-    include:
-      - build/linux/x64/release/bundle/**
   runtime:
     env:
       PATH: $APPDIR/usr/bin:$PATH
