@@ -9,6 +9,7 @@ import 'package:invoiso/screens/settings_screen.dart';
 import 'package:invoiso/services/invoice_pdf_services.dart';
 
 import '../models/user.dart';
+import '../database/user_service.dart';
 import 'customer_management_screen.dart';
 import '../database/database_helper.dart';
 import 'create_invoice_screen.dart';
@@ -28,8 +29,22 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
+  late User _currentUser;
 
   Invoice? invoiceToEdit;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentUser = widget.loggedInUser;
+  }
+
+  Future<void> _refreshUser() async {
+    final fresh = await UserService.getUserById(_currentUser.id);
+    if (fresh != null && mounted) {
+      setState(() => _currentUser = fresh);
+    }
+  }
 
   Widget buildScreen() {
     if (_selectedIndex != 1) {
@@ -52,7 +67,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return ProductManagementScreen();
       case 5:
         return SettingsScreen(
-          currentUser: widget.loggedInUser,
+          currentUser: _currentUser,
         );
       default:
         return const Center(child: Text("Unknown tab"));
@@ -86,7 +101,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               AppSpacing.wSmall,
               Text(
-                "Hi ${widget.loggedInUser.username}",
+                "Hi ${_currentUser.username}",
                 style: TextStyle(fontSize: 18),
               ),
               AppSpacing.wMedium
@@ -108,6 +123,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
           NavigationRail(
             selectedIndex: _selectedIndex,
             onDestinationSelected: (index) {
+              // Refresh user when navigating away from Settings tab
+              // so the header reflects any username change immediately.
+              if (_selectedIndex == 5 && index != 5) {
+                _refreshUser();
+              }
               setState(() {
                 _selectedIndex = index;
               });

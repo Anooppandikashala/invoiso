@@ -1,5 +1,6 @@
 import 'package:invoiso/models/user.dart';
 import 'database_helper.dart';
+import '../utils/password_utils.dart';
 
 class UserService {
   static final dbHelper = DatabaseHelper();
@@ -11,7 +12,7 @@ class UserService {
     final result = await db.query(
       'users',
       where: 'username = ? AND password = ?',
-      whereArgs: [username, password],
+      whereArgs: [username, PasswordUtils.hash(password)],
     );
 
     if (result.isNotEmpty) {
@@ -28,19 +29,43 @@ class UserService {
     return maps.map((map) => User.fromMap(map)).toList();
   }
 
+  static Future<User?> getUserById(String id) async {
+    final db = await dbHelper.database;
+    final result = await db.query('users', where: 'id = ?', whereArgs: [id], limit: 1);
+    if (result.isNotEmpty) return User.fromMap(result.first);
+    return null;
+  }
+
   static Future<void> insertUser(User user) async {
     final db = await dbHelper.database;
-    await db.insert('users', user.toMap());
+    final userWithHashedPassword = User(
+      id: user.id,
+      username: user.username,
+      password: PasswordUtils.hash(user.password),
+      userType: user.userType,
+    );
+    await db.insert('users', userWithHashedPassword.toMap());
   }
 
   static Future<void> updateUser(User user) async {
     final db = await dbHelper.database;
-    await db.update('users', user.toMap(), where: 'id = ?', whereArgs: [user.id]);
+    // Deliberately excludes 'password' — use updatePassword() to change passwords.
+    await db.update(
+      'users',
+      {'username': user.username, 'user_type': user.userType},
+      where: 'id = ?',
+      whereArgs: [user.id],
+    );
   }
 
   static Future<void> updatePassword(String id, String newPassword) async {
     final db = await dbHelper.database;
-    await db.update('users', {'password': newPassword}, where: 'id = ?', whereArgs: [id]);
+    await db.update(
+      'users',
+      {'password': PasswordUtils.hash(newPassword)},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 
   static Future<bool> userExists(String userId) async {

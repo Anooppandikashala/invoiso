@@ -1,6 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:invoiso/constants.dart';
-import 'package:invoiso/database/database_helper.dart';
 import 'package:intl/intl.dart';
 
 import 'package:invoiso/backup/backup_manager.dart';
@@ -73,12 +74,11 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
 
     try {
       final result = await _backupManager.restoreBackup(
-        database: await DatabaseHelper().database,
         backupPath: backup.filePath,
       );
 
       if (result.success) {
-        _showSuccessDialog('Backup restored successfully!');
+        _showRestartDialog();
       } else {
         _showErrorDialog(result.message);
       }
@@ -115,9 +115,25 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
     }
   }
 
+  Future<void> _downloadBackup(BackupInfo backup) async {
+    setState(() => _isLoading = true);
+    try {
+      final result = await _backupManager.downloadBackup(backup.filePath);
+      if (result.success) {
+        _showSuccessDialog('Backup saved to Downloads folder.');
+      } else {
+        _showErrorDialog(result.message);
+      }
+    } catch (e) {
+      _showErrorDialog('Failed to download backup: ${e.toString()}');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
   Future<void> _shareBackup(BackupInfo backup) async {
     try {
-      await _backupManager.downloadBackup(backup.filePath);
+      await _backupManager.shareBackup(backup.filePath);
     } catch (e) {
       _showErrorDialog('Failed to share backup: ${e.toString()}');
     }
@@ -127,11 +143,10 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final result = await _backupManager.importBackup(await DatabaseHelper().database);
+      final result = await _backupManager.importBackup();
 
       if (result.success) {
-        _showSuccessDialog('Backup imported successfully!');
-        _loadBackups();
+        _showRestartDialog();
       } else {
         _showErrorDialog(result.message);
       }
@@ -253,6 +268,9 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
                 _restoreBackup(backup);
                 break;
               case 'download':
+                _downloadBackup(backup);
+                break;
+              case 'share':
                 _shareBackup(backup);
                 break;
               case 'delete':
@@ -273,6 +291,13 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
               child: ListTile(
                 leading: Icon(Icons.download),
                 title: Text('Download'),
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'share',
+              child: ListTile(
+                leading: Icon(Icons.share),
+                title: Text('Share'),
               ),
             ),
             const PopupMenuItem(
@@ -306,6 +331,31 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
         ],
       ),
     ) ?? false;
+  }
+
+  void _showRestartDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Restore Successful'),
+        content: const Text(
+          'The database has been restored successfully.\n\n'
+          'The app needs to restart to apply the changes. '
+          'Please close and reopen the application.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close Later'),
+          ),
+          TextButton(
+            onPressed: () => exit(0),
+            child: const Text('Close App Now'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showSuccessDialog(String message) {
