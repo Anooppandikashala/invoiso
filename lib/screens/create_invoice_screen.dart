@@ -750,9 +750,12 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               children: [
                 Icon(Icons.receipt_long, color: Theme.of(context).primaryColor),
                 const SizedBox(width: 8),
-                Text(
-                  '$invoiceType Details',
-                  style: const TextStyle(fontSize: AppFontSize.medium, fontWeight: FontWeight.bold),
+                Flexible(
+                  child: Text(
+                    '$invoiceType Details',
+                    style: const TextStyle(fontSize: AppFontSize.medium, fontWeight: FontWeight.bold),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
@@ -1174,12 +1177,15 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                         children: [
                           // Enable Tax toggle
                           Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text(
-                                'Enable Tax',
-                                style: TextStyle(fontWeight: FontWeight.w600),
+                              const Flexible(
+                                child: Text(
+                                  'Enable Tax',
+                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
-                              const Spacer(),
                               Switch(
                                 value: _isTaxEnabled,
                                 onChanged: (value) {
@@ -1193,29 +1199,25 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                           if (_isTaxEnabled) ...[
                             const SizedBox(height: 8),
                             // Global / Per Item selector
-                            SegmentedButton<bool>(
-                              segments: const [
-                                ButtonSegment<bool>(
-                                  value: false,
-                                  label: Text('Global Rate'),
-                                  icon: Icon(Icons.percent, size: 16),
-                                ),
-                                ButtonSegment<bool>(
-                                  value: true,
-                                  label: Text('Per Item'),
-                                  icon: Icon(Icons.list_alt, size: 16),
-                                ),
-                              ],
-                              selected: {_isPerItem},
-                              onSelectionChanged: (selection) {
-                                setState(() {
-                                  _isPerItem = selection.first;
-                                });
-                              },
-                              style: ButtonStyle(
-                                textStyle: WidgetStateProperty.all(
-                                  const TextStyle(fontSize: 12),
-                                ),
+                            Tooltip(
+                              message: _isPerItem ? 'Per Item Rate' : 'Global Rate',
+                              child: SegmentedButton<bool>(
+                                segments: const [
+                                  ButtonSegment<bool>(
+                                    value: false,
+                                    icon: Icon(Icons.percent, size: 16),
+                                  ),
+                                  ButtonSegment<bool>(
+                                    value: true,
+                                    icon: Icon(Icons.list_alt, size: 16),
+                                  ),
+                                ],
+                                selected: {_isPerItem},
+                                onSelectionChanged: (selection) {
+                                  setState(() {
+                                    _isPerItem = selection.first;
+                                  });
+                                },
                               ),
                             ),
                             const SizedBox(height: 8),

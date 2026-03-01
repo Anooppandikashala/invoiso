@@ -120,69 +120,62 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       body: Row(
         children: [
-          NavigationRail(
-            selectedIndex: _selectedIndex,
-            onDestinationSelected: (index) {
-              // Refresh user when navigating away from Settings tab
-              // so the header reflects any username change immediately.
-              if (_selectedIndex == 5 && index != 5) {
-                _refreshUser();
-              }
-              setState(() {
-                _selectedIndex = index;
-              });
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: IntrinsicHeight(
+                    child: NavigationRail(
+                      selectedIndex: _selectedIndex,
+                      onDestinationSelected: (index) {
+                        // Refresh user when navigating away from Settings tab
+                        // so the header reflects any username change immediately.
+                        if (_selectedIndex == 5 && index != 5) {
+                          _refreshUser();
+                        }
+                        setState(() {
+                          _selectedIndex = index;
+                        });
+                      },
+                      labelType: NavigationRailLabelType.all,
+                      destinations: [
+                        NavigationRailDestination(
+                          icon: const Icon(Icons.dashboard),
+                          selectedIcon: Icon(Icons.dashboard, color: Colors.blue[900]),
+                          label: const Text('Dashboard'),
+                        ),
+                        NavigationRailDestination(
+                          icon: const Icon(Icons.receipt),
+                          selectedIcon: Icon(Icons.receipt, color: Colors.blue[900]),
+                          label: const Text('New Invoice'),
+                        ),
+                        NavigationRailDestination(
+                          icon: const Icon(Icons.list),
+                          selectedIcon: Icon(Icons.list, color: Colors.blue[900]),
+                          label: const Text('Invoices'),
+                        ),
+                        NavigationRailDestination(
+                          icon: const Icon(Icons.people),
+                          selectedIcon: Icon(Icons.people, color: Colors.blue[900]),
+                          label: const Text('Customers'),
+                        ),
+                        NavigationRailDestination(
+                          icon: const Icon(Icons.inventory),
+                          selectedIcon: Icon(Icons.inventory, color: Colors.blue[900]),
+                          label: const Text('Products'),
+                        ),
+                        NavigationRailDestination(
+                          icon: const Icon(Icons.settings),
+                          selectedIcon: Icon(Icons.settings, color: Colors.blue[900]),
+                          label: const Text('Settings'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
             },
-            labelType: NavigationRailLabelType.all,
-            destinations: [
-              NavigationRailDestination(
-                icon: const Icon(Icons.dashboard),
-                selectedIcon: Icon(
-                  Icons.dashboard,
-                  color: Colors.blue[900],
-                ),
-                label: const Text('Dashboard'),
-              ),
-              NavigationRailDestination(
-                icon: const Icon(Icons.receipt),
-                selectedIcon: Icon(
-                  Icons.receipt,
-                  color: Colors.blue[900],
-                ),
-                label: const Text('New Invoice'),
-              ),
-              NavigationRailDestination(
-                icon: const Icon(Icons.list),
-                selectedIcon: Icon(
-                  Icons.list,
-                  color: Colors.blue[900],
-                ),
-                label: const Text('Invoices'),
-              ),
-              NavigationRailDestination(
-                icon: const Icon(Icons.people),
-                selectedIcon: Icon(
-                  Icons.people,
-                  color: Colors.blue[900],
-                ),
-                label: const Text('Customers'),
-              ),
-              NavigationRailDestination(
-                icon: const Icon(Icons.inventory),
-                selectedIcon: Icon(
-                  Icons.inventory,
-                  color: Colors.blue[900],
-                ),
-                label: const Text('Products'),
-              ),
-              NavigationRailDestination(
-                icon: const Icon(Icons.settings),
-                selectedIcon: Icon(
-                  Icons.settings,
-                  color: Colors.blue[900],
-                ),
-                label: const Text('Settings'),
-              ),
-            ],
           ),
           const VerticalDivider(thickness: 1, width: 1),
           Expanded(child: buildScreen()),
