@@ -3,11 +3,7 @@ import 'package:invoiso/database/user_service.dart';
 import '../constants.dart';
 import '../models/user.dart';
 import '../database/database_helper.dart';
-
-import 'package:flutter/material.dart';
-import 'package:invoiso/database/user_service.dart';
-import '../models/user.dart';
-import '../database/database_helper.dart';
+import '../utils/password_utils.dart';
 
 class UserManagementScreen extends StatefulWidget {
   final User currentUser;
@@ -61,10 +57,12 @@ class _UserManagementScreenState extends State<UserManagementScreen>
           _isLoading = false;
         });
       } else {
+        final fresh = await UserService.getUserById(widget.currentUser.id);
+        final user = fresh ?? widget.currentUser;
         setState(() {
-          _users = [widget.currentUser];
-          _filteredUsers = [widget.currentUser];
-          _editingUserId = widget.currentUser.id;
+          _users = [user];
+          _filteredUsers = [user];
+          _editingUserId = user.id;
           _isLoading = false;
         });
       }
@@ -349,7 +347,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   onPressed: () async {
                     if (formKey.currentState!.validate()) {
                       final user = _users.firstWhere((u) => u.id == userId);
-                      if (user.password == oldPasswordController.text) {
+                      if (user.password == PasswordUtils.hash(oldPasswordController.text)) {
                         await UserService.updatePassword(
                             userId, newPasswordController.text);
                         Navigator.of(context).pop();
@@ -629,47 +627,50 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         return null;
                       },
                     ),
-                    const SizedBox(height: 20),
-                    TextFormField(
-                      controller: _passwordController,
-                      decoration: InputDecoration(
-                        labelText: 'Password',
-                        hintText: 'Enter password',
-                        prefixIcon: const Icon(Icons.lock_outline),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_off
-                                : Icons.visibility,
+                    if(_editingUserId == null) ...
+                    [
+                      const SizedBox(height: 20),
+                      TextFormField(
+                        controller: _passwordController,
+                        decoration: InputDecoration(
+                          labelText: 'Password',
+                          hintText: 'Enter password',
+                          prefixIcon: const Icon(Icons.lock_outline),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
                           ),
-                          onPressed: () {
-                            setState(() {
-                              _obscurePassword = !_obscurePassword;
-                            });
-                          },
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[50],
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                            borderSide: BorderSide(
+                                color: Theme.of(context).primaryColor, width: 2),
+                          ),
                         ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[50],
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                          borderSide: BorderSide(
-                              color: Theme.of(context).primaryColor, width: 2),
-                        ),
+                        obscureText: _obscurePassword,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Password is required';
+                          }
+                          if (value.length < 6) {
+                            return 'Password must be at least 6 characters';
+                          }
+                          return null;
+                        },
                       ),
-                      obscureText: _obscurePassword,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Password is required';
-                        }
-                        if (value.length < 6) {
-                          return 'Password must be at least 6 characters';
-                        }
-                        return null;
-                      },
-                    ),
+                    ],
                     const SizedBox(height: 20),
                     DropdownButtonFormField<String>(
                       value: _userTypeController.text.isNotEmpty
@@ -1264,9 +1265,11 @@ class _UserManagementScreenState1 extends State<UserManagementScreen1>
     }
     else
     {
+      final fresh = await UserService.getUserById(widget.currentUser.id);
+      final user = fresh ?? widget.currentUser;
       setState(() {
-        _users = [widget.currentUser];
-        _editingUserId  = widget.currentUser.id;
+        _users = [user];
+        _editingUserId = user.id;
       });
     }
   }
@@ -1461,7 +1464,7 @@ class _UserManagementScreenState1 extends State<UserManagementScreen1>
                     if (formKey.currentState!.validate()) {
                       // Verify old password
                       final user = _users.firstWhere((u) => u.id == userId);
-                      if (user.password == oldPasswordController.text) {
+                      if (user.password == PasswordUtils.hash(oldPasswordController.text)) {
                         await UserService.updatePassword(userId, newPasswordController.text);
                         Navigator.of(context).pop();
                         _showSnackBar('Password changed successfully', Colors.green);

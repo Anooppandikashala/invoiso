@@ -12,6 +12,7 @@ import 'package:invoiso/models/invoice_item.dart';
 import '../common.dart';
 import '../models/company_info.dart';
 import '../models/user.dart';
+import '../utils/password_utils.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -20,7 +21,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 6;
+  final dbVersion = 7;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -142,7 +143,7 @@ class DatabaseHelper {
     await db.insert('users', {
       'id': 'user-001',
       'username': 'admin',
-      'password': 'admin',
+      'password': PasswordUtils.hash('admin'),
       'user_type': 'admin'
     });
 
@@ -181,6 +182,22 @@ class DatabaseHelper {
         "ALTER TABLE invoices ADD COLUMN tax_mode TEXT DEFAULT 'global'"
       );
     }
+    if (oldVersion < 7) {
+      // Hash any existing plain-text passwords.
+      // SHA-256 produces 64-character hex strings; shorter values are plain text.
+      final users = await db.query('users');
+      for (final user in users) {
+        final plainPw = user['password'] as String;
+        if (plainPw.length != 64) {
+          await db.update(
+            'users',
+            {'password': PasswordUtils.hash(plainPw)},
+            where: 'id = ?',
+            whereArgs: [user['id']],
+          );
+        }
+      }
+    }
   }
 
   // ─────────────────────────────────────────────
@@ -200,5 +217,14 @@ class DatabaseHelper {
       await db.close();
       _database = null;
     }
+  }
+
+  /// Closes the current connection, clears the singleton reference, and
+  /// re-opens a fresh connection. Call this after the DB file is replaced
+  /// (e.g. after a backup restore).
+  Future<Database> reinitialize() async {
+    await close();
+    _database = await _initDB();
+    return _database!;
   }
 }

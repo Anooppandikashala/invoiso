@@ -17,6 +17,20 @@ class BackupManager {
   static const String _backupExtension = '.invoicedb';
   static const String _jsonExtension = '.json';
 
+  // Tables excluded from JSON exports (contain sensitive data).
+  static const Set<String> _excludedFromJsonExport = {'users'};
+
+  // Restore order ensures parent tables are inserted before child tables,
+  // preventing foreign-key constraint violations.
+  static const List<String> _restoreTableOrder = [
+    'customers',
+    'products',
+    'company_info',
+    'settings',
+    'invoices',
+    'invoice_items',
+  ];
+
   // Create backup of the entire database
   Future<BackupResult> createBackup({
     String? customPath,
@@ -56,7 +70,8 @@ class BackupManager {
     }
   }
 
-  // Create database file backup
+  // Create database file backup — copies the live DB file while it is open.
+  // SQLite WAL mode on desktop keeps the file consistent during a copy.
   Future<String> _createDatabaseBackup(
       String backupName,
       String? customPath,
@@ -65,17 +80,12 @@ class BackupManager {
     final backupDir = customPath ?? await _getBackupDirectory();
     final backupPath = join(backupDir, '$backupName$_backupExtension');
 
-    // Copy database file
-    final dbFile = File(dbPath);
-    await dbFile.copy(backupPath);
-
-    // Reopen database
-    await openDatabase(dbPath);
+    await File(dbPath).copy(backupPath);
 
     return backupPath;
   }
 
-  // Create JSON export backup
+  // Create JSON export backup (excludes sensitive tables such as 'users')
   Future<String> _createJsonBackup(
       String backupName,
       String? customPath,
@@ -83,33 +93,28 @@ class BackupManager {
     final backupDir = customPath ?? await _getBackupDirectory();
     final backupPath = join(backupDir, '$backupName$_jsonExtension');
 
-    // Export all data to JSON
     final backupData = await _exportDataToJson(await DatabaseHelper().database);
 
-    // Write JSON file
-    final backupFile = File(backupPath);
-    await backupFile.writeAsString(jsonEncode(backupData));
+    await File(backupPath).writeAsString(jsonEncode(backupData));
 
     return backupPath;
   }
 
-  // Export database data to JSON format
+  // Export database data to JSON format (sensitive tables excluded)
   Future<Map<String, dynamic>> _exportDataToJson(Database database) async {
     final backupData = <String, dynamic>{};
 
-    // Get all table names
     final tables = await database.rawQuery(
         "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
     );
 
-    // Export each table
     for (final table in tables) {
       final tableName = table['name'] as String;
+      if (_excludedFromJsonExport.contains(tableName)) continue;
       final tableData = await database.query(tableName);
       backupData[tableName] = tableData;
     }
 
-    // Add metadata
     backupData['_metadata'] = {
       'created_at': DateTime.now().toIso8601String(),
       'version': '1.0',
@@ -123,7 +128,6 @@ class BackupManager {
 
   // Restore from backup
   Future<BackupResult> restoreBackup({
-    required Database database,
     required String backupPath,
   }) async {
     try {
@@ -135,12 +139,20 @@ class BackupManager {
         );
       }
 
+      // Verify integrity before touching the live database
+      if (!await verifyBackup(backupPath)) {
+        return BackupResult(
+          success: false,
+          message: 'Backup file is corrupted or invalid',
+        );
+      }
+
       final extension = backupPath.split('.').last;
 
       if (extension == _backupExtension.replaceAll('.', '')) {
-        await _restoreFromDatabaseBackup(database, backupPath);
+        await _restoreFromDatabaseBackup(backupPath);
       } else if (extension == _jsonExtension.replaceAll('.', '')) {
-        await _restoreFromJsonBackup(database, backupPath);
+        await _restoreFromJsonBackup(backupPath);
       } else {
         return BackupResult(
           success: false,
@@ -162,54 +174,90 @@ class BackupManager {
     }
   }
 
-  // Restore from database backup
-  Future<void> _restoreFromDatabaseBackup(
-      Database database,
-      String backupPath,
-      ) async {
-    final dbPath = database.path;
+  // Restore from database backup.
+  // Takes a safety copy first, then replaces the file and re-initializes the
+  // singleton so all subsequent DB calls get a live connection.
+  Future<void> _restoreFromDatabaseBackup(String backupPath) async {
+    final dbPath = DatabaseHelper.path!;
+    final safetyPath = '$dbPath.pre_restore_backup';
 
-    // Close current database
-    await database.close();
+    // Safety copy of current database
+    await File(dbPath).copy(safetyPath);
 
-    // Replace current database with backup
-    final backupFile = File(backupPath);
-    await backupFile.copy(dbPath);
+    try {
+      // Close singleton and null its reference
+      await DatabaseHelper().close();
 
-    // Reopen database
-    await openDatabase(dbPath);
+      // Replace the database file on disk
+      await File(backupPath).copy(dbPath);
+
+      // Re-initialize through the singleton — runs migrations if needed
+      await DatabaseHelper().reinitialize();
+    } catch (e) {
+      // Restore safety copy on failure
+      try {
+        await DatabaseHelper().close();
+        await File(safetyPath).copy(dbPath);
+        await DatabaseHelper().reinitialize();
+      } catch (_) {}
+      rethrow;
+    } finally {
+      // Clean up safety copy
+      final safetyFile = File(safetyPath);
+      if (await safetyFile.exists()) await safetyFile.delete();
+    }
   }
 
   // Restore from JSON backup
-  Future<void> _restoreFromJsonBackup(
-      Database database,
-      String backupPath,
-      ) async {
-    final backupFile = File(backupPath);
-    final jsonContent = await backupFile.readAsString();
+  Future<void> _restoreFromJsonBackup(String backupPath) async {
+    final jsonContent = await File(backupPath).readAsString();
     final backupData = jsonDecode(jsonContent) as Map<String, dynamic>;
 
-    // Begin transaction
-    await database.transaction((txn) async {
-      // Clear existing data
-      final tables = await txn.rawQuery(
-          "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
-      );
+    // Validate metadata version
+    const supportedVersion = '1.0';
+    final metadata = backupData['_metadata'] as Map<String, dynamic>?;
+    if (metadata != null) {
+      final backupVersion = metadata['version'] as String?;
+      if (backupVersion != null && backupVersion != supportedVersion) {
+        throw Exception(
+          'Incompatible backup version: $backupVersion. '
+          'This backup was created with a newer version of the app.',
+        );
+      }
+    }
 
-      for (final table in tables) {
-        final tableName = table['name'] as String;
+    final database = await DatabaseHelper().database;
+
+    await database.transaction((txn) async {
+      // Clear existing data in reverse FK order
+      for (final tableName in _restoreTableOrder.reversed) {
         await txn.delete(tableName);
       }
 
-      // Restore data
-      for (final entry in backupData.entries) {
-        if (entry.key.startsWith('_')) continue; // Skip metadata
-
-        final tableName = entry.key;
-        final tableData = entry.value as List<dynamic>;
-
+      // Restore in FK-safe order (parents before children)
+      for (final tableName in _restoreTableOrder) {
+        if (!backupData.containsKey(tableName)) continue;
+        final tableData = backupData[tableName] as List<dynamic>;
         for (final row in tableData) {
-          await txn.insert(tableName, row as Map<String, dynamic>);
+          await txn.insert(
+            tableName,
+            row as Map<String, dynamic>,
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
+        }
+      }
+
+      // Restore any tables not in the ordered list (excluding metadata keys)
+      for (final entry in backupData.entries) {
+        if (entry.key.startsWith('_')) continue;
+        if (_restoreTableOrder.contains(entry.key)) continue;
+        final tableData = entry.value as List<dynamic>;
+        for (final row in tableData) {
+          await txn.insert(
+            entry.key,
+            row as Map<String, dynamic>,
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
         }
       }
     });
@@ -247,7 +295,6 @@ class BackupManager {
       }
     }
 
-    // Sort by creation date (newest first)
     backups.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     return backups;
@@ -279,12 +326,9 @@ class BackupManager {
   Future<void> performAutoBackup(Database database) async {
     final backups = await getBackupList();
 
-    // Check if we need to create a new backup
     if (backups.isEmpty ||
         DateTime.now().difference(backups.first.createdAt).inDays >= 7) {
       await createBackup();
-
-      // Clean up old backups (keep only last 5)
       await _cleanupOldBackups();
     }
   }
@@ -302,7 +346,7 @@ class BackupManager {
   }
 
   // Import backup from external source
-  Future<BackupResult> importBackup(Database database) async {
+  Future<BackupResult> importBackup() async {
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
@@ -311,10 +355,7 @@ class BackupManager {
 
       if (result != null && result.files.isNotEmpty) {
         final filePath = result.files.first.path!;
-        return await restoreBackup(
-          database: database,
-          backupPath: filePath,
-        );
+        return await restoreBackup(backupPath: filePath);
       }
 
       return BackupResult(
@@ -363,12 +404,10 @@ class BackupManager {
       final extension = backupPath.split('.').last;
 
       if (extension == _backupExtension.replaceAll('.', '')) {
-        // For database backups, try to open the file
         final tempDb = await openDatabase(backupPath, readOnly: true);
         await tempDb.close();
         return true;
       } else if (extension == _jsonExtension.replaceAll('.', '')) {
-        // For JSON backups, try to parse the JSON
         final content = await file.readAsString();
         jsonDecode(content);
         return true;
@@ -399,14 +438,11 @@ class BackupManager {
     }
 
     if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-      final downloadsPath = join(
-        (await getDownloadsDirectory())?.path ?? '',
-      );
-      final dir = Directory(downloadsPath);
+      final path = (await getDownloadsDirectory())?.path ?? '';
+      final dir = Directory(path);
       if (await dir.exists()) return dir;
     }
 
-    // Fallback to app documents dir
     return await getApplicationDocumentsDirectory();
   }
 
@@ -416,6 +452,6 @@ class BackupManager {
       final permission = await Permission.storage.request();
       return permission == PermissionStatus.granted;
     }
-    return true; // iOS doesn't need explicit permission for app documents
+    return true;
   }
 }
