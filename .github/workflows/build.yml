@@ -172,14 +172,25 @@ jobs:
               BUNDLE=build/linux/x64/release/bundle
               LIBSTDCPP=$(find /usr/lib -name "libstdc++.so.6.0.*" | sort -V | tail -1)
               echo "Bundling libstdc++: $LIBSTDCPP"
+
+              # Verify the found libstdc++ actually provides GLIBCXX_3.4.29
+              if ! objdump -p "$LIBSTDCPP" | grep -q "GLIBCXX_3.4.29"; then
+                echo "ERROR: found libstdc++ does NOT provide GLIBCXX_3.4.29"
+                objdump -p "$LIBSTDCPP" | grep GLIBCXX
+                exit 1
+              fi
+              echo "Confirmed: $LIBSTDCPP provides GLIBCXX_3.4.29"
               cp "$LIBSTDCPP" "$BUNDLE/lib/libstdc++.so.6"
 
-              # Patch the Syncfusion plugin rpath so it finds the bundled libstdc++
-              # at its install location instead of the system library.
-              # This is more reliable than LD_LIBRARY_PATH wrapper scripts.
-              patchelf --set-rpath /usr/share/invoiso/lib \
-                "$BUNDLE/lib/libsyncfusion_pdfviewer_linux_plugin.so"
-              echo "Patched Syncfusion plugin rpath -> /usr/share/invoiso/lib"
+              # Set DT_RPATH (not DT_RUNPATH) on the main binary using --force-rpath.
+              # DT_RPATH (unlike DT_RUNPATH) is inherited by ALL transitively loaded
+              # libraries and dlopen calls. This ensures the Flutter engine and the
+              # Syncfusion plugin both resolve libstdc++.so.6 from our bundled copy
+              # before the system's old version is found.
+              patchelf --force-rpath \
+                --set-rpath /usr/share/invoiso/lib \
+                "$BUNDLE/invoiso"
+              echo "Patched invoiso DT_RPATH -> /usr/share/invoiso/lib"
 
               dart pub global activate fastforge
               export PATH="$PATH:$HOME/.pub-cache/bin"
