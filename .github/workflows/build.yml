@@ -147,7 +147,7 @@ jobs:
 
               apt-get update -y
               apt-get install -y \
-                curl unzip xz-utils zip \
+                curl git unzip xz-utils zip \
                 clang cmake ninja-build pkg-config \
                 libgtk-3-dev liblzma-dev patchelf squashfs-tools \
                 software-properties-common ca-certificates
