@@ -200,12 +200,14 @@ jobs:
               mkdir -p /tmp/deb_root
               dpkg-deb -R "$DEB_FILE" /tmp/deb_root
 
-              echo "--- original /usr/bin/invoiso ---"
-              cat /tmp/deb_root/usr/bin/invoiso 2>/dev/null || echo "(none)"
+              echo "--- deb contents ---"
+              find /tmp/deb_root -type f | sort
 
+              mkdir -p /tmp/deb_root/usr/bin
               printf "#!/bin/sh\nexport LD_PRELOAD=/usr/share/invoiso/lib/libstdc++.so.6\nexec /usr/share/invoiso/invoiso \"\$@\"\n" \
                 > /tmp/deb_root/usr/bin/invoiso
               chmod 755 /tmp/deb_root/usr/bin/invoiso
+              echo "Created LD_PRELOAD launcher at /usr/bin/invoiso"
 
               dpkg-deb -b /tmp/deb_root "$DEB_FILE"
               echo "Repacked with LD_PRELOAD launcher"
