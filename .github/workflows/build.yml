@@ -182,14 +182,14 @@ jobs:
               echo "Confirmed: $LIBSTDCPP provides GLIBCXX_3.4.29"
               cp "$LIBSTDCPP" "$BUNDLE/lib/libstdc++.so.6"
 
-              # Set DT_RPATH (not DT_RUNPATH) on the main binary using --force-rpath.
-              # DT_RPATH (unlike DT_RUNPATH) is inherited by ALL transitively loaded
-              # libraries and dlopen calls. This ensures the Flutter engine and the
-              # Syncfusion plugin both resolve libstdc++.so.6 from our bundled copy
-              # before the system's old version is found.
-              patchelf --force-rpath \
-                --set-rpath /usr/share/invoiso/lib \
-                "$BUNDLE/invoiso"
+              # Set DT_RPATH on the main binary so it is inherited by ALL transitively
+              # loaded libraries and dlopen calls (Flutter engine, Syncfusion plugin).
+              # Note: patchelf 0.9 (ubuntu 18.04) --set-rpath already writes DT_RPATH
+              # by default (DT_RUNPATH support came in 0.10), so --force-rpath is not
+              # needed and must NOT be used — it does not exist in 0.9 and breaks
+              # argument parsing. Use a literal path to avoid variable expansion issues.
+              patchelf --set-rpath /usr/share/invoiso/lib \
+                build/linux/x64/release/bundle/invoiso
               echo "Patched invoiso DT_RPATH -> /usr/share/invoiso/lib"
 
               dart pub global activate fastforge
