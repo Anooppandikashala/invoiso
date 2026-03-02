@@ -203,6 +203,12 @@ jobs:
               echo "--- deb contents ---"
               find /tmp/deb_root -type f | sort
 
+              # Explicitly inject libstdc++.so.6 — fastforge may not carry it
+              # from bundle/lib/ into the .deb; inject it directly now
+              mkdir -p /tmp/deb_root/usr/share/invoiso/lib
+              cp "$LIBSTDCPP" /tmp/deb_root/usr/share/invoiso/lib/libstdc++.so.6
+              echo "Injected libstdc++.so.6 into deb at /usr/share/invoiso/lib/"
+
               mkdir -p /tmp/deb_root/usr/bin
               printf "#!/bin/sh\nexport LD_PRELOAD=/usr/share/invoiso/lib/libstdc++.so.6\nexec /usr/share/invoiso/invoiso \"\$@\"\n" \
                 > /tmp/deb_root/usr/bin/invoiso
