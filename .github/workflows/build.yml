@@ -117,40 +117,17 @@ jobs:
           path: Invoiso-*-ubuntu22.deb
 
   # ─────────────────────────────────────────────────────────────
-  # Linux — build .deb for Ubuntu 18.04 (Docker container build)
+  # Linux — build .deb for Ubuntu 18.04
+  # Runs on ubuntu-22.04 runner (Node.js 20 compatible for GH
+  # Actions tooling); compilation happens inside a ubuntu:18.04
+  # Docker container so the binary links against glibc 2.27.
+  # GCC 11 libstdc++ is bundled to satisfy GLIBCXX_3.4.29.
   # ─────────────────────────────────────────────────────────────
   build-linux-ubuntu18:
-    runs-on: ubuntu-latest
-    container:
-      image: ubuntu:18.04
-      options: --privileged
+    runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install system build dependencies
-        run: |
-          apt-get update -y
-          apt-get install -y \
-            curl git unzip xz-utils zip \
-            clang cmake ninja-build pkg-config \
-            libgtk-3-dev liblzma-dev patchelf \
-            software-properties-common sudo ca-certificates
-
-      - name: Install GCC 11 (provides GLIBCXX_3.4.29 compiled against glibc 2.27)
-        run: |
-          add-apt-repository -y ppa:ubuntu-toolchain-r/test
-          apt-get update -y
-          apt-get install -y gcc-11 g++-11
-
-      - name: Install Flutter SDK
-        run: |
-          curl -fsSL \
-            https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.32.8-stable.tar.xz \
-            -o flutter.tar.xz
-          tar xf flutter.tar.xz -C /opt
-          /opt/flutter/bin/flutter config --no-analytics
-          /opt/flutter/bin/flutter precache --linux
 
       - name: Set version from tag
         run: |
@@ -159,33 +136,53 @@ jobs:
           sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
           echo "Building version: $VERSION"
 
-      - name: Install FastForge
-        run: /opt/flutter/bin/dart pub global activate fastforge
-
-      - name: Flutter Pub Get
-        run: /opt/flutter/bin/flutter pub get
-
-      - name: Build Flutter Linux Release
-        run: /opt/flutter/bin/flutter build linux --release
-
-      - name: Bundle libstdc++ and create launcher wrapper
+      - name: Build .deb inside Ubuntu 18.04 Docker container
         run: |
-          BUNDLE=build/linux/x64/release/bundle
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -w /workspace \
+            ubuntu:18.04 \
+            bash -c '
+              set -e
 
-          # Find the highest installed libstdc++.so.6.x (GCC 11 from PPA)
-          LIBSTDCPP=$(find /usr/lib -name "libstdc++.so.6.0.*" | sort -V | tail -1)
-          echo "Bundling libstdc++: $LIBSTDCPP"
-          cp "$LIBSTDCPP" $BUNDLE/lib/libstdc++.so.6
+              apt-get update -y
+              apt-get install -y \
+                curl unzip xz-utils zip \
+                clang cmake ninja-build pkg-config \
+                libgtk-3-dev liblzma-dev patchelf squashfs-tools \
+                software-properties-common ca-certificates
 
-          # Rename real binary; place wrapper launcher in its spot
-          mv $BUNDLE/invoiso $BUNDLE/invoiso.bin
-          printf '#!/bin/bash\nexport LD_LIBRARY_PATH=/usr/share/invoiso/lib:$LD_LIBRARY_PATH\nexec /usr/share/invoiso/invoiso.bin "$@"\n' \
-            > $BUNDLE/invoiso
-          chmod +x $BUNDLE/invoiso
+              add-apt-repository -y ppa:ubuntu-toolchain-r/test
+              apt-get update -y
+              apt-get install -y gcc-11 g++-11
 
-      - name: Build .deb Package
+              curl -fsSL \
+                https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.32.8-stable.tar.xz \
+                -o /tmp/flutter.tar.xz
+              tar xf /tmp/flutter.tar.xz -C /opt
+              export PATH="/opt/flutter/bin:$PATH"
+              flutter config --no-analytics
+              flutter precache --linux
+
+              flutter pub get
+              flutter build linux --release
+
+              BUNDLE=build/linux/x64/release/bundle
+              LIBSTDCPP=$(find /usr/lib -name "libstdc++.so.6.0.*" | sort -V | tail -1)
+              echo "Bundling libstdc++: $LIBSTDCPP"
+              cp "$LIBSTDCPP" "$BUNDLE/lib/libstdc++.so.6"
+
+              mv "$BUNDLE/invoiso" "$BUNDLE/invoiso.bin"
+              printf "#!/bin/bash\nexport LD_LIBRARY_PATH=/usr/share/invoiso/lib:\$LD_LIBRARY_PATH\nexec /usr/share/invoiso/invoiso.bin \"\$@\"\n" \
+                > "$BUNDLE/invoiso"
+              chmod +x "$BUNDLE/invoiso"
+
+              dart pub global activate fastforge
+              dart pub global run fastforge package --platform linux --targets deb
+            '
+
+      - name: Rename .deb
         run: |
-          /opt/flutter/bin/dart pub global run fastforge package --platform linux --targets deb
           VERSION="${GITHUB_REF#refs/tags/}"
           VERSION="${VERSION#v}"
           DEB_FILE=$(find dist/$VERSION -name "*.deb" | head -1)
