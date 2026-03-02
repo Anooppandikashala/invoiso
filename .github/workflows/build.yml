@@ -182,24 +182,35 @@ jobs:
               echo "Confirmed: $LIBSTDCPP provides GLIBCXX_3.4.29"
               cp "$LIBSTDCPP" "$BUNDLE/lib/libstdc++.so.6"
 
-              # Set DT_RPATH on the main binary so it is inherited by ALL transitively
-              # loaded libraries and dlopen calls (Flutter engine, Syncfusion plugin).
-              # Note: patchelf 0.9 (ubuntu 18.04) --set-rpath already writes DT_RPATH
-              # by default (DT_RUNPATH support came in 0.10), so --force-rpath is not
-              # needed and must NOT be used — it does not exist in 0.9 and breaks
-              # argument parsing. Use a literal path to avoid variable expansion issues.
-              patchelf --set-rpath /usr/share/invoiso/lib \
-                build/linux/x64/release/bundle/invoiso
-              echo "Patched invoiso DT_RPATH -> /usr/share/invoiso/lib"
-
               dart pub global activate fastforge
               export PATH="$PATH:$HOME/.pub-cache/bin"
               fastforge package --platform linux --targets deb
 
-              # Rename inside the container (we are root here; runner cannot mv root-owned files)
-              VERSION=$(grep "^version:" pubspec.yaml | head -1 | sed "s/version: //" | tr -d " ")
+              # ── LD_PRELOAD launcher fix ────────────────────────────────────────────
+              # libflutter_linux_gtk.so (a direct dep of invoiso) loads the system
+              # libstdc++.so.6 via the ldconfig cache before any rpath is consulted.
+              # Once that old version is in the process namespace, every dlopen call
+              # (including Syncfusion) reuses it — patchelf cannot fix this.
+              #
+              # LD_PRELOAD forces our bundled libstdc++.so.6 into the namespace FIRST,
+              # before any library processing occurs.  We extract the .deb, replace the
+              # /usr/bin/invoiso launcher with an LD_PRELOAD wrapper, then repack.
               DEB_FILE=$(find dist -name "*.deb" | head -1)
-              echo "Renaming $DEB_FILE -> Invoiso-${VERSION}-ubuntu18.deb"
+              echo "Repacking launcher in: $DEB_FILE"
+              mkdir -p /tmp/deb_root
+              dpkg-deb -R "$DEB_FILE" /tmp/deb_root
+
+              echo "--- original /usr/bin/invoiso ---"
+              cat /tmp/deb_root/usr/bin/invoiso 2>/dev/null || echo "(none)"
+
+              printf "#!/bin/sh\nexport LD_PRELOAD=/usr/share/invoiso/lib/libstdc++.so.6\nexec /usr/share/invoiso/invoiso \"\$@\"\n" \
+                > /tmp/deb_root/usr/bin/invoiso
+              chmod 755 /tmp/deb_root/usr/bin/invoiso
+
+              dpkg-deb -b /tmp/deb_root "$DEB_FILE"
+              echo "Repacked with LD_PRELOAD launcher"
+
+              VERSION=$(grep "^version:" pubspec.yaml | head -1 | sed "s/version: //" | tr -d " ")
               cp "$DEB_FILE" "Invoiso-${VERSION}-ubuntu18.deb"
             '
 
