@@ -180,7 +180,8 @@ jobs:
               chmod +x "$BUNDLE/invoiso"
 
               dart pub global activate fastforge
-              dart pub global run fastforge package --platform linux --targets deb
+              export PATH="$PATH:$HOME/.pub-cache/bin"
+              fastforge package --platform linux --targets deb
             '
 
       - name: Rename .deb
