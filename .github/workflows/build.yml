@@ -182,15 +182,13 @@ jobs:
               dart pub global activate fastforge
               export PATH="$PATH:$HOME/.pub-cache/bin"
               fastforge package --platform linux --targets deb
-            '
 
-      - name: Rename .deb
-        run: |
-          VERSION="${GITHUB_REF#refs/tags/}"
-          VERSION="${VERSION#v}"
-          DEB_FILE=$(find dist/$VERSION -name "*.deb" | head -1)
-          echo "Found deb: $DEB_FILE"
-          mv "$DEB_FILE" Invoiso-$VERSION-ubuntu18.deb
+              # Rename inside the container (we are root here; runner cannot mv root-owned files)
+              VERSION=$(grep "^version:" pubspec.yaml | head -1 | sed "s/version: //" | tr -d " ")
+              DEB_FILE=$(find dist -name "*.deb" | head -1)
+              echo "Renaming $DEB_FILE -> Invoiso-${VERSION}-ubuntu18.deb"
+              cp "$DEB_FILE" "Invoiso-${VERSION}-ubuntu18.deb"
+            '
 
       - name: Upload Ubuntu18 .deb
         uses: actions/upload-artifact@v4
