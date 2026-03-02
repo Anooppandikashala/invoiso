@@ -52,8 +52,8 @@ class CurrencyOption {
 
 class SupportedCurrencies {
   static const List<CurrencyOption> all = [
-    CurrencyOption(code: 'INR', symbol: 'Rs.',   name: 'Indian Rupee'),
-    CurrencyOption(code: 'USD', symbol: '\$',   name: 'US Dollar'),
+    CurrencyOption(code: 'INR', symbol: 'Rs.', name: 'Indian Rupee'),
+    CurrencyOption(code: 'USD', symbol: '\$',  name: 'US Dollar'),
     CurrencyOption(code: 'EUR', symbol: '€',   name: 'Euro'),
     CurrencyOption(code: 'GBP', symbol: '£',   name: 'British Pound'),
     CurrencyOption(code: 'JPY', symbol: '¥',   name: 'Japanese Yen'),
@@ -61,6 +61,7 @@ class SupportedCurrencies {
     CurrencyOption(code: 'SGD', symbol: 'S\$', name: 'Singapore Dollar'),
     CurrencyOption(code: 'AUD', symbol: 'A\$', name: 'Australian Dollar'),
     CurrencyOption(code: 'CAD', symbol: 'C\$', name: 'Canadian Dollar'),
+    CurrencyOption(code: 'JMD', symbol: 'J\$', name: 'Jamaican Dollar'),
   ];
 
   static CurrencyOption fromCode(String code) {

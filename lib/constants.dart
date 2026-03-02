@@ -64,7 +64,7 @@ class AppBorderRadius
 class AppConfig
 {
   static const name = "invoiso";
-  static const version = "v3.0.4";
+  static const version = "v3.0.5";
   static const developer = "ANOOP P";
   static const supportEmail = "anooppkrishnan96@gmail.com";
   static const website = "https://anooppandikashala.github.io/invoisoapp/";
