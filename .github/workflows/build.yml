@@ -174,10 +174,12 @@ jobs:
               echo "Bundling libstdc++: $LIBSTDCPP"
               cp "$LIBSTDCPP" "$BUNDLE/lib/libstdc++.so.6"
 
-              mv "$BUNDLE/invoiso" "$BUNDLE/invoiso.bin"
-              printf "#!/bin/bash\nexport LD_LIBRARY_PATH=/usr/share/invoiso/lib:\$LD_LIBRARY_PATH\nexec /usr/share/invoiso/invoiso.bin \"\$@\"\n" \
-                > "$BUNDLE/invoiso"
-              chmod +x "$BUNDLE/invoiso"
+              # Patch the Syncfusion plugin rpath so it finds the bundled libstdc++
+              # at its install location instead of the system library.
+              # This is more reliable than LD_LIBRARY_PATH wrapper scripts.
+              patchelf --set-rpath /usr/share/invoiso/lib \
+                "$BUNDLE/lib/libsyncfusion_pdfviewer_linux_plugin.so"
+              echo "Patched Syncfusion plugin rpath -> /usr/share/invoiso/lib"
 
               dart pub global activate fastforge
               export PATH="$PATH:$HOME/.pub-cache/bin"
