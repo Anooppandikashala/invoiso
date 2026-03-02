@@ -160,6 +160,8 @@ jobs:
                 https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.32.8-stable.tar.xz \
                 -o /tmp/flutter.tar.xz
               tar xf /tmp/flutter.tar.xz -C /opt
+              git config --global --add safe.directory /opt/flutter
+              git config --global --add safe.directory /workspace
               export PATH="/opt/flutter/bin:$PATH"
               flutter config --no-analytics
               flutter precache --linux
