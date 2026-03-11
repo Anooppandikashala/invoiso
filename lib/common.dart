@@ -18,6 +18,8 @@ enum SettingKey {
   additionalInfo,
   thankYouNote,
   currency,
+  upiId,
+  showUpiQr,
 }
 
 extension SettingKeyExtension on SettingKey
@@ -34,6 +36,10 @@ extension SettingKeyExtension on SettingKey
         return 'thank_you_note';
       case SettingKey.currency:
         return 'currency';
+      case SettingKey.upiId:
+        return 'upi_id';
+      case SettingKey.showUpiQr:
+        return 'show_upi_qr';
     }
   }
 }

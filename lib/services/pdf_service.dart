@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:qr/qr.dart';
 import 'package:invoiso/constants.dart';
 import 'package:invoiso/database/company_info_service.dart';
 import 'package:invoiso/database/database_helper.dart';
@@ -28,22 +29,41 @@ class PDFService {
     final rawPrefix = await SettingsService.getSetting(SettingKey.invoicePrefix) ?? 'INV';
     final invoicePrefix = rawPrefix.isNotEmpty ? '$rawPrefix-' : '';
 
+    // UPI QR settings
+    final upiId = await SettingsService.getSetting(SettingKey.upiId);
+    final showQrStr = await SettingsService.getSetting(SettingKey.showUpiQr);
+    final effectiveUpiId =
+        (upiId != null && upiId.trim().isNotEmpty) ? upiId.trim() : null;
+    final showUpiQr = showQrStr == 'true' && effectiveUpiId != null;
+
     switch (selectedTemplate) {
       case InvoiceTemplate.classic:
-        pdf.addPage(await _buildClassicTemplate(invoice, company, currencySymbol, invoicePrefix));
+        pdf.addPage(await _buildClassicTemplate(
+          invoice, company, currencySymbol, invoicePrefix,
+          upiId: effectiveUpiId, showUpiQr: showUpiQr,
+        ));
         break;
       case InvoiceTemplate.modern:
-        pdf.addPage(await _buildModernTemplate(invoice, company, currencySymbol, invoicePrefix));
+        pdf.addPage(await _buildModernTemplate(
+          invoice, company, currencySymbol, invoicePrefix,
+          upiId: effectiveUpiId, showUpiQr: showUpiQr,
+        ));
         break;
       case InvoiceTemplate.minimal:
-        pdf.addPage(await _buildMinimalTemplate(invoice, company, currencySymbol, invoicePrefix));
+        pdf.addPage(await _buildMinimalTemplate(
+          invoice, company, currencySymbol, invoicePrefix,
+          upiId: effectiveUpiId, showUpiQr: showUpiQr,
+        ));
         break;
     }
 
     return pdf;
   }
 
-  static Future<pw.MultiPage> _buildClassicTemplate(Invoice invoice, CompanyInfo? company, String currencySymbol, String invoicePrefix) async
+  static Future<pw.MultiPage> _buildClassicTemplate(
+    Invoice invoice, CompanyInfo? company, String currencySymbol, String invoicePrefix, {
+    String? upiId, bool showUpiQr = false,
+  }) async
   {
     final accentColor = PdfColors.indigo900; // Use a strong accent color
     final LogoPosition logoPosition = await SettingsService.getLogoPosition(); DefaultValues.logoPosition;//await SettingsService.getLogoPosition(); // "left" or "right"
@@ -150,13 +170,29 @@ class PDFService {
 
         pw.SizedBox(height: 20),
 
-        // 5. Totals and Notes
+        // 5. Totals, Notes and optional UPI QR
         pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
             _buildAdditionalNotes(invoice),
-            _buildEnhancedTotals(invoice, PdfColors.grey200, PdfColors.black, accentColor, currencySymbol),
+            pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.end,
+              children: [
+                _buildEnhancedTotals(invoice, PdfColors.grey200, PdfColors.black, accentColor, currencySymbol),
+                if (showUpiQr && upiId != null) ...[
+                  pw.SizedBox(height: 12),
+                  _buildUpiQrSection(
+                    upiId: upiId,
+                    companyName: company?.name ?? '',
+                    amount: invoice.total,
+                    currencyCode: invoice.currencyCode,
+                    invoiceId: invoice.id,
+                    accentColor: accentColor,
+                  ),
+                ],
+              ],
+            ),
           ],
         ),
 
@@ -169,7 +205,10 @@ class PDFService {
     );
   }
 
-  static Future<pw.MultiPage> _buildMinimalTemplate(Invoice invoice, CompanyInfo? company, String currencySymbol, String invoicePrefix) async
+  static Future<pw.MultiPage> _buildMinimalTemplate(
+    Invoice invoice, CompanyInfo? company, String currencySymbol, String invoicePrefix, {
+    String? upiId, bool showUpiQr = false,
+  }) async
   {
     final accentColor = PdfColors.grey700; // Use a strong, neutral accent
     final LogoPosition logoPosition = await SettingsService.getLogoPosition();//await SettingsService.getLogoPosition(); // "left" or "right"
@@ -255,14 +294,29 @@ class PDFService {
 
         pw.SizedBox(height: 20),
 
-        // 4. Notes + Totals
+        // 4. Notes + Totals + optional UPI QR
         pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               _buildAdditionalNotes(invoice),
-              // Use the enhanced totals widget for a professional summary
-              _buildEnhancedTotals(invoice, PdfColors.grey200, PdfColors.black, accentColor, currencySymbol),
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.end,
+                children: [
+                  _buildEnhancedTotals(invoice, PdfColors.grey200, PdfColors.black, accentColor, currencySymbol),
+                  if (showUpiQr && upiId != null) ...[
+                    pw.SizedBox(height: 12),
+                    _buildUpiQrSection(
+                      upiId: upiId,
+                      companyName: company?.name ?? '',
+                      amount: invoice.total,
+                      currencyCode: invoice.currencyCode,
+                      invoiceId: invoice.id,
+                      accentColor: accentColor,
+                    ),
+                  ],
+                ],
+              ),
             ]
         ),
 
@@ -277,7 +331,10 @@ class PDFService {
     );
   }
 
-  static Future<pw.MultiPage> _buildModernTemplate(Invoice invoice, CompanyInfo? company, String currencySymbol, String invoicePrefix) async
+  static Future<pw.MultiPage> _buildModernTemplate(
+    Invoice invoice, CompanyInfo? company, String currencySymbol, String invoicePrefix, {
+    String? upiId, bool showUpiQr = false,
+  }) async
   {
     final accentColor = PdfColors.blue600;
     final LogoPosition logoPosition = await SettingsService.getLogoPosition();//await SettingsService.getLogoPosition(); // "left" or "right"
@@ -406,7 +463,7 @@ class PDFService {
 
         pw.SizedBox(height: 25),
 
-        // 5. Notes + Totals
+        // 5. Notes + Totals + optional UPI QR
         pw.Padding(
           padding: const pw.EdgeInsets.symmetric(horizontal: 30),
           child: pw.Row(
@@ -414,8 +471,23 @@ class PDFService {
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               _buildAdditionalNotes(invoice),
-              // Updated totals box with strong accent color for total due
-              _buildEnhancedTotals(invoice, PdfColors.blue200, PdfColors.black, accentColor, currencySymbol),
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.end,
+                children: [
+                  _buildEnhancedTotals(invoice, PdfColors.blue200, PdfColors.black, accentColor, currencySymbol),
+                  if (showUpiQr && upiId != null) ...[
+                    pw.SizedBox(height: 12),
+                    _buildUpiQrSection(
+                      upiId: upiId,
+                      companyName: company?.name ?? '',
+                      amount: invoice.total,
+                      currencyCode: invoice.currencyCode,
+                      invoiceId: invoice.id,
+                      accentColor: accentColor,
+                    ),
+                  ],
+                ],
+              ),
             ],
           ),
         ),
@@ -432,6 +504,105 @@ class PDFService {
           ),
         ),
       ],
+    );
+  }
+
+  // UPI QR Code Section
+  // Renders a bordered box containing a QR code, the UPI ID, and the amount.
+  // Uses pw.CustomPaint to draw the QR matrix pixel-by-pixel — no Flutter
+  // widget dependency, works entirely within the pdf package.
+  static pw.Widget _buildUpiQrSection({
+    required String upiId,
+    required String companyName,
+    required double amount,
+    required String currencyCode,
+    required String invoiceId,
+    required PdfColor accentColor,
+  }) {
+    // Build a URI that any UPI-capable app can handle.
+    final encodedName = Uri.encodeComponent(companyName);
+    final encodedNote = Uri.encodeComponent('Invoice $invoiceId');
+    final upiUri =
+        'upi://pay?pa=$upiId&pn=$encodedName'
+        '&am=${amount.toStringAsFixed(2)}'
+        '&cu=${currencyCode.toUpperCase()}'
+        '&tn=$encodedNote';
+
+    // Generate the QR matrix. QrCode.fromData auto-selects the version.
+    // Wrapped in try/catch — if the URI is somehow unrepresentable we skip
+    // the QR silently rather than crashing PDF generation.
+    QrCode? qrCode;
+    try {
+      qrCode = QrCode.fromData(
+        data: upiUri,
+        errorCorrectLevel: QrErrorCorrectLevel.M,
+      );
+    } catch (_) {
+      return pw.SizedBox(); // fallback: render nothing
+    }
+
+    final qrImage = QrImage(qrCode);
+    final int moduleCount = qrCode.moduleCount;
+    const double qrSize = 90.0;
+
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(8),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: accentColor, width: 0.5),
+        borderRadius: pw.BorderRadius.circular(4),
+      ),
+      child: pw.Column(
+        mainAxisSize: pw.MainAxisSize.min,
+        crossAxisAlignment: pw.CrossAxisAlignment.center,
+        children: [
+          pw.Text(
+            'Pay via UPI',
+            style: pw.TextStyle(
+              fontSize: 8,
+              fontWeight: pw.FontWeight.bold,
+              color: accentColor,
+            ),
+          ),
+          pw.SizedBox(height: 4),
+
+          // QR matrix rendered with CustomPaint
+          pw.CustomPaint(
+            size: const PdfPoint(qrSize, qrSize),
+            painter: (canvas, size) {
+              final double moduleSize = qrSize / moduleCount;
+              canvas.setFillColor(PdfColors.black);
+              for (int row = 0; row < moduleCount; row++) {
+                for (int col = 0; col < moduleCount; col++) {
+                  if (qrImage.isDark(row, col)) {
+                    final double x = col * moduleSize;
+                    // PDF coordinate origin is bottom-left; flip the row axis.
+                    final double y = (moduleCount - row - 1) * moduleSize;
+                    canvas
+                      ..drawRect(x, y, moduleSize, moduleSize)
+                      ..fillPath();
+                  }
+                }
+              }
+            },
+          ),
+
+          pw.SizedBox(height: 4),
+          pw.Text(
+            upiId,
+            style: pw.TextStyle(fontSize: 7, color: PdfColors.grey700),
+            textAlign: pw.TextAlign.center,
+          ),
+          pw.Text(
+            '${currencyCode.toUpperCase()} ${amount.toStringAsFixed(2)}',
+            style: pw.TextStyle(
+              fontSize: 7,
+              fontWeight: pw.FontWeight.bold,
+              color: accentColor,
+            ),
+            textAlign: pw.TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 

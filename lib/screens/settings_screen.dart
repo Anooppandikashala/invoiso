@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:invoiso/constants.dart';
 import 'package:invoiso/database/company_info_service.dart';
+import 'package:invoiso/common.dart';
 import 'package:invoiso/database/settings_service.dart';
 import 'package:invoiso/screens/backup_management_screen.dart';
 import 'package:invoiso/screens/invoice_settings_screen.dart';
@@ -32,8 +33,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final emailController = TextEditingController();
   final websiteController = TextEditingController();
   final gstinController = TextEditingController();
+  final _upiIdController = TextEditingController();
 
   CompanyInfo? _companyInfo;
+  bool _showUpiQr = false;
 
   File? _selectedLogoFile;
   String? _base64Logo;
@@ -46,8 +49,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _loadCompanyInfo() async {
     final info = await CompanyInfoService.getCompanyInfo();
+    final base64Logo = await SettingsService.getCompanyLogo();
+    final upiId = await SettingsService.getSetting(SettingKey.upiId);
+    final showQrStr = await SettingsService.getSetting(SettingKey.showUpiQr);
     if (info != null) {
-      final base64Logo = await SettingsService.getCompanyLogo();
       setState(() {
         _companyInfo = info;
         nameController.text = info.name;
@@ -56,10 +61,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         emailController.text = info.email;
         websiteController.text = info.website;
         gstinController.text = info.gstin;
+        _upiIdController.text = upiId ?? '';
+        _showUpiQr = showQrStr == 'true';
         if (base64Logo != null && base64Logo.isNotEmpty) {
-          setState(() {
-            _base64Logo = base64Logo;
-          });
+          _base64Logo = base64Logo;
         }
       });
     }
@@ -85,6 +90,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await SettingsService.setCompanyLogo(_base64Logo!);
     }
 
+    await SettingsService.setSetting(
+        SettingKey.upiId, _upiIdController.text.trim());
+    await SettingsService.setSetting(
+        SettingKey.showUpiQr, _showUpiQr.toString());
+
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Company info saved successfully')),
     );
@@ -102,6 +113,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     emailController.dispose();
     websiteController.dispose();
     gstinController.dispose();
+    _upiIdController.dispose();
     super.dispose();
   }
 
@@ -505,6 +517,106 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   filled: true,
                                   fillColor: Colors.grey[50],
                                   counterText: '',
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    // ── Payment Settings section ──────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 20),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 4,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).primaryColor,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'Payment Settings',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // UPI ID field
+                            TextField(
+                              controller: _upiIdController,
+                              style: const TextStyle(fontSize: 16),
+                              decoration: InputDecoration(
+                                labelText: 'UPI ID',
+                                hintText: 'yourname@bankname',
+                                helperText:
+                                    'Used to generate a payment QR code on invoices. Indian UPI only.',
+                                prefixIcon: const Icon(Icons.qr_code, size: 20),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                      AppBorderRadius.xsmall),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                      AppBorderRadius.xsmall),
+                                  borderSide:
+                                      BorderSide(color: Colors.grey[300]!),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                      AppBorderRadius.xsmall),
+                                  borderSide: BorderSide(
+                                    color: Theme.of(context).primaryColor,
+                                    width: 2,
+                                  ),
+                                ),
+                                filled: true,
+                                fillColor: Colors.grey[50],
+                              ),
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            // Show QR toggle
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.grey[50],
+                                borderRadius: BorderRadius.circular(
+                                    AppBorderRadius.xsmall),
+                                border:
+                                    Border.all(color: Colors.grey[300]!),
+                              ),
+                              child: SwitchListTile(
+                                title: const Text('Show QR Code on Invoices'),
+                                subtitle: const Text(
+                                  'Adds a scannable UPI payment QR to generated PDFs',
+                                  style: TextStyle(fontSize: 12),
+                                ),
+                                value: _showUpiQr,
+                                onChanged: (val) =>
+                                    setState(() => _showUpiQr = val),
+                                activeColor:
+                                    Theme.of(context).primaryColor,
+                                secondary: Icon(
+                                  Icons.payment,
+                                  color: _showUpiQr
+                                      ? Theme.of(context).primaryColor
+                                      : Colors.grey,
                                 ),
                               ),
                             ),
