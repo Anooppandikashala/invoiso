@@ -1,25 +1,44 @@
 import 'package:invoiso/models/user.dart';
 import 'database_helper.dart';
+import '../utils/app_logger.dart';
 import '../utils/password_utils.dart';
+
+const _tag = 'UserService';
 
 class UserService {
   static final dbHelper = DatabaseHelper();
 
   // ─────────────────────────────────────────────
   // CRUD for User
+
+  /// Looks up a user by username and verifies the password.
+  /// Supports both legacy SHA-256 (salt == null) and HMAC-SHA256.
   static Future<User?> getUser(String username, String password) async {
     final db = await dbHelper.database;
     final result = await db.query(
       'users',
-      where: 'username = ? AND password = ?',
-      whereArgs: [username, PasswordUtils.hash(password)],
+      where: 'username = ?',
+      whereArgs: [username],
     );
 
-    if (result.isNotEmpty) {
-      final user = result.first;
-      return User.fromMap(user);
-    }
+    if (result.isEmpty) return null;
 
+    final user = User.fromMap(result.first);
+    if (PasswordUtils.verify(password, user.password, user.salt)) {
+      return user;
+    }
+    return null;
+  }
+
+  static Future<User?> getUserByUsername(String username) async {
+    final db = await dbHelper.database;
+    final result = await db.query(
+      'users',
+      where: 'username = ?',
+      whereArgs: [username],
+      limit: 1,
+    );
+    if (result.isNotEmpty) return User.fromMap(result.first);
     return null;
   }
 
@@ -36,15 +55,20 @@ class UserService {
     return null;
   }
 
+  /// Inserts a new user with a fresh salt + HMAC-SHA256 hash.
   static Future<void> insertUser(User user) async {
     final db = await dbHelper.database;
-    final userWithHashedPassword = User(
+    final salt = PasswordUtils.generateSalt();
+    final hashedPw = PasswordUtils.hashWithSalt(user.password, salt);
+    final userToInsert = User(
       id: user.id,
       username: user.username,
-      password: PasswordUtils.hash(user.password),
+      password: hashedPw,
       userType: user.userType,
+      salt: salt,
+      passwordChanged: user.passwordChanged,
     );
-    await db.insert('users', userWithHashedPassword.toMap());
+    await db.insert('users', userToInsert.toMap());
   }
 
   static Future<void> updateUser(User user) async {
@@ -58,11 +82,30 @@ class UserService {
     );
   }
 
+  /// Updates the password for a user: generates a new salt, re-hashes, and
+  /// sets password_changed = 1.
   static Future<void> updatePassword(String id, String newPassword) async {
+    final db = await dbHelper.database;
+    final salt = PasswordUtils.generateSalt();
+    final hashedPw = PasswordUtils.hashWithSalt(newPassword, salt);
+    await db.update(
+      'users',
+      {
+        'password': hashedPw,
+        'salt': salt,
+        'password_changed': 1,
+      },
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  /// Marks password_changed = 1 for the given user.
+  static Future<void> markPasswordChanged(String id) async {
     final db = await dbHelper.database;
     await db.update(
       'users',
-      {'password': PasswordUtils.hash(newPassword)},
+      {'password_changed': 1},
       where: 'id = ?',
       whereArgs: [id],
     );
@@ -70,55 +113,47 @@ class UserService {
 
   static Future<bool> userExists(String userId) async {
     final db = await dbHelper.database;
-
     try {
       final result = await db.query(
-        'users', // Replace with your actual table name
+        'users',
         where: 'id = ?',
         whereArgs: [userId],
         limit: 1,
       );
-
       return result.isNotEmpty;
     } catch (e) {
-      print('Error checking if user exists: $e');
+      AppLogger.e(_tag, 'Error checking if user exists', e);
       return false;
     }
   }
 
   static Future<int> _deleteUser(String userId) async {
     final db = await dbHelper.database;
-
     try {
-      // Delete the user from the database
-      int result = await db.delete(
-        'users', // Replace with your actual table name
+      final result = await db.delete(
+        'users',
         where: 'id = ?',
         whereArgs: [userId],
       );
-
-      print('User deleted successfully. Rows affected: $result');
+      AppLogger.d(_tag, 'User deleted successfully. Rows affected: $result');
       return result;
     } catch (e) {
-      print('Error deleting user: $e');
+      AppLogger.e(_tag, 'Error deleting user', e);
       throw Exception('Failed to delete user: $e');
     }
   }
 
   static Future<bool> deleteUserSafely(String userId) async {
     try {
-      // Check if user exists first
-      bool exists = await userExists(userId);
+      final exists = await userExists(userId);
       if (!exists) {
-        print('User with ID $userId does not exist');
+        AppLogger.w(_tag, 'User with ID $userId does not exist');
         return false;
       }
-
-      // Delete the user
-      int result = await _deleteUser(userId);
+      final result = await _deleteUser(userId);
       return result > 0;
     } catch (e) {
-      print('Error in safe delete: $e');
+      AppLogger.e(_tag, 'Error in safe delete', e);
       return false;
     }
   }

@@ -1,18 +1,11 @@
-import 'dart:ffi';
-import 'dart:io';
-
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:invoiso/models/customer.dart';
-import 'package:invoiso/models/product.dart';
-import 'package:invoiso/models/invoice.dart';
-import 'package:invoiso/models/invoice_item.dart';
 
-import '../common.dart';
-import '../models/company_info.dart';
-import '../models/user.dart';
+import '../utils/app_logger.dart';
 import '../utils/password_utils.dart';
+
+const _tag = 'DatabaseHelper';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -21,7 +14,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 7;
+  final dbVersion = 8;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -30,9 +23,7 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDB() async {
-    // _path = join(await getDatabasesPath(), 'invoice_manager.db');
-    // _path = join(Directory.current.path, 'invoice_manager.db');
-    final dbDir = await getApplicationSupportDirectory(); // from path_provider
+    final dbDir = await getApplicationSupportDirectory();
     _path = join(dbDir.path, 'invoice_manager.db');
     return await openDatabase(
       _path!,
@@ -81,7 +72,8 @@ class DatabaseHelper {
         type TEXT,
         currency_code TEXT DEFAULT 'INR',
         currency_symbol TEXT DEFAULT '₹',
-        tax_mode TEXT DEFAULT 'global'
+        tax_mode TEXT DEFAULT 'global',
+        deleted_at TEXT
       )
     ''');
 
@@ -106,7 +98,9 @@ class DatabaseHelper {
         id TEXT PRIMARY KEY,
         username TEXT UNIQUE,
         password TEXT,
-        user_type TEXT
+        user_type TEXT,
+        salt TEXT,
+        password_changed INTEGER NOT NULL DEFAULT 1
       )
     ''');
 
@@ -129,6 +123,25 @@ class DatabaseHelper {
       )
     ''');
 
+    await db.execute('''
+      CREATE TABLE _migration_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        version INTEGER,
+        step TEXT,
+        status TEXT,
+        message TEXT,
+        applied_at TEXT
+      )
+    ''');
+
+    // Indexes
+    await db.execute('CREATE INDEX idx_invoices_customer ON invoices(customer_name)');
+    await db.execute('CREATE INDEX idx_invoices_date ON invoices(date)');
+    await db.execute('CREATE INDEX idx_invoices_type ON invoices(type)');
+    await db.execute('CREATE INDEX idx_customers_name ON customers(name)');
+    await db.execute('CREATE INDEX idx_products_name ON products(name)');
+    await db.execute('CREATE INDEX idx_invoice_items_invoice ON invoice_items(invoice_id)');
+
     // Insert dummy company info
     await db.insert('company_info', {
       'name': 'Your Company Name',
@@ -139,64 +152,150 @@ class DatabaseHelper {
       'gstin': ''
     });
 
-    // Insert default admin user (for first-time login)
+    // Insert default admin user with salted hash
+    final salt = PasswordUtils.generateSalt();
+    final hashedPw = PasswordUtils.hashWithSalt('admin', salt);
     await db.insert('users', {
       'id': 'user-001',
       'username': 'admin',
-      'password': PasswordUtils.hash('admin'),
-      'user_type': 'admin'
+      'password': hashedPw,
+      'user_type': 'admin',
+      'salt': salt,
+      'password_changed': 0,
     });
 
     // Insert default template
-    await db.insert('settings', {
-      'key': 'invoice_template',
-      'value': 'classic'
-    });
+    await db.insert('settings', {'key': 'invoice_template', 'value': 'classic'});
 
     // Insert default currency
-    await db.insert('settings', {
-      'key': 'currency',
-      'value': 'INR'
-    });
+    await db.insert('settings', {'key': 'currency', 'value': 'INR'});
   }
 
-  Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async
-  {
-    print('Upgrading database from $oldVersion to $newVersion');
+  Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    AppLogger.d(_tag, 'Upgrading database from $oldVersion to $newVersion');
+
+    // Ensure migration log table exists before logging anything
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS _migration_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        version INTEGER,
+        step TEXT,
+        status TEXT,
+        message TEXT,
+        applied_at TEXT
+      )
+    ''');
 
     if (oldVersion < 5) {
-      await db.execute(
-        "ALTER TABLE invoices ADD COLUMN currency_code TEXT DEFAULT 'INR'"
-      );
-      await db.execute(
-        "ALTER TABLE invoices ADD COLUMN currency_symbol TEXT DEFAULT '₹'"
-      );
-      await db.insert(
-        'settings',
-        {'key': 'currency', 'value': 'INR'},
-        conflictAlgorithm: ConflictAlgorithm.ignore,
-      );
+      await _runMigrationStep(db, 5, 'add_currency_columns', () async {
+        await db.execute(
+          "ALTER TABLE invoices ADD COLUMN currency_code TEXT DEFAULT 'INR'",
+        );
+        await db.execute(
+          "ALTER TABLE invoices ADD COLUMN currency_symbol TEXT DEFAULT '₹'",
+        );
+        await db.insert(
+          'settings',
+          {'key': 'currency', 'value': 'INR'},
+          conflictAlgorithm: ConflictAlgorithm.ignore,
+        );
+      });
     }
+
     if (oldVersion < 6) {
-      await db.execute(
-        "ALTER TABLE invoices ADD COLUMN tax_mode TEXT DEFAULT 'global'"
-      );
+      await _runMigrationStep(db, 6, 'add_tax_mode_column', () async {
+        await db.execute(
+          "ALTER TABLE invoices ADD COLUMN tax_mode TEXT DEFAULT 'global'",
+        );
+      });
     }
+
     if (oldVersion < 7) {
-      // Hash any existing plain-text passwords.
-      // SHA-256 produces 64-character hex strings; shorter values are plain text.
-      final users = await db.query('users');
-      for (final user in users) {
-        final plainPw = user['password'] as String;
-        if (plainPw.length != 64) {
-          await db.update(
-            'users',
-            {'password': PasswordUtils.hash(plainPw)},
-            where: 'id = ?',
-            whereArgs: [user['id']],
-          );
+      await _runMigrationStep(db, 7, 'hash_plain_passwords', () async {
+        final users = await db.query('users');
+        for (final user in users) {
+          final plainPw = user['password'] as String;
+          if (plainPw.length != 64) {
+            await db.update(
+              'users',
+              {'password': PasswordUtils.hash(plainPw)},
+              where: 'id = ?',
+              whereArgs: [user['id']],
+            );
+          }
         }
-      }
+      });
+    }
+
+    if (oldVersion < 8) {
+      await _runMigrationStep(db, 8, 'add_salt_and_password_changed', () async {
+        await db.execute(
+          'ALTER TABLE users ADD COLUMN salt TEXT',
+        );
+        await db.execute(
+          'ALTER TABLE users ADD COLUMN password_changed INTEGER NOT NULL DEFAULT 1',
+        );
+        // Force admin to reset password on next login
+        await db.execute(
+          "UPDATE users SET password_changed = 0 WHERE username = 'admin'",
+        );
+      });
+
+      await _runMigrationStep(db, 8, 'add_deleted_at_column', () async {
+        await db.execute(
+          'ALTER TABLE invoices ADD COLUMN deleted_at TEXT',
+        );
+      });
+
+      await _runMigrationStep(db, 8, 'add_indexes', () async {
+        await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_invoices_customer ON invoices(customer_name)',
+        );
+        await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_invoices_date ON invoices(date)',
+        );
+        await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_invoices_type ON invoices(type)',
+        );
+        await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_customers_name ON customers(name)',
+        );
+        await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_products_name ON products(name)',
+        );
+        await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_invoice_items_invoice ON invoice_items(invoice_id)',
+        );
+      });
+    }
+  }
+
+  Future<void> _runMigrationStep(
+    Database db,
+    int version,
+    String step,
+    Future<void> Function() action,
+  ) async {
+    try {
+      await action();
+      await db.insert('_migration_log', {
+        'version': version,
+        'step': step,
+        'status': 'success',
+        'message': null,
+        'applied_at': DateTime.now().toIso8601String(),
+      });
+      AppLogger.d(_tag, 'Migration v$version/$step: success');
+    } catch (e, stack) {
+      AppLogger.e(_tag, 'Migration v$version/$step failed', e, stack);
+      await db.insert('_migration_log', {
+        'version': version,
+        'step': step,
+        'status': 'failure',
+        'message': e.toString(),
+        'applied_at': DateTime.now().toIso8601String(),
+      });
+      rethrow;
     }
   }
 

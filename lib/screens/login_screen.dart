@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:invoiso/constants.dart';
 import 'package:invoiso/database/user_service.dart';
+import 'package:invoiso/screens/change_password_screen.dart';
 
-import '../database/database_helper.dart';
 import 'dashboard_screen.dart';
-
 
 // Login Screen
 class LoginScreen extends StatefulWidget {
@@ -18,6 +16,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -29,13 +28,36 @@ class _LoginScreenState extends State<LoginScreen> {
   void _login() async {
     final username = _usernameController.text.trim();
     final password = _passwordController.text;
-    final user = await UserService.getUser(username, password);
-    if (!mounted) return;
-    if (user != null) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => DashboardScreen(user)),
+
+    if (username.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter username and password')),
       );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    final user = await UserService.getUser(username, password);
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (user != null) {
+      if (!user.passwordChanged) {
+        // Force password change
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChangePasswordScreen(user: user, forced: true),
+          ),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => DashboardScreen(user)),
+        );
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Invalid credentials')),
@@ -52,17 +74,11 @@ class _LoginScreenState extends State<LoginScreen> {
           elevation: 8,
           color: Colors.white,
           child: Container(
-            width: MediaQuery.sizeOf(context).width*0.25,
+            width: MediaQuery.sizeOf(context).width * 0.25,
             padding: const EdgeInsets.all(32),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Icon(Icons.description, size: 88, color: Theme.of(context).primaryColor),
-                // AppSpacing.hXlarge,
-                // const Text(
-                //   AppConfig.name,
-                //   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                // ),
                 Image.asset(
                   'assets/images/logo.png',
                   width: 230,
@@ -82,6 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 TextField(
                   controller: _passwordController,
                   obscureText: true,
+                  onSubmitted: (_) => _login(),
                   decoration: const InputDecoration(
                     labelText: 'Password',
                     prefixIcon: Icon(Icons.lock),
@@ -89,18 +106,27 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 AppSpacing.hXlarge,
-                ElevatedButton(
-                  onPressed: _login,
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 50),
-                    backgroundColor: Theme.of(context).primaryColor,
-                    foregroundColor: Colors.white
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _login,
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 50),
+                      backgroundColor: Theme.of(context).primaryColor,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Text('Login'),
                   ),
-                  child: const Text('Login'),
                 ),
-                AppSpacing.hSmall,
-                const Text('Default: admin/admin',
-                    style: TextStyle(color: Colors.grey)),
               ],
             ),
           ),

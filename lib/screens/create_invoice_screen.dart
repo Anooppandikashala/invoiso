@@ -193,6 +193,40 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (product.stock <= 0)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.red[50],
+                    border: Border.all(color: Colors.red[200]!),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.warning_amber, color: Colors.red, size: 18),
+                      const SizedBox(width: 8),
+                      const Text('Out of Stock', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                )
+              else
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.green[50],
+                    border: Border.all(color: Colors.green[200]!),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.inventory_2, color: Colors.green, size: 18),
+                      const SizedBox(width: 8),
+                      Text('Available Stock: ${product.stock}', style: const TextStyle(color: Colors.green)),
+                    ],
+                  ),
+                ),
               TextField(
                 controller: quantityController,
                 decoration: InputDecoration(
@@ -229,15 +263,64 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
-            onPressed: () {
-              Navigator.pop(context);
-              addInvoiceProduct(
-                InvoiceItem(
-                  product: product,
-                  quantity: int.tryParse(quantityController.text) ?? 1,
-                  discount: double.tryParse(discountController.text) ?? 0.0,
-                ),
-              );
+            onPressed: () async {
+              final qty = int.tryParse(quantityController.text) ?? 1;
+              final discount = double.tryParse(discountController.text) ?? 0.0;
+
+              // Check stock
+              if (product.stock > 0 && qty > product.stock) {
+                // Insufficient stock — ask user if they want to add anyway
+                Navigator.pop(context);
+                final addAnyway = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Insufficient Stock'),
+                    content: Text(
+                      'Only ${product.stock} unit(s) available. Add $qty anyway?',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text('Cancel'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                        child: const Text('Add Anyway'),
+                      ),
+                    ],
+                  ),
+                );
+                if (addAnyway == true) {
+                  addInvoiceProduct(InvoiceItem(product: product, quantity: qty, discount: discount));
+                }
+              } else if (product.stock == 0) {
+                Navigator.pop(context);
+                final addAnyway = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Out of Stock'),
+                    content: Text('${product.name} is out of stock. Add anyway?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text('Cancel'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                        child: const Text('Add Anyway'),
+                      ),
+                    ],
+                  ),
+                );
+                if (addAnyway == true) {
+                  addInvoiceProduct(InvoiceItem(product: product, quantity: qty, discount: discount));
+                }
+              } else {
+                Navigator.pop(context);
+                addInvoiceProduct(InvoiceItem(product: product, quantity: qty, discount: discount));
+              }
             },
             child: const Text('Add'),
           ),
@@ -711,10 +794,30 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                               //   overflow: TextOverflow.ellipsis,
                               //   style: const TextStyle(color: Colors.black, fontWeight: FontWeight.normal),
                               // ),
-                              Text(
-                                '$_currencySymbol${product.price.toStringAsFixed(2)}  (Stock : ${product.stock})',
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold,fontSize: AppFontSize.medium),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      '$_currencySymbol${product.price.toStringAsFixed(2)}  (Stock : ${product.stock})',
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: AppFontSize.medium),
+                                    ),
+                                  ),
+                                  if (product.stock == 0)
+                                    Container(
+                                      margin: const EdgeInsets.only(left: 8),
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.red[50],
+                                        border: Border.all(color: Colors.red),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: const Text(
+                                        'Out of Stock',
+                                        style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                ],
                               )
                             ],
                           )

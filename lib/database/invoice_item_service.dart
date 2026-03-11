@@ -1,12 +1,14 @@
 import 'package:invoiso/models/invoice_item.dart';
 import '../models/product.dart';
+import '../utils/app_logger.dart';
 import 'database_helper.dart';
 
-class InvoiceItemService
-{
+const _tag = 'InvoiceItemService';
+
+class InvoiceItemService {
   static final dbHelper = DatabaseHelper();
 
-  static Future<void> insertInvoiceItems(String invId,InvoiceItem item) async {
+  static Future<void> insertInvoiceItems(String invId, InvoiceItem item) async {
     final db = await dbHelper.database;
     await db.insert('invoice_items', {
       'invoice_id': invId,
@@ -24,27 +26,22 @@ class InvoiceItemService
   static Future<List<InvoiceItem>> getInvoiceItemsByInvoiceId(String invoiceId) async {
     final db = await dbHelper.database;
     final maps = await db.query('invoice_items', where: 'invoice_id = ?', whereArgs: [invoiceId]);
-    List<InvoiceItem> items = [];
+    final List<InvoiceItem> items = [];
 
-    for (var map in maps)
-    {
-      try
-      {
-        // final product = await getProductById(map['product_id'] as String);
+    for (var map in maps) {
+      try {
         final product = Product.fromInvoiceItemsMap(map);
         items.add(
           InvoiceItem(
             product: product,
             quantity: map['quantity'] as int,
-            discount: map['discount'] as double,
+            discount: (map['discount'] is int)
+                ? (map['discount'] as int).toDouble()
+                : (map['discount'] ?? 0.0) as double,
           ),
         );
-      }
-      catch (e, stackTrace)
-      {
-        print('Error parsing invoice item row: $e');
-        print(stackTrace);
-        // optionally continue, skip this row
+      } catch (e, stackTrace) {
+        AppLogger.e(_tag, 'Error parsing invoice item row', e, stackTrace);
         continue;
       }
     }

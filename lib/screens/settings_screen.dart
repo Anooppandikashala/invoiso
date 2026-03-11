@@ -115,6 +115,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     final file = File(result.files.single.path!);
     final bytes = await file.readAsBytes();
+
+    // Validate file size (2MB limit)
+    if (bytes.length > 2 * 1024 * 1024) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Image file must be less than 2 MB.')),
+        );
+      }
+      return;
+    }
+
     final decodedImage = img.decodeImage(bytes);
 
     if (decodedImage == null) {

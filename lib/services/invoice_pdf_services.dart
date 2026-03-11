@@ -9,7 +9,6 @@ import 'package:printing/printing.dart';
 
 import '../common.dart';
 import '../database/database_helper.dart';
-import '../screens/pdf_view_screen.dart';
 
 class InvoicePdfServices
 {
@@ -21,30 +20,6 @@ class InvoicePdfServices
       if(context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Error generating PDF: $e')));
-      }
-    }
-  }
-
-  static Future<void>  viewPDF(BuildContext context,Invoice invoice) async {
-    try {
-      final pdf = await PDFService.generateInvoicePDF(invoice);
-      final bytes = await pdf.save();
-      if(context.mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) =>
-                PDFViewerScreen(pdfBytes: bytes, invoiceId: invoice.id),
-          ),
-        );
-      }
-    } catch (e)
-    {
-      if(context.mounted)
-      {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error previewing PDF: $e')),
-        );
       }
     }
   }

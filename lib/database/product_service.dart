@@ -119,4 +119,10 @@ class ProductService {
     await db.update('products', {'stock': newStock},
         where: 'id = ?', whereArgs: [id]);
   }
+
+  static Future<bool> hasSufficientStock(String productId, int quantity) async {
+    final product = await getProductById(productId);
+    if (product == null) return false;
+    return product.stock >= quantity;
+  }
 }
