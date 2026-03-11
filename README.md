@@ -164,7 +164,5 @@ Copyright © 2025 [Anoop Pandikashala](https://github.com/Anooppandikashala)
 
 <div align="center">
   <p>If Invoiso saves you time, consider supporting its development.</p>
-  <a href="https://www.buymeacoffee.com/anoopp">
-    <img src="https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=☕&slug=anoopp&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" alt="Buy Me a Coffee" />
-  </a>
+  [![Buy Me a Coffee](https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=☕&slug=anoopp&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff)](https://www.buymeacoffee.com/anoopp)
 </div>
