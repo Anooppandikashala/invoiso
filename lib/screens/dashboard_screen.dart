@@ -33,6 +33,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   late User _currentUser;
 
   Invoice? invoiceToEdit;
+  Invoice? _invoiceToClone;
+  String _cloneType = 'Invoice';
 
   @override
   void initState() {
@@ -72,15 +74,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (_selectedIndex != 1) {
       setState(() {
         invoiceToEdit = null;
+        _invoiceToClone = null;
       });
     }
     switch (_selectedIndex) {
       case 0:
-        return DashboardHome(onEditInvoice: editInvoice);
+        return DashboardHome(onEditInvoice: editInvoice, onCloneInvoice: cloneInvoice);
       case 1:
-        return CreateInvoiceScreen(invoiceToEdit: invoiceToEdit);
+        return CreateInvoiceScreen(
+          invoiceToEdit: invoiceToEdit,
+          cloneFrom: _invoiceToClone,
+          cloneType: _invoiceToClone != null ? _cloneType : null,
+        );
       case 2:
-        return InvoiceManagementScreen(onEditInvoice: editInvoice);
+        return InvoiceManagementScreen(
+          onEditInvoice: editInvoice,
+          onCloneInvoice: cloneInvoice,
+        );
       case 3:
         return CustomerManagementScreen();
       case 4:
@@ -96,6 +106,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() {
       _selectedIndex = 1;
       invoiceToEdit = invoice;
+      _invoiceToClone = null;
+    });
+  }
+
+  void cloneInvoice(Invoice invoice, String type) {
+    setState(() {
+      _selectedIndex = 1;
+      invoiceToEdit = null;
+      _invoiceToClone = invoice;
+      _cloneType = type;
     });
   }
 
@@ -201,7 +221,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
 class DashboardHome extends StatefulWidget {
   final Function(Invoice) onEditInvoice;
-  const DashboardHome({required this.onEditInvoice, Key? key}) : super(key: key);
+  final Function(Invoice, String) onCloneInvoice;
+  const DashboardHome({
+    required this.onEditInvoice,
+    required this.onCloneInvoice,
+    Key? key,
+  }) : super(key: key);
 
   @override
   _DashboardHomeState createState() => _DashboardHomeState();
@@ -461,6 +486,9 @@ class _DashboardHomeState extends State<DashboardHome> {
                                                 _buildActionButton(Icons.edit_outlined, Colors.blue, 'Edit',
                                                     () => widget.onEditInvoice(invoice)),
                                                 const SizedBox(width: 8),
+                                                _buildActionButton(Icons.copy_all_outlined, Colors.teal, 'Duplicate',
+                                                    () => _showCloneDialog(invoice)),
+                                                const SizedBox(width: 8),
                                                 _buildActionButton(Icons.picture_as_pdf_outlined, Colors.orange, 'PDF',
                                                     () => InvoicePdfServices.previewPDF(context, invoice)),
                                                 const SizedBox(width: 8),
@@ -547,6 +575,48 @@ class _DashboardHomeState extends State<DashboardHome> {
         ),
       ),
     );
+  }
+
+  Future<void> _showCloneDialog(Invoice invoice) async {
+    final type = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.copy_all, color: Colors.teal),
+            SizedBox(width: 12),
+            Text('Duplicate Invoice'),
+          ],
+        ),
+        content: Text(
+          'Create a copy of Invoice #${invoice.id}\n(${invoice.customer.name}) as:',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          OutlinedButton.icon(
+            onPressed: () => Navigator.pop(ctx, 'Quotation'),
+            icon: const Icon(Icons.request_quote_outlined),
+            label: const Text('Quotation'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(ctx, 'Invoice'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).primaryColor,
+              foregroundColor: Colors.white,
+            ),
+            icon: const Icon(Icons.receipt),
+            label: const Text('Invoice'),
+          ),
+        ],
+      ),
+    );
+    if (type != null) {
+      widget.onCloneInvoice(invoice, type);
+    }
   }
 
   void _showDeleteDialog(Invoice invoice) {

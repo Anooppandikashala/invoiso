@@ -11,7 +11,13 @@ import 'package:open_file/open_file.dart';
 
 class InvoiceManagementScreen extends ConsumerStatefulWidget {
   final Function(Invoice) onEditInvoice;
-  const InvoiceManagementScreen({super.key, required this.onEditInvoice});
+  final Function(Invoice, String) onCloneInvoice;
+
+  const InvoiceManagementScreen({
+    super.key,
+    required this.onEditInvoice,
+    required this.onCloneInvoice,
+  });
 
   @override
   ConsumerState<InvoiceManagementScreen> createState() =>
@@ -63,6 +69,48 @@ class _InvoiceManagementScreenState
         setState(() => _isLoadingPage = false);
         AppError.show(context, 'Failed to load invoices: $e', onRetry: _loadPage);
       }
+    }
+  }
+
+  Future<void> _showCloneDialog(Invoice invoice) async {
+    final type = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.copy_all, color: Colors.teal),
+            SizedBox(width: 12),
+            Text('Duplicate Invoice'),
+          ],
+        ),
+        content: Text(
+          'Create a copy of Invoice #${invoice.id}\n(${invoice.customer.name}) as:',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          OutlinedButton.icon(
+            onPressed: () => Navigator.pop(ctx, 'Quotation'),
+            icon: const Icon(Icons.request_quote_outlined),
+            label: const Text('Quotation'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(ctx, 'Invoice'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).primaryColor,
+              foregroundColor: Colors.white,
+            ),
+            icon: const Icon(Icons.receipt),
+            label: const Text('Invoice'),
+          ),
+        ],
+      ),
+    );
+    if (type != null) {
+      widget.onCloneInvoice(invoice, type);
     }
   }
 
@@ -277,7 +325,7 @@ class _InvoiceManagementScreenState
                                         3: FlexColumnWidth(1),
                                         4: FixedColumnWidth(80),
                                         5: FlexColumnWidth(1.2),
-                                        6: FixedColumnWidth(280),
+                                        6: FixedColumnWidth(320),
                                       },
                                       children: [
                                         TableRow(
@@ -482,6 +530,9 @@ class _InvoiceManagementScreenState
                     const SizedBox(width: 4),
                     _buildActionButton(Icons.edit_outlined, Colors.blue, 'Edit',
                         () => widget.onEditInvoice(invoice)),
+                    const SizedBox(width: 4),
+                    _buildActionButton(Icons.copy_all_outlined, Colors.teal, 'Duplicate',
+                        () => _showCloneDialog(invoice)),
                     const SizedBox(width: 4),
                     _buildActionButton(Icons.picture_as_pdf_outlined, Colors.orange, 'PDF',
                         () => InvoicePdfServices.previewPDF(context, invoice)),

@@ -15,7 +15,20 @@ import 'package:invoiso/constants.dart';
 
 class CreateInvoiceScreen extends StatefulWidget {
   final Invoice? invoiceToEdit;
-  const CreateInvoiceScreen({super.key, this.invoiceToEdit});
+  /// When set, the form is pre-populated from this invoice and saved as a NEW
+  /// invoice (cloneFrom != null implies invoiceToEdit == null).
+  final Invoice? cloneFrom;
+  /// The invoice type to use for the clone ('Invoice' or 'Quotation').
+  /// Defaults to the source invoice type when null.
+  final String? cloneType;
+
+  const CreateInvoiceScreen({
+    super.key,
+    this.invoiceToEdit,
+    this.cloneFrom,
+    this.cloneType,
+  });
+
   @override
   _CreateInvoiceScreenState createState() => _CreateInvoiceScreenState();
 }
@@ -84,14 +97,36 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       invoiceType = _invoice!.type;
       currentInvoiceNumber = _invoice!.id;
       dateController.text = DateFormat('dd/MM/yyyy').format(_invoice!.date);
+    } else if (widget.cloneFrom != null) {
+      // Clone: pre-populate fields but treat as a brand-new invoice.
+      // isEditing stays false → _createInvoice() will be called on save.
+      final src = widget.cloneFrom!;
+      selectedCustomer = src.customer;
+      invoiceItems = List.from(src.items);
+      nameController.text = src.customer.name;
+      emailController.text = src.customer.email;
+      phoneController.text = src.customer.phone;
+      addressController.text = src.customer.address;
+      gstinController.text = src.customer.gstin;
+      taxRate = src.taxRate;
+      taxRateController.text = (taxRate * 100).toStringAsFixed(1);
+      _isTaxEnabled = src.taxMode != TaxMode.none;
+      _isPerItem    = src.taxMode == TaxMode.perItem;
+      invoiceType = widget.cloneType ?? src.type;
+      // date stays as today; currentInvoiceNumber is generated in _loadCustomersAndProducts
     }
   }
 
-  Future<void> _setAdditionalNote() async
-  {
-    final addNote = widget.invoiceToEdit != null ?
-        ( widget.invoiceToEdit!.notes != null ? widget.invoiceToEdit!.notes! : "") :
-        await SettingsService.getSetting(SettingKey.additionalInfo) ?? DefaultValues.additionalNote;
+  Future<void> _setAdditionalNote() async {
+    final String addNote;
+    if (widget.invoiceToEdit != null) {
+      addNote = widget.invoiceToEdit!.notes ?? '';
+    } else if (widget.cloneFrom != null) {
+      addNote = widget.cloneFrom!.notes ?? '';
+    } else {
+      addNote = await SettingsService.getSetting(SettingKey.additionalInfo) ??
+          DefaultValues.additionalNote;
+    }
     setState(() {
       notesController.text = addNote;
     });
@@ -127,12 +162,16 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         invNumber = widget.invoiceToEdit?.id;
       }
 
-      // Use the existing invoice's currency when editing, otherwise use the current setting
+      // Use the existing invoice's currency when editing or cloning,
+      // otherwise fall back to the current app-wide currency setting.
       final String loadedCurrencyCode;
       final String loadedCurrencySymbol;
       if (isEditing && widget.invoiceToEdit != null) {
         loadedCurrencyCode = widget.invoiceToEdit!.currencyCode;
         loadedCurrencySymbol = widget.invoiceToEdit!.currencySymbol;
+      } else if (widget.cloneFrom != null) {
+        loadedCurrencyCode = widget.cloneFrom!.currencyCode;
+        loadedCurrencySymbol = widget.cloneFrom!.currencySymbol;
       } else {
         final currency = await SettingsService.getCurrency();
         loadedCurrencyCode = currency.code;
@@ -1768,7 +1807,11 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
             Text(
               _invoice != null && !isEditing
                   ? '$invoiceType Created'
-                  : (widget.invoiceToEdit != null ? 'Edit $invoiceType' : 'Create New $invoiceType'),
+                  : widget.invoiceToEdit != null
+                      ? 'Edit $invoiceType'
+                      : widget.cloneFrom != null
+                          ? 'Duplicate as $invoiceType'
+                          : 'Create New $invoiceType',
             ),
             Text(DateFormat('dd/MM/yyyy').format(DateTime.now())),
             Padding(
