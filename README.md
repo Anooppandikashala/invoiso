@@ -25,7 +25,7 @@
 
   <br/>
 
-  <img src="landing/assets/images/invoiso-banner.webp" alt="Invoiso — Free Offline Invoice Software" width="100%" />
+  <img src="landing/assets/images/pngs/invoiso_banner.png" alt="Invoiso — Free Offline Invoice Software" width="100%" />
 </div>
 
 ---
