@@ -40,13 +40,14 @@ class _InvoiceManagementScreenState
   /// they always align pixel-perfectly.
   static const Map<int, TableColumnWidth> _columnWidths = {
     0: FixedColumnWidth(48),   // checkbox
-    1: FixedColumnWidth(64),   // #
+    1: FixedColumnWidth(56),   // #
     2: FlexColumnWidth(1.5),   // Invoice ID
     3: FlexColumnWidth(1.2),   // Customer
     4: FlexColumnWidth(1.0),   // Date
-    5: FixedColumnWidth(64),   // Items
-    6: FlexColumnWidth(1.2),   // Total
-    7: FixedColumnWidth(320),  // Actions
+    5: FlexColumnWidth(0.8),   // Type
+    6: FixedColumnWidth(80),   // Items (widened so "Items" doesn't wrap)
+    7: FlexColumnWidth(1.2),   // Total
+    8: FixedColumnWidth(320),  // Actions
   };
 
   // ─── Lifecycle ─────────────────────────────────────────────────────────────
@@ -569,6 +570,7 @@ class _InvoiceManagementScreenState
                                             _buildTableHeader('Invoice ID'),
                                             _buildTableHeader('Customer'),
                                             _buildTableHeader('Date'),
+                                            _buildTableHeader('Type'),
                                             _buildTableHeader('Items'),
                                             _buildTableHeader('Total'),
                                             _buildTableHeader('Actions'),
@@ -787,14 +789,17 @@ class _InvoiceManagementScreenState
 
   Widget _buildTableHeader(String text) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-      child: Text(
-        text,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 15,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.5,
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+      child: Center(
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+          ),
         ),
       ),
     );
@@ -874,9 +879,43 @@ class _InvoiceManagementScreenState
                 ),
               ),
               _buildTableCell(
-                Text(invoice.date.toString().split(' ')[0],
-                    style: const TextStyle(fontSize: 14)),
+                Center(
+                  child: Text(invoice.date.toString().split(' ')[0],
+                      style: const TextStyle(fontSize: 13)),
+                ),
               ),
+              // Type badge
+              _buildTableCell(
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: invoice.type == 'Invoice'
+                          ? Colors.indigo.withOpacity(0.1)
+                          : Colors.orange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: invoice.type == 'Invoice'
+                            ? Colors.indigo.withOpacity(0.35)
+                            : Colors.orange.withOpacity(0.35),
+                      ),
+                    ),
+                    child: Text(
+                      invoice.type,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: invoice.type == 'Invoice'
+                            ? Colors.indigo[700]
+                            : Colors.orange[800],
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+              ),
+              // Items count
               _buildTableCell(
                 Center(
                   child: Container(

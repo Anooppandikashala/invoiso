@@ -414,23 +414,31 @@ class _DashboardHomeState extends State<DashboardHome> {
                                                   Row(
                                                     children: [
                                                       Text(
-                                                        'Invoice #${invoice.id}',
+                                                        '${invoice.type} #${invoice.id}',
                                                         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                                                       ),
                                                       const SizedBox(width: 12),
                                                       Container(
                                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                                         decoration: BoxDecoration(
-                                                          color: Colors.green.withOpacity(0.1),
+                                                          color: invoice.type == 'Invoice'
+                                                              ? Colors.indigo.withOpacity(0.1)
+                                                              : Colors.orange.withOpacity(0.1),
                                                           borderRadius: BorderRadius.circular(6),
-                                                          border: Border.all(color: Colors.green.withOpacity(0.3)),
+                                                          border: Border.all(
+                                                            color: invoice.type == 'Invoice'
+                                                                ? Colors.indigo.withOpacity(0.35)
+                                                                : Colors.orange.withOpacity(0.35),
+                                                          ),
                                                         ),
                                                         child: Text(
-                                                          'PAID',
+                                                          invoice.type,
                                                           style: TextStyle(
                                                             fontSize: 11,
                                                             fontWeight: FontWeight.w600,
-                                                            color: Colors.green[700],
+                                                            color: invoice.type == 'Invoice'
+                                                                ? Colors.indigo[700]
+                                                                : Colors.orange[800],
                                                             letterSpacing: 0.5,
                                                           ),
                                                         ),
