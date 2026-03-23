@@ -29,6 +29,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
   int _currentPage = 0;
   int _totalCustomerCount = 0;
   bool _isLoading = false;
+  final FocusNode _searchFocusNode = FocusNode();
 
   // Form controllers
   final _nameController = TextEditingController();
@@ -51,6 +52,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
     _phoneController.dispose();
     _addressController.dispose();
     _gstinController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -656,6 +658,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
           Expanded(
             flex: 3,
             child: TextField(
+              focusNode: _searchFocusNode,
               decoration: InputDecoration(
                 labelText: 'Search customers...',
                 prefixIcon: const Icon(Icons.search),

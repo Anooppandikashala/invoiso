@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -35,6 +36,8 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
   String _sortBy = 'name';
   bool _isAscending = true;
   bool _isLoading = false;
+  final FocusNode _searchFocusNode = FocusNode();
+  Timer? _searchDebounce;
 
   // Form controllers
   final _nameController = TextEditingController();
@@ -70,6 +73,8 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
     _stockController.dispose();
     _taxRateController.dispose();
     _hsnCodeController.dispose();
+    _searchFocusNode.dispose();
+    _searchDebounce?.cancel();
     super.dispose();
   }
 
@@ -401,7 +406,8 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
       _currentPage = 0;
       _searchQuery = query;
     });
-    _loadProducts();
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 400), _loadProducts);
   }
 
   void _onSortChanged(String? value) {
@@ -708,6 +714,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
           Expanded(
             flex: 3,
             child: TextField(
+              focusNode: _searchFocusNode,
               decoration: InputDecoration(
                 labelText: 'Search products...',
                 prefixIcon: const Icon(Icons.search),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/constants.dart';
@@ -35,6 +37,8 @@ class _InvoiceManagementScreenState
   List<Invoice> _pageInvoices = [];
   final Set<String> _selectedIds = {};
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+  Timer? _searchDebounce;
 
   /// Shared column widths used by both the header table and every row table so
   /// they always align pixel-perfectly.
@@ -61,6 +65,8 @@ class _InvoiceManagementScreenState
   @override
   void dispose() {
     _searchController.dispose();
+    _searchFocusNode.dispose();
+    _searchDebounce?.cancel();
     super.dispose();
   }
 
@@ -403,6 +409,7 @@ class _InvoiceManagementScreenState
                           constraints: const BoxConstraints(maxWidth: 600),
                           child: TextField(
                             controller: _searchController,
+                            focusNode: _searchFocusNode,
                             style: const TextStyle(fontSize: 16),
                             decoration: InputDecoration(
                               labelText:
@@ -450,7 +457,11 @@ class _InvoiceManagementScreenState
                                 _searchQuery = value;
                                 _currentPage = 0;
                               });
-                              _loadPage();
+                              _searchDebounce?.cancel();
+                              _searchDebounce = Timer(
+                                const Duration(milliseconds: 400),
+                                _loadPage,
+                              );
                             },
                           ),
                         ),
