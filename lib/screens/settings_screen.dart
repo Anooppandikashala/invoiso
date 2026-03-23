@@ -162,91 +162,77 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildCompanyInfoForm() {
+    final primaryColor = Theme.of(context).primaryColor;
 
-    final logoWidget = _selectedLogoFile != null
+    final logoContent = _selectedLogoFile != null
         ? ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
             child: Image.file(_selectedLogoFile!, fit: BoxFit.contain),
           )
         : (_base64Logo != null
             ? ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                 child: Image.memory(base64Decode(_base64Logo!),
                     fit: BoxFit.contain),
               )
-            : Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).primaryColor.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.add_photo_alternate_outlined,
-                        size: 40,
-                        color: Theme.of(context).primaryColor,
-                      ),
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: primaryColor.withOpacity(0.08),
+                      shape: BoxShape.circle,
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Upload Logo',
+                    child: Icon(Icons.add_photo_alternate_outlined,
+                        size: 36, color: primaryColor),
+                  ),
+                  const SizedBox(height: 10),
+                  Text('Upload Logo',
                       style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Click to browse',
+                          color: Colors.grey[600],
+                          fontSize: AppFontSize.small,
+                          fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 2),
+                  Text('Click to browse',
                       style: TextStyle(
-                        color: Colors.grey[400],
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
+                          color: Colors.grey[400],
+                          fontSize: AppFontSize.xsmall)),
+                ],
               ));
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: const Text('Company Information'),
-        backgroundColor: Theme.of(context).primaryColor,
+        backgroundColor: primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 900),
-            child: Card(
+      body: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Left panel ──────────────────────────────────────────────
+          SizedBox(
+            width: 240,
+            child: Container(
               color: Colors.white,
-              elevation: 4,
-              shadowColor: Colors.black.withOpacity(0.1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(40),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Company Logo Section
-                    Center(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(24),
                       child: Column(
                         children: [
+                          const SizedBox(height: 8),
                           Text(
-                            'Company Logo',
+                            'COMPANY LOGO',
                             style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.grey[700],
+                              fontSize: AppFontSize.xsmall,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.grey[400],
+                              letterSpacing: 1.0,
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -261,588 +247,335 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 decoration: BoxDecoration(
                                   color: Colors.grey[50],
                                   border: Border.all(
-                                    color: Colors.grey[300]!,
-                                    width: 2,
-                                    strokeAlign: BorderSide.strokeAlignInside,
-                                  ),
-                                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.05),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
+                                      color: Colors.grey[300]!, width: 2),
+                                  borderRadius: BorderRadius.circular(
+                                      AppBorderRadius.xsmall),
                                 ),
-                                child: logoWidget,
+                                child: logoContent,
                               ),
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 48),
-
-                    // Section Title
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 24),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 4,
-                            height: 24,
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).primaryColor,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
+                          const SizedBox(height: 16),
+                          // Live company name preview
+                          ValueListenableBuilder(
+                            valueListenable: nameController,
+                            builder: (_, value, __) {
+                              final name = value.text.trim();
+                              if (name.isEmpty) return const SizedBox.shrink();
+                              return Text(
+                                name,
+                                style: const TextStyle(
+                                  fontSize: AppFontSize.large,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              );
+                            },
                           ),
-                          const SizedBox(width: 12),
-                          const Text(
-                            'Company Details',
+                          const SizedBox(height: 12),
+                          Text(
+                            'Max 512×512 px · 2 MB\nPNG or JPG only',
                             style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                              fontSize: AppFontSize.xsmall,
+                              color: Colors.grey[400],
+                              height: 1.6,
                             ),
+                            textAlign: TextAlign.center,
                           ),
                         ],
                       ),
                     ),
-
-                    // Two Column Form
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final fieldWidth = constraints.maxWidth / 2 - 12;
-                        return Wrap(
-                          spacing: 24,
-                          runSpacing: 24,
-                          children: [
-                            SizedBox(
-                              width: fieldWidth,
-                              child: TextField(
-                                controller: nameController,
-                                style: const TextStyle(fontSize: 16),
-                                maxLength: 50,
-                                decoration: InputDecoration(
-                                  labelText: 'Company Name',
-                                  prefixIcon:
-                                      const Icon(Icons.business, size: 20),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                                    borderSide:
-                                        BorderSide(color: Colors.grey[300]!),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                                    borderSide: BorderSide(
-                                      color: Theme.of(context).primaryColor,
-                                      width: 2,
-                                    ),
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.grey[50],
-                                  counterText: '',
-                                ),
-                              ),
-                            ),
-                            SizedBox(
-                              width: fieldWidth,
-                              child: TextField(
-                                controller: gstinController,
-                                style: const TextStyle(fontSize: 16),
-                                maxLength: 50,
-                                decoration: InputDecoration(
-                                  labelText: 'GSTIN',
-                                  prefixIcon:
-                                      const Icon(Icons.receipt_long, size: 20),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                                    borderSide:
-                                        BorderSide(color: Colors.grey[300]!),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                                    borderSide: BorderSide(
-                                      color: Theme.of(context).primaryColor,
-                                      width: 2,
-                                    ),
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.grey[50],
-                                  counterText: '',
-                                ),
-                              ),
-                            ),
-                            SizedBox(
-                              width: fieldWidth,
-                              child: TextField(
-                                controller: phoneController,
-                                maxLength: 12,
-                                style: const TextStyle(fontSize: 16),
-                                decoration: InputDecoration(
-                                  labelText: 'Phone',
-                                  prefixIcon: const Icon(Icons.phone, size: 20),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                                    borderSide:
-                                        BorderSide(color: Colors.grey[300]!),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                                    borderSide: BorderSide(
-                                      color: Theme.of(context).primaryColor,
-                                      width: 2,
-                                    ),
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.grey[50],
-                                  counterText: '',
-                                ),
-                                keyboardType: TextInputType.number,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.digitsOnly,
-                                  LengthLimitingTextInputFormatter(12),
-                                ],
-                              ),
-                            ),
-                            SizedBox(
-                              width: fieldWidth,
-                              child: TextField(
-                                controller: emailController,
-                                maxLength: 100,
-                                style: const TextStyle(fontSize: 16),
-                                decoration: InputDecoration(
-                                  labelText: 'Email',
-                                  prefixIcon: const Icon(Icons.email, size: 20),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                                    borderSide:
-                                        BorderSide(color: Colors.grey[300]!),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                                    borderSide: BorderSide(
-                                      color: Theme.of(context).primaryColor,
-                                      width: 2,
-                                    ),
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.grey[50],
-                                  counterText: '',
-                                ),
-                                keyboardType: TextInputType.emailAddress,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.allow(
-                                      RegExp(r'[a-zA-Z0-9@._\-]')),
-                                ],
-                              ),
-                            ),
-                            SizedBox(
-                              width: fieldWidth,
-                              child: TextField(
-                                controller: websiteController,
-                                maxLength: 100,
-                                style: const TextStyle(fontSize: 16),
-                                decoration: InputDecoration(
-                                  labelText: 'Website',
-                                  prefixIcon:
-                                      const Icon(Icons.language, size: 20),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                                    borderSide:
-                                        BorderSide(color: Colors.grey[300]!),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                                    borderSide: BorderSide(
-                                      color: Theme.of(context).primaryColor,
-                                      width: 2,
-                                    ),
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.grey[50],
-                                  counterText: '',
-                                ),
-                                keyboardType: TextInputType.url,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.allow(
-                                      RegExp(r'[a-zA-Z0-9:/.%-]')),
-                                ],
-                              ),
-                            ),
-                            SizedBox(
-                              width: constraints.maxWidth,
-                              child: TextField(
-                                controller: addressController,
-                                style: const TextStyle(fontSize: 16),
-                                maxLength: 100,
-                                maxLines: 3,
-                                decoration: InputDecoration(
-                                  labelText: 'Address',
-                                  prefixIcon: const Padding(
-                                    padding: EdgeInsets.only(bottom: 48),
-                                    child: Icon(Icons.location_on, size: 20),
-                                  ),
-                                  alignLabelWithHint: true,
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                                    borderSide:
-                                        BorderSide(color: Colors.grey[300]!),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                                    borderSide: BorderSide(
-                                      color: Theme.of(context).primaryColor,
-                                      width: 2,
-                                    ),
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.grey[50],
-                                  counterText: '',
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    // ── Payment Settings section ──────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 20),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 4,
-                            height: 24,
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).primaryColor,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          const Text(
-                            'Payment Settings',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // UPI ID field
-                            TextField(
-                              controller: _upiIdController,
-                              style: const TextStyle(fontSize: 16),
-                              decoration: InputDecoration(
-                                labelText: 'UPI ID',
-                                hintText: 'yourname@bankname',
-                                helperText:
-                                    'Used to generate a payment QR code on invoices. Indian UPI only.',
-                                prefixIcon: const Icon(Icons.qr_code, size: 20),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(
-                                      AppBorderRadius.xsmall),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(
-                                      AppBorderRadius.xsmall),
-                                  borderSide:
-                                      BorderSide(color: Colors.grey[300]!),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(
-                                      AppBorderRadius.xsmall),
-                                  borderSide: BorderSide(
-                                    color: Theme.of(context).primaryColor,
-                                    width: 2,
-                                  ),
-                                ),
-                                filled: true,
-                                fillColor: Colors.grey[50],
-                              ),
-                            ),
-
-                            const SizedBox(height: 16),
-
-                            // Show QR toggle
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.grey[50],
-                                borderRadius: BorderRadius.circular(
-                                    AppBorderRadius.xsmall),
-                                border:
-                                    Border.all(color: Colors.grey[300]!),
-                              ),
-                              child: SwitchListTile(
-                                title: const Text('Show QR Code on Invoices'),
-                                subtitle: const Text(
-                                  'Adds a scannable UPI payment QR to generated PDFs',
-                                  style: TextStyle(fontSize: 12),
-                                ),
-                                value: _showUpiQr,
-                                onChanged: (val) =>
-                                    setState(() => _showUpiQr = val),
-                                activeColor:
-                                    Theme.of(context).primaryColor,
-                                secondary: Icon(
-                                  Icons.payment,
-                                  color: _showUpiQr
-                                      ? Theme.of(context).primaryColor
-                                      : Colors.grey,
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-
-                    const SizedBox(height: 40),
-
-                    // Save Button
-                    SizedBox(
+                  ),
+                  // Save button pinned at bottom
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: SizedBox(
                       width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton(
+                      child: ElevatedButton.icon(
                         onPressed: _saveCompanyInfo,
+                        icon: const Icon(Icons.save_rounded),
+                        label: const Text('Save'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).primaryColor,
+                          backgroundColor: primaryColor,
                           foregroundColor: Colors.white,
-                          elevation: 2,
-                          shadowColor:
-                              Theme.of(context).primaryColor.withOpacity(0.4),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                            borderRadius:
+                                BorderRadius.circular(AppBorderRadius.small),
                           ),
-                        ),
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.save, size: 20),
-                            SizedBox(width: 8),
-                            Text(
-                              'Save Company Information',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
-        ),
+
+          VerticalDivider(width: 1, color: Colors.grey[200]),
+
+          // ── Right: scrollable form ───────────────────────────────────
+          Expanded(
+            child: SingleChildScrollView(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _sectionLabel('COMPANY DETAILS'),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildField(
+                          controller: nameController,
+                          label: 'Company Name',
+                          icon: Icons.business_rounded,
+                          maxLength: 50,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildField(
+                          controller: gstinController,
+                          label: 'GSTIN',
+                          icon: Icons.receipt_long_rounded,
+                          maxLength: 50,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildField(
+                          controller: phoneController,
+                          label: 'Phone',
+                          icon: Icons.phone_rounded,
+                          maxLength: 12,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                            LengthLimitingTextInputFormatter(12),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildField(
+                          controller: emailController,
+                          label: 'Email',
+                          icon: Icons.email_rounded,
+                          maxLength: 100,
+                          keyboardType: TextInputType.emailAddress,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                                RegExp(r'[a-zA-Z0-9@._\-]')),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _buildField(
+                    controller: websiteController,
+                    label: 'Website',
+                    icon: Icons.language_rounded,
+                    maxLength: 100,
+                    keyboardType: TextInputType.url,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(
+                          RegExp(r'[a-zA-Z0-9:/.%-]')),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _buildField(
+                    controller: addressController,
+                    label: 'Address',
+                    icon: Icons.location_on_rounded,
+                    maxLength: 100,
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 32),
+                  _sectionLabel('PAYMENT SETTINGS'),
+                  const SizedBox(height: 16),
+                  _buildField(
+                    controller: _upiIdController,
+                    label: 'UPI ID',
+                    icon: Icons.qr_code_rounded,
+                    hint: 'yourname@bankname',
+                    helper:
+                        'Used to generate a payment QR code on invoices. Indian UPI only.',
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius:
+                          BorderRadius.circular(AppBorderRadius.xsmall),
+                      border: Border.all(color: Colors.grey[200]!),
+                    ),
+                    child: SwitchListTile(
+                      title: const Text('Show QR Code on Invoices'),
+                      subtitle: const Text(
+                        'Adds a scannable UPI payment QR to generated PDFs',
+                        style: TextStyle(fontSize: AppFontSize.small),
+                      ),
+                      value: _showUpiQr,
+                      onChanged: (val) => setState(() => _showUpiQr = val),
+                      activeColor: primaryColor,
+                      secondary: Icon(
+                        Icons.payment_rounded,
+                        color: _showUpiQr ? primaryColor : Colors.grey,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildAppInfoScreen() {
+    final primaryColor = Theme.of(context).primaryColor;
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text('Application Information'),
-        backgroundColor: Theme.of(context).primaryColor,
+        title: const Text('Software Information'),
+        backgroundColor: primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(32),
+        child: Center(
           child: Container(
-            constraints: const BoxConstraints(maxWidth: 1000),
-            child: Card(
-              color: Colors.white,
-              elevation: 4,
-              shadowColor: Colors.black.withOpacity(0.1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(40),
-                child: Column(
+            constraints: const BoxConstraints(maxWidth: 820),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // ── Hero card ────────────────────────────────────────────
+                Card(
+                  elevation: 0,
+                  color: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+                    side: BorderSide(color: Colors.grey[200]!),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 32, vertical: 28),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Image.asset(
+                          'assets/images/logo.png',
+                          width: 130,
+                          height: 52,
+                          fit: BoxFit.contain,
+                        ),
+                        const SizedBox(width: 24),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                AppConfig.name.toUpperCase(),
+                                style: const TextStyle(
+                                  fontSize: AppFontSize.xxlarge,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                AppConfig.description,
+                                style: TextStyle(
+                                  fontSize: AppFontSize.small,
+                                  color: Colors.grey[600],
+                                  height: 1.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 24),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: primaryColor.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                                color: primaryColor.withOpacity(0.3)),
+                          ),
+                          child: Text(
+                            AppConfig.version,
+                            style: TextStyle(
+                              fontSize: AppFontSize.medium,
+                              fontWeight: FontWeight.bold,
+                              color: primaryColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // ── Two info cards ───────────────────────────────────────
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Header Section
-                    Center(
-                      child: Column(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Image.asset(
-                              'assets/images/logo.png',
-                              width: 200,
-                              height: 80,
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                          //const SizedBox(height: 8),
-                          Text(
-                            'Version & License Information',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
+                    Expanded(
+                      flex: 2,
+                      child: _infoCard('APP DETAILS', [
+                        _infoRow(Icons.apps_rounded, 'App Name',
+                            AppConfig.name.toUpperCase()),
+                        _infoRow(Icons.tag_rounded, 'Version',
+                            AppConfig.version),
+                        _infoRow(Icons.gavel_rounded, 'License',
+                            AppConfig.license.toUpperCase()),
+                      ]),
                     ),
-                    const SizedBox(height: 48),
-
-                    // Section Title
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 24),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 4,
-                            height: 24,
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).primaryColor,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          const Text(
-                            'Application Details',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // Three Column Info Grid
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final fieldWidth = (constraints.maxWidth - 48) / 3;
-                        return Wrap(
-                          spacing: 24,
-                          runSpacing: 24,
-                          children: [
-                            _infoTile(
-                              'App Name',
-                              AppConfig.name.toUpperCase(),
-                              fieldWidth,
-                              Icons.apps,
-                            ),
-                            _infoTile(
-                              'Version',
-                              AppConfig.version,
-                              fieldWidth,
-                              Icons.numbers,
-                            ),
-                            _infoTile(
-                              'Developer',
-                              AppConfig.developer.toUpperCase(),
-                              fieldWidth,
-                              Icons.code,
-                            ),
-                            _infoTile(
-                              'Contact Email',
-                              AppConfig.supportEmail,
-                              fieldWidth,
-                              Icons.email_outlined,
-                            ),
-                            _infoTile(
-                              'Website',
-                              AppConfig.website,
-                              fieldWidth,
-                              Icons.language,
-                            ),
-                            _infoTile(
-                              'License',
-                              AppConfig.license.toUpperCase(),
-                              fieldWidth,
-                              Icons.gavel,
-                            ),
-                            _infoTile(
-                              'Description',
-                              AppConfig.description,
-                              constraints.maxWidth,
-                              Icons.description_outlined,
-                              maxLines: 3,
-                              isFullWidth: true,
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-
-                    const SizedBox(height: 40),
-
-                    // Footer Section
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                        border: Border.all(color: Colors.grey[200]!),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            color: Theme.of(context).primaryColor,
-                            size: 24,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'This information is read-only and configured in the application settings.',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.grey[700],
-                                height: 1.4,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                    const SizedBox(width: 20),
+                    Expanded(
+                      flex: 3,
+                      child: _infoCard('DEVELOPER', [
+                        _infoRow(Icons.person_rounded, 'Developer',
+                            AppConfig.developer.toUpperCase()),
+                        _infoRow(Icons.email_rounded, 'Support Email',
+                            AppConfig.supportEmail),
+                        _infoRow(Icons.language_rounded, 'Website',
+                            AppConfig.website),
+                      ]),
                     ),
                   ],
                 ),
-              ),
+
+                const SizedBox(height: 32),
+
+                // ── Footer ───────────────────────────────────────────────
+                Text(
+                  '© ${DateTime.now().year} ${AppConfig.developer}  |  Released under the ${AppConfig.license} License',
+                  style: TextStyle(
+                    fontSize: AppFontSize.small,
+                    color: Colors.grey[400],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
           ),
         ),
@@ -850,90 +583,128 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _infoTile(
-    String label,
-    String value,
-    double width,
-    IconData icon, {
-    int maxLines = 1,
-    bool isFullWidth = false,
-  }) {
-    return SizedBox(
-      width: width,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.grey[50]!,
-              Colors.grey[100]!,
-            ],
-          ),
-          borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-          border: Border.all(color: Colors.grey[200]!, width: 1.5),
-        ),
+  Widget _infoCard(String title, List<Widget> rows) {
+    return Card(
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+        side: BorderSide(color: Colors.grey[200]!),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: AppFontSize.xsmall,
+                fontWeight: FontWeight.w700,
+                color: Colors.grey[400],
+                letterSpacing: 1.0,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...rows.expand((row) => [
+                  row,
+                  Divider(height: 1, color: Colors.grey[100]),
+                ]).toList()
+              ..removeLast(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _infoRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: Colors.grey[400]),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    icon,
-                    size: 20,
-                    color: Colors.grey[700],
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: AppFontSize.xsmall,
+                    color: Colors.grey[500],
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey[600],
-                      letterSpacing: 0.5,
-                    ),
+                const SizedBox(height: 3),
+                SelectableText(
+                  value,
+                  style: const TextStyle(
+                    fontSize: AppFontSize.medium,
+                    fontWeight: FontWeight.w500,
+                    height: 1.4,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey[200]!),
-              ),
-              child: SelectableText(
-                value,
-                style: TextStyle(
-                  fontSize: isFullWidth ? 15 : 16,
-                  color: Colors.grey[800],
-                  height: 1.5,
-                  fontWeight: FontWeight.w500,
-                ),
-                maxLines: maxLines,
-              ),
-            ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionLabel(String title) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: AppFontSize.xsmall,
+        fontWeight: FontWeight.w700,
+        color: Colors.grey[400],
+        letterSpacing: 1.0,
+      ),
+    );
+  }
+
+  Widget _buildField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    int maxLength = 100,
+    int maxLines = 1,
+    String? hint,
+    String? helper,
+    TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
+  }) {
+    final primaryColor = Theme.of(context).primaryColor;
+    return TextField(
+      controller: controller,
+      maxLength: maxLength,
+      maxLines: maxLines,
+      style: const TextStyle(fontSize: AppFontSize.medium),
+      keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        helperText: helper,
+        helperMaxLines: 2,
+        prefixIcon: Icon(icon, size: 20),
+        alignLabelWithHint: maxLines > 1,
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+          borderSide: BorderSide(color: Colors.grey[300]!),
         ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+          borderSide: BorderSide(color: primaryColor, width: 2),
+        ),
+        filled: true,
+        fillColor: Colors.white,
+        counterText: '',
       ),
     );
   }
