@@ -41,3 +41,16 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+*.md
+*.zsync
+*.disabled
+*.AppImage
+crash-report.txt
+AppDir/
+AppDirbuild/
+dist/
+*~
+myapp_1.0.0/
+appimage-build/
+*screenshots2/

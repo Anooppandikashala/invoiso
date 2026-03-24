@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Basic Metadata -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Download Invoiso — free offline invoice and billing software for Windows and Linux. No account, no subscription. Manage customers, products and inventory, generate PDF invoices." />
+    <meta name="keywords" content="Invoiso download, invoice software download, offline invoicing Windows, offline invoicing Linux, free invoice app download" />
+    <meta name="author" content="Invoiso" />
+    <meta name="robots" content="index, follow" />
+
+    <!-- Title -->
+    <title>Download Invoiso — Free Offline Invoice & Billing Software for Windows & Linux</title>
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://anooppandikashala.github.io/invoisoapp/download.html" />
+
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#06080f" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Download Invoiso — Free Offline Invoice & Billing Software" />
+    <meta property="og:description" content="Download Invoiso for Windows and Linux. Free offline invoice and billing software for small businesses. No account, no subscription required." />
+    <meta property="og:image" content="https://anooppandikashala.github.io/invoisoapp/assets/images/invoiso-banner.webp" />
+    <meta property="og:url" content="https://anooppandikashala.github.io/invoisoapp/download.html" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" content="Invoiso" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Download Invoiso — Free Offline Invoice & Billing Software" />
+    <meta name="twitter:description" content="Free offline invoice and billing software for Windows and Linux. No account, no subscription. Download and run instantly." />
+    <meta name="twitter:image" content="https://anooppandikashala.github.io/invoisoapp/assets/images/invoiso-banner.webp" />
+
+    <!-- Favicon & Icons -->
+    <link rel="icon" type="image/svg+xml" href="assets/images/logo.svg" />
+    <link rel="apple-touch-icon" href="assets/images/apple-touch-icon.png" />
+
+    <!-- Preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- Fonts -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" />
+
+    <!-- CSS Libraries -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+    <link rel="stylesheet" href="style.css" />
+
+    <style>
+      /* ── Release card ── */
+      .release-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        overflow: hidden;
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        box-shadow: 0 0 0 1px rgba(255,255,255,0.04), 0 20px 60px rgba(0,0,0,0.4);
+        margin-bottom: 24px;
+        transition: border-color 0.3s ease;
+      }
+
+      .release-card:hover {
+        border-color: rgba(79,142,247,0.2);
+      }
+
+      .release-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 22px 28px;
+        border-bottom: 1px solid var(--border);
+        background: rgba(255,255,255,0.02);
+      }
+
+      .release-header-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .release-title {
+        font-weight: 700;
+        font-size: 1.05rem;
+        color: var(--text);
+      }
+
+      .release-date {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        white-space: nowrap;
+      }
+
+      /* ── Two-column layout for latest release ── */
+      .latest-body {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        min-height: 0;
+      }
+
+      .latest-downloads {
+        border-right: 1px solid var(--border);
+        padding-bottom: 20px;
+      }
+
+      .latest-notes {
+        padding: 24px 28px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .latest-notes-title {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: var(--text-muted);
+        margin-bottom: 16px;
+      }
+
+      /* Release notes content */
+      .notes-content {
+        color: var(--text);
+        font-size: 0.9rem;
+        line-height: 1.75;
+        flex: 1;
+      }
+
+      .notes-content .cl-heading {
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: var(--primary);
+        margin: 12px 0 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      .notes-content .cl-heading:first-child {
+        margin-top: 0;
+      }
+
+      .notes-content .cl-para {
+        margin: 4px 0;
+      }
+
+      .notes-content .cl-list {
+        list-style: none;
+        padding-left: 0;
+        margin: 4px 0;
+      }
+
+      .notes-content .cl-list li {
+        padding: 2px 0 2px 18px;
+        position: relative;
+      }
+
+      .notes-content .cl-list li::before {
+        content: '•';
+        position: absolute;
+        left: 5px;
+        color: var(--primary);
+        font-weight: bold;
+      }
+
+      .notes-content .cl-code {
+        background: rgba(79,142,247,0.15);
+        color: var(--primary);
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 0.85em;
+      }
+
+      /* ── Asset download buttons ── */
+      .assets-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+        padding: 0 20px 4px;
+      }
+
+      .os-section-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: var(--text-muted);
+        padding: 14px 20px 8px;
+      }
+
+      .asset-btn {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 16px;
+        border-radius: 12px;
+        border: 1.5px solid var(--border);
+        background: rgba(255,255,255,0.03);
+        text-decoration: none;
+        color: var(--text-muted);
+        transition: all 0.25s ease;
+        min-width: 0;
+      }
+
+      .asset-btn:hover {
+        border-color: var(--primary);
+        background: rgba(79,142,247,0.08);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(79,142,247,0.15), 0 0 0 1px rgba(79,142,247,0.1);
+        color: var(--primary);
+      }
+
+      .asset-icon {
+        font-size: 1.4rem;
+        flex-shrink: 0;
+        width: 30px;
+        text-align: center;
+      }
+
+      .asset-info {
+        min-width: 0;
+        flex: 1;
+      }
+
+      .asset-name {
+        font-weight: 600;
+        font-size: 0.85rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.3;
+      }
+
+      .asset-meta {
+        font-size: 0.75rem;
+        opacity: 0.65;
+        margin-top: 2px;
+      }
+
+      .asset-dl-icon {
+        font-size: 0.85rem;
+        flex-shrink: 0;
+        opacity: 0.6;
+      }
+
+      .no-assets {
+        padding: 20px;
+        color: var(--text-muted);
+        font-style: italic;
+        font-size: 0.95rem;
+      }
+
+      /* ── GitHub link at bottom of notes ── */
+      .gh-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 20px;
+        color: var(--primary);
+        font-weight: 600;
+        font-size: 0.88rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+      }
+
+      .gh-link:hover {
+        color: white;
+        text-decoration: underline;
+      }
+
+      /* ── Archive list ── */
+      .archive-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 16px 24px;
+        text-decoration: none;
+        color: var(--text-muted);
+        border-bottom: 1px solid var(--border);
+        transition: background 0.2s ease, color 0.2s ease;
+      }
+
+      .archive-row:last-child { border-bottom: none; }
+
+      .archive-row:hover {
+        background: rgba(79,142,247,0.05);
+        color: var(--primary);
+      }
+
+      .archive-row-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+      }
+
+      .archive-row-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-shrink: 0;
+        color: var(--text-muted);
+        font-size: 0.875rem;
+      }
+
+      .archive-title {
+        font-size: 0.95rem;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* ── "View all releases" button ── */
+      .gh-all-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: var(--card);
+        color: var(--text-muted);
+        font-size: 0.875rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.25s ease;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+      }
+
+      .gh-all-link:hover {
+        border-color: rgba(79,142,247,0.35);
+        color: var(--primary);
+        background: rgba(79,142,247,0.06);
+      }
+
+      /* ── Previous releases section label ── */
+      .archive-section-heading {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.09em;
+        color: var(--text-muted);
+        margin-bottom: 10px;
+        padding-left: 2px;
+      }
+
+      /* ── Responsive ── */
+      @media (max-width: 768px) {
+        .latest-body {
+          grid-template-columns: 1fr;
+        }
+
+        .latest-downloads {
+          border-right: none;
+          border-bottom: 1px solid var(--border);
+        }
+
+        .release-header {
+          padding: 18px 20px;
+        }
+
+        .archive-row {
+          padding: 14px 18px;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+
+        .archive-row-right .release-date {
+          display: none;
+        }
+      }
+    </style>
+
+    <!-- Structured Data: Breadcrumb -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://anooppandikashala.github.io/invoisoapp/" },
+        { "@type": "ListItem", "position": 2, "name": "Download", "item": "https://anooppandikashala.github.io/invoisoapp/download.html" }
+      ]
+    }
+    </script>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-D7RSN6EGR6"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-D7RSN6EGR6');
+    </script>
+  </head>
+
+  <body class="font-sans">
+
+    <!-- Skip Navigation -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <!-- Navbar -->
+    <header class="navbar fixed w-full z-50">
+      <nav class="container mx-auto flex justify-between items-center py-4 px-6 max-w-7xl" aria-label="Main navigation">
+        <a href="index.html" class="logo-link flex items-center text-3xl font-bold tracking-tight" style="text-decoration:none;">
+          <img src="assets/images/logo.svg" alt="" class="w-8 h-8 mr-2" aria-hidden="true" />
+          Invoiso
+        </a>
+        <ul class="hidden md:flex space-x-10 font-medium">
+          <li><a href="index.html#home" class="transition-colors duration-300">Home</a></li>
+          <li><a href="index.html#features" class="transition-colors duration-300">Features</a></li>
+          <li><a href="index.html#about" class="transition-colors duration-300">About</a></li>
+          <li><a href="index.html#screenshots" class="transition-colors duration-300">Screenshots</a></li>
+          <li><a href="index.html#faq" class="transition-colors duration-300">FAQ</a></li>
+          <li><a href="index.html#testimonials" class="transition-colors duration-300">Reviews</a></li>
+          <li><a href="download.html" class="transition-colors duration-300 primary-text" aria-current="page">Download</a></li>
+          <li><a href="index.html#contact" class="transition-colors duration-300">Contact</a></li>
+        </ul>
+
+        <button
+          class="md:hidden"
+          id="hamburger-btn"
+          aria-label="Toggle navigation menu"
+          aria-expanded="false"
+          aria-controls="mobile-menu"
+        >
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+        </button>
+      </nav>
+
+      <div class="mobile-menu hidden md:hidden" id="mobile-menu">
+        <ul class="py-4 px-6 space-y-3">
+          <li><a href="index.html#home" class="block py-2 transition-colors">Home</a></li>
+          <li><a href="index.html#features" class="block py-2 transition-colors">Features</a></li>
+          <li><a href="index.html#about" class="block py-2 transition-colors">About</a></li>
+          <li><a href="index.html#screenshots" class="block py-2 transition-colors">Screenshots</a></li>
+          <li><a href="index.html#faq" class="block py-2 transition-colors">FAQ</a></li>
+          <li><a href="index.html#testimonials" class="block py-2 transition-colors">Reviews</a></li>
+          <li><a href="download.html" class="block py-2 transition-colors font-semibold primary-text">Download</a></li>
+          <li><a href="index.html#contact" class="block py-2 transition-colors">Contact</a></li>
+        </ul>
+      </div>
+    </header>
+
+    <main id="main-content">
+      <!-- Page Hero -->
+      <section class="pt-40 pb-16 hero-gradient text-white text-center relative">
+        <div class="hero-noise" aria-hidden="true"></div>
+        <div class="container mx-auto px-6 relative z-10">
+          <div class="fade-in-up">
+            <nav aria-label="Breadcrumb" class="mb-6">
+              <ol class="flex items-center justify-center gap-2 text-sm font-medium" style="color:rgba(79,142,247,0.7)">
+                <li><a href="index.html" class="hover:text-white transition-colors">Home</a></li>
+                <li aria-hidden="true" class="opacity-50">/</li>
+                <li class="text-white" aria-current="page">Download</li>
+              </ol>
+            </nav>
+            <h1 class="text-5xl md:text-6xl font-bold mb-4 leading-tight">Download Invoiso</h1>
+            <p class="text-lg md:text-xl max-w-2xl mx-auto leading-relaxed" style="color:rgba(226,232,240,0.85)">
+              Free for Windows &amp; Linux. No account, no subscription — just download and run.
+            </p>
+            <div class="hero-trust-strip">
+              <span class="trust-chip"><i class="fas fa-check-circle" aria-hidden="true"></i> Free forever</span>
+              <span class="trust-chip"><i class="fab fa-github" aria-hidden="true"></i> Open source</span>
+              <span class="trust-chip"><i class="fas fa-wifi-slash" aria-hidden="true"></i> Works offline</span>
+              <span class="trust-chip"><i class="fas fa-user-slash" aria-hidden="true"></i> No registration</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Content -->
+      <section class="py-14 releases-section">
+        <div class="container mx-auto px-6 max-w-5xl">
+
+          <div id="releases-list">
+            <div class="text-center py-10" style="color:var(--text-muted)">
+              <i class="fas fa-spinner fa-spin text-2xl mb-3 primary-text" aria-hidden="true"></i>
+              <p class="text-sm">Loading releases...</p>
+            </div>
+          </div>
+
+          <div class="text-center mt-10">
+            <a href="https://github.com/Anooppandikashala/invoiso/releases" target="_blank" rel="noopener noreferrer" class="gh-all-link">
+              <i class="fab fa-github" aria-hidden="true"></i>
+              View all releases on GitHub
+              <i class="fas fa-chevron-right" style="font-size:0.7rem;opacity:0.6" aria-hidden="true"></i>
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-white text-center py-12 relative">
+      <div class="container mx-auto px-6">
+        <div class="flex flex-wrap justify-center gap-8 text-lg mb-8">
+          <a href="https://github.com/Anooppandikashala/invoiso" target="_blank" rel="noopener noreferrer" class="hover:underline">
+            <i class="fab fa-github mr-2" aria-hidden="true"></i>GitHub
+          </a>
+          <a href="https://buymeacoffee.com/anoopp" target="_blank" rel="noopener noreferrer" class="hover:underline">
+            <i class="fas fa-mug-hot mr-2" aria-hidden="true"></i>Support
+          </a>
+          <a href="mailto:anooppkrishnan96@gmail.com" class="hover:underline">
+            <i class="fas fa-envelope mr-2" aria-hidden="true"></i>Email
+          </a>
+        </div>
+        <div class="border-t pt-8" style="border-color:var(--border)">
+          <p class="text-lg">
+            © <span id="year"></span> Invoiso. All rights reserved.
+          </p>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+
+      document.getElementById('year').textContent = new Date().getFullYear();
+
+      // Mobile menu
+      var hamburgerBtn = document.getElementById('hamburger-btn');
+      var mobileMenu   = document.getElementById('mobile-menu');
+      hamburgerBtn.addEventListener('click', function () {
+        var isOpen = !mobileMenu.classList.contains('hidden');
+        mobileMenu.classList.toggle('hidden');
+        hamburgerBtn.setAttribute('aria-expanded', String(!isOpen));
+      });
+      mobileMenu.querySelectorAll('a').forEach(function (link) {
+        link.addEventListener('click', function () {
+          mobileMenu.classList.add('hidden');
+          hamburgerBtn.setAttribute('aria-expanded', 'false');
+        });
+      });
+
+      // --- Helpers ---
+      function escHtml(str) {
+        return str
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      function formatBytes(bytes) {
+        if (!bytes) return '';
+        var mb = bytes / (1024 * 1024);
+        return mb >= 1 ? mb.toFixed(1) + ' MB' : (bytes / 1024).toFixed(0) + ' KB';
+      }
+
+      function inlineFormat(str) {
+        return escHtml(str)
+          .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+          .replace(/`(.+?)`/g, '<code class="cl-code">$1</code>');
+      }
+
+      function simpleMarkdown(text) {
+        var lines = text.split('\n');
+        var html  = '';
+        var inList = false;
+        lines.forEach(function (line) {
+          if (/^#{1,3}\s+/.test(line)) {
+            if (inList) { html += '</ul>'; inList = false; }
+            html += '<p class="cl-heading">' + inlineFormat(line.replace(/^#{1,3}\s+/, '')) + '</p>';
+          } else if (/^[-*]\s+/.test(line)) {
+            if (!inList) { html += '<ul class="cl-list">'; inList = true; }
+            html += '<li>' + inlineFormat(line.replace(/^[-*]\s+/, '')) + '</li>';
+          } else if (line.trim() === '') {
+            if (inList) { html += '</ul>'; inList = false; }
+          } else {
+            if (inList) { html += '</ul>'; inList = false; }
+            html += '<p class="cl-para">' + inlineFormat(line) + '</p>';
+          }
+        });
+        if (inList) html += '</ul>';
+        return html;
+      }
+
+      function classifyAsset(name) {
+        var n = name.toLowerCase();
+        if (n.endsWith('.exe') || n.endsWith('.msi'))
+          return { os: 'windows', icon: 'fab fa-windows' };
+        if (n.endsWith('.appimage'))
+          return { os: 'linux', icon: 'fab fa-linux' };
+        if (n.endsWith('.deb'))
+          return { os: 'linux', icon: 'fab fa-ubuntu' };
+        if (n.endsWith('.rpm'))
+          return { os: 'linux', icon: 'fab fa-fedora' };
+        if (n.endsWith('.tar.gz') || n.endsWith('.tar.xz') || n.endsWith('.tar.bz2'))
+          return { os: 'linux', icon: 'fab fa-linux' };
+        if (n.endsWith('.zip'))
+          return { os: 'other', icon: 'fas fa-file-archive' };
+        if (n.endsWith('.zsync'))
+          return { os: 'other', icon: 'fas fa-sync' };
+        if (n.endsWith('.sha256') || n.endsWith('.sha256sum') || n.endsWith('.sha512'))
+          return { os: 'other', icon: 'fas fa-shield-alt' };
+        return { os: 'other', icon: 'fas fa-file-download' };
+      }
+
+      function buildAssetRows(entries) {
+        return entries.map(function (e) {
+          var size = formatBytes(e.asset.size);
+          var dl   = e.asset.download_count || 0;
+          var meta = [size, dl ? dl.toLocaleString() + ' downloads' : ''].filter(Boolean).join(' · ');
+          return (
+            '<a href="' + escHtml(e.asset.browser_download_url) + '" class="asset-btn" aria-label="Download ' + escHtml(e.asset.name) + '">' +
+              '<span class="asset-icon"><i class="' + e.info.icon + '" aria-hidden="true"></i></span>' +
+              '<span class="asset-info">' +
+                '<span class="asset-name">' + escHtml(e.asset.name) + '</span>' +
+                (meta ? '<span class="asset-meta">' + escHtml(meta) + '</span>' : '') +
+              '</span>' +
+              '<i class="fas fa-arrow-down asset-dl-icon" aria-hidden="true"></i>' +
+            '</a>'
+          );
+        }).join('');
+      }
+
+      // --- Fetch releases ---
+      fetch('https://api.github.com/repos/Anooppandikashala/invoiso/releases?per_page=100')
+        .then(function (res) {
+          if (!res.ok) throw new Error('Network error');
+          return res.json();
+        })
+        .then(function (releases) {
+          var list = document.getElementById('releases-list');
+          list.innerHTML = '';
+
+          if (!releases.length) {
+            list.innerHTML = '<p class="text-center py-8" style="color:var(--text-muted)">No releases found.</p>';
+            return;
+          }
+
+          // ── Latest release: downloads (left) + release notes (right) ──
+          var latest = releases[0];
+          var latestDate = new Date(latest.published_at).toLocaleDateString('en-US', {
+            year: 'numeric', month: 'long', day: 'numeric',
+          });
+
+          var windows = [], linux = [], other = [];
+          (latest.assets || []).forEach(function (asset) {
+            var info  = classifyAsset(asset.name);
+            var entry = { asset: asset, info: info };
+            if (info.os === 'windows')    windows.push(entry);
+            else if (info.os === 'linux') linux.push(entry);
+            else                          other.push(entry);
+          });
+
+          var downloadsHtml = '';
+          if (windows.length) {
+            downloadsHtml += '<p class="os-section-label"><i class="fab fa-windows mr-1" aria-hidden="true"></i> Windows</p>';
+            downloadsHtml += '<div class="assets-grid">' + buildAssetRows(windows) + '</div>';
+          }
+          if (linux.length) {
+            downloadsHtml += '<p class="os-section-label" style="' + (windows.length ? 'padding-top:8px;' : '') + '"><i class="fab fa-linux mr-1" aria-hidden="true"></i> Linux</p>';
+            downloadsHtml += '<div class="assets-grid">' + buildAssetRows(linux) + '</div>';
+          }
+          if (other.length) {
+            downloadsHtml += '<p class="os-section-label" style="' + (windows.length || linux.length ? 'padding-top:8px;' : '') + '">Other</p>';
+            downloadsHtml += '<div class="assets-grid">' + buildAssetRows(other) + '</div>';
+          }
+          if (!windows.length && !linux.length && !other.length) {
+            downloadsHtml = '<p class="no-assets">No downloadable assets for this release.</p>';
+          }
+
+          var notesHtml = latest.body
+            ? simpleMarkdown(latest.body)
+            : '<p class="cl-para" style="color:var(--text-muted);font-style:italic;">No release notes provided.</p>';
+
+          var latestCard = document.createElement('div');
+          latestCard.className = 'release-card';
+          latestCard.innerHTML =
+            '<div class="release-header">' +
+              '<div class="release-header-left">' +
+                '<span class="version-badge">' + escHtml(latest.tag_name) + '</span>' +
+                '<span class="latest-badge">Latest</span>' +
+                '<span class="release-title">' + escHtml(latest.name || latest.tag_name) + '</span>' +
+              '</div>' +
+              '<span class="release-date">' + latestDate + '</span>' +
+            '</div>' +
+            '<div class="latest-body">' +
+              '<div class="latest-downloads">' + downloadsHtml + '</div>' +
+              '<div class="latest-notes">' +
+                '<p class="latest-notes-title"><i class="fas fa-scroll mr-1" aria-hidden="true"></i> What\'s new</p>' +
+                '<div class="notes-content">' + notesHtml + '</div>' +
+                '<a href="' + escHtml(latest.html_url) + '" target="_blank" rel="noopener noreferrer" class="gh-link">' +
+                  'Full release on GitHub <i class="fas fa-external-link-alt" aria-hidden="true"></i>' +
+                '</a>' +
+              '</div>' +
+            '</div>';
+
+          list.appendChild(latestCard);
+
+          // ── Older releases: archive rows linking to GitHub ──
+          if (releases.length > 1) {
+            var archiveWrap = document.createElement('div');
+            archiveWrap.style.marginTop = '40px';
+
+            var archiveHeading = document.createElement('h2');
+            archiveHeading.className = 'archive-section-heading';
+            archiveHeading.textContent = 'Previous Releases';
+            archiveWrap.appendChild(archiveHeading);
+
+            var archiveCard = document.createElement('div');
+            archiveCard.className = 'release-card';
+            archiveCard.style.overflow = 'visible';
+            archiveCard.innerHTML = releases.slice(1).map(function (r) {
+              var date = new Date(r.published_at).toLocaleDateString('en-US', {
+                year: 'numeric', month: 'long', day: 'numeric',
+              });
+              return (
+                '<a href="' + escHtml(r.html_url) + '" target="_blank" rel="noopener noreferrer" class="archive-row">' +
+                  '<div class="archive-row-left">' +
+                    '<span class="version-badge">' + escHtml(r.tag_name) + '</span>' +
+                    '<span class="archive-title">' + escHtml(r.name || r.tag_name) + '</span>' +
+                  '</div>' +
+                  '<div class="archive-row-right">' +
+                    '<span class="release-date">' + date + '</span>' +
+                    '<i class="fab fa-github" aria-hidden="true"></i>' +
+                  '</div>' +
+                '</a>'
+              );
+            }).join('');
+
+            archiveWrap.appendChild(archiveCard);
+            list.appendChild(archiveWrap);
+          }
+        })
+        .catch(function () {
+          document.getElementById('releases-list').innerHTML =
+            '<p class="text-center py-8" style="color:var(--text-muted)">Could not load releases. ' +
+            '<a href="https://github.com/Anooppandikashala/invoiso/releases" target="_blank" rel="noopener noreferrer" class="primary-text underline">View on GitHub →</a></p>';
+        });
+
+    });
+
+    window.addEventListener('scroll', function () {
+      document.querySelector('.navbar').classList.toggle('scrolled', window.scrollY > 50);
+    });
+    </script>
+  </body>
+</html>

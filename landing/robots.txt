@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://anooppandikashala.github.io/invoisoapp/sitemap.xml

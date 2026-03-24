@@ -3,8 +3,8 @@
 
   <h1>Invoiso</h1>
 
-  <p><strong>Free offline invoice software for Windows &amp; Linux</strong></p>
-  <p>Create professional PDF invoices, manage clients and products — entirely offline. No subscription, no cloud, no account needed.</p>
+  <p><strong>Free offline invoice &amp; billing software for Windows &amp; Linux</strong></p>
+  <p>Create professional PDF invoices, manage customers, products and inventory — entirely offline. Built for small businesses, shops and freelancers. No subscription, no cloud, no account needed.</p>
 
   <p>
     <a href="https://github.com/Anooppandikashala/invoiso/releases/latest">
@@ -25,7 +25,7 @@
 
   <br/>
 
-  <img src="landing/assets/images/pngs/invoiso_banner.png" alt="Invoiso — Free Offline Invoice Software" width="100%" />
+  <img src="landing/assets/images/pngs/invoiso_banner.png" alt="Invoiso — Free Offline Invoice &amp; Billing Software for Windows and Linux" width="100%" />
 </div>
 
 ---
@@ -55,11 +55,11 @@
 
 | Dashboard | Create Invoice | Invoice PDF |
 |:---------:|:--------------:|:-----------:|
-| ![Dashboard](landing/assets/images/screenshots/dashboard.webp) | ![Create Invoice](landing/assets/images/screenshots/new_invoice1.webp) | ![Invoice PDF](landing/assets/images/screenshots/invoice_pdf.webp) |
+| ![Dashboard](landing/assets/images/screenshots/dashboard.png) | ![Create Invoice](landing/assets/images/screenshots/create_new_invoice1.png) | ![Invoice PDF](landing/assets/images/screenshots/invoice_pdf_view.png) |
 
 | Classic Template | Modern Template | Minimal Template |
 |:---------------:|:---------------:|:----------------:|
-| ![Classic](landing/assets/images/screenshots/classic_pdf_template.webp) | ![Modern](landing/assets/images/screenshots/modern_pdf_template.webp) | ![Minimal](landing/assets/images/screenshots/minimal_pdf_template.webp) |
+| ![Classic](landing/assets/images/screenshots/template_classic.png) | ![Modern](landing/assets/images/screenshots/template_modern.png) | ![Minimal](landing/assets/images/screenshots/template_minimal.png) |
 
 </div>
 
