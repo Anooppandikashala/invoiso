@@ -286,6 +286,39 @@ jobs:
           VERSION="${VERSION#v}"
           DEB_FILE=$(find dist/$VERSION -name "*.deb" | head -1)
           echo "Found deb: $DEB_FILE"
+
+          # ── Inject libsqlite3.so and create LD_LIBRARY_PATH launcher ──────────
+          # sqflite_common_ffi calls DynamicLibrary.open("libsqlite3.so") which
+          # needs the unversioned symlink.  Ubuntu 24.04 only ships libsqlite3.so.0
+          # in the runtime package; the unversioned name requires libsqlite3-dev.
+          # Bundle it so the app always finds it regardless of what the user has
+          # installed.
+          mkdir -p /tmp/deb_root
+          dpkg-deb -R "$DEB_FILE" /tmp/deb_root
+
+          echo "--- deb contents ---"
+          find /tmp/deb_root -type f | sort
+
+          mkdir -p /tmp/deb_root/usr/share/invoiso/lib
+
+          LIBSQLITE=$(find /usr/lib -name "libsqlite3.so.0.*" | sort -V | tail -1)
+          if [ -z "$LIBSQLITE" ]; then
+            sudo apt-get install -y libsqlite3-dev
+            LIBSQLITE=$(find /usr/lib -name "libsqlite3.so.0.*" | sort -V | tail -1)
+          fi
+          echo "Bundling libsqlite3: $LIBSQLITE"
+          cp "$LIBSQLITE" /tmp/deb_root/usr/share/invoiso/lib/libsqlite3.so
+          echo "Injected libsqlite3.so into deb at /usr/share/invoiso/lib/"
+
+          mkdir -p /tmp/deb_root/usr/bin
+          printf '#!/bin/sh\nexport LD_LIBRARY_PATH=/usr/share/invoiso/lib:$LD_LIBRARY_PATH\nexec /usr/share/invoiso/invoiso "$@"\n' \
+            > /tmp/deb_root/usr/bin/invoiso
+          chmod 755 /tmp/deb_root/usr/bin/invoiso
+          echo "Created LD_LIBRARY_PATH launcher at /usr/bin/invoiso"
+
+          dpkg-deb -b /tmp/deb_root "$DEB_FILE"
+          echo "Repacked with LD_LIBRARY_PATH launcher"
+
           mv "$DEB_FILE" Invoiso-$VERSION-ubuntu24.deb
 
       - name: Upload .deb
@@ -416,6 +449,17 @@ jobs:
 
           # Bundle libgcc_s
           cp /usr/lib/x86_64-linux-gnu/libgcc_s.so.1 AppDir/usr/lib/
+
+          # Bundle libsqlite3.so — sqflite_common_ffi calls
+          # DynamicLibrary.open("libsqlite3.so") (unversioned).  Ubuntu only
+          # ships libsqlite3.so.0 in the runtime package so we bundle it here.
+          LIBSQLITE=$(find /usr/lib -name "libsqlite3.so.0.*" | sort -V | tail -1)
+          if [ -z "$LIBSQLITE" ]; then
+            sudo apt-get install -y libsqlite3-dev
+            LIBSQLITE=$(find /usr/lib -name "libsqlite3.so.0.*" | sort -V | tail -1)
+          fi
+          echo "Bundling libsqlite3: $LIBSQLITE"
+          cp "$LIBSQLITE" AppDir/usr/lib/libsqlite3.so
 
           # Icons
           cp assets/deb/images/logo.png AppDir/usr/share/icons/logo.png
