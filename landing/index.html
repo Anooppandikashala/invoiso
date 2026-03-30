@@ -78,7 +78,7 @@
       "operatingSystem": "Windows, Linux",
       "applicationCategory": "BusinessApplication",
       "description": "Free and offline invoicing software for Windows and Linux. Create professional PDF invoices, manage customers and products without internet access.",
-      "softwareVersion": "3.2.0",
+      "softwareVersion": "3.4.2",
       "releaseNotes": "https://anooppandikashala.github.io/invoisoapp/changelog.html",
       "license": "https://github.com/Anooppandikashala/invoiso/blob/main/LICENSE",
       "featureList": [
@@ -92,6 +92,11 @@
         "Product and inventory management",
         "Multi-currency support (INR, USD, EUR, GBP, JPY, AED, SGD, AUD, CAD)",
         "GST-ready invoices with GSTIN and HSN code fields",
+        "Payment tracking — record partial or full payments against invoices",
+        "Payment status tracking (Unpaid, Partial, Paid) with colour-coded chips",
+        "PDF payment receipts — downloadable receipt for every payment",
+        "Outstanding balance tracking across all invoices",
+        "Role-based access control — admin and standard user roles",
         "Data backup and restore",
         "CSV export",
         "No subscription or fees — free forever",
@@ -234,6 +239,14 @@
           "acceptedAnswer": {
             "@type": "Answer",
             "text": "The Linux AppImage build is fully portable — just download the .AppImage file, mark it executable, and run it with no installation needed. The Windows installer is a standard setup file."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I track payments against an invoice?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. Invoiso has built-in payment tracking. Record partial or full payments against any invoice, and the app automatically calculates the outstanding balance and updates the payment status — Unpaid, Partial, or Paid. You can also download a professional PDF receipt for each payment."
           }
         }
       ]
@@ -422,6 +435,26 @@
               </div>
             </div>
 
+            <div class="feature-item">
+              <div class="feature-icon-box" style="background:rgba(16,185,129,0.14)">
+                <i class="fas fa-money-bill-wave" style="color:#10b981" aria-hidden="true"></i>
+              </div>
+              <div>
+                <h3>Payment Tracking</h3>
+                <p>Record partial or full payments, track outstanding balances, and download a PDF receipt for every payment.</p>
+              </div>
+            </div>
+
+            <div class="feature-item">
+              <div class="feature-icon-box" style="background:rgba(139,92,246,0.14)">
+                <i class="fas fa-user-shield" style="color:#8b5cf6" aria-hidden="true"></i>
+              </div>
+              <div>
+                <h3>Role-Based Access</h3>
+                <p>Admin and standard user roles. Restrict deletes, settings, and backup to admins only.</p>
+              </div>
+            </div>
+
           </div>
           
         </div>
@@ -432,6 +465,8 @@
               <span class="trust-chip"><i class="fas fa-user-slash" aria-hidden="true"></i> No registration</span>
               <span class="trust-chip"><i class="fas fa-file-invoice" aria-hidden="true"></i> GST ready</span>
               <span class="trust-chip"><i class="fas fa-qrcode" aria-hidden="true"></i> UPI QR support</span>
+              <span class="trust-chip"><i class="fas fa-money-bill-wave" aria-hidden="true"></i> Payment tracking</span>
+              <span class="trust-chip"><i class="fas fa-user-shield" aria-hidden="true"></i> Role-based access</span>
             </div>
       </section>
 
@@ -666,6 +701,12 @@
                     <td style="padding:13px 20px;text-align:center;color:#ef4444;font-size:18px" aria-label="No">✗</td>
                     <td style="padding:13px 20px;text-align:center;color:#ef4444;font-size:18px" aria-label="No">✗</td>
                   </tr>
+                  <tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02)">
+                    <td style="padding:13px 20px;color:var(--text)">Payment tracking &amp; receipts</td>
+                    <td style="padding:13px 20px;text-align:center;color:#10b981;font-size:18px" aria-label="Yes">✓</td>
+                    <td style="padding:13px 20px;text-align:center;color:#10b981;font-size:18px" aria-label="Yes">✓</td>
+                    <td style="padding:13px 20px;text-align:center;color:#10b981;font-size:18px" aria-label="Yes">✓</td>
+                  </tr>
                   <tr>
                     <td style="padding:13px 20px;color:var(--text)">PDF invoice templates</td>
                     <td style="padding:13px 20px;text-align:center;color:var(--text)">3 (Classic, Modern, Minimal)</td>
@@ -729,6 +770,16 @@
               </summary>
               <div class="faq-answer">
                 <p>Your data never leaves your device — no cloud, no remote servers. Use <strong>Settings → Backup</strong> to export a database file you can restore at any time.</p>
+              </div>
+            </details>
+
+            <details class="faq-item">
+              <summary class="faq-question">
+                Can I track payments against an invoice?
+                <i class="fas fa-chevron-down faq-chevron" aria-hidden="true"></i>
+              </summary>
+              <div class="faq-answer">
+                <p>Yes. Invoiso has built-in payment tracking. Record partial or full payments against any invoice, and the app automatically calculates the outstanding balance and updates the payment status (Unpaid, Partial, or Paid). You can also download a professional PDF receipt for each payment.</p>
               </div>
             </details>
 
