@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/constants.dart';
 import 'package:invoiso/screens/splash_screen.dart';
-import 'package:screen_retriever/screen_retriever.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -62,10 +61,6 @@ Future<void> main() async {
     );
 
     windowManager.waitUntilReadyToShow(options, () async {
-      final screen = await screenRetriever.getPrimaryDisplay();
-      final screenSize = screen.size;
-      final Size minSize = Size(screenSize.width * 0.75, screenSize.height * 0.75);
-      await windowManager.setMinimumSize(minSize);
       await windowManager.center();
       await windowManager.show();
       await windowManager.focus();

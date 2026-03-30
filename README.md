@@ -71,6 +71,16 @@
 
 ---
 
+## 🔐 Default Login
+
+| Username | Password |
+|----------|----------|
+| `admin`  | `admin`  |
+
+> You will be prompted to change the password on first login.
+
+---
+
 ## ⬇️ Download
 
 | Platform | Format | Link |
