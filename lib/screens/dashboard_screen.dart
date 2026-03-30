@@ -6,7 +6,9 @@ import 'package:invoiso/database/product_service.dart';
 import 'package:invoiso/database/settings_service.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/screens/settings_screen.dart';
+import 'package:invoiso/common.dart';
 import 'package:invoiso/services/invoice_pdf_services.dart';
+import 'package:invoiso/widgets/apply_payment_dialog.dart';
 import 'package:invoiso/utils/session_manager.dart';
 
 import '../models/user.dart';
@@ -25,7 +27,7 @@ class DashboardScreen extends StatefulWidget {
   const DashboardScreen(this.loggedInUser, {super.key});
 
   @override
-  _DashboardScreenState createState() => _DashboardScreenState();
+  State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
@@ -79,7 +81,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
     switch (_selectedIndex) {
       case 0:
-        return DashboardHome(onEditInvoice: editInvoice, onCloneInvoice: cloneInvoice);
+        return DashboardHome(onEditInvoice: editInvoice, onCloneInvoice: cloneInvoice, user: _currentUser);
       case 1:
         return CreateInvoiceScreen(
           invoiceToEdit: invoiceToEdit,
@@ -90,11 +92,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return InvoiceManagementScreen(
           onEditInvoice: editInvoice,
           onCloneInvoice: cloneInvoice,
+          user: _currentUser,
         );
       case 3:
-        return CustomerManagementScreen();
+        return CustomerManagementScreen(user: _currentUser);
       case 4:
-        return ProductManagementScreen();
+        return ProductManagementScreen(user: _currentUser);
       case 5:
         return SettingsScreen(currentUser: _currentUser);
       default:
@@ -222,14 +225,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
 class DashboardHome extends StatefulWidget {
   final Function(Invoice) onEditInvoice;
   final Function(Invoice, String) onCloneInvoice;
+  final User user;
   const DashboardHome({
     required this.onEditInvoice,
     required this.onCloneInvoice,
-    Key? key,
-  }) : super(key: key);
+    required this.user,
+    super.key,
+  });
 
   @override
-  _DashboardHomeState createState() => _DashboardHomeState();
+  State<DashboardHome> createState() => _DashboardHomeState();
 }
 
 class _DashboardHomeState extends State<DashboardHome> {
@@ -422,13 +427,13 @@ class _DashboardHomeState extends State<DashboardHome> {
                                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                                         decoration: BoxDecoration(
                                                           color: invoice.type == 'Invoice'
-                                                              ? Colors.indigo.withOpacity(0.1)
-                                                              : Colors.orange.withOpacity(0.1),
+                                                              ? Colors.indigo.withValues(alpha:0.1)
+                                                              : Colors.orange.withValues(alpha:0.1),
                                                           borderRadius: BorderRadius.circular(6),
                                                           border: Border.all(
                                                             color: invoice.type == 'Invoice'
-                                                                ? Colors.indigo.withOpacity(0.35)
-                                                                : Colors.orange.withOpacity(0.35),
+                                                                ? Colors.indigo.withValues(alpha:0.35)
+                                                                : Colors.orange.withValues(alpha:0.35),
                                                           ),
                                                         ),
                                                         child: Text(
@@ -443,6 +448,10 @@ class _DashboardHomeState extends State<DashboardHome> {
                                                           ),
                                                         ),
                                                       ),
+                                                      if (invoice.type == 'Invoice') ...[
+                                                        const SizedBox(width: 8),
+                                                        _buildPaymentStatusChip(invoice.paymentStatus),
+                                                      ],
                                                     ],
                                                   ),
                                                   const SizedBox(height: 6),
@@ -470,7 +479,7 @@ class _DashboardHomeState extends State<DashboardHome> {
                                             Container(
                                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                               decoration: BoxDecoration(
-                                                color: Colors.purple.withOpacity(0.1),
+                                                color: Colors.purple.withValues(alpha:0.1),
                                                 borderRadius: BorderRadius.circular(8),
                                               ),
                                               child: Text(
@@ -503,8 +512,20 @@ class _DashboardHomeState extends State<DashboardHome> {
                                                 _buildActionButton(Icons.print_outlined, Colors.blueGrey, 'Print',
                                                     () => InvoicePdfServices.generatePDF(context, invoice)),
                                                 const SizedBox(width: 8),
+                                                _buildActionButton(Icons.payments_outlined, Colors.purple, 'Payment',
+                                                    invoice.type == 'Invoice'
+                                                        ? () => showDialog(
+                                                              context: context,
+                                                              barrierDismissible: false,
+                                                              builder: (_) => ApplyPaymentDialog(
+                                                                invoice: invoice,
+                                                                onPaymentRecorded: () => setState(() {}),
+                                                              ),
+                                                            )
+                                                        : null),
+                                                const SizedBox(width: 8),
                                                 _buildActionButton(Icons.delete_outline, Colors.red, 'Delete',
-                                                    () => _showDeleteDialog(invoice)),
+                                                    widget.user.isAdmin() ? () => _showDeleteDialog(invoice) : null),
                                               ],
                                             ),
                                           ],
@@ -531,10 +552,10 @@ class _DashboardHomeState extends State<DashboardHome> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
+            colors: [color.withValues(alpha:0.1), color.withValues(alpha:0.05)],
           ),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.2), width: 1.5),
+          border: Border.all(color: color.withValues(alpha:0.2), width: 1.5),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -548,12 +569,12 @@ class _DashboardHomeState extends State<DashboardHome> {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                     boxShadow: [
-                      BoxShadow(color: color.withOpacity(0.2), blurRadius: 8, offset: const Offset(0, 2)),
+                      BoxShadow(color: color.withValues(alpha:0.2), blurRadius: 8, offset: const Offset(0, 2)),
                     ],
                   ),
                   child: Icon(icon, color: color, size: 28),
                 ),
-                Icon(Icons.trending_up, color: color.withOpacity(0.4), size: 24),
+                Icon(Icons.trending_up, color: color.withValues(alpha:0.4), size: 24),
               ],
             ),
             const SizedBox(height: 20),
@@ -566,7 +587,8 @@ class _DashboardHomeState extends State<DashboardHome> {
     );
   }
 
-  Widget _buildActionButton(IconData icon, Color color, String tooltip, VoidCallback onPressed) {
+  Widget _buildActionButton(IconData icon, Color color, String tooltip, VoidCallback? onPressed) {
+    final effectiveColor = onPressed != null ? color : Colors.grey[400]!;
     return Tooltip(
       message: tooltip,
       child: InkWell(
@@ -575,12 +597,40 @@ class _DashboardHomeState extends State<DashboardHome> {
         child: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: effectiveColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: color.withOpacity(0.2)),
+            border: Border.all(color: effectiveColor.withValues(alpha: 0.2)),
           ),
-          child: Icon(icon, color: color, size: 20),
+          child: Icon(icon, color: effectiveColor, size: 20),
         ),
+      ),
+    );
+  }
+
+  Widget _buildPaymentStatusChip(PaymentStatus status) {
+    final Color color;
+    final String label;
+    switch (status) {
+      case PaymentStatus.paid:
+        color = Colors.green;
+        label = 'Paid';
+      case PaymentStatus.partial:
+        color = Colors.orange;
+        label = 'Partial';
+      case PaymentStatus.unpaid:
+        color = Colors.red;
+        label = 'Unpaid';
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color),
       ),
     );
   }
@@ -636,7 +686,7 @@ class _DashboardHomeState extends State<DashboardHome> {
           children: [
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+              decoration: BoxDecoration(color: Colors.red.withValues(alpha:0.1), borderRadius: BorderRadius.circular(8)),
               child: const Icon(Icons.warning_amber_rounded, color: Colors.red),
             ),
             const SizedBox(width: 12),

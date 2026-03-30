@@ -5,8 +5,10 @@ import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/product.dart';
 import '../models/customer.dart';
 import '../models/invoice_item.dart';
+import '../models/invoice_payment.dart';
 import '../utils/app_logger.dart';
 import 'database_helper.dart';
+import 'payment_service.dart';
 
 const _tag = 'InvoiceService';
 
@@ -173,6 +175,8 @@ class InvoiceService {
       }
     }
 
+    final payments = await PaymentService.getPaymentsForInvoice(id);
+
     return Invoice(
       id: id,
       customer: customer,
@@ -186,6 +190,7 @@ class InvoiceService {
       currencyCode: i['currency_code'] as String? ?? 'INR',
       currencySymbol: i['currency_symbol'] as String? ?? '₹',
       taxMode: TaxModeExtension.fromKey(i['tax_mode'] as String?),
+      payments: payments,
     );
   }
 
@@ -309,10 +314,13 @@ class InvoiceService {
   }
 
   // ─────────────────────────────────────────────
-  // Private helper: build Invoice list from raw DB rows
+  // Private helper: build Invoice list from raw DB rows.
+  // Payments are batch-loaded in a single query (no N+1).
   static Future<List<Invoice>> _buildInvoiceList(
     List<Map<String, dynamic>> invoiceMaps,
   ) async {
+    if (invoiceMaps.isEmpty) return [];
+
     final invoices = <Invoice>[];
 
     for (var map in invoiceMaps) {
@@ -350,6 +358,31 @@ class InvoiceService {
           taxMode: TaxModeExtension.fromKey(map['tax_mode'] as String?),
         ),
       );
+    }
+
+    // Batch-load all payments for this page in one query, then assign
+    final db = await dbHelper.database;
+    final ids = invoices.map((inv) => inv.id).toList();
+    final placeholders = List.filled(ids.length, '?').join(',');
+    final paymentRows = await db.rawQuery(
+      'SELECT * FROM invoice_payments '
+      'WHERE invoice_id IN ($placeholders) '
+      'ORDER BY invoice_id, date_paid ASC, rowid ASC',
+      ids,
+    );
+
+    // Group payments by invoice_id
+    final paymentsByInvoice = <String, List<dynamic>>{};
+    for (final row in paymentRows) {
+      final invId = row['invoice_id'] as String;
+      paymentsByInvoice.putIfAbsent(invId, () => []).add(row);
+    }
+
+    for (final invoice in invoices) {
+      final rows = paymentsByInvoice[invoice.id] ?? [];
+      invoice.payments = rows
+          .map((r) => InvoicePayment.fromMap(r as Map<String, dynamic>))
+          .toList();
     }
 
     return invoices;

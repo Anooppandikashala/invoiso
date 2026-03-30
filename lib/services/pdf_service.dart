@@ -1,16 +1,13 @@
 import 'dart:convert';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:qr/qr.dart';
 import 'package:invoiso/constants.dart';
 import 'package:invoiso/database/company_info_service.dart';
-import 'package:invoiso/database/database_helper.dart';
 import 'package:invoiso/database/settings_service.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/foundation.dart';
 
 import 'package:invoiso/models/invoice.dart';
@@ -617,6 +614,9 @@ class PDFService {
 
   // Enhanced totals with highlighted total - MODIFIED
   static pw.Widget _buildEnhancedTotals(Invoice invoice, PdfColor accentRowColor, PdfColor primaryColor, PdfColor totalHighlightColor, String currencySymbol) {
+    final hasPaid = invoice.amountPaid > 0;
+    final isPaidInFull = invoice.outstandingBalance <= 0;
+
     return pw.Container(
       width: 250,
       decoration: pw.BoxDecoration(
@@ -633,12 +633,14 @@ class PDFService {
             padding: const pw.EdgeInsets.all(8),
             decoration: pw.BoxDecoration(
               color: totalHighlightColor,
-              borderRadius: const pw.BorderRadius.vertical(bottom: pw.Radius.circular(5)),
+              borderRadius: hasPaid
+                  ? pw.BorderRadius.zero
+                  : const pw.BorderRadius.vertical(bottom: pw.Radius.circular(5)),
             ),
             child: pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
-                pw.Text("Total Due",
+                pw.Text("Total",
                     style: pw.TextStyle(
                         fontSize: 12,
                         fontWeight: pw.FontWeight.bold,
@@ -651,6 +653,39 @@ class PDFService {
               ],
             ),
           ),
+          if (hasPaid) ...[
+            _totalRow(
+              "Amount Paid",
+              "$currencySymbol ${invoice.amountPaid.toStringAsFixed(2)}",
+            ),
+            pw.Container(
+              padding: const pw.EdgeInsets.all(8),
+              decoration: pw.BoxDecoration(
+                color: isPaidInFull ? PdfColors.green700 : PdfColors.orange,
+                borderRadius: const pw.BorderRadius.vertical(bottom: pw.Radius.circular(5)),
+              ),
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text(
+                    isPaidInFull ? "PAID IN FULL" : "Amount Due",
+                    style: pw.TextStyle(
+                        fontSize: 12,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.white),
+                  ),
+                  if (!isPaidInFull)
+                    pw.Text(
+                      "$currencySymbol ${invoice.outstandingBalance.toStringAsFixed(2)}",
+                      style: pw.TextStyle(
+                          fontSize: 12,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.white),
+                    ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

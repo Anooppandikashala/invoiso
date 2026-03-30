@@ -1,6 +1,7 @@
 import '../common.dart';
 import 'customer.dart';
 import 'invoice_item.dart';
+import 'invoice_payment.dart';
 
 class Invoice {
   String id;
@@ -13,6 +14,7 @@ class Invoice {
   String currencyCode;
   String currencySymbol;
   TaxMode taxMode;
+  List<InvoicePayment> payments;
 
   Invoice({
     required this.id,
@@ -25,6 +27,7 @@ class Invoice {
     this.currencyCode = 'INR',
     this.currencySymbol = '₹',
     this.taxMode = TaxMode.global,
+    this.payments = const [],
   });
 
   double get subtotal => items.fold(0.0, (sum, item) => sum + item.total);
@@ -44,4 +47,14 @@ class Invoice {
   }
 
   double get total => subtotal + tax;
+
+  double get amountPaid => payments.fold(0.0, (sum, p) => sum + p.amountPaid);
+
+  double get outstandingBalance => (total - amountPaid).clamp(0.0, double.infinity);
+
+  PaymentStatus get paymentStatus {
+    if (amountPaid <= 0) return PaymentStatus.unpaid;
+    if (outstandingBalance <= 0) return PaymentStatus.paid;
+    return PaymentStatus.partial;
+  }
 }

@@ -8,7 +8,7 @@ class PdfSettingsScreen extends StatefulWidget {
   const PdfSettingsScreen({super.key});
 
   @override
-  _PdfSettingsScreenState createState() => _PdfSettingsScreenState();
+  State<PdfSettingsScreen> createState() => _PdfSettingsScreenState();
 }
 
 class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
@@ -196,7 +196,7 @@ class _TemplateListTile extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         decoration: BoxDecoration(
-          color: isPreviewed ? primaryColor.withOpacity(0.08) : Colors.white,
+          color: isPreviewed ? primaryColor.withValues(alpha: 0.08) : Colors.white,
           border: Border.all(
             color: isPreviewed ? primaryColor : Colors.grey[300]!,
             width: isPreviewed ? 2 : 1,
@@ -345,7 +345,7 @@ class _PreviewPanel extends StatelessWidget {
                     ),
                   ),
                   backgroundColor:
-                      Theme.of(context).primaryColor.withOpacity(0.1),
+                      Theme.of(context).primaryColor.withValues(alpha: 0.1),
                   side: BorderSide.none,
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                 ),
@@ -364,7 +364,7 @@ class _PreviewPanel extends StatelessWidget {
                 decoration: BoxDecoration(
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.15),
+                      color: Colors.black.withValues(alpha: 0.15),
                       blurRadius: 24,
                       offset: const Offset(0, 8),
                     ),

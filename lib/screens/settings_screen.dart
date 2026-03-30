@@ -9,7 +9,6 @@ import 'package:invoiso/screens/backup_management_screen.dart';
 import 'package:invoiso/screens/invoice_settings_screen.dart';
 import 'package:invoiso/screens/pdf_settings_screen.dart';
 import 'package:invoiso/screens/user_management_screen.dart';
-import '../database/database_helper.dart';
 import '../models/company_info.dart';
 import '../models/user.dart';
 import 'dart:convert';
@@ -141,6 +140,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final decodedImage = img.decodeImage(bytes);
 
     if (decodedImage == null) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Invalid image file.')),
       );
@@ -149,6 +149,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     // Validate dimensions
     if (decodedImage.width > 512 || decodedImage.height > 512) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Image must be max 512x512 pixels.')),
       );
@@ -181,7 +182,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: primaryColor.withOpacity(0.08),
+                      color: primaryColor.withValues(alpha: 0.08),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(Icons.add_photo_alternate_outlined,
@@ -513,10 +514,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 14, vertical: 8),
                           decoration: BoxDecoration(
-                            color: primaryColor.withOpacity(0.08),
+                            color: primaryColor.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                                color: primaryColor.withOpacity(0.3)),
+                                color: primaryColor.withValues(alpha: 0.3)),
                           ),
                           child: Text(
                             AppConfig.version,
@@ -756,6 +757,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!widget.currentUser.isAdmin()) {
+      return _buildAppInfoScreen();
+    }
+
     return Scaffold(
       body: Row(
         children: [
@@ -795,12 +800,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ],
           ),
           const VerticalDivider(thickness: 1, width: 1),
-          Expanded(child: _buildContent()
-              // Scaffold(
-              //   appBar: AppBar(title: const Text("Settings")),
-              //   body: _buildContent(),
-              //),
-              ),
+          Expanded(child: _buildContent()),
         ],
       ),
     );

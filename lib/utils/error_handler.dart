@@ -67,7 +67,7 @@ class AppError {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: confirmColor.withOpacity(0.1),
+                color: confirmColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(Icons.warning_amber_rounded, color: confirmColor),

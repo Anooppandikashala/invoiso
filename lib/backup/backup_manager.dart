@@ -29,6 +29,7 @@ class BackupManager {
     'settings',
     'invoices',
     'invoice_items',
+    'invoice_payments',
   ];
 
   // Create backup of the entire database
@@ -318,7 +319,7 @@ class BackupManager {
   Future<void> shareBackup(String backupPath) async {
     final file = File(backupPath);
     if (await file.exists()) {
-      await Share.shareXFiles([XFile(backupPath)]);
+      await SharePlus.instance.share(ShareParams(files: [XFile(backupPath)]));
     }
   }
 

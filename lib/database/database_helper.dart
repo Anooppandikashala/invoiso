@@ -14,7 +14,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 8;
+  final dbVersion = 9;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -134,6 +134,23 @@ class DatabaseHelper {
       )
     ''');
 
+    await db.execute('''
+      CREATE TABLE invoice_payments (
+        id               TEXT PRIMARY KEY,
+        invoice_id       TEXT NOT NULL,
+        invoice_number   TEXT NOT NULL,
+        receipt_number   TEXT NOT NULL,
+        amount_paid      REAL NOT NULL,
+        tax_amount_paid  REAL NOT NULL DEFAULT 0,
+        previously_paid  REAL NOT NULL DEFAULT 0,
+        balance_after    REAL NOT NULL,
+        date_paid        TEXT NOT NULL,
+        payment_method   TEXT,
+        notes            TEXT,
+        FOREIGN KEY (invoice_id) REFERENCES invoices(id)
+      )
+    ''');
+
     // Indexes
     await db.execute('CREATE INDEX idx_invoices_customer ON invoices(customer_name)');
     await db.execute('CREATE INDEX idx_invoices_date ON invoices(date)');
@@ -141,6 +158,8 @@ class DatabaseHelper {
     await db.execute('CREATE INDEX idx_customers_name ON customers(name)');
     await db.execute('CREATE INDEX idx_products_name ON products(name)');
     await db.execute('CREATE INDEX idx_invoice_items_invoice ON invoice_items(invoice_id)');
+    await db.execute('CREATE INDEX idx_payments_invoice ON invoice_payments(invoice_id)');
+    await db.execute('CREATE INDEX idx_payments_date ON invoice_payments(date_paid)');
 
     // Insert dummy company info
     await db.insert('company_info', {
@@ -265,6 +284,33 @@ class DatabaseHelper {
         );
         await db.execute(
           'CREATE INDEX IF NOT EXISTS idx_invoice_items_invoice ON invoice_items(invoice_id)',
+        );
+      });
+    }
+
+    if (oldVersion < 9) {
+      await _runMigrationStep(db, 9, 'create_invoice_payments_table', () async {
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS invoice_payments (
+            id               TEXT PRIMARY KEY,
+            invoice_id       TEXT NOT NULL,
+            invoice_number   TEXT NOT NULL,
+            receipt_number   TEXT NOT NULL,
+            amount_paid      REAL NOT NULL,
+            tax_amount_paid  REAL NOT NULL DEFAULT 0,
+            previously_paid  REAL NOT NULL DEFAULT 0,
+            balance_after    REAL NOT NULL,
+            date_paid        TEXT NOT NULL,
+            payment_method   TEXT,
+            notes            TEXT,
+            FOREIGN KEY (invoice_id) REFERENCES invoices(id)
+          )
+        ''');
+        await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_payments_invoice ON invoice_payments(invoice_id)',
+        );
+        await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_payments_date ON invoice_payments(date_paid)',
         );
       });
     }

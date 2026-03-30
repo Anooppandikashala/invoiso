@@ -2,23 +2,28 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:invoiso/common.dart';
 import 'package:invoiso/constants.dart';
 import 'package:invoiso/database/invoice_service.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/providers/invoice_provider.dart';
 import 'package:invoiso/services/export_service.dart';
 import 'package:invoiso/services/invoice_pdf_services.dart';
+import 'package:invoiso/widgets/apply_payment_dialog.dart';
 import 'package:invoiso/utils/error_handler.dart';
 import 'package:open_file/open_file.dart';
+import 'package:invoiso/models/user.dart';
 
 class InvoiceManagementScreen extends ConsumerStatefulWidget {
   final Function(Invoice) onEditInvoice;
   final Function(Invoice, String) onCloneInvoice;
+  final User user;
 
   const InvoiceManagementScreen({
     super.key,
     required this.onEditInvoice,
     required this.onCloneInvoice,
+    required this.user,
   });
 
   @override
@@ -33,6 +38,7 @@ class _InvoiceManagementScreenState
   String _searchQuery = '';
   bool _isLoadingPage = false;
   bool _isBulkLoading = false;
+  bool _hidePaid = false;
   int _totalCount = 0;
   List<Invoice> _pageInvoices = [];
   final Set<String> _selectedIds = {};
@@ -45,13 +51,15 @@ class _InvoiceManagementScreenState
   static const Map<int, TableColumnWidth> _columnWidths = {
     0: FixedColumnWidth(48),   // checkbox
     1: FixedColumnWidth(56),   // #
-    2: FlexColumnWidth(1.5),   // Invoice ID
-    3: FlexColumnWidth(1.2),   // Customer
-    4: FlexColumnWidth(1.0),   // Date
+    2: FlexColumnWidth(0.9),   // Invoice ID
+    3: FlexColumnWidth(1.0),   // Customer
+    4: FixedColumnWidth(100),  // Date
     5: FlexColumnWidth(0.8),   // Type
-    6: FixedColumnWidth(80),   // Items (widened so "Items" doesn't wrap)
-    7: FlexColumnWidth(1.2),   // Total
-    8: FixedColumnWidth(320),  // Actions
+    6: FixedColumnWidth(80),   // Items
+    7: FlexColumnWidth(1.0),   // Total
+    8: FixedColumnWidth(90),   // Status  ← payment status chip
+    9: FlexColumnWidth(1.0),   // Outstanding ← outstanding balance
+    10: FixedColumnWidth(360), // Actions
   };
 
   // ─── Lifecycle ─────────────────────────────────────────────────────────────
@@ -87,8 +95,15 @@ class _InvoiceManagementScreenState
         InvoiceService.getInvoiceCount(searchQuery: _searchQuery),
       ]);
       if (mounted) {
+        var pageInvoices = results[0] as List<Invoice>;
+        if (_hidePaid) {
+          // Keep Quotations; for Invoices only keep those with an outstanding balance
+          pageInvoices = pageInvoices
+              .where((inv) => inv.type != 'Invoice' || inv.outstandingBalance > 0)
+              .toList();
+        }
         setState(() {
-          _pageInvoices = results[0] as List<Invoice>;
+          _pageInvoices = pageInvoices;
           _totalCount = results[1] as int;
           _isLoadingPage = false;
         });
@@ -378,11 +393,12 @@ class _InvoiceManagementScreenState
             onPressed: _exportCsv,
             tooltip: 'Export all to CSV',
           ),
-          IconButton(
-            icon: const Icon(Icons.delete_sweep_outlined),
-            onPressed: _showTrashDialog,
-            tooltip: 'Trash',
-          ),
+          if (widget.user.isAdmin())
+            IconButton(
+              icon: const Icon(Icons.delete_sweep_outlined),
+              onPressed: _showTrashDialog,
+              tooltip: 'Trash',
+            ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
@@ -476,6 +492,53 @@ class _InvoiceManagementScreenState
                         Colors.green,
                         Icons.pages,
                       ),
+                      const SizedBox(width: 16),
+                      // Hide Paid toggle
+                      InkWell(
+                        onTap: () {
+                          setState(() {
+                            _hidePaid = !_hidePaid;
+                            _currentPage = 0;
+                          });
+                          _loadPage();
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: _hidePaid
+                                ? Colors.orange.withValues(alpha:0.12)
+                                : Colors.grey.withValues(alpha:0.08),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: _hidePaid
+                                  ? Colors.orange.withValues(alpha:0.4)
+                                  : Colors.grey[300]!,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _hidePaid
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                                size: 18,
+                                color: _hidePaid ? Colors.orange[700] : Colors.grey[600],
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Hide Paid',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color: _hidePaid ? Colors.orange[700] : Colors.grey[700],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -522,7 +585,7 @@ class _InvoiceManagementScreenState
                           ),
                         )
                       : SizedBox(
-                          width: MediaQuery.sizeOf(context).width * 0.75,
+                          width: MediaQuery.sizeOf(context).width * 0.95,
                           child: SingleChildScrollView(
                             padding:
                                 const EdgeInsets.symmetric(horizontal: 24),
@@ -544,7 +607,7 @@ class _InvoiceManagementScreenState
                                           Theme.of(context).primaryColor,
                                           Theme.of(context)
                                               .primaryColor
-                                              .withOpacity(0.8),
+                                              .withValues(alpha:0.8),
                                         ],
                                       ),
                                       borderRadius: const BorderRadius.only(
@@ -584,6 +647,8 @@ class _InvoiceManagementScreenState
                                             _buildTableHeader('Type'),
                                             _buildTableHeader('Items'),
                                             _buildTableHeader('Total'),
+                                            _buildTableHeader('Status'),
+                                            _buildTableHeader('Outstanding'),
                                             _buildTableHeader('Actions'),
                                           ],
                                         ),
@@ -649,12 +714,12 @@ class _InvoiceManagementScreenState
                           decoration: BoxDecoration(
                             color: Theme.of(context)
                                 .primaryColor
-                                .withOpacity(0.1),
+                                .withValues(alpha:0.1),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
                                 color: Theme.of(context)
                                     .primaryColor
-                                    .withOpacity(0.3)),
+                                    .withValues(alpha:0.3)),
                           ),
                           child: Text(
                             'Page ${_currentPage + 1} of ${_totalPages > 0 ? _totalPages : 1}',
@@ -761,12 +826,13 @@ class _InvoiceManagementScreenState
           ),
           const SizedBox(width: 8),
 
-          _buildBulkButton(
-            icon: Icons.delete_outline,
-            label: 'Move to Trash',
-            color: Colors.red[300]!,
-            onPressed: _isBulkLoading ? null : _bulkSoftDelete,
-          ),
+          if (widget.user.isAdmin())
+            _buildBulkButton(
+              icon: Icons.delete_outline,
+              label: 'Move to Trash',
+              color: Colors.red[300]!,
+              onPressed: _isBulkLoading ? null : _bulkSoftDelete,
+            ),
         ],
       ),
     );
@@ -788,7 +854,7 @@ class _InvoiceManagementScreenState
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
           side: BorderSide(
-              color: onPressed != null ? c.withOpacity(0.5) : Colors.white24),
+              color: onPressed != null ? c.withValues(alpha:0.5) : Colors.white24),
         ),
       ),
       icon: Icon(icon, size: 18),
@@ -801,16 +867,14 @@ class _InvoiceManagementScreenState
   Widget _buildTableHeader(String text) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-      child: Center(
-        child: Text(
-          text,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
-          ),
+      child: Text(
+        text,
+        textAlign: TextAlign.left,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.5,
         ),
       ),
     );
@@ -821,7 +885,7 @@ class _InvoiceManagementScreenState
     return Container(
       decoration: BoxDecoration(
         color: isSelected
-            ? Theme.of(context).primaryColor.withOpacity(0.08)
+            ? Theme.of(context).primaryColor.withValues(alpha:0.08)
             : (isEven ? Colors.grey[50] : Colors.white),
         border: Border(
           bottom: BorderSide(color: Colors.grey[200]!, width: 1),
@@ -847,23 +911,21 @@ class _InvoiceManagementScreenState
                 ),
               ),
               _buildTableCell(
-                Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .primaryColor
-                          .withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      '$index',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).primaryColor,
-                      ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context)
+                        .primaryColor
+                        .withValues(alpha:0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    '$index',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).primaryColor,
                     ),
                   ),
                 ),
@@ -886,33 +948,31 @@ class _InvoiceManagementScreenState
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    _CustomerInfoButton(customer: invoice.customer),
                   ],
                 ),
               ),
               _buildTableCell(
-                Center(
-                  child: Text(invoice.date.toString().split(' ')[0],
-                      style: const TextStyle(fontSize: 13)),
-                ),
+                Text(invoice.date.toString().split(' ')[0],
+                    style: const TextStyle(fontSize: 13)),
               ),
               // Type badge
               _buildTableCell(
-                Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: invoice.type == 'Invoice'
+                        ? Colors.indigo.withValues(alpha:0.1)
+                        : Colors.orange.withValues(alpha:0.1),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(
                       color: invoice.type == 'Invoice'
-                          ? Colors.indigo.withOpacity(0.1)
-                          : Colors.orange.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(
-                        color: invoice.type == 'Invoice'
-                            ? Colors.indigo.withOpacity(0.35)
-                            : Colors.orange.withOpacity(0.35),
-                      ),
+                          ? Colors.indigo.withValues(alpha:0.35)
+                          : Colors.orange.withValues(alpha:0.35),
                     ),
-                    child: Text(
+                  ),
+                  child: Text(
                       invoice.type,
                       style: TextStyle(
                         fontSize: 11,
@@ -924,25 +984,22 @@ class _InvoiceManagementScreenState
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                ),
               ),
               // Items count
               _buildTableCell(
-                Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      '${invoice.items.length}',
-                      style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.blue[700]),
-                    ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withValues(alpha:0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    '${invoice.items.length}',
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.blue[700]),
                   ),
                 ),
               ),
@@ -954,6 +1011,27 @@ class _InvoiceManagementScreenState
                       fontWeight: FontWeight.bold,
                       color: Colors.green),
                 ),
+              ),
+              // Payment status chip (only meaningful for Invoices)
+              _buildTableCell(
+                invoice.type == 'Invoice'
+                    ? _buildPaymentStatusChip(invoice.paymentStatus)
+                    : Text('—', style: TextStyle(color: Colors.grey[400])),
+              ),
+              // Outstanding balance
+              _buildTableCell(
+                invoice.type != 'Invoice' || invoice.paymentStatus == PaymentStatus.paid
+                    ? Text('—', style: TextStyle(color: Colors.grey[400]))
+                    : Text(
+                        '${invoice.currencySymbol} ${invoice.outstandingBalance.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: invoice.paymentStatus == PaymentStatus.partial
+                              ? Colors.orange[700]
+                              : Colors.red[700],
+                        ),
+                      ),
               ),
               _buildTableCell(
                 Row(
@@ -967,6 +1045,17 @@ class _InvoiceManagementScreenState
                     _buildActionButton(
                         Icons.edit_outlined, Colors.blue, 'Edit',
                         () => widget.onEditInvoice(invoice)),
+                    const SizedBox(width: 4),
+                    _buildActionButton(
+                      Icons.payments_outlined,
+                      invoice.paymentStatus == PaymentStatus.paid
+                          ? Colors.green
+                          : Colors.purple,
+                      'Apply Payment',
+                      invoice.type == 'Invoice'
+                          ? () => _showApplyPaymentDialog(invoice)
+                          : null,
+                    ),
                     const SizedBox(width: 4),
                     _buildActionButton(
                         Icons.copy_all_outlined, Colors.teal, 'Duplicate',
@@ -986,7 +1075,7 @@ class _InvoiceManagementScreenState
                     const SizedBox(width: 4),
                     _buildActionButton(
                         Icons.delete_outline, Colors.red, 'Move to Trash',
-                        () => _softDelete(invoice)),
+                        widget.user.isAdmin() ? () => _softDelete(invoice) : null),
                   ],
                 ),
               ),
@@ -1009,9 +1098,9 @@ class _InvoiceManagementScreenState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha:0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha:0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1039,7 +1128,8 @@ class _InvoiceManagementScreenState
   }
 
   Widget _buildActionButton(
-      IconData icon, Color color, String tooltip, VoidCallback onPressed) {
+      IconData icon, Color color, String tooltip, VoidCallback? onPressed) {
+    final effectiveColor = onPressed != null ? color : Colors.grey[400]!;
     return Tooltip(
       message: tooltip,
       child: InkWell(
@@ -1048,12 +1138,54 @@ class _InvoiceManagementScreenState
         child: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: effectiveColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: color.withOpacity(0.2)),
+            border: Border.all(color: effectiveColor.withValues(alpha: 0.2)),
           ),
-          child: Icon(icon, color: color, size: 18),
+          child: Icon(icon, color: effectiveColor, size: 18),
         ),
+      ),
+    );
+  }
+
+  Widget _buildPaymentStatusChip(PaymentStatus status) {
+    final Color color;
+    final String label;
+    switch (status) {
+      case PaymentStatus.paid:
+        color = Colors.green;
+        label = 'Paid';
+      case PaymentStatus.partial:
+        color = Colors.orange;
+        label = 'Partial';
+      case PaymentStatus.unpaid:
+        color = Colors.red;
+        label = 'Unpaid';
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha:0.1),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withValues(alpha:0.4)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color),
+      ),
+    );
+  }
+
+  Future<void> _showApplyPaymentDialog(Invoice invoice) async {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => ApplyPaymentDialog(
+        invoice: invoice,
+        onPaymentRecorded: () {
+          ref.read(invoicesProvider.notifier).refresh();
+          _loadPage();
+        },
       ),
     );
   }
@@ -1062,6 +1194,7 @@ class _InvoiceManagementScreenState
 // Silence the unawaited future lint for the showDialog call used to drive the
 // progress overlay (we close it programmatically via Navigator.pop).
 void unawaited(Future<void> future) {}
+
 
 // ─────────────────────────────────────────────
 // Trash Dialog
@@ -1126,7 +1259,7 @@ class _TrashDialogState extends State<_TrashDialog> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
+                    color: Colors.red.withValues(alpha:0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(Icons.delete_sweep, color: Colors.red),
@@ -1201,6 +1334,164 @@ class _TrashDialogState extends State<_TrashDialog> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Customer info button — tapping the ⓘ icon shows a clean dialog with
+// the customer's full contact details.
+class _CustomerInfoButton extends StatelessWidget {
+  final dynamic customer;
+
+  const _CustomerInfoButton({required this.customer});
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: 'View contact details',
+      child: InkWell(
+        onTap: () => _showDialog(context),
+        borderRadius: BorderRadius.circular(4),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          child: Icon(Icons.info_outline, size: 15, color: Colors.indigo[400]),
+        ),
+      ),
+    );
+  }
+
+  void _showDialog(BuildContext context) {
+    final c = customer;
+    final hasAny = (c.phone as String).isNotEmpty ||
+        (c.email as String).isNotEmpty ||
+        (c.address as String).isNotEmpty ||
+        (c.gstin as String).isNotEmpty;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        child: SizedBox(
+          width: 340,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.fromLTRB(20, 16, 12, 16),
+                decoration: BoxDecoration(
+                  color: Colors.indigo,
+                  borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(14)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.person, color: Colors.white, size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        c.name,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                      onPressed: () => Navigator.pop(ctx),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Contact details body
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (!hasAny)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Text(
+                          'No contact details available.',
+                          style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                        ),
+                      ),
+                    if ((c.phone as String).isNotEmpty)
+                      _infoRow(Icons.phone_outlined, 'Phone', c.phone, Colors.green),
+                    if ((c.email as String).isNotEmpty)
+                      _infoRow(Icons.email_outlined, 'Email', c.email, Colors.blue),
+                    if ((c.address as String).isNotEmpty)
+                      _infoRow(Icons.location_on_outlined, 'Address', c.address, Colors.orange),
+                    if ((c.gstin as String).isNotEmpty)
+                      _infoRow(Icons.badge_outlined, 'GSTIN', c.gstin, Colors.purple),
+                  ],
+                ),
+              ),
+
+              // Close button
+              Align(
+                alignment: Alignment.centerRight,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 4, 16, 12),
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('Close'),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _infoRow(IconData icon, String label, String value, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Icon(icon, size: 15, color: color),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey[500],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(fontSize: 13, color: Colors.black87),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

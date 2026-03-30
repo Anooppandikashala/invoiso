@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:invoiso/common.dart';
 
 import '../constants.dart';
 import '../database/settings_service.dart';
 
 class InvoiceSettingsScreen extends StatefulWidget {
-  const InvoiceSettingsScreen({Key? key}) : super(key: key);
+  const InvoiceSettingsScreen({super.key});
 
   @override
   State<InvoiceSettingsScreen> createState() => _InvoiceSettingsScreenState();
@@ -92,7 +91,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
             child: Card(
               elevation: 4,
               color: Colors.white,
-              shadowColor: Colors.black.withOpacity(0.1),
+              shadowColor: Colors.black.withValues(alpha:0.1),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -326,7 +325,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                           foregroundColor: Colors.white,
                           elevation: 2,
                           shadowColor:
-                          Theme.of(context).primaryColor.withOpacity(0.4),
+                          Theme.of(context).primaryColor.withValues(alpha:0.4),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                           ),
