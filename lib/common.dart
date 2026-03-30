@@ -108,6 +108,12 @@ enum LogoPosition
   right
 }
 
+enum PaymentStatus {
+  unpaid,
+  partial,
+  paid,
+}
+
 extension LogoPositionExtension on LogoPosition
 {
   String get key {

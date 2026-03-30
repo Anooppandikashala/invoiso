@@ -5,6 +5,7 @@ class Product {
   double price;
   int stock;
   String hsncode;
+  // ignore: non_constant_identifier_names
   int tax_rate;
 
   Product({
@@ -14,6 +15,7 @@ class Product {
     required this.price,
     required this.stock,
     required this.hsncode,
+    // ignore: non_constant_identifier_names
     required this.tax_rate
   });
 

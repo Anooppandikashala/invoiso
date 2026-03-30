@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:invoiso/constants.dart';
 import 'package:invoiso/database/customer_service.dart';
-import 'package:invoiso/database/database_helper.dart';
 import 'package:invoiso/models/customer.dart';
+import 'package:invoiso/models/user.dart';
 import 'package:uuid/uuid.dart';
 import 'package:csv/csv.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -12,10 +12,11 @@ import 'dart:io';
 import 'package:share_plus/share_plus.dart';
 
 class CustomerManagementScreen extends StatefulWidget {
-  const CustomerManagementScreen({super.key});
+  final User user;
+  const CustomerManagementScreen({super.key, required this.user});
 
   @override
-  _CustomerManagementScreenState createState() =>
+  State<CustomerManagementScreen> createState() =>
       _CustomerManagementScreenState();
 }
 
@@ -176,11 +177,11 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
 
   void _showCustomerDialog(Customer customer,bool isEdit) {
     //final isEdit = customer != null;
-    final nameCtrl = TextEditingController(text: customer?.name ?? '');
-    final emailCtrl = TextEditingController(text: customer?.email ?? '');
-    final phoneCtrl = TextEditingController(text: customer?.phone ?? '');
-    final addressCtrl = TextEditingController(text: customer?.address ?? '');
-    final gstinCtrl = TextEditingController(text: customer?.gstin ?? '');
+    final nameCtrl = TextEditingController(text: customer.name);
+    final emailCtrl = TextEditingController(text: customer.email);
+    final phoneCtrl = TextEditingController(text: customer.phone);
+    final addressCtrl = TextEditingController(text: customer.address);
+    final gstinCtrl = TextEditingController(text: customer.gstin);
     final dialogFormKey = GlobalKey<FormState>();
 
     showDialog(
@@ -340,7 +341,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
       final dir = await getTemporaryDirectory();
       final file = File('${dir.path}/customers.csv');
       await file.writeAsString(csv);
-      await Share.shareXFiles([XFile(file.path)], text: 'Customer List (CSV)');
+      await SharePlus.instance.share(ShareParams(files: [XFile(file.path)], text: 'Customer List (CSV)'));
       _showSnackBar('CSV exported successfully!');
     } catch (e) {
       _showSnackBar('Error exporting CSV: $e', isError: true);
@@ -353,7 +354,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
       pdf.addPage(
         pw.Page(
           build: (pw.Context context) {
-            return pw.Table.fromTextArray(
+            return pw.TableHelper.fromTextArray(
               headers: ['Name', 'Email', 'Phone', 'GSTIN', 'Address'],
               data: _filteredCustomers
                   .map((c) => [c.name, c.email, c.phone, c.gstin, c.address])
@@ -366,7 +367,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
       final dir = await getTemporaryDirectory();
       final file = File('${dir.path}/customers.pdf');
       await file.writeAsBytes(await pdf.save());
-      await Share.shareXFiles([XFile(file.path)], text: 'Customer List (PDF)');
+      await SharePlus.instance.share(ShareParams(files: [XFile(file.path)], text: 'Customer List (PDF)'));
       _showSnackBar('PDF exported successfully!');
     } catch (e) {
       _showSnackBar('Error exporting PDF: $e', isError: true);
@@ -426,7 +427,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
               gradient: LinearGradient(
                 colors: [
                   Theme.of(context).primaryColor,
-                  Theme.of(context).primaryColor.withOpacity(0.8),
+                  Theme.of(context).primaryColor.withValues(alpha: 0.8),
                 ],
               ),
               borderRadius: const BorderRadius.only(
@@ -570,28 +571,6 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
     );
   }
 
-  Widget _buildCustomerTable1(List<Customer> customers, int totalPages) {
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Column(
-        children: [
-          _buildTableHeader(),
-          _buildSearchAndSort(),
-          Expanded(
-            child: customers.isEmpty
-                ? _buildEmptyState()
-                : SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: _buildDataTable(customers),
-            ),
-          ),
-          _buildPaginationControls(totalPages),
-        ],
-      ),
-    );
-  }
-
   Widget _buildTableHeader() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -599,7 +578,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
         gradient: LinearGradient(
           colors: [
             Theme.of(context).primaryColor,
-            Theme.of(context).primaryColor.withOpacity(0.8),
+            Theme.of(context).primaryColor.withValues(alpha: 0.8),
           ],
         ),
         borderRadius: const BorderRadius.only(
@@ -631,7 +610,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
                 icon: const Icon(Icons.file_download),
                 tooltip: 'Export CSV',
                 style: IconButton.styleFrom(
-                  backgroundColor: Colors.white.withOpacity(0.2),
+                  backgroundColor: Colors.white.withValues(alpha: 0.2),
                 ),
               ),
               const SizedBox(width: 8),
@@ -640,7 +619,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
                 icon: const Icon(Icons.picture_as_pdf),
                 tooltip: 'Export PDF',
                 style: IconButton.styleFrom(
-                  backgroundColor: Colors.white.withOpacity(0.2),
+                  backgroundColor: Colors.white.withValues(alpha: 0.2),
                 ),
               ),
             ],
@@ -738,7 +717,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
   Widget _buildDataTable(List<Customer> customers) {
     return DataTable(
       headingRowColor: WidgetStateProperty.all(
-        Theme.of(context).primaryColor.withOpacity(0.1),
+        Theme.of(context).primaryColor.withValues(alpha: 0.1),
       ),
       dataRowMinHeight: 56,
       dataRowMaxHeight: 72,
@@ -791,12 +770,13 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
                     onPressed: () => _showCustomerDialog(customer,true),
                     tooltip: 'Edit',
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.delete, size: 20),
-                    color: Colors.red,
-                    onPressed: () => _confirmDelete(customer),
-                    tooltip: 'Delete',
-                  ),
+                  if (widget.user.isAdmin())
+                    IconButton(
+                      icon: const Icon(Icons.delete, size: 20),
+                      color: Colors.red,
+                      onPressed: () => _confirmDelete(customer),
+                      tooltip: 'Delete',
+                    ),
                 ],
               ),
             ),
@@ -833,7 +813,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(

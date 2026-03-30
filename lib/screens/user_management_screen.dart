@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:invoiso/database/user_service.dart';
 import '../constants.dart';
 import '../models/user.dart';
-import '../database/database_helper.dart';
 import '../utils/password_utils.dart';
 
 class UserManagementScreen extends StatefulWidget {
@@ -102,9 +101,11 @@ class _UserManagementScreenState extends State<UserManagementScreen>
 
         if (_editingUserId == null) {
           await UserService.insertUser(user);
+          if (!mounted) return;
           _showSnackBar('User added successfully', Colors.green);
         } else {
           await UserService.updateUser(user);
+          if (!mounted) return;
           _showSnackBar(
               'User updated successfully', Theme.of(context).primaryColor);
         }
@@ -157,7 +158,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
               title: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                 ),
                 child: Row(
@@ -350,6 +351,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       if (user.password == PasswordUtils.hash(oldPasswordController.text)) {
                         await UserService.updatePassword(
                             userId, newPasswordController.text);
+                        if (!context.mounted) return;
                         Navigator.of(context).pop();
                         _showSnackBar(
                             'Password changed successfully', Colors.green);
@@ -465,6 +467,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
               label: const Text('Delete', style: TextStyle(fontSize: 15)),
               onPressed: () async {
                 await UserService.deleteUserSafely(user.id);
+                if (!context.mounted) return;
                 Navigator.of(context).pop();
                 _showSnackBar('User deleted successfully', Colors.orange);
                 _loadUsers();
@@ -516,7 +519,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: (isAdmin ? Colors.purple : Colors.blue).withOpacity(0.3),
+            color: (isAdmin ? Colors.purple : Colors.blue).withValues(alpha: 0.3),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -559,7 +562,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  Theme.of(context).primaryColor.withOpacity(0.8),
+                  Theme.of(context).primaryColor.withValues(alpha: 0.8),
                   Theme.of(context).primaryColor,
                 ],
               ),
@@ -571,7 +574,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                   ),
                   child: Icon(
@@ -700,7 +703,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               Container(
                                 padding: const EdgeInsets.all(6),
                                 decoration: BoxDecoration(
-                                  color: Colors.purple.withOpacity(0.1),
+                                  color: Colors.purple.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: const Icon(
@@ -722,7 +725,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               Container(
                                 padding: const EdgeInsets.all(6),
                                 decoration: BoxDecoration(
-                                  color: Colors.blue.withOpacity(0.1),
+                                  color: Colors.blue.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: const Icon(Icons.person,
@@ -744,7 +747,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                               Container(
                                 padding: const EdgeInsets.all(6),
                                 decoration: BoxDecoration(
-                                  color: Colors.blue.withOpacity(0.1),
+                                  color: Colors.blue.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: const Icon(Icons.person,
@@ -851,7 +854,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  Theme.of(context).primaryColor.withOpacity(0.8),
+                  Theme.of(context).primaryColor.withValues(alpha: 0.8),
                   Theme.of(context).primaryColor,
                 ],
               ),
@@ -865,7 +868,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                       ),
                       child: const Icon(Icons.people,
@@ -889,7 +892,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       hintText: 'Search users...',
-                      hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+                      hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
                       prefixIcon:
                       const Icon(Icons.search, color: Colors.white),
                       suffixIcon: _searchController.text.isNotEmpty
@@ -901,7 +904,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       )
                           : null,
                       filled: true,
-                      fillColor: Colors.white.withOpacity(0.2),
+                      fillColor: Colors.white.withValues(alpha: 0.2),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                         borderSide: BorderSide.none,
@@ -978,7 +981,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       color: isEditing
                           ? Theme.of(context)
                           .primaryColor
-                          .withOpacity(0.1)
+                          .withValues(alpha: 0.1)
                           : Colors.white,
                       borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                       border: Border.all(
@@ -992,7 +995,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         BoxShadow(
                           color: Theme.of(context)
                               .primaryColor
-                              .withOpacity(0.2),
+                              .withValues(alpha: 0.2),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -1025,7 +1028,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                                 color: (isAdmin
                                     ? Colors.purple
                                     : Colors.blue)
-                                    .withOpacity(0.3),
+                                    .withValues(alpha: 0.3),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -1141,7 +1144,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
       ),
       child: IconButton(
@@ -1285,9 +1288,11 @@ class _UserManagementScreenState1 extends State<UserManagementScreen1>
 
       if (_editingUserId == null) {
         await UserService.insertUser(user);
+        if (!mounted) return;
         _showSnackBar('User added successfully', Colors.green);
       } else {
         await UserService.updateUser(user);
+        if (!mounted) return;
         _showSnackBar('User updated successfully', Theme.of(context).primaryColor);
       }
 
@@ -1466,6 +1471,7 @@ class _UserManagementScreenState1 extends State<UserManagementScreen1>
                       final user = _users.firstWhere((u) => u.id == userId);
                       if (user.password == PasswordUtils.hash(oldPasswordController.text)) {
                         await UserService.updatePassword(userId, newPasswordController.text);
+                        if (!context.mounted) return;
                         Navigator.of(context).pop();
                         _showSnackBar('Password changed successfully', Colors.green);
                         _loadUsers();
@@ -1515,6 +1521,7 @@ class _UserManagementScreenState1 extends State<UserManagementScreen1>
               ),
               onPressed: () async {
                 await UserService.deleteUserSafely(user.id);
+                if (!context.mounted) return;
                 Navigator.of(context).pop();
                 _showSnackBar('User deleted successfully', Colors.orange);
                 _loadUsers();

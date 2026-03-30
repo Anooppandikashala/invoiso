@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:invoiso/common.dart';
 import 'package:invoiso/constants.dart';
 import 'package:invoiso/database/product_service.dart';
 import 'package:invoiso/database/settings_service.dart';
@@ -13,12 +12,14 @@ import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
 
 import '../models/product.dart';
+import '../models/user.dart';
 
 class ProductManagementScreen extends StatefulWidget {
-  const ProductManagementScreen({super.key});
+  final User user;
+  const ProductManagementScreen({super.key, required this.user});
 
   @override
-  _ProductManagementScreenState createState() =>
+  State<ProductManagementScreen> createState() =>
       _ProductManagementScreenState();
 }
 
@@ -163,16 +164,16 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
 
   void _showProductDialog(Product product, bool isEdit) {
     //final isEdit = product != null;
-    final nameCtrl = TextEditingController(text: product?.name ?? '');
+    final nameCtrl = TextEditingController(text: product.name);
     final descriptionCtrl =
-        TextEditingController(text: product?.description ?? '');
+        TextEditingController(text: product.description);
     final priceCtrl =
-        TextEditingController(text: product?.price.toString() ?? '');
+        TextEditingController(text: product.price.toString());
     final stockCtrl =
-        TextEditingController(text: product?.stock.toString() ?? '');
-    final hsnCodeCtrl = TextEditingController(text: product?.hsncode ?? '');
+        TextEditingController(text: product.stock.toString());
+    final hsnCodeCtrl = TextEditingController(text: product.hsncode);
     final taxRateCtrl =
-        TextEditingController(text: product?.tax_rate.toString() ?? '18');
+        TextEditingController(text: product.tax_rate.toString());
     final dialogFormKey = GlobalKey<FormState>();
 
     showDialog(
@@ -375,7 +376,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
       final pdf = pw.Document();
       pdf.addPage(
         pw.Page(
-          build: (context) => pw.Table.fromTextArray(
+          build: (context) => pw.TableHelper.fromTextArray(
             context: context,
             data: [
               ['Name', 'HSN Code', 'Description', 'Price', 'Tax Rate', 'Stock'],
@@ -433,8 +434,6 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
   @override
   Widget build(BuildContext context) {
     final totalPages = (_totalProducts / _pageSize).ceil();
-    final start = _currentPage * _pageSize;
-    final end = (start + _pageSize).clamp(0, _totalProducts);
 
     return Scaffold(
       appBar: AppBar(
@@ -482,7 +481,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
               gradient: LinearGradient(
                 colors: [
                   Theme.of(context).primaryColor,
-                  Theme.of(context).primaryColor.withOpacity(0.8),
+                  Theme.of(context).primaryColor.withValues(alpha: 0.8),
                 ],
               ),
               borderRadius: const BorderRadius.only(
@@ -655,7 +654,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
         gradient: LinearGradient(
           colors: [
             Theme.of(context).primaryColor,
-            Theme.of(context).primaryColor.withOpacity(0.8),
+            Theme.of(context).primaryColor.withValues(alpha: 0.8),
           ],
         ),
         borderRadius: const BorderRadius.only(
@@ -687,7 +686,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                 icon: const Icon(Icons.file_download),
                 tooltip: 'Export CSV',
                 style: IconButton.styleFrom(
-                  backgroundColor: Colors.white.withOpacity(0.2),
+                  backgroundColor: Colors.white.withValues(alpha: 0.2),
                 ),
               ),
               const SizedBox(width: 8),
@@ -696,7 +695,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                 icon: const Icon(Icons.picture_as_pdf),
                 tooltip: 'Export PDF',
                 style: IconButton.styleFrom(
-                  backgroundColor: Colors.white.withOpacity(0.2),
+                  backgroundColor: Colors.white.withValues(alpha: 0.2),
                 ),
               ),
             ],
@@ -914,12 +913,13 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                     onPressed: () => _showProductDialog(p, true),
                     tooltip: 'Edit',
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.delete, size: 20),
-                    color: Colors.red,
-                    onPressed: () => _confirmDelete(p),
-                    tooltip: 'Delete',
-                  ),
+                  if (widget.user.isAdmin())
+                    IconButton(
+                      icon: const Icon(Icons.delete, size: 20),
+                      color: Colors.red,
+                      onPressed: () => _confirmDelete(p),
+                      tooltip: 'Delete',
+                    ),
                 ],
               ),
             ),
@@ -959,7 +959,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(

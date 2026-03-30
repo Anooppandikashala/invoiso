@@ -30,7 +30,7 @@ class CreateInvoiceScreen extends StatefulWidget {
   });
 
   @override
-  _CreateInvoiceScreenState createState() => _CreateInvoiceScreenState();
+  State<CreateInvoiceScreen> createState() => _CreateInvoiceScreenState();
 }
 
 class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
@@ -462,6 +462,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         isLoading = false;
       });
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -478,6 +479,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       );
     } catch (e) {
       setState(() => isLoading = false);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error creating invoice: $e')),
       );
@@ -1136,6 +1138,73 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     );
   }
 
+  Widget _buildPaymentSummaryPanel(Invoice invoice) {
+    final amountPaid = invoice.amountPaid;
+    final outstanding = invoice.outstandingBalance;
+    final isPaid = outstanding <= 0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        const Divider(height: 24),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Amount Paid:',
+              style: TextStyle(fontSize: 14, color: Colors.green[700]),
+            ),
+            Text(
+              '$_currencySymbol${amountPaid.toStringAsFixed(2)}',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Colors.green[700],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        if (isPaid)
+          Container(
+            margin: const EdgeInsets.only(top: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.green,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: const Text(
+              'PAID IN FULL',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                letterSpacing: 1,
+              ),
+            ),
+          )
+        else
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Amount Due:',
+                style: TextStyle(fontSize: 14, color: Colors.orange[800]),
+              ),
+              Text(
+                '$_currencySymbol${outstanding.toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orange[800],
+                ),
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+
   Widget _invoiceItems(double tax, double subtotal, double total) {
     return Card(
       elevation: 3,
@@ -1426,6 +1495,11 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                             _buildTotalRow('Tax', tax, false),
                             const SizedBox(height: 20),
                             _buildTotalRow('Total', total, true),
+                            if (isEditing &&
+                                _invoice != null &&
+                                _invoice!.type == 'Invoice' &&
+                                _invoice!.payments.isNotEmpty)
+                              _buildPaymentSummaryPanel(_invoice!),
                           ],
                         ),
                       ),
@@ -1597,6 +1671,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         isLoading = false;
       });
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -1613,6 +1688,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       );
     } catch (e) {
       setState(() => isLoading = false);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error updating invoice: $e')),
       );
