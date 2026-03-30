@@ -4,7 +4,7 @@
   <h1>Invoiso</h1>
 
   <p><strong>Free offline invoice &amp; billing software for Windows &amp; Linux</strong></p>
-  <p>Create professional PDF invoices, manage customers, products and inventory — entirely offline. Built for small businesses, shops and freelancers. No subscription, no cloud, no account needed.</p>
+  <p>Create professional PDF invoices, track payments, manage customers, products and inventory — entirely offline. Built for small businesses, shops and freelancers. No subscription, no cloud, no account needed.</p>
 
   <p>
     <a href="https://github.com/Anooppandikashala/invoiso/releases/latest">
@@ -38,18 +38,39 @@
 
 ## ✨ Features
 
+### Invoicing
 - **100% Offline** — All data stored locally in SQLite. No internet required, ever.
-- **PDF Invoice Generation** — One-click professional PDFs in Classic, Modern or Minimal templates.
-- **Invoice & Quotation** — Create both invoice and quotation documents with colour-coded tracking.
-- **Invoice Cloning** — Duplicate any invoice or quotation with one click.
+- **PDF Invoice Generation** — One-click professional PDFs in Classic, Modern, or Minimal templates.
+- **Invoice & Quotation** — Create both invoice and quotation documents with colour-coded status tracking.
+- **Invoice Cloning** — Duplicate any invoice or quotation in one click.
 - **Bulk Actions** — Multi-select invoices to bulk export CSV, generate PDFs, or move to trash.
+- **Soft Delete / Trash** — Deleted invoices go to a recoverable Trash view.
+- **CSV Export** — Export invoice data to CSV for spreadsheets or accounting software.
+
+### Payment Tracking
+- **Payment Recording** — Record multiple partial or full payments against any invoice.
+- **Payment Status** — Automatic Unpaid / Partial / Paid tracking with colour-coded chips.
+- **Payment Receipts** — Download a professional PDF receipt for every payment.
+- **Outstanding Balance** — Running balance calculated and shown across all views.
+- **PDF Payment Summary** — Invoice PDFs show Amount Paid, Amount Due, and a PAID IN FULL stamp.
+
+### Finance & Compliance
+- **Multi-Currency** — INR, USD, EUR, GBP, JPY, AED, SGD, AUD, CAD — stored per invoice.
+- **GST Ready** — GSTIN fields, HSN codes, per-item or global tax rates for Indian businesses.
 - **UPI Payment QR** — Embed a scannable UPI QR code in every PDF (GPay, PhonePe, Paytm).
-- **GST Ready** — GSTIN fields, HSN codes, per-item or global tax rate for Indian businesses.
-- **Multi-Currency** — INR, USD, EUR, GBP, JPY, AED, SGD, AUD, CAD, JMD.
-- **Customer & Product Management** — Full CRUD with search, sort, and pagination.
-- **Soft Delete / Trash** — Deleted invoices are recoverable from the Trash view.
-- **CSV Export** — Export invoice data to CSV for use in spreadsheets or accounting software.
+
+### Data Management
+- **Customer Management** — Full CRUD with search, sort, and pagination.
+- **Product & Inventory Management** — Full CRUD with search, sort, and pagination.
 - **Backup & Restore** — One-click database backup to any location on your machine.
+
+### Security & Access Control
+- **Multi-User Login** — Username and password authentication with session timeout.
+- **Role-Based Access** — Admin and standard user roles with separate permissions.
+- **Admin-Only Actions** — Company settings, PDF settings, backup/restore, and all deletes restricted to admins.
+- **Forced Password Change** — New users must change their password on first login.
+
+### General
 - **No Registration** — No account, no email, no cloud sync required.
 - **Free Forever** — MIT licensed, open source.
 
@@ -83,13 +104,15 @@
 
 ## ⬇️ Download
 
+**Latest version: v3.4.2**
+
 | Platform | Format | Link |
 |----------|--------|------|
-| **Windows** | `.exe` Installer | [Latest Release](https://github.com/Anooppandikashala/invoiso/releases/latest) |
-| **Linux** | `.AppImage` (portable) | [Latest Release](https://github.com/Anooppandikashala/invoiso/releases/latest) |
-| **Linux** | `.deb` Package | [Latest Release](https://github.com/Anooppandikashala/invoiso/releases/latest) |
+| **Windows** | `.exe` Installer | [Download v3.4.2](https://anooppandikashala.github.io/invoisoapp/download.html) |
+| **Linux** | `.AppImage` (portable) | [Download v3.4.2](https://anooppandikashala.github.io/invoisoapp/download.html) |
+| **Linux** | `.deb` Package | [Download v3.4.2](https://anooppandikashala.github.io/invoisoapp/download.html) |
 
-> Always download from the [official releases page](https://github.com/Anooppandikashala/invoiso/releases/latest).
+> Always download from the [official website](https://anooppandikashala.github.io/invoisoapp/download.html) or the [GitHub releases page](https://github.com/Anooppandikashala/invoiso/releases/latest).
 
 ---
 
@@ -97,8 +120,8 @@
 
 ### Prerequisites
 
-- [Flutter SDK](https://flutter.dev/docs/get-started/install) `>=3.3.3`
-- Linux: standard build tools (`clang`, `cmake`, `ninja-build`, `libgtk-3-dev`)
+- [Flutter SDK](https://flutter.dev/docs/get-started/install) `>=3.3.3 <4.0.0`
+- Linux: `clang`, `cmake`, `ninja-build`, `libgtk-3-dev`
 - Windows: Visual Studio 2022 with "Desktop development with C++" workload
 
 ### Steps
@@ -120,7 +143,9 @@ flutter build linux --release    # Linux
 flutter build windows --release  # Windows
 ```
 
-The output binary is placed in `build/linux/x64/release/bundle/` (Linux) or `build/windows/x64/runner/Release/` (Windows).
+Output locations:
+- **Linux:** `build/linux/x64/release/bundle/`
+- **Windows:** `build/windows/x64/runner/Release/`
 
 ---
 
@@ -131,11 +156,15 @@ The output binary is placed in `build/linux/x64/release/bundle/` (Linux) or `bui
 | Framework | [Flutter](https://flutter.dev) 3.x (Dart) |
 | Database | SQLite via [sqflite](https://pub.dev/packages/sqflite) + [sqflite_common_ffi](https://pub.dev/packages/sqflite_common_ffi) |
 | PDF Generation | [pdf](https://pub.dev/packages/pdf) + [printing](https://pub.dev/packages/printing) |
+| PDF Preview | [syncfusion_flutter_pdfviewer](https://pub.dev/packages/syncfusion_flutter_pdfviewer) |
 | QR Codes | [qr](https://pub.dev/packages/qr) |
 | State Management | [flutter_riverpod](https://pub.dev/packages/flutter_riverpod) |
 | File Picker | [file_picker](https://pub.dev/packages/file_picker) |
 | CSV Export | [csv](https://pub.dev/packages/csv) |
+| File Sharing | [share_plus](https://pub.dev/packages/share_plus) |
+| Image Processing | [image](https://pub.dev/packages/image) |
 | Window Management | [window_manager](https://pub.dev/packages/window_manager) |
+| Security | [crypto](https://pub.dev/packages/crypto) |
 
 ---
 
@@ -143,16 +172,68 @@ The output binary is placed in `build/linux/x64/release/bundle/` (Linux) or `bui
 
 ```
 lib/
-├── main.dart                   # App entry point
-├── common.dart                 # Shared enums and data classes
-├── constants.dart              # UI constants and app config
-├── database/                   # SQLite services (CRUD for each entity)
-├── models/                     # Data models (Invoice, Customer, Product, ...)
-├── providers/                  # Riverpod state providers
-├── screens/                    # All UI screens
-├── services/                   # PDF generation, CSV/PDF export
-├── backup/                     # Backup and restore logic
-└── utils/                      # Logger, formatters, password utils, error handler
+├── main.dart                        # App entry point, window setup
+├── common.dart                      # Shared enums, extensions, data classes
+├── constants.dart                   # UI constants, spacing, font sizes
+│
+├── models/                          # Data models
+│   ├── invoice.dart                 # Invoice + PaymentStatus
+│   ├── invoice_item.dart            # Line items
+│   ├── invoice_payment.dart         # Payment records
+│   ├── customer.dart
+│   ├── product.dart
+│   ├── company_info.dart
+│   ├── user.dart                    # User + role (admin/user)
+│   └── backup_info.dart / backup_results.dart
+│
+├── database/                        # SQLite CRUD services
+│   ├── database_helper.dart         # DB init, migrations (v1→v6)
+│   ├── invoice_service.dart
+│   ├── invoice_item_service.dart
+│   ├── payment_service.dart         # Payment recording & history
+│   ├── customer_service.dart
+│   ├── product_service.dart
+│   ├── company_info_service.dart
+│   ├── settings_service.dart        # Key-value settings store
+│   └── user_service.dart
+│
+├── providers/                       # Riverpod state providers
+│   ├── invoice_provider.dart
+│   └── product_provider.dart
+│
+├── screens/                         # UI screens
+│   ├── splash_screen.dart
+│   ├── login_screen.dart
+│   ├── change_password_screen.dart
+│   ├── dashboard_screen.dart        # Dashboard + DashboardHome widget
+│   ├── create_invoice_screen.dart   # Create / edit invoice & quotation
+│   ├── invoice_management_screen.dart
+│   ├── customer_management_screen.dart
+│   ├── product_management_screen.dart
+│   ├── settings_screen.dart         # Settings hub (admin-only sections)
+│   ├── invoice_settings_screen.dart
+│   ├── pdf_settings_screen.dart
+│   ├── backup_management_screen.dart
+│   └── user_management_screen.dart
+│
+├── services/                        # Business logic & file services
+│   ├── pdf_service.dart             # PDF generation (3 templates)
+│   ├── invoice_pdf_services.dart    # Print, preview, export wrapper
+│   ├── payment_receipt_service.dart # Payment receipt PDF generation
+│   └── export_service.dart          # CSV & bulk PDF export
+│
+├── backup/
+│   └── backup_manager.dart          # Backup & restore logic
+│
+├── widgets/
+│   └── apply_payment_dialog.dart    # Shared payment dialog & summary card
+│
+└── utils/
+    ├── app_logger.dart
+    ├── error_handler.dart
+    ├── formatters.dart
+    ├── password_utils.dart          # HMAC-SHA256 hashing + salt
+    └── session_manager.dart         # Inactivity session timeout
 ```
 
 ---
@@ -183,5 +264,3 @@ Copyright © 2025 [Anoop Pandikashala](https://github.com/Anooppandikashala)
 
   [![Buy Me a Coffee](https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=☕&slug=anoopp&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff)](https://www.buymeacoffee.com/anoopp)
 </div>
-
-
