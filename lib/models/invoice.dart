@@ -15,6 +15,7 @@ class Invoice {
   String currencySymbol;
   TaxMode taxMode;
   List<InvoicePayment> payments;
+  String? upiId; // selected UPI account for this invoice
 
   Invoice({
     required this.id,
@@ -28,6 +29,7 @@ class Invoice {
     this.currencySymbol = '₹',
     this.taxMode = TaxMode.global,
     this.payments = const [],
+    this.upiId,
   });
 
   double get subtotal => items.fold(0.0, (sum, item) => sum + item.total);

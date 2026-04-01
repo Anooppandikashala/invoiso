@@ -18,8 +18,9 @@ enum SettingKey {
   additionalInfo,
   thankYouNote,
   currency,
-  upiId,
+  upiId,      // kept for backward-compat read only
   showUpiQr,
+  upiIds,     // JSON list of UpiEntry objects
 }
 
 extension SettingKeyExtension on SettingKey
@@ -40,8 +41,30 @@ extension SettingKeyExtension on SettingKey
         return 'upi_id';
       case SettingKey.showUpiQr:
         return 'show_upi_qr';
+      case SettingKey.upiIds:
+        return 'upi_ids';
     }
   }
+}
+
+/// A single UPI payment account entry.
+class UpiEntry {
+  final String label;     // friendly name, e.g. "HDFC Bank" (may be empty)
+  final String id;        // UPI ID, e.g. "business@okhdfcbank"
+  final bool isDefault;   // whether this is the default account
+
+  const UpiEntry({required this.label, required this.id, this.isDefault = false});
+
+  Map<String, dynamic> toJson() => {'label': label, 'id': id, 'isDefault': isDefault};
+
+  factory UpiEntry.fromJson(Map<String, dynamic> json) => UpiEntry(
+        label: json['label'] as String? ?? '',
+        id: json['id'] as String? ?? '',
+        isDefault: json['isDefault'] as bool? ?? false,
+      );
+
+  /// Returns the label if set, otherwise falls back to the UPI ID itself.
+  String get displayLabel => label.trim().isNotEmpty ? label.trim() : id;
 }
 
 class CurrencyOption {

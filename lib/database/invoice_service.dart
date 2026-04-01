@@ -35,6 +35,7 @@ class InvoiceService {
         'currency_code': invoice.currencyCode,
         'currency_symbol': invoice.currencySymbol,
         'tax_mode': invoice.taxMode.key,
+        'upi_id': invoice.upiId,
       });
 
       for (var item in invoice.items) {
@@ -87,6 +88,7 @@ class InvoiceService {
           'tax_rate': invoice.taxRate,
           'type': invoice.type,
           'tax_mode': invoice.taxMode.key,
+          'upi_id': invoice.upiId,
         },
         where: 'id = ?',
         whereArgs: [invoice.id],
@@ -190,6 +192,7 @@ class InvoiceService {
       currencyCode: i['currency_code'] as String? ?? 'INR',
       currencySymbol: i['currency_symbol'] as String? ?? '₹',
       taxMode: TaxModeExtension.fromKey(i['tax_mode'] as String?),
+      upiId: i['upi_id'] as String?,
       payments: payments,
     );
   }
@@ -356,6 +359,7 @@ class InvoiceService {
           currencyCode: map['currency_code'] as String? ?? 'INR',
           currencySymbol: map['currency_symbol'] as String? ?? '₹',
           taxMode: TaxModeExtension.fromKey(map['tax_mode'] as String?),
+          upiId: map['upi_id'] as String?,
         ),
       );
     }

@@ -26,12 +26,21 @@ class PDFService {
     final rawPrefix = await SettingsService.getSetting(SettingKey.invoicePrefix) ?? 'INV';
     final invoicePrefix = rawPrefix.isNotEmpty ? '$rawPrefix-' : '';
 
-    // UPI QR settings
-    final upiId = await SettingsService.getSetting(SettingKey.upiId);
+    // UPI QR settings — use the per-invoice UPI ID; fall back to the default
+    // UPI from settings so that invoices created before this feature still
+    // show a QR code when the global toggle is on.
+    String? effectiveUpiId = invoice.upiId;
+    if (effectiveUpiId == null || effectiveUpiId.trim().isEmpty) {
+      final upiEntries = await SettingsService.getUpiIds();
+      final fallback = upiEntries.where((e) => e.isDefault).firstOrNull
+          ?? upiEntries.firstOrNull;
+      effectiveUpiId = fallback?.id;
+    } else {
+      effectiveUpiId = effectiveUpiId.trim();
+    }
     final showQrStr = await SettingsService.getSetting(SettingKey.showUpiQr);
-    final effectiveUpiId =
-        (upiId != null && upiId.trim().isNotEmpty) ? upiId.trim() : null;
-    final showUpiQr = showQrStr == 'true' && effectiveUpiId != null;
+    final showUpiQr =
+        showQrStr == 'true' && effectiveUpiId != null && effectiveUpiId.isNotEmpty;
 
     switch (selectedTemplate) {
       case InvoiceTemplate.classic:
@@ -516,6 +525,7 @@ class PDFService {
     required String invoiceId,
     required PdfColor accentColor,
   }) {
+    const double qrSize = 90.0;
     // Build a URI that any UPI-capable app can handle.
     final encodedName = Uri.encodeComponent(companyName);
     final encodedNote = Uri.encodeComponent('Invoice $invoiceId');
@@ -540,7 +550,6 @@ class PDFService {
 
     final qrImage = QrImage(qrCode);
     final int moduleCount = qrCode.moduleCount;
-    const double qrSize = 90.0;
 
     return pw.Container(
       padding: const pw.EdgeInsets.all(8),
@@ -564,7 +573,7 @@ class PDFService {
 
           // QR matrix rendered with CustomPaint
           pw.CustomPaint(
-            size: const PdfPoint(qrSize, qrSize),
+            size: PdfPoint(qrSize, qrSize),
             painter: (canvas, size) {
               final double moduleSize = qrSize / moduleCount;
               canvas.setFillColor(PdfColors.black);

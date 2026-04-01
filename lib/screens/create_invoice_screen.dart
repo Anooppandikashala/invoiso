@@ -67,6 +67,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   String currentInvoiceNumber = "";
   String _currencyCode = 'INR';
   String _currencySymbol = '₹';
+  List<UpiEntry> _upiEntries = [];
+  UpiEntry? _selectedUpi;
 
   TaxMode get _taxMode {
     if (!_isTaxEnabled) return TaxMode.none;
@@ -178,6 +180,23 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         loadedCurrencySymbol = currency.symbol;
       }
 
+      final upiEntries = await SettingsService.getUpiIds();
+
+      // Determine which UPI to pre-select.
+      String? existingUpiId;
+      if (isEditing && widget.invoiceToEdit != null) {
+        existingUpiId = widget.invoiceToEdit!.upiId;
+      } else if (widget.cloneFrom != null) {
+        existingUpiId = widget.cloneFrom!.upiId;
+      }
+
+      UpiEntry? preselectedUpi;
+      if (existingUpiId != null && existingUpiId.isNotEmpty) {
+        preselectedUpi = upiEntries.where((e) => e.id == existingUpiId).firstOrNull;
+      }
+      preselectedUpi ??= upiEntries.where((e) => e.isDefault).firstOrNull
+          ?? upiEntries.firstOrNull;
+
       setState(() {
         customers = c;
         filteredCustomers = List.from(c);
@@ -188,6 +207,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         }
         _currencyCode = loadedCurrencyCode;
         _currencySymbol = loadedCurrencySymbol;
+        _upiEntries = upiEntries;
+        _selectedUpi = preselectedUpi;
         isLoading = false;
       });
     } catch (e) {
@@ -453,6 +474,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         currencyCode: _currencyCode,
         currencySymbol: _currencySymbol,
         taxMode: _taxMode,
+        upiId: _selectedUpi?.id,
       );
 
       await InvoiceService.insertInvoice(invoice);
@@ -1368,7 +1390,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 Row(
                   children: [
                     Expanded(
-                      flex: 4,
+                      flex: _upiEntries.isNotEmpty ? 3 : 4,
                       child: TextField(
                         controller: notesController,
                         decoration: InputDecoration(
@@ -1380,9 +1402,51 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                         maxLines: 3,
                       ),
                     ),
+                    if (_upiEntries.isNotEmpty) ...[
+                      AppSpacing.wSmall,
+                      Expanded(
+                        flex: 2,
+                        child: DropdownButtonFormField<UpiEntry?>(
+                          value: _selectedUpi,
+                          decoration: InputDecoration(
+                            labelText: 'Payment UPI Account',
+                            prefixIcon: const Icon(Icons.qr_code_rounded, size: 20),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                            filled: true,
+                            fillColor: Colors.white,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                          ),
+                          items: [
+                            const DropdownMenuItem<UpiEntry?>(
+                              value: null,
+                              child: Text('None', style: TextStyle(color: Colors.grey)),
+                            ),
+                            ..._upiEntries.map((e) => DropdownMenuItem<UpiEntry?>(
+                              value: e,
+                              child: Row(
+                                children: [
+                                  if (e.isDefault) ...[
+                                    Icon(Icons.star_rounded, size: 14, color: Colors.amber[700]),
+                                    const SizedBox(width: 4),
+                                  ],
+                                  Text(e.displayLabel),
+                                  const SizedBox(width: 8),
+                                  Text(e.id,
+                                      style: TextStyle(
+                                          fontSize: AppFontSize.xsmall,
+                                          color: Colors.grey[500])),
+                                ],
+                              ),
+                            )),
+                          ],
+                          onChanged: (val) => setState(() => _selectedUpi = val),
+                        ),
+                      ),
+                    ],
                     AppSpacing.wSmall,
                     Expanded(
-                      flex: 1,
+                      flex: _upiEntries.isNotEmpty ? 2 : 1,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -1662,6 +1726,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         currencyCode: _currencyCode,
         currencySymbol: _currencySymbol,
         taxMode: _taxMode,
+        upiId: _selectedUpi?.id,
       );
 
       await InvoiceService.updateInvoice(updatedInvoice);
