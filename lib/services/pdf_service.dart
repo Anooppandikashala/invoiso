@@ -25,6 +25,7 @@ class PDFService {
     final currencySymbol = invoice.currencySymbol;
     final rawPrefix = await SettingsService.getSetting(SettingKey.invoicePrefix) ?? 'INV';
     final invoicePrefix = rawPrefix.isNotEmpty ? '$rawPrefix-' : '';
+    final showGst = await SettingsService.getShowGstFields();
 
     // UPI QR settings — use the per-invoice UPI ID; fall back to the default
     // UPI from settings so that invoices created before this feature still
@@ -46,19 +47,19 @@ class PDFService {
       case InvoiceTemplate.classic:
         pdf.addPage(await _buildClassicTemplate(
           invoice, company, currencySymbol, invoicePrefix,
-          upiId: effectiveUpiId, showUpiQr: showUpiQr,
+          upiId: effectiveUpiId, showUpiQr: showUpiQr, showGst: showGst,
         ));
         break;
       case InvoiceTemplate.modern:
         pdf.addPage(await _buildModernTemplate(
           invoice, company, currencySymbol, invoicePrefix,
-          upiId: effectiveUpiId, showUpiQr: showUpiQr,
+          upiId: effectiveUpiId, showUpiQr: showUpiQr, showGst: showGst,
         ));
         break;
       case InvoiceTemplate.minimal:
         pdf.addPage(await _buildMinimalTemplate(
           invoice, company, currencySymbol, invoicePrefix,
-          upiId: effectiveUpiId, showUpiQr: showUpiQr,
+          upiId: effectiveUpiId, showUpiQr: showUpiQr, showGst: showGst,
         ));
         break;
     }
@@ -68,7 +69,7 @@ class PDFService {
 
   static Future<pw.MultiPage> _buildClassicTemplate(
     Invoice invoice, CompanyInfo? company, String currencySymbol, String invoicePrefix, {
-    String? upiId, bool showUpiQr = false,
+    String? upiId, bool showUpiQr = false, bool showGst = true,
   }) async
   {
     final accentColor = PdfColors.indigo900; // Use a strong accent color
@@ -113,7 +114,7 @@ class PDFService {
                   pw.Text(company?.address ?? '', style: const pw.TextStyle(fontSize: 10)),
                   pw.Text('Phone: ${company?.phone ?? ''}', style: const pw.TextStyle(fontSize: 10)),
                   pw.Text('Email: ${company?.email ?? ''}', style: const pw.TextStyle(fontSize: 10)),
-                  pw.Text('GSTIN: ${company?.gstin ?? ''}', style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 10, color: PdfColors.grey700)),
+                  if (showGst) pw.Text('GSTIN: ${company?.gstin ?? ''}', style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 10, color: PdfColors.grey700)),
                 ],
               ),
             ),
@@ -162,7 +163,7 @@ class PDFService {
                     pw.Text(invoice.customer.address, style: const pw.TextStyle(fontSize: 10)),
                     pw.Text(invoice.customer.phone, style: const pw.TextStyle(fontSize: 10)),
                     pw.Text(invoice.customer.email, style: const pw.TextStyle(fontSize: 10)),
-                    pw.Text("GSTIN: ${invoice.customer.gstin}", style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 10, color: PdfColors.grey600)),
+                    if (showGst) pw.Text("GSTIN: ${invoice.customer.gstin}", style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 10, color: PdfColors.grey600)),
                   ]
               )
             )
@@ -213,7 +214,7 @@ class PDFService {
 
   static Future<pw.MultiPage> _buildMinimalTemplate(
     Invoice invoice, CompanyInfo? company, String currencySymbol, String invoicePrefix, {
-    String? upiId, bool showUpiQr = false,
+    String? upiId, bool showUpiQr = false, bool showGst = true,
   }) async
   {
     final accentColor = PdfColors.grey700; // Use a strong, neutral accent
@@ -273,7 +274,7 @@ class PDFService {
                 pw.Text(company?.address ?? '', style: const pw.TextStyle(fontSize: 10)),
                 pw.Text(company?.phone ?? '', style: const pw.TextStyle(fontSize: 10)),
                 pw.Text(company?.email ?? '', style: const pw.TextStyle(fontSize: 10)),
-                pw.Text("GSTIN: ${company?.gstin ?? ''}",style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 9)),
+                if (showGst) pw.Text("GSTIN: ${company?.gstin ?? ''}",style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 9)),
               ],
             ),
 
@@ -287,7 +288,7 @@ class PDFService {
                 pw.Text(invoice.customer.address, style: const pw.TextStyle(fontSize: 10)),
                 pw.Text(invoice.customer.phone, style: const pw.TextStyle(fontSize: 10)),
                 pw.Text(invoice.customer.email, style: const pw.TextStyle(fontSize: 10)),
-                pw.Text("GSTIN: ${invoice.customer.gstin}",style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 9)),
+                if (showGst) pw.Text("GSTIN: ${invoice.customer.gstin}",style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 9)),
               ],
             ),
           ],
@@ -339,7 +340,7 @@ class PDFService {
 
   static Future<pw.MultiPage> _buildModernTemplate(
     Invoice invoice, CompanyInfo? company, String currencySymbol, String invoicePrefix, {
-    String? upiId, bool showUpiQr = false,
+    String? upiId, bool showUpiQr = false, bool showGst = true,
   }) async
   {
     final accentColor = PdfColors.blue600;
@@ -388,7 +389,7 @@ class PDFService {
                         style: const pw.TextStyle(color: PdfColors.white, fontSize: 10)),
                     pw.Text('Email: ${company?.email ?? ''}',
                         style: const pw.TextStyle(color: PdfColors.white, fontSize: 10)),
-                    pw.Text('GSTIN: ${company?.gstin ?? ''}',
+                    if (showGst) pw.Text('GSTIN: ${company?.gstin ?? ''}',
                         style: pw.TextStyle(
                             color: PdfColors.white,
                             fontStyle: pw.FontStyle.italic,
@@ -451,7 +452,7 @@ class PDFService {
                 pw.Text(invoice.customer.address, style: const pw.TextStyle(fontSize: 10)),
                 pw.Text(invoice.customer.phone, style: const pw.TextStyle(fontSize: 10)),
                 pw.Text(invoice.customer.email, style: const pw.TextStyle(fontSize: 10)),
-                pw.Text("GSTIN: ${invoice.customer.gstin}",
+                if (showGst) pw.Text("GSTIN: ${invoice.customer.gstin}",
                     style: pw.TextStyle(
                         fontSize: 10, fontStyle: pw.FontStyle.italic)),
               ],

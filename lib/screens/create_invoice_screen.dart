@@ -69,6 +69,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   String _currencySymbol = '₹';
   List<UpiEntry> _upiEntries = [];
   UpiEntry? _selectedUpi;
+  bool _showGstFields = true;
 
   TaxMode get _taxMode {
     if (!_isTaxEnabled) return TaxMode.none;
@@ -181,6 +182,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       }
 
       final upiEntries = await SettingsService.getUpiIds();
+      final showGst = await SettingsService.getShowGstFields();
 
       // Determine which UPI to pre-select.
       String? existingUpiId;
@@ -209,6 +211,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         _currencySymbol = loadedCurrencySymbol;
         _upiEntries = upiEntries;
         _selectedUpi = preselectedUpi;
+        _showGstFields = showGst;
         isLoading = false;
       });
     } catch (e) {
@@ -1045,20 +1048,22 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: gstinController,
-                    style: TextStyle(fontSize: AppFontSize.medium),
-                    decoration: InputDecoration(
-                      labelText: 'GSTIN',
-                      labelStyle: TextStyle(fontSize: AppFontSize.medium),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
-                      filled: true,
-                      fillColor: Colors.white,
+                if (_showGstFields) ...[
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: gstinController,
+                      style: TextStyle(fontSize: AppFontSize.medium),
+                      decoration: InputDecoration(
+                        labelText: 'GSTIN',
+                        labelStyle: TextStyle(fontSize: AppFontSize.medium),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                        filled: true,
+                        fillColor: Colors.white,
+                      ),
                     ),
                   ),
-                ),
+                ],
                 const SizedBox(width: 12),
                 Expanded(
                   child: TextField(

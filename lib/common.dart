@@ -20,7 +20,8 @@ enum SettingKey {
   currency,
   upiId,      // kept for backward-compat read only
   showUpiQr,
-  upiIds,     // JSON list of UpiEntry objects
+  upiIds,         // JSON list of UpiEntry objects
+  showGstFields,  // whether to show GST/GSTIN fields
 }
 
 extension SettingKeyExtension on SettingKey
@@ -43,6 +44,8 @@ extension SettingKeyExtension on SettingKey
         return 'show_upi_qr';
       case SettingKey.upiIds:
         return 'upi_ids';
+      case SettingKey.showGstFields:
+        return 'show_gst_fields';
     }
   }
 }

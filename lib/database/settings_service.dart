@@ -109,4 +109,11 @@ class SettingsService
     final encoded = jsonEncode(entries.map((e) => e.toJson()).toList());
     await setSetting(SettingKey.upiIds, encoded);
   }
+
+  /// Returns whether GST/GSTIN fields should be shown.
+  /// Defaults to true so existing users are unaffected.
+  static Future<bool> getShowGstFields() async {
+    final val = await getSetting(SettingKey.showGstFields);
+    return val != 'false';
+  }
 }
