@@ -418,9 +418,12 @@ class _DashboardHomeState extends State<DashboardHome> {
                                                 children: [
                                                   Row(
                                                     children: [
-                                                      Text(
-                                                        '${invoice.type} #${invoice.id}',
-                                                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                                      Flexible(
+                                                        child: Text(
+                                                          '${invoice.type} #${invoice.id}',
+                                                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                                          overflow: TextOverflow.ellipsis,
+                                                        ),
                                                       ),
                                                       const SizedBox(width: 12),
                                                       Container(
