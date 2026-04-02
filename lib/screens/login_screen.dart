@@ -135,6 +135,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         : const Text('Login'),
                   ),
                 ),
+                AppSpacing.hLarge,
+                Text(
+                  AppConfig.version,
+                  style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+                ),
               ],
             ),
           ),
