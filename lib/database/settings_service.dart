@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:sqflite/sqflite.dart';
 
 import '../common.dart';
@@ -82,5 +84,36 @@ class SettingsService
   static Future<CurrencyOption> getCurrency() async {
     final code = await getSetting(SettingKey.currency) ?? 'INR';
     return SupportedCurrencies.fromCode(code);
+  }
+
+  /// Returns the list of saved UPI accounts.
+  /// Falls back to the old single [SettingKey.upiId] value for users upgrading
+  /// from a previous version that had only one UPI ID field.
+  static Future<List<UpiEntry>> getUpiIds() async {
+    final json = await getSetting(SettingKey.upiIds);
+    if (json != null && json.isNotEmpty) {
+      final List<dynamic> decoded = jsonDecode(json);
+      return decoded
+          .map((e) => UpiEntry.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
+    // Backward-compat: migrate old single UPI ID to list format.
+    final oldId = await getSetting(SettingKey.upiId);
+    if (oldId != null && oldId.trim().isNotEmpty) {
+      return [UpiEntry(label: '', id: oldId.trim(), isDefault: true)];
+    }
+    return [];
+  }
+
+  static Future<void> setUpiIds(List<UpiEntry> entries) async {
+    final encoded = jsonEncode(entries.map((e) => e.toJson()).toList());
+    await setSetting(SettingKey.upiIds, encoded);
+  }
+
+  /// Returns whether GST/GSTIN fields should be shown.
+  /// Defaults to true so existing users are unaffected.
+  static Future<bool> getShowGstFields() async {
+    final val = await getSetting(SettingKey.showGstFields);
+    return val != 'false';
   }
 }

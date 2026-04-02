@@ -18,6 +18,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
 
   String _selectedLogoPosition = 'left';
   String _selectedCurrencyCode = 'INR';
+  bool _showGstFields = true;
   bool _isLoading = true;
 
   @override
@@ -32,6 +33,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     final info = await SettingsService.getSetting(SettingKey.additionalInfo);
     final thanks = await SettingsService.getSetting(SettingKey.thankYouNote);
     final currency = await SettingsService.getCurrency();
+    final showGst = await SettingsService.getShowGstFields();
 
     setState(() {
       _selectedLogoPosition = position ?? 'left';
@@ -39,6 +41,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
       invoicePrefixController.text = prefix ?? 'INV';
       additionalInfoController.text = info ?? '';
       thankYouController.text = thanks ?? '';
+      _showGstFields = showGst;
       _isLoading = false;
     });
   }
@@ -49,6 +52,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     await SettingsService.setSetting(SettingKey.additionalInfo, additionalInfoController.text);
     await SettingsService.setSetting(SettingKey.thankYouNote, thankYouController.text);
     await SettingsService.setCurrency(_selectedCurrencyCode);
+    await SettingsService.setSetting(SettingKey.showGstFields, _showGstFields.toString());
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -270,6 +274,34 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                   filled: true,
                                   fillColor: Colors.grey[50],
                                   counterText: '',
+                                ),
+                              ),
+                            ),
+
+                            // GST Fields Toggle
+                            SizedBox(
+                              width: constraints.maxWidth,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[50],
+                                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                  border: Border.all(color: Colors.grey[300]!),
+                                ),
+                                child: SwitchListTile(
+                                  title: const Text('Show GST Fields'),
+                                  subtitle: const Text(
+                                    'Display GSTIN fields on invoices, PDFs, and CSV exports',
+                                  ),
+                                  secondary: Icon(
+                                    Icons.receipt_long_rounded,
+                                    color: _showGstFields
+                                        ? Theme.of(context).primaryColor
+                                        : Colors.grey,
+                                  ),
+                                  value: _showGstFields,
+                                  onChanged: (val) =>
+                                      setState(() => _showGstFields = val),
+                                  activeColor: Theme.of(context).primaryColor,
                                 ),
                               ),
                             ),

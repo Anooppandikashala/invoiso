@@ -32,7 +32,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final emailController = TextEditingController();
   final websiteController = TextEditingController();
   final gstinController = TextEditingController();
-  final _upiIdController = TextEditingController();
+  final List<({TextEditingController label, TextEditingController id})>
+      _upiControllers = [];
+  int? _defaultUpiIndex;
 
   CompanyInfo? _companyInfo;
   bool _showUpiQr = false;
@@ -49,7 +51,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _loadCompanyInfo() async {
     final info = await CompanyInfoService.getCompanyInfo();
     final base64Logo = await SettingsService.getCompanyLogo();
-    final upiId = await SettingsService.getSetting(SettingKey.upiId);
+    final upiEntries = await SettingsService.getUpiIds();
     final showQrStr = await SettingsService.getSetting(SettingKey.showUpiQr);
     if (info != null) {
       setState(() {
@@ -60,10 +62,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
         emailController.text = info.email;
         websiteController.text = info.website;
         gstinController.text = info.gstin;
-        _upiIdController.text = upiId ?? '';
         _showUpiQr = showQrStr == 'true';
         if (base64Logo != null && base64Logo.isNotEmpty) {
           _base64Logo = base64Logo;
+        }
+        for (final row in _upiControllers) {
+          row.label.dispose();
+          row.id.dispose();
+        }
+        _upiControllers.clear();
+        _defaultUpiIndex = null;
+        for (int i = 0; i < upiEntries.length; i++) {
+          final entry = upiEntries[i];
+          _upiControllers.add((
+            label: TextEditingController(text: entry.label),
+            id: TextEditingController(text: entry.id),
+          ));
+          if (entry.isDefault) _defaultUpiIndex = i;
         }
       });
     }
@@ -89,8 +104,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await SettingsService.setCompanyLogo(_base64Logo!);
     }
 
-    await SettingsService.setSetting(
-        SettingKey.upiId, _upiIdController.text.trim());
+    final upiEntries = <UpiEntry>[];
+    for (int i = 0; i < _upiControllers.length; i++) {
+      final id = _upiControllers[i].id.text.trim();
+      if (id.isEmpty) continue;
+      upiEntries.add(UpiEntry(
+        label: _upiControllers[i].label.text.trim(),
+        id: id,
+        isDefault: i == _defaultUpiIndex,
+      ));
+    }
+    await SettingsService.setUpiIds(upiEntries);
     await SettingsService.setSetting(
         SettingKey.showUpiQr, _showUpiQr.toString());
 
@@ -112,7 +136,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     emailController.dispose();
     websiteController.dispose();
     gstinController.dispose();
-    _upiIdController.dispose();
+    for (final row in _upiControllers) {
+      row.label.dispose();
+      row.id.dispose();
+    }
     super.dispose();
   }
 
@@ -403,15 +430,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 32),
                   _sectionLabel('PAYMENT SETTINGS'),
                   const SizedBox(height: 16),
-                  _buildField(
-                    controller: _upiIdController,
-                    label: 'UPI ID',
-                    icon: Icons.qr_code_rounded,
-                    hint: 'yourname@bankname',
-                    helper:
-                        'Used to generate a payment QR code on invoices. Indian UPI only.',
-                  ),
-                  const SizedBox(height: 12),
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -422,7 +440,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: SwitchListTile(
                       title: const Text('Show QR Code on Invoices'),
                       subtitle: const Text(
-                        'Adds a scannable UPI payment QR to generated PDFs',
+                        'Adds scannable UPI payment QR codes to generated PDFs',
                         style: TextStyle(fontSize: AppFontSize.small),
                       ),
                       value: _showUpiQr,
@@ -432,6 +450,89 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         Icons.payment_rounded,
                         color: _showUpiQr ? primaryColor : Colors.grey,
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  _sectionLabel('UPI ACCOUNTS'),
+                  const SizedBox(height: 10),
+                  ..._upiControllers.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final row = entry.value;
+                    final isDefault = index == _defaultUpiIndex;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Row(
+                        children: [
+                          // Default star
+                          Tooltip(
+                            message: isDefault ? 'Default' : 'Set as Default',
+                            child: IconButton(
+                              icon: Icon(
+                                isDefault ? Icons.star_rounded : Icons.star_outline_rounded,
+                                color: isDefault ? Colors.amber[700] : Colors.grey[400],
+                              ),
+                              onPressed: () => setState(() => _defaultUpiIndex = index),
+                            ),
+                          ),
+                          SizedBox(
+                            width: 160,
+                            child: _buildField(
+                              controller: row.label,
+                              label: 'Label',
+                              icon: Icons.label_outline_rounded,
+                              hint: 'e.g. HDFC Bank',
+                              maxLength: 40,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildField(
+                              controller: row.id,
+                              label: 'UPI ID',
+                              icon: Icons.qr_code_rounded,
+                              hint: 'yourname@bankname',
+                              maxLength: 100,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            tooltip: 'Remove',
+                            icon: const Icon(Icons.remove_circle_outline,
+                                color: Colors.redAccent),
+                            onPressed: () {
+                              setState(() {
+                                _upiControllers[index].label.dispose();
+                                _upiControllers[index].id.dispose();
+                                _upiControllers.removeAt(index);
+                                if (_defaultUpiIndex == index) {
+                                  _defaultUpiIndex = null;
+                                } else if (_defaultUpiIndex != null &&
+                                    _defaultUpiIndex! > index) {
+                                  _defaultUpiIndex = _defaultUpiIndex! - 1;
+                                }
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                  const SizedBox(height: 4),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _upiControllers.add((
+                            label: TextEditingController(),
+                            id: TextEditingController(),
+                          ));
+                        });
+                      },
+                      icon: Icon(Icons.add_circle_outline,
+                          color: primaryColor, size: 18),
+                      label: Text('Add UPI Account',
+                          style: TextStyle(color: primaryColor)),
                     ),
                   ),
                   const SizedBox(height: 32),
