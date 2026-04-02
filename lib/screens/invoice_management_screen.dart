@@ -18,12 +18,14 @@ class InvoiceManagementScreen extends ConsumerStatefulWidget {
   final Function(Invoice) onEditInvoice;
   final Function(Invoice, String) onCloneInvoice;
   final User user;
+  final String filterType; // 'Invoice' | 'Quotation'
 
   const InvoiceManagementScreen({
     super.key,
     required this.onEditInvoice,
     required this.onCloneInvoice,
     required this.user,
+    this.filterType = 'Invoice',
   });
 
   @override
@@ -39,6 +41,7 @@ class _InvoiceManagementScreenState
   bool _isLoadingPage = false;
   bool _isBulkLoading = false;
   bool _hidePaid = false;
+  String _dueDateFilter = 'all'; // 'all' | 'overdue' | 'due_today' | 'due_week' | 'due_month'
   int _totalCount = 0;
   List<Invoice> _pageInvoices = [];
   final Set<String> _selectedIds = {};
@@ -48,19 +51,42 @@ class _InvoiceManagementScreenState
 
   /// Shared column widths used by both the header table and every row table so
   /// they always align pixel-perfectly.
-  static const Map<int, TableColumnWidth> _columnWidths = {
-    0: FixedColumnWidth(48),   // checkbox
-    1: FixedColumnWidth(56),   // #
-    2: FlexColumnWidth(0.9),   // Invoice ID
-    3: FlexColumnWidth(1.0),   // Customer
-    4: FixedColumnWidth(100),  // Date
-    5: FlexColumnWidth(0.8),   // Type
-    6: FixedColumnWidth(80),   // Items
-    7: FlexColumnWidth(1.0),   // Total
-    8: FixedColumnWidth(90),   // Status  ← payment status chip
-    9: FlexColumnWidth(1.0),   // Outstanding ← outstanding balance
-    10: FixedColumnWidth(360), // Actions
+  static const List<(String, String, Color)> _dueDateFilterOptions = [
+    ('all',        'All Dues',      Colors.grey),
+    ('overdue',    'Overdue',       Colors.red),
+    ('due_today',  'Due Today',     Colors.orange),
+    ('due_week',   'Due This Week', Colors.blue),
+    ('due_month',  'Due This Month',Colors.teal),
+  ];
+
+  // Invoice table: checkbox | # | ID | Customer | Date | Items | Total | Status | Outstanding | Actions
+  static const Map<int, TableColumnWidth> _invoiceColumnWidths = {
+    0: FixedColumnWidth(48),
+    1: FixedColumnWidth(56),
+    2: FlexColumnWidth(0.9),
+    3: FlexColumnWidth(1.0),
+    4: FixedColumnWidth(120),
+    5: FixedColumnWidth(80),
+    6: FlexColumnWidth(1.0),
+    7: FixedColumnWidth(90),
+    8: FlexColumnWidth(1.0),
+    9: FixedColumnWidth(360),
   };
+
+  // Quotation table: checkbox | # | ID | Customer | Date | Items | Total | Actions
+  static const Map<int, TableColumnWidth> _quotationColumnWidths = {
+    0: FixedColumnWidth(48),
+    1: FixedColumnWidth(56),
+    2: FlexColumnWidth(0.9),
+    3: FlexColumnWidth(1.0),
+    4: FixedColumnWidth(120),
+    5: FixedColumnWidth(80),
+    6: FlexColumnWidth(1.0),
+    7: FixedColumnWidth(360),
+  };
+
+  Map<int, TableColumnWidth> get _columnWidths =>
+      widget.filterType == 'Quotation' ? _quotationColumnWidths : _invoiceColumnWidths;
 
   // ─── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -91,8 +117,12 @@ class _InvoiceManagementScreenState
           page: _currentPage,
           pageSize: _pageSize,
           searchQuery: _searchQuery,
+          filterType: widget.filterType,
         ),
-        InvoiceService.getInvoiceCount(searchQuery: _searchQuery),
+        InvoiceService.getInvoiceCount(
+          searchQuery: _searchQuery,
+          filterType: widget.filterType,
+        ),
       ]);
       if (mounted) {
         var pageInvoices = results[0] as List<Invoice>;
@@ -101,6 +131,26 @@ class _InvoiceManagementScreenState
           pageInvoices = pageInvoices
               .where((inv) => inv.type != 'Invoice' || inv.outstandingBalance > 0)
               .toList();
+        }
+        if (_dueDateFilter != 'all') {
+          final now = DateTime.now();
+          final today = DateTime(now.year, now.month, now.day);
+          pageInvoices = pageInvoices.where((inv) {
+            if (inv.dueDate == null) return false;
+            final due = DateTime(inv.dueDate!.year, inv.dueDate!.month, inv.dueDate!.day);
+            switch (_dueDateFilter) {
+              case 'overdue':
+                return due.isBefore(today) && inv.paymentStatus != PaymentStatus.paid;
+              case 'due_today':
+                return due == today;
+              case 'due_week':
+                return !due.isBefore(today) && due.isBefore(today.add(const Duration(days: 7)));
+              case 'due_month':
+                return !due.isBefore(today) && due.isBefore(DateTime(today.year, today.month + 1, today.day));
+              default:
+                return true;
+            }
+          }).toList();
         }
         setState(() {
           _pageInvoices = pageInvoices;
@@ -492,6 +542,7 @@ class _InvoiceManagementScreenState
                         Colors.green,
                         Icons.pages,
                       ),
+                      if (widget.filterType == 'Invoice') ...[
                       const SizedBox(width: 16),
                       // Hide Paid toggle
                       InkWell(
@@ -539,6 +590,47 @@ class _InvoiceManagementScreenState
                           ),
                         ),
                       ),
+                      ], // end filterType == 'Invoice'
+                      if (widget.filterType == 'Invoice') ...[
+                      const SizedBox(width: 16),
+                      // Due date filter chips
+                      ..._dueDateFilterOptions.map((option) {
+                        final isActive = _dueDateFilter == option.$1;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: InkWell(
+                            onTap: () {
+                              setState(() {
+                                _dueDateFilter = option.$1;
+                                _currentPage = 0;
+                              });
+                              _loadPage();
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: isActive
+                                    ? option.$3.withValues(alpha: 0.12)
+                                    : Colors.grey.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: isActive ? option.$3.withValues(alpha: 0.4) : Colors.grey[300]!,
+                                ),
+                              ),
+                              child: Text(
+                                option.$2,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color: isActive ? option.$3 : Colors.grey[700],
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                      ], // end filterType == 'Invoice' (due date chips)
                     ],
                   ),
                 ),
@@ -565,7 +657,7 @@ class _InvoiceManagementScreenState
                               const SizedBox(height: 16),
                               Text(
                                 _searchQuery.isEmpty
-                                    ? 'No invoices found'
+                                    ? 'No ${widget.filterType.toLowerCase()}s found'
                                     : 'No results for "$_searchQuery"',
                                 style: TextStyle(
                                   fontSize: 18,
@@ -576,7 +668,7 @@ class _InvoiceManagementScreenState
                               const SizedBox(height: 8),
                               Text(
                                 _searchQuery.isEmpty
-                                    ? 'Create your first invoice to see it here'
+                                    ? 'Create your first ${widget.filterType.toLowerCase()} to see it here'
                                     : 'Try adjusting your search',
                                 style: TextStyle(
                                     fontSize: 14, color: Colors.grey[400]),
@@ -644,11 +736,12 @@ class _InvoiceManagementScreenState
                                             _buildTableHeader('Invoice ID'),
                                             _buildTableHeader('Customer'),
                                             _buildTableHeader('Date'),
-                                            _buildTableHeader('Type'),
                                             _buildTableHeader('Items'),
                                             _buildTableHeader('Total'),
-                                            _buildTableHeader('Status'),
-                                            _buildTableHeader('Outstanding'),
+                                            if (widget.filterType == 'Invoice') ...[
+                                              _buildTableHeader('Status'),
+                                              _buildTableHeader('Outstanding'),
+                                            ],
                                             _buildTableHeader('Actions'),
                                           ],
                                         ),
@@ -952,39 +1045,7 @@ class _InvoiceManagementScreenState
                   ],
                 ),
               ),
-              _buildTableCell(
-                Text(invoice.date.toString().split(' ')[0],
-                    style: const TextStyle(fontSize: 13)),
-              ),
-              // Type badge
-              _buildTableCell(
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: invoice.type == 'Invoice'
-                        ? Colors.indigo.withValues(alpha:0.1)
-                        : Colors.orange.withValues(alpha:0.1),
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(
-                      color: invoice.type == 'Invoice'
-                          ? Colors.indigo.withValues(alpha:0.35)
-                          : Colors.orange.withValues(alpha:0.35),
-                    ),
-                  ),
-                  child: Text(
-                      invoice.type,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: invoice.type == 'Invoice'
-                            ? Colors.indigo[700]
-                            : Colors.orange[800],
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-              ),
+              _buildTableCell(_buildDateCell(invoice)),
               // Items count
               _buildTableCell(
                 Container(
@@ -1012,27 +1073,25 @@ class _InvoiceManagementScreenState
                       color: Colors.green),
                 ),
               ),
-              // Payment status chip (only meaningful for Invoices)
-              _buildTableCell(
-                invoice.type == 'Invoice'
-                    ? _buildPaymentStatusChip(invoice.paymentStatus)
-                    : Text('—', style: TextStyle(color: Colors.grey[400])),
-              ),
-              // Outstanding balance
-              _buildTableCell(
-                invoice.type != 'Invoice' || invoice.paymentStatus == PaymentStatus.paid
-                    ? Text('—', style: TextStyle(color: Colors.grey[400]))
-                    : Text(
-                        '${invoice.currencySymbol} ${invoice.outstandingBalance.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: invoice.paymentStatus == PaymentStatus.partial
-                              ? Colors.orange[700]
-                              : Colors.red[700],
+              if (widget.filterType == 'Invoice') ...[
+                // Payment status chip
+                _buildTableCell(_buildPaymentStatusChip(invoice.paymentStatus)),
+                // Outstanding balance
+                _buildTableCell(
+                  invoice.paymentStatus == PaymentStatus.paid
+                      ? Text('—', style: TextStyle(color: Colors.grey[400]))
+                      : Text(
+                          '${invoice.currencySymbol} ${invoice.outstandingBalance.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: invoice.paymentStatus == PaymentStatus.partial
+                                ? Colors.orange[700]
+                                : Colors.red[700],
+                          ),
                         ),
-                      ),
-              ),
+                ),
+              ],
               _buildTableCell(
                 Row(
                   mainAxisSize: MainAxisSize.min,
@@ -1046,17 +1105,17 @@ class _InvoiceManagementScreenState
                         Icons.edit_outlined, Colors.blue, 'Edit',
                         () => widget.onEditInvoice(invoice)),
                     const SizedBox(width: 4),
+                    if (widget.filterType == 'Invoice') ...[
                     _buildActionButton(
                       Icons.payments_outlined,
                       invoice.paymentStatus == PaymentStatus.paid
                           ? Colors.green
                           : Colors.purple,
                       'Apply Payment',
-                      invoice.type == 'Invoice'
-                          ? () => _showApplyPaymentDialog(invoice)
-                          : null,
+                      () => _showApplyPaymentDialog(invoice),
                     ),
                     const SizedBox(width: 4),
+                    ],
                     _buildActionButton(
                         Icons.copy_all_outlined, Colors.teal, 'Duplicate',
                         () => _showCloneDialog(invoice)),
@@ -1090,6 +1149,53 @@ class _InvoiceManagementScreenState
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
       child: child,
+    );
+  }
+
+  Widget _buildDateCell(Invoice invoice) {
+    final orderStr = invoice.date.toString().split(' ')[0];
+    if (invoice.dueDate == null) {
+      return Text(orderStr, style: const TextStyle(fontSize: 13));
+    }
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final due = DateTime(invoice.dueDate!.year, invoice.dueDate!.month, invoice.dueDate!.day);
+    final isOverdue = due.isBefore(today) && invoice.paymentStatus != PaymentStatus.paid;
+    final isToday = due == today;
+    final dueStr = invoice.dueDate!.toString().split(' ')[0];
+    final dueColor = isOverdue
+        ? Colors.red[700]!
+        : isToday
+            ? Colors.orange[700]!
+            : Colors.grey[600]!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(orderStr, style: const TextStyle(fontSize: 12)),
+        const SizedBox(height: 3),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(dueStr, style: TextStyle(fontSize: 12, color: dueColor, fontWeight: (isOverdue || isToday) ? FontWeight.w600 : FontWeight.normal)),
+            if (isOverdue || isToday) ...[
+              const SizedBox(width: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                decoration: BoxDecoration(
+                  color: dueColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(3),
+                  border: Border.all(color: dueColor.withValues(alpha: 0.3)),
+                ),
+                child: Text(
+                  isOverdue ? 'Overdue' : 'Today',
+                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: dueColor),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ],
     );
   }
 

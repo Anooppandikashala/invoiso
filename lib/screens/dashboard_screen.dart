@@ -90,15 +90,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
         );
       case 2:
         return InvoiceManagementScreen(
+          key: const ValueKey('invoice_list'),
           onEditInvoice: editInvoice,
           onCloneInvoice: cloneInvoice,
           user: _currentUser,
+          filterType: 'Invoice',
         );
       case 3:
-        return CustomerManagementScreen(user: _currentUser);
+        return InvoiceManagementScreen(
+          key: const ValueKey('quotation_list'),
+          onEditInvoice: editInvoice,
+          onCloneInvoice: cloneInvoice,
+          user: _currentUser,
+          filterType: 'Quotation',
+        );
       case 4:
-        return ProductManagementScreen(user: _currentUser);
+        return CustomerManagementScreen(user: _currentUser);
       case 5:
+        return ProductManagementScreen(user: _currentUser);
+      case 6:
         return SettingsScreen(currentUser: _currentUser);
       default:
         return const Center(child: Text('Unknown tab'));
@@ -169,7 +179,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       child: NavigationRail(
                         selectedIndex: _selectedIndex,
                         onDestinationSelected: (index) {
-                          if (_selectedIndex == 5 && index != 5) {
+                          if (_selectedIndex == 6 && index != 6) {
                             _refreshUser();
                           }
                           setState(() => _selectedIndex = index);
@@ -187,9 +197,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             label: const Text('New Invoice'),
                           ),
                           NavigationRailDestination(
-                            icon: const Icon(Icons.list),
-                            selectedIcon: Icon(Icons.list, color: Colors.blue[900]),
+                            icon: const Icon(Icons.receipt_long_outlined),
+                            selectedIcon: Icon(Icons.receipt_long, color: Colors.blue[900]),
                             label: const Text('Invoices'),
+                          ),
+                          NavigationRailDestination(
+                            icon: const Icon(Icons.request_quote_outlined),
+                            selectedIcon: Icon(Icons.request_quote, color: Colors.blue[900]),
+                            label: const Text('Quotations'),
                           ),
                           NavigationRailDestination(
                             icon: const Icon(Icons.people),
@@ -458,21 +473,71 @@ class _DashboardHomeState extends State<DashboardHome> {
                                                     ],
                                                   ),
                                                   const SizedBox(height: 6),
-                                                  Row(
+                                                  Wrap(
+                                                    spacing: 6,
+                                                    runSpacing: 4,
+                                                    crossAxisAlignment: WrapCrossAlignment.center,
                                                     children: [
-                                                      Icon(Icons.person_outline, size: 16, color: Colors.grey[600]),
-                                                      const SizedBox(width: 6),
-                                                      Text(
-                                                        invoice.customer.name,
-                                                        style: TextStyle(fontSize: 15, color: Colors.grey[700]),
+                                                      Row(
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          Icon(Icons.person_outline, size: 16, color: Colors.grey[600]),
+                                                          const SizedBox(width: 6),
+                                                          Text(
+                                                            invoice.customer.name,
+                                                            style: TextStyle(fontSize: 15, color: Colors.grey[700]),
+                                                          ),
+                                                        ],
                                                       ),
-                                                      const SizedBox(width: 16),
-                                                      Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
-                                                      const SizedBox(width: 6),
-                                                      Text(
-                                                        invoice.date.toString().split(' ')[0],
-                                                        style: TextStyle(fontSize: 15, color: Colors.grey[700]),
+                                                      Row(
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
+                                                          const SizedBox(width: 6),
+                                                          Text(
+                                                            invoice.date.toString().split(' ')[0],
+                                                            style: TextStyle(fontSize: 15, color: Colors.grey[700]),
+                                                          ),
+                                                        ],
                                                       ),
+                                                      if (invoice.dueDate != null)
+                                                        () {
+                                                          final now = DateTime.now();
+                                                          final today = DateTime(now.year, now.month, now.day);
+                                                          final due = DateTime(invoice.dueDate!.year, invoice.dueDate!.month, invoice.dueDate!.day);
+                                                          final isOverdue = due.isBefore(today) && invoice.paymentStatus != PaymentStatus.paid;
+                                                          final color = isOverdue ? Colors.red[700]! : Colors.grey[600]!;
+                                                          return Row(
+                                                            mainAxisSize: MainAxisSize.min,
+                                                            children: [
+                                                              Icon(Icons.event_outlined, size: 16, color: color),
+                                                              const SizedBox(width: 6),
+                                                              Text(
+                                                                'Due: ${invoice.dueDate!.toString().split(' ')[0]}',
+                                                                style: TextStyle(
+                                                                  fontSize: 15,
+                                                                  color: color,
+                                                                  fontWeight: isOverdue ? FontWeight.w600 : FontWeight.normal,
+                                                                ),
+                                                              ),
+                                                              if (isOverdue) ...[
+                                                                const SizedBox(width: 6),
+                                                                Container(
+                                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                                  decoration: BoxDecoration(
+                                                                    color: Colors.red.withValues(alpha: 0.1),
+                                                                    borderRadius: BorderRadius.circular(4),
+                                                                    border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                                                                  ),
+                                                                  child: Text(
+                                                                    'Overdue',
+                                                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.red[700]),
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ],
+                                                          );
+                                                        }(),
                                                     ],
                                                   ),
                                                 ],

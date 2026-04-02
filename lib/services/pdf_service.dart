@@ -137,6 +137,8 @@ class PDFService {
               children: [
                 pw.Text("Invoice #: $invoicePrefix${invoice.id}", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
                 pw.Text("Date: ${_formatDate(invoice.date)}", style: const pw.TextStyle(fontSize: 10)),
+                if (invoice.dueDate != null)
+                  pw.Text("Due Date: ${_formatDate(invoice.dueDate!)}", style: const pw.TextStyle(fontSize: 10)),
               ],
             ),
           ],
@@ -249,6 +251,11 @@ class PDFService {
                 pw.SizedBox(height: 5),
                 pw.Text("DATE", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: accentColor)),
                 pw.Text(_formatDate(invoice.date), style: const pw.TextStyle(fontSize: 12)),
+                if (invoice.dueDate != null) ...[
+                  pw.SizedBox(height: 5),
+                  pw.Text("DUE DATE", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: accentColor)),
+                  pw.Text(_formatDate(invoice.dueDate!), style: const pw.TextStyle(fontSize: 12)),
+                ],
               ],
             ),
             if(logoImage != null && logoPosition == LogoPosition.right) _buildCompanyLogo(logoImage),
@@ -424,6 +431,8 @@ class PDFService {
                   pw.Text("Invoice #: $invoicePrefix${invoice.id}",
                       style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
                   pw.Text("Date: ${_formatDate(invoice.date)}", style: const pw.TextStyle(fontSize: 10)),
+                  if (invoice.dueDate != null)
+                    pw.Text("Due Date: ${_formatDate(invoice.dueDate!)}", style: const pw.TextStyle(fontSize: 10)),
                 ],
               ),
             ],

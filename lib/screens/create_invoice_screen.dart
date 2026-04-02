@@ -51,6 +51,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   final gstinController = TextEditingController();
   final taxRateController = TextEditingController();
   final dateController = TextEditingController();
+  final dueDateController = TextEditingController();
+  DateTime? _selectedDueDate;
 
   final _customerScrollController = ScrollController();
   final _productScrollController = ScrollController();
@@ -100,6 +102,10 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       invoiceType = _invoice!.type;
       currentInvoiceNumber = _invoice!.id;
       dateController.text = DateFormat('dd/MM/yyyy').format(_invoice!.date);
+      if (_invoice!.dueDate != null) {
+        _selectedDueDate = _invoice!.dueDate;
+        dueDateController.text = DateFormat('dd/MM/yyyy').format(_invoice!.dueDate!);
+      }
     } else if (widget.cloneFrom != null) {
       // Clone: pre-populate fields but treat as a brand-new invoice.
       // isEditing stays false → _createInvoice() will be called on save.
@@ -145,6 +151,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     phoneController.dispose();
     addressController.dispose();
     taxRateController.dispose();
+    dateController.dispose();
+    dueDateController.dispose();
     _customerScrollController.dispose();
     _productScrollController.dispose();
     _invoiceItemsScrollController.dispose();
@@ -471,6 +479,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
             ),
         items: List.from(invoiceItems),
         date: DateTime.now(),
+        dueDate: _selectedDueDate,
         notes: notesController.text.isNotEmpty ? notesController.text : null,
         taxRate: _taxMode == TaxMode.global ? taxRate : 0.0,
         type: invoiceType,
@@ -953,12 +962,52 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     enabled: false,
                     style: TextStyle(fontSize: AppFontSize.medium),
                     decoration: InputDecoration(
-                      labelText: 'Date',
+                      labelText: 'Order Date',
                       labelStyle: TextStyle(fontSize: AppFontSize.medium),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
                       filled: true,
                       fillColor: Colors.grey[100],
                     ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    controller: dueDateController,
+                    readOnly: true,
+                    style: TextStyle(fontSize: AppFontSize.medium),
+                    decoration: InputDecoration(
+                      labelText: 'Due Date',
+                      labelStyle: TextStyle(fontSize: AppFontSize.medium),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                      filled: true,
+                      fillColor: Colors.white,
+                      suffixIcon: dueDateController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, size: 18),
+                              onPressed: () {
+                                setState(() {
+                                  _selectedDueDate = null;
+                                  dueDateController.clear();
+                                });
+                              },
+                            )
+                          : const Icon(Icons.calendar_today, size: 18),
+                    ),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _selectedDueDate ?? DateTime.now(),
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2100),
+                      );
+                      if (picked != null) {
+                        setState(() {
+                          _selectedDueDate = picked;
+                          dueDateController.text = DateFormat('dd/MM/yyyy').format(picked);
+                        });
+                      }
+                    },
                   ),
                 )
               ],
@@ -1430,17 +1479,13 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                             ..._upiEntries.map((e) => DropdownMenuItem<UpiEntry?>(
                               value: e,
                               child: Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   if (e.isDefault) ...[
                                     Icon(Icons.star_rounded, size: 14, color: Colors.amber[700]),
                                     const SizedBox(width: 4),
                                   ],
                                   Text(e.displayLabel),
-                                  const SizedBox(width: 8),
-                                  Text(e.id,
-                                      style: TextStyle(
-                                          fontSize: AppFontSize.xsmall,
-                                          color: Colors.grey[500])),
                                 ],
                               ),
                             )),
@@ -1725,6 +1770,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
             ),
         items: List.from(invoiceItems),
         date: _invoice!.date,
+        dueDate: _selectedDueDate,
         notes: notesController.text.isNotEmpty ? notesController.text : null,
         taxRate: _taxMode == TaxMode.global ? taxRate : 0.0,
         type: invoiceType,
@@ -2036,7 +2082,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(flex: 1, child: _invoiceDetailsForm()),
+                  Expanded(flex: 2, child: _invoiceDetailsForm()),
                   AppSpacing.wSmall,
                   Expanded(flex: 3, child: _customerDetailsForm()),
                 ],
@@ -2077,7 +2123,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(flex: 1, child: _invoiceDetailsForm()),
+                      Expanded(flex: 2, child: _invoiceDetailsForm()),
                       const SizedBox(width: 16),
                       Expanded(flex: 3, child: _customerDetailsForm()),
                     ],

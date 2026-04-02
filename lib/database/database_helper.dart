@@ -14,7 +14,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 10;
+  final dbVersion = 11;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -74,7 +74,8 @@ class DatabaseHelper {
         currency_symbol TEXT DEFAULT '₹',
         tax_mode TEXT DEFAULT 'global',
         deleted_at TEXT,
-        upi_id TEXT
+        upi_id TEXT,
+        due_date TEXT
       )
     ''');
 
@@ -320,6 +321,14 @@ class DatabaseHelper {
       await _runMigrationStep(db, 10, 'add_upi_id_to_invoices', () async {
         await db.execute(
           'ALTER TABLE invoices ADD COLUMN upi_id TEXT',
+        );
+      });
+    }
+
+    if (oldVersion < 11) {
+      await _runMigrationStep(db, 11, 'add_due_date_to_invoices', () async {
+        await db.execute(
+          'ALTER TABLE invoices ADD COLUMN due_date TEXT',
         );
       });
     }
