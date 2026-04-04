@@ -38,6 +38,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
   bool _isAscending = true;
   bool _isLoading = false;
   final FocusNode _searchFocusNode = FocusNode();
+  final ScrollController _horizontalScrollController = ScrollController();
   Timer? _searchDebounce;
 
   // Form controllers
@@ -75,6 +76,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
     _taxRateController.dispose();
     _hsnCodeController.dispose();
     _searchFocusNode.dispose();
+    _horizontalScrollController.dispose();
     _searchDebounce?.cancel();
     super.dispose();
   }
@@ -454,13 +456,11 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Left form panel
                   SizedBox(
                     width: 320,
                     child: SingleChildScrollView(child: _buildAddProductCard()),
                   ),
                   const SizedBox(width: 16),
-                  // Right table panel
                   Expanded(child: _buildProductTable(totalPages)),
                 ],
               ),
@@ -634,11 +634,19 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
           Expanded(
             child: _products.isEmpty
                 ? _buildEmptyState()
-                : SingleChildScrollView(
-                    scrollDirection: Axis.vertical,
+                : Scrollbar(
+                    controller: _horizontalScrollController,
+                    thumbVisibility: true,
+                    trackVisibility: true,
+                    notificationPredicate: (notif) => notif.depth == 1,
                     child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                        child: _buildDataTable()),
+                      scrollDirection: Axis.vertical,
+                      child: SingleChildScrollView(
+                        controller: _horizontalScrollController,
+                        scrollDirection: Axis.horizontal,
+                        child: _buildDataTable(),
+                      ),
+                    ),
                   ),
           ),
           _buildPaginationControls(totalPages),

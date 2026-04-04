@@ -1271,6 +1271,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               children: [
                 Expanded(
                   child: DropdownButtonFormField<String>(
+                    isExpanded: true,
                     value: invoiceType,
                     decoration: InputDecoration(
                       labelText: 'Type',
@@ -1612,13 +1613,17 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
             color: isTotal ? Colors.green : Colors.grey[700],
           ),
         ),
-        const SizedBox(width: 24),
-        Text(
-          '$_currencySymbol${amount.toStringAsFixed(2)}',
-          style: TextStyle(
-            fontSize: isTotal ? 20 : 14,
-            fontWeight: FontWeight.bold,
-            color: isTotal ? Colors.green : Colors.black87,
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            '$_currencySymbol${amount.toStringAsFixed(2)}',
+            textAlign: TextAlign.end,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: isTotal ? 20 : 14,
+              fontWeight: FontWeight.bold,
+              color: isTotal ? Colors.green : Colors.black87,
+            ),
           ),
         ),
       ],
@@ -1877,6 +1882,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                       Expanded(
                         flex: 2,
                         child: DropdownButtonFormField<UpiEntry?>(
+                          isExpanded: true,
                           value: _selectedUpi,
                           decoration: InputDecoration(
                             labelText: 'Payment UPI Account',

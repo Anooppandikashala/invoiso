@@ -31,6 +31,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
   int _totalCustomerCount = 0;
   bool _isLoading = false;
   final FocusNode _searchFocusNode = FocusNode();
+  final ScrollController _horizontalScrollController = ScrollController();
 
   // Form controllers
   final _nameController = TextEditingController();
@@ -54,6 +55,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
     _addressController.dispose();
     _gstinController.dispose();
     _searchFocusNode.dispose();
+    _horizontalScrollController.dispose();
     super.dispose();
   }
 
@@ -396,21 +398,19 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Left form panel
-            SizedBox(
-              width: 320,
-              child: SingleChildScrollView(child: _buildAddCustomerCard()),
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 320,
+                    child: SingleChildScrollView(child: _buildAddCustomerCard()),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(child: _buildCustomerTable(currentPageCustomers, totalPages)),
+                ],
+              ),
             ),
-            const SizedBox(width: 16),
-            // Right table panel
-            Expanded(child: _buildCustomerTable(currentPageCustomers, totalPages)),
-          ],
-        ),
-      ),
     );
   }
 
@@ -552,18 +552,23 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
           Expanded(
             child: customers.isEmpty
                 ? _buildEmptyState()
-                : SingleChildScrollView(
-              scrollDirection: Axis.vertical,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minWidth: 800, // or any width your table needs
+                : Scrollbar(
+                    controller: _horizontalScrollController,
+                    thumbVisibility: true,
+                    trackVisibility: true,
+                    notificationPredicate: (notif) => notif.depth == 1,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.vertical,
+                      child: SingleChildScrollView(
+                        controller: _horizontalScrollController,
+                        scrollDirection: Axis.horizontal,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(minWidth: 800),
+                          child: _buildDataTable(customers),
+                        ),
+                      ),
+                    ),
                   ),
-                  child: _buildDataTable(customers),
-                ),
-              ),
-            ),
           ),
           _buildPaginationControls(totalPages),
         ],

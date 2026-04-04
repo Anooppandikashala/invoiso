@@ -70,7 +70,7 @@ class _InvoiceManagementScreenState
     6: FlexColumnWidth(1.0),
     7: FixedColumnWidth(90),
     8: FlexColumnWidth(1.0),
-    9: FixedColumnWidth(360),
+    9: FixedColumnWidth(320),
   };
 
   // Quotation table: checkbox | # | ID | Customer | Date | Items | Total | Actions
@@ -82,7 +82,7 @@ class _InvoiceManagementScreenState
     4: FixedColumnWidth(120),
     5: FixedColumnWidth(80),
     6: FlexColumnWidth(1.0),
-    7: FixedColumnWidth(360),
+    7: FixedColumnWidth(320),
   };
 
   Map<int, TableColumnWidth> get _columnWidths =>
@@ -1029,20 +1029,26 @@ class _InvoiceManagementScreenState
                         fontSize: 15, fontWeight: FontWeight.w600)),
               ),
               _buildTableCell(
-                Row(
-                  children: [
-                    Icon(Icons.person_outline,
-                        size: 16, color: Colors.grey[600]),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        invoice.customer.name,
-                        style: const TextStyle(fontSize: 14),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    _CustomerInfoButton(customer: invoice.customer),
-                  ],
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final showIcon = constraints.maxWidth > 60;
+                    return Row(
+                      children: [
+                        if (showIcon) ...[
+                          Icon(Icons.person_outline, size: 16, color: Colors.grey[600]),
+                          const SizedBox(width: 6),
+                        ],
+                        Expanded(
+                          child: Text(
+                            invoice.customer.name,
+                            style: const TextStyle(fontSize: 14),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        _CustomerInfoButton(customer: invoice.customer),
+                      ],
+                    );
+                  },
                 ),
               ),
               _buildTableCell(_buildDateCell(invoice)),
