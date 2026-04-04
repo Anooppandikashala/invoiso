@@ -14,7 +14,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 11;
+  final dbVersion = 13;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -75,7 +75,8 @@ class DatabaseHelper {
         tax_mode TEXT DEFAULT 'global',
         deleted_at TEXT,
         upi_id TEXT,
-        due_date TEXT
+        due_date TEXT,
+        quantity_label TEXT
       )
     ''');
 
@@ -88,8 +89,10 @@ class DatabaseHelper {
         product_price REAL,
         product_tax_rate INTEGER,
         product_hsn_code TEXT,
-        quantity INTEGER,
+        quantity REAL,
         discount REAL,
+        unit_price REAL,
+        extra_cost REAL,
         PRIMARY KEY (invoice_id, product_id),
         FOREIGN KEY (invoice_id) REFERENCES invoices(id)
       )
@@ -329,6 +332,27 @@ class DatabaseHelper {
       await _runMigrationStep(db, 11, 'add_due_date_to_invoices', () async {
         await db.execute(
           'ALTER TABLE invoices ADD COLUMN due_date TEXT',
+        );
+      });
+    }
+
+    if (oldVersion < 12) {
+      await _runMigrationStep(db, 12, 'add_unit_price_to_invoice_items', () async {
+        await db.execute(
+          'ALTER TABLE invoice_items ADD COLUMN unit_price REAL',
+        );
+      });
+    }
+
+    if (oldVersion < 13) {
+      await _runMigrationStep(db, 13, 'add_extra_cost_to_invoice_items', () async {
+        await db.execute(
+          'ALTER TABLE invoice_items ADD COLUMN extra_cost REAL',
+        );
+      });
+      await _runMigrationStep(db, 13, 'add_quantity_label_to_invoices', () async {
+        await db.execute(
+          'ALTER TABLE invoices ADD COLUMN quantity_label TEXT',
         );
       });
     }

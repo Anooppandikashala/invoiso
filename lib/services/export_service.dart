@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:intl/intl.dart';
@@ -15,6 +16,7 @@ class ExportService {
     final header = <String>[
       'Invoice ID',
       'Date',
+      'Due Date',
       'Customer',
       'Phone',
       'Address',
@@ -24,18 +26,23 @@ class ExportService {
       'Tax',
       'Total',
       'Currency',
+      'UPI',
       'Items',
     ];
 
     final dataRows = invoices.map((inv) {
       final itemsSummary = inv.items.map((item) {
-        final unitPrice = item.product.price.toStringAsFixed(2);
-        return '${item.product.name} \u00d7${item.quantity} @${inv.currencySymbol}$unitPrice';
+        final qty = item.quantity == item.quantity.roundToDouble()
+            ? item.quantity.toInt().toString()
+            : item.quantity.toString();
+        final unitPrice = item.effectivePrice.toStringAsFixed(2);
+        return '${item.product.name} x$qty @${inv.currencyCode} $unitPrice';
       }).join('; ');
 
       return <dynamic>[
         inv.id,
         AppFormatters.formatShortDate(inv.date),
+        inv.dueDate != null ? AppFormatters.formatShortDate(inv.dueDate!) : '',
         inv.customer.name,
         inv.customer.phone,
         inv.customer.address,
@@ -45,16 +52,18 @@ class ExportService {
         inv.tax.toStringAsFixed(2),
         inv.total.toStringAsFixed(2),
         inv.currencyCode,
+        inv.upiId ?? '',
         itemsSummary,
       ];
     }).toList();
 
     final rows = <List<dynamic>>[header, ...dataRows];
     final csv = const ListToCsvConverter().convert(rows);
+    // Prepend UTF-8 BOM so Excel and other apps render Unicode correctly
     final dir = await getApplicationDocumentsDirectory();
     final filename = 'invoices_${DateTime.now().millisecondsSinceEpoch}.csv';
     final file = File('${dir.path}/$filename');
-    await file.writeAsString(csv);
+    await file.writeAsBytes(utf8.encode('\uFEFF$csv'));
     return file.path;
   }
 

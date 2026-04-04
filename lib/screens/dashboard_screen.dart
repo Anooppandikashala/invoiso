@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:invoiso/constants.dart';
 import 'package:invoiso/database/customer_service.dart';
 import 'package:invoiso/database/invoice_service.dart';
@@ -32,6 +33,7 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
+  bool _sidebarExpanded = true;
   late User _currentUser;
 
   Invoice? invoiceToEdit;
@@ -139,100 +141,329 @@ class _DashboardScreenState extends State<DashboardScreen> {
       onPanDown: (_) => SessionManager.onUserActivity(),
       behavior: HitTestBehavior.translucent,
       child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          title: Image.asset(
-            'assets/images/logo.png',
-            width: 120,
-            height: 100,
-            fit: BoxFit.contain,
-          ),
-          actions: [
-            Row(
-              children: [
-                Icon(Icons.person, color: Theme.of(context).primaryColor),
-                AppSpacing.wSmall,
-                Text('Hi ${_currentUser.username}', style: const TextStyle(fontSize: 18)),
-                AppSpacing.wMedium,
-              ],
-            ),
-            IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: () {
-                SessionManager.dispose();
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                );
-              },
-            ),
-          ],
-        ),
         body: Row(
           children: [
-            LayoutBuilder(
-              builder: (context, constraints) {
-                return SingleChildScrollView(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                    child: IntrinsicHeight(
-                      child: NavigationRail(
-                        selectedIndex: _selectedIndex,
-                        onDestinationSelected: (index) {
-                          if (_selectedIndex == 6 && index != 6) {
-                            _refreshUser();
-                          }
-                          setState(() => _selectedIndex = index);
-                        },
-                        labelType: NavigationRailLabelType.all,
-                        destinations: [
-                          NavigationRailDestination(
-                            icon: const Icon(Icons.dashboard),
-                            selectedIcon: Icon(Icons.dashboard, color: Colors.blue[900]),
-                            label: const Text('Dashboard'),
-                          ),
-                          NavigationRailDestination(
-                            icon: const Icon(Icons.receipt),
-                            selectedIcon: Icon(Icons.receipt, color: Colors.blue[900]),
-                            label: const Text('New Invoice'),
-                          ),
-                          NavigationRailDestination(
-                            icon: const Icon(Icons.receipt_long_outlined),
-                            selectedIcon: Icon(Icons.receipt_long, color: Colors.blue[900]),
-                            label: const Text('Invoices'),
-                          ),
-                          NavigationRailDestination(
-                            icon: const Icon(Icons.request_quote_outlined),
-                            selectedIcon: Icon(Icons.request_quote, color: Colors.blue[900]),
-                            label: const Text('Quotations'),
-                          ),
-                          NavigationRailDestination(
-                            icon: const Icon(Icons.people),
-                            selectedIcon: Icon(Icons.people, color: Colors.blue[900]),
-                            label: const Text('Customers'),
-                          ),
-                          NavigationRailDestination(
-                            icon: const Icon(Icons.inventory),
-                            selectedIcon: Icon(Icons.inventory, color: Colors.blue[900]),
-                            label: const Text('Products'),
-                          ),
-                          NavigationRailDestination(
-                            icon: const Icon(Icons.settings),
-                            selectedIcon: Icon(Icons.settings, color: Colors.blue[900]),
-                            label: const Text('Settings'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-            const VerticalDivider(thickness: 1, width: 1),
+            _buildSidebar(),
             Expanded(child: buildScreen()),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSidebar() {
+    final expanded = _sidebarExpanded;
+    final primary = Theme.of(context).primaryColor;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeInOut,
+      width: expanded ? 210 : 64,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(right: BorderSide(color: Color(0xFFE2E8F0), width: 1)),
+      ),
+      child: ClipRect(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // ── Logo + toggle ──────────────────────────
+          if (expanded)
+            SizedBox(
+              height: 76,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Positioned(
+                    left: 16,
+                    right: 36,
+                    child: Image.asset(
+                      'assets/images/logo.png',
+                      height: 36,
+                      fit: BoxFit.fitHeight,
+                    ),
+                  ),
+                  Positioned(
+                    right: 6,
+                    child: Tooltip(
+                      message: 'Collapse sidebar',
+                      child: InkWell(
+                        onTap: () => setState(() => _sidebarExpanded = false),
+                        borderRadius: BorderRadius.circular(6),
+                        child: Padding(
+                          padding: const EdgeInsets.all(6),
+                          child: Icon(Icons.chevron_left_rounded,
+                              color: const Color(0xFF64748B), size: 20),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            SizedBox(
+              height: 76,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.asset(
+                      'assets/images/logo_v.png',
+                      width: 38,
+                      height: 38,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Tooltip(
+                    message: 'Expand sidebar',
+                    child: InkWell(
+                      onTap: () => setState(() => _sidebarExpanded = true),
+                      borderRadius: BorderRadius.circular(6),
+                      child: Padding(
+                        padding: const EdgeInsets.all(4),
+                        child: Icon(Icons.chevron_right_rounded,
+                            color: const Color(0xFF64748B), size: 18),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          const Divider(color: Color(0xFFE2E8F0), height: 1, thickness: 1),
+          const SizedBox(height: 8),
+
+          // ── Nav Items ──────────────────────────────
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildNavItem(0, Icons.dashboard_outlined, Icons.dashboard, 'Dashboard'),
+                  _buildNavItem(1, Icons.receipt_outlined, Icons.receipt, 'New Invoice'),
+                  _buildNavItem(2, Icons.receipt_long_outlined, Icons.receipt_long, 'Invoices'),
+                  _buildNavItem(3, Icons.request_quote_outlined, Icons.request_quote, 'Quotations'),
+                  _buildNavItem(4, Icons.people_outline, Icons.people, 'Customers'),
+                  _buildNavItem(5, Icons.inventory_2_outlined, Icons.inventory_2, 'Products'),
+                  _buildNavItem(6, Icons.settings_outlined, Icons.settings, 'Settings'),
+                ],
+              ),
+            ),
+          ),
+
+          // ── User Info ──────────────────────────────
+          const Divider(color: Color(0xFFE2E8F0), height: 1, thickness: 1),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final useExpanded = constraints.maxWidth > 110;
+              if (useExpanded) {
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 10, 16),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 15,
+                        backgroundColor: primary.withValues(alpha: 0.12),
+                        child: Text(
+                          _currentUser.username.isNotEmpty
+                              ? _currentUser.username[0].toUpperCase()
+                              : '?',
+                          style: TextStyle(
+                              color: primary, fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _currentUser.username,
+                              style: const TextStyle(
+                                  color: Color(0xFF1E293B), fontSize: 13, fontWeight: FontWeight.w500),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              _currentUser.isAdmin() ? 'Admin' : 'User',
+                              style: const TextStyle(
+                                  color: Color(0xFF64748B), fontSize: 11),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Tooltip(
+                        message: 'Logout',
+                        child: InkWell(
+                          onTap: () {
+                            SessionManager.dispose();
+                            Navigator.pushReplacement(context,
+                                MaterialPageRoute(builder: (_) => const LoginScreen()));
+                          },
+                          borderRadius: BorderRadius.circular(6),
+                          child: const Padding(
+                            padding: EdgeInsets.all(6),
+                            child: Icon(Icons.logout_rounded,
+                                color: Color(0xFF64748B), size: 18),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Center(
+                      child: Tooltip(
+                        message: _currentUser.username,
+                        child: CircleAvatar(
+                          radius: 15,
+                          backgroundColor: primary.withValues(alpha: 0.12),
+                          child: Text(
+                            _currentUser.username.isNotEmpty
+                                ? _currentUser.username[0].toUpperCase()
+                                : '?',
+                            style: TextStyle(
+                                color: primary, fontSize: 12, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Center(
+                      child: Tooltip(
+                        message: 'Logout',
+                        child: InkWell(
+                          onTap: () {
+                            SessionManager.dispose();
+                            Navigator.pushReplacement(context,
+                                MaterialPageRoute(builder: (_) => const LoginScreen()));
+                          },
+                          borderRadius: BorderRadius.circular(6),
+                          child: Padding(
+                            padding: const EdgeInsets.all(6),
+                            child: const Icon(Icons.logout_rounded,
+                                color: Color(0xFF64748B), size: 18),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+      ),  // ClipRect
+    );
+  }
+
+  Widget _buildNavItem(int index, IconData outlinedIcon, IconData filledIcon, String label) {
+    final selected = _selectedIndex == index;
+    final primary = Theme.of(context).primaryColor;
+
+    void onTap() {
+      if (_selectedIndex == 6 && index != 6) _refreshUser();
+      setState(() => _selectedIndex = index);
+    }
+
+    // Use LayoutBuilder so the layout switches based on actual rendered width,
+    // not just state — prevents overflow errors during the AnimatedContainer transition.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useExpanded = constraints.maxWidth > 110;
+
+        if (!useExpanded) {
+          return Tooltip(
+            message: label,
+            preferBelow: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+                child: InkWell(
+                  onTap: onTap,
+                  borderRadius: BorderRadius.circular(8),
+                  hoverColor: primary.withValues(alpha: 0.06),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    padding: const EdgeInsets.all(12),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: selected ? primary.withValues(alpha: 0.1) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      selected ? filledIcon : outlinedIcon,
+                      color: selected ? primary : const Color(0xFF64748B),
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(8),
+              hoverColor: primary.withValues(alpha: 0.06),
+              splashColor: primary.withValues(alpha: 0.1),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                decoration: BoxDecoration(
+                  color: selected ? primary.withValues(alpha: 0.1) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      selected ? filledIcon : outlinedIcon,
+                      color: selected ? primary : const Color(0xFF64748B),
+                      size: 18,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                          color: selected ? primary : const Color(0xFF64748B),
+                          fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                          fontSize: 13.5,
+                        ),
+                      ),
+                    ),
+                    if (selected)
+                      Container(
+                        width: 3,
+                        height: 18,
+                        decoration: BoxDecoration(
+                          color: primary,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -308,58 +539,64 @@ class _DashboardHomeState extends State<DashboardHome> {
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  width: MediaQuery.sizeOf(context).width * 0.75,
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Stats Cards Section
-                        Row(
-                          children: [
-                            _buildStatCard('Total Customers', totalCustomers.toString(), Colors.blue, Icons.people),
-                            const SizedBox(width: 16),
-                            _buildStatCard('Total Products', totalProducts.toString(), Colors.green, Icons.inventory_2),
-                            const SizedBox(width: 16),
-                            _buildStatCard('Total Invoices', totalInvoices.toString(), Colors.orange, Icons.receipt_long),
-                            const SizedBox(width: 16),
-                            _buildStatCard(
-                              'Total Revenue',
-                              '$_currencySymbol ${totalRevenue.toStringAsFixed(2)}',
-                              Colors.purple,
-                              Icons.account_balance_wallet,
-                            ),
-                          ],
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Greeting Banner ──────────────────────────────
+                  _buildGreetingBanner(),
+
+                  const SizedBox(height: 28),
+
+                  // ── Stats Row ────────────────────────────────────
+                  Row(
+                    children: [
+                      _buildStatCard('Customers', totalCustomers.toString(), const Color(0xFF1565C0), Icons.people_outline),
+                      const SizedBox(width: 16),
+                      _buildStatCard('Products', totalProducts.toString(), const Color(0xFF2E7D32), Icons.inventory_2_outlined),
+                      const SizedBox(width: 16),
+                      _buildStatCard('Invoices', totalInvoices.toString(), const Color(0xFFE65100), Icons.receipt_long_outlined),
+                      const SizedBox(width: 16),
+                      _buildStatCard(
+                        'Total Revenue',
+                        '$_currencySymbol ${totalRevenue.toStringAsFixed(2)}',
+                        const Color(0xFF6A1B9A),
+                        Icons.account_balance_wallet_outlined,
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 36),
+
+                  // ── Recent Invoices Header ────────────────────────
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 4,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).primaryColor,
+                          borderRadius: BorderRadius.circular(2),
                         ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'Recent Invoices',
+                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: -0.3),
+                      ),
+                      const Spacer(),
+                      Text(
+                        'Last 5 invoices',
+                        style: TextStyle(fontSize: 13, color: Colors.grey[400]),
+                      ),
+                    ],
+                  ),
 
-                        const SizedBox(height: 40),
+                  const SizedBox(height: 20),
 
-                        // Recent Invoices Section
-                        Row(
-                          children: [
-                            Container(
-                              width: 4,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).primaryColor,
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            const Text(
-                              'Recent Invoices',
-                              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        recentInvoices.isEmpty
+                  recentInvoices.isEmpty
                             ? Center(
                                 child: Container(
                                   padding: const EdgeInsets.all(48),
@@ -574,7 +811,7 @@ class _DashboardHomeState extends State<DashboardHome> {
                                                 _buildActionButton(Icons.copy_all_outlined, Colors.teal, 'Duplicate',
                                                     () => _showCloneDialog(invoice)),
                                                 const SizedBox(width: 8),
-                                                _buildActionButton(Icons.picture_as_pdf_outlined, Colors.orange, 'PDF',
+                                                _buildActionButton(Icons.picture_as_pdf_outlined, Colors.orange, 'PDF View / Download',
                                                     () => InvoicePdfServices.previewPDF(context, invoice)),
                                                 const SizedBox(width: 8),
                                                 _buildActionButton(Icons.print_outlined, Colors.blueGrey, 'Print',
@@ -603,27 +840,89 @@ class _DashboardHomeState extends State<DashboardHome> {
                                   );
                                 },
                               ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
+    );
+  }
+
+  Widget _buildGreetingBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1E293B), Color(0xFF334155)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1E293B).withValues(alpha: 0.25),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Welcome back, ${widget.user.username}',
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  letterSpacing: -0.3,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Here\'s your business at a glance',
+                style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.72)),
+              ),
+            ],
+          ),
+          const Spacer(),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                DateFormat('EEEE').format(DateTime.now()),
+                style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.72)),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                DateFormat('MMM d, yyyy').format(DateTime.now()),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildStatCard(String title, String value, Color color, IconData icon) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [color.withValues(alpha:0.1), color.withValues(alpha:0.05)],
-          ),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withValues(alpha:0.2), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.07),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -632,23 +931,41 @@ class _DashboardHomeState extends State<DashboardHome> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                    boxShadow: [
-                      BoxShadow(color: color.withValues(alpha:0.2), blurRadius: 8, offset: const Offset(0, 2)),
-                    ],
+                    color: color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(icon, color: color, size: 28),
+                  child: Icon(icon, color: color, size: 22),
                 ),
-                Icon(Icons.trending_up, color: color.withValues(alpha:0.4), size: 24),
+                Icon(Icons.trending_up_rounded, color: color.withValues(alpha: 0.3), size: 18),
               ],
             ),
-            const SizedBox(height: 20),
-            Text(title, style: TextStyle(fontSize: 14, color: Colors.grey[600], fontWeight: FontWeight.w500)),
-            const SizedBox(height: 8),
-            Text(value, style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: color)),
+            const SizedBox(height: 16),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[900],
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: TextStyle(fontSize: 12, color: Colors.grey[500], fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 14),
+            Container(
+              height: 3,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(2),
+                gradient: LinearGradient(
+                  colors: [color.withValues(alpha: 0.6), color.withValues(alpha: 0.1)],
+                ),
+              ),
+            ),
           ],
         ),
       ),

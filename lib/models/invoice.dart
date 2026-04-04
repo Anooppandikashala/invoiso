@@ -15,8 +15,9 @@ class Invoice {
   String currencySymbol;
   TaxMode taxMode;
   List<InvoicePayment> payments;
-  String? upiId; // selected UPI account for this invoice
+  String? upiId;         // selected UPI account for this invoice
   DateTime? dueDate;
+  String? quantityLabel; // custom label for the Qty column (e.g. "Words", "Hours")
 
   Invoice({
     required this.id,
@@ -32,6 +33,7 @@ class Invoice {
     this.payments = const [],
     this.upiId,
     this.dueDate,
+    this.quantityLabel,
   });
 
   double get subtotal => items.fold(0.0, (sum, item) => sum + item.total);

@@ -116,4 +116,13 @@ class SettingsService
     final val = await getSetting(SettingKey.showGstFields);
     return val != 'false';
   }
+
+  static Future<bool> getFractionalQuantity() async {
+    final val = await getSetting(SettingKey.fractionalQuantity);
+    return val == 'true';  // off by default
+  }
+
+  static Future<String> getQuantityLabel() async {
+    return await getSetting(SettingKey.quantityLabel) ?? '';
+  }
 }

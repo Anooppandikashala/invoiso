@@ -31,7 +31,7 @@ class InvoicePdfServices
       final bytes = await pdf.save();
       if(context.mounted)
       {
-        PDFService.showCenteredPDFViewer(context, bytes, invoice.id);
+        PDFService.showCenteredPDFViewer(context, bytes, invoice);
       }
     } catch (e)
     {
@@ -78,7 +78,7 @@ class InvoicePdfServices
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('${item.product.name} x${item.quantity}'),
+                    Text('${item.product.name} x${item.quantity == item.quantity.roundToDouble() ? item.quantity.toInt() : item.quantity}'),
                     Text('${invoice.currencySymbol} ${item.total.toStringAsFixed(2)}'),
                   ],
                 ),

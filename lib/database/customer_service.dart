@@ -61,4 +61,16 @@ class CustomerService
     await db.delete('customers', where: 'id = ?', whereArgs: [id]);
   }
 
+  static Future<Customer?> findByPhone(String phone) async {
+    if (phone.trim().isEmpty) return null;
+    final db = await dbHelper.database;
+    final maps = await db.query(
+      'customers',
+      where: 'phone = ?',
+      whereArgs: [phone.trim()],
+      limit: 1,
+    );
+    return maps.isNotEmpty ? Customer.fromMap(maps.first) : null;
+  }
+
 }

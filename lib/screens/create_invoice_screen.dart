@@ -72,6 +72,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   List<UpiEntry> _upiEntries = [];
   UpiEntry? _selectedUpi;
   bool _showGstFields = true;
+  bool _fractionalQuantity = false;
+  String _quantityLabel = '';
 
   TaxMode get _taxMode {
     if (!_isTaxEnabled) return TaxMode.none;
@@ -106,6 +108,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         _selectedDueDate = _invoice!.dueDate;
         dueDateController.text = DateFormat('dd/MM/yyyy').format(_invoice!.dueDate!);
       }
+      _quantityLabel = _invoice!.quantityLabel ?? '';
     } else if (widget.cloneFrom != null) {
       // Clone: pre-populate fields but treat as a brand-new invoice.
       // isEditing stays false → _createInvoice() will be called on save.
@@ -122,6 +125,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       _isTaxEnabled = src.taxMode != TaxMode.none;
       _isPerItem    = src.taxMode == TaxMode.perItem;
       invoiceType = widget.cloneType ?? src.type;
+      _quantityLabel = src.quantityLabel ?? '';
       // date stays as today; currentInvoiceNumber is generated in _loadCustomersAndProducts
     }
   }
@@ -191,6 +195,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
       final upiEntries = await SettingsService.getUpiIds();
       final showGst = await SettingsService.getShowGstFields();
+      final fractionalQty = await SettingsService.getFractionalQuantity();
+      final quantityLabelSetting = await SettingsService.getQuantityLabel();
 
       // Determine which UPI to pre-select.
       String? existingUpiId;
@@ -220,6 +226,11 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         _upiEntries = upiEntries;
         _selectedUpi = preselectedUpi;
         _showGstFields = showGst;
+        _fractionalQuantity = fractionalQty;
+        // For new invoices, use the global setting. Edit/clone already set _quantityLabel in initState.
+        if (!isEditing && widget.cloneFrom == null) {
+          _quantityLabel = quantityLabelSetting;
+        }
         isLoading = false;
       });
     } catch (e) {
@@ -233,8 +244,10 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   }
 
   void addInvoiceProductPrompt(Product product) {
-    final quantityController = TextEditingController(text: '1');
+    final quantityController = TextEditingController();
     final discountController = TextEditingController(text: '0');
+    final unitPriceController = TextEditingController(text: product.price.toString());
+    final extraCostController = TextEditingController();
 
     showDialog(
       context: context,
@@ -301,13 +314,16 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               TextField(
                 controller: quantityController,
                 decoration: InputDecoration(
-                  labelText: 'Quantity',
+                  labelText: _quantityLabel.trim().isNotEmpty ? _quantityLabel.trim() : 'Quantity',
+                  hintText: '1',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
                   prefixIcon: const Icon(Icons.numbers),
                   filled: true,
                   fillColor: Colors.grey[50],
                 ),
-                keyboardType: TextInputType.number,
+                keyboardType: _fractionalQuantity
+                    ? const TextInputType.numberWithOptions(decimal: true)
+                    : TextInputType.number,
               ),
               const SizedBox(height: 16),
               TextField(
@@ -320,6 +336,33 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   fillColor: Colors.grey[50],
                 ),
                 keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: unitPriceController,
+                decoration: InputDecoration(
+                  labelText: 'Unit Price (override)',
+                  helperText: 'Default: $_currencySymbol${product.price}',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                  prefixIcon: const Icon(Icons.attach_money),
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                ),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: extraCostController,
+                decoration: InputDecoration(
+                  labelText: 'Extra Cost (optional)',
+                  hintText: '0.00',
+                  helperText: 'Flat fee added on top of the line total',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                  prefixIcon: const Icon(Icons.add_circle_outline, size: 18),
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                ),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
               ),
             ],
           ),
@@ -335,8 +378,13 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
             onPressed: () async {
-              final qty = int.tryParse(quantityController.text) ?? 1;
+              final qty = _fractionalQuantity
+                  ? (double.tryParse(quantityController.text) ?? 1.0)
+                  : (int.tryParse(quantityController.text) ?? 1).toDouble();
               final discount = double.tryParse(discountController.text) ?? 0.0;
+              final parsedUnitPrice = double.tryParse(unitPriceController.text);
+              final unitPrice = (parsedUnitPrice != null && parsedUnitPrice != product.price) ? parsedUnitPrice : null;
+              final extraCost = double.tryParse(extraCostController.text);
 
               // Check stock
               if (product.stock > 0 && qty > product.stock) {
@@ -363,7 +411,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   ),
                 );
                 if (addAnyway == true) {
-                  addInvoiceProduct(InvoiceItem(product: product, quantity: qty, discount: discount));
+                  addInvoiceProduct(InvoiceItem(product: product, quantity: qty, discount: discount, unitPrice: unitPrice, extraCost: extraCost));
                 }
               } else if (product.stock == 0) {
                 Navigator.pop(context);
@@ -386,11 +434,11 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   ),
                 );
                 if (addAnyway == true) {
-                  addInvoiceProduct(InvoiceItem(product: product, quantity: qty, discount: discount));
+                  addInvoiceProduct(InvoiceItem(product: product, quantity: qty, discount: discount, unitPrice: unitPrice, extraCost: extraCost));
                 }
               } else {
                 Navigator.pop(context);
-                addInvoiceProduct(InvoiceItem(product: product, quantity: qty, discount: discount));
+                addInvoiceProduct(InvoiceItem(product: product, quantity: qty, discount: discount, unitPrice: unitPrice, extraCost: extraCost));
               }
             },
             child: const Text('Add'),
@@ -401,7 +449,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   }
 
   void addInvoiceProduct(InvoiceItem invoiceItem) {
-    final exists = invoiceItems.any((item) => item.product.id == invoiceItem.product.id);
+    final isAdHoc = invoiceItem.product.id.startsWith('custom-');
+    final exists = !isAdHoc && invoiceItems.any((item) => item.product.id == invoiceItem.product.id);
 
     if (exists) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -468,9 +517,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       final invoiceId = await InvoicePdfServices.generateNextInvoiceNumber();
       final invoice = Invoice(
         id: invoiceId,
-        customer: selectedCustomer ??
-            Customer(
-              id: const Uuid().v4(),
+        customer: Customer(
+              id: selectedCustomer?.id ?? const Uuid().v4(),
               name: nameController.text,
               email: emailController.text,
               phone: phoneController.text,
@@ -487,6 +535,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         currencySymbol: _currencySymbol,
         taxMode: _taxMode,
         upiId: _selectedUpi?.id,
+        quantityLabel: _quantityLabel.trim().isEmpty ? null : _quantityLabel.trim(),
       );
 
       await InvoiceService.insertInvoice(invoice);
@@ -522,8 +571,10 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
   void _editInvoiceItem(int index) {
     final item = invoiceItems[index];
-    final quantityController = TextEditingController(text: item.quantity.toString());
+    final quantityController = TextEditingController(text: item.quantity == 1.0 ? '' : item.quantity.toString());
     final discountController = TextEditingController(text: item.discount.toString());
+    final unitPriceController = TextEditingController(text: item.effectivePrice.toString());
+    final extraCostController = TextEditingController(text: item.extraCost != null ? item.extraCost.toString() : '');
 
     showDialog(
       context: context,
@@ -564,13 +615,15 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               TextField(
                 controller: quantityController,
                 decoration: InputDecoration(
-                  labelText: 'Quantity',
+                  labelText: _quantityLabel.trim().isNotEmpty ? _quantityLabel.trim() : 'Quantity',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
                   prefixIcon: const Icon(Icons.numbers),
                   filled: true,
                   fillColor: Colors.grey[50],
                 ),
-                keyboardType: TextInputType.number,
+                keyboardType: _fractionalQuantity
+                    ? const TextInputType.numberWithOptions(decimal: true)
+                    : TextInputType.number,
               ),
               const SizedBox(height: 16),
               TextField(
@@ -583,6 +636,33 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   fillColor: Colors.grey[50],
                 ),
                 keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: unitPriceController,
+                decoration: InputDecoration(
+                  labelText: 'Unit Price (override)',
+                  helperText: 'Default: $_currencySymbol${item.product.price}',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                  prefixIcon: const Icon(Icons.attach_money),
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                ),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: extraCostController,
+                decoration: InputDecoration(
+                  labelText: 'Extra Cost (optional)',
+                  hintText: '0.00',
+                  helperText: 'Flat fee added on top of the line total',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                  prefixIcon: const Icon(Icons.add_circle_outline, size: 18),
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                ),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
               ),
             ],
           ),
@@ -598,10 +678,17 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
             onPressed: () {
+              final parsedUnitPrice = double.tryParse(unitPriceController.text);
+              final unitPrice = (parsedUnitPrice != null && parsedUnitPrice != item.product.price) ? parsedUnitPrice : null;
+              final extraCost = double.tryParse(extraCostController.text);
               final updatedItem = InvoiceItem(
                 product: item.product,
-                quantity: int.tryParse(quantityController.text) ?? item.quantity,
+                quantity: _fractionalQuantity
+                    ? (double.tryParse(quantityController.text) ?? item.quantity)
+                    : (int.tryParse(quantityController.text) ?? item.quantity.toInt()).toDouble(),
                 discount: double.tryParse(discountController.text) ?? item.discount,
+                unitPrice: unitPrice,
+                extraCost: extraCost,
               );
 
               setState(() {
@@ -611,6 +698,159 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               Navigator.pop(context);
             },
             child: const Text('Update'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _addAdHocItemDialog() {
+    final nameController = TextEditingController();
+    final priceController = TextEditingController();
+    final quantityController = TextEditingController();
+    final discountController = TextEditingController(text: '0');
+    final taxRateController = TextEditingController(text: '0');
+    final extraCostController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.add_box, color: Colors.deepPurple),
+            SizedBox(width: 12),
+            Text('Custom Item', style: TextStyle(fontSize: AppFontSize.xlarge)),
+          ],
+        ),
+        content: SizedBox(
+          width: MediaQuery.of(context).size.width * 0.3,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(
+                  labelText: 'Item Name',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                  prefixIcon: const Icon(Icons.label),
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: priceController,
+                decoration: InputDecoration(
+                  labelText: 'Unit Price',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                  prefixIcon: const Icon(Icons.attach_money),
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                ),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: quantityController,
+                decoration: InputDecoration(
+                  labelText: _quantityLabel.trim().isNotEmpty ? _quantityLabel.trim() : 'Quantity',
+                  hintText: '1',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                  prefixIcon: const Icon(Icons.numbers),
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                ),
+                keyboardType: _fractionalQuantity
+                    ? const TextInputType.numberWithOptions(decimal: true)
+                    : TextInputType.number,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: discountController,
+                decoration: InputDecoration(
+                  labelText: 'Discount',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                  prefixIcon: const Icon(Icons.discount),
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: extraCostController,
+                decoration: InputDecoration(
+                  labelText: 'Extra Cost (optional)',
+                  hintText: '0.00',
+                  helperText: 'Flat fee added on top of the line total',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                  prefixIcon: const Icon(Icons.add_circle_outline, size: 18),
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                ),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              ),
+              if (_taxMode == TaxMode.perItem) ...[
+                const SizedBox(height: 16),
+                TextField(
+                  controller: taxRateController,
+                  decoration: InputDecoration(
+                    labelText: 'Tax Rate (%)',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                    prefixIcon: const Icon(Icons.percent),
+                    filled: true,
+                    fillColor: Colors.grey[50],
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.deepPurple,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            onPressed: () {
+              final name = nameController.text.trim();
+              final price = double.tryParse(priceController.text) ?? 0.0;
+              final taxRate = _taxMode == TaxMode.perItem
+                  ? (int.tryParse(taxRateController.text) ?? 0)
+                  : 0;
+              if (name.isEmpty) return;
+
+              final adHocProduct = Product(
+                id: 'custom-${const Uuid().v4()}',
+                name: name,
+                description: '',
+                price: price,
+                stock: 0,
+                hsncode: '',
+                tax_rate: taxRate,
+              );
+              final extraCost = double.tryParse(extraCostController.text);
+              final item = InvoiceItem(
+                product: adHocProduct,
+                quantity: _fractionalQuantity
+                    ? (double.tryParse(quantityController.text) ?? 1.0)
+                    : (int.tryParse(quantityController.text) ?? 1).toDouble(),
+                discount: double.tryParse(discountController.text) ?? 0.0,
+                extraCost: extraCost,
+              );
+              setState(() {
+                invoiceItems.insert(0, item);
+              });
+              Navigator.pop(context);
+            },
+            child: const Text('Add', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -806,6 +1046,19 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     filled: true,
                     fillColor: Colors.white,
                     contentPadding: const EdgeInsets.symmetric(horizontal: AppPadding.small, vertical: AppPadding.xsmall),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: _addAdHocItemDialog,
+                    icon: const Icon(Icons.add, size: 16),
+                    label: const Text('Custom Item', style: TextStyle(fontSize: AppFontSize.small)),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.deepPurple,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    ),
                   ),
                 ),
               ],
@@ -1013,24 +1266,51 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              value: invoiceType,
-              decoration: InputDecoration(
-                labelText: 'Type',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
-                filled: true,
-                fillColor: Colors.white,
-              ),
-              items: const [
-                DropdownMenuItem(value: 'Invoice', child: Text('Invoice',style: TextStyle(fontSize: AppFontSize.medium),)),
-                DropdownMenuItem(value: 'Quotation', child: Text('Quotation',style: TextStyle(fontSize: AppFontSize.medium),)),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    value: invoiceType,
+                    decoration: InputDecoration(
+                      labelText: 'Type',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                      filled: true,
+                      fillColor: Colors.white,
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'Invoice', child: Text('Invoice', style: TextStyle(fontSize: AppFontSize.medium))),
+                      DropdownMenuItem(value: 'Quotation', child: Text('Quotation', style: TextStyle(fontSize: AppFontSize.medium))),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) resetInvoiceType(value);
+                    },
+                  ),
+                ),
+                if (_quantityLabel.trim().isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Tooltip(
+                      message: 'Qty column label — change in Invoice Settings',
+                      child: InputDecorator(
+                        decoration: InputDecoration(
+                          labelText: 'Qty Label',
+                          prefixIcon: const Icon(Icons.tag, size: 18),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                          filled: true,
+                          fillColor: Colors.grey[100],
+                        ),
+                        child: Text(
+                          _quantityLabel.trim(),
+                          style: TextStyle(fontSize: AppFontSize.medium, color: Colors.grey[700]),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ],
-              onChanged: (value) {
-                if (value != null) {
-                  resetInvoiceType(value);
-                }
-              },
-            )
+            ),
           ],
         ),
       ),
@@ -1062,6 +1342,110 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     });
   }
 
+  Future<void> _saveCustomer() async {
+    final name = nameController.text.trim();
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.white),
+              SizedBox(width: 12),
+              Text('Please enter a customer name before saving'),
+            ],
+          ),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+      return;
+    }
+
+    final phone = phoneController.text.trim();
+    final existing = await CustomerService.findByPhone(phone);
+
+    if (existing != null) {
+      if (!mounted) return;
+      final update = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.person_search, color: Colors.orange),
+              SizedBox(width: 12),
+              Text('Customer Already Exists'),
+            ],
+          ),
+          content: Text(
+            '"${existing.name}" is already saved with this phone number.\n\nUpdate their details with the current information?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Keep Existing'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Update', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      );
+      if (update != true) return;
+
+      final updated = Customer(
+        id: existing.id,
+        name: name,
+        email: emailController.text.trim(),
+        phone: phone,
+        address: addressController.text.trim(),
+        gstin: gstinController.text.trim(),
+      );
+      await CustomerService.updateCustomer(updated);
+      final reloaded = await CustomerService.getAllCustomers();
+      setState(() {
+        selectedCustomer = updated;
+        customers = reloaded;
+        filteredCustomers = reloaded;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${updated.name} updated in customer list'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } else {
+      final newCustomer = Customer(
+        id: const Uuid().v4(),
+        name: name,
+        email: emailController.text.trim(),
+        phone: phone,
+        address: addressController.text.trim(),
+        gstin: gstinController.text.trim(),
+      );
+      await CustomerService.insertCustomer(newCustomer);
+      final reloaded = await CustomerService.getAllCustomers();
+      setState(() {
+        selectedCustomer = newCustomer;
+        customers = reloaded;
+        filteredCustomers = reloaded;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${newCustomer.name} saved to customer list'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
   Widget _customerDetailsForm() {
     return Card(
       elevation: 3,
@@ -1078,6 +1462,33 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 const Text(
                   'Customer Details',
                   style: TextStyle(fontSize: AppFontSize.medium, fontWeight: FontWeight.bold),
+                ),
+                const Spacer(),
+                Tooltip(
+                  message: selectedCustomer != null
+                      ? 'Customer already saved — deselect to save a new one'
+                      : 'Save customer to customer list',
+                  child: OutlinedButton.icon(
+                    onPressed: selectedCustomer != null ? null : _saveCustomer,
+                    icon: Icon(
+                      Icons.person_add_outlined,
+                      size: 16,
+                      color: selectedCustomer != null ? Colors.grey : Theme.of(context).primaryColor,
+                    ),
+                    label: Text(
+                      selectedCustomer != null ? 'Saved' : 'Save Customer',
+                      style: TextStyle(
+                        fontSize: AppFontSize.small,
+                        color: selectedCustomer != null ? Colors.grey : Theme.of(context).primaryColor,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      side: BorderSide(
+                        color: selectedCustomer != null ? Colors.grey[300]! : Theme.of(context).primaryColor,
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -1167,7 +1578,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     );
   }
 
-  Widget _buildItemDetail(String label, String value) {
+  Widget _buildItemDetail(String label, String value, {Color? color}) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -1180,9 +1591,10 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         ),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
+            color: color,
           ),
         ),
       ],
@@ -1201,13 +1613,17 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
             color: isTotal ? Colors.green : Colors.grey[700],
           ),
         ),
-        const SizedBox(width: 24),
-        Text(
-          '$_currencySymbol${amount.toStringAsFixed(2)}',
-          style: TextStyle(
-            fontSize: isTotal ? 20 : 14,
-            fontWeight: FontWeight.bold,
-            color: isTotal ? Colors.green : Colors.black87,
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            '$_currencySymbol${amount.toStringAsFixed(2)}',
+            textAlign: TextAlign.end,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: isTotal ? 20 : 14,
+              fontWeight: FontWeight.bold,
+              color: isTotal ? Colors.green : Colors.black87,
+            ),
           ),
         ),
       ],
@@ -1381,10 +1797,15 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                           spacing: 16,
                           runSpacing: 4,
                           children: [
-                            _buildItemDetail('Price', item.product.price.toString()),
+                            if (item.unitPrice != null)
+                              _buildItemDetail('Price', '$_currencySymbol${item.effectivePrice.toStringAsFixed(2)} *', color: Colors.orange[700])
+                            else
+                              _buildItemDetail('Price', '$_currencySymbol${item.product.price.toStringAsFixed(2)}'),
                             _buildItemDetail('HSN', item.product.hsncode.toString()),
-                            _buildItemDetail('Qty', item.quantity.toString()),
+                            _buildItemDetail(_quantityLabel.trim().isNotEmpty ? _quantityLabel.trim() : 'Qty', item.quantity == item.quantity.roundToDouble() ? item.quantity.toInt().toString() : item.quantity.toString()),
                             _buildItemDetail('Discount', '$_currencySymbol${item.discount.toStringAsFixed(2)}'),
+                            if (item.extraCost != null && item.extraCost! > 0)
+                              _buildItemDetail('Extra', '+$_currencySymbol${item.extraCost!.toStringAsFixed(2)}', color: Colors.teal[700]),
                             if (_taxMode == TaxMode.perItem)
                               _buildItemDetail('Tax', '${item.product.tax_rate}%'),
                           ],
@@ -1461,6 +1882,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                       Expanded(
                         flex: 2,
                         child: DropdownButtonFormField<UpiEntry?>(
+                          isExpanded: true,
                           value: _selectedUpi,
                           decoration: InputDecoration(
                             labelText: 'Payment UPI Account',
@@ -1524,17 +1946,17 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                           if (_isTaxEnabled) ...[
                             const SizedBox(height: 8),
                             // Global / Per Item selector
-                            Tooltip(
-                              message: _isPerItem ? 'Per Item Rate' : 'Global Rate',
-                              child: SegmentedButton<bool>(
+                            SegmentedButton<bool>(
                                 segments: const [
                                   ButtonSegment<bool>(
                                     value: false,
                                     icon: Icon(Icons.percent, size: 16),
+                                    tooltip: 'Global Rate',
                                   ),
                                   ButtonSegment<bool>(
                                     value: true,
                                     icon: Icon(Icons.list_alt, size: 16),
+                                    tooltip: 'Per Item Rate',
                                   ),
                                 ],
                                 selected: {_isPerItem},
@@ -1544,7 +1966,6 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                   });
                                 },
                               ),
-                            ),
                             const SizedBox(height: 8),
                             // Global rate input (only when global selected)
                             if (!_isPerItem)
@@ -1759,9 +2180,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     try {
       final updatedInvoice = Invoice(
         id: _invoice!.id,
-        customer: selectedCustomer ??
-            Customer(
-              id: const Uuid().v4(),
+        customer: Customer(
+              id: selectedCustomer?.id ?? const Uuid().v4(),
               name: nameController.text,
               email: emailController.text,
               phone: phoneController.text,
@@ -1778,6 +2198,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         currencySymbol: _currencySymbol,
         taxMode: _taxMode,
         upiId: _selectedUpi?.id,
+        quantityLabel: _quantityLabel.trim().isEmpty ? null : _quantityLabel.trim(),
       );
 
       await InvoiceService.updateInvoice(updatedInvoice);
@@ -2008,9 +2429,22 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
             Text(DateFormat('dd/MM/yyyy').format(DateTime.now())),
             Padding(
               padding: const EdgeInsets.only(right: 8.0),
-              child: Text(
-                style: TextStyle(fontSize: 24),
-                '$invoiceType Number : #[$currentInvoiceNumber]',
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    style: TextStyle(fontSize: 24),
+                    '$invoiceType Number : #[$currentInvoiceNumber]',
+                  ),
+                  const SizedBox(width: 6),
+                  Tooltip(
+                    message: 'Invoice numbers are auto-generated.\n'
+                        'The next number is calculated from the last\n'
+                        'invoice in the database (including deleted ones).\n'
+                        'Manual editing is not supported.',
+                    child: const Icon(Icons.info_outline, size: 16, color: Colors.white70),
+                  ),
+                ],
               ),
             ),
           ],
