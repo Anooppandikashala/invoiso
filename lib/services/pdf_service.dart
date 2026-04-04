@@ -1,6 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:printing/printing.dart';
 import 'package:qr/qr.dart';
 import 'package:invoiso/constants.dart';
 import 'package:invoiso/database/company_info_service.dart';
@@ -175,7 +180,7 @@ class PDFService {
         pw.SizedBox(height: 25),
 
         // 4. Items Table
-        _buildInvoiceTable(invoice, headerColor: accentColor, textColor: PdfColors.white), // Using accent color for table header
+        _buildInvoiceTable(invoice, headerColor: accentColor, textColor: PdfColors.white, showGst: showGst), // Using accent color for table header
 
         pw.SizedBox(height: 20),
 
@@ -304,7 +309,7 @@ class PDFService {
         pw.SizedBox(height: 30),
 
         // 3. Table (Clean, no external borders)
-        _buildInvoiceTable(invoice, headerColor: PdfColors.grey100, textColor: PdfColors.black),
+        _buildInvoiceTable(invoice, headerColor: PdfColors.grey100, textColor: PdfColors.black, showGst: showGst),
 
         pw.SizedBox(height: 20),
 
@@ -474,7 +479,7 @@ class PDFService {
         // 4. Table Section
         pw.Padding(
           padding: const pw.EdgeInsets.symmetric(horizontal: 30),
-          child: _buildInvoiceTable(invoice, headerColor: accentColor, textColor: PdfColors.white),
+          child: _buildInvoiceTable(invoice, headerColor: accentColor, textColor: PdfColors.white, showGst: showGst),
         ),
 
         pw.SizedBox(height: 25),
@@ -736,39 +741,34 @@ class PDFService {
   }
 
   // Build Invoice Table - MODIFIED
-  static pw.Widget _buildInvoiceTable(Invoice invoice, {PdfColor headerColor = PdfColors.grey200, PdfColor textColor = PdfColors.black})
+  static pw.Widget _buildInvoiceTable(Invoice invoice, {PdfColor headerColor = PdfColors.grey200, PdfColor textColor = PdfColors.black, bool showGst = true})
   {
     final bool showItemTax = invoice.taxMode == TaxMode.perItem;
 
+    // Build column widths dynamically based on which columns are visible
+    int col = 0;
+    final Map<int, pw.TableColumnWidth> colWidths = {
+      col++: const pw.FlexColumnWidth(1),    // Sl No
+      col++: const pw.FlexColumnWidth(3),    // Item Name
+      if (showGst) col: const pw.FlexColumnWidth(2),  // HSN Code
+    };
+    if (showGst) col++;
+    colWidths[col++] = const pw.FlexColumnWidth(1);    // Qty
+    colWidths[col++] = const pw.FlexColumnWidth(1.5);  // Price
+    if (showItemTax) colWidths[col++] = const pw.FlexColumnWidth(1); // Tax %
+    colWidths[col++] = const pw.FlexColumnWidth(1.5);  // Discount
+    colWidths[col++] = const pw.FlexColumnWidth(1.5);  // Total
+
     return pw.Table(
-      // Removed external border for a cleaner look
-      // border: pw.TableBorder.all(color: PdfColors.grey300),
-      columnWidths: showItemTax ? {
-        0: const pw.FlexColumnWidth(1),
-        1: const pw.FlexColumnWidth(3),
-        2: const pw.FlexColumnWidth(2),
-        3: const pw.FlexColumnWidth(1),
-        4: const pw.FlexColumnWidth(1.5),
-        5: const pw.FlexColumnWidth(1),   // Tax %
-        6: const pw.FlexColumnWidth(1.5),
-        7: const pw.FlexColumnWidth(1.5),
-      } : {
-        0: const pw.FlexColumnWidth(1),
-        1: const pw.FlexColumnWidth(3),
-        2: const pw.FlexColumnWidth(2),
-        3: const pw.FlexColumnWidth(1),
-        4: const pw.FlexColumnWidth(1.5),
-        5: const pw.FlexColumnWidth(1.5),
-        6: const pw.FlexColumnWidth(1.5),
-      },
+      columnWidths: colWidths,
       children: [
         pw.TableRow(
           decoration: pw.BoxDecoration(color: headerColor),
           children: [
             _buildTableCell('Sl No', isHeader: true, textColor: textColor),
             _buildTableCell('Item Name', isHeader: true, textColor: textColor),
-            _buildTableCell('HSN Code', isHeader: true, textColor: textColor),
-            _buildTableCell('Qty', isHeader: true, textColor: textColor),
+            if (showGst) _buildTableCell('HSN Code', isHeader: true, textColor: textColor),
+            _buildTableCell(invoice.quantityLabel?.isNotEmpty == true ? invoice.quantityLabel! : 'Qty', isHeader: true, textColor: textColor),
             _buildTableCell('Price', isHeader: true, textColor: textColor),
             if (showItemTax) _buildTableCell('Tax %', isHeader: true, textColor: textColor),
             _buildTableCell('Discount', isHeader: true, textColor: textColor),
@@ -779,32 +779,31 @@ class PDFService {
           final index = entry.key;
           final item = entry.value;
           return pw.TableRow(
-            decoration: index % 2 == 0 ? const pw.BoxDecoration(color: PdfColors.white) : const pw.BoxDecoration(color: PdfColors.grey100), // Zebra striping
+            decoration: index % 2 == 0 ? const pw.BoxDecoration(color: PdfColors.white) : const pw.BoxDecoration(color: PdfColors.grey100),
             children: [
               _buildTableCell('${index + 1}'),
               _buildTableCell(item.product.name),
-              _buildTableCell(item.product.hsncode),
-              _buildTableCell(item.quantity.toString()),
-              _buildTableCell(item.product.price.toStringAsFixed(2)),
+              if (showGst) _buildTableCell(item.product.hsncode),
+              _buildTableCell(item.quantity == item.quantity.roundToDouble() ? item.quantity.toInt().toString() : item.quantity.toString()),
+              _buildTableCell(item.effectivePrice.toStringAsFixed(2)),
               if (showItemTax) _buildTableCell('${item.product.tax_rate}%'),
               _buildTableCell(item.discount.toStringAsFixed(2)),
               _buildTableCell(item.total.toStringAsFixed(2)),
             ],
           );
         }),
-        // Add a bottom line for professional finish
         pw.TableRow(
-            children: [
-              pw.Container(height: 1, color: PdfColors.grey400),
-              pw.Container(height: 1, color: PdfColors.grey400),
-              pw.Container(height: 1, color: PdfColors.grey400),
-              pw.Container(height: 1, color: PdfColors.grey400),
-              pw.Container(height: 1, color: PdfColors.grey400),
-              if (showItemTax) pw.Container(height: 1, color: PdfColors.grey400),
-              pw.Container(height: 1, color: PdfColors.grey400),
-              pw.Container(height: 1, color: PdfColors.grey400),
-            ]
-        )
+          children: [
+            pw.Container(height: 1, color: PdfColors.grey400),
+            pw.Container(height: 1, color: PdfColors.grey400),
+            if (showGst) pw.Container(height: 1, color: PdfColors.grey400),
+            pw.Container(height: 1, color: PdfColors.grey400),
+            pw.Container(height: 1, color: PdfColors.grey400),
+            if (showItemTax) pw.Container(height: 1, color: PdfColors.grey400),
+            pw.Container(height: 1, color: PdfColors.grey400),
+            pw.Container(height: 1, color: PdfColors.grey400),
+          ],
+        ),
       ],
     );
   }
@@ -843,23 +842,62 @@ class PDFService {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
-  static Future<void> showCenteredPDFViewer(BuildContext context, Uint8List pdfBytes, String invoiceId) async {
+  static String _buildPdfFilename(Invoice invoice) {
+    final rawNumber = invoice.id.replaceAll(RegExp(r'^0+'), '');
+    final invoiceNumber = rawNumber.isEmpty ? '0' : rawNumber;
+    final firstName = invoice.customer.name.trim()
+        .split(RegExp(r'\s+'))
+        .first
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]'), '');
+    final date = DateFormat('yyyyMMdd').format(invoice.date);
+    return 'inv-$invoiceNumber-$firstName-$date.pdf';
+  }
+
+  static Future<void> showCenteredPDFViewer(BuildContext context, Uint8List pdfBytes, Invoice invoice) async {
     return showDialog(
       context: context,
-      builder: (context) => Dialog(
+      builder: (dialogContext) => Dialog(
         insetPadding: const EdgeInsets.all(16),
         child: SizedBox(
-          width: MediaQuery.sizeOf(context).width*0.75,  // Adjust width for desktop
-          height: MediaQuery.sizeOf(context).height*0.8, // Adjust height for desktop
+          width: MediaQuery.sizeOf(dialogContext).width * 0.75,
+          height: MediaQuery.sizeOf(dialogContext).height * 0.8,
           child: Column(
             children: [
               AppBar(
                 automaticallyImplyLeading: false,
-                title: Text('Invoice #$invoiceId'),
+                title: Text('Invoice #${invoice.id}'),
                 actions: [
                   IconButton(
+                    icon: const Icon(Icons.print_outlined),
+                    tooltip: 'Print',
+                    onPressed: () async {
+                      await Printing.layoutPdf(onLayout: (_) async => pdfBytes);
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.download_outlined),
+                    tooltip: 'Download',
+                    onPressed: () async {
+                      final dir = await getApplicationDocumentsDirectory();
+                      final filename = _buildPdfFilename(invoice);
+                      final file = File('${dir.path}/$filename');
+                      await file.writeAsBytes(pdfBytes);
+                      await OpenFile.open(file.path);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Saved: ${file.path}'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                  IconButton(
                     icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
+                    tooltip: 'Close',
+                    onPressed: () => Navigator.pop(dialogContext),
                   ),
                 ],
               ),

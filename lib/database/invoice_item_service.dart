@@ -20,6 +20,8 @@ class InvoiceItemService {
       'product_hsn_code': item.product.hsncode,
       'quantity': item.quantity,
       'discount': item.discount,
+      'unit_price': item.unitPrice,
+      'extra_cost': item.extraCost,
     });
   }
 
@@ -31,13 +33,25 @@ class InvoiceItemService {
     for (var map in maps) {
       try {
         final product = Product.fromInvoiceItemsMap(map);
+        final rawUnitPrice = map['unit_price'];
+        final unitPrice = rawUnitPrice == null
+            ? null
+            : (rawUnitPrice is int ? rawUnitPrice.toDouble() : rawUnitPrice as double);
+        final rawExtraCost = map['extra_cost'];
+        final extraCost = rawExtraCost == null
+            ? null
+            : (rawExtraCost is int ? rawExtraCost.toDouble() : rawExtraCost as double);
         items.add(
           InvoiceItem(
             product: product,
-            quantity: map['quantity'] as int,
+            quantity: (map['quantity'] is int)
+                ? (map['quantity'] as int).toDouble()
+                : (map['quantity'] ?? 1.0) as double,
             discount: (map['discount'] is int)
                 ? (map['discount'] as int).toDouble()
                 : (map['discount'] ?? 0.0) as double,
+            unitPrice: unitPrice,
+            extraCost: extraCost,
           ),
         );
       } catch (e, stackTrace) {

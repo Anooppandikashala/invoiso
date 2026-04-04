@@ -37,6 +37,7 @@ class InvoiceService {
         'tax_mode': invoice.taxMode.key,
         'upi_id': invoice.upiId,
         'due_date': invoice.dueDate?.toIso8601String(),
+        'quantity_label': invoice.quantityLabel,
       });
 
       for (var item in invoice.items) {
@@ -50,6 +51,8 @@ class InvoiceService {
           'product_hsn_code': item.product.hsncode,
           'quantity': item.quantity,
           'discount': item.discount,
+          'unit_price': item.unitPrice,
+          'extra_cost': item.extraCost,
         });
       }
     });
@@ -58,7 +61,7 @@ class InvoiceService {
     for (var item in invoice.items) {
       final product = await ProductService.getProductById(item.product.id);
       if (product != null) {
-        final newStock = product.stock - item.quantity;
+        final newStock = product.stock - item.quantity.round();
         await ProductService.updateProductStock(product.id, newStock);
       }
     }
@@ -91,6 +94,7 @@ class InvoiceService {
           'tax_mode': invoice.taxMode.key,
           'upi_id': invoice.upiId,
           'due_date': invoice.dueDate?.toIso8601String(),
+          'quantity_label': invoice.quantityLabel,
         },
         where: 'id = ?',
         whereArgs: [invoice.id],
@@ -115,6 +119,8 @@ class InvoiceService {
           'product_hsn_code': item.product.hsncode,
           'quantity': item.quantity,
           'discount': item.discount,
+          'unit_price': item.unitPrice,
+          'extra_cost': item.extraCost,
         });
       }
     });
@@ -123,7 +129,9 @@ class InvoiceService {
     for (var oldItem in oldItems) {
       final product = await ProductService.getProductById(oldItem['product_id'] as String);
       if (product != null) {
-        final restoredStock = product.stock + (oldItem['quantity'] as int);
+        final rawQty = oldItem['quantity'];
+        final oldQty = rawQty is int ? rawQty : (rawQty as double).round();
+        final restoredStock = product.stock + oldQty;
         await ProductService.updateProductStock(product.id, restoredStock);
       }
     }
@@ -132,7 +140,7 @@ class InvoiceService {
     for (var item in invoice.items) {
       final product = await ProductService.getProductById(item.product.id);
       if (product != null) {
-        final newStock = product.stock - item.quantity;
+        final newStock = product.stock - item.quantity.round();
         await ProductService.updateProductStock(product.id, newStock);
       }
     }
@@ -166,12 +174,24 @@ class InvoiceService {
     for (var row in itemRows) {
       try {
         final product = Product.fromInvoiceItemsMap(row);
+        final rawUnitPrice = row['unit_price'];
+        final unitPrice = rawUnitPrice == null
+            ? null
+            : (rawUnitPrice is int ? rawUnitPrice.toDouble() : rawUnitPrice as double);
+        final rawExtraCost = row['extra_cost'];
+        final extraCost = rawExtraCost == null
+            ? null
+            : (rawExtraCost is int ? rawExtraCost.toDouble() : rawExtraCost as double);
         items.add(InvoiceItem(
           product: product,
-          quantity: row['quantity'] as int,
+          quantity: (row['quantity'] is int)
+              ? (row['quantity'] as int).toDouble()
+              : (row['quantity'] ?? 1.0) as double,
           discount: (row['discount'] is int)
               ? (row['discount'] as int).toDouble()
               : (row['discount'] ?? 0.0) as double,
+          unitPrice: unitPrice,
+          extraCost: extraCost,
         ));
       } catch (e, stackTrace) {
         AppLogger.e(_tag, 'Error parsing invoice item row', e, stackTrace);
@@ -196,6 +216,7 @@ class InvoiceService {
       taxMode: TaxModeExtension.fromKey(i['tax_mode'] as String?),
       upiId: i['upi_id'] as String?,
       dueDate: i['due_date'] != null ? DateTime.tryParse(i['due_date'] as String) : null,
+      quantityLabel: i['quantity_label'] as String?,
       payments: payments,
     );
   }
@@ -364,6 +385,7 @@ class InvoiceService {
           taxMode: TaxModeExtension.fromKey(map['tax_mode'] as String?),
           upiId: map['upi_id'] as String?,
           dueDate: map['due_date'] != null ? DateTime.tryParse(map['due_date'] as String) : null,
+          quantityLabel: map['quantity_label'] as String?,
         ),
       );
     }

@@ -574,7 +574,7 @@ class _DashboardHomeState extends State<DashboardHome> {
                                                 _buildActionButton(Icons.copy_all_outlined, Colors.teal, 'Duplicate',
                                                     () => _showCloneDialog(invoice)),
                                                 const SizedBox(width: 8),
-                                                _buildActionButton(Icons.picture_as_pdf_outlined, Colors.orange, 'PDF',
+                                                _buildActionButton(Icons.picture_as_pdf_outlined, Colors.orange, 'PDF View / Download',
                                                     () => InvoicePdfServices.previewPDF(context, invoice)),
                                                 const SizedBox(width: 8),
                                                 _buildActionButton(Icons.print_outlined, Colors.blueGrey, 'Print',

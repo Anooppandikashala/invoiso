@@ -21,7 +21,9 @@ enum SettingKey {
   upiId,      // kept for backward-compat read only
   showUpiQr,
   upiIds,         // JSON list of UpiEntry objects
-  showGstFields,  // whether to show GST/GSTIN fields
+  showGstFields,       // whether to show GST/GSTIN fields
+  fractionalQuantity,  // whether to allow decimal quantities (e.g. 1.5 hrs)
+  quantityLabel,       // default label for the Qty column (e.g. "Words", "Hours")
 }
 
 extension SettingKeyExtension on SettingKey
@@ -46,6 +48,10 @@ extension SettingKeyExtension on SettingKey
         return 'upi_ids';
       case SettingKey.showGstFields:
         return 'show_gst_fields';
+      case SettingKey.fractionalQuantity:
+        return 'fractional_quantity';
+      case SettingKey.quantityLabel:
+        return 'quantity_label';
     }
   }
 }

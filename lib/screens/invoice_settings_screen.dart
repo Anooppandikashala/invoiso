@@ -15,10 +15,12 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
   final TextEditingController invoicePrefixController = TextEditingController();
   final TextEditingController additionalInfoController = TextEditingController();
   final TextEditingController thankYouController = TextEditingController();
+  final TextEditingController quantityLabelController = TextEditingController();
 
   String _selectedLogoPosition = 'left';
   String _selectedCurrencyCode = 'INR';
   bool _showGstFields = true;
+  bool _fractionalQuantity = false;
   bool _isLoading = true;
 
   @override
@@ -34,6 +36,8 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     final thanks = await SettingsService.getSetting(SettingKey.thankYouNote);
     final currency = await SettingsService.getCurrency();
     final showGst = await SettingsService.getShowGstFields();
+    final fractionalQty = await SettingsService.getFractionalQuantity();
+    final qtyLabel = await SettingsService.getQuantityLabel();
 
     setState(() {
       _selectedLogoPosition = position ?? 'left';
@@ -42,6 +46,8 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
       additionalInfoController.text = info ?? '';
       thankYouController.text = thanks ?? '';
       _showGstFields = showGst;
+      _fractionalQuantity = fractionalQty;
+      quantityLabelController.text = qtyLabel;
       _isLoading = false;
     });
   }
@@ -53,6 +59,8 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     await SettingsService.setSetting(SettingKey.thankYouNote, thankYouController.text);
     await SettingsService.setCurrency(_selectedCurrencyCode);
     await SettingsService.setSetting(SettingKey.showGstFields, _showGstFields.toString());
+    await SettingsService.setSetting(SettingKey.fractionalQuantity, _fractionalQuantity.toString());
+    await SettingsService.setSetting(SettingKey.quantityLabel, quantityLabelController.text.trim());
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -206,6 +214,66 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                               ),
                             ),
 
+                            // Quantity Column Label
+                            SizedBox(
+                              width: fieldWidth,
+                              child: TextField(
+                                controller: quantityLabelController,
+                                maxLength: 30,
+                                decoration: InputDecoration(
+                                  labelText: 'Quantity Column Label',
+                                  hintText: 'e.g. Words, Hours, Units',
+                                  helperText: 'Leave blank to use default "Qty"',
+                                  prefixIcon: const Icon(Icons.tag),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderSide: BorderSide(color: Colors.grey[300]!),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderSide: BorderSide(
+                                      color: Theme.of(context).primaryColor,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.grey[50],
+                                  counterText: '',
+                                ),
+                              ),
+                            ),
+
+                            // Invoice numbering info
+                            SizedBox(
+                              width: fieldWidth,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue[50],
+                                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                  border: Border.all(color: Colors.blue[200]!),
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Icon(Icons.info_outline, size: 16, color: Colors.blue[700]),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Invoice numbers are auto-generated and cannot be edited manually. '
+                                        'Each new invoice number is derived from the last invoice number stored in the database — including soft-deleted invoices. '
+                                        'If you created test invoices and deleted them, the counter will continue from where it left off.',
+                                        style: TextStyle(fontSize: 12, color: Colors.blue[800], height: 1.4),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
                             // Currency
                             SizedBox(
                               width: fieldWidth,
@@ -290,7 +358,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                 child: SwitchListTile(
                                   title: const Text('Show GST Fields'),
                                   subtitle: const Text(
-                                    'Display GSTIN fields on invoices, PDFs, and CSV exports',
+                                    'Display GSTIN fields (HSN Code) on invoices, PDFs, and CSV exports',
                                   ),
                                   secondary: Icon(
                                     Icons.receipt_long_rounded,
@@ -301,6 +369,36 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                   value: _showGstFields,
                                   onChanged: (val) =>
                                       setState(() => _showGstFields = val),
+                                  activeColor: Theme.of(context).primaryColor,
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 12),
+
+                            // Fractional Quantity Toggle
+                            SizedBox(
+                              width: constraints.maxWidth,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[50],
+                                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                  border: Border.all(color: Colors.grey[300]!),
+                                ),
+                                child: SwitchListTile(
+                                  title: const Text('Allow Fractional Quantities'),
+                                  subtitle: const Text(
+                                    'Enable decimal quantities (e.g. 1.5 hrs, 0.5 kg)',
+                                  ),
+                                  secondary: Icon(
+                                    Icons.pin_outlined,
+                                    color: _fractionalQuantity
+                                        ? Theme.of(context).primaryColor
+                                        : Colors.grey,
+                                  ),
+                                  value: _fractionalQuantity,
+                                  onChanged: (val) =>
+                                      setState(() => _fractionalQuantity = val),
                                   activeColor: Theme.of(context).primaryColor,
                                 ),
                               ),

@@ -1123,7 +1123,7 @@ class _InvoiceManagementScreenState
                     _buildActionButton(
                         Icons.picture_as_pdf_outlined,
                         Colors.orange,
-                        'PDF',
+                        'PDF View / Download',
                         () => InvoicePdfServices.previewPDF(
                             context, invoice)),
                     const SizedBox(width: 4),
