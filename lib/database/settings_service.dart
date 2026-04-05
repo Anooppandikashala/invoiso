@@ -125,4 +125,9 @@ class SettingsService
   static Future<String> getQuantityLabel() async {
     return await getSetting(SettingKey.quantityLabel) ?? '';
   }
+
+  /// Returns the logo size key: 'small' | 'medium' | 'large'. Defaults to 'medium'.
+  static Future<String> getLogoSize() async {
+    return await getSetting(SettingKey.logoSize) ?? 'medium';
+  }
 }

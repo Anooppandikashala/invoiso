@@ -383,11 +383,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           controller: phoneController,
                           label: 'Phone',
                           icon: Icons.phone_rounded,
-                          maxLength: 12,
-                          keyboardType: TextInputType.number,
+                          maxLength: 60,
+                          keyboardType: TextInputType.phone,
+                          hint: '+91 9876543210',
+                          helper: 'Multiple numbers: separate with comma',
                           inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                            LengthLimitingTextInputFormatter(12),
+                            FilteringTextInputFormatter.allow(
+                                RegExp(r'[0-9+\s\-()\,]')),
                           ],
                         ),
                       ),

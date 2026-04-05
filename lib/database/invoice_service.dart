@@ -1,6 +1,7 @@
 import 'package:invoiso/common.dart';
 import 'package:invoiso/database/invoice_item_service.dart';
 import 'package:invoiso/database/product_service.dart';
+import 'package:invoiso/models/additional_cost.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/product.dart';
 import '../models/customer.dart';
@@ -38,6 +39,7 @@ class InvoiceService {
         'upi_id': invoice.upiId,
         'due_date': invoice.dueDate?.toIso8601String(),
         'quantity_label': invoice.quantityLabel,
+        'additional_costs': AdditionalCost.listToJson(invoice.additionalCosts),
       });
 
       for (var item in invoice.items) {
@@ -95,6 +97,7 @@ class InvoiceService {
           'upi_id': invoice.upiId,
           'due_date': invoice.dueDate?.toIso8601String(),
           'quantity_label': invoice.quantityLabel,
+          'additional_costs': AdditionalCost.listToJson(invoice.additionalCosts),
         },
         where: 'id = ?',
         whereArgs: [invoice.id],
@@ -217,6 +220,7 @@ class InvoiceService {
       upiId: i['upi_id'] as String?,
       dueDate: i['due_date'] != null ? DateTime.tryParse(i['due_date'] as String) : null,
       quantityLabel: i['quantity_label'] as String?,
+      additionalCosts: AdditionalCost.listFromJson(i['additional_costs'] as String?),
       payments: payments,
     );
   }
@@ -386,6 +390,7 @@ class InvoiceService {
           upiId: map['upi_id'] as String?,
           dueDate: map['due_date'] != null ? DateTime.tryParse(map['due_date'] as String) : null,
           quantityLabel: map['quantity_label'] as String?,
+          additionalCosts: AdditionalCost.listFromJson(map['additional_costs'] as String?),
         ),
       );
     }

@@ -1,4 +1,5 @@
 import '../common.dart';
+import 'additional_cost.dart';
 import 'customer.dart';
 import 'invoice_item.dart';
 import 'invoice_payment.dart';
@@ -18,6 +19,7 @@ class Invoice {
   String? upiId;         // selected UPI account for this invoice
   DateTime? dueDate;
   String? quantityLabel; // custom label for the Qty column (e.g. "Words", "Hours")
+  List<AdditionalCost> additionalCosts; // e.g. Shipping, Packaging (zero tax, added after tax)
 
   Invoice({
     required this.id,
@@ -34,6 +36,7 @@ class Invoice {
     this.upiId,
     this.dueDate,
     this.quantityLabel,
+    this.additionalCosts = const [],
   });
 
   double get subtotal => items.fold(0.0, (sum, item) => sum + item.total);
@@ -52,7 +55,10 @@ class Invoice {
     }
   }
 
-  double get total => subtotal + tax;
+  double get additionalCostsTotal =>
+      additionalCosts.fold(0.0, (sum, c) => sum + c.amount);
+
+  double get total => subtotal + tax + additionalCostsTotal;
 
   double get amountPaid => payments.fold(0.0, (sum, p) => sum + p.amountPaid);
 

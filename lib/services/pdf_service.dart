@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:open_file/open_file.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:printing/printing.dart';
 import 'package:qr/qr.dart';
 import 'package:invoiso/constants.dart';
@@ -78,7 +78,8 @@ class PDFService {
   }) async
   {
     final accentColor = PdfColors.indigo900; // Use a strong accent color
-    final LogoPosition logoPosition = await SettingsService.getLogoPosition(); DefaultValues.logoPosition;//await SettingsService.getLogoPosition(); // "left" or "right"
+    final LogoPosition logoPosition = await SettingsService.getLogoPosition();
+    final logoSizePx = _logoSizePx(await SettingsService.getLogoSize());
     final base64Logo = await SettingsService.getCompanyLogo();
     final logoImage = base64Logo != null ? pw.MemoryImage(base64Decode(base64Logo)) : null;
     final String thankyouNote = await SettingsService.getSetting(SettingKey.thankYouNote) ?? DefaultValues.thankYouNote;
@@ -100,7 +101,7 @@ class PDFService {
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            if (logoImage != null && logoPosition == LogoPosition.left) _buildCompanyLogo(logoImage),
+            if (logoImage != null && logoPosition == LogoPosition.left) _buildCompanyLogo(logoImage, size: logoSizePx),
             // Company Info Block
             pw.Container(
               padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -119,11 +120,12 @@ class PDFService {
                   pw.Text(company?.address ?? '', style: const pw.TextStyle(fontSize: 10)),
                   pw.Text('Phone: ${company?.phone ?? ''}', style: const pw.TextStyle(fontSize: 10)),
                   pw.Text('Email: ${company?.email ?? ''}', style: const pw.TextStyle(fontSize: 10)),
+                  if ((company?.website ?? '').isNotEmpty) pw.Text('Web: ${company!.website}', style: const pw.TextStyle(fontSize: 10)),
                   if (showGst) pw.Text('GSTIN: ${company?.gstin ?? ''}', style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 10, color: PdfColors.grey700)),
                 ],
               ),
             ),
-            if (logoImage != null && logoPosition == LogoPosition.right) _buildCompanyLogo(logoImage),
+            if (logoImage != null && logoPosition == LogoPosition.right) _buildCompanyLogo(logoImage, size: logoSizePx),
           ],
         ),
 
@@ -225,7 +227,8 @@ class PDFService {
   }) async
   {
     final accentColor = PdfColors.grey700; // Use a strong, neutral accent
-    final LogoPosition logoPosition = await SettingsService.getLogoPosition();//await SettingsService.getLogoPosition(); // "left" or "right"
+    final LogoPosition logoPosition = await SettingsService.getLogoPosition();
+    final logoSizePx = _logoSizePx(await SettingsService.getLogoSize());
     final base64Logo = await SettingsService.getCompanyLogo();
     final logoImage = base64Logo != null ? pw.MemoryImage(base64Decode(base64Logo)) : null;
     final String thankyouNote = await SettingsService.getSetting(SettingKey.thankYouNote) ?? "";
@@ -247,7 +250,7 @@ class PDFService {
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
-            if(logoImage != null && logoPosition == LogoPosition.left) _buildCompanyLogo(logoImage),
+            if(logoImage != null && logoPosition == LogoPosition.left) _buildCompanyLogo(logoImage, size: logoSizePx),
             pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
@@ -263,7 +266,7 @@ class PDFService {
                 ],
               ],
             ),
-            if(logoImage != null && logoPosition == LogoPosition.right) _buildCompanyLogo(logoImage),
+            if(logoImage != null && logoPosition == LogoPosition.right) _buildCompanyLogo(logoImage, size: logoSizePx),
           ],
         ),
 
@@ -286,6 +289,7 @@ class PDFService {
                 pw.Text(company?.address ?? '', style: const pw.TextStyle(fontSize: 10)),
                 pw.Text(company?.phone ?? '', style: const pw.TextStyle(fontSize: 10)),
                 pw.Text(company?.email ?? '', style: const pw.TextStyle(fontSize: 10)),
+                if ((company?.website ?? '').isNotEmpty) pw.Text(company!.website, style: const pw.TextStyle(fontSize: 10)),
                 if (showGst) pw.Text("GSTIN: ${company?.gstin ?? ''}",style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 9)),
               ],
             ),
@@ -356,7 +360,8 @@ class PDFService {
   }) async
   {
     final accentColor = PdfColors.blue600;
-    final LogoPosition logoPosition = await SettingsService.getLogoPosition();//await SettingsService.getLogoPosition(); // "left" or "right"
+    final LogoPosition logoPosition = await SettingsService.getLogoPosition();
+    final logoSizePx = _logoSizePx(await SettingsService.getLogoSize());
     final base64Logo = await SettingsService.getCompanyLogo();
     final logoImage = base64Logo != null ? pw.MemoryImage(base64Decode(base64Logo)) : null;
     final String thankyouNote = await SettingsService.getSetting(SettingKey.thankYouNote) ?? "";
@@ -381,7 +386,7 @@ class PDFService {
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              if (logoImage != null && logoPosition == LogoPosition.left) _buildCompanyLogo(logoImage),
+              if (logoImage != null && logoPosition == LogoPosition.left) _buildCompanyLogo(logoImage, size: logoSizePx),
               // Company Info
               pw.Expanded(
                 flex: 2,
@@ -401,6 +406,8 @@ class PDFService {
                         style: const pw.TextStyle(color: PdfColors.white, fontSize: 10)),
                     pw.Text('Email: ${company?.email ?? ''}',
                         style: const pw.TextStyle(color: PdfColors.white, fontSize: 10)),
+                    if ((company?.website ?? '').isNotEmpty) pw.Text(company!.website,
+                        style: const pw.TextStyle(color: PdfColors.white, fontSize: 10)),
                     if (showGst) pw.Text('GSTIN: ${company?.gstin ?? ''}',
                         style: pw.TextStyle(
                             color: PdfColors.white,
@@ -410,7 +417,7 @@ class PDFService {
                 ),
               ),
               // Logo
-              if (logoImage != null && logoPosition == LogoPosition.right) _buildCompanyLogo(logoImage),
+              if (logoImage != null && logoPosition == LogoPosition.right) _buildCompanyLogo(logoImage, size: logoSizePx),
             ],
           ),
         ),
@@ -627,13 +634,63 @@ class PDFService {
     );
   }
 
+  /// Shows a save-file dialog so the user can choose where to store the PDF.
+  static Future<void> _downloadWithPicker(
+      BuildContext context, Uint8List pdfBytes, Invoice invoice) async {
+    final filename = _buildPdfFilename(invoice);
+    final savePath = await FilePicker.platform.saveFile(
+      dialogTitle: 'Save Invoice PDF',
+      fileName: filename,
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+    );
+    if (savePath == null) return; // user cancelled
+    final file = File(savePath);
+    await file.writeAsBytes(pdfBytes);
+    await OpenFile.open(file.path);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Saved: $savePath'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  /// Generates the PDF for [invoice] and opens a save-file dialog.
+  /// Call this directly from the invoice list to download without opening preview.
+  static Future<void> downloadPDF(BuildContext context, Invoice invoice) async {
+    try {
+      final pdf = await generateInvoicePDF(invoice);
+      final bytes = await pdf.save();
+      if (context.mounted) {
+        await _downloadWithPicker(context, bytes, invoice);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error downloading PDF: $e')),
+        );
+      }
+    }
+  }
+
   // Company Logo Builder
-  static pw.Widget _buildCompanyLogo(pw.MemoryImage image) {
+  static pw.Widget _buildCompanyLogo(pw.MemoryImage image, {double size = 90}) {
     return pw.Container(
-      width: 80,
-      height: 80,
+      width: size,
+      height: size,
       child: pw.Image(image, fit: pw.BoxFit.contain),
     );
+  }
+
+  static double _logoSizePx(String sizeKey) {
+    switch (sizeKey) {
+      case 'small':  return 60;
+      case 'large':  return 120;
+      default:       return 90;
+    }
   }
 
   // Enhanced totals with highlighted total - MODIFIED
@@ -653,6 +710,10 @@ class PDFService {
           _totalRow(
               _taxLabel(invoice),
               "$currencySymbol ${invoice.tax.toStringAsFixed(2)}"),
+          ...invoice.additionalCosts.map((c) => _totalRow(
+                c.label.isEmpty ? 'Extra Cost' : c.label,
+                "$currencySymbol ${c.amount.toStringAsFixed(2)}",
+              )),
           pw.Container(
             padding: const pw.EdgeInsets.all(8),
             decoration: pw.BoxDecoration(
@@ -845,13 +906,12 @@ class PDFService {
   static String _buildPdfFilename(Invoice invoice) {
     final rawNumber = invoice.id.replaceAll(RegExp(r'^0+'), '');
     final invoiceNumber = rawNumber.isEmpty ? '0' : rawNumber;
-    final firstName = invoice.customer.name.trim()
-        .split(RegExp(r'\s+'))
-        .first
+    final fullName = invoice.customer.name.trim()
         .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9]'), '');
+        .replaceAll(RegExp(r'\s+'), '_')
+        .replaceAll(RegExp(r'[^a-z0-9_]'), '');
     final date = DateFormat('yyyyMMdd').format(invoice.date);
-    return 'inv-$invoiceNumber-$firstName-$date.pdf';
+    return 'inv-$invoiceNumber-$fullName-$date.pdf';
   }
 
   static Future<void> showCenteredPDFViewer(BuildContext context, Uint8List pdfBytes, Invoice invoice) async {
@@ -878,21 +938,7 @@ class PDFService {
                   IconButton(
                     icon: const Icon(Icons.download_outlined),
                     tooltip: 'Download',
-                    onPressed: () async {
-                      final dir = await getApplicationDocumentsDirectory();
-                      final filename = _buildPdfFilename(invoice);
-                      final file = File('${dir.path}/$filename');
-                      await file.writeAsBytes(pdfBytes);
-                      await OpenFile.open(file.path);
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Saved: ${file.path}'),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      }
-                    },
+                    onPressed: () => _downloadWithPicker(context, pdfBytes, invoice),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close),
