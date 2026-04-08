@@ -9,6 +9,7 @@ import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/providers/invoice_provider.dart';
 import 'package:invoiso/services/export_service.dart';
 import 'package:invoiso/services/invoice_pdf_services.dart';
+import 'package:invoiso/services/pdf_service.dart';
 import 'package:invoiso/widgets/apply_payment_dialog.dart';
 import 'package:invoiso/utils/error_handler.dart';
 import 'package:open_file/open_file.dart';
@@ -70,7 +71,7 @@ class _InvoiceManagementScreenState
     6: FlexColumnWidth(1.0),
     7: FixedColumnWidth(90),
     8: FlexColumnWidth(1.0),
-    9: FixedColumnWidth(320),
+    9: FixedColumnWidth(360),
   };
 
   // Quotation table: checkbox | # | ID | Customer | Date | Items | Total | Actions
@@ -1129,9 +1130,15 @@ class _InvoiceManagementScreenState
                     _buildActionButton(
                         Icons.picture_as_pdf_outlined,
                         Colors.orange,
-                        'PDF View / Download',
+                        'PDF Preview',
                         () => InvoicePdfServices.previewPDF(
                             context, invoice)),
+                    const SizedBox(width: 4),
+                    _buildActionButton(
+                        Icons.download_outlined,
+                        Colors.deepPurple,
+                        'Download PDF',
+                        () => PDFService.downloadPDF(context, invoice)),
                     const SizedBox(width: 4),
                     _buildActionButton(
                         Icons.print_outlined, Colors.blueGrey, 'Print',

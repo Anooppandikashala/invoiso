@@ -22,6 +22,7 @@ class InvoiceItemService {
       'discount': item.discount,
       'unit_price': item.unitPrice,
       'extra_cost': item.extraCost,
+      'discount_per_unit': item.discountPerUnit ? 1 : 0,
     });
   }
 
@@ -52,6 +53,7 @@ class InvoiceItemService {
                 : (map['discount'] ?? 0.0) as double,
             unitPrice: unitPrice,
             extraCost: extraCost,
+            discountPerUnit: (map['discount_per_unit'] as int? ?? 0) == 1,
           ),
         );
       } catch (e, stackTrace) {

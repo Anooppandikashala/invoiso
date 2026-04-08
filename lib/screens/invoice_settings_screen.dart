@@ -19,6 +19,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
 
   String _selectedLogoPosition = 'left';
   String _selectedCurrencyCode = 'INR';
+  String _selectedLogoSize = 'medium';
   bool _showGstFields = true;
   bool _fractionalQuantity = false;
   bool _isLoading = true;
@@ -38,10 +39,12 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     final showGst = await SettingsService.getShowGstFields();
     final fractionalQty = await SettingsService.getFractionalQuantity();
     final qtyLabel = await SettingsService.getQuantityLabel();
+    final logoSize = await SettingsService.getLogoSize();
 
     setState(() {
       _selectedLogoPosition = position ?? 'left';
       _selectedCurrencyCode = currency.code;
+      _selectedLogoSize = logoSize;
       invoicePrefixController.text = prefix ?? 'INV';
       additionalInfoController.text = info ?? '';
       thankYouController.text = thanks ?? '';
@@ -53,6 +56,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
   }
 
   Future<void> _saveSettings() async {
+    await SettingsService.setSetting(SettingKey.logoSize, _selectedLogoSize);
     await SettingsService.setSetting(SettingKey.logoPosition, _selectedLogoPosition);
     await SettingsService.setSetting(SettingKey.invoicePrefix, invoicePrefixController.text);
     await SettingsService.setSetting(SettingKey.additionalInfo, additionalInfoController.text);
@@ -178,6 +182,41 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                   setState(() {
                                     _selectedLogoPosition = value!;
                                   });
+                                },
+                              ),
+                            ),
+
+                            // Company Logo Size
+                            SizedBox(
+                              width: fieldWidth,
+                              child: DropdownButtonFormField<String>(
+                                value: _selectedLogoSize,
+                                decoration: InputDecoration(
+                                  labelText: 'Company Logo Size',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderSide: BorderSide(color: Colors.grey[300]!),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderSide: BorderSide(
+                                      color: Theme.of(context).primaryColor,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.grey[50],
+                                ),
+                                items: const [
+                                  DropdownMenuItem(value: 'small',  child: Text('Small')),
+                                  DropdownMenuItem(value: 'medium', child: Text('Medium')),
+                                  DropdownMenuItem(value: 'large',  child: Text('Large')),
+                                ],
+                                onChanged: (value) {
+                                  setState(() => _selectedLogoSize = value!);
                                 },
                               ),
                             ),

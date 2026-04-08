@@ -10,7 +10,9 @@ import '../models/customer.dart';
 import '../models/invoice.dart';
 import '../models/invoice_item.dart';
 import '../models/product.dart';
+import '../models/additional_cost.dart';
 import '../services/invoice_pdf_services.dart';
+import '../services/pdf_service.dart';
 import 'package:invoiso/constants.dart';
 
 class CreateInvoiceScreen extends StatefulWidget {
@@ -40,6 +42,10 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   List<Product> products = [];
   List<Product> filteredProducts = [];
   List<InvoiceItem> invoiceItems = [];
+  final Set<String> _savedAdHocIds = {}; // tracks custom item IDs already saved to products
+  final List<({TextEditingController label, TextEditingController amount})>
+      _additionalCostControllers = [];
+  bool _showAdditionalCosts = false;
 
   final notesController = TextEditingController();
   final searchController = TextEditingController();
@@ -109,6 +115,13 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         dueDateController.text = DateFormat('dd/MM/yyyy').format(_invoice!.dueDate!);
       }
       _quantityLabel = _invoice!.quantityLabel ?? '';
+      for (final c in _invoice!.additionalCosts) {
+        _additionalCostControllers.add((
+          label: TextEditingController(text: c.label),
+          amount: TextEditingController(text: c.amount.toStringAsFixed(2)),
+        ));
+      }
+      if (_additionalCostControllers.isNotEmpty) _showAdditionalCosts = true;
     } else if (widget.cloneFrom != null) {
       // Clone: pre-populate fields but treat as a brand-new invoice.
       // isEditing stays false → _createInvoice() will be called on save.
@@ -126,6 +139,13 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       _isPerItem    = src.taxMode == TaxMode.perItem;
       invoiceType = widget.cloneType ?? src.type;
       _quantityLabel = src.quantityLabel ?? '';
+      for (final c in src.additionalCosts) {
+        _additionalCostControllers.add((
+          label: TextEditingController(text: c.label),
+          amount: TextEditingController(text: c.amount.toStringAsFixed(2)),
+        ));
+      }
+      if (_additionalCostControllers.isNotEmpty) _showAdditionalCosts = true;
       // date stays as today; currentInvoiceNumber is generated in _loadCustomersAndProducts
     }
   }
@@ -161,6 +181,10 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     _productScrollController.dispose();
     _invoiceItemsScrollController.dispose();
     gstinController.dispose();
+    for (final row in _additionalCostControllers) {
+      row.label.dispose();
+      row.amount.dispose();
+    }
     super.dispose();
   }
 
@@ -226,6 +250,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         _upiEntries = upiEntries;
         _selectedUpi = preselectedUpi;
         _showGstFields = showGst;
+        if (!showGst) _isTaxEnabled = false;
         _fractionalQuantity = fractionalQty;
         // For new invoices, use the global setting. Edit/clone already set _quantityLabel in initState.
         if (!isEditing && widget.cloneFrom == null) {
@@ -249,9 +274,12 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     final unitPriceController = TextEditingController(text: product.price.toString());
     final extraCostController = TextEditingController();
 
+    bool discountPerUnit = false;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
@@ -337,6 +365,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 ),
                 keyboardType: TextInputType.number,
               ),
+              const SizedBox(height: 8),
+              _buildDiscountPerUnitToggle(discountPerUnit, (val) => setDialogState(() => discountPerUnit = val)),
               const SizedBox(height: 16),
               TextField(
                 controller: unitPriceController,
@@ -411,7 +441,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   ),
                 );
                 if (addAnyway == true) {
-                  addInvoiceProduct(InvoiceItem(product: product, quantity: qty, discount: discount, unitPrice: unitPrice, extraCost: extraCost));
+                  addInvoiceProduct(InvoiceItem(product: product, quantity: qty, discount: discount, unitPrice: unitPrice, extraCost: extraCost, discountPerUnit: discountPerUnit));
                 }
               } else if (product.stock == 0) {
                 Navigator.pop(context);
@@ -434,16 +464,17 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   ),
                 );
                 if (addAnyway == true) {
-                  addInvoiceProduct(InvoiceItem(product: product, quantity: qty, discount: discount, unitPrice: unitPrice, extraCost: extraCost));
+                  addInvoiceProduct(InvoiceItem(product: product, quantity: qty, discount: discount, unitPrice: unitPrice, extraCost: extraCost, discountPerUnit: discountPerUnit));
                 }
               } else {
                 Navigator.pop(context);
-                addInvoiceProduct(InvoiceItem(product: product, quantity: qty, discount: discount, unitPrice: unitPrice, extraCost: extraCost));
+                addInvoiceProduct(InvoiceItem(product: product, quantity: qty, discount: discount, unitPrice: unitPrice, extraCost: extraCost, discountPerUnit: discountPerUnit));
               }
             },
             child: const Text('Add'),
           ),
         ],
+      ),
       ),
     );
   }
@@ -536,6 +567,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         taxMode: _taxMode,
         upiId: _selectedUpi?.id,
         quantityLabel: _quantityLabel.trim().isEmpty ? null : _quantityLabel.trim(),
+        additionalCosts: _buildAdditionalCosts(),
       );
 
       await InvoiceService.insertInvoice(invoice);
@@ -575,10 +607,12 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     final discountController = TextEditingController(text: item.discount.toString());
     final unitPriceController = TextEditingController(text: item.effectivePrice.toString());
     final extraCostController = TextEditingController(text: item.extraCost != null ? item.extraCost.toString() : '');
+    bool discountPerUnit = item.discountPerUnit;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Row(
           children: [
@@ -637,6 +671,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 ),
                 keyboardType: TextInputType.number,
               ),
+              const SizedBox(height: 8),
+              _buildDiscountPerUnitToggle(discountPerUnit, (val) => setDialogState(() => discountPerUnit = val)),
               const SizedBox(height: 16),
               TextField(
                 controller: unitPriceController,
@@ -689,6 +725,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 discount: double.tryParse(discountController.text) ?? item.discount,
                 unitPrice: unitPrice,
                 extraCost: extraCost,
+                discountPerUnit: discountPerUnit,
               );
 
               setState(() {
@@ -701,6 +738,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
           ),
         ],
       ),
+      ),
     );
   }
 
@@ -712,9 +750,12 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     final taxRateController = TextEditingController(text: '0');
     final extraCostController = TextEditingController();
 
+    bool discountPerUnit = false;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Row(
           children: [
@@ -777,6 +818,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 ),
                 keyboardType: TextInputType.number,
               ),
+              const SizedBox(height: 8),
+              _buildDiscountPerUnitToggle(discountPerUnit, (val) => setDialogState(() => discountPerUnit = val)),
               const SizedBox(height: 16),
               TextField(
                 controller: extraCostController,
@@ -844,15 +887,15 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     : (int.tryParse(quantityController.text) ?? 1).toDouble(),
                 discount: double.tryParse(discountController.text) ?? 0.0,
                 extraCost: extraCost,
+                discountPerUnit: discountPerUnit,
               );
-              setState(() {
-                invoiceItems.insert(0, item);
-              });
               Navigator.pop(context);
+              addInvoiceProduct(item);
             },
             child: const Text('Add', style: TextStyle(color: Colors.white)),
           ),
         ],
+      ),
       ),
     );
   }
@@ -1331,6 +1374,12 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       _invoice = null;
       selectedCustomer = null;
       invoiceItems.clear();
+      for (final row in _additionalCostControllers) {
+        row.label.dispose();
+        row.amount.dispose();
+      }
+      _additionalCostControllers.clear();
+      _showAdditionalCosts = false;
       notesController.clear();
       nameController.clear();
       emailController.clear();
@@ -1578,6 +1627,183 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     );
   }
 
+  List<AdditionalCost> _buildAdditionalCosts() {
+    final costs = <AdditionalCost>[];
+    for (final row in _additionalCostControllers) {
+      final label = row.label.text.trim();
+      final amount = double.tryParse(row.amount.text) ?? 0.0;
+      if (label.isNotEmpty && amount > 0) {
+        costs.add(AdditionalCost(label: label, amount: amount));
+      }
+    }
+    return costs;
+  }
+
+  Widget _buildAdditionalCostsSection() {
+    final primary = Theme.of(context).primaryColor;
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      decoration: BoxDecoration(
+        color: Colors.teal.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+        border: Border.all(color: Colors.teal.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        children: [
+          // Header row — always visible, toggles collapse
+          InkWell(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(AppBorderRadius.xsmall)),
+            onTap: () => setState(() => _showAdditionalCosts = !_showAdditionalCosts),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Row(
+                children: [
+                  Icon(Icons.add_box_outlined, size: 18, color: Colors.teal[700]),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Additional Costs',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.teal[800],
+                    ),
+                  ),
+                  if (_additionalCostControllers.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.teal,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '${_additionalCostControllers.length}',
+                        style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                  const Spacer(),
+                  Icon(
+                    _showAdditionalCosts ? Icons.expand_less : Icons.expand_more,
+                    color: Colors.teal[700],
+                    size: 20,
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Collapsible body
+          if (_showAdditionalCosts) ...[
+            const Divider(height: 1, color: Colors.teal),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                children: [
+                  ..._additionalCostControllers.asMap().entries.map((entry) {
+                    final i = entry.key;
+                    final row = entry.value;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            flex: 3,
+                            child: TextField(
+                              controller: row.label,
+                              onChanged: (_) => setState(() {}),
+                              decoration: InputDecoration(
+                                labelText: 'Label',
+                                hintText: 'e.g. Shipping',
+                                isDense: true,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                ),
+                                filled: true,
+                                fillColor: Colors.white,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            flex: 2,
+                            child: TextField(
+                              controller: row.amount,
+                              onChanged: (_) => setState(() {}),
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              decoration: InputDecoration(
+                                labelText: 'Amount',
+                                prefixText: '$_currencySymbol ',
+                                isDense: true,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                ),
+                                filled: true,
+                                fillColor: Colors.white,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          IconButton(
+                            icon: const Icon(Icons.remove_circle_outline, color: Colors.red, size: 20),
+                            tooltip: 'Remove',
+                            onPressed: () {
+                              setState(() {
+                                _additionalCostControllers[i].label.dispose();
+                                _additionalCostControllers[i].amount.dispose();
+                                _additionalCostControllers.removeAt(i);
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _additionalCostControllers.add((
+                            label: TextEditingController(),
+                            amount: TextEditingController(),
+                          ));
+                        });
+                      },
+                      icon: Icon(Icons.add_circle_outline, color: primary, size: 16),
+                      label: Text('Add Row', style: TextStyle(color: primary, fontSize: 13)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDiscountPerUnitToggle(bool value, ValueChanged<bool> onChanged) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Discount per unit', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+            Text(
+              value
+                  ? '(price − discount) × qty'
+                  : '(price × qty) − discount',
+              style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+            ),
+          ],
+        ),
+        Switch(value: value, onChanged: onChanged),
+      ],
+    );
+  }
+
   Widget _buildItemDetail(String label, String value, {Color? color}) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -1803,7 +2029,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                               _buildItemDetail('Price', '$_currencySymbol${item.product.price.toStringAsFixed(2)}'),
                             _buildItemDetail('HSN', item.product.hsncode.toString()),
                             _buildItemDetail(_quantityLabel.trim().isNotEmpty ? _quantityLabel.trim() : 'Qty', item.quantity == item.quantity.roundToDouble() ? item.quantity.toInt().toString() : item.quantity.toString()),
-                            _buildItemDetail('Discount', '$_currencySymbol${item.discount.toStringAsFixed(2)}'),
+                            _buildItemDetail('Discount', '$_currencySymbol${item.discount.toStringAsFixed(2)}${item.discountPerUnit ? ' ×qty' : ''}'),
                             if (item.extraCost != null && item.extraCost! > 0)
                               _buildItemDetail('Extra', '+$_currencySymbol${item.extraCost!.toStringAsFixed(2)}', color: Colors.teal[700]),
                             if (_taxMode == TaxMode.perItem)
@@ -1829,6 +2055,49 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                               ),
                             ),
                           ),
+                          if (item.product.id.startsWith('custom-') &&
+                              !_savedAdHocIds.contains(item.product.id)) ...[
+                            const SizedBox(width: 8),
+                            Tooltip(
+                              message: 'Save to product list',
+                              child: TextButton.icon(
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.deepPurple,
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  side: const BorderSide(color: Colors.deepPurple, width: 1),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                                icon: const Icon(Icons.bookmark_add_outlined, size: 16),
+                                label: const Text('Save', style: TextStyle(fontSize: 12)),
+                                onPressed: () async {
+                                  final messenger = ScaffoldMessenger.of(context);
+                                  final newProduct = Product(
+                                    id: const Uuid().v4(),
+                                    name: item.product.name,
+                                    description: '',
+                                    price: item.effectivePrice,
+                                    stock: 0,
+                                    hsncode: item.product.hsncode,
+                                    tax_rate: item.product.tax_rate,
+                                  );
+                                  await ProductService.insertProduct(newProduct);
+                                  final reloaded = await ProductService.getAllProducts();
+                                  if (!mounted) return;
+                                  setState(() {
+                                    _savedAdHocIds.add(item.product.id);
+                                    products = reloaded;
+                                    filteredProducts = reloaded;
+                                  });
+                                  messenger.showSnackBar(
+                                    SnackBar(
+                                      content: Text('${newProduct.name} saved to product list'),
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
                           const SizedBox(width: 8),
                           IconButton(
                             icon: const Icon(Icons.edit, size: 20),
@@ -1862,6 +2131,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
             ),
             child: Column(
               children: [
+                _buildAdditionalCostsSection(),
+                const SizedBox(height: 12),
                 Row(
                   children: [
                     Expanded(
@@ -1922,27 +2193,29 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Enable Tax toggle
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Flexible(
-                                child: Text(
-                                  'Enable Tax',
-                                  style: TextStyle(fontWeight: FontWeight.w600),
-                                  overflow: TextOverflow.ellipsis,
+                          // Enable Tax toggle (only when GST fields are enabled)
+                          if (_showGstFields) ...[
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Flexible(
+                                  child: Text(
+                                    'Enable Tax',
+                                    style: TextStyle(fontWeight: FontWeight.w600),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                              ),
-                              Switch(
-                                value: _isTaxEnabled,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _isTaxEnabled = value;
-                                  });
-                                },
-                              ),
-                            ],
-                          ),
+                                Switch(
+                                  value: _isTaxEnabled,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _isTaxEnabled = value;
+                                    });
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
                           if (_isTaxEnabled) ...[
                             const SizedBox(height: 8),
                             // Global / Per Item selector
@@ -2028,6 +2301,14 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                             _buildTotalRow('Subtotal', subtotal, false),
                             const SizedBox(height: 8),
                             _buildTotalRow('Tax', tax, false),
+                            ..._buildAdditionalCosts().map((c) => Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: _buildTotalRow(
+                                c.label.isEmpty ? 'Extra Cost' : c.label,
+                                c.amount,
+                                false,
+                              ),
+                            )),
                             const SizedBox(height: 20),
                             _buildTotalRow('Total', total, true),
                             if (isEditing &&
@@ -2141,6 +2422,15 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
             ),
             const SizedBox(width: 12),
             _buildActionButton(
+              icon: Icons.download_outlined,
+              label: 'Download',
+              color: Colors.deepPurple,
+              onPressed: _invoice != null
+                  ? () => PDFService.downloadPDF(context, _invoice!)
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            _buildActionButton(
               icon: Icons.print,
               label: 'Print',
               color: Colors.blue,
@@ -2199,6 +2489,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         taxMode: _taxMode,
         upiId: _selectedUpi?.id,
         quantityLabel: _quantityLabel.trim().isEmpty ? null : _quantityLabel.trim(),
+        additionalCosts: _buildAdditionalCosts(),
       );
 
       await InvoiceService.updateInvoice(updatedInvoice);
@@ -2344,6 +2635,13 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     ),
                     const SizedBox(width: 16),
                     _buildSuccessActionButton(
+                      icon: Icons.download_outlined,
+                      label: 'Download PDF',
+                      color: Colors.deepPurple,
+                      onPressed: () => PDFService.downloadPDF(context, _invoice!),
+                    ),
+                    const SizedBox(width: 16),
+                    _buildSuccessActionButton(
                       icon: Icons.print,
                       label: 'Print PDF',
                       color: Colors.blue,
@@ -2351,7 +2649,81 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
+                // Offer to save customer only if they weren't already in the list
+                if (selectedCustomer == null && nameController.text.trim().isNotEmpty)
+                  Container(
+                    constraints: const BoxConstraints(maxWidth: 480),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade50,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.amber.shade300),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.person_add_alt_1_outlined, color: Colors.amber.shade800, size: 22),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Save "${nameController.text.trim()}" to your customer list for future use?',
+                            style: TextStyle(fontSize: 13, color: Colors.amber.shade900),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.amber.shade900,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          ),
+                          onPressed: () async {
+                            final phone = phoneController.text.trim();
+                            final existing = phone.isNotEmpty
+                                ? await CustomerService.findByPhone(phone)
+                                : null;
+                            final newCustomer = existing ?? Customer(
+                              id: const Uuid().v4(),
+                              name: nameController.text.trim(),
+                              email: emailController.text.trim(),
+                              phone: phone,
+                              address: addressController.text.trim(),
+                              gstin: gstinController.text.trim(),
+                            );
+                            if (existing == null) {
+                              await CustomerService.insertCustomer(newCustomer);
+                            }
+                            final reloaded = await CustomerService.getAllCustomers();
+                            if (mounted) {
+                              setState(() {
+                                selectedCustomer = newCustomer;
+                                customers = reloaded;
+                                filteredCustomers = reloaded;
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('${newCustomer.name} saved to customer list'),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          },
+                          child: const Text('Save', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.grey,
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                          ),
+                          onPressed: () => setState(() => selectedCustomer = Customer(
+                            id: '', name: nameController.text.trim(),
+                            email: '', phone: '', address: '', gstin: '',
+                          )),
+                          child: const Text('Dismiss'),
+                        ),
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: 16),
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
                     minimumSize: Size(MediaQuery.of(context).size.width * 0.2, 56),
@@ -2410,7 +2782,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         tax = 0.0;
         break;
     }
-    double total = subtotal + tax;
+    final additionalTotal = _buildAdditionalCosts()
+        .fold(0.0, (sum, c) => sum + c.amount);
+    double total = subtotal + tax + additionalTotal;
 
     return Scaffold(
       appBar: AppBar(

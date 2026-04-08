@@ -9,6 +9,7 @@ import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/screens/settings_screen.dart';
 import 'package:invoiso/common.dart';
 import 'package:invoiso/services/invoice_pdf_services.dart';
+import 'package:invoiso/services/pdf_service.dart';
 import 'package:invoiso/widgets/apply_payment_dialog.dart';
 import 'package:invoiso/utils/session_manager.dart';
 
@@ -811,8 +812,11 @@ class _DashboardHomeState extends State<DashboardHome> {
                                                 _buildActionButton(Icons.copy_all_outlined, Colors.teal, 'Duplicate',
                                                     () => _showCloneDialog(invoice)),
                                                 const SizedBox(width: 8),
-                                                _buildActionButton(Icons.picture_as_pdf_outlined, Colors.orange, 'PDF View / Download',
+                                                _buildActionButton(Icons.picture_as_pdf_outlined, Colors.orange, 'PDF Preview',
                                                     () => InvoicePdfServices.previewPDF(context, invoice)),
+                                                const SizedBox(width: 8),
+                                                _buildActionButton(Icons.download_outlined, Colors.deepPurple, 'Download PDF',
+                                                    () => PDFService.downloadPDF(context, invoice)),
                                                 const SizedBox(width: 8),
                                                 _buildActionButton(Icons.print_outlined, Colors.blueGrey, 'Print',
                                                     () => InvoicePdfServices.generatePDF(context, invoice)),

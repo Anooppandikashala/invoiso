@@ -24,6 +24,7 @@ enum SettingKey {
   showGstFields,       // whether to show GST/GSTIN fields
   fractionalQuantity,  // whether to allow decimal quantities (e.g. 1.5 hrs)
   quantityLabel,       // default label for the Qty column (e.g. "Words", "Hours")
+  logoSize,            // logo size on PDF: 'small' | 'medium' | 'large'
 }
 
 extension SettingKeyExtension on SettingKey
@@ -52,6 +53,8 @@ extension SettingKeyExtension on SettingKey
         return 'fractional_quantity';
       case SettingKey.quantityLabel:
         return 'quantity_label';
+      case SettingKey.logoSize:
+        return 'logo_size';
     }
   }
 }
@@ -100,6 +103,7 @@ class SupportedCurrencies {
     CurrencyOption(code: 'AUD', symbol: 'A\$', name: 'Australian Dollar'),
     CurrencyOption(code: 'CAD', symbol: 'C\$', name: 'Canadian Dollar'),
     CurrencyOption(code: 'JMD', symbol: 'J\$', name: 'Jamaican Dollar'),
+    CurrencyOption(code: 'ZAR', symbol: 'R',   name: 'South African Rand'),
   ];
 
   static CurrencyOption fromCode(String code) {

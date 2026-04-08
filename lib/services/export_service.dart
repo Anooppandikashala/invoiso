@@ -30,7 +30,11 @@ class ExportService {
       'Items',
     ];
 
-    final dataRows = invoices.map((inv) {
+    // Sort oldest → newest so records append naturally in spreadsheets
+    final sorted = List<Invoice>.from(invoices)
+      ..sort((a, b) => a.id.compareTo(b.id));
+
+    final dataRows = sorted.map((inv) {
       final itemsSummary = inv.items.map((item) {
         final qty = item.quantity == item.quantity.roundToDouble()
             ? item.quantity.toInt().toString()

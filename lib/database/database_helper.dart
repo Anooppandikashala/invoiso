@@ -14,7 +14,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 13;
+  final dbVersion = 15;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -76,7 +76,8 @@ class DatabaseHelper {
         deleted_at TEXT,
         upi_id TEXT,
         due_date TEXT,
-        quantity_label TEXT
+        quantity_label TEXT,
+        additional_costs TEXT
       )
     ''');
 
@@ -93,6 +94,7 @@ class DatabaseHelper {
         discount REAL,
         unit_price REAL,
         extra_cost REAL,
+        discount_per_unit INTEGER DEFAULT 0,
         PRIMARY KEY (invoice_id, product_id),
         FOREIGN KEY (invoice_id) REFERENCES invoices(id)
       )
@@ -353,6 +355,22 @@ class DatabaseHelper {
       await _runMigrationStep(db, 13, 'add_quantity_label_to_invoices', () async {
         await db.execute(
           'ALTER TABLE invoices ADD COLUMN quantity_label TEXT',
+        );
+      });
+    }
+
+    if (oldVersion < 14) {
+      await _runMigrationStep(db, 14, 'add_discount_per_unit_to_invoice_items', () async {
+        await db.execute(
+          'ALTER TABLE invoice_items ADD COLUMN discount_per_unit INTEGER DEFAULT 0',
+        );
+      });
+    }
+
+    if (oldVersion < 15) {
+      await _runMigrationStep(db, 15, 'add_additional_costs_to_invoices', () async {
+        await db.execute(
+          'ALTER TABLE invoices ADD COLUMN additional_costs TEXT',
         );
       });
     }
