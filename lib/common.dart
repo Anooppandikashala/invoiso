@@ -103,6 +103,7 @@ class SupportedCurrencies {
     CurrencyOption(code: 'AUD', symbol: 'A\$', name: 'Australian Dollar'),
     CurrencyOption(code: 'CAD', symbol: 'C\$', name: 'Canadian Dollar'),
     CurrencyOption(code: 'JMD', symbol: 'J\$', name: 'Jamaican Dollar'),
+    CurrencyOption(code: 'ZAR', symbol: 'R',   name: 'South African Rand'),
   ];
 
   static CurrencyOption fromCode(String code) {
