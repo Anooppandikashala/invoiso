@@ -53,6 +53,7 @@ class InvoiceService {
           'product_hsn_code': item.product.hsncode,
           'quantity': item.quantity,
           'discount': item.discount,
+          'discount_per_unit': item.discountPerUnit ? 1 : 0,
           'unit_price': item.unitPrice,
           'extra_cost': item.extraCost,
         });
@@ -122,6 +123,7 @@ class InvoiceService {
           'product_hsn_code': item.product.hsncode,
           'quantity': item.quantity,
           'discount': item.discount,
+          'discount_per_unit': item.discountPerUnit ? 1 : 0,
           'unit_price': item.unitPrice,
           'extra_cost': item.extraCost,
         });
@@ -193,6 +195,7 @@ class InvoiceService {
           discount: (row['discount'] is int)
               ? (row['discount'] as int).toDouble()
               : (row['discount'] ?? 0.0) as double,
+          discountPerUnit: (row['discount_per_unit'] as int? ?? 0) == 1,
           unitPrice: unitPrice,
           extraCost: extraCost,
         ));

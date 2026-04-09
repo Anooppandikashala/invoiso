@@ -87,9 +87,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return DashboardHome(onEditInvoice: editInvoice, onCloneInvoice: cloneInvoice, user: _currentUser);
       case 1:
         return CreateInvoiceScreen(
+          key: ValueKey('create_invoice_${invoiceToEdit?.id ?? 'new'}_${_invoiceToClone?.id ?? ''}'),
           invoiceToEdit: invoiceToEdit,
           cloneFrom: _invoiceToClone,
           cloneType: _invoiceToClone != null ? _cloneType : null,
+          onCreateNewInvoice: () {
+            setState(() {
+              invoiceToEdit = null;
+              _invoiceToClone = null;
+            });
+          },
         );
       case 2:
         return InvoiceManagementScreen(

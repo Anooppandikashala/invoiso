@@ -23,12 +23,16 @@ class CreateInvoiceScreen extends StatefulWidget {
   /// The invoice type to use for the clone ('Invoice' or 'Quotation').
   /// Defaults to the source invoice type when null.
   final String? cloneType;
+  /// Called when the user taps "New Invoice" while in edit mode.
+  /// The parent (DashboardScreen) resets invoiceToEdit to null.
+  final VoidCallback? onCreateNewInvoice;
 
   const CreateInvoiceScreen({
     super.key,
     this.invoiceToEdit,
     this.cloneFrom,
     this.cloneType,
+    this.onCreateNewInvoice,
   });
 
   @override
@@ -1389,6 +1393,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       taxRate = Tax.defaultTaxRate;
       taxRateController.text = (taxRate * 100).toStringAsFixed(1);
     });
+    await _setAdditionalNote();
   }
 
   Future<void> _saveCustomer() async {
@@ -1868,9 +1873,11 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Amount Paid:',
-              style: TextStyle(fontSize: 14, color: Colors.green[700]),
+            Expanded(
+              child: Text(
+                'Amount Paid:',
+                style: TextStyle(fontSize: 14, color: Colors.green[700]),
+              ),
             ),
             Text(
               '$_currencySymbol${amountPaid.toStringAsFixed(2)}',
@@ -1905,9 +1912,11 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Amount Due:',
-                style: TextStyle(fontSize: 14, color: Colors.orange[800]),
+              Expanded(
+                child: Text(
+                  'Amount Due:',
+                  style: TextStyle(fontSize: 14, color: Colors.orange[800]),
+                ),
               ),
               Text(
                 '$_currencySymbol${outstanding.toStringAsFixed(2)}',
@@ -2494,8 +2503,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
       await InvoiceService.updateInvoice(updatedInvoice);
 
+      final refreshedInvoice = await InvoiceService.getInvoiceById(updatedInvoice.id);
       setState(() {
-        _invoice = updatedInvoice;
+        _invoice = refreshedInvoice ?? updatedInvoice;
         isLoading = false;
       });
 
@@ -2791,14 +2801,37 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              _invoice != null && !isEditing
-                  ? '$invoiceType Created'
-                  : widget.invoiceToEdit != null
-                      ? 'Edit $invoiceType'
-                      : widget.cloneFrom != null
-                          ? 'Duplicate as $invoiceType'
-                          : 'Create New $invoiceType',
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _invoice != null && !isEditing
+                      ? '$invoiceType Created'
+                      : widget.invoiceToEdit != null
+                          ? 'Edit $invoiceType'
+                          : widget.cloneFrom != null
+                              ? 'Duplicate as $invoiceType'
+                              : 'Create New $invoiceType',
+                ),
+                if (isEditing) ...[
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    onPressed: () => widget.onCreateNewInvoice?.call(),
+                    icon: const Icon(Icons.add, size: 16),
+                    label: const Text('New Invoice', style: TextStyle(fontSize: 13)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Theme.of(context).primaryColor,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ],
+              ],
             ),
             Text(DateFormat('dd/MM/yyyy').format(DateTime.now())),
             Padding(
