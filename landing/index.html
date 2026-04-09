@@ -99,6 +99,8 @@
         "Role-based access control — admin and standard user roles",
         "Data backup and restore",
         "CSV export",
+        "Flexible line items — per-invoice price override and custom ad-hoc items",
+        "Custom quantity label — rename the Qty column to Hrs, Kg, or any unit",
         "No subscription or fees — free forever",
         "No account or registration required",
         "Data never leaves your device"
@@ -286,10 +288,11 @@
         <ul class="hidden md:flex space-x-10 font-medium">
           <li><a href="#home" class="transition-colors duration-300">Home</a></li>
           <li><a href="#features" class="transition-colors duration-300">Features</a></li>
-          <li><a href="#how-it-works" class="transition-colors duration-300">How It Works</a></li>
           <li><a href="#about" class="transition-colors duration-300">About</a></li>
           <li><a href="#screenshots" class="transition-colors duration-300">Screenshots</a></li>
+          <li><a href="#demo" class="transition-colors duration-300">Demo</a></li>
           <li><a href="faq.html" class="transition-colors duration-300">FAQ</a></li>
+          <li><a href="changelog.html" class="transition-colors duration-300">Updates</a></li>
           <li><a href="download.html" class="transition-colors duration-300">Download</a></li>
           <li><a href="#contact" class="transition-colors duration-300">Contact</a></li>
         </ul>
@@ -311,10 +314,11 @@
         <ul class="py-4 px-6 space-y-3">
           <li><a href="#home" class="block py-2 transition-colors">Home</a></li>
           <li><a href="#features" class="block py-2 transition-colors">Features</a></li>
-          <li><a href="#how-it-works" class="block py-2 transition-colors">How It Works</a></li>
           <li><a href="#about" class="block py-2 transition-colors">About</a></li>
           <li><a href="#screenshots" class="block py-2 transition-colors">Screenshots</a></li>
+          <li><a href="#demo" class="block py-2 transition-colors">Demo</a></li>
           <li><a href="faq.html" class="block py-2 transition-colors">FAQ</a></li>
+          <li><a href="changelog.html" class="block py-2 transition-colors">Updates</a></li>
           <li><a href="download.html" class="block py-2 transition-colors">Download</a></li>
           <li><a href="#contact" class="block py-2 transition-colors">Contact</a></li>
         </ul>
@@ -452,6 +456,26 @@
               <div>
                 <h3>Role-Based Access</h3>
                 <p>Admin and standard user roles. Restrict deletes, settings, and backup to admins only.</p>
+              </div>
+            </div>
+
+            <div class="feature-item">
+              <div class="feature-icon-box" style="background:rgba(249,115,22,0.14)">
+                <i class="fas fa-tags" style="color:#f97316" aria-hidden="true"></i>
+              </div>
+              <div>
+                <h3>Flexible Line Items</h3>
+                <p>Override the unit price of any line item per invoice, or add one-off custom items on the fly — no product catalogue entry needed.</p>
+              </div>
+            </div>
+
+            <div class="feature-item">
+              <div class="feature-icon-box" style="background:rgba(6,182,212,0.14)">
+                <i class="fas fa-ruler" style="color:#06b6d4" aria-hidden="true"></i>
+              </div>
+              <div>
+                <h3>Custom Quantity Label</h3>
+                <p>Rename the quantity column to match your business — use "Hrs" for services, "Units" for goods, or any label you need.</p>
               </div>
             </div>
 
@@ -636,6 +660,27 @@
             <div class="swiper-button-next" aria-label="Next screenshot"></div>
             <div class="swiper-button-prev" aria-label="Previous screenshot"></div>
             <div class="swiper-pagination"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- App Walkthrough Video Section -->
+      <section id="demo" class="py-20 about-section">
+        <div class="container mx-auto px-6 max-w-4xl">
+          <div class="text-center mb-10">
+            <h2 class="section-title text-4xl font-bold mb-3 primary-text">See It in Action</h2>
+            <p style="color:var(--text-muted)">Full walkthrough of Invoiso — from setup to your first invoice</p>
+          </div>
+          <div class="glass-card rounded-2xl overflow-hidden" style="position:relative;padding-top:56.25%;">
+            <iframe
+              src="https://www.youtube-nocookie.com/embed/HH17FE3C4tM?rel=0&origin=https://anooppandikashala.github.io"
+              title="Invoiso App Walkthrough"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              referrerpolicy="strict-origin-when-cross-origin"
+              allowfullscreen
+              loading="lazy"
+              style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"
+            ></iframe>
           </div>
         </div>
       </section>
@@ -876,14 +921,20 @@
     // --- Testimonials data ---
     // To add a new review, just push another object into this array.
     var testimonials = [
-      /* Uncomment after client approval:
-      {
+      //Uncomment after client approval:
+      /*{
         name: 'Keyson',
         location: 'Jamaica',
         text: 'All-in-all, your app is a very fantastic piece of software! I look forward to supporting this project in the future, where you can probably add more features or what not! Well done bro! 👏 👏👏',
         stars: 5,
-      },
-      */
+      },*/
+      {
+        name: 'Raul V',
+        location: '',
+        text: 'I’ve been looking for a long time for a simple but useful invoicing program, multi platform. I found complete accounting suites, complicated, and not really useful if you just want to create invoices and keep record of payments and sales taxes. Then I found Invoiso and I was amazed!, beautiful interface and functionality, it does everything you need without complicating things like the full accounting suites. Try it, you will not be disappointed.',
+        stars: 5,
+      }
+      
     ];
 
     (function buildTestimonials() {

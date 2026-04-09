@@ -255,6 +255,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   _buildNavItem(3, Icons.request_quote_outlined, Icons.request_quote, 'Quotations'),
                   _buildNavItem(4, Icons.people_outline, Icons.people, 'Customers'),
                   _buildNavItem(5, Icons.inventory_2_outlined, Icons.inventory_2, 'Products'),
+                  _buildComingSoonNavItem(Icons.bar_chart_outlined, 'Reports'),
                   _buildNavItem(6, Icons.settings_outlined, Icons.settings, 'Settings'),
                 ],
               ),
@@ -370,6 +371,76 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
       ),  // ClipRect
+    );
+  }
+
+  Widget _buildComingSoonNavItem(IconData icon, String label) {
+    const disabledColor = Color(0xFFCBD5E1);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useExpanded = constraints.maxWidth > 110;
+
+        if (!useExpanded) {
+          return Tooltip(
+            message: '$label — Coming Soon',
+            preferBelow: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: disabledColor, size: 20),
+              ),
+            ),
+          );
+        }
+
+        return Tooltip(
+          message: 'Coming Soon',
+          preferBelow: false,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(icon, color: disabledColor, size: 18),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: const TextStyle(
+                        color: disabledColor,
+                        fontWeight: FontWeight.w400,
+                        fontSize: 13.5,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: const Text(
+                      'Soon',
+                      style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: disabledColor),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -497,6 +568,7 @@ class _DashboardHomeState extends State<DashboardHome> {
   int totalProducts = 0;
   int totalInvoices = 0;
   double totalRevenue = 0.0;
+  double totalOutstanding = 0.0;
   List<Invoice> recentInvoices = [];
   String _currencySymbol = '₹';
   bool isLoading = true;
@@ -515,11 +587,14 @@ class _DashboardHomeState extends State<DashboardHome> {
     final List<Invoice> invoices = await InvoiceService.getAllInvoices();
     final currency = await SettingsService.getCurrency();
 
+    final onlyInvoices = invoices.where((inv) => inv.type == 'Invoice').toList();
+
     setState(() {
       totalCustomers = customers.length;
       totalProducts = products.length;
       totalInvoices = invoices.length;
-      totalRevenue = invoices.fold(0.0, (sum, inv) => sum + inv.total);
+      totalRevenue = onlyInvoices.fold(0.0, (sum, inv) => sum + inv.amountPaid);
+      totalOutstanding = onlyInvoices.fold(0.0, (sum, inv) => sum + inv.outstandingBalance);
       recentInvoices = invoices.length > 5 ? invoices.sublist(0, 5) : invoices;
       _currencySymbol = currency.symbol;
       isLoading = false;
@@ -558,7 +633,9 @@ class _DashboardHomeState extends State<DashboardHome> {
                   const SizedBox(height: 28),
 
                   // ── Stats Row ────────────────────────────────────
-                  Row(
+                  IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       _buildStatCard('Customers', totalCustomers.toString(), const Color(0xFF1565C0), Icons.people_outline),
                       const SizedBox(width: 16),
@@ -567,12 +644,20 @@ class _DashboardHomeState extends State<DashboardHome> {
                       _buildStatCard('Invoices', totalInvoices.toString(), const Color(0xFFE65100), Icons.receipt_long_outlined),
                       const SizedBox(width: 16),
                       _buildStatCard(
-                        'Total Revenue',
+                        'Revenue Collected',
                         '$_currencySymbol ${totalRevenue.toStringAsFixed(2)}',
                         const Color(0xFF6A1B9A),
                         Icons.account_balance_wallet_outlined,
                       ),
+                      const SizedBox(width: 16),
+                      _buildStatCard(
+                        'Outstanding',
+                        '$_currencySymbol ${totalOutstanding.toStringAsFixed(2)}',
+                        const Color(0xFFC62828),
+                        Icons.hourglass_top_outlined,
+                      ),
                     ],
+                  ),
                   ),
 
                   const SizedBox(height: 36),
@@ -956,7 +1041,7 @@ class _DashboardHomeState extends State<DashboardHome> {
             Text(
               value,
               style: TextStyle(
-                fontSize: 26,
+                fontSize: 22,
                 fontWeight: FontWeight.bold,
                 color: Colors.grey[900],
                 letterSpacing: -0.5,
@@ -965,7 +1050,7 @@ class _DashboardHomeState extends State<DashboardHome> {
             const SizedBox(height: 4),
             Text(
               title,
-              style: TextStyle(fontSize: 12, color: Colors.grey[500], fontWeight: FontWeight.w500),
+              style: TextStyle(fontSize: 12, color: Colors.grey[700], fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 14),
             Container(
