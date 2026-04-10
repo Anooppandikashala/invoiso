@@ -12,8 +12,10 @@ import 'package:invoiso/services/invoice_pdf_services.dart';
 import 'package:invoiso/services/pdf_service.dart';
 import 'package:invoiso/widgets/apply_payment_dialog.dart';
 import 'package:invoiso/utils/error_handler.dart';
+import 'package:intl/intl.dart';
 import 'package:open_file/open_file.dart';
 import 'package:invoiso/models/user.dart';
+import 'package:invoiso/widgets/customer_info_button.dart';
 
 class InvoiceManagementScreen extends ConsumerStatefulWidget {
   final Function(Invoice) onEditInvoice;
@@ -64,9 +66,9 @@ class _InvoiceManagementScreenState
   static const Map<int, TableColumnWidth> _invoiceColumnWidths = {
     0: FixedColumnWidth(48),
     1: FixedColumnWidth(56),
-    2: FlexColumnWidth(0.9),
-    3: FlexColumnWidth(1.0),
-    4: FixedColumnWidth(120),
+    2: FlexColumnWidth(0.6),
+    3: FlexColumnWidth(0.9),
+    4: FixedColumnWidth(150),
     5: FixedColumnWidth(80),
     6: FlexColumnWidth(1.0),
     7: FixedColumnWidth(90),
@@ -263,11 +265,145 @@ class _InvoiceManagementScreenState
   // ─── Toolbar actions ───────────────────────────────────────────────────────
 
   Future<void> _exportCsv() async {
+    final fmt = DateFormat('dd/MM/yyyy');
+    DateTime? fromDate;
+    DateTime? toDate;
+    bool exportAll = false;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.file_download_outlined,
+                  color: Theme.of(context).primaryColor),
+              const SizedBox(width: 10),
+              Text('Export ${widget.filterType}s to CSV'),
+            ],
+          ),
+          content: SizedBox(
+            width: 400,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Export All toggle
+                InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: () => setS(() {
+                    exportAll = !exportAll;
+                    if (exportAll) {
+                      fromDate = null;
+                      toDate = null;
+                    }
+                  }),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        Checkbox(
+                          value: exportAll,
+                          onChanged: (v) => setS(() {
+                            exportAll = v ?? false;
+                            if (exportAll) {
+                              fromDate = null;
+                              toDate = null;
+                            }
+                          }),
+                        ),
+                        const SizedBox(width: 4),
+                        const Text('Export All Records',
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                      ],
+                    ),
+                  ),
+                ),
+                const Divider(height: 20),
+                // Date range pickers
+                Opacity(
+                  opacity: exportAll ? 0.35 : 1.0,
+                  child: AbsorbPointer(
+                    absorbing: exportAll,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Or filter by date range:',
+                          style: TextStyle(fontSize: 13, color: Colors.black54),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _DatePickerField(
+                                label: 'From Date',
+                                value: fromDate,
+                                formatter: fmt,
+                                onPicked: (d) => setS(() => fromDate = d),
+                                onCleared: () => setS(() => fromDate = null),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _DatePickerField(
+                                label: 'To Date',
+                                value: toDate,
+                                formatter: fmt,
+                                onPicked: (d) => setS(() => toDate = d),
+                                onCleared: () => setS(() => toDate = null),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (fromDate != null &&
+                            toDate != null &&
+                            toDate!.isBefore(fromDate!)) ...[
+                          const SizedBox(height: 8),
+                          const Text(
+                            'To date must be after From date.',
+                            style: TextStyle(fontSize: 12, color: Colors.red),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton.icon(
+              onPressed: (!exportAll &&
+                      fromDate != null &&
+                      toDate != null &&
+                      toDate!.isBefore(fromDate!))
+                  ? null
+                  : () => Navigator.pop(ctx, true),
+              icon: const Icon(Icons.download, size: 18),
+              label: const Text('Export'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
     try {
-      final all = await InvoiceService.getAllInvoices();
-      final path = await ExportService.exportInvoicesToCsv(all);
+      final invoices = await InvoiceService.getInvoicesForExport(
+        fromDate: exportAll ? null : fromDate,
+        toDate: exportAll ? null : toDate,
+        filterType: widget.filterType,
+      );
+      final path = await ExportService.exportInvoicesToCsv(invoices, type: widget.filterType);
       if (mounted) {
-        AppError.showSuccess(context, 'Exported to: $path');
+        AppError.showSuccess(context,
+            'Exported ${invoices.length} record${invoices.length == 1 ? '' : 's'} to: $path');
         await OpenFile.open(path);
       }
     } catch (e) {
@@ -421,7 +557,7 @@ class _InvoiceManagementScreenState
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text('Invoice Management'),
+        title: Text('${widget.filterType} Management'),
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -677,8 +813,10 @@ class _InvoiceManagementScreenState
                             ],
                           ),
                         )
-                      : SizedBox(
-                          width: MediaQuery.sizeOf(context).width * 0.95,
+                      : Align(
+                          alignment: Alignment.topCenter,
+                          child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: AppLayout.maxWidthWide),
                           child: SingleChildScrollView(
                             padding:
                                 const EdgeInsets.symmetric(horizontal: 24),
@@ -767,6 +905,7 @@ class _InvoiceManagementScreenState
                             ),
                           ),
                         ),
+                      ),
                 ),
 
                 // ── Pagination ────────────────────────────────────────────
@@ -1033,6 +1172,7 @@ class _InvoiceManagementScreenState
                 LayoutBuilder(
                   builder: (context, constraints) {
                     final showIcon = constraints.maxWidth > 60;
+                    final showInfoBtn = constraints.maxWidth > 30;
                     return Row(
                       children: [
                         if (showIcon) ...[
@@ -1046,7 +1186,8 @@ class _InvoiceManagementScreenState
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        _CustomerInfoButton(customer: invoice.customer),
+                        if (showInfoBtn)
+                          CustomerInfoButton(customer: invoice.customer),
                       ],
                     );
                   },
@@ -1190,7 +1331,9 @@ class _InvoiceManagementScreenState
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(dueStr, style: TextStyle(fontSize: 12, color: dueColor, fontWeight: (isOverdue || isToday) ? FontWeight.w600 : FontWeight.normal)),
+            Flexible(
+              child: Text(dueStr, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: dueColor, fontWeight: (isOverdue || isToday) ? FontWeight.w600 : FontWeight.normal)),
+            ),
             if (isOverdue || isToday) ...[
               const SizedBox(width: 4),
               Container(
@@ -1458,159 +1601,56 @@ class _TrashDialogState extends State<_TrashDialog> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Customer info button — tapping the ⓘ icon shows a clean dialog with
-// the customer's full contact details.
-class _CustomerInfoButton extends StatelessWidget {
-  final dynamic customer;
 
-  const _CustomerInfoButton({required this.customer});
+class _DatePickerField extends StatelessWidget {
+  final String label;
+  final DateTime? value;
+  final DateFormat formatter;
+  final ValueChanged<DateTime> onPicked;
+  final VoidCallback onCleared;
+
+  const _DatePickerField({
+    required this.label,
+    required this.value,
+    required this.formatter,
+    required this.onPicked,
+    required this.onCleared,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: 'View contact details',
-      child: InkWell(
-        onTap: () => _showDialog(context),
-        borderRadius: BorderRadius.circular(4),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-          child: Icon(Icons.info_outline, size: 15, color: Colors.indigo[400]),
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () async {
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: value ?? DateTime.now(),
+          firstDate: DateTime(2000),
+          lastDate: DateTime(2100),
+        );
+        if (picked != null) onPicked(picked);
+      },
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(fontSize: 13),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          suffixIcon: value != null
+              ? IconButton(
+                  icon: const Icon(Icons.clear, size: 16),
+                  onPressed: onCleared,
+                )
+              : const Icon(Icons.calendar_today, size: 16),
         ),
-      ),
-    );
-  }
-
-  void _showDialog(BuildContext context) {
-    final c = customer;
-    final hasAny = (c.phone as String).isNotEmpty ||
-        (c.email as String).isNotEmpty ||
-        (c.address as String).isNotEmpty ||
-        (c.gstin as String).isNotEmpty;
-
-    showDialog(
-      context: context,
-      builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        child: SizedBox(
-          width: 340,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.fromLTRB(20, 16, 12, 16),
-                decoration: BoxDecoration(
-                  color: Colors.indigo,
-                  borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(14)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.person, color: Colors.white, size: 20),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        c.name,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white70, size: 20),
-                      onPressed: () => Navigator.pop(ctx),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Contact details body
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (!hasAny)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: Text(
-                          'No contact details available.',
-                          style: TextStyle(color: Colors.grey[500], fontSize: 13),
-                        ),
-                      ),
-                    if ((c.phone as String).isNotEmpty)
-                      _infoRow(Icons.phone_outlined, 'Phone', c.phone, Colors.green),
-                    if ((c.email as String).isNotEmpty)
-                      _infoRow(Icons.email_outlined, 'Email', c.email, Colors.blue),
-                    if ((c.address as String).isNotEmpty)
-                      _infoRow(Icons.location_on_outlined, 'Address', c.address, Colors.orange),
-                    if ((c.gstin as String).isNotEmpty)
-                      _infoRow(Icons.badge_outlined, 'GSTIN', c.gstin, Colors.purple),
-                  ],
-                ),
-              ),
-
-              // Close button
-              Align(
-                alignment: Alignment.centerRight,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(0, 4, 16, 12),
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: const Text('Close'),
-                  ),
-                ),
-              ),
-            ],
+        child: Text(
+          value != null ? formatter.format(value!) : 'Any',
+          style: TextStyle(
+            fontSize: 13,
+            color: value != null ? Colors.black87 : Colors.black38,
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _infoRow(IconData icon, String label, String value, Color color) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Icon(icon, size: 15, color: color),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey[500],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: const TextStyle(fontSize: 13, color: Colors.black87),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }

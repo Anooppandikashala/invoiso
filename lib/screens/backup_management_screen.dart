@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:invoiso/constants.dart';
 import 'package:intl/intl.dart';
 
 import 'package:invoiso/backup/backup_manager.dart';
@@ -175,64 +174,69 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
-        children: [
-          // Action buttons
-          Padding(
-            padding: const EdgeInsets.only(left: 50,right: 50,top: 16,bottom: 16),
-            child: Column(
               children: [
-                Row(
-                  spacing: 30,
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => _createBackup(BackupType.database),
-                        icon: const Icon(Icons.backup),
-                        label: const Text('Create DB Backup'),
+                // Action buttons
+                Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 900),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                      child: Row(
+                        spacing: 16,
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () => _createBackup(BackupType.database),
+                              icon: const Icon(Icons.backup),
+                              label: const Text('Create DB Backup'),
+                            ),
+                          ),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () => _createBackup(BackupType.json),
+                              icon: const Icon(Icons.download),
+                              label: const Text('Export JSON'),
+                            ),
+                          ),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: _importBackup,
+                              icon: const Icon(Icons.upload),
+                              label: const Text('Import Backup'),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    AppSpacing.hSmall,
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => _createBackup(BackupType.json),
-                        icon: const Icon(Icons.download),
-                        label: const Text('Export JSON'),
-                      ),
-                    ),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: _importBackup,
-                        icon: const Icon(Icons.upload),
-                        label: const Text('Import Backup'),
-                      ),
-                    )
-                  ],
+                  ),
+                ),
+
+                const Divider(),
+
+                // Backup list
+                Expanded(
+                  child: _backups.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'No backups found',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                        )
+                      : Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 900),
+                            child: ListView.builder(
+                              itemCount: _backups.length,
+                              itemBuilder: (context, index) {
+                                final backup = _backups[index];
+                                return _buildBackupTile(backup);
+                              },
+                            ),
+                          ),
+                        ),
                 ),
               ],
             ),
-          ),
-
-          const Divider(),
-
-          // Backup list
-          Expanded(
-            child: _backups.isEmpty
-                ? const Center(
-              child: Text(
-                'No backups found',
-                style: TextStyle(fontSize: 16),
-              ),
-            )
-                : ListView.builder(
-              itemCount: _backups.length,
-              itemBuilder: (context, index) {
-                final backup = _backups[index];
-                return _buildBackupTile(backup);
-              },
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -240,7 +244,7 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
     final dateFormat = DateFormat('MMM dd, yyyy HH:mm');
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 50, vertical: 10),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: backup.type == BackupType.database

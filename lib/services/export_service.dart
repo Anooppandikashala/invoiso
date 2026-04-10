@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:csv/csv.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import '../database/settings_service.dart';
@@ -9,12 +8,13 @@ import '../services/pdf_service.dart';
 import '../utils/formatters.dart';
 
 class ExportService {
-  static Future<String> exportInvoicesToCsv(List<Invoice> invoices) async {
+  static Future<String> exportInvoicesToCsv(List<Invoice> invoices,
+      {String type = 'Invoice'}) async {
     final showGst = await SettingsService.getShowGstFields();
 
     // Build header row
     final header = <String>[
-      'Invoice ID',
+      '$type ID',
       'Date',
       'Due Date',
       'Customer',
@@ -62,10 +62,11 @@ class ExportService {
     }).toList();
 
     final rows = <List<dynamic>>[header, ...dataRows];
-    final csv = const ListToCsvConverter().convert(rows);
+    final csv = buildQuotedCsv(rows);
     // Prepend UTF-8 BOM so Excel and other apps render Unicode correctly
     final dir = await getApplicationDocumentsDirectory();
-    final filename = 'invoices_${DateTime.now().millisecondsSinceEpoch}.csv';
+    final prefix = '${type.toLowerCase()}s'; // 'invoices' or 'quotations'
+    final filename = '${prefix}_${DateTime.now().millisecondsSinceEpoch}.csv';
     final file = File('${dir.path}/$filename');
     await file.writeAsBytes(utf8.encode('\uFEFF$csv'));
     return file.path;

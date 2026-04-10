@@ -14,7 +14,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 15;
+  final dbVersion = 16;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -41,7 +41,8 @@ class DatabaseHelper {
         email TEXT,
         phone TEXT,
         address TEXT,
-        gstin TEXT
+        gstin TEXT,
+        business_name TEXT DEFAULT ''
       )
     ''');
 
@@ -66,6 +67,7 @@ class DatabaseHelper {
         customer_phone TEXT,
         customer_address TEXT,
         customer_gstin TEXT,
+        customer_business_name TEXT DEFAULT '',
         date TEXT,
         notes TEXT,
         tax_rate REAL,
@@ -119,7 +121,8 @@ class DatabaseHelper {
         phone TEXT,
         email TEXT,
         website TEXT,
-        gstin TEXT
+        gstin TEXT,
+        country TEXT DEFAULT 'India'
       )
     ''');
 
@@ -371,6 +374,24 @@ class DatabaseHelper {
       await _runMigrationStep(db, 15, 'add_additional_costs_to_invoices', () async {
         await db.execute(
           'ALTER TABLE invoices ADD COLUMN additional_costs TEXT',
+        );
+      });
+    }
+
+    if (oldVersion < 16) {
+      await _runMigrationStep(db, 16, 'add_business_name_to_customers', () async {
+        await db.execute(
+          "ALTER TABLE customers ADD COLUMN business_name TEXT DEFAULT ''",
+        );
+      });
+      await _runMigrationStep(db, 16, 'add_customer_business_name_to_invoices', () async {
+        await db.execute(
+          "ALTER TABLE invoices ADD COLUMN customer_business_name TEXT DEFAULT ''",
+        );
+      });
+      await _runMigrationStep(db, 16, 'add_country_to_company_info', () async {
+        await db.execute(
+          "ALTER TABLE company_info ADD COLUMN country TEXT DEFAULT 'India'",
         );
       });
     }

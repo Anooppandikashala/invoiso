@@ -59,6 +59,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   final phoneController = TextEditingController();
   final addressController = TextEditingController();
   final gstinController = TextEditingController();
+  final businessNameController = TextEditingController();
   final taxRateController = TextEditingController();
   final dateController = TextEditingController();
   final dueDateController = TextEditingController();
@@ -107,6 +108,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       phoneController.text = _invoice!.customer.phone;
       addressController.text = _invoice!.customer.address;
       gstinController.text = _invoice!.customer.gstin;
+      businessNameController.text = _invoice!.customer.businessName;
       taxRate = _invoice!.taxRate;
       taxRateController.text = (taxRate * 100).toStringAsFixed(1);
       _isTaxEnabled = _invoice!.taxMode != TaxMode.none;
@@ -137,6 +139,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       phoneController.text = src.customer.phone;
       addressController.text = src.customer.address;
       gstinController.text = src.customer.gstin;
+      businessNameController.text = src.customer.businessName;
       taxRate = src.taxRate;
       taxRateController.text = (taxRate * 100).toStringAsFixed(1);
       _isTaxEnabled = src.taxMode != TaxMode.none;
@@ -185,6 +188,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     _productScrollController.dispose();
     _invoiceItemsScrollController.dispose();
     gstinController.dispose();
+    businessNameController.dispose();
     for (final row in _additionalCostControllers) {
       row.label.dispose();
       row.amount.dispose();
@@ -559,6 +563,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               phone: phoneController.text,
               address: addressController.text,
               gstin: gstinController.text,
+              businessName: businessNameController.text,
             ),
         items: List.from(invoiceItems),
         date: DateTime.now(),
@@ -945,6 +950,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       phoneController.text = customer?.phone ?? '';
       addressController.text = customer?.address ?? '';
       gstinController.text = customer?.gstin ?? '';
+      businessNameController.text = customer?.businessName ?? '';
     });
   }
 
@@ -1390,6 +1396,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       phoneController.clear();
       addressController.clear();
       gstinController.clear();
+      businessNameController.clear();
       taxRate = Tax.defaultTaxRate;
       taxRateController.text = (taxRate * 100).toStringAsFixed(1);
     });
@@ -1457,6 +1464,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         phone: phone,
         address: addressController.text.trim(),
         gstin: gstinController.text.trim(),
+        businessName: businessNameController.text.trim(),
       );
       await CustomerService.updateCustomer(updated);
       final reloaded = await CustomerService.getAllCustomers();
@@ -1481,6 +1489,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         phone: phone,
         address: addressController.text.trim(),
         gstin: gstinController.text.trim(),
+        businessName: businessNameController.text.trim(),
       );
       await CustomerService.insertCustomer(newCustomer);
       final reloaded = await CustomerService.getAllCustomers();
@@ -1547,6 +1556,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               ],
             ),
             const SizedBox(height: 16),
+            // Row 1: Customer Name | Business Name | Phone
             Row(
               children: [
                 Expanded(
@@ -1562,22 +1572,20 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     ),
                   ),
                 ),
-                if (_showGstFields) ...[
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      controller: gstinController,
-                      style: TextStyle(fontSize: AppFontSize.medium),
-                      decoration: InputDecoration(
-                        labelText: 'GSTIN',
-                        labelStyle: TextStyle(fontSize: AppFontSize.medium),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
-                        filled: true,
-                        fillColor: Colors.white,
-                      ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    controller: businessNameController,
+                    style: TextStyle(fontSize: AppFontSize.medium),
+                    decoration: InputDecoration(
+                      labelText: 'Business Name',
+                      labelStyle: TextStyle(fontSize: AppFontSize.medium),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                      filled: true,
+                      fillColor: Colors.white,
                     ),
                   ),
-                ],
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: TextField(
@@ -1595,6 +1603,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               ],
             ),
             const SizedBox(height: 12),
+            // Row 2: Email | Address | GSTIN (conditional)
             Row(
               children: [
                 Expanded(
@@ -1624,6 +1633,23 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     ),
                   ),
                 ),
+                if (_showGstFields) ...[
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: gstinController,
+                      style: TextStyle(fontSize: AppFontSize.medium),
+                      decoration: InputDecoration(
+                        labelText: 'Tax/VAT Number (GSTIN)',
+                        labelStyle: TextStyle(fontSize: AppFontSize.medium),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                        filled: true,
+                        fillColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                ] else
+                  const Expanded(child: SizedBox()),
               ],
             ),
           ],
@@ -2486,6 +2512,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               phone: phoneController.text,
               address: addressController.text,
               gstin: gstinController.text,
+              businessName: businessNameController.text,
             ),
         items: List.from(invoiceItems),
         date: _invoice!.date,
@@ -2698,6 +2725,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                               phone: phone,
                               address: addressController.text.trim(),
                               gstin: gstinController.text.trim(),
+                              businessName: businessNameController.text.trim(),
                             );
                             if (existing == null) {
                               await CustomerService.insertCustomer(newCustomer);
@@ -2726,7 +2754,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                           ),
                           onPressed: () => setState(() => selectedCustomer = Customer(
                             id: '', name: nameController.text.trim(),
-                            email: '', phone: '', address: '', gstin: '',
+                            email: '', phone: '', address: '', gstin: '', businessName: '',
                           )),
                           child: const Text('Dismiss'),
                         ),
@@ -2871,15 +2899,20 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
             color: Colors.grey[100],
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(AppPadding.xsmall),
-              child: Column(
-                children: [
-                  if (isDesktop)
-                    _buildDesktopLayout(tax, subtotal, total)
-                  else if (isTablet)
-                    _buildTabletLayout(tax, subtotal, total)
-                  else
-                    _buildMobileLayout(tax, subtotal, total),
-                ],
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: AppLayout.maxWidthWide),
+                  child: Column(
+                    children: [
+                      if (isDesktop)
+                        _buildDesktopLayout(tax, subtotal, total)
+                      else if (isTablet)
+                        _buildTabletLayout(tax, subtotal, total)
+                      else
+                        _buildMobileLayout(tax, subtotal, total),
+                    ],
+                  ),
+                ),
               ),
             ),
           );

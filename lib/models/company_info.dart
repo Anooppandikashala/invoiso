@@ -6,6 +6,7 @@ class CompanyInfo {
   final String email;
   final String website;
   final String gstin;
+  final String country;
 
   CompanyInfo({
     this.id,
@@ -15,6 +16,7 @@ class CompanyInfo {
     required this.email,
     required this.website,
     required this.gstin,
+    this.country = 'India',
   });
 
   factory CompanyInfo.fromMap(Map<String, dynamic> map) {
@@ -25,7 +27,8 @@ class CompanyInfo {
       phone: map['phone'],
       email: map['email'],
       website: map['website'],
-      gstin: map['gstin']
+      gstin: map['gstin'],
+      country: map['country'] ?? 'India',
     );
   }
 
@@ -37,7 +40,8 @@ class CompanyInfo {
       'phone': phone,
       'email': email,
       'website': website,
-      'gstin':gstin
+      'gstin': gstin,
+      'country': country,
     };
   }
 }

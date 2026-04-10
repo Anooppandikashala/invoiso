@@ -73,4 +73,48 @@ class CustomerService
     return maps.isNotEmpty ? Customer.fromMap(maps.first) : null;
   }
 
+  static Future<Customer?> findByEmail(String email) async {
+    if (email.trim().isEmpty) return null;
+    final db = await dbHelper.database;
+    final maps = await db.query(
+      'customers',
+      where: 'email = ?',
+      whereArgs: [email.trim()],
+      limit: 1,
+    );
+    return maps.isNotEmpty ? Customer.fromMap(maps.first) : null;
+  }
+
+  /// Find an existing customer that matches by email OR phone.
+  static Future<Customer?> findDuplicate(String email, String phone) async {
+    final db = await dbHelper.database;
+    final conditions = <String>[];
+    final args = <String>[];
+    if (email.trim().isNotEmpty) { conditions.add('email = ?'); args.add(email.trim()); }
+    if (phone.trim().isNotEmpty) { conditions.add('phone = ?'); args.add(phone.trim()); }
+    if (conditions.isEmpty) return null;
+    final maps = await db.query(
+      'customers',
+      where: conditions.join(' OR '),
+      whereArgs: args,
+      limit: 1,
+    );
+    return maps.isNotEmpty ? Customer.fromMap(maps.first) : null;
+  }
+
+  static Future<void> deleteAllCustomers() async {
+    final db = await dbHelper.database;
+    await db.delete('customers');
+  }
+
+  /// Insert a batch of customers in a single transaction.
+  static Future<void> insertBatch(List<Customer> customers) async {
+    final db = await dbHelper.database;
+    await db.transaction((txn) async {
+      for (final c in customers) {
+        await txn.insert('customers', c.toMap());
+      }
+    });
+  }
+
 }
