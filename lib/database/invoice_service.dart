@@ -29,6 +29,7 @@ class InvoiceService {
         'customer_phone': invoice.customer.phone,
         'customer_address': invoice.customer.address,
         'customer_gstin': invoice.customer.gstin,
+        'customer_business_name': invoice.customer.businessName,
         'date': invoice.date.toIso8601String(),
         'notes': invoice.notes,
         'tax_rate': invoice.taxRate,
@@ -91,6 +92,7 @@ class InvoiceService {
           'customer_phone': invoice.customer.phone,
           'customer_address': invoice.customer.address,
           'customer_gstin': invoice.customer.gstin,
+          'customer_business_name': invoice.customer.businessName,
           'notes': invoice.notes,
           'tax_rate': invoice.taxRate,
           'type': invoice.type,
@@ -171,6 +173,7 @@ class InvoiceService {
       'phone': i['customer_phone'],
       'address': i['customer_address'],
       'gstin': i['customer_gstin'],
+      'business_name': i['customer_business_name'] ?? '',
     });
 
     final itemRows = await db.query('invoice_items', where: 'invoice_id = ?', whereArgs: [id]);
@@ -235,6 +238,38 @@ class InvoiceService {
       'invoices',
       where: 'deleted_at IS NULL',
       orderBy: 'id DESC',
+    );
+
+    return _buildInvoiceList(invoiceMaps);
+  }
+
+  static Future<List<Invoice>> getInvoicesForExport({
+    DateTime? fromDate,
+    DateTime? toDate,
+    String? filterType,
+  }) async {
+    final db = await dbHelper.database;
+    final whereParts = <String>['deleted_at IS NULL'];
+    final whereArgs = <dynamic>[];
+
+    if (filterType != null && filterType.isNotEmpty) {
+      whereParts.add('type = ?');
+      whereArgs.add(filterType);
+    }
+    if (fromDate != null) {
+      whereParts.add('date >= ?');
+      whereArgs.add('${fromDate.toIso8601String().substring(0, 10)}T00:00:00.000');
+    }
+    if (toDate != null) {
+      whereParts.add('date <= ?');
+      whereArgs.add('${toDate.toIso8601String().substring(0, 10)}T23:59:59.999');
+    }
+
+    final invoiceMaps = await db.query(
+      'invoices',
+      where: whereParts.join(' AND '),
+      whereArgs: whereArgs.isEmpty ? null : whereArgs,
+      orderBy: 'date ASC',
     );
 
     return _buildInvoiceList(invoiceMaps);
@@ -373,6 +408,7 @@ class InvoiceService {
         'phone': map['customer_phone'],
         'address': map['customer_address'],
         'gstin': map['customer_gstin'],
+        'business_name': map['customer_business_name'] ?? '',
       });
 
       final items = await InvoiceItemService.getInvoiceItemsByInvoiceId(invoiceId);

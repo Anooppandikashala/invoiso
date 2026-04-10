@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'package:file_picker/file_picker.dart';
+import 'package:invoiso/utils/formatters.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:invoiso/constants.dart';
@@ -7,9 +10,7 @@ import 'package:invoiso/models/user.dart';
 import 'package:uuid/uuid.dart';
 import 'package:csv/csv.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:path_provider/path_provider.dart';
 import 'dart:io';
-import 'package:share_plus/share_plus.dart';
 
 class CustomerManagementScreen extends StatefulWidget {
   final User user;
@@ -39,6 +40,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
   final _gstinController = TextEditingController();
+  final _businessNameController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   @override
@@ -54,6 +56,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
     _phoneController.dispose();
     _addressController.dispose();
     _gstinController.dispose();
+    _businessNameController.dispose();
     _searchFocusNode.dispose();
     _horizontalScrollController.dispose();
     super.dispose();
@@ -127,6 +130,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
         phone: _phoneController.text.trim(),
         address: _addressController.text.trim(),
         gstin: _gstinController.text.trim(),
+        businessName: _businessNameController.text.trim(),
       );
 
       if (customer == null) {
@@ -153,6 +157,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
     _phoneController.clear();
     _addressController.clear();
     _gstinController.clear();
+    _businessNameController.clear();
   }
 
   void _showSnackBar(String message, {bool isError = false}) {
@@ -184,6 +189,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
     final phoneCtrl = TextEditingController(text: customer.phone);
     final addressCtrl = TextEditingController(text: customer.address);
     final gstinCtrl = TextEditingController(text: customer.gstin);
+    final businessNameCtrl = TextEditingController(text: customer.businessName);
     final dialogFormKey = GlobalKey<FormState>();
 
     showDialog(
@@ -211,6 +217,9 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
                   _buildDialogTextField(nameCtrl, 'Name', Icons.person,
                       readOnly: !isEdit),
                   const SizedBox(height: 16),
+                  _buildDialogTextField(businessNameCtrl, 'Business Name', Icons.business_center,
+                      readOnly: !isEdit, maxLength: 100),
+                  const SizedBox(height: 16),
                   _buildDialogTextField(emailCtrl, 'Email', Icons.email,
                       readOnly: !isEdit, keyboardType: TextInputType.emailAddress),
                   const SizedBox(height: 16),
@@ -219,7 +228,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
                       keyboardType: TextInputType.phone,
                       maxLength: 12),
                   const SizedBox(height: 16),
-                  _buildDialogTextField(gstinCtrl, 'GSTIN', Icons.business,
+                  _buildDialogTextField(gstinCtrl, 'Tax/VAT Number (GSTIN)', Icons.receipt_long,
                       readOnly: !isEdit, maxLength: 50),
                   const SizedBox(height: 16),
                   _buildDialogTextField(addressCtrl, 'Address', Icons.location_on,
@@ -246,6 +255,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
                   phone: phoneCtrl.text.trim(),
                   address: addressCtrl.text.trim(),
                   gstin: gstinCtrl.text.trim(),
+                  businessName: businessNameCtrl.text.trim(),
                 );
 
                 await CustomerService.updateCustomer(updatedCustomer);
@@ -326,24 +336,474 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
     }
   }
 
+  Future<void> _downloadSampleCSV() async {
+    const sample = '"name","email","phone","address","business_name","tax_number"\n'
+        '"John Smith","john@example.com","+27821234567","123 Main St, Cape Town","Acme (Pty) Ltd","ZA123456789"\n'
+        '"Jane Doe","jane@example.com","+27831234567","456 Oak Ave, Johannesburg","",""\n';
+
+    final savePath = await FilePicker.platform.saveFile(
+      dialogTitle: 'Save Sample CSV',
+      fileName: 'customers_sample.csv',
+      type: FileType.custom,
+      allowedExtensions: ['csv'],
+    );
+    if (savePath == null) return;
+
+    try {
+      await File(savePath).writeAsBytes(utf8.encode('\uFEFF$sample'));
+      _showSnackBar('Sample CSV saved successfully!');
+    } catch (e) {
+      _showSnackBar('Error saving sample: $e', isError: true);
+    }
+  }
+
+  // ── CSV Import ────────────────────────────────────────────────────────────
+
+  static const _csvMaxRows = 200;
+  static const _csvHeaders = ['name', 'email', 'phone', 'address', 'business_name', 'tax_number'];
+
+  Future<void> _showImportDialog() async {
+    final proceed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.upload_file, color: Theme.of(context).primaryColor),
+            const SizedBox(width: 10),
+            const Text('Import Customers from CSV'),
+          ],
+        ),
+        content: SizedBox(
+          width: MediaQuery.of(context).size.width * 0.45,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Your CSV file must use the following column headers (exact spelling, any order):',
+                ),
+                const SizedBox(height: 12),
+                // Columns table
+                Table(
+                  border: TableBorder.all(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(6)),
+                  columnWidths: const {
+                    0: FlexColumnWidth(1.4),
+                    1: FlexColumnWidth(0.7),
+                    2: FlexColumnWidth(2),
+                  },
+                  children: [
+                    TableRow(
+                      decoration: BoxDecoration(color: Colors.grey.shade100),
+                      children: const [
+                        _TableHeader('Column'),
+                        _TableHeader('Required'),
+                        _TableHeader('Description'),
+                      ],
+                    ),
+                    _csvRuleRow('name',          'Yes', 'Customer full name'),
+                    _csvRuleRow('email',         'No',  'Email address'),
+                    _csvRuleRow('phone',         'No',  'Phone number'),
+                    _csvRuleRow('address',       'No',  'Full address'),
+                    _csvRuleRow('business_name', 'No',  'Company / business name'),
+                    _csvRuleRow('tax_number',    'No',  'Tax / VAT / GSTIN number'),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // Notes
+                _ruleNote(Icons.info_outline, 'Maximum $_csvMaxRows rows per import.'),
+                _ruleNote(Icons.info_outline, 'Duplicates are detected by email or phone. You will be asked to overwrite or skip each one.'),
+                _ruleNote(Icons.info_outline, 'Rows missing a name are skipped and reported at the end.'),
+                _ruleNote(Icons.info_outline, 'UTF-8 encoding recommended. Excel BOM is handled automatically.'),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    Navigator.pop(ctx, false);
+                    await _downloadSampleCSV();
+                  },
+                  icon: const Icon(Icons.download),
+                  label: const Text('Download Sample CSV'),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton.icon(
+            onPressed: () => Navigator.pop(ctx, true),
+            icon: const Icon(Icons.folder_open),
+            label: const Text('Choose File'),
+          ),
+        ],
+      ),
+    );
+    if (proceed == true) await _importFromCSV();
+  }
+
+  static TableRow _csvRuleRow(String col, String req, String desc) {
+    return TableRow(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Text(col, style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Text(
+            req,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: req == 'Yes' ? Colors.red.shade700 : Colors.grey.shade600,
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Text(desc, style: const TextStyle(fontSize: 12)),
+        ),
+      ],
+    );
+  }
+
+  static Widget _ruleNote(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 15, color: Colors.blueGrey),
+          const SizedBox(width: 6),
+          Expanded(child: Text(text, style: const TextStyle(fontSize: 12, color: Colors.black87))),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _importFromCSV() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['csv'],
+      dialogTitle: 'Select Customer CSV',
+    );
+    if (result == null || result.files.single.path == null) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final bytes = await File(result.files.single.path!).readAsBytes();
+      // Strip UTF-8 BOM if present
+      final content = utf8.decode(
+        bytes.length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF
+            ? bytes.sublist(3)
+            : bytes,
+      );
+
+      final rows = const CsvToListConverter(eol: '\n').convert(content);
+      if (rows.isEmpty) {
+        _showSnackBar('CSV file is empty.', isError: true);
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      // Parse and validate headers
+      final headers = rows.first.map((h) => h.toString().trim().toLowerCase()).toList();
+      if (!headers.contains('name')) {
+        _showSnackBar('CSV missing required column: "name"', isError: true);
+        setState(() => _isLoading = false);
+        return;
+      }
+      for (final col in headers) {
+        if (!_csvHeaders.contains(col)) {
+          _showSnackBar('Unknown column "$col". Expected: ${_csvHeaders.join(', ')}', isError: true);
+          setState(() => _isLoading = false);
+          return;
+        }
+      }
+
+      final dataRows = rows.skip(1).toList();
+
+      // Hard limit
+      if (dataRows.length > _csvMaxRows) {
+        _showSnackBar('CSV has ${dataRows.length} rows. Maximum is $_csvMaxRows. Please split the file.', isError: true);
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      String getField(List<dynamic> row, String col) {
+        final i = headers.indexOf(col);
+        return i < 0 || i >= row.length ? '' : row[i].toString().trim();
+      }
+
+      // Categorise rows
+      final List<Customer> valid = [];
+      final List<Customer> duplicates = [];
+      final List<String> errors = [];
+
+      for (int i = 0; i < dataRows.length; i++) {
+        final row = dataRows[i];
+        final name = getField(row, 'name');
+        if (name.isEmpty) {
+          errors.add('Row ${i + 2}: missing name — skipped');
+          continue;
+        }
+        final email = getField(row, 'email');
+        final phone = getField(row, 'phone');
+        final existing = await CustomerService.findDuplicate(email, phone);
+        final customer = Customer(
+          id: existing?.id ?? const Uuid().v4(),
+          name: name,
+          email: email,
+          phone: phone,
+          address: getField(row, 'address'),
+          gstin: getField(row, 'tax_number'),
+          businessName: getField(row, 'business_name'),
+        );
+        if (existing != null) {
+          duplicates.add(customer);
+        } else {
+          valid.add(customer);
+        }
+      }
+
+      setState(() => _isLoading = false);
+
+      if (!mounted) return;
+      await _showImportPreviewDialog(valid, duplicates, errors);
+    } catch (e) {
+      setState(() => _isLoading = false);
+      _showSnackBar('Error reading CSV: $e', isError: true);
+    }
+  }
+
+  Future<void> _showImportPreviewDialog(
+    List<Customer> newCustomers,
+    List<Customer> duplicates,
+    List<String> errors,
+  ) async {
+    // Per-row overwrite flags: true = overwrite, false = skip
+    final overwriteFlags = List<bool>.filled(duplicates.length, false);
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          final total = newCustomers.length + overwriteFlags.where((f) => f).length;
+
+          return AlertDialog(
+            title: const Text('Import Preview'),
+            content: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.55,
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        Chip(
+                          label: Text('${newCustomers.length} new'),
+                          backgroundColor: Colors.green.shade100,
+                          avatar: const Icon(Icons.person_add, size: 16),
+                        ),
+                        Chip(
+                          label: Text('${duplicates.length} duplicates'),
+                          backgroundColor: Colors.orange.shade100,
+                          avatar: const Icon(Icons.warning_amber, size: 16),
+                        ),
+                        if (errors.isNotEmpty)
+                          Chip(
+                            label: Text('${errors.length} errors'),
+                            backgroundColor: Colors.red.shade100,
+                            avatar: const Icon(Icons.error_outline, size: 16),
+                          ),
+                      ],
+                    ),
+
+                    if (duplicates.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Text('Duplicates (matched by email or phone):',
+                                style: TextStyle(fontWeight: FontWeight.bold)),
+                          ),
+                          TextButton(
+                            onPressed: () => setDialogState(() {
+                              for (int i = 0; i < overwriteFlags.length; i++) { overwriteFlags[i] = true; }
+                            }),
+                            child: const Text('Overwrite All'),
+                          ),
+                          TextButton(
+                            onPressed: () => setDialogState(() {
+                              for (int i = 0; i < overwriteFlags.length; i++) { overwriteFlags[i] = false; }
+                            }),
+                            child: const Text('Skip All'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      ...List.generate(duplicates.length, (i) {
+                        final c = duplicates[i];
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 6),
+                          child: ListTile(
+                            dense: true,
+                            title: Text('${c.name}${c.businessName.isNotEmpty ? ' — ${c.businessName}' : ''}'),
+                            subtitle: Text('${c.email} · ${c.phone}'),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text('Skip', style: TextStyle(fontSize: 12)),
+                                Switch(
+                                  value: overwriteFlags[i],
+                                  onChanged: (v) => setDialogState(() => overwriteFlags[i] = v),
+                                ),
+                                const Text('Overwrite', style: TextStyle(fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+                    ],
+
+                    if (errors.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      const Text('Skipped rows (errors):',
+                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+                      const SizedBox(height: 8),
+                      ...errors.map((e) => Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Text('• $e',
+                                style: const TextStyle(fontSize: 12, color: Colors.red)),
+                          )),
+                    ],
+
+                    const SizedBox(height: 12),
+                    Text(
+                      'Will import $total customer${total == 1 ? '' : 's'}.',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              FilledButton.icon(
+                onPressed: total == 0
+                    ? null
+                    : () async {
+                        Navigator.pop(ctx);
+                        await _executeImport(newCustomers, duplicates, overwriteFlags);
+                      },
+                icon: const Icon(Icons.upload),
+                label: Text('Import $total'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _executeImport(
+    List<Customer> newCustomers,
+    List<Customer> duplicates,
+    List<bool> overwriteFlags,
+  ) async {
+    setState(() => _isLoading = true);
+    try {
+      if (newCustomers.isNotEmpty) {
+        await CustomerService.insertBatch(newCustomers);
+      }
+      for (int i = 0; i < duplicates.length; i++) {
+        if (overwriteFlags[i]) {
+          await CustomerService.updateCustomer(duplicates[i]);
+        }
+      }
+      await _loadCustomers();
+      final imported = newCustomers.length + overwriteFlags.where((f) => f).length;
+      _showSnackBar('Imported $imported customer${imported == 1 ? '' : 's'} successfully!');
+    } catch (e) {
+      setState(() => _isLoading = false);
+      _showSnackBar('Import error: $e', isError: true);
+    }
+  }
+
+  // ── Delete All ────────────────────────────────────────────────────────────
+
+  Future<void> _confirmDeleteAll() async {
+    if (_customers.isEmpty) {
+      _showSnackBar('No customers to delete.');
+      return;
+    }
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete All Customers'),
+        content: Text(
+          'This will permanently delete all ${_customers.length} customer${_customers.length == 1 ? '' : 's'}. '
+          'Existing invoices are not affected. This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete All'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    setState(() => _isLoading = true);
+    try {
+      await CustomerService.deleteAllCustomers();
+      await _loadCustomers();
+      _showSnackBar('All customers deleted.');
+    } catch (e) {
+      setState(() => _isLoading = false);
+      _showSnackBar('Error deleting customers: $e', isError: true);
+    }
+  }
+
   Future<void> _exportToCSV() async {
     try {
       List<List<String>> csvData = [
-        ['Name', 'Email', 'Phone', 'GSTIN', 'Address'],
+        ['name', 'email', 'phone', 'address', 'business_name', 'tax_number'],
         ..._filteredCustomers.map((c) => [
           c.name,
           c.email,
           c.phone,
-          c.gstin,
           c.address,
+          c.businessName,
+          c.gstin,
         ]),
       ];
 
-      String csv = const ListToCsvConverter().convert(csvData);
-      final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/customers.csv');
-      await file.writeAsString(csv);
-      await SharePlus.instance.share(ShareParams(files: [XFile(file.path)], text: 'Customer List (CSV)'));
+      final csv = buildQuotedCsv(csvData);
+      final savePath = await FilePicker.platform.saveFile(
+        dialogTitle: 'Save Customer CSV',
+        fileName: 'customers.csv',
+        type: FileType.custom,
+        allowedExtensions: ['csv'],
+      );
+      if (savePath == null) return;
+      await File(savePath).writeAsBytes(utf8.encode('\uFEFF$csv'));
       _showSnackBar('CSV exported successfully!');
     } catch (e) {
       _showSnackBar('Error exporting CSV: $e', isError: true);
@@ -357,19 +817,23 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
         pw.Page(
           build: (pw.Context context) {
             return pw.TableHelper.fromTextArray(
-              headers: ['Name', 'Email', 'Phone', 'GSTIN', 'Address'],
+              headers: ['Name', 'Business Name', 'Email', 'Phone', 'Tax/VAT No', 'Address'],
               data: _filteredCustomers
-                  .map((c) => [c.name, c.email, c.phone, c.gstin, c.address])
+                  .map((c) => [c.name, c.businessName, c.email, c.phone, c.gstin, c.address])
                   .toList(),
             );
           },
         ),
       );
 
-      final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/customers.pdf');
-      await file.writeAsBytes(await pdf.save());
-      await SharePlus.instance.share(ShareParams(files: [XFile(file.path)], text: 'Customer List (PDF)'));
+      final savePath = await FilePicker.platform.saveFile(
+        dialogTitle: 'Save Customer PDF',
+        fileName: 'customers.pdf',
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+      );
+      if (savePath == null) return;
+      await File(savePath).writeAsBytes(await pdf.save());
       _showSnackBar('PDF exported successfully!');
     } catch (e) {
       _showSnackBar('Error exporting PDF: $e', isError: true);
@@ -461,15 +925,17 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
               key: _formKey,
               child: Column(
                 children: [
-                  _buildFormField(_nameController, 'Name', Icons.person, true,maxLength: 50),
+                  _buildFormField(_nameController, 'Name', Icons.person, true, maxLength: 50),
                   const SizedBox(height: 16),
-                  _buildFormField(_emailController, 'Email', Icons.email, false,maxLength: 100,
+                  _buildFormField(_businessNameController, 'Business Name', Icons.business_center, false, maxLength: 100),
+                  const SizedBox(height: 16),
+                  _buildFormField(_emailController, 'Email', Icons.email, false, maxLength: 100,
                       keyboardType: TextInputType.emailAddress),
                   const SizedBox(height: 16),
                   _buildFormField(_phoneController, 'Phone', Icons.phone, false,
                       keyboardType: TextInputType.phone, maxLength: 12),
                   const SizedBox(height: 16),
-                  _buildFormField(_gstinController, 'GSTIN', Icons.business, false,
+                  _buildFormField(_gstinController, 'Tax/VAT Number (GSTIN)', Icons.receipt_long, false,
                       maxLength: 50),
                   const SizedBox(height: 16),
                   _buildFormField(_addressController, 'Address', Icons.location_on, false,
@@ -614,6 +1080,15 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
           Row(
             children: [
               IconButton.filled(
+                onPressed: _showImportDialog,
+                icon: const Icon(Icons.upload_file),
+                tooltip: 'Import CSV',
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.white.withValues(alpha: 0.2),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton.filled(
                 onPressed: _exportToCSV,
                 icon: const Icon(Icons.file_download),
                 tooltip: 'Export CSV',
@@ -630,6 +1105,17 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
                   backgroundColor: Colors.white.withValues(alpha: 0.2),
                 ),
               ),
+              if (widget.user.isAdmin()) ...[
+                const SizedBox(width: 8),
+                IconButton.filled(
+                  onPressed: _confirmDeleteAll,
+                  icon: const Icon(Icons.delete_sweep),
+                  tooltip: 'Delete All Customers',
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.red.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
             ],
           ),
         ],
@@ -732,9 +1218,10 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
       columns: [
         const DataColumn(label: Text('Sl. No', style: TextStyle(fontWeight: FontWeight.bold))),
         const DataColumn(label: Text('Name', style: TextStyle(fontWeight: FontWeight.bold))),
+        const DataColumn(label: Text('Business Name', style: TextStyle(fontWeight: FontWeight.bold))),
         const DataColumn(label: Text('Email', style: TextStyle(fontWeight: FontWeight.bold))),
         const DataColumn(label: Text('Phone', style: TextStyle(fontWeight: FontWeight.bold))),
-        const DataColumn(label: Text('GSTIN', style: TextStyle(fontWeight: FontWeight.bold))),
+        const DataColumn(label: Text('Tax/VAT No', style: TextStyle(fontWeight: FontWeight.bold))),
         const DataColumn(label: Text('Address', style: TextStyle(fontWeight: FontWeight.bold))),
         const DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
       ],
@@ -748,6 +1235,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
           cells: [
             DataCell(Text(serial.toString())),
             DataCell(Text(customer.name, style: const TextStyle(fontWeight: FontWeight.w500))),
+            DataCell(Text(customer.businessName)),
             DataCell(Text(customer.email)),
             DataCell(Text(customer.phone)),
             DataCell(Text(customer.gstin)),
@@ -843,6 +1331,20 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _TableHeader extends StatelessWidget {
+  final String text;
+  const _TableHeader(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+      child: Text(text,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
     );
   }
 }

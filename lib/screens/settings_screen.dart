@@ -32,6 +32,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final emailController = TextEditingController();
   final websiteController = TextEditingController();
   final gstinController = TextEditingController();
+  String _selectedCountry = 'India';
+  int _companyInfoLoadCount = 0; // incremented once when DB data arrives; forces Autocomplete reinit
   final List<({TextEditingController label, TextEditingController id})>
       _upiControllers = [];
   int? _defaultUpiIndex;
@@ -62,6 +64,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         emailController.text = info.email;
         websiteController.text = info.website;
         gstinController.text = info.gstin;
+        _selectedCountry = info.country.isEmpty ? 'India' : info.country;
+        _companyInfoLoadCount++;
         _showUpiQr = showQrStr == 'true';
         if (base64Logo != null && base64Logo.isNotEmpty) {
           _base64Logo = base64Logo;
@@ -92,7 +96,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         phone: phoneController.text,
         email: emailController.text,
         website: websiteController.text,
-        gstin: gstinController.text);
+        gstin: gstinController.text,
+        country: _selectedCountry);
 
     if (_companyInfo == null) {
       await CompanyInfoService.insertCompanyInfo(newInfo);
@@ -347,11 +352,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
           // ── Right: scrollable form ───────────────────────────────────
           Expanded(
             child: SingleChildScrollView(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+              padding: const EdgeInsets.symmetric(vertical: 28),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 900),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                   _sectionLabel('COMPANY DETAILS'),
                   const SizedBox(height: 16),
                   Row(
@@ -368,7 +377,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Expanded(
                         child: _buildField(
                           controller: gstinController,
-                          label: 'GSTIN',
+                          label: _selectedCountry == 'India' || _selectedCountry.isEmpty
+                              ? 'GSTIN'
+                              : 'Tax/VAT No',
                           icon: Icons.receipt_long_rounded,
                           maxLength: 50,
                         ),
@@ -377,7 +388,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 16),
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Expanded(child: _buildCountryField()),
+                      const SizedBox(width: 16),
                       Expanded(
                         child: _buildField(
                           controller: phoneController,
@@ -538,7 +552,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: 32),
-                ],
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
@@ -767,6 +784,71 @@ class _SettingsScreenState extends State<SettingsScreen> {
         color: Colors.grey[400],
         letterSpacing: 1.0,
       ),
+    );
+  }
+
+  Widget _buildCountryField() {
+    final primaryColor = Theme.of(context).primaryColor;
+    return Autocomplete<String>(
+      key: ValueKey(_companyInfoLoadCount),
+      initialValue: TextEditingValue(text: _selectedCountry),
+      optionsBuilder: (TextEditingValue value) {
+        if (value.text.isEmpty) return AppCountries.all;
+        return AppCountries.all.where(
+          (c) => c.toLowerCase().contains(value.text.toLowerCase()),
+        );
+      },
+      onSelected: (String country) {
+        setState(() => _selectedCountry = country);
+      },
+      fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
+        return TextField(
+          controller: controller,
+          focusNode: focusNode,
+          style: const TextStyle(fontSize: AppFontSize.medium),
+          decoration: InputDecoration(
+            labelText: 'Country',
+            prefixIcon: const Icon(Icons.public_rounded, size: 20),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+              borderSide: BorderSide(color: primaryColor, width: 2),
+            ),
+            filled: true,
+            fillColor: Colors.white,
+          ),
+        );
+      },
+      optionsViewBuilder: (context, onSelected, options) {
+        return Align(
+          alignment: Alignment.topLeft,
+          child: Material(
+            elevation: 4,
+            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 200, maxWidth: 320),
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                shrinkWrap: true,
+                itemCount: options.length,
+                itemBuilder: (context, index) {
+                  final country = options.elementAt(index);
+                  return ListTile(
+                    dense: true,
+                    title: Text(country, style: const TextStyle(fontSize: AppFontSize.medium)),
+                    onTap: () => onSelected(country),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 

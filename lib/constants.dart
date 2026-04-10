@@ -64,7 +64,7 @@ class AppBorderRadius
 class AppConfig
 {
   static const name = "invoiso";
-  static const version = "v3.7.3";
+  static const version = "v3.8.0";
   static const developer = "ANOOP P";
   static const supportEmail = "anooppkrishnan96@gmail.com";
   static const website = "https://anooppandikashala.github.io/invoisoapp/";
@@ -75,6 +75,13 @@ class AppConfig
 class Tax
 {
   static const defaultTaxRate = 0.18;
+}
+
+class AppLayout
+{
+  static const double maxWidthNarrow  = 900.0;   // settings, backup, customer, product screens
+  static const double maxWidthNormal  = 1200.0;  // dashboard
+  static const double maxWidthWide    = 1700.0;  // create invoice (dense multi-panel form)
 }
 
 class DefaultValues

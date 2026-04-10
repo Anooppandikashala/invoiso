@@ -6,13 +6,13 @@ import 'package:invoiso/constants.dart';
 import 'package:invoiso/database/product_service.dart';
 import 'package:invoiso/database/settings_service.dart';
 import 'package:uuid/uuid.dart';
-import 'package:csv/csv.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
 
 import '../models/product.dart';
 import '../models/user.dart';
+import '../utils/formatters.dart';
 
 class ProductManagementScreen extends StatefulWidget {
   final User user;
@@ -362,7 +362,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
         ..._products.map((p) =>
             [p.name, p.hsncode, p.description, p.price, p.tax_rate, p.stock])
       ];
-      final csvData = const ListToCsvConverter().convert(rows);
+      final csvData = buildQuotedCsv(rows);
       final dir = await getApplicationDocumentsDirectory();
       final file = File('${dir.path}/products.csv');
       await file.writeAsString(csvData);

@@ -6,6 +6,7 @@ class Customer {
   String phone;
   String address;
   String gstin;
+  String businessName;
 
   Customer({
     required this.id,
@@ -13,7 +14,8 @@ class Customer {
     required this.email,
     required this.phone,
     required this.address,
-    required this.gstin
+    required this.gstin,
+    this.businessName = '',
   });
 
   // Convert a Map into a Customer object
@@ -25,6 +27,7 @@ class Customer {
       phone: map['phone'] ?? '',
       address: map['address'] ?? '',
       gstin: map['gstin'] ?? '',
+      businessName: map['business_name'] ?? '',
     );
   }
 
@@ -37,6 +40,7 @@ class Customer {
       'phone': phone,
       'address': address,
       'gstin': gstin,
+      'business_name': businessName,
     };
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:invoiso/common.dart';
 import 'package:invoiso/database/company_info_service.dart';
 import 'package:invoiso/database/settings_service.dart';
 import 'package:invoiso/models/invoice.dart';
@@ -107,7 +108,7 @@ class PaymentReceiptService {
                         style: const pw.TextStyle(
                             fontSize: 9, color: PdfColors.grey700)),
                   if ((company?.gstin ?? '').isNotEmpty)
-                    pw.Text('GSTIN: ${company!.gstin}',
+                    pw.Text('${taxLabel(company?.country)}: ${company!.gstin}',
                         style: const pw.TextStyle(
                             fontSize: 9, color: PdfColors.grey700)),
                 ],
@@ -187,6 +188,10 @@ class PaymentReceiptService {
         pw.Text(invoice.customer.name,
             style: pw.TextStyle(
                 fontSize: 11, fontWeight: pw.FontWeight.bold)),
+        if (invoice.customer.businessName.isNotEmpty)
+          pw.Text(invoice.customer.businessName,
+              style:
+                  const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
         if (invoice.customer.address.isNotEmpty)
           pw.Text(invoice.customer.address,
               style:
@@ -196,7 +201,7 @@ class PaymentReceiptService {
               style:
                   const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
         if (invoice.customer.gstin.isNotEmpty)
-          pw.Text('GSTIN: ${invoice.customer.gstin}',
+          pw.Text('${taxLabel(company?.country)}: ${invoice.customer.gstin}',
               style:
                   const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
 

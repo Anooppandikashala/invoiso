@@ -121,7 +121,7 @@ class PDFService {
                   pw.Text('Phone: ${company?.phone ?? ''}', style: const pw.TextStyle(fontSize: 10)),
                   pw.Text('Email: ${company?.email ?? ''}', style: const pw.TextStyle(fontSize: 10)),
                   if ((company?.website ?? '').isNotEmpty) pw.Text('Web: ${company!.website}', style: const pw.TextStyle(fontSize: 10)),
-                  if (showGst) pw.Text('GSTIN: ${company?.gstin ?? ''}', style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 10, color: PdfColors.grey700)),
+                  if (showGst) pw.Text('${taxLabel(company?.country)}: ${company?.gstin ?? ''}', style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 10, color: PdfColors.grey700)),
                 ],
               ),
             ),
@@ -137,8 +137,6 @@ class PDFService {
         pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.end,
           children: [
-            // pw.Text('INVOICE',
-            //     style: pw.TextStyle(fontSize: 32, fontWeight: pw.FontWeight.bold, color: accentColor)),
             pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.end,
               children: [
@@ -151,15 +149,13 @@ class PDFService {
           ],
         ),
 
-        // pw.SizedBox(height: 20),
-
         // 3. Customer Info
         pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
             pw.Container(
               padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-              color: PdfColors.grey200, // Background for the Bill To header
+              color: PdfColors.grey200,
               child: pw.Text("BILL TO", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: PdfColors.grey700)),
             ),
             pw.Padding(
@@ -169,10 +165,12 @@ class PDFService {
                   children: [
                     pw.SizedBox(height: 5),
                     pw.Text(invoice.customer.name, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11)),
+                    if (invoice.customer.businessName.isNotEmpty)
+                      pw.Text(invoice.customer.businessName, style: const pw.TextStyle(fontSize: 10)),
                     pw.Text(invoice.customer.address, style: const pw.TextStyle(fontSize: 10)),
                     pw.Text(invoice.customer.phone, style: const pw.TextStyle(fontSize: 10)),
                     pw.Text(invoice.customer.email, style: const pw.TextStyle(fontSize: 10)),
-                    if (showGst) pw.Text("GSTIN: ${invoice.customer.gstin}", style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 10, color: PdfColors.grey600)),
+                    if (showGst) pw.Text("${taxLabel(company?.country)}: ${invoice.customer.gstin}", style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 10, color: PdfColors.grey600)),
                   ]
               )
             )
@@ -290,21 +288,23 @@ class PDFService {
                 pw.Text(company?.phone ?? '', style: const pw.TextStyle(fontSize: 10)),
                 pw.Text(company?.email ?? '', style: const pw.TextStyle(fontSize: 10)),
                 if ((company?.website ?? '').isNotEmpty) pw.Text(company!.website, style: const pw.TextStyle(fontSize: 10)),
-                if (showGst) pw.Text("GSTIN: ${company?.gstin ?? ''}",style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 9)),
+                if (showGst) pw.Text("${taxLabel(company?.country)}: ${company?.gstin ?? ''}",style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 9)),
               ],
             ),
 
             // BILL TO (Customer Info)
             pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.end, // Align customer info to the right
+              crossAxisAlignment: pw.CrossAxisAlignment.end,
               children: [
                 pw.Text("BILL TO", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11, color: accentColor)),
                 pw.SizedBox(height: 5),
                 pw.Text(invoice.customer.name, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
+                if (invoice.customer.businessName.isNotEmpty)
+                  pw.Text(invoice.customer.businessName, style: const pw.TextStyle(fontSize: 10)),
                 pw.Text(invoice.customer.address, style: const pw.TextStyle(fontSize: 10)),
                 pw.Text(invoice.customer.phone, style: const pw.TextStyle(fontSize: 10)),
                 pw.Text(invoice.customer.email, style: const pw.TextStyle(fontSize: 10)),
-                if (showGst) pw.Text("GSTIN: ${invoice.customer.gstin}",style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 9)),
+                if (showGst) pw.Text("${taxLabel(company?.country)}: ${invoice.customer.gstin}",style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 9)),
               ],
             ),
           ],
@@ -408,7 +408,7 @@ class PDFService {
                         style: const pw.TextStyle(color: PdfColors.white, fontSize: 10)),
                     if ((company?.website ?? '').isNotEmpty) pw.Text(company!.website,
                         style: const pw.TextStyle(color: PdfColors.white, fontSize: 10)),
-                    if (showGst) pw.Text('GSTIN: ${company?.gstin ?? ''}',
+                    if (showGst) pw.Text('${taxLabel(company?.country)}: ${company?.gstin ?? ''}',
                         style: pw.TextStyle(
                             color: PdfColors.white,
                             fontStyle: pw.FontStyle.italic,
@@ -470,10 +470,12 @@ class PDFService {
                         color: accentColor)),
                 pw.SizedBox(height: 6),
                 pw.Text(invoice.customer.name, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+                if (invoice.customer.businessName.isNotEmpty)
+                  pw.Text(invoice.customer.businessName, style: const pw.TextStyle(fontSize: 10)),
                 pw.Text(invoice.customer.address, style: const pw.TextStyle(fontSize: 10)),
                 pw.Text(invoice.customer.phone, style: const pw.TextStyle(fontSize: 10)),
                 pw.Text(invoice.customer.email, style: const pw.TextStyle(fontSize: 10)),
-                if (showGst) pw.Text("GSTIN: ${invoice.customer.gstin}",
+                if (showGst) pw.Text("${taxLabel(company?.country)}: ${invoice.customer.gstin}",
                     style: pw.TextStyle(
                         fontSize: 10, fontStyle: pw.FontStyle.italic)),
               ],

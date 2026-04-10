@@ -11,6 +11,7 @@ import 'package:invoiso/common.dart';
 import 'package:invoiso/services/invoice_pdf_services.dart';
 import 'package:invoiso/services/pdf_service.dart';
 import 'package:invoiso/widgets/apply_payment_dialog.dart';
+import 'package:invoiso/widgets/customer_info_button.dart';
 import 'package:invoiso/utils/session_manager.dart';
 
 import '../models/user.dart';
@@ -570,6 +571,7 @@ class _DashboardHomeState extends State<DashboardHome> {
   double totalRevenue = 0.0;
   double totalOutstanding = 0.0;
   List<Invoice> recentInvoices = [];
+  List<Invoice> dueSoonInvoices = [];
   String _currencySymbol = '₹';
   bool isLoading = true;
 
@@ -596,6 +598,20 @@ class _DashboardHomeState extends State<DashboardHome> {
       totalRevenue = onlyInvoices.fold(0.0, (sum, inv) => sum + inv.amountPaid);
       totalOutstanding = onlyInvoices.fold(0.0, (sum, inv) => sum + inv.outstandingBalance);
       recentInvoices = invoices.length > 5 ? invoices.sublist(0, 5) : invoices;
+
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final tomorrow = today.add(const Duration(days: 1));
+      dueSoonInvoices = onlyInvoices
+          .where((inv) =>
+              inv.dueDate != null &&
+              inv.paymentStatus != PaymentStatus.paid &&
+              (DateTime(inv.dueDate!.year, inv.dueDate!.month, inv.dueDate!.day) == today ||
+               DateTime(inv.dueDate!.year, inv.dueDate!.month, inv.dueDate!.day) == tomorrow))
+          .toList()
+        ..sort((a, b) => a.dueDate!.compareTo(b.dueDate!));
+      if (dueSoonInvoices.length > 5) dueSoonInvoices = dueSoonInvoices.sublist(0, 5);
+
       _currencySymbol = currency.symbol;
       isLoading = false;
     });
@@ -624,8 +640,11 @@ class _DashboardHomeState extends State<DashboardHome> {
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(28),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1200),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // ── Greeting Banner ──────────────────────────────
                   _buildGreetingBanner(),
@@ -659,6 +678,12 @@ class _DashboardHomeState extends State<DashboardHome> {
                     ],
                   ),
                   ),
+
+                  // ── Due Soon ─────────────────────────────────────
+                  if (dueSoonInvoices.isNotEmpty) ...[
+                    const SizedBox(height: 36),
+                    _buildDueSoonSection(),
+                  ],
 
                   const SizedBox(height: 36),
 
@@ -937,6 +962,8 @@ class _DashboardHomeState extends State<DashboardHome> {
                                 },
                               ),
                 ],
+                  ),
+                ),
               ),
             ),
     );
@@ -1002,6 +1029,149 @@ class _DashboardHomeState extends State<DashboardHome> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDueSoonSection() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        Row(
+          children: [
+            Container(
+              width: 4,
+              height: 24,
+              decoration: BoxDecoration(
+                color: Colors.orange[700],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Icon(Icons.notifications_active_outlined, color: Colors.orange, size: 22),
+            const SizedBox(width: 8),
+            const Text(
+              'Due Soon',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: -0.3),
+            ),
+            const SizedBox(width: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
+              ),
+              child: Text(
+                '${dueSoonInvoices.length} invoice${dueSoonInvoices.length == 1 ? '' : 's'}',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.orange[800]),
+              ),
+            ),
+            const Spacer(),
+            Text(
+              'Today & Tomorrow',
+              style: TextStyle(fontSize: 13, color: Colors.grey[400]),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        // Cards
+        ...dueSoonInvoices.map((invoice) {
+          final due = DateTime(invoice.dueDate!.year, invoice.dueDate!.month, invoice.dueDate!.day);
+          final isToday = due == today;
+          final badgeColor = isToday ? Colors.red : Colors.orange;
+          final badgeLabel = isToday ? 'Due Today' : 'Due Tomorrow';
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            child: Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                side: BorderSide(color: badgeColor.withValues(alpha: 0.3), width: 1),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                child: Row(
+                  children: [
+                    // Due badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: badgeColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: badgeColor.withValues(alpha: 0.4)),
+                      ),
+                      child: Text(
+                        badgeLabel,
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: badgeColor),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Invoice ID
+                    Text(
+                      '#${invoice.id}',
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(width: 16),
+                    // Customer
+                    Icon(Icons.person_outline, size: 15, color: Colors.grey[500]),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              invoice.customer.name,
+                              style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          CustomerInfoButton(customer: invoice.customer),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Outstanding amount
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: badgeColor.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '$_currencySymbol ${invoice.outstandingBalance.toStringAsFixed(2)}',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: badgeColor),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Actions
+                    _buildActionButton(Icons.visibility_outlined, Colors.green, 'View',
+                        () => InvoicePdfServices.showInvoiceDetails(context, invoice)),
+                    const SizedBox(width: 6),
+                    _buildActionButton(Icons.picture_as_pdf_outlined, Colors.orange, 'PDF Preview',
+                        () => InvoicePdfServices.previewPDF(context, invoice)),
+                    const SizedBox(width: 6),
+                    _buildActionButton(Icons.payments_outlined, Colors.purple, 'Record Payment',
+                        () => showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (_) => ApplyPaymentDialog(
+                                invoice: invoice,
+                                onPaymentRecorded: _loadDashboardData,
+                              ),
+                            )),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }),
+      ],
     );
   }
 
