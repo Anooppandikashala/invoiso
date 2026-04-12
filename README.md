@@ -23,9 +23,9 @@
   </p>
 
   <p>
-    <a href="https://anooppandikashala.github.io/invoisoapp/">🌐 Website</a> &nbsp;·&nbsp;
-    <a href="https://anooppandikashala.github.io/invoisoapp/download.html">⬇️ Download</a> &nbsp;·&nbsp;
-    <a href="https://anooppandikashala.github.io/invoisoapp/faq.html">❓ FAQ</a> &nbsp;·&nbsp;
+    <a href="https://invoiso.co.in/">🌐 Website</a> &nbsp;·&nbsp;
+    <a href="https://invoiso.co.in/download.html">⬇️ Download</a> &nbsp;·&nbsp;
+    <a href="https://invoiso.co.in/faq.html">❓ FAQ</a> &nbsp;·&nbsp;
     <a href="https://github.com/Anooppandikashala/invoiso/issues">🐛 Report a Bug</a>
   </p>
 
@@ -108,11 +108,11 @@
 
 | Platform | Format | Link |
 |----------|--------|------|
-| **Windows** | `.exe` Installer | [Download v3.4.2](https://anooppandikashala.github.io/invoisoapp/download.html) |
-| **Linux** | `.AppImage` (portable) | [Download v3.4.2](https://anooppandikashala.github.io/invoisoapp/download.html) |
-| **Linux** | `.deb` Package | [Download v3.4.2](https://anooppandikashala.github.io/invoisoapp/download.html) |
+| **Windows** | `.exe` Installer | [Download v3.4.2](https://invoiso.co.in/download.html) |
+| **Linux** | `.AppImage` (portable) | [Download v3.4.2](https://invoiso.co.in/download.html) |
+| **Linux** | `.deb` Package | [Download v3.4.2](https://invoiso.co.in/download.html) |
 
-> Always download from the [official website](https://anooppandikashala.github.io/invoisoapp/download.html) or the [GitHub releases page](https://github.com/Anooppandikashala/invoiso/releases/latest).
+> Always download from the [official website](https://invoiso.co.in/download.html) or the [GitHub releases page](https://github.com/Anooppandikashala/invoiso/releases/latest).
 
 ---
 
