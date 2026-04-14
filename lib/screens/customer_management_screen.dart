@@ -1107,13 +1107,28 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
               ),
               if (widget.user.isAdmin()) ...[
                 const SizedBox(width: 8),
-                IconButton.filled(
-                  onPressed: _confirmDeleteAll,
-                  icon: const Icon(Icons.delete_sweep),
-                  tooltip: 'Delete All Customers',
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, color: Colors.white),
+                  tooltip: 'More actions',
                   style: IconButton.styleFrom(
-                    backgroundColor: Colors.red.withValues(alpha: 0.7),
+                    backgroundColor: Colors.white.withValues(alpha: 0.2),
                   ),
+                  onSelected: (value) {
+                    if (value == 'delete_all') _confirmDeleteAll();
+                  },
+                  itemBuilder: (ctx) => [
+                    const PopupMenuItem<String>(
+                      value: 'delete_all',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete_sweep, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text('Delete All Customers',
+                              style: TextStyle(color: Colors.red)),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ],
