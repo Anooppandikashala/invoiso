@@ -130,4 +130,23 @@ class SettingsService
   static Future<String> getLogoSize() async {
     return await getSetting(SettingKey.logoSize) ?? 'medium';
   }
+
+  static Future<BusinessType> getBusinessType() async {
+    final val = await getSetting(SettingKey.businessType);
+    return BusinessTypeExtension.fromKey(val);
+  }
+
+  static Future<void> setBusinessType(BusinessType type) async {
+    await setSetting(SettingKey.businessType, type.key);
+  }
+
+  /// Whether the quantity field is shown. Defaults to true.
+  static Future<bool> getShowQuantity() async {
+    final val = await getSetting(SettingKey.showQuantity);
+    return val != 'false';
+  }
+
+  static Future<void> setShowQuantity(bool show) async {
+    await setSetting(SettingKey.showQuantity, show.toString());
+  }
 }

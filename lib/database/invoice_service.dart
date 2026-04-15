@@ -57,6 +57,8 @@ class InvoiceService {
           'discount_per_unit': item.discountPerUnit ? 1 : 0,
           'unit_price': item.unitPrice,
           'extra_cost': item.extraCost,
+          'is_product_saved': item.isProductSaved ? 1 : 0,
+          'product_type': item.product.type,
         });
       }
     });
@@ -128,6 +130,8 @@ class InvoiceService {
           'discount_per_unit': item.discountPerUnit ? 1 : 0,
           'unit_price': item.unitPrice,
           'extra_cost': item.extraCost,
+          'is_product_saved': item.isProductSaved ? 1 : 0,
+          'product_type': item.product.type,
         });
       }
     });

@@ -22,6 +22,8 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
   String _selectedLogoSize = 'medium';
   bool _showGstFields = true;
   bool _fractionalQuantity = false;
+  bool _showQuantity = true;
+  BusinessType _businessType = BusinessType.both;
   bool _isLoading = true;
 
   @override
@@ -40,6 +42,8 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     final fractionalQty = await SettingsService.getFractionalQuantity();
     final qtyLabel = await SettingsService.getQuantityLabel();
     final logoSize = await SettingsService.getLogoSize();
+    final showQuantity = await SettingsService.getShowQuantity();
+    final businessType = await SettingsService.getBusinessType();
 
     setState(() {
       _selectedLogoPosition = position ?? 'left';
@@ -51,6 +55,8 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
       _showGstFields = showGst;
       _fractionalQuantity = fractionalQty;
       quantityLabelController.text = qtyLabel;
+      _showQuantity = showQuantity;
+      _businessType = businessType;
       _isLoading = false;
     });
   }
@@ -65,6 +71,8 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     await SettingsService.setSetting(SettingKey.showGstFields, _showGstFields.toString());
     await SettingsService.setSetting(SettingKey.fractionalQuantity, _fractionalQuantity.toString());
     await SettingsService.setSetting(SettingKey.quantityLabel, quantityLabelController.text.trim());
+    await SettingsService.setShowQuantity(_showQuantity);
+    await SettingsService.setBusinessType(_businessType);
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -442,6 +450,95 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                 ),
                               ),
                             ),
+
+                            const SizedBox(height: 12),
+
+                            // Show Quantity Toggle
+                            SizedBox(
+                              width: constraints.maxWidth,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[50],
+                                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                  border: Border.all(color: Colors.grey[300]!),
+                                ),
+                                child: SwitchListTile(
+                                  title: const Text('Show Quantity Field'),
+                                  subtitle: const Text(
+                                    'Hide quantity for service-based billing; price column becomes "Rate"',
+                                  ),
+                                  secondary: Icon(
+                                    Icons.onetwothree_rounded,
+                                    color: _showQuantity
+                                        ? Theme.of(context).primaryColor
+                                        : Colors.grey,
+                                  ),
+                                  value: _showQuantity,
+                                  onChanged: (val) =>
+                                      setState(() => _showQuantity = val),
+                                  activeColor: Theme.of(context).primaryColor,
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 12),
+
+                            // Business Type
+                            SizedBox(
+                              width: constraints.maxWidth,
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[50],
+                                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                  border: Border.all(color: Colors.grey[300]!),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(Icons.category_outlined,
+                                            color: Theme.of(context).primaryColor),
+                                        const SizedBox(width: 12),
+                                        const Text('Business Type',
+                                            style: TextStyle(fontSize: 16)),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    const Text(
+                                      'Controls item type options in product list and invoices',
+                                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    SegmentedButton<BusinessType>(
+                                      segments: const [
+                                        ButtonSegment(
+                                          value: BusinessType.product,
+                                          label: Text('Product'),
+                                          icon: Icon(Icons.inventory_2_outlined, size: 16),
+                                        ),
+                                        ButtonSegment(
+                                          value: BusinessType.service,
+                                          label: Text('Service'),
+                                          icon: Icon(Icons.design_services_outlined, size: 16),
+                                        ),
+                                        ButtonSegment(
+                                          value: BusinessType.both,
+                                          label: Text('Both'),
+                                          icon: Icon(Icons.all_inclusive, size: 16),
+                                        ),
+                                      ],
+                                      selected: {_businessType},
+                                      onSelectionChanged: (val) =>
+                                          setState(() => _businessType = val.first),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 12),
 
                             // Thank You Note
                             SizedBox(

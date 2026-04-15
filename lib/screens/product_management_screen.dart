@@ -11,6 +11,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:file_picker/file_picker.dart';
 import 'package:csv/csv.dart';
 
+import '../common.dart';
 import '../models/product.dart';
 import '../models/user.dart';
 import '../utils/formatters.dart';
@@ -52,6 +53,9 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
   final _formKey = GlobalKey<FormState>();
 
   String _currencySymbol = '₹';
+  BusinessType _businessType = BusinessType.both;
+  String _typeFilter = 'both'; // 'both' | 'product' | 'service'
+  String _newItemType = 'product'; // type for the add-product form
 
   static const _csvMaxRows = 500;
   static const _csvHeaders = [
@@ -67,8 +71,18 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
   void initState() {
     super.initState();
     _taxRateController.text = "18";
+    _loadBusinessType();
     _loadProducts();
     _loadCurrency();
+  }
+
+  Future<void> _loadBusinessType() async {
+    final bt = await SettingsService.getBusinessType();
+    setState(() {
+      _businessType = bt;
+      _typeFilter = bt == BusinessType.both ? 'both' : bt.key;
+      _newItemType = bt == BusinessType.service ? 'service' : 'product';
+    });
   }
 
   Future<void> _loadCurrency() async {
@@ -100,8 +114,9 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
           limit: _pageSize,
           query: _searchQuery,
           orderBy: _sortBy,
-          orderASC: _isAscending);
-      final count = await ProductService.getProductCount(_searchQuery);
+          orderASC: _isAscending,
+          type: _typeFilter);
+      final count = await ProductService.getProductCount(_searchQuery, _typeFilter);
       final allCount = await ProductService.getTotalProductCount();
 
       setState(() {
@@ -129,6 +144,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
         stock: int.parse(_stockController.text.trim()),
         hsncode: _hsnCodeController.text.trim(),
         tax_rate: int.parse(_taxRateController.text.trim()),
+        type: _newItemType,
       );
 
       await ProductService.insertProduct(newProduct);
@@ -188,10 +204,12 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
     final taxRateCtrl =
         TextEditingController(text: product.tax_rate.toString());
     final dialogFormKey = GlobalKey<FormState>();
+    String dialogItemType = product.type;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
@@ -200,7 +218,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
               color: Theme.of(context).primaryColor,
             ),
             const SizedBox(width: 8),
-            Text(isEdit ? 'Edit Product' : 'View Product'),
+            Text(isEdit ? 'Edit Product/Service' : 'View Product/Service'),
           ],
         ),
         content: SizedBox(
@@ -211,8 +229,25 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (_businessType == BusinessType.both && isEdit) ...[
+                    SegmentedButton<String>(
+                      segments: const [
+                        ButtonSegment(value: 'product', label: Text('Product'), icon: Icon(Icons.inventory_2_outlined, size: 16)),
+                        ButtonSegment(value: 'service', label: Text('Service'), icon: Icon(Icons.design_services_outlined, size: 16)),
+                      ],
+                      selected: {dialogItemType},
+                      onSelectionChanged: (val) => setDialogState(() => dialogItemType = val.first),
+                    ),
+                    const SizedBox(height: 16),
+                  ] else if (_businessType == BusinessType.both) ...[
+                    Chip(
+                      avatar: Icon(dialogItemType == 'service' ? Icons.design_services_outlined : Icons.inventory_2_outlined, size: 16),
+                      label: Text(dialogItemType == 'service' ? 'Service' : 'Product'),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   _buildDialogTextField(
-                      nameCtrl, 'Product Name', Icons.inventory_2,
+                      nameCtrl, 'Name', Icons.inventory_2,
                       readOnly: !isEdit, maxLength: 100),
                   const SizedBox(height: 16),
                   _buildDialogTextField(hsnCodeCtrl, 'HSN Code', Icons.qr_code,
@@ -262,17 +297,19 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                   stock: int.parse(stockCtrl.text.trim()),
                   hsncode: hsnCodeCtrl.text.trim(),
                   tax_rate: int.parse(taxRateCtrl.text.trim()),
+                  type: dialogItemType,
                 );
 
                 await ProductService.updateProduct(updatedProduct);
                 await _loadProducts();
                 if (context.mounted) Navigator.pop(context);
-                _showSnackBar('Product updated successfully!');
+                _showSnackBar('Product/Service updated successfully!');
               },
               icon: const Icon(Icons.save),
               label: const Text('Update'),
             ),
         ],
+      ),
       ),
     );
   }
@@ -1029,7 +1066,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Product Management'),
+        title: const Text('Product/Service Management'),
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -1088,7 +1125,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                 SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Add New Product',
+                    'Add New Product/Service',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -1105,8 +1142,19 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
               key: _formKey,
               child: Column(
                 children: [
+                  if (_businessType == BusinessType.both) ...[
+                    SegmentedButton<String>(
+                      segments: const [
+                        ButtonSegment(value: 'product', label: Text('Product'), icon: Icon(Icons.inventory_2_outlined, size: 16)),
+                        ButtonSegment(value: 'service', label: Text('Service'), icon: Icon(Icons.design_services_outlined, size: 16)),
+                      ],
+                      selected: {_newItemType},
+                      onSelectionChanged: (val) => setState(() => _newItemType = val.first),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   _buildFormField(
-                      _nameController, 'Product Name', Icons.inventory_2,
+                      _nameController, 'Name', Icons.inventory_2,
                       maxLength: 100),
                   const SizedBox(height: 16),
                   _buildFormField(_hsnCodeController, 'HSN Code', Icons.qr_code,
@@ -1147,7 +1195,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                         child: FilledButton.icon(
                           onPressed: _addProduct,
                           icon: const Icon(Icons.add),
-                          label: const Text('Add Product'),
+                          label: Text(_newItemType == 'service' ? 'Add Service' : 'Add Product'),
                           style: FilledButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
@@ -1223,6 +1271,25 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
       child: Column(
         children: [
           _buildTableHeader(),
+          if (_businessType == BusinessType.both)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: SegmentedButton<String>(
+                segments: const [
+                  ButtonSegment(value: 'both', label: Text('All')),
+                  ButtonSegment(value: 'product', label: Text('Products'), icon: Icon(Icons.inventory_2_outlined, size: 16)),
+                  ButtonSegment(value: 'service', label: Text('Services'), icon: Icon(Icons.design_services_outlined, size: 16)),
+                ],
+                selected: {_typeFilter},
+                onSelectionChanged: (val) {
+                  setState(() {
+                    _typeFilter = val.first;
+                    _currentPage = 0;
+                  });
+                  _loadProducts();
+                },
+              ),
+            ),
           _buildSearchAndSort(),
           Expanded(
             child: _products.isEmpty
@@ -1427,28 +1494,31 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
       ),
       dataRowMinHeight: 56,
       dataRowMaxHeight: 72,
-      columns: const [
-        DataColumn(
+      columns: [
+        const DataColumn(
             label:
                 Text('Sl. No', style: TextStyle(fontWeight: FontWeight.bold))),
-        DataColumn(
+        const DataColumn(
             label: Text('Name', style: TextStyle(fontWeight: FontWeight.bold))),
-        DataColumn(
+        if (_businessType == BusinessType.both)
+          const DataColumn(
+              label: Text('Type', style: TextStyle(fontWeight: FontWeight.bold))),
+        const DataColumn(
             label: Text('HSN Code',
                 style: TextStyle(fontWeight: FontWeight.bold))),
-        DataColumn(
+        const DataColumn(
             label: Text('Description',
                 style: TextStyle(fontWeight: FontWeight.bold))),
-        DataColumn(
+        const DataColumn(
             label:
                 Text('Price', style: TextStyle(fontWeight: FontWeight.bold))),
-        DataColumn(
+        const DataColumn(
             label: Text('Tax Rate',
                 style: TextStyle(fontWeight: FontWeight.bold))),
-        DataColumn(
+        const DataColumn(
             label:
                 Text('Stock', style: TextStyle(fontWeight: FontWeight.bold))),
-        DataColumn(
+        const DataColumn(
             label:
                 Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
       ],
@@ -1465,6 +1535,17 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                 p.name.length > 30 ? '${p.name.substring(0, 30)}...' : p.name,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontWeight: FontWeight.w500))),
+            if (_businessType == BusinessType.both)
+              DataCell(Chip(
+                avatar: Icon(
+                  p.type == 'service' ? Icons.design_services_outlined : Icons.inventory_2_outlined,
+                  size: 14,
+                ),
+                label: Text(p.type == 'service' ? 'Service' : 'Product',
+                    style: const TextStyle(fontSize: 11)),
+                padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+              )),
             DataCell(Text(p.hsncode)),
             DataCell(
               Tooltip(

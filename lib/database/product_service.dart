@@ -58,19 +58,25 @@ class ProductService {
     );
   }
 
-  static Future<List<Product>> searchProducts(String query) async {
+  static Future<List<Product>> searchProducts(String query, {String? type}) async {
     final db = await dbHelper.database;
+    final typeFilter = (type != null && type != 'both') ? type : null;
     if (query.isEmpty) {
-      final result = await db.query('products');
+      final result = await db.query(
+        'products',
+        where: typeFilter != null ? 'type = ?' : null,
+        whereArgs: typeFilter != null ? [typeFilter] : null,
+      );
       return result.map((e) => Product.fromMap(e)).toList();
     } else {
       final result = await db.query(
         'products',
-        where: 'LOWER(name) LIKE ? OR hsncode LIKE ?',
-        whereArgs: [
-          '%${query.toLowerCase()}%',
-          '%$query%',
-        ],
+        where: typeFilter != null
+            ? '(LOWER(name) LIKE ? OR hsncode LIKE ?) AND type = ?'
+            : 'LOWER(name) LIKE ? OR hsncode LIKE ?',
+        whereArgs: typeFilter != null
+            ? ['%${query.toLowerCase()}%', '%$query%', typeFilter]
+            : ['%${query.toLowerCase()}%', '%$query%'],
       );
       return result.map((e) => Product.fromMap(e)).toList();
     }
@@ -81,16 +87,30 @@ class ProductService {
     required int limit,
     String query = '',
     String orderBy = 'name',
-    bool orderASC = true
+    bool orderASC = true,
+    String? type,
   }) async {
     final db = await dbHelper.database;
-
     final order = orderASC ? "ASC" : "DESC";
+    final typeFilter = (type != null && type != 'both') ? type : null;
+
+    String? where;
+    List<dynamic>? whereArgs;
+    if (query.isNotEmpty && typeFilter != null) {
+      where = '(name LIKE ? OR description LIKE ?) AND type = ?';
+      whereArgs = ['%$query%', '%$query%', typeFilter];
+    } else if (query.isNotEmpty) {
+      where = 'name LIKE ? OR description LIKE ?';
+      whereArgs = ['%$query%', '%$query%'];
+    } else if (typeFilter != null) {
+      where = 'type = ?';
+      whereArgs = [typeFilter];
+    }
 
     final maps = await db.query(
       'products',
-      where: query.isNotEmpty ? 'name LIKE ? OR description LIKE ?' : null,
-      whereArgs: query.isNotEmpty ? ['%$query%', '%$query%'] : null,
+      where: where,
+      whereArgs: whereArgs,
       orderBy: '$orderBy $order',
       limit: limit,
       offset: offset,
@@ -99,14 +119,28 @@ class ProductService {
     return maps.map((map) => Product.fromMap(map)).toList();
   }
 
-  static Future<int> getProductCount([String query = '']) async {
+  static Future<int> getProductCount([String query = '', String? type]) async {
     final db = await dbHelper.database;
-    return Sqflite.firstIntValue(await db.rawQuery(
-      query.isNotEmpty
-          ? "SELECT COUNT(*) FROM products WHERE name LIKE ? OR description LIKE ?"
-          : "SELECT COUNT(*) FROM products",
-      query.isNotEmpty ? ['%$query%', '%$query%'] : null,
-    ))!;
+    final typeFilter = (type != null && type != 'both') ? type : null;
+
+    if (query.isNotEmpty && typeFilter != null) {
+      return Sqflite.firstIntValue(await db.rawQuery(
+        "SELECT COUNT(*) FROM products WHERE (name LIKE ? OR description LIKE ?) AND type = ?",
+        ['%$query%', '%$query%', typeFilter],
+      ))!;
+    } else if (query.isNotEmpty) {
+      return Sqflite.firstIntValue(await db.rawQuery(
+        "SELECT COUNT(*) FROM products WHERE name LIKE ? OR description LIKE ?",
+        ['%$query%', '%$query%'],
+      ))!;
+    } else if (typeFilter != null) {
+      return Sqflite.firstIntValue(await db.rawQuery(
+        "SELECT COUNT(*) FROM products WHERE type = ?",
+        [typeFilter],
+      ))!;
+    }
+    return Sqflite.firstIntValue(
+        await db.rawQuery("SELECT COUNT(*) FROM products"))!;
   }
 
   static Future<void> deleteProduct(String id) async {

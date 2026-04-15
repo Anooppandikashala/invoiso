@@ -23,6 +23,8 @@ class InvoiceItemService {
       'unit_price': item.unitPrice,
       'extra_cost': item.extraCost,
       'discount_per_unit': item.discountPerUnit ? 1 : 0,
+      'is_product_saved': item.isProductSaved ? 1 : 0,
+      'product_type': item.product.type,
     });
   }
 
@@ -54,6 +56,7 @@ class InvoiceItemService {
             unitPrice: unitPrice,
             extraCost: extraCost,
             discountPerUnit: (map['discount_per_unit'] as int? ?? 0) == 1,
+            isProductSaved: (map['is_product_saved'] as int? ?? 0) == 1,
           ),
         );
       } catch (e, stackTrace) {
@@ -63,5 +66,15 @@ class InvoiceItemService {
     }
 
     return items;
+  }
+
+  static Future<void> markProductSaved(String invoiceId, String productId) async {
+    final db = await dbHelper.database;
+    await db.update(
+      'invoice_items',
+      {'is_product_saved': 1},
+      where: 'invoice_id = ? AND product_id = ?',
+      whereArgs: [invoiceId, productId],
+    );
   }
 }
