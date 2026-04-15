@@ -125,4 +125,37 @@ class ProductService {
     if (product == null) return false;
     return product.stock >= quantity;
   }
+
+  /// Find an existing product by name (case-insensitive).
+  static Future<Product?> findDuplicateByName(String name) async {
+    if (name.trim().isEmpty) return null;
+    final db = await dbHelper.database;
+    final maps = await db.query(
+      'products',
+      where: 'LOWER(name) = ?',
+      whereArgs: [name.trim().toLowerCase()],
+      limit: 1,
+    );
+    return maps.isNotEmpty ? Product.fromMap(maps.first) : null;
+  }
+
+  static Future<void> deleteAllProducts() async {
+    final db = await dbHelper.database;
+    await db.delete('products');
+  }
+
+  /// Insert products in batches of [batchSize] rows per transaction.
+  static Future<void> insertBatch(List<Product> products,
+      {int batchSize = 50}) async {
+    final db = await dbHelper.database;
+    for (int i = 0; i < products.length; i += batchSize) {
+      final chunk =
+          products.sublist(i, (i + batchSize).clamp(0, products.length));
+      await db.transaction((txn) async {
+        for (final p in chunk) {
+          await txn.insert('products', p.toMap());
+        }
+      });
+    }
+  }
 }

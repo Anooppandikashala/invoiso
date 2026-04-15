@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,8 +8,8 @@ import 'package:invoiso/database/product_service.dart';
 import 'package:invoiso/database/settings_service.dart';
 import 'package:uuid/uuid.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:path_provider/path_provider.dart';
-import 'package:open_file/open_file.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:csv/csv.dart';
 
 import '../models/product.dart';
 import '../models/user.dart';
@@ -51,6 +52,16 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
   final _formKey = GlobalKey<FormState>();
 
   String _currencySymbol = '₹';
+
+  static const _csvMaxRows = 500;
+  static const _csvHeaders = [
+    'name',
+    'hsn_code',
+    'description',
+    'price',
+    'tax_rate',
+    'stock'
+  ];
 
   @override
   void initState() {
@@ -355,18 +366,562 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
     }
   }
 
+  // ── Sample CSV ────────────────────────────────────────────────────────────
+
+  Future<void> _downloadSampleCSV() async {
+    const sample =
+        '"name","hsn_code","description","price","tax_rate","stock"\n'
+        '"Wireless Mouse","84716010","Ergonomic wireless mouse","599.00","18","50"\n'
+        '"USB Hub","84734000","4-port USB 3.0 hub","299.00","18","100"\n';
+
+    final savePath = await FilePicker.platform.saveFile(
+      dialogTitle: 'Save Sample CSV',
+      fileName: 'products_sample.csv',
+      type: FileType.custom,
+      allowedExtensions: ['csv'],
+    );
+    if (savePath == null) return;
+
+    try {
+      await File(savePath).writeAsBytes(utf8.encode('\uFEFF$sample'));
+      _showSnackBar('Sample CSV saved successfully!');
+    } catch (e) {
+      _showSnackBar('Error saving sample: $e', isError: true);
+    }
+  }
+
+  // ── CSV Import ────────────────────────────────────────────────────────────
+
+  Future<void> _showImportDialog() async {
+    final proceed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.upload_file, color: Theme.of(context).primaryColor),
+            const SizedBox(width: 10),
+            const Text('Import Products from CSV'),
+          ],
+        ),
+        content: SizedBox(
+          width: MediaQuery.of(context).size.width * 0.45,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Your CSV file must use the following column headers (exact spelling, any order):',
+                ),
+                const SizedBox(height: 12),
+                Table(
+                  border: TableBorder.all(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(6)),
+                  columnWidths: const {
+                    0: FlexColumnWidth(1.4),
+                    1: FlexColumnWidth(0.7),
+                    2: FlexColumnWidth(2),
+                  },
+                  children: [
+                    TableRow(
+                      decoration:
+                          BoxDecoration(color: Colors.grey.shade100),
+                      children: const [
+                        _TableHeader('Column'),
+                        _TableHeader('Required'),
+                        _TableHeader('Description'),
+                      ],
+                    ),
+                    _csvRuleRow('name', 'Yes', 'Product name'),
+                    _csvRuleRow('price', 'Yes', 'Unit price (numeric)'),
+                    _csvRuleRow('hsn_code', 'No', 'HSN / SAC code'),
+                    _csvRuleRow('description', 'No', 'Short description'),
+                    _csvRuleRow('tax_rate', 'No', 'Tax % (0–100), default 0'),
+                    _csvRuleRow('stock', 'No', 'Stock quantity, default 0'),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _ruleNote(Icons.info_outline,
+                    'Maximum $_csvMaxRows rows per import.'),
+                _ruleNote(Icons.info_outline,
+                    'Duplicates are detected by product name (case-insensitive). You will be asked to overwrite or skip each one.'),
+                _ruleNote(Icons.info_outline,
+                    'Rows missing name or price are skipped and reported.'),
+                _ruleNote(Icons.info_outline,
+                    'UTF-8 encoding recommended. Excel BOM is handled automatically.'),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    Navigator.pop(ctx, false);
+                    await _downloadSampleCSV();
+                  },
+                  icon: const Icon(Icons.download),
+                  label: const Text('Download Sample CSV'),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton.icon(
+            onPressed: () => Navigator.pop(ctx, true),
+            icon: const Icon(Icons.folder_open),
+            label: const Text('Choose File'),
+          ),
+        ],
+      ),
+    );
+    if (proceed == true) await _importFromCSV();
+  }
+
+  static TableRow _csvRuleRow(String col, String req, String desc) {
+    return TableRow(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Text(col,
+              style:
+                  const TextStyle(fontFamily: 'monospace', fontSize: 12)),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Text(
+            req,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: req == 'Yes'
+                  ? Colors.red.shade700
+                  : Colors.grey.shade600,
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child:
+              Text(desc, style: const TextStyle(fontSize: 12)),
+        ),
+      ],
+    );
+  }
+
+  static Widget _ruleNote(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 15, color: Colors.blueGrey),
+          const SizedBox(width: 6),
+          Expanded(
+              child: Text(text,
+                  style: const TextStyle(
+                      fontSize: 12, color: Colors.black87))),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _importFromCSV() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['csv'],
+      dialogTitle: 'Select Product CSV',
+    );
+    if (result == null || result.files.single.path == null) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final bytes =
+          await File(result.files.single.path!).readAsBytes();
+      // Strip UTF-8 BOM if present
+      final content = utf8.decode(
+        bytes.length >= 3 &&
+                bytes[0] == 0xEF &&
+                bytes[1] == 0xBB &&
+                bytes[2] == 0xBF
+            ? bytes.sublist(3)
+            : bytes,
+      );
+
+      final rows =
+          const CsvToListConverter(eol: '\n').convert(content);
+      if (rows.isEmpty) {
+        _showSnackBar('CSV file is empty.', isError: true);
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      // Parse and validate headers
+      final headers = rows.first
+          .map((h) => h.toString().trim().toLowerCase())
+          .toList();
+
+      if (!headers.contains('name')) {
+        _showSnackBar('CSV missing required column: "name"',
+            isError: true);
+        setState(() => _isLoading = false);
+        return;
+      }
+      if (!headers.contains('price')) {
+        _showSnackBar('CSV missing required column: "price"',
+            isError: true);
+        setState(() => _isLoading = false);
+        return;
+      }
+      for (final col in headers) {
+        if (!_csvHeaders.contains(col)) {
+          _showSnackBar(
+              'Unknown column "$col". Expected: ${_csvHeaders.join(', ')}',
+              isError: true);
+          setState(() => _isLoading = false);
+          return;
+        }
+      }
+
+      final dataRows = rows.skip(1).toList();
+
+      if (dataRows.length > _csvMaxRows) {
+        _showSnackBar(
+            'CSV has ${dataRows.length} rows. Maximum is $_csvMaxRows. Please split the file.',
+            isError: true);
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      String getField(List<dynamic> row, String col) {
+        final i = headers.indexOf(col);
+        return i < 0 || i >= row.length
+            ? ''
+            : row[i].toString().trim();
+      }
+
+      final List<Product> valid = [];
+      final List<Product> duplicates = [];
+      final List<String> errors = [];
+
+      for (int i = 0; i < dataRows.length; i++) {
+        final row = dataRows[i];
+        final name = getField(row, 'name');
+        final priceStr = getField(row, 'price');
+
+        if (name.isEmpty) {
+          errors.add('Row ${i + 2}: missing name — skipped');
+          continue;
+        }
+        final price = double.tryParse(priceStr);
+        if (price == null || price < 0) {
+          errors.add(
+              'Row ${i + 2}: invalid price "$priceStr" — skipped');
+          continue;
+        }
+
+        final taxStr = getField(row, 'tax_rate');
+        final stockStr = getField(row, 'stock');
+        final taxRate =
+            taxStr.isEmpty ? 0 : (int.tryParse(taxStr) ?? 0);
+        final stock =
+            stockStr.isEmpty ? 0 : (int.tryParse(stockStr) ?? 0);
+
+        final existing =
+            await ProductService.findDuplicateByName(name);
+        final product = Product(
+          id: existing?.id ?? const Uuid().v4(),
+          name: name,
+          hsncode: getField(row, 'hsn_code'),
+          description: getField(row, 'description'),
+          price: price,
+          tax_rate: taxRate.clamp(0, 100),
+          stock: stock < 0 ? 0 : stock,
+        );
+
+        if (existing != null) {
+          duplicates.add(product);
+        } else {
+          valid.add(product);
+        }
+      }
+
+      setState(() => _isLoading = false);
+
+      if (!mounted) return;
+      await _showImportPreviewDialog(valid, duplicates, errors);
+    } catch (e) {
+      setState(() => _isLoading = false);
+      _showSnackBar('Error reading CSV: $e', isError: true);
+    }
+  }
+
+  Future<void> _showImportPreviewDialog(
+    List<Product> newProducts,
+    List<Product> duplicates,
+    List<String> errors,
+  ) async {
+    final overwriteFlags =
+        List<bool>.filled(duplicates.length, false);
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          final total = newProducts.length +
+              overwriteFlags.where((f) => f).length;
+
+          return AlertDialog(
+            title: const Text('Import Preview'),
+            content: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.55,
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        Chip(
+                          label:
+                              Text('${newProducts.length} new'),
+                          backgroundColor:
+                              Colors.green.shade100,
+                          avatar: const Icon(
+                              Icons.add_box_outlined,
+                              size: 16),
+                        ),
+                        Chip(
+                          label: Text(
+                              '${duplicates.length} duplicates'),
+                          backgroundColor:
+                              Colors.orange.shade100,
+                          avatar: const Icon(
+                              Icons.warning_amber,
+                              size: 16),
+                        ),
+                        if (errors.isNotEmpty)
+                          Chip(
+                            label:
+                                Text('${errors.length} errors'),
+                            backgroundColor:
+                                Colors.red.shade100,
+                            avatar: const Icon(
+                                Icons.error_outline,
+                                size: 16),
+                          ),
+                      ],
+                    ),
+                    if (duplicates.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                                'Duplicates (matched by name):',
+                                style: TextStyle(
+                                    fontWeight:
+                                        FontWeight.bold)),
+                          ),
+                          TextButton(
+                            onPressed: () =>
+                                setDialogState(() {
+                              for (int i = 0;
+                                  i < overwriteFlags.length;
+                                  i++) {
+                                overwriteFlags[i] = true;
+                              }
+                            }),
+                            child:
+                                const Text('Overwrite All'),
+                          ),
+                          TextButton(
+                            onPressed: () =>
+                                setDialogState(() {
+                              for (int i = 0;
+                                  i < overwriteFlags.length;
+                                  i++) {
+                                overwriteFlags[i] = false;
+                              }
+                            }),
+                            child: const Text('Skip All'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      ...List.generate(duplicates.length, (i) {
+                        final p = duplicates[i];
+                        return Card(
+                          margin:
+                              const EdgeInsets.only(bottom: 6),
+                          child: ListTile(
+                            dense: true,
+                            title: Text(p.name),
+                            subtitle: Text(
+                                '$_currencySymbol${p.price.toStringAsFixed(2)} · HSN: ${p.hsncode.isEmpty ? '—' : p.hsncode}'),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text('Skip',
+                                    style: TextStyle(
+                                        fontSize: 12)),
+                                Switch(
+                                  value: overwriteFlags[i],
+                                  onChanged: (v) =>
+                                      setDialogState(() =>
+                                          overwriteFlags[i] =
+                                              v),
+                                ),
+                                const Text('Overwrite',
+                                    style: TextStyle(
+                                        fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+                    ],
+                    if (errors.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      const Text('Skipped rows (errors):',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red)),
+                      const SizedBox(height: 8),
+                      ...errors.map((e) => Padding(
+                            padding:
+                                const EdgeInsets.only(bottom: 4),
+                            child: Text('• $e',
+                                style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.red)),
+                          )),
+                    ],
+                    const SizedBox(height: 12),
+                    Text(
+                      'Will import $total product${total == 1 ? '' : 's'}.',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              FilledButton.icon(
+                onPressed: total == 0
+                    ? null
+                    : () async {
+                        Navigator.pop(ctx);
+                        await _executeImport(
+                            newProducts,
+                            duplicates,
+                            overwriteFlags);
+                      },
+                icon: const Icon(Icons.upload),
+                label: Text('Import $total'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _executeImport(
+    List<Product> newProducts,
+    List<Product> duplicates,
+    List<bool> overwriteFlags,
+  ) async {
+    setState(() => _isLoading = true);
+    try {
+      if (newProducts.isNotEmpty) {
+        await ProductService.insertBatch(newProducts);
+      }
+      for (int i = 0; i < duplicates.length; i++) {
+        if (overwriteFlags[i]) {
+          await ProductService.updateProduct(duplicates[i]);
+        }
+      }
+      await _loadProducts();
+      final imported = newProducts.length +
+          overwriteFlags.where((f) => f).length;
+      _showSnackBar(
+          'Imported $imported product${imported == 1 ? '' : 's'} successfully!');
+    } catch (e) {
+      setState(() => _isLoading = false);
+      _showSnackBar('Import error: $e', isError: true);
+    }
+  }
+
+  // ── Delete All ────────────────────────────────────────────────────────────
+
+  Future<void> _confirmDeleteAll() async {
+    if (_allProductsCount == 0) {
+      _showSnackBar('No products to delete.');
+      return;
+    }
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete All Products'),
+        content: Text(
+          'This will permanently delete all $_allProductsCount '
+          'product${_allProductsCount == 1 ? '' : 's'}. '
+          'Existing invoices are not affected. This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style:
+                FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete All'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    setState(() => _isLoading = true);
+    try {
+      await ProductService.deleteAllProducts();
+      await _loadProducts();
+      _showSnackBar('All products deleted.');
+    } catch (e) {
+      setState(() => _isLoading = false);
+      _showSnackBar('Error deleting products: $e', isError: true);
+    }
+  }
+
   Future<void> _exportToCSV() async {
     try {
-      List<List<dynamic>> rows = [
-        ['Name', 'HSN Code', 'Description', 'Price', 'Tax Rate', 'Stock'],
-        ..._products.map((p) =>
-            [p.name, p.hsncode, p.description, p.price, p.tax_rate, p.stock])
+      final allProducts = await ProductService.getAllProducts();
+      final List<List<dynamic>> rows = [
+        ['name', 'hsn_code', 'description', 'price', 'tax_rate', 'stock'],
+        ...allProducts.map((p) =>
+            [p.name, p.hsncode, p.description, p.price, p.tax_rate, p.stock]),
       ];
       final csvData = buildQuotedCsv(rows);
-      final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/products.csv');
-      await file.writeAsString(csvData);
-      await OpenFile.open(file.path);
+      final savePath = await FilePicker.platform.saveFile(
+        dialogTitle: 'Save Products CSV',
+        fileName: 'products.csv',
+        type: FileType.custom,
+        allowedExtensions: ['csv'],
+      );
+      if (savePath == null) return;
+      await File(savePath).writeAsBytes(utf8.encode('\uFEFF$csvData'));
       _showSnackBar('CSV exported successfully!');
     } catch (e) {
       _showSnackBar('Error exporting CSV: $e', isError: true);
@@ -374,7 +929,37 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
   }
 
   Future<void> _exportToPDF() async {
+    // Ask user: current page or all products
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Export to PDF'),
+        content: Text(
+          'Export the current page ($_pageSize products) or all $_allProductsCount products?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          OutlinedButton(
+            onPressed: () => Navigator.pop(ctx, 'page'),
+            child: const Text('Current Page'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, 'all'),
+            child: const Text('All Products'),
+          ),
+        ],
+      ),
+    );
+    if (choice == null) return;
+
     try {
+      final productsToExport = choice == 'all'
+          ? await ProductService.getAllProducts()
+          : _products;
+
       final pdf = pw.Document();
       pdf.addPage(
         pw.Page(
@@ -382,22 +967,27 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
             context: context,
             data: [
               ['Name', 'HSN Code', 'Description', 'Price', 'Tax Rate', 'Stock'],
-              ..._products.map((p) => [
+              ...productsToExport.map((p) => [
                     p.name,
                     p.hsncode,
                     p.description,
-                    p.price,
-                    p.tax_rate,
-                    p.stock
+                    p.price.toStringAsFixed(2),
+                    '${p.tax_rate}%',
+                    p.stock,
                   ]),
             ],
           ),
         ),
       );
-      final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/products.pdf');
-      await file.writeAsBytes(await pdf.save());
-      await OpenFile.open(file.path);
+
+      final savePath = await FilePicker.platform.saveFile(
+        dialogTitle: 'Save Products PDF',
+        fileName: 'products.pdf',
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+      );
+      if (savePath == null) return;
+      await File(savePath).writeAsBytes(await pdf.save());
       _showSnackBar('PDF exported successfully!');
     } catch (e) {
       _showSnackBar('Error exporting PDF: $e', isError: true);
@@ -693,6 +1283,15 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
           Row(
             children: [
               IconButton.filled(
+                onPressed: _showImportDialog,
+                icon: const Icon(Icons.upload_file),
+                tooltip: 'Import CSV',
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.white.withValues(alpha: 0.2),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton.filled(
                 onPressed: _exportToCSV,
                 icon: const Icon(Icons.file_download),
                 tooltip: 'Export CSV',
@@ -709,6 +1308,32 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                   backgroundColor: Colors.white.withValues(alpha: 0.2),
                 ),
               ),
+              if (widget.user.isAdmin()) ...[
+                const SizedBox(width: 8),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, color: Colors.white),
+                  tooltip: 'More actions',
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.white.withValues(alpha: 0.2),
+                  ),
+                  onSelected: (value) {
+                    if (value == 'delete_all') _confirmDeleteAll();
+                  },
+                  itemBuilder: (ctx) => [
+                    const PopupMenuItem<String>(
+                      value: 'delete_all',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete_sweep, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text('Delete All Products',
+                              style: TextStyle(color: Colors.red)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ],
@@ -992,6 +1617,21 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _TableHeader extends StatelessWidget {
+  final String text;
+  const _TableHeader(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+      child: Text(text,
+          style:
+              const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
     );
   }
 }
