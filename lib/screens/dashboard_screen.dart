@@ -682,7 +682,7 @@ class _DashboardHomeState extends State<DashboardHome> {
               padding: const EdgeInsets.all(28),
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1200),
+                  constraints: const BoxConstraints(maxWidth: AppLayout.maxWidthNormal),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -1851,9 +1851,9 @@ class _DashboardHomeState extends State<DashboardHome> {
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min, // important for safety
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
                   padding: const EdgeInsets.all(10),
@@ -1863,11 +1863,44 @@ class _DashboardHomeState extends State<DashboardHome> {
                   ),
                   child: Icon(icon, color: color, size: 22),
                 ),
-                Icon(Icons.trending_up_rounded,
-                    color: color.withValues(alpha: 0.3), size: 18),
+
+                const SizedBox(width: 8),
+
+                if (subtitle?.isNotEmpty ?? false)
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.warning_amber_rounded,
+                            size: 12,
+                            color: subtitleColor ?? Colors.red,
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              subtitle!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.right,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: subtitleColor ?? Colors.red,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
               ],
             ),
+
             const SizedBox(height: 16),
+
             Text(
               value,
               style: TextStyle(
@@ -1877,38 +1910,22 @@ class _DashboardHomeState extends State<DashboardHome> {
                 letterSpacing: -0.5,
               ),
             ),
+
             const SizedBox(height: 4),
-            Flexible(
-              child: Text(
-                title,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[700],
-                    fontWeight: FontWeight.w700),
+
+            Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[700],
+                fontWeight: FontWeight.w700,
               ),
             ),
-            if (subtitle != null) ...[
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(Icons.warning_amber_rounded,
-                      size: 12, color: subtitleColor ?? Colors.red),
-                  const SizedBox(width: 4),
-                  Flexible(
-                    child: Text(
-                      subtitle,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                          fontSize: 11,
-                          color: subtitleColor ?? Colors.red,
-                          fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+
             const SizedBox(height: 14),
+
             Container(
               height: 3,
               decoration: BoxDecoration(
@@ -1916,7 +1933,7 @@ class _DashboardHomeState extends State<DashboardHome> {
                 gradient: LinearGradient(
                   colors: [
                     color.withValues(alpha: 0.6),
-                    color.withValues(alpha: 0.1)
+                    color.withValues(alpha: 0.1),
                   ],
                 ),
               ),

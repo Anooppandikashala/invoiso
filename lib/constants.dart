@@ -80,7 +80,7 @@ class Tax
 class AppLayout
 {
   static const double maxWidthNarrow  = 900.0;   // settings, backup, customer, product screens
-  static const double maxWidthNormal  = 1200.0;  // dashboard
+  static const double maxWidthNormal  = 1500.0;  // dashboard
   static const double maxWidthWide    = 1900.0;  // create invoice (dense multi-panel form)
 }
 
