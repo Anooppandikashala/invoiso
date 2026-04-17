@@ -18,13 +18,13 @@ class AppSpacing {
 
 class AppFontSize
 {
-  static const xsmall = 10.0;
-  static const small = 12.0;
-  static const medium = 14.0;
-  static const large = 16.0;
-  static const xlarge = 18.0;
-  static const xxlarge = 20.0;
-  static const xxxlarge = 22.0;
+  static const xsmall = 12.0;
+  static const small = 14.0;
+  static const medium = 16.0;
+  static const large = 18.0;
+  static const xlarge = 20.0;
+  static const xxlarge = 22.0;
+  static const xxxlarge = 24.0;
 }
 
 class AppPadding
@@ -55,10 +55,10 @@ class AppMargin
 
 class AppBorderRadius
 {
-  static const xsmall = 8.0;
-  static const small = 10.0;
-  static const medium = 12.0;
-  static const large = 14.0;
+  static const xsmall = 10.0;
+  static const small = 12.0;
+  static const medium = 14.0;
+  static const large = 16.0;
 }
 
 class AppConfig
@@ -81,7 +81,7 @@ class AppLayout
 {
   static const double maxWidthNarrow  = 900.0;   // settings, backup, customer, product screens
   static const double maxWidthNormal  = 1200.0;  // dashboard
-  static const double maxWidthWide    = 1700.0;  // create invoice (dense multi-panel form)
+  static const double maxWidthWide    = 1900.0;  // create invoice (dense multi-panel form)
 }
 
 class DefaultValues

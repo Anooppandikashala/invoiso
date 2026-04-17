@@ -9,6 +9,7 @@ import 'package:invoiso/screens/backup_management_screen.dart';
 import 'package:invoiso/screens/invoice_settings_screen.dart';
 import 'package:invoiso/screens/pdf_settings_screen.dart';
 import 'package:invoiso/screens/user_management_screen.dart';
+import '../invoisoColors.dart';
 import '../models/company_info.dart';
 import '../models/user.dart';
 import 'dart:convert';
@@ -40,6 +41,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   CompanyInfo? _companyInfo;
   bool _showUpiQr = false;
+  BusinessType _businessType = BusinessType.both;
 
   File? _selectedLogoFile;
   String? _base64Logo;
@@ -55,6 +57,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final base64Logo = await SettingsService.getCompanyLogo();
     final upiEntries = await SettingsService.getUpiIds();
     final showQrStr = await SettingsService.getSetting(SettingKey.showUpiQr);
+    final businessType = await SettingsService.getBusinessType();
     if (info != null) {
       setState(() {
         _companyInfo = info;
@@ -67,6 +70,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _selectedCountry = info.country.isEmpty ? 'India' : info.country;
         _companyInfoLoadCount++;
         _showUpiQr = showQrStr == 'true';
+        _businessType = businessType;
         if (base64Logo != null && base64Logo.isNotEmpty) {
           _base64Logo = base64Logo;
         }
@@ -122,6 +126,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await SettingsService.setUpiIds(upiEntries);
     await SettingsService.setSetting(
         SettingKey.showUpiQr, _showUpiQr.toString());
+    await SettingsService.setBusinessType(_businessType);
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -259,15 +264,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       child: Column(
                         children: [
                           const SizedBox(height: 8),
-                          Text(
-                            'COMPANY LOGO',
-                            style: TextStyle(
-                              fontSize: AppFontSize.xsmall,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.grey[400],
-                              letterSpacing: 1.0,
-                            ),
-                          ),
+                          _sectionLabel('COMPANY LOGO'),
                           const SizedBox(height: 16),
                           GestureDetector(
                             onTap: _pickLogo,
@@ -312,7 +309,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             'Max 512×512 px · 2 MB\nPNG or JPG only',
                             style: TextStyle(
                               fontSize: AppFontSize.xsmall,
-                              color: Colors.grey[400],
+                              color: CompanyInfoScreenColors.sectionHeadingColor,
                               height: 1.6,
                             ),
                             textAlign: TextAlign.center,
@@ -442,6 +439,57 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     icon: Icons.location_on_rounded,
                     maxLength: 100,
                     maxLines: 3,
+                  ),
+                  const SizedBox(height: 32),
+                  _sectionLabel('BUSINESS TYPE'),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                      border: Border.all(color: Colors.grey[200]!),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.category_outlined, color: Theme.of(context).primaryColor),
+                            const SizedBox(width: 12),
+                            const Text('Business Type', style: TextStyle(fontSize: 16)),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Controls item type options in the product list and invoices',
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                        const SizedBox(height: 12),
+                        SegmentedButton<BusinessType>(
+                          segments: const [
+                            ButtonSegment(
+                              value: BusinessType.product,
+                              label: Text('Product'),
+                              icon: Icon(Icons.inventory_2_outlined, size: 16),
+                            ),
+                            ButtonSegment(
+                              value: BusinessType.service,
+                              label: Text('Service'),
+                              icon: Icon(Icons.design_services_outlined, size: 16),
+                            ),
+                            ButtonSegment(
+                              value: BusinessType.both,
+                              label: Text('Both'),
+                              icon: Icon(Icons.all_inclusive, size: 16),
+                            ),
+                          ],
+                          selected: {_businessType},
+                          onSelectionChanged: (val) =>
+                              setState(() => _businessType = val.first),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 32),
                   _sectionLabel('PAYMENT SETTINGS'),
@@ -780,8 +828,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       title,
       style: TextStyle(
         fontSize: AppFontSize.xsmall,
-        fontWeight: FontWeight.w700,
-        color: Colors.grey[400],
+        fontWeight: FontWeight.w600,
+        color: CompanyInfoScreenColors.sectionHeadingColor,
         letterSpacing: 1.0,
       ),
     );

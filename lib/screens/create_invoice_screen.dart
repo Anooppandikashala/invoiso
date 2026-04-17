@@ -295,7 +295,10 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
   void addInvoiceProductPrompt(Product product) {
     final quantityController = TextEditingController();
-    final discountController = TextEditingController(text: '0');
+    final discountController = TextEditingController(
+        text: product.defaultDiscount > 0
+            ? product.defaultDiscount.toString()
+            : '0');
     final unitPriceController = TextEditingController(text: product.price.toString());
     final extraCostController = TextEditingController();
 
@@ -364,6 +367,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     ],
                   ),
                 ),
+              if (_showQuantity) ...[
               TextField(
                 controller: quantityController,
                 decoration: InputDecoration(
@@ -379,6 +383,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     : TextInputType.number,
               ),
               const SizedBox(height: 16),
+              ],
               TextField(
                 controller: discountController,
                 decoration: InputDecoration(
@@ -399,7 +404,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   labelText: 'Unit Price (override)',
                   helperText: 'Default: $_currencySymbol${product.price}',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
-                  prefixIcon: const Icon(Icons.attach_money),
+                  prefixText: '$_currencySymbol ',
                   filled: true,
                   fillColor: Colors.grey[50],
                 ),
@@ -433,9 +438,11 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
             onPressed: () async {
-              final qty = _fractionalQuantity
-                  ? (double.tryParse(quantityController.text) ?? 1.0)
-                  : (int.tryParse(quantityController.text) ?? 1).toDouble();
+              final qty = !_showQuantity
+                  ? 1.0
+                  : _fractionalQuantity
+                      ? (double.tryParse(quantityController.text) ?? 1.0)
+                      : (int.tryParse(quantityController.text) ?? 1).toDouble();
               final discount = double.tryParse(discountController.text) ?? 0.0;
               final parsedUnitPrice = double.tryParse(unitPriceController.text);
               final unitPrice = (parsedUnitPrice != null && parsedUnitPrice != product.price) ? parsedUnitPrice : null;
@@ -468,7 +475,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 if (addAnyway == true) {
                   addInvoiceProduct(InvoiceItem(product: product, quantity: qty, discount: discount, unitPrice: unitPrice, extraCost: extraCost, discountPerUnit: discountPerUnit));
                 }
-              } else if (product.stock == 0) {
+              } else if (product.stock <= 0) {
                 Navigator.pop(context);
                 final addAnyway = await showDialog<bool>(
                   context: context,
@@ -660,7 +667,12 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.inventory_2, color: Colors.blue[700]),
+                    Icon(
+                      item.product.type == 'service'
+                          ? Icons.design_services_outlined
+                          : Icons.inventory_2,
+                      color: Colors.blue[700],
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
@@ -668,10 +680,33 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: AppFontSize.xlarge),
                       ),
                     ),
+                    if (_businessType == BusinessType.both) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: item.product.type == 'service'
+                              ? Colors.purple.withValues(alpha: 0.15)
+                              : Colors.indigo.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          item.product.type == 'service' ? 'Service' : 'Product',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: item.product.type == 'service'
+                                ? Colors.purple[700]
+                                : Colors.indigo[700],
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
               const SizedBox(height: 20),
+              if (_showQuantity) ...[
               TextField(
                 controller: quantityController,
                 decoration: InputDecoration(
@@ -685,6 +720,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     ? const TextInputType.numberWithOptions(decimal: true)
                     : TextInputType.number,
               ),
+              ],
               const SizedBox(height: 16),
               TextField(
                 controller: discountController,
@@ -706,7 +742,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   labelText: 'Unit Price (override)',
                   helperText: 'Default: $_currencySymbol${item.product.price}',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
-                  prefixIcon: const Icon(Icons.attach_money),
+                  prefixText: '$_currencySymbol ',
                   filled: true,
                   fillColor: Colors.grey[50],
                 ),
@@ -745,9 +781,11 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               final extraCost = double.tryParse(extraCostController.text);
               final updatedItem = InvoiceItem(
                 product: item.product,
-                quantity: _fractionalQuantity
-                    ? (double.tryParse(quantityController.text) ?? item.quantity)
-                    : (int.tryParse(quantityController.text) ?? item.quantity.toInt()).toDouble(),
+                quantity: !_showQuantity
+                    ? 1.0
+                    : _fractionalQuantity
+                        ? (double.tryParse(quantityController.text) ?? item.quantity)
+                        : (int.tryParse(quantityController.text) ?? item.quantity.toInt()).toDouble(),
                 discount: double.tryParse(discountController.text) ?? item.discount,
                 unitPrice: unitPrice,
                 extraCost: extraCost,
@@ -823,7 +861,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 decoration: InputDecoration(
                   labelText: _showQuantity ? 'Unit Price' : 'Rate',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
-                  prefixIcon: const Icon(Icons.attach_money),
+                  prefixText: '$_currencySymbol ',
                   filled: true,
                   fillColor: Colors.grey[50],
                 ),
@@ -1115,13 +1153,30 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   children: [
                     Icon(Icons.inventory_2, color: Theme.of(context).primaryColor),
                     const SizedBox(width: 8),
-                    const Text(
-                      'Products',
-                      style: TextStyle(fontSize: AppFontSize.medium, fontWeight: FontWeight.bold),
+                    const Flexible(
+                      child: Text(
+                        'Products/Services',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: AppFontSize.medium, fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(Icons.circle, color: Colors.red, size: 8),
+                    const SizedBox(width: 4),
+                    const Flexible(
+                      child: Text(
+                        'Out of stock items are shown in red',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: AppFontSize.xsmall, color: Colors.grey),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
                 TextField(
                   controller: searchController,
                   onChanged: _filterProducts,
@@ -1178,10 +1233,15 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                       leading: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.blue.withValues(alpha: 0.1),
+                          color: product.stock <= 0
+                              ? Colors.red.withValues(alpha: 0.1)
+                              : Colors.blue.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Icon(Icons.inventory_2, color: Colors.grey,size: AppFontSize.xlarge,),
+                        child: Icon(Icons.inventory_2,
+                          color: product.stock <= 0 ? Colors.red : Colors.grey,
+                          size: AppFontSize.xlarge,
+                        ),
                       ),
                       title: Text(
                         product.name,
@@ -1192,50 +1252,43 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                         ),
                       ),
                       subtitle: Column(
-                        //mainAxisAlignment: MainAxisAlignment.start,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             'HSN: ${product.hsncode.toUpperCase()}',
                             maxLines: 2,
-                            style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.w400,fontSize: AppFontSize.small),
+                            style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.w400, fontSize: AppFontSize.small),
                           ),
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          const SizedBox(height: 2),
+                          Row(
                             children: [
-                              // Text(
-                              //   'Stock : ${product.stock}',
-                              //   overflow: TextOverflow.ellipsis,
-                              //   style: const TextStyle(color: Colors.black, fontWeight: FontWeight.normal),
-                              // ),
-                              Row(
-                                children: [
-                                  Expanded(
+                              Flexible(
+                                child: Text(
+                                  '$_currencySymbol${product.price.toStringAsFixed(2)}  ·  Stock: ${product.stock}',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: AppFontSize.small),
+                                ),
+                              ),
+                              if (product.defaultDiscount > 0) ...[
+                                const SizedBox(width: 6),
+                                Flexible(
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.orange[50],
+                                      border: Border.all(color: Colors.orange),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
                                     child: Text(
-                                      '$_currencySymbol${product.price.toStringAsFixed(2)}  (Stock : ${product.stock})',
+                                      '-$_currencySymbol${product.defaultDiscount.toStringAsFixed(0)}',
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: AppFontSize.medium),
+                                      style: TextStyle(color: Colors.orange[800], fontSize: 10, fontWeight: FontWeight.bold),
                                     ),
                                   ),
-                                  if (product.stock == 0)
-                                    Container(
-                                      margin: const EdgeInsets.only(left: 8),
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: Colors.red[50],
-                                        border: Border.all(color: Colors.red),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: const Text(
-                                        'Out of Stock',
-                                        style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold),
-                                      ),
-                                    ),
-                                ],
-                              )
+                                ),
+                              ],
                             ],
-                          )
+                          ),
                         ],
                       ),
                       trailing: IconButton(
@@ -2092,12 +2145,38 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                           spacing: 16,
                           runSpacing: 4,
                           children: [
+                            if (_businessType == BusinessType.both)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: item.product.type == 'service'
+                                      ? Colors.purple.withValues(alpha: 0.1)
+                                      : Colors.indigo.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(
+                                    color: item.product.type == 'service'
+                                        ? Colors.purple.withValues(alpha: 0.4)
+                                        : Colors.indigo.withValues(alpha: 0.4),
+                                  ),
+                                ),
+                                child: Text(
+                                  item.product.type == 'service' ? 'Service' : 'Product',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: item.product.type == 'service'
+                                        ? Colors.purple[700]
+                                        : Colors.indigo[700],
+                                  ),
+                                ),
+                              ),
                             if (item.unitPrice != null)
                               _buildItemDetail('Price', '$_currencySymbol${item.effectivePrice.toStringAsFixed(2)} *', color: Colors.orange[700])
                             else
                               _buildItemDetail('Price', '$_currencySymbol${item.product.price.toStringAsFixed(2)}'),
                             _buildItemDetail('HSN', item.product.hsncode.toString()),
-                            _buildItemDetail(_quantityLabel.trim().isNotEmpty ? _quantityLabel.trim() : 'Qty', item.quantity == item.quantity.roundToDouble() ? item.quantity.toInt().toString() : item.quantity.toString()),
+                            if (_showQuantity)
+                              _buildItemDetail(_quantityLabel.trim().isNotEmpty ? _quantityLabel.trim() : 'Qty', item.quantity == item.quantity.roundToDouble() ? item.quantity.toInt().toString() : item.quantity.toString()),
                             _buildItemDetail('Discount', '$_currencySymbol${item.discount.toStringAsFixed(2)}${item.discountPerUnit ? ' ×qty' : ''}'),
                             if (item.extraCost != null && item.extraCost! > 0)
                               _buildItemDetail('Extra', '+$_currencySymbol${item.extraCost!.toStringAsFixed(2)}', color: Colors.teal[700]),
@@ -2162,6 +2241,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                     stock: 0,
                                     hsncode: item.product.hsncode,
                                     tax_rate: item.product.tax_rate,
+                                    type: item.product.type,
                                   );
                                   await ProductService.insertProduct(newProduct);
                                   item.isProductSaved = true;

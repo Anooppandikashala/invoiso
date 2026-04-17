@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:invoiso/constants.dart';
 import 'package:invoiso/database/product_service.dart';
 import 'package:invoiso/database/settings_service.dart';
+import 'package:invoiso/invoisoColors.dart';
 import 'package:uuid/uuid.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:file_picker/file_picker.dart';
@@ -45,6 +46,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
 
   // Form controllers
   final _nameController = TextEditingController();
+  final _defaultDiscountController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _priceController = TextEditingController();
   final _stockController = TextEditingController();
@@ -97,6 +99,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
     _nameController.dispose();
     _descriptionController.dispose();
     _priceController.dispose();
+    _defaultDiscountController.dispose();
     _stockController.dispose();
     _taxRateController.dispose();
     _hsnCodeController.dispose();
@@ -116,7 +119,8 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
           orderBy: _sortBy,
           orderASC: _isAscending,
           type: _typeFilter);
-      final count = await ProductService.getProductCount(_searchQuery, _typeFilter);
+      final count =
+          await ProductService.getProductCount(_searchQuery, _typeFilter);
       final allCount = await ProductService.getTotalProductCount();
 
       setState(() {
@@ -145,6 +149,8 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
         hsncode: _hsnCodeController.text.trim(),
         tax_rate: int.parse(_taxRateController.text.trim()),
         type: _newItemType,
+        defaultDiscount:
+            double.tryParse(_defaultDiscountController.text.trim()) ?? 0.0,
       );
 
       await ProductService.insertProduct(newProduct);
@@ -163,6 +169,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
     _nameController.clear();
     _descriptionController.clear();
     _priceController.clear();
+    _defaultDiscountController.clear();
     _stockController.clear();
     _hsnCodeController.clear();
     _taxRateController.clear();
@@ -185,7 +192,8 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
         ),
         backgroundColor: isError ? Colors.red.shade600 : Colors.green.shade600,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         duration: const Duration(seconds: 3),
       ),
     );
@@ -194,15 +202,16 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
   void _showProductDialog(Product product, bool isEdit) {
     //final isEdit = product != null;
     final nameCtrl = TextEditingController(text: product.name);
-    final descriptionCtrl =
-        TextEditingController(text: product.description);
-    final priceCtrl =
-        TextEditingController(text: product.price.toString());
-    final stockCtrl =
-        TextEditingController(text: product.stock.toString());
+    final descriptionCtrl = TextEditingController(text: product.description);
+    final priceCtrl = TextEditingController(text: product.price.toString());
+    final stockCtrl = TextEditingController(text: product.stock.toString());
     final hsnCodeCtrl = TextEditingController(text: product.hsncode);
     final taxRateCtrl =
         TextEditingController(text: product.tax_rate.toString());
+    final defaultDiscountCtrl = TextEditingController(
+        text: product.defaultDiscount > 0
+            ? product.defaultDiscount.toString()
+            : '');
     final dialogFormKey = GlobalKey<FormState>();
     String dialogItemType = product.type;
 
@@ -210,106 +219,132 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Icon(
-              isEdit ? Icons.edit : Icons.visibility,
-              color: Theme.of(context).primaryColor,
-            ),
-            const SizedBox(width: 8),
-            Text(isEdit ? 'Edit Product/Service' : 'View Product/Service'),
-          ],
-        ),
-        content: SizedBox(
-          width: MediaQuery.of(context).size.width * 0.4,
-          child: Form(
-            key: dialogFormKey,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_businessType == BusinessType.both && isEdit) ...[
-                    SegmentedButton<String>(
-                      segments: const [
-                        ButtonSegment(value: 'product', label: Text('Product'), icon: Icon(Icons.inventory_2_outlined, size: 16)),
-                        ButtonSegment(value: 'service', label: Text('Service'), icon: Icon(Icons.design_services_outlined, size: 16)),
-                      ],
-                      selected: {dialogItemType},
-                      onSelectionChanged: (val) => setDialogState(() => dialogItemType = val.first),
-                    ),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Icon(
+                isEdit ? Icons.edit : Icons.visibility,
+                color: Theme.of(context).primaryColor,
+              ),
+              const SizedBox(width: 8),
+              Text(isEdit ? 'Edit Product/Service' : 'View Product/Service'),
+            ],
+          ),
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.4,
+            child: Form(
+              key: dialogFormKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_businessType == BusinessType.both && isEdit) ...[
+                      SegmentedButton<String>(
+                        segments: const [
+                          ButtonSegment(
+                              value: 'product',
+                              label: Text('Product'),
+                              icon: Icon(Icons.inventory_2_outlined, size: 16)),
+                          ButtonSegment(
+                              value: 'service',
+                              label: Text('Service'),
+                              icon: Icon(Icons.design_services_outlined,
+                                  size: 16)),
+                        ],
+                        selected: {dialogItemType},
+                        onSelectionChanged: (val) =>
+                            setDialogState(() => dialogItemType = val.first),
+                      ),
+                      const SizedBox(height: 16),
+                    ] else if (_businessType == BusinessType.both) ...[
+                      Chip(
+                        avatar: Icon(
+                            dialogItemType == 'service'
+                                ? Icons.design_services_outlined
+                                : Icons.inventory_2_outlined,
+                            size: 16),
+                        label: Text(dialogItemType == 'service'
+                            ? 'Service'
+                            : 'Product'),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    _buildDialogTextField(nameCtrl, 'Name', Icons.inventory_2,
+                        readOnly: !isEdit, maxLength: 100),
                     const SizedBox(height: 16),
-                  ] else if (_businessType == BusinessType.both) ...[
-                    Chip(
-                      avatar: Icon(dialogItemType == 'service' ? Icons.design_services_outlined : Icons.inventory_2_outlined, size: 16),
-                      label: Text(dialogItemType == 'service' ? 'Service' : 'Product'),
-                    ),
+                    _buildDialogTextField(
+                        hsnCodeCtrl, 'HSN Code', Icons.qr_code,
+                        readOnly: !isEdit, maxLength: 100),
                     const SizedBox(height: 16),
+                    _buildDialogTextField(
+                        descriptionCtrl, 'Description', Icons.description,
+                        readOnly: !isEdit, maxLines: 3, maxLength: 100),
+                    const SizedBox(height: 16),
+                    _buildDialogTextField(
+                        priceCtrl, 'Price', Icons.attach_money,
+                        readOnly: !isEdit,
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        isPrice: true,
+                        prefixText: '$_currencySymbol '),
+                    const SizedBox(height: 16),
+                    _buildDialogTextField(
+                        defaultDiscountCtrl, 'Default Discount', Icons.discount,
+                        readOnly: !isEdit,
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        isPrice: true,
+                        prefixText: '$_currencySymbol '),
+                    const SizedBox(height: 16),
+                    _buildDialogTextField(
+                        taxRateCtrl, 'Tax Rate (%)', Icons.percent,
+                        readOnly: !isEdit,
+                        keyboardType: TextInputType.number,
+                        isTaxRate: true),
+                    const SizedBox(height: 16),
+                    _buildDialogTextField(stockCtrl, 'Stock', Icons.inventory,
+                        readOnly: !isEdit,
+                        keyboardType: TextInputType.number,
+                        isStock: true),
                   ],
-                  _buildDialogTextField(
-                      nameCtrl, 'Name', Icons.inventory_2,
-                      readOnly: !isEdit, maxLength: 100),
-                  const SizedBox(height: 16),
-                  _buildDialogTextField(hsnCodeCtrl, 'HSN Code', Icons.qr_code,
-                      readOnly: !isEdit, maxLength: 100),
-                  const SizedBox(height: 16),
-                  _buildDialogTextField(
-                      descriptionCtrl, 'Description', Icons.description,
-                      readOnly: !isEdit, maxLines: 3, maxLength: 100),
-                  const SizedBox(height: 16),
-                  _buildDialogTextField(
-                      priceCtrl, 'Price ($_currencySymbol)', Icons.attach_money,
-                      readOnly: !isEdit,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      isPrice: true),
-                  const SizedBox(height: 16),
-                  _buildDialogTextField(
-                      taxRateCtrl, 'Tax Rate (%)', Icons.percent,
-                      readOnly: !isEdit,
-                      keyboardType: TextInputType.number,
-                      isTaxRate: true),
-                  const SizedBox(height: 16),
-                  _buildDialogTextField(stockCtrl, 'Stock', Icons.inventory,
-                      readOnly: !isEdit,
-                      keyboardType: TextInputType.number,
-                      isStock: true),
-                ],
+                ),
               ),
             ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-          if (isEdit)
-            FilledButton.icon(
-              onPressed: () async {
-                if (!dialogFormKey.currentState!.validate()) return;
-
-                final updatedProduct = Product(
-                  id: product.id,
-                  name: nameCtrl.text.trim(),
-                  description: descriptionCtrl.text.trim(),
-                  price: double.parse(priceCtrl.text.trim()),
-                  stock: int.parse(stockCtrl.text.trim()),
-                  hsncode: hsnCodeCtrl.text.trim(),
-                  tax_rate: int.parse(taxRateCtrl.text.trim()),
-                  type: dialogItemType,
-                );
-
-                await ProductService.updateProduct(updatedProduct);
-                await _loadProducts();
-                if (context.mounted) Navigator.pop(context);
-                _showSnackBar('Product/Service updated successfully!');
-              },
-              icon: const Icon(Icons.save),
-              label: const Text('Update'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
             ),
-        ],
-      ),
+            if (isEdit)
+              FilledButton.icon(
+                onPressed: () async {
+                  if (!dialogFormKey.currentState!.validate()) return;
+
+                  final updatedProduct = Product(
+                    id: product.id,
+                    name: nameCtrl.text.trim(),
+                    description: descriptionCtrl.text.trim(),
+                    price: double.parse(priceCtrl.text.trim()),
+                    stock: int.parse(stockCtrl.text.trim()),
+                    hsncode: hsnCodeCtrl.text.trim(),
+                    tax_rate: int.parse(taxRateCtrl.text.trim()),
+                    type: dialogItemType,
+                    defaultDiscount:
+                        double.tryParse(defaultDiscountCtrl.text.trim()) ?? 0.0,
+                  );
+
+                  await ProductService.updateProduct(updatedProduct);
+                  await _loadProducts();
+                  if (context.mounted) Navigator.pop(context);
+                  _showSnackBar('Product/Service updated successfully!');
+                },
+                icon: const Icon(Icons.save),
+                label: const Text('Update'),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -325,6 +360,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
     bool isPrice = false,
     bool isStock = false,
     bool isTaxRate = false,
+    String? prefixText,
   }) {
     return TextFormField(
       controller: controller,
@@ -339,8 +375,10 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
               : null,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+        prefixIcon: prefixText == null ? Icon(icon) : null,
+        prefixText: prefixText,
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         filled: readOnly,
         fillColor: readOnly ? Colors.grey.shade100 : null,
         counterText: '',
@@ -462,8 +500,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                   },
                   children: [
                     TableRow(
-                      decoration:
-                          BoxDecoration(color: Colors.grey.shade100),
+                      decoration: BoxDecoration(color: Colors.grey.shade100),
                       children: const [
                         _TableHeader('Column'),
                         _TableHeader('Required'),
@@ -522,8 +559,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           child: Text(col,
-              style:
-                  const TextStyle(fontFamily: 'monospace', fontSize: 12)),
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -532,16 +568,13 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: req == 'Yes'
-                  ? Colors.red.shade700
-                  : Colors.grey.shade600,
+              color: req == 'Yes' ? Colors.red.shade700 : Colors.grey.shade600,
             ),
           ),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          child:
-              Text(desc, style: const TextStyle(fontSize: 12)),
+          child: Text(desc, style: const TextStyle(fontSize: 12)),
         ),
       ],
     );
@@ -557,8 +590,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
           const SizedBox(width: 6),
           Expanded(
               child: Text(text,
-                  style: const TextStyle(
-                      fontSize: 12, color: Colors.black87))),
+                  style: const TextStyle(fontSize: 12, color: Colors.black87))),
         ],
       ),
     );
@@ -575,8 +607,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final bytes =
-          await File(result.files.single.path!).readAsBytes();
+      final bytes = await File(result.files.single.path!).readAsBytes();
       // Strip UTF-8 BOM if present
       final content = utf8.decode(
         bytes.length >= 3 &&
@@ -587,8 +618,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
             : bytes,
       );
 
-      final rows =
-          const CsvToListConverter(eol: '\n').convert(content);
+      final rows = const CsvToListConverter(eol: '\n').convert(content);
       if (rows.isEmpty) {
         _showSnackBar('CSV file is empty.', isError: true);
         setState(() => _isLoading = false);
@@ -596,19 +626,16 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
       }
 
       // Parse and validate headers
-      final headers = rows.first
-          .map((h) => h.toString().trim().toLowerCase())
-          .toList();
+      final headers =
+          rows.first.map((h) => h.toString().trim().toLowerCase()).toList();
 
       if (!headers.contains('name')) {
-        _showSnackBar('CSV missing required column: "name"',
-            isError: true);
+        _showSnackBar('CSV missing required column: "name"', isError: true);
         setState(() => _isLoading = false);
         return;
       }
       if (!headers.contains('price')) {
-        _showSnackBar('CSV missing required column: "price"',
-            isError: true);
+        _showSnackBar('CSV missing required column: "price"', isError: true);
         setState(() => _isLoading = false);
         return;
       }
@@ -634,9 +661,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
 
       String getField(List<dynamic> row, String col) {
         final i = headers.indexOf(col);
-        return i < 0 || i >= row.length
-            ? ''
-            : row[i].toString().trim();
+        return i < 0 || i >= row.length ? '' : row[i].toString().trim();
       }
 
       final List<Product> valid = [];
@@ -654,20 +679,16 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
         }
         final price = double.tryParse(priceStr);
         if (price == null || price < 0) {
-          errors.add(
-              'Row ${i + 2}: invalid price "$priceStr" — skipped');
+          errors.add('Row ${i + 2}: invalid price "$priceStr" — skipped');
           continue;
         }
 
         final taxStr = getField(row, 'tax_rate');
         final stockStr = getField(row, 'stock');
-        final taxRate =
-            taxStr.isEmpty ? 0 : (int.tryParse(taxStr) ?? 0);
-        final stock =
-            stockStr.isEmpty ? 0 : (int.tryParse(stockStr) ?? 0);
+        final taxRate = taxStr.isEmpty ? 0 : (int.tryParse(taxStr) ?? 0);
+        final stock = stockStr.isEmpty ? 0 : (int.tryParse(stockStr) ?? 0);
 
-        final existing =
-            await ProductService.findDuplicateByName(name);
+        final existing = await ProductService.findDuplicateByName(name);
         final product = Product(
           id: existing?.id ?? const Uuid().v4(),
           name: name,
@@ -700,16 +721,15 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
     List<Product> duplicates,
     List<String> errors,
   ) async {
-    final overwriteFlags =
-        List<bool>.filled(duplicates.length, false);
+    final overwriteFlags = List<bool>.filled(duplicates.length, false);
 
     await showDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) {
-          final total = newProducts.length +
-              overwriteFlags.where((f) => f).length;
+          final total =
+              newProducts.length + overwriteFlags.where((f) => f).length;
 
           return AlertDialog(
             title: const Text('Import Preview'),
@@ -725,32 +745,20 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                       runSpacing: 8,
                       children: [
                         Chip(
-                          label:
-                              Text('${newProducts.length} new'),
-                          backgroundColor:
-                              Colors.green.shade100,
-                          avatar: const Icon(
-                              Icons.add_box_outlined,
-                              size: 16),
+                          label: Text('${newProducts.length} new'),
+                          backgroundColor: Colors.green.shade100,
+                          avatar: const Icon(Icons.add_box_outlined, size: 16),
                         ),
                         Chip(
-                          label: Text(
-                              '${duplicates.length} duplicates'),
-                          backgroundColor:
-                              Colors.orange.shade100,
-                          avatar: const Icon(
-                              Icons.warning_amber,
-                              size: 16),
+                          label: Text('${duplicates.length} duplicates'),
+                          backgroundColor: Colors.orange.shade100,
+                          avatar: const Icon(Icons.warning_amber, size: 16),
                         ),
                         if (errors.isNotEmpty)
                           Chip(
-                            label:
-                                Text('${errors.length} errors'),
-                            backgroundColor:
-                                Colors.red.shade100,
-                            avatar: const Icon(
-                                Icons.error_outline,
-                                size: 16),
+                            label: Text('${errors.length} errors'),
+                            backgroundColor: Colors.red.shade100,
+                            avatar: const Icon(Icons.error_outline, size: 16),
                           ),
                       ],
                     ),
@@ -759,30 +767,20 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                       Row(
                         children: [
                           const Expanded(
-                            child: Text(
-                                'Duplicates (matched by name):',
-                                style: TextStyle(
-                                    fontWeight:
-                                        FontWeight.bold)),
+                            child: Text('Duplicates (matched by name):',
+                                style: TextStyle(fontWeight: FontWeight.bold)),
                           ),
                           TextButton(
-                            onPressed: () =>
-                                setDialogState(() {
-                              for (int i = 0;
-                                  i < overwriteFlags.length;
-                                  i++) {
+                            onPressed: () => setDialogState(() {
+                              for (int i = 0; i < overwriteFlags.length; i++) {
                                 overwriteFlags[i] = true;
                               }
                             }),
-                            child:
-                                const Text('Overwrite All'),
+                            child: const Text('Overwrite All'),
                           ),
                           TextButton(
-                            onPressed: () =>
-                                setDialogState(() {
-                              for (int i = 0;
-                                  i < overwriteFlags.length;
-                                  i++) {
+                            onPressed: () => setDialogState(() {
+                              for (int i = 0; i < overwriteFlags.length; i++) {
                                 overwriteFlags[i] = false;
                               }
                             }),
@@ -794,8 +792,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                       ...List.generate(duplicates.length, (i) {
                         final p = duplicates[i];
                         return Card(
-                          margin:
-                              const EdgeInsets.only(bottom: 6),
+                          margin: const EdgeInsets.only(bottom: 6),
                           child: ListTile(
                             dense: true,
                             title: Text(p.name),
@@ -805,18 +802,14 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 const Text('Skip',
-                                    style: TextStyle(
-                                        fontSize: 12)),
+                                    style: TextStyle(fontSize: 12)),
                                 Switch(
                                   value: overwriteFlags[i],
-                                  onChanged: (v) =>
-                                      setDialogState(() =>
-                                          overwriteFlags[i] =
-                                              v),
+                                  onChanged: (v) => setDialogState(
+                                      () => overwriteFlags[i] = v),
                                 ),
                                 const Text('Overwrite',
-                                    style: TextStyle(
-                                        fontSize: 12)),
+                                    style: TextStyle(fontSize: 12)),
                               ],
                             ),
                           ),
@@ -827,23 +820,19 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                       const SizedBox(height: 16),
                       const Text('Skipped rows (errors):',
                           style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.red)),
+                              fontWeight: FontWeight.bold, color: Colors.red)),
                       const SizedBox(height: 8),
                       ...errors.map((e) => Padding(
-                            padding:
-                                const EdgeInsets.only(bottom: 4),
+                            padding: const EdgeInsets.only(bottom: 4),
                             child: Text('• $e',
                                 style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.red)),
+                                    fontSize: 12, color: Colors.red)),
                           )),
                     ],
                     const SizedBox(height: 12),
                     Text(
                       'Will import $total product${total == 1 ? '' : 's'}.',
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -860,9 +849,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                     : () async {
                         Navigator.pop(ctx);
                         await _executeImport(
-                            newProducts,
-                            duplicates,
-                            overwriteFlags);
+                            newProducts, duplicates, overwriteFlags);
                       },
                 icon: const Icon(Icons.upload),
                 label: Text('Import $total'),
@@ -890,8 +877,8 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
         }
       }
       await _loadProducts();
-      final imported = newProducts.length +
-          overwriteFlags.where((f) => f).length;
+      final imported =
+          newProducts.length + overwriteFlags.where((f) => f).length;
       _showSnackBar(
           'Imported $imported product${imported == 1 ? '' : 's'} successfully!');
     } catch (e) {
@@ -922,8 +909,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
             child: const Text('Cancel'),
           ),
           FilledButton(
-            style:
-                FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Delete All'),
           ),
@@ -993,9 +979,8 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
     if (choice == null) return;
 
     try {
-      final productsToExport = choice == 'all'
-          ? await ProductService.getAllProducts()
-          : _products;
+      final productsToExport =
+          choice == 'all' ? await ProductService.getAllProducts() : _products;
 
       final pdf = pw.Document();
       pdf.addPage(
@@ -1108,12 +1093,8 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Theme.of(context).primaryColor,
-                  Theme.of(context).primaryColor.withValues(alpha: 0.8),
-                ],
-              ),
+              gradient:
+                  ProductManagementScreenColors.topBarBackgroundGradientColor,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
@@ -1145,16 +1126,23 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                   if (_businessType == BusinessType.both) ...[
                     SegmentedButton<String>(
                       segments: const [
-                        ButtonSegment(value: 'product', label: Text('Product'), icon: Icon(Icons.inventory_2_outlined, size: 16)),
-                        ButtonSegment(value: 'service', label: Text('Service'), icon: Icon(Icons.design_services_outlined, size: 16)),
+                        ButtonSegment(
+                            value: 'product',
+                            label: Text('Product'),
+                            icon: Icon(Icons.inventory_2_outlined, size: 16)),
+                        ButtonSegment(
+                            value: 'service',
+                            label: Text('Service'),
+                            icon:
+                                Icon(Icons.design_services_outlined, size: 16)),
                       ],
                       selected: {_newItemType},
-                      onSelectionChanged: (val) => setState(() => _newItemType = val.first),
+                      onSelectionChanged: (val) =>
+                          setState(() => _newItemType = val.first),
                     ),
                     const SizedBox(height: 16),
                   ],
-                  _buildFormField(
-                      _nameController, 'Name', Icons.inventory_2,
+                  _buildFormField(_nameController, 'Name', Icons.inventory_2,
                       maxLength: 100),
                   const SizedBox(height: 16),
                   _buildFormField(_hsnCodeController, 'HSN Code', Icons.qr_code,
@@ -1164,11 +1152,19 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                       _descriptionController, 'Description', Icons.description,
                       maxLines: 3, maxLength: 100, required: false),
                   const SizedBox(height: 16),
-                  _buildFormField(
-                      _priceController, 'Price ($_currencySymbol)', Icons.attach_money,
+                  _buildFormField(_priceController, 'Price', Icons.attach_money,
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
-                      isPrice: true),
+                      isPrice: true,
+                      prefixText: '$_currencySymbol '),
+                  const SizedBox(height: 16),
+                  _buildFormField(_defaultDiscountController,
+                      'Default Discount', Icons.discount,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      isPrice: true,
+                      required: false,
+                      prefixText: '$_currencySymbol '),
                   const SizedBox(height: 16),
                   _buildFormField(
                       _taxRateController, 'Tax Rate (%)', Icons.percent,
@@ -1195,7 +1191,9 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                         child: FilledButton.icon(
                           onPressed: _addProduct,
                           icon: const Icon(Icons.add),
-                          label: Text(_newItemType == 'service' ? 'Add Service' : 'Add Product'),
+                          label: Text(_newItemType == 'service'
+                              ? 'Add Service'
+                              : 'Add Product'),
                           style: FilledButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
@@ -1223,6 +1221,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
     bool isPrice = false,
     bool isStock = false,
     bool isTaxRate = false,
+    String? prefixText,
   }) {
     return TextFormField(
       controller: controller,
@@ -1236,8 +1235,10 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
               : null,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+        prefixIcon: prefixText == null ? Icon(icon) : null,
+        prefixText: prefixText,
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         counterText: '',
       ),
       validator: (value) {
@@ -1277,8 +1278,14 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
               child: SegmentedButton<String>(
                 segments: const [
                   ButtonSegment(value: 'both', label: Text('All')),
-                  ButtonSegment(value: 'product', label: Text('Products'), icon: Icon(Icons.inventory_2_outlined, size: 16)),
-                  ButtonSegment(value: 'service', label: Text('Services'), icon: Icon(Icons.design_services_outlined, size: 16)),
+                  ButtonSegment(
+                      value: 'product',
+                      label: Text('Products'),
+                      icon: Icon(Icons.inventory_2_outlined, size: 16)),
+                  ButtonSegment(
+                      value: 'service',
+                      label: Text('Services'),
+                      icon: Icon(Icons.design_services_outlined, size: 16)),
                 ],
                 selected: {_typeFilter},
                 onSelectionChanged: (val) {
@@ -1316,15 +1323,15 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
   }
 
   Widget _buildTableHeader() {
+    String headText = (_typeFilter == "both"
+        ? 'Products/Services'
+        : (_typeFilter == "product")
+            ? 'Products($_allProductsCount)'
+            : 'Services($_allProductsCount)');
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Theme.of(context).primaryColor,
-            Theme.of(context).primaryColor.withValues(alpha: 0.8),
-          ],
-        ),
+        gradient: ProductManagementScreenColors.topBarBackgroundGradientColor,
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(16),
           topRight: Radius.circular(16),
@@ -1338,7 +1345,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
               const Icon(Icons.inventory, color: Colors.white, size: 28),
               const SizedBox(width: 12),
               Text(
-                'Products ($_allProductsCount)',
+                headText,
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -1420,8 +1427,9 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
               decoration: InputDecoration(
                 labelText: 'Search products...',
                 prefixIcon: const Icon(Icons.search),
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                border: OutlineInputBorder(
+                    borderRadius:
+                        BorderRadius.circular(AppBorderRadius.xsmall)),
                 filled: true,
                 fillColor: Colors.grey.shade50,
               ),
@@ -1502,7 +1510,8 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
             label: Text('Name', style: TextStyle(fontWeight: FontWeight.bold))),
         if (_businessType == BusinessType.both)
           const DataColumn(
-              label: Text('Type', style: TextStyle(fontWeight: FontWeight.bold))),
+              label:
+                  Text('Type', style: TextStyle(fontWeight: FontWeight.bold))),
         const DataColumn(
             label: Text('HSN Code',
                 style: TextStyle(fontWeight: FontWeight.bold))),
@@ -1512,6 +1521,9 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
         const DataColumn(
             label:
                 Text('Price', style: TextStyle(fontWeight: FontWeight.bold))),
+        const DataColumn(
+            label:
+            Text('Discount', style: TextStyle(fontWeight: FontWeight.bold))),
         const DataColumn(
             label: Text('Tax Rate',
                 style: TextStyle(fontWeight: FontWeight.bold))),
@@ -1536,15 +1548,20 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontWeight: FontWeight.w500))),
             if (_businessType == BusinessType.both)
-              DataCell(Chip(
-                avatar: Icon(
-                  p.type == 'service' ? Icons.design_services_outlined : Icons.inventory_2_outlined,
-                  size: 14,
+              DataCell(Tooltip(
+                message: p.type == 'service' ? 'Service' : 'Product',
+                child: Chip(
+                  avatar: Icon(
+                    p.type == 'service'
+                        ? Icons.design_services_outlined
+                        : Icons.inventory_2_outlined,
+                    size: 14,
+                  ),
+                  label: Text(p.type == 'service' ? 'Service' : 'Product',
+                      style: const TextStyle(fontSize: 11)),
+                  padding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
                 ),
-                label: Text(p.type == 'service' ? 'Service' : 'Product',
-                    style: const TextStyle(fontSize: 11)),
-                padding: EdgeInsets.zero,
-                visualDensity: VisualDensity.compact,
               )),
             DataCell(Text(p.hsncode)),
             DataCell(
@@ -1570,6 +1587,22 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Colors.green.shade700,
+                  ),
+                ),
+              ),
+            ),
+            DataCell(
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  '$_currencySymbol${p.defaultDiscount.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue.shade700,
                   ),
                 ),
               ),
@@ -1711,8 +1744,7 @@ class _TableHeader extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
       child: Text(text,
-          style:
-              const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
     );
   }
 }

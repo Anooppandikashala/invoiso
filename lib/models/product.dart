@@ -8,6 +8,7 @@ class Product {
   // ignore: non_constant_identifier_names
   int tax_rate;
   String type; // 'product' or 'service'
+  double defaultDiscount;
 
   Product({
     required this.id,
@@ -19,6 +20,7 @@ class Product {
     // ignore: non_constant_identifier_names
     required this.tax_rate,
     this.type = 'product',
+    this.defaultDiscount = 0.0,
   });
 
   // Convert a Map into a Product object
@@ -34,6 +36,7 @@ class Product {
       hsncode: map['hsncode'] ?? '',
       tax_rate: map['tax_rate'] ?? 0,
       type: map['type'] as String? ?? 'product',
+      defaultDiscount: (map['default_discount'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
@@ -49,6 +52,7 @@ class Product {
       hsncode: map['product_hsn_code'] ?? '',
       tax_rate: map['product_tax_rate'] ?? 0,
       type: map['product_type'] as String? ?? 'product',
+      defaultDiscount: (map['product_default_discount'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
@@ -63,6 +67,7 @@ class Product {
       'hsncode': hsncode,
       'tax_rate': tax_rate,
       'type': type,
+      'default_discount': defaultDiscount,
     };
   }
 }
