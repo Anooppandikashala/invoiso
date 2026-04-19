@@ -1,5 +1,35 @@
 
 /* =============================================
+   YouTube Facade
+   ============================================= */
+.yt-facade {
+  cursor: pointer;
+}
+
+.yt-play-btn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 68px;
+  height: 48px;
+  opacity: 0.85;
+  pointer-events: none;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.yt-facade:hover .yt-play-btn,
+.yt-facade:focus .yt-play-btn {
+  transform: translate(-50%, -50%) scale(1.12);
+  opacity: 1;
+}
+
+.yt-facade:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+
+/* =============================================
    Design Tokens
    ============================================= */
 :root {
@@ -1253,5 +1283,231 @@ footer .border-t {
     .hero-gradient h1,
     .hero-gradient h2 {
         font-size: 2.5rem;
+    }
+}
+
+/* =============================================
+   Enhanced UI/UX — v2
+   ============================================= */
+
+/* ── Hero badge pill ── */
+.hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(79,142,247,0.08);
+    border: 1px solid rgba(79,142,247,0.22);
+    color: var(--primary);
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 7px 18px;
+    border-radius: 999px;
+    letter-spacing: 0.02em;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    margin-bottom: 24px;
+}
+
+/* ── Navbar link hover — slide-up underline ── */
+.navbar nav ul a {
+    position: relative;
+    padding-bottom: 3px;
+}
+
+.navbar nav ul a::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: var(--primary);
+    border-radius: 2px;
+    transition: width 0.25s ease;
+}
+
+.navbar nav ul a:hover::after {
+    width: 100%;
+}
+
+/* ── Nav active link state ── */
+.navbar nav ul a.nav-active {
+    color: var(--primary) !important;
+}
+
+.navbar nav ul a.nav-active::after {
+    width: 100%;
+}
+
+/* ── Nav Download CTA pill ── */
+a.nav-cta,
+.navbar nav ul a.nav-cta {
+    background: var(--primary) !important;
+    color: #fff !important;
+    padding: 7px 18px !important;
+    border-radius: 8px;
+    font-weight: 600 !important;
+    box-shadow: 0 0 14px rgba(79,142,247,0.2);
+    transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease !important;
+    padding-bottom: 7px !important;
+}
+
+a.nav-cta:hover,
+.navbar nav ul a.nav-cta:hover {
+    background: #6ba3ff !important;
+    color: #fff !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 18px rgba(79,142,247,0.45) !important;
+}
+
+a.nav-cta::after,
+.navbar nav ul a.nav-cta::after {
+    display: none !important;
+}
+
+/* ── Mobile nav Download CTA ── */
+.mobile-menu a.nav-cta {
+    display: inline-flex !important;
+    width: fit-content;
+    margin-top: 4px;
+}
+
+/* ── Feature item icon hover animation ── */
+.feature-icon-box {
+    transition: transform 0.25s ease;
+}
+
+.feature-item:hover .feature-icon-box {
+    transform: scale(1.12) rotate(4deg);
+}
+
+/* ── Stronger feature item hover (overrides earlier rule) ── */
+.feature-item:hover {
+    border-color: rgba(79,142,247,0.40);
+    background: rgba(255,255,255,0.055);
+    box-shadow: 0 0 0 1px rgba(79,142,247,0.08),
+                0 14px 45px rgba(0,0,0,0.42),
+                0 0 24px rgba(79,142,247,0.07);
+    transform: translateY(-3px);
+}
+
+/* ── Scroll-reveal ── */
+.reveal {
+    opacity: 0;
+    transform: translateY(22px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.reveal-d1 { transition-delay: 0.08s; }
+.reveal-d2 { transition-delay: 0.16s; }
+.reveal-d3 { transition-delay: 0.24s; }
+.reveal-d4 { transition-delay: 0.32s; }
+.reveal-d5 { transition-delay: 0.40s; }
+
+/* ── Comparison table — Invoiso column highlight ── */
+.comparison-table td:nth-child(2),
+.comparison-table th:nth-child(2) {
+    background: rgba(79,142,247,0.06) !important;
+    border-left: 1px solid rgba(79,142,247,0.18) !important;
+    border-right: 1px solid rgba(79,142,247,0.18) !important;
+}
+
+.comparison-table thead th:nth-child(2) {
+    border-top: 2px solid rgba(79,142,247,0.35) !important;
+}
+
+/* ── Section subtext polish ── */
+.section-subtext {
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: var(--text-muted);
+    max-width: 36rem;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* ── How-It-Works step cards — numbered accent ── */
+.step-card {
+    position: relative;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.step-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(79,142,247,0.3);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.45), 0 0 24px rgba(79,142,247,0.08);
+}
+
+/* ── Improved trust chip ── */
+.trust-chip {
+    transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.trust-chip:hover {
+    border-color: rgba(79,142,247,0.4);
+    background: rgba(79,142,247,0.12);
+    color: var(--text);
+}
+
+/* ── Hero gradient orbs — richer colours ── */
+.hero-gradient::before {
+    background: radial-gradient(circle, rgba(79,142,247,0.28) 0%, transparent 65%);
+}
+
+.hero-gradient::after {
+    background: radial-gradient(circle, rgba(139,92,246,0.22) 0%, transparent 65%);
+}
+
+/* ── Primary button active press feedback ── */
+.btn-primary:active {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 0 18px rgba(79,142,247,0.35), 0 4px 12px rgba(0,0,0,0.3) !important;
+}
+
+/* ── Stat card hover ── */
+.stat-card:hover {
+    transform: translateY(-6px);
+    border-color: rgba(79,142,247,0.25);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 30px rgba(79,142,247,0.08);
+}
+
+/* ── Logo gradient accent ── */
+.logo-text-accent {
+    background: linear-gradient(135deg, var(--primary), #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ── Footer link hover refinement ── */
+footer a:hover {
+    color: var(--primary);
+}
+
+/* ── Extra-small mobile tweaks ── */
+@media (max-width: 480px) {
+    .hero-badge {
+        font-size: 0.75rem;
+        padding: 6px 14px;
+    }
+
+    .hero-trust-strip {
+        gap: 6px;
+    }
+
+    .trust-chip {
+        font-size: 0.73rem;
+        padding: 4px 11px;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+        width: 100%;
+        justify-content: center;
     }
 }

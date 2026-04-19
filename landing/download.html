@@ -21,7 +21,7 @@
     <!-- Open Graph -->
     <meta property="og:title" content="Download Invoiso — Free Offline Invoice & Billing Software" />
     <meta property="og:description" content="Download Invoiso for Windows and Linux. Free offline invoice and billing software for small businesses. No account, no subscription required." />
-    <meta property="og:image" content="https://invoiso.co.in/assets/images/invoiso-banner.webp" />
+    <meta property="og:image" content="https://invoiso.co.in/assets/images/invoiso_banner.webp" />
     <meta property="og:url" content="https://invoiso.co.in/download.html" />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="en_US" />
@@ -31,7 +31,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Download Invoiso — Free Offline Invoice & Billing Software" />
     <meta name="twitter:description" content="Free offline invoice and billing software for Windows and Linux. No account, no subscription. Download and run instantly." />
-    <meta name="twitter:image" content="https://invoiso.co.in/assets/images/invoiso-banner.webp" />
+    <meta name="twitter:image" content="https://invoiso.co.in/assets/images/invoiso_banner.webp" />
 
     <!-- Favicon & Icons -->
     <link rel="icon" type="image/svg+xml" href="assets/images/logo.svg" />
@@ -44,11 +44,13 @@
     <!-- Fonts -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" />
 
-    <!-- CSS Libraries -->
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-
+    <!-- CSS: critical (local, render-blocking) -->
+    <link rel="stylesheet" href="tailwind.css" />
     <link rel="stylesheet" href="style.css" />
+
+    <!-- CSS: non-critical (deferred) -->
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" /></noscript>
 
     <style>
       /* ── Release card ── */
@@ -381,6 +383,36 @@
       }
     </style>
 
+    <!-- Structured Data: SoftwareApplication -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Invoiso",
+      "operatingSystem": "Windows, Linux",
+      "applicationCategory": "BusinessApplication",
+      "description": "Free and offline invoicing software for Windows and Linux. Create professional PDF invoices, manage customers and products without internet access.",
+      "softwareVersion": "3.8.0",
+      "url": "https://invoiso.co.in/",
+      "downloadUrl": "https://invoiso.co.in/download.html",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "5",
+        "reviewCount": "1",
+        "bestRating": "5"
+      },
+      "author": {
+        "@type": "Person",
+        "name": "Anoop Pandikashala"
+      }
+    }
+    </script>
+
     <!-- Structured Data: Breadcrumb -->
     <script type="application/ld+json">
     {
@@ -392,14 +424,23 @@
       ]
     }
     </script>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-D7RSN6EGR6"></script>
+    <!-- Google Analytics: deferred until browser is idle -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-
       gtag('config', 'G-D7RSN6EGR6');
+      (function() {
+        function loadGA() {
+          var s = document.createElement('script');
+          s.async = true;
+          s.src = 'https://www.googletagmanager.com/gtag/js?id=G-D7RSN6EGR6';
+          document.head.appendChild(s);
+        }
+        'requestIdleCallback' in window
+          ? requestIdleCallback(loadGA, { timeout: 4000 })
+          : window.addEventListener('load', function() { setTimeout(loadGA, 1000); });
+      })();
     </script>
   </head>
 

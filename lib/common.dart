@@ -25,6 +25,8 @@ enum SettingKey {
   fractionalQuantity,  // whether to allow decimal quantities (e.g. 1.5 hrs)
   quantityLabel,       // default label for the Qty column (e.g. "Words", "Hours")
   logoSize,            // logo size on PDF: 'small' | 'medium' | 'large'
+  businessType,        // 'product' | 'service' | 'both'
+  showQuantity,        // whether to show quantity field (default true)
 }
 
 extension SettingKeyExtension on SettingKey
@@ -55,6 +57,42 @@ extension SettingKeyExtension on SettingKey
         return 'quantity_label';
       case SettingKey.logoSize:
         return 'logo_size';
+      case SettingKey.businessType:
+        return 'business_type';
+      case SettingKey.showQuantity:
+        return 'show_quantity';
+    }
+  }
+}
+
+enum BusinessType {
+  product,
+  service,
+  both,
+}
+
+extension BusinessTypeExtension on BusinessType {
+  String get key {
+    switch (this) {
+      case BusinessType.product: return 'product';
+      case BusinessType.service: return 'service';
+      case BusinessType.both:    return 'both';
+    }
+  }
+
+  String get label {
+    switch (this) {
+      case BusinessType.product: return 'Product-based';
+      case BusinessType.service: return 'Service-based';
+      case BusinessType.both:    return 'Both';
+    }
+  }
+
+  static BusinessType fromKey(String? key) {
+    switch (key) {
+      case 'product': return BusinessType.product;
+      case 'service': return BusinessType.service;
+      default:        return BusinessType.both;
     }
   }
 }

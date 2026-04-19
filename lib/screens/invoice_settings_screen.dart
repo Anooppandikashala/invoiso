@@ -22,6 +22,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
   String _selectedLogoSize = 'medium';
   bool _showGstFields = true;
   bool _fractionalQuantity = false;
+  bool _showQuantity = true;
   bool _isLoading = true;
 
   @override
@@ -40,6 +41,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     final fractionalQty = await SettingsService.getFractionalQuantity();
     final qtyLabel = await SettingsService.getQuantityLabel();
     final logoSize = await SettingsService.getLogoSize();
+    final showQuantity = await SettingsService.getShowQuantity();
 
     setState(() {
       _selectedLogoPosition = position ?? 'left';
@@ -51,6 +53,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
       _showGstFields = showGst;
       _fractionalQuantity = fractionalQty;
       quantityLabelController.text = qtyLabel;
+      _showQuantity = showQuantity;
       _isLoading = false;
     });
   }
@@ -65,6 +68,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     await SettingsService.setSetting(SettingKey.showGstFields, _showGstFields.toString());
     await SettingsService.setSetting(SettingKey.fractionalQuantity, _fractionalQuantity.toString());
     await SettingsService.setSetting(SettingKey.quantityLabel, quantityLabelController.text.trim());
+    await SettingsService.setShowQuantity(_showQuantity);
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -147,6 +151,66 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                           spacing: 24,
                           runSpacing: 24,
                           children: [
+
+                            // Invoice Prefix
+                            SizedBox(
+                              width: fieldWidth,
+                              child: TextField(
+                                controller: invoicePrefixController,
+                                maxLength: 10,
+                                decoration: InputDecoration(
+                                  labelText: 'Invoice Prefix',
+                                  prefixIcon:
+                                  const Icon(Icons.confirmation_number),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderSide:
+                                    BorderSide(color: Colors.grey[300]!),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderSide: BorderSide(
+                                      color: Theme.of(context).primaryColor,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.grey[50],
+                                  counterText: '',
+                                ),
+                              ),
+                            ),
+
+                            // Invoice numbering info
+                            SizedBox(
+                              width: fieldWidth,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue[50],
+                                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                  border: Border.all(color: Colors.blue[200]!),
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Icon(Icons.info_outline, size: 16, color: Colors.blue[700]),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Invoice numbers are auto-generated and cannot be edited manually. '
+                                            'Each new invoice number is derived from the last invoice number stored in the database — including soft-deleted invoices. '
+                                            'If you created test invoices and deleted them, the counter will continue from where it left off.',
+                                        style: TextStyle(fontSize: 12, color: Colors.blue[800], height: 1.4),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                             // Company Logo Position
                             SizedBox(
                               width: fieldWidth,
@@ -221,38 +285,6 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                               ),
                             ),
 
-                            // Invoice Prefix
-                            SizedBox(
-                              width: fieldWidth,
-                              child: TextField(
-                                controller: invoicePrefixController,
-                                maxLength: 10,
-                                decoration: InputDecoration(
-                                  labelText: 'Invoice Prefix',
-                                  prefixIcon:
-                                  const Icon(Icons.confirmation_number),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                                    borderSide:
-                                    BorderSide(color: Colors.grey[300]!),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                                    borderSide: BorderSide(
-                                      color: Theme.of(context).primaryColor,
-                                      width: 2,
-                                    ),
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.grey[50],
-                                  counterText: '',
-                                ),
-                              ),
-                            ),
-
                             // Quantity Column Label
                             SizedBox(
                               width: fieldWidth,
@@ -281,34 +313,6 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                   filled: true,
                                   fillColor: Colors.grey[50],
                                   counterText: '',
-                                ),
-                              ),
-                            ),
-
-                            // Invoice numbering info
-                            SizedBox(
-                              width: fieldWidth,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue[50],
-                                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                                  border: Border.all(color: Colors.blue[200]!),
-                                ),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Icon(Icons.info_outline, size: 16, color: Colors.blue[700]),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        'Invoice numbers are auto-generated and cannot be edited manually. '
-                                        'Each new invoice number is derived from the last invoice number stored in the database — including soft-deleted invoices. '
-                                        'If you created test invoices and deleted them, the counter will continue from where it left off.',
-                                        style: TextStyle(fontSize: 12, color: Colors.blue[800], height: 1.4),
-                                      ),
-                                    ),
-                                  ],
                                 ),
                               ),
                             ),
@@ -349,39 +353,6 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                     _selectedCurrencyCode = value!;
                                   });
                                 },
-                              ),
-                            ),
-
-                            // Additional Info
-                            SizedBox(
-                              width: constraints.maxWidth,
-                              child: TextField(
-                                controller: additionalInfoController,
-                                maxLength: 300,
-                                maxLines: 3,
-                                decoration: InputDecoration(
-                                  labelText: 'Additional Information',
-                                  prefixIcon: const Icon(Icons.info_outline),
-                                  alignLabelWithHint: true,
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                                    borderSide:
-                                    BorderSide(color: Colors.grey[300]!),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                                    borderSide: BorderSide(
-                                      color: Theme.of(context).primaryColor,
-                                      width: 2,
-                                    ),
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.grey[50],
-                                  counterText: '',
-                                ),
                               ),
                             ),
 
@@ -439,6 +410,70 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                   onChanged: (val) =>
                                       setState(() => _fractionalQuantity = val),
                                   activeColor: Theme.of(context).primaryColor,
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 12),
+
+                            // Show Quantity Toggle
+                            SizedBox(
+                              width: constraints.maxWidth,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[50],
+                                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                  border: Border.all(color: Colors.grey[300]!),
+                                ),
+                                child: SwitchListTile(
+                                  title: const Text('Show Quantity Field'),
+                                  subtitle: const Text(
+                                    'Hide quantity for service-based billing; price column becomes "Rate"',
+                                  ),
+                                  secondary: Icon(
+                                    Icons.onetwothree_rounded,
+                                    color: _showQuantity
+                                        ? Theme.of(context).primaryColor
+                                        : Colors.grey,
+                                  ),
+                                  value: _showQuantity,
+                                  onChanged: (val) =>
+                                      setState(() => _showQuantity = val),
+                                  activeColor: Theme.of(context).primaryColor,
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 12),
+                            // Additional Info
+                            SizedBox(
+                              width: constraints.maxWidth,
+                              child: TextField(
+                                controller: additionalInfoController,
+                                maxLength: 300,
+                                maxLines: 3,
+                                decoration: InputDecoration(
+                                  labelText: 'Additional Information',
+                                  prefixIcon: const Icon(Icons.info_outline),
+                                  alignLabelWithHint: true,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderSide:
+                                    BorderSide(color: Colors.grey[300]!),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderSide: BorderSide(
+                                      color: Theme.of(context).primaryColor,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.grey[50],
+                                  counterText: '',
                                 ),
                               ),
                             ),

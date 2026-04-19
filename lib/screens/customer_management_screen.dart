@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
+import 'package:invoiso/invoisoColors.dart';
 import 'package:invoiso/utils/formatters.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -891,12 +892,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Theme.of(context).primaryColor,
-                  Theme.of(context).primaryColor.withValues(alpha: 0.8),
-                ],
-              ),
+              gradient: CustomerManagementScreenColors.topBarBackgroundGradientColor,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
@@ -1049,12 +1045,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Theme.of(context).primaryColor,
-            Theme.of(context).primaryColor.withValues(alpha: 0.8),
-          ],
-        ),
+        gradient: CustomerManagementScreenColors.topBarBackgroundGradientColor,
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(16),
           topRight: Radius.circular(16),

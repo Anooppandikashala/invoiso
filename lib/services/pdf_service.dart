@@ -31,6 +31,8 @@ class PDFService {
     final rawPrefix = await SettingsService.getSetting(SettingKey.invoicePrefix) ?? 'INV';
     final invoicePrefix = rawPrefix.isNotEmpty ? '$rawPrefix-' : '';
     final showGst = await SettingsService.getShowGstFields();
+    final showQuantity = await SettingsService.getShowQuantity();
+    final businessType = await SettingsService.getBusinessType();
 
     // UPI QR settings — use the per-invoice UPI ID; fall back to the default
     // UPI from settings so that invoices created before this feature still
@@ -53,18 +55,21 @@ class PDFService {
         pdf.addPage(await _buildClassicTemplate(
           invoice, company, currencySymbol, invoicePrefix,
           upiId: effectiveUpiId, showUpiQr: showUpiQr, showGst: showGst,
+          showQuantity: showQuantity, businessType: businessType,
         ));
         break;
       case InvoiceTemplate.modern:
         pdf.addPage(await _buildModernTemplate(
           invoice, company, currencySymbol, invoicePrefix,
           upiId: effectiveUpiId, showUpiQr: showUpiQr, showGst: showGst,
+          showQuantity: showQuantity, businessType: businessType,
         ));
         break;
       case InvoiceTemplate.minimal:
         pdf.addPage(await _buildMinimalTemplate(
           invoice, company, currencySymbol, invoicePrefix,
           upiId: effectiveUpiId, showUpiQr: showUpiQr, showGst: showGst,
+          showQuantity: showQuantity, businessType: businessType,
         ));
         break;
     }
@@ -75,6 +80,7 @@ class PDFService {
   static Future<pw.MultiPage> _buildClassicTemplate(
     Invoice invoice, CompanyInfo? company, String currencySymbol, String invoicePrefix, {
     String? upiId, bool showUpiQr = false, bool showGst = true,
+    bool showQuantity = true, BusinessType businessType = BusinessType.both,
   }) async
   {
     final accentColor = PdfColors.indigo900; // Use a strong accent color
@@ -180,7 +186,7 @@ class PDFService {
         pw.SizedBox(height: 25),
 
         // 4. Items Table
-        _buildInvoiceTable(invoice, headerColor: accentColor, textColor: PdfColors.white, showGst: showGst), // Using accent color for table header
+        _buildInvoiceTable(invoice, headerColor: accentColor, textColor: PdfColors.white, showGst: showGst, showQuantity: showQuantity, businessType: businessType),
 
         pw.SizedBox(height: 20),
 
@@ -222,6 +228,7 @@ class PDFService {
   static Future<pw.MultiPage> _buildMinimalTemplate(
     Invoice invoice, CompanyInfo? company, String currencySymbol, String invoicePrefix, {
     String? upiId, bool showUpiQr = false, bool showGst = true,
+    bool showQuantity = true, BusinessType businessType = BusinessType.both,
   }) async
   {
     final accentColor = PdfColors.grey700; // Use a strong, neutral accent
@@ -313,7 +320,7 @@ class PDFService {
         pw.SizedBox(height: 30),
 
         // 3. Table (Clean, no external borders)
-        _buildInvoiceTable(invoice, headerColor: PdfColors.grey100, textColor: PdfColors.black, showGst: showGst),
+        _buildInvoiceTable(invoice, headerColor: PdfColors.grey100, textColor: PdfColors.black, showGst: showGst, showQuantity: showQuantity, businessType: businessType),
 
         pw.SizedBox(height: 20),
 
@@ -357,6 +364,7 @@ class PDFService {
   static Future<pw.MultiPage> _buildModernTemplate(
     Invoice invoice, CompanyInfo? company, String currencySymbol, String invoicePrefix, {
     String? upiId, bool showUpiQr = false, bool showGst = true,
+    bool showQuantity = true, BusinessType businessType = BusinessType.both,
   }) async
   {
     final accentColor = PdfColors.blue600;
@@ -488,7 +496,7 @@ class PDFService {
         // 4. Table Section
         pw.Padding(
           padding: const pw.EdgeInsets.symmetric(horizontal: 30),
-          child: _buildInvoiceTable(invoice, headerColor: accentColor, textColor: PdfColors.white, showGst: showGst),
+          child: _buildInvoiceTable(invoice, headerColor: accentColor, textColor: PdfColors.white, showGst: showGst, showQuantity: showQuantity, businessType: businessType),
         ),
 
         pw.SizedBox(height: 25),
@@ -709,9 +717,10 @@ class PDFService {
       child: pw.Column(
         children: [
           _totalRow("Subtotal", "$currencySymbol ${invoice.subtotal.toStringAsFixed(2)}"),
-          _totalRow(
-              _taxLabel(invoice),
-              "$currencySymbol ${invoice.tax.toStringAsFixed(2)}"),
+          if (invoice.taxMode != TaxMode.none)
+            _totalRow(
+                _taxLabel(invoice),
+                "$currencySymbol ${invoice.tax.toStringAsFixed(2)}"),
           ...invoice.additionalCosts.map((c) => _totalRow(
                 c.label.isEmpty ? 'Extra Cost' : c.label,
                 "$currencySymbol ${c.amount.toStringAsFixed(2)}",
@@ -804,9 +813,11 @@ class PDFService {
   }
 
   // Build Invoice Table - MODIFIED
-  static pw.Widget _buildInvoiceTable(Invoice invoice, {PdfColor headerColor = PdfColors.grey200, PdfColor textColor = PdfColors.black, bool showGst = true})
+  static pw.Widget _buildInvoiceTable(Invoice invoice, {PdfColor headerColor = PdfColors.grey200, PdfColor textColor = PdfColors.black, bool showGst = true, bool showQuantity = true, BusinessType businessType = BusinessType.both})
   {
     final bool showItemTax = invoice.taxMode == TaxMode.perItem;
+    final bool showType = businessType == BusinessType.both;
+    final String priceHeader = showQuantity ? 'Price' : 'Rate';
 
     // Build column widths dynamically based on which columns are visible
     int col = 0;
@@ -816,8 +827,8 @@ class PDFService {
       if (showGst) col: const pw.FlexColumnWidth(2),  // HSN Code
     };
     if (showGst) col++;
-    colWidths[col++] = const pw.FlexColumnWidth(1);    // Qty
-    colWidths[col++] = const pw.FlexColumnWidth(1.5);  // Price
+    if (showQuantity) colWidths[col++] = const pw.FlexColumnWidth(1);    // Qty
+    colWidths[col++] = const pw.FlexColumnWidth(1.5);  // Price/Rate
     if (showItemTax) colWidths[col++] = const pw.FlexColumnWidth(1); // Tax %
     colWidths[col++] = const pw.FlexColumnWidth(1.5);  // Discount
     colWidths[col++] = const pw.FlexColumnWidth(1.5);  // Total
@@ -831,8 +842,8 @@ class PDFService {
             _buildTableCell('Sl No', isHeader: true, textColor: textColor),
             _buildTableCell('Item Name', isHeader: true, textColor: textColor),
             if (showGst) _buildTableCell('HSN Code', isHeader: true, textColor: textColor),
-            _buildTableCell(invoice.quantityLabel?.isNotEmpty == true ? invoice.quantityLabel! : 'Qty', isHeader: true, textColor: textColor),
-            _buildTableCell('Price', isHeader: true, textColor: textColor),
+            if (showQuantity) _buildTableCell(invoice.quantityLabel?.isNotEmpty == true ? invoice.quantityLabel! : 'Qty', isHeader: true, textColor: textColor),
+            _buildTableCell(priceHeader, isHeader: true, textColor: textColor),
             if (showItemTax) _buildTableCell('Tax %', isHeader: true, textColor: textColor),
             _buildTableCell('Discount', isHeader: true, textColor: textColor),
             _buildTableCell('Total', isHeader: true, textColor: textColor),
@@ -845,9 +856,22 @@ class PDFService {
             decoration: index % 2 == 0 ? const pw.BoxDecoration(color: PdfColors.white) : const pw.BoxDecoration(color: PdfColors.grey100),
             children: [
               _buildTableCell('${index + 1}'),
-              _buildTableCell(item.product.name),
+              pw.Padding(
+                padding: const pw.EdgeInsets.all(4),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(item.product.name, style: const pw.TextStyle(fontSize: 9)),
+                    if (showType)
+                      pw.Text(
+                        item.product.type == 'service' ? 'Service' : 'Product',
+                        style: pw.TextStyle(fontSize: 7, color: PdfColors.grey600, fontStyle: pw.FontStyle.italic),
+                      ),
+                  ],
+                ),
+              ),
               if (showGst) _buildTableCell(item.product.hsncode),
-              _buildTableCell(item.quantity == item.quantity.roundToDouble() ? item.quantity.toInt().toString() : item.quantity.toString()),
+              if (showQuantity) _buildTableCell(item.quantity == item.quantity.roundToDouble() ? item.quantity.toInt().toString() : item.quantity.toString()),
               _buildTableCell(item.effectivePrice.toStringAsFixed(2)),
               if (showItemTax) _buildTableCell('${item.product.tax_rate}%'),
               _buildTableCell(item.discount.toStringAsFixed(2)),
@@ -860,7 +884,7 @@ class PDFService {
             pw.Container(height: 1, color: PdfColors.grey400),
             pw.Container(height: 1, color: PdfColors.grey400),
             if (showGst) pw.Container(height: 1, color: PdfColors.grey400),
-            pw.Container(height: 1, color: PdfColors.grey400),
+            if (showQuantity) pw.Container(height: 1, color: PdfColors.grey400),
             pw.Container(height: 1, color: PdfColors.grey400),
             if (showItemTax) pw.Container(height: 1, color: PdfColors.grey400),
             pw.Container(height: 1, color: PdfColors.grey400),

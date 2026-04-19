@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/common.dart';
 import 'package:invoiso/constants.dart';
 import 'package:invoiso/database/invoice_service.dart';
+import 'package:invoiso/invoisoColors.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/providers/invoice_provider.dart';
 import 'package:invoiso/services/export_service.dart';
@@ -833,14 +834,7 @@ class _InvoiceManagementScreenState
                                   // Table header
                                   Container(
                                     decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          Theme.of(context).primaryColor,
-                                          Theme.of(context)
-                                              .primaryColor
-                                              .withValues(alpha:0.8),
-                                        ],
-                                      ),
+                                      gradient: InvoiceManagementScreenColors.topBarBackgroundGradientColor,
                                       borderRadius: const BorderRadius.only(
                                         topLeft: Radius.circular(12),
                                         topRight: Radius.circular(12),

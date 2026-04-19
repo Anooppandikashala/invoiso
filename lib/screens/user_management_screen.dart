@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:invoiso/database/user_service.dart';
+import 'package:invoiso/invoisoColors.dart';
 import '../constants.dart';
 import '../models/user.dart';
 import '../utils/password_utils.dart';
@@ -560,12 +561,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Theme.of(context).primaryColor.withValues(alpha: 0.8),
-                  Theme.of(context).primaryColor,
-                ],
-              ),
+              gradient: UserManagementScreenColors.topBarBackgroundGradientColor,
               borderRadius:
               const BorderRadius.vertical(top: Radius.circular(16)),
             ),
@@ -852,12 +848,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Theme.of(context).primaryColor.withValues(alpha: 0.8),
-                  Theme.of(context).primaryColor,
-                ],
-              ),
+              gradient: UserManagementScreenColors.topBarBackgroundGradientColor,
               borderRadius:
               const BorderRadius.vertical(top: Radius.circular(16)),
             ),
@@ -1206,7 +1197,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   child: _buildUserForm(),
                 ),
                 Expanded(
-                  flex: 3,
+                  flex: 4,
                   child: _buildUsersList(),
                 ),
               ],

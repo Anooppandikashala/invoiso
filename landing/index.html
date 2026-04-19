@@ -24,7 +24,7 @@
     <!-- Open Graph / Facebook -->
     <meta property="og:title" content="Invoiso – Free Offline Invoice Software for Small Business" />
     <meta property="og:description" content="Free offline invoice software for small business. Create PDF invoices, track payments, manage customers — no subscription, no cloud, no account. Free forever on Windows &amp; Linux." />
-    <meta property="og:image" content="https://invoiso.co.in/assets/images/invoiso-banner.webp" />
+    <meta property="og:image" content="https://invoiso.co.in/assets/images/invoiso_banner.webp" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="Invoiso — Offline Invoicing Software for Windows and Linux" />
@@ -37,7 +37,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Invoiso – Free Offline Invoice Software for Small Business" />
     <meta name="twitter:description" content="Free offline invoice software for small business. PDF invoices, payment tracking, customer management — no subscription, no cloud, no account. Windows &amp; Linux." />
-    <meta name="twitter:image" content="https://invoiso.co.in/assets/images/invoiso-banner.webp" />
+    <meta name="twitter:image" content="https://invoiso.co.in/assets/images/invoiso_banner.webp" />
     <meta name="twitter:image:alt" content="Invoiso — Offline Invoicing Software" />
 
     <!-- Favicon & Icons -->
@@ -51,12 +51,17 @@
     <!-- Fonts -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" />
 
-    <!-- CSS Libraries -->
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css" />
-
+    <!-- CSS: critical (local, render-blocking) -->
+    <link rel="stylesheet" href="tailwind.css" />
     <link rel="stylesheet" href="style.css" />
+
+    <!-- CSS: non-critical (deferred, does not block render) -->
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" /></noscript>
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css" /></noscript>
+
+    <script src="https://analytics.ahrefs.com/analytics.js" data-key="VyIavFbTCewNANvEqSMTLQ" async></script>
 
     <!-- Structured Data: Website -->
     <script type="application/ld+json">
@@ -97,7 +102,7 @@
       "operatingSystem": "Windows, Linux",
       "applicationCategory": "BusinessApplication",
       "description": "Free and offline invoicing software for Windows and Linux. Create professional PDF invoices, manage customers and products without internet access.",
-      "softwareVersion": "3.4.2",
+      "softwareVersion": "3.8.0",
       "releaseNotes": "https://invoiso.co.in/changelog.html",
       "license": "https://github.com/Anooppandikashala/invoiso/blob/main/LICENSE",
       "featureList": [
@@ -128,9 +133,9 @@
         "@type": "Person",
         "name": "Anoop Pandikashala"
       },
-      "image": "https://invoiso.co.in/assets/images/invoiso-banner.webp",
+      "image": "https://invoiso.co.in/assets/images/invoiso_banner.webp",
       "url": "https://invoiso.co.in/",
-      "downloadUrl": "https://github.com/Anooppandikashala/invoiso/releases/latest",
+      "downloadUrl": "https://invoiso.co.in/download.html",
       "offers": {
         "@type": "Offer",
         "price": "0",
@@ -141,7 +146,13 @@
         "author": { "@type": "Person", "name": "Raul V" },
         "reviewBody": "I've been looking for a long time for a simple but useful invoicing program, multi platform. Then I found Invoiso and I was amazed! Beautiful interface and functionality, it does everything you need without complicating things. Try it, you will not be disappointed.",
         "reviewRating": { "@type": "Rating", "ratingValue": "5", "bestRating": "5" }
-      }]
+      }],
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "5",
+        "reviewCount": "1",
+        "bestRating": "5"
+      }
     }
     </script>
 
@@ -266,14 +277,42 @@
       ]
     }
     </script>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-D7RSN6EGR6"></script>
+    <!-- Structured Data: VideoObject -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "VideoObject",
+      "name": "Invoiso App Walkthrough — Free Offline Invoice Software",
+      "description": "Full walkthrough of Invoiso — from setup to creating your first invoice. Covers company settings, customers, products, PDF templates, UPI QR code, and payment tracking.",
+      "thumbnailUrl": "https://img.youtube.com/vi/HH17FE3C4tM/maxresdefault.jpg",
+      "uploadDate": "2025-01-01",
+      "embedUrl": "https://www.youtube-nocookie.com/embed/HH17FE3C4tM",
+      "contentUrl": "https://www.youtube.com/watch?v=HH17FE3C4tM",
+      "publisher": {
+        "@type": "Organization",
+        "name": "Invoiso",
+        "url": "https://invoiso.co.in/"
+      }
+    }
+    </script>
+
+    <!-- Google Analytics: deferred until browser is idle -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-
       gtag('config', 'G-D7RSN6EGR6');
+      (function() {
+        function loadGA() {
+          var s = document.createElement('script');
+          s.async = true;
+          s.src = 'https://www.googletagmanager.com/gtag/js?id=G-D7RSN6EGR6';
+          document.head.appendChild(s);
+        }
+        'requestIdleCallback' in window
+          ? requestIdleCallback(loadGA, { timeout: 4000 })
+          : window.addEventListener('load', function() { setTimeout(loadGA, 1000); });
+      })();
     </script>
   </head>
 
@@ -295,7 +334,7 @@
       <nav class="container mx-auto flex justify-between items-center py-4 px-6 max-w-7xl" aria-label="Main navigation">
         <a href="#home" class="logo-link flex items-center text-3xl font-bold tracking-tight" style="text-decoration:none;">
           <img src="assets/images/logo.svg" alt="" class="w-8 h-8 mr-2" aria-hidden="true" />
-          Invoiso
+          <span class="logo-text-accent">Invoiso</span>
         </a>
         <ul class="hidden md:flex space-x-10 font-medium">
           <li><a href="#home" class="transition-colors duration-300">Home</a></li>
@@ -305,7 +344,7 @@
           <li><a href="#demo" class="transition-colors duration-300">Demo</a></li>
           <li><a href="faq.html" class="transition-colors duration-300">FAQ</a></li>
           <li><a href="changelog.html" class="transition-colors duration-300">Updates</a></li>
-          <li><a href="download.html" class="transition-colors duration-300">Download</a></li>
+          <li><a href="download.html" class="nav-cta">Download</a></li>
           <li><a href="#contact" class="transition-colors duration-300">Contact</a></li>
         </ul>
 
@@ -331,7 +370,7 @@
           <li><a href="#demo" class="block py-2 transition-colors">Demo</a></li>
           <li><a href="faq.html" class="block py-2 transition-colors">FAQ</a></li>
           <li><a href="changelog.html" class="block py-2 transition-colors">Updates</a></li>
-          <li><a href="download.html" class="block py-2 transition-colors">Download</a></li>
+          <li><a href="download.html" class="block py-2 nav-cta">Download</a></li>
           <li><a href="#contact" class="block py-2 transition-colors">Contact</a></li>
         </ul>
       </div>
@@ -343,10 +382,14 @@
         <div class="hero-noise" aria-hidden="true"></div>
         <div class="container mx-auto px-6 relative z-10">
           <div class="fade-in-up">
+            <div class="hero-badge">
+              <i class="fab fa-github" aria-hidden="true"></i>
+              Open Source &nbsp;&middot;&nbsp; Free Forever &nbsp;&middot;&nbsp; Windows &amp; Linux
+            </div>
             <h1 class="text-4xl md:text-6xl font-bold mb-4 leading-tight">
               Free Offline Invoice &amp; Billing Software<br/>for <span style="color:var(--primary)">Small Business</span>
             </h1>
-            <p class="text-lg md:text-xl mb-4 max-w-2xl mx-auto leading-relaxed font-semibold" style="color:rgba(226,232,240,0.65)">
+            <p class="text-lg md:text-xl mb-4 max-w-2xl mx-auto leading-relaxed font-bold tracking-wide" style="color:var(--primary);letter-spacing:0.08em;">
               Simple. Fast. Offline.
             </p>
             <p class="text-base md:text-lg mb-12 max-w-2xl mx-auto leading-relaxed" style="color:rgba(226,232,240,0.80)">
@@ -377,6 +420,15 @@
               </a>
               -->
             </div>
+            <!-- Trust indicators -->
+            <div class="hero-trust-strip" style="margin-top:32px;">
+              <span class="trust-chip"><i class="fas fa-check-circle" aria-hidden="true"></i> Free forever</span>
+              <span class="trust-chip"><i class="fab fa-github" aria-hidden="true"></i> Open source</span>
+              <span class="trust-chip"><i class="fas fa-plug-circle-xmark" aria-hidden="true"></i> Works offline</span>
+              <span class="trust-chip"><i class="fas fa-user-slash" aria-hidden="true"></i> No registration</span>
+              <span class="trust-chip"><i class="fas fa-file-invoice" aria-hidden="true"></i> GST ready</span>
+              <span class="trust-chip"><i class="fas fa-qrcode" aria-hidden="true"></i> UPI QR support</span>
+            </div>
           </div>
         </div>
       </section>
@@ -384,12 +436,12 @@
       <!-- Features Section -->
       <section id="features" class="py-20 features-section">
         <div class="container mx-auto px-6">
-          <div class="text-center mb-10">
+          <div class="text-center mb-10 reveal">
             <h2 class="section-title text-4xl font-bold mb-3 primary-text">Free Invoice Software Features</h2>
             <p style="color:var(--text-muted)">Everything you need to manage invoices professionally — 100% free, 100% offline</p>
           </div>
 
-          <div class="grid md:grid-cols-2 gap-3 max-w-4xl mx-auto">
+          <div class="grid md:grid-cols-2 gap-4 max-w-4xl mx-auto">
 
             <div class="feature-item">
               <div class="feature-icon-box" style="background:rgba(79,142,247,0.14)">
@@ -494,16 +546,6 @@
           </div>
           
         </div>
-        <div class="hero-trust-strip">
-              <span class="trust-chip"><i class="fas fa-check-circle" aria-hidden="true"></i> Free forever</span>
-              <span class="trust-chip"><i class="fab fa-github" aria-hidden="true"></i> Open source</span>
-              <span class="trust-chip"><i class="fas fa-plug-circle-xmark" aria-hidden="true"></i> Works offline</span>
-              <span class="trust-chip"><i class="fas fa-user-slash" aria-hidden="true"></i> No registration</span>
-              <span class="trust-chip"><i class="fas fa-file-invoice" aria-hidden="true"></i> GST ready</span>
-              <span class="trust-chip"><i class="fas fa-qrcode" aria-hidden="true"></i> UPI QR support</span>
-              <span class="trust-chip"><i class="fas fa-money-bill-wave" aria-hidden="true"></i> Payment tracking</span>
-              <span class="trust-chip"><i class="fas fa-user-shield" aria-hidden="true"></i> Role-based access</span>
-            </div>
       </section>
 
       <!-- Offline Emphasis Section -->
@@ -548,11 +590,11 @@
       <!-- Who Is This For Section -->
       <section id="who" class="py-20 features-section">
         <div class="container mx-auto px-6">
-          <div class="text-center mb-10">
+          <div class="text-center mb-10 reveal">
             <h2 class="section-title text-4xl font-bold mb-3 primary-text">Free Billing Software for Freelancers &amp; Small Business</h2>
             <p style="color:var(--text-muted)">Built for anyone who needs professional invoicing without the complexity or cost</p>
           </div>
-          <div class="grid md:grid-cols-2 gap-3 max-w-4xl mx-auto">
+          <div class="grid md:grid-cols-2 gap-4 max-w-4xl mx-auto">
 
             <div class="feature-item">
               <div class="feature-icon-box" style="background:rgba(79,142,247,0.14)">
@@ -601,34 +643,34 @@
       <!-- How It Works Section -->
       <section id="how-it-works" class="py-20 about-section relative overflow-hidden">
         <div class="container mx-auto px-6 max-w-6xl relative z-10">
-          <div class="text-center mb-12">
+          <div class="text-center mb-12 reveal">
             <h2 class="section-title text-4xl font-bold mb-3 primary-text">How to Create Free Invoices with Invoiso</h2>
             <p style="color:var(--text-muted)">Get started in minutes — no account, no setup, no internet required</p>
           </div>
           <div class="grid md:grid-cols-4 gap-6 text-center">
 
-            <div class="glass-card p-6 rounded-2xl">
+            <div class="glass-card p-6 rounded-2xl step-card reveal reveal-d1">
               <div class="text-3xl mb-4" style="color:var(--primary)"><i class="fas fa-download" aria-hidden="true"></i></div>
               <div class="text-xs font-bold mb-2 tracking-widest" style="color:var(--primary)">STEP 1</div>
               <h3 class="font-bold mb-2 text-base" style="color:var(--text)">Download &amp; Install</h3>
               <p class="text-sm" style="color:var(--text-muted)">Install Invoiso on Windows or Linux. No account or registration required.</p>
             </div>
 
-            <div class="glass-card p-6 rounded-2xl">
+            <div class="glass-card p-6 rounded-2xl step-card reveal reveal-d2">
               <div class="text-3xl mb-4" style="color:var(--primary)"><i class="fas fa-building" aria-hidden="true"></i></div>
               <div class="text-xs font-bold mb-2 tracking-widest" style="color:var(--primary)">STEP 2</div>
               <h3 class="font-bold mb-2 text-base" style="color:var(--text)">Set Up Your Company</h3>
               <p class="text-sm" style="color:var(--text-muted)">Enter your business name, logo, GSTIN, and UPI ID in settings. Takes under a minute.</p>
             </div>
 
-            <div class="glass-card p-6 rounded-2xl">
+            <div class="glass-card p-6 rounded-2xl step-card reveal reveal-d3">
               <div class="text-3xl mb-4" style="color:var(--primary)"><i class="fas fa-file-invoice" aria-hidden="true"></i></div>
               <div class="text-xs font-bold mb-2 tracking-widest" style="color:var(--primary)">STEP 3</div>
               <h3 class="font-bold mb-2 text-base" style="color:var(--text)">Create an Invoice</h3>
               <p class="text-sm" style="color:var(--text-muted)">Select a customer, add products, configure tax, and choose a PDF template.</p>
             </div>
 
-            <div class="glass-card p-6 rounded-2xl">
+            <div class="glass-card p-6 rounded-2xl step-card reveal reveal-d4">
               <div class="text-3xl mb-4" style="color:var(--primary)"><i class="fas fa-share-alt" aria-hidden="true"></i></div>
               <div class="text-xs font-bold mb-2 tracking-widest" style="color:var(--primary)">STEP 4</div>
               <h3 class="font-bold mb-2 text-base" style="color:var(--text)">Export &amp; Share</h3>
@@ -646,7 +688,7 @@
           <div class="absolute bottom-20 right-20 w-96 h-96 bg-purple-600 rounded-full blur-3xl"></div>
         </div>
         <div class="container mx-auto px-6 max-w-5xl relative z-10">
-          <div class="text-center mb-10">
+          <div class="text-center mb-10 reveal">
             <h2 class="section-title text-4xl font-bold mb-3 primary-text">Why Invoiso Is the Best Free Offline Invoice App</h2>
           </div>
           <div class="glass-card p-8 rounded-2xl">
@@ -685,8 +727,8 @@
       <!-- Screenshots Section -->
       <section id="screenshots" class="py-20 screenshots-section">
         <div class="container mx-auto px-6 text-center">
-          <h2 class="section-title text-4xl font-bold mb-3 primary-text">Invoiso in Action — Free Invoice Software Screenshots</h2>
-          <p class="mb-8 max-w-2xl mx-auto" style="color:var(--text-muted)">Explore the intuitive interface designed for seamless invoice management</p>
+          <h2 class="section-title text-4xl font-bold mb-3 primary-text reveal">Invoiso in Action — Free Invoice Software Screenshots</h2>
+          <p class="mb-8 max-w-2xl mx-auto reveal" style="color:var(--text-muted)">Explore the intuitive interface designed for seamless invoice management</p>
 
           <!-- Category filter chips -->
           <div class="screenshots-chips" id="screenshots-chips" role="group" aria-label="Filter screenshots by category"></div>
@@ -699,10 +741,10 @@
 
           <noscript>
             <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; margin-top:24px;">
-              <img src="assets/images/screenshots/dashboard.webp" alt="Invoiso dashboard showing total revenue, recent invoices and business overview" width="1280" height="800" style="width:100%;border-radius:8px;" />
-              <img src="assets/images/screenshots/new_invoice1.webp" alt="Create a new invoice in Invoiso — select customer, add products and set tax rate" width="1280" height="800" style="width:100%;border-radius:8px;" />
-              <img src="assets/images/screenshots/invoice_pdf.webp" alt="Professional PDF invoice generated by Invoiso with company logo and item breakdown" width="1280" height="800" style="width:100%;border-radius:8px;" />
-              <img src="assets/images/screenshots/classic_pdf_template.webp" alt="Classic PDF invoice template with branded header — Invoiso" width="1280" height="800" style="width:100%;border-radius:8px;" />
+              <img src="assets/images/screenshots/dashboard.png" alt="Invoiso dashboard showing total revenue, recent invoices and business overview" width="1280" height="800" style="width:100%;border-radius:8px;" />
+              <img src="assets/images/screenshots/create_new_invoice1.png" alt="Create a new invoice in Invoiso — select customer, add products and set tax rate" width="1280" height="800" style="width:100%;border-radius:8px;" />
+              <img src="assets/images/screenshots/invoice_pdf_view.png" alt="Professional PDF invoice generated by Invoiso with company logo and item breakdown" width="1280" height="800" style="width:100%;border-radius:8px;" />
+              <img src="assets/images/screenshots/template_classic.png" alt="Classic PDF invoice template with branded header — Invoiso" width="1280" height="800" style="width:100%;border-radius:8px;" />
             </div>
           </noscript>
 
@@ -718,20 +760,26 @@
       <!-- App Walkthrough Video Section -->
       <section id="demo" class="py-20 about-section">
         <div class="container mx-auto px-6 max-w-4xl">
-          <div class="text-center mb-10">
+          <div class="text-center mb-10 reveal">
             <h2 class="section-title text-4xl font-bold mb-3 primary-text">Invoiso Demo — Free Offline Invoice Software Walkthrough</h2>
             <p style="color:var(--text-muted)">Full walkthrough of Invoiso — from setup to your first invoice</p>
           </div>
-          <div class="glass-card rounded-2xl overflow-hidden" style="position:relative;padding-top:56.25%;">
-            <iframe
-              src="https://www.youtube-nocookie.com/embed/HH17FE3C4tM?rel=0&origin=https://invoiso.co.in"
-              title="Invoiso App Walkthrough"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              referrerpolicy="strict-origin-when-cross-origin"
-              allowfullscreen
-              loading="lazy"
-              style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"
-            ></iframe>
+          <div class="glass-card rounded-2xl overflow-hidden yt-facade"
+               data-id="HH17FE3C4tM"
+               data-title="Invoiso App Walkthrough"
+               style="position:relative;padding-top:56.25%;"
+               role="button" tabindex="0"
+               aria-label="Play: Invoiso App Walkthrough">
+            <img src="https://i.ytimg.com/vi/HH17FE3C4tM/maxresdefault.jpg"
+                 alt="Invoiso App Walkthrough — click to play"
+                 width="1280" height="720" loading="lazy"
+                 style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;" />
+            <button class="yt-play-btn" type="button" tabindex="-1" aria-hidden="true">
+              <svg viewBox="0 0 68 48" width="68" height="48">
+                <path d="M66.52,7.74c-0.78-2.93-2.49-5.41-5.42-6.19C55.79,.13,34,0,34,0S12.21,.13,6.9,1.55 C3.97,2.33,2.27,4.81,1.48,7.74C0.06,13.05,0,24,0,24s0.06,10.95,1.48,16.26c0.78,2.93,2.49,5.41,5.42,6.19 C12.21,47.87,34,48,34,48s21.79-0.13,27.1-1.55c2.93-0.78,4.64-3.26,5.42-6.19C67.94,34.95,68,24,68,24S67.94,13.05,66.52,7.74z" fill="#f00"></path>
+                <path d="M 45,24 27,14 27,34" fill="#fff"></path>
+              </svg>
+            </button>
           </div>
         </div>
       </section>
@@ -739,17 +787,19 @@
       <!-- Comparison Section -->
       <section id="comparison" class="py-20 features-section">
         <div class="container mx-auto px-6 max-w-5xl">
-          <div class="text-center mb-10">
-            <h2 class="section-title text-4xl font-bold mb-3 primary-text">Why Invoiso Is the Best Free Invoicing Software</h2>
+          <div class="text-center mb-10 reveal">
+            <h2 class="section-title text-4xl font-bold mb-3 primary-text">Invoiso vs Zoho Invoice vs Wave — Feature Comparison</h2>
             <p style="color:var(--text-muted)">How Invoiso compares to Wave, Zoho Invoice, and other cloud-based invoicing tools</p>
           </div>
           <div class="glass-card rounded-2xl overflow-hidden">
             <div class="overflow-x-auto">
-              <table style="width:100%;border-collapse:collapse;font-size:14px;">
+              <table class="comparison-table" style="width:100%;border-collapse:collapse;font-size:14px;">
                 <thead>
                   <tr style="background:var(--primary)">
                     <th style="padding:14px 20px;text-align:left;color:#fff;font-weight:600;">Feature</th>
-                    <th style="padding:14px 20px;text-align:center;color:#fff;font-weight:700;">Invoiso</th>
+                    <th style="padding:14px 20px;text-align:center;color:#fff;font-weight:700;">
+                      Invoiso <span style="display:inline-block;background:rgba(255,255,255,0.25);color:#fff;font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:999px;margin-left:6px;letter-spacing:0.05em;vertical-align:middle;">★ Best</span>
+                    </th>
                     <th style="padding:14px 20px;text-align:center;color:rgba(255,255,255,0.75);font-weight:600;">Zoho Invoice</th>
                     <th style="padding:14px 20px;text-align:center;color:rgba(255,255,255,0.75);font-weight:600;">Wave</th>
                   </tr>
@@ -822,7 +872,7 @@
       <!-- FAQ Teaser Section -->
       <section id="faq" class="py-20 faq-section">
         <div class="container mx-auto px-6 max-w-3xl text-center">
-          <div class="mb-10">
+          <div class="mb-10 reveal">
             <h2 class="section-title text-4xl font-bold mb-3 primary-text">Frequently Asked Questions</h2>
             <p style="color:var(--text-muted)">Quick answers to the most common questions</p>
           </div>
@@ -893,7 +943,7 @@
       <!-- Testimonials Section -->
       <section id="testimonials" class="py-20 testimonials-section">
         <div class="container mx-auto px-6">
-          <div class="text-center mb-12">
+          <div class="text-center mb-12 reveal">
             <h2 class="section-title text-4xl font-bold mb-3 primary-text">What People Say</h2>
             <p style="color:var(--text-muted)">Real feedback from real users</p>
           </div>
@@ -904,7 +954,7 @@
       <!-- Contact Section -->
       <section id="contact" class="py-16 contact-section">
         <div class="container mx-auto px-6 max-w-lg">
-          <div class="text-center mb-8">
+          <div class="text-center mb-8 reveal">
             <h2 class="section-title text-4xl font-bold mb-3 primary-text">Get in Touch</h2>
             <p style="color:var(--text-muted)">Questions or feedback? We'd love to hear from you.</p>
           </div>
@@ -970,294 +1020,6 @@
       </div>
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
-    <script>
-    // --- Testimonials data ---
-    // To add a new review, just push another object into this array.
-    var testimonials = [
-      //Uncomment after client approval:
-      /*{
-        name: 'Keyson',
-        location: 'Jamaica',
-        text: 'All-in-all, your app is a very fantastic piece of software! I look forward to supporting this project in the future, where you can probably add more features or what not! Well done bro! 👏 👏👏',
-        stars: 5,
-      },*/
-      {
-        name: 'Raul V',
-        location: '',
-        text: 'I’ve been looking for a long time for a simple but useful invoicing program, multi platform. I found complete accounting suites, complicated, and not really useful if you just want to create invoices and keep record of payments and sales taxes. Then I found Invoiso and I was amazed!, beautiful interface and functionality, it does everything you need without complicating things like the full accounting suites. Try it, you will not be disappointed.',
-        stars: 5,
-      }
-      
-    ];
-
-    (function buildTestimonials() {
-      // Hide the entire section when there are no reviews
-      if (testimonials.length === 0) {
-        var section = document.getElementById('testimonials');
-        if (section) section.style.display = 'none';
-        return;
-      }
-
-      var grid = document.getElementById('testimonials-grid');
-      if (!grid) return;
-      if (testimonials.length === 1) grid.classList.add('single');
-      else if (testimonials.length === 2) grid.classList.add('double');
-      testimonials.forEach(function (t) {
-        var initials = t.name.split(' ').map(function (w) { return w[0]; }).join('').toUpperCase().slice(0, 2);
-        var starsHtml = '';
-        for (var i = 0; i < 5; i++) {
-          starsHtml += i < t.stars
-            ? '<i class="fas fa-star" aria-hidden="true"></i>'
-            : '<i class="far fa-star" aria-hidden="true"></i>';
-        }
-        var card = document.createElement('div');
-        card.className = 'testimonial-card';
-        card.innerHTML =
-          '<div class="testimonial-header">' +
-            '<div class="testimonial-stars" aria-label="' + t.stars + ' out of 5 stars">' + starsHtml + '</div>' +
-            '<div class="testimonial-meta">' +
-              '<span class="testimonial-name">' + t.name + '</span>' +
-              '<span>, </span>' +
-              '<span class="testimonial-location">' + t.location + '</span>' +
-            '</div>' +
-          '</div>' +
-          '<p class="testimonial-text">' + t.text + '</p>';
-        grid.appendChild(card);
-      });
-    })();
-
-    document.addEventListener('DOMContentLoaded', function () {
-
-      // --- Screenshot data ---
-      const screenshots = [
-        { src: 'login.png',                   text: 'Invoice Login Page',               alt: 'Invoiso login screen — secure desktop invoicing app for Windows and Linux',                            category: 'Invoices' },
-        { src: 'dashboard.png',               text: 'Invoice Dashboard Page',           alt: 'Invoiso dashboard showing total revenue, invoice count, and recent invoices overview',                 category: 'Invoices' },
-        { src: 'create_new_invoice1.png',     text: 'Create Invoice Page',              alt: 'Create a new invoice in Invoiso — select customer, add products, apply tax rate',                      category: 'Invoices' },
-        { src: 'create_new_invoice2.png',     text: 'Create Invoice with Products',     alt: 'Invoiso invoice creation screen with products and line items added',                                   category: 'Invoices' },
-        { src: 'invoice_actions.png',         text: 'Invoice Created Successfully',     alt: 'Invoice created successfully in Invoiso — ready to preview, print or export as PDF',                   category: 'Invoices' },
-        { src: 'invoice_simple_view.png',     text: 'Invoice Details Page',             alt: 'Invoice details view in Invoiso showing customer info, line items and total amount due',               category: 'Invoices' },
-        { src: 'edit_invoice.png',            text: 'Edit Your Invoice',                alt: 'Edit an existing invoice in Invoiso — update customer, products and tax settings',                     category: 'Invoices' },
-        { src: 'duplicate_invoice_list.png',  text: 'Duplicate Invoice Action',         alt: 'Invoice Duplicating action',                                                                           category: 'Invoices' },
-        { src: 'invoice_lists_and_actions.png',text: 'Invoice Listing Page',            alt: 'Invoice management list in Invoiso showing all invoices with search, filter and bulk actions',         category: 'Invoices' },
-        { src: 'invoice_pdf_view.png',        text: 'Sample Invoice PDF',               alt: 'Professional PDF invoice generated by Invoiso with company logo, itemised list and total amount',      category: 'PDF' },
-        { src: 'invoice_print_view.png',      text: 'Sample Invoice PDF Print View',    alt: 'Professional PDF invoice Print View',                                                                  category: 'PDF' },
-        { src: 'Invoice_template_selection_screen.png',text: 'Invoice Templates',       alt: 'Invoiso PDF template selection — Classic, Modern and Minimal invoice templates side by side',          category: 'PDF' },
-        { src: 'template_classic.png',        text: 'Classic Invoice Template',         alt: 'Classic PDF invoice template with branded company header and itemised table — Invoiso',                category: 'PDF' },
-        { src: 'template_modern.png',         text: 'Modern Invoice Template',          alt: 'Modern PDF invoice template with blue header block and professional layout — Invoiso',                 category: 'PDF' },
-        { src: 'template_minimal.png',        text: 'Minimal Invoice Template',         alt: 'Minimal PDF invoice template — clean, simple and distraction-free design — Invoiso',                   category: 'PDF' },
-        { src: 'customer_list.png',           text: 'Customer Management Page',         alt: 'Customer management screen in Invoiso showing client list with search, sort and edit options',         category: 'Clients' },
-        { src: 'edit_customer.png',           text: 'Customer Editing Page',            alt: 'Edit customer details in Invoiso — name, email, phone, address and GSTIN fields',                      category: 'Clients' },
-        { src: 'product_list.png',            text: 'Product Management Page',          alt: 'Product management screen in Invoiso showing items with price, stock and HSN code',                    category: 'Products' },
-        { src: 'edit_product.png',            text: 'Product Editing Page',             alt: 'Edit product in Invoiso — set name, price, stock, HSN code and tax rate',                              category: 'Products' },
-        { src: 'system_users_management.png', text: 'User Management Page',             alt: 'User management screen in Invoiso — add and manage app users with role-based access',                  category: 'Settings' },
-        //{ src: 'user_edit.webp',              text: 'User Editing Page',                alt: 'Edit user account details in Invoiso — username, password and user type',                              category: 'Settings' },
-        { src: 'Company_settings_page.png',   text: 'Organisation Information',         alt: 'Company information settings in Invoiso — name, address, phone, email, GSTIN and logo',                category: 'Settings' },
-        { src: 'invoice_settings_page.png',   text: 'Invoice Settings',                 alt: 'Invoice settings screen in Invoiso — configure prefix, currency, tax and UPI QR code',                 category: 'Settings' },
-        { src: 'backup_and_restore_page.png', text: 'Backup Management',                alt: 'Backup and restore screen in Invoiso — one-click database backup to keep your data safe',              category: 'Settings' },
-        { src: 'software_info_page.png',      text: 'About Invoiso',                    alt: 'About Invoiso screen — version, developer info and open source license details',                       category: 'Settings' },
-      ];
-
-      // --- Build slides dynamically ---
-      var wrapper = document.getElementById('screenshots-wrapper');
-      screenshots.forEach(function (item, index) {
-        var slide = document.createElement('div');
-        slide.classList.add('swiper-slide');
-        slide.dataset.customText = item.text;
-        slide.innerHTML =
-          '<img src="assets/images/screenshots/' + item.src + '" ' +
-               'alt="' + item.alt + '" ' +
-               'loading="lazy" ' +
-               'width="1280" ' +
-               'height="800" ' +
-               'data-index="' + index + '" />';
-        wrapper.appendChild(slide);
-      });
-
-      // --- Initialise Swiper ---
-      var swiper = new Swiper('.screenshots-swiper', {
-        effect: 'coverflow',
-        grabCursor: true,
-        centeredSlides: true,
-        slidesPerView: 'auto',
-        loop: true,
-        autoplay: {
-          delay: 4000,
-          disableOnInteraction: false,
-          pauseOnMouseEnter: true,
-        },
-        coverflowEffect: {
-          rotate: 25,
-          stretch: 0,
-          depth: 250,
-          modifier: 1,
-          slideShadows: false,
-        },
-        pagination: {
-          el: '.swiper-pagination',
-          clickable: true,
-          dynamicBullets: true,
-        },
-        navigation: {
-          nextEl: '.swiper-button-next',
-          prevEl: '.swiper-button-prev',
-        },
-        breakpoints: {
-          640:  { slidesPerView: 1 },
-          768:  { slidesPerView: 1.5 },
-          1024: { slidesPerView: 2 },
-        },
-      });
-
-      // --- Category chips ---
-      var chipCategories = [
-        { id: 'All',      icon: 'fas fa-th-large'     },
-        { id: 'Invoices', icon: 'fas fa-file-invoice'  },
-        { id: 'PDF',      icon: 'fas fa-file-pdf'     },
-        { id: 'Clients',  icon: 'fas fa-users'        },
-        { id: 'Products', icon: 'fas fa-box'          },
-        { id: 'Settings', icon: 'fas fa-cog'          },
-      ];
-
-      var chipsEl = document.getElementById('screenshots-chips');
-
-      chipCategories.forEach(function (cat) {
-        var count = cat.id === 'All'
-          ? screenshots.length
-          : screenshots.filter(function (s) { return s.category === cat.id; }).length;
-
-        var btn = document.createElement('button');
-        btn.className = 'screenshot-chip' + (cat.id === 'All' ? ' active' : '');
-        btn.dataset.category = cat.id;
-        btn.type = 'button';
-        btn.setAttribute('aria-pressed', cat.id === 'All' ? 'true' : 'false');
-        btn.innerHTML =
-          '<i class="' + cat.icon + '" aria-hidden="true"></i> ' + cat.id +
-          ' <span class="chip-count">' + count + '</span>';
-
-        btn.addEventListener('click', function () {
-          chipsEl.querySelectorAll('.screenshot-chip').forEach(function (c) {
-            c.classList.remove('active');
-            c.setAttribute('aria-pressed', 'false');
-          });
-          btn.classList.add('active');
-          btn.setAttribute('aria-pressed', 'true');
-
-          var targetIndex = cat.id === 'All'
-            ? 0
-            : screenshots.findIndex(function (s) { return s.category === cat.id; });
-          swiper.slideToLoop(targetIndex < 0 ? 0 : targetIndex, 600);
-        });
-
-        chipsEl.appendChild(btn);
-      });
-
-      // --- Caption & chip sync ---
-      var captionCatEl  = document.getElementById('caption-category');
-      var captionTextEl = document.getElementById('custom-bottom-text');
-
-      function updateCaption() {
-        var s = screenshots[swiper.realIndex];
-        if (!s) return;
-        if (captionCatEl)  captionCatEl.textContent  = s.category;
-        if (captionTextEl) captionTextEl.textContent = s.text;
-        // Sync active chip to current slide's category
-        chipsEl.querySelectorAll('.screenshot-chip').forEach(function (c) {
-          var match = c.dataset.category === s.category;
-          c.classList.toggle('active', match);
-          c.setAttribute('aria-pressed', match ? 'true' : 'false');
-        });
-      }
-
-      swiper.on('slideChange', updateCaption);
-      updateCaption();
-
-      // Year
-      document.getElementById('year').textContent = new Date().getFullYear();
-
-      // --- Image preview modal ---
-      var previewModal = document.getElementById('imagePreview');
-      var previewImg   = document.getElementById('previewImg');
-      var currentImage = 0;
-
-      function openPreview(index) {
-        currentImage     = index;
-        previewImg.src   = 'assets/images/screenshots/' + screenshots[index].src;
-        previewImg.alt   = screenshots[index].alt;
-        previewModal.style.display = 'flex';
-        document.getElementById('closePreviewBtn').focus();
-      }
-
-      function closePreview() {
-        previewModal.style.display = 'none';
-      }
-
-      function changeImage(direction) {
-        currentImage = (currentImage + direction + screenshots.length) % screenshots.length;
-        previewImg.src = 'assets/images/screenshots/' + screenshots[currentImage].src;
-        previewImg.alt = screenshots[currentImage].alt;
-      }
-
-      document.getElementById('closePreviewBtn').addEventListener('click', closePreview);
-      document.getElementById('prevImgBtn').addEventListener('click', function () { changeImage(-1); });
-      document.getElementById('nextImgBtn').addEventListener('click', function () { changeImage(1); });
-
-      // Delegated click on slides (works with dynamically created elements)
-      wrapper.addEventListener('click', function (e) {
-        var img = e.target.closest('img[data-index]');
-        if (img) { openPreview(parseInt(img.dataset.index, 10)); }
-      });
-
-      document.addEventListener('keydown', function (e) {
-        if (previewModal.style.display === 'flex') {
-          if (e.key === 'Escape')     { closePreview(); }
-          if (e.key === 'ArrowLeft')  { changeImage(-1); }
-          if (e.key === 'ArrowRight') { changeImage(1); }
-        }
-      });
-
-      previewModal.addEventListener('click', function (e) {
-        if (e.target === previewModal) { closePreview(); }
-      });
-
-      // --- Mobile menu ---
-      var hamburgerBtn = document.getElementById('hamburger-btn');
-      var mobileMenu   = document.getElementById('mobile-menu');
-
-      hamburgerBtn.addEventListener('click', function () {
-        var isOpen = !mobileMenu.classList.contains('hidden');
-        mobileMenu.classList.toggle('hidden');
-        hamburgerBtn.setAttribute('aria-expanded', String(!isOpen));
-      });
-
-      mobileMenu.querySelectorAll('a').forEach(function (link) {
-        link.addEventListener('click', function () {
-          mobileMenu.classList.add('hidden');
-          hamburgerBtn.setAttribute('aria-expanded', 'false');
-        });
-      });
-
-      // --- 3D tilt effect for feature cards ---
-      document.querySelectorAll('.feature-card').forEach(function (card) {
-        card.addEventListener('mousemove', function (e) {
-          var rect    = card.getBoundingClientRect();
-          var x       = e.clientX - rect.left;
-          var y       = e.clientY - rect.top;
-          var rotateX = ((y / rect.height) - 0.5) * -16;
-          var rotateY = ((x / rect.width)  - 0.5) *  16;
-          card.style.transform = 'perspective(800px) rotateX(' + rotateX + 'deg) rotateY(' + rotateY + 'deg) translateZ(8px)';
-        });
-        card.addEventListener('mouseleave', function () {
-          card.style.transform = '';
-        });
-      });
-
-    });
-
-    // Navbar scroll effect
-    window.addEventListener('scroll', function () {
-      document.querySelector('.navbar').classList.toggle('scrolled', window.scrollY > 50);
-    });
-    </script>
+    <script defer src="assets/js/app.js"></script>
   </body>
 </html>

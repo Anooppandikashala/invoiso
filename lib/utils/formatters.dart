@@ -25,3 +25,10 @@ class AppFormatters {
   static String formatAmount(double amount, String symbol) =>
       '$symbol ${_numberFormat.format(amount)}';
 }
+
+extension StringLimit on String {
+  String limit(int maxLength, {String suffix = '...'}) {
+    if (length <= maxLength) return this;
+    return substring(0, maxLength) + suffix;
+  }
+}

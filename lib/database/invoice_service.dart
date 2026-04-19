@@ -57,6 +57,8 @@ class InvoiceService {
           'discount_per_unit': item.discountPerUnit ? 1 : 0,
           'unit_price': item.unitPrice,
           'extra_cost': item.extraCost,
+          'is_product_saved': item.isProductSaved ? 1 : 0,
+          'product_type': item.product.type,
         });
       }
     });
@@ -128,6 +130,8 @@ class InvoiceService {
           'discount_per_unit': item.discountPerUnit ? 1 : 0,
           'unit_price': item.unitPrice,
           'extra_cost': item.extraCost,
+          'is_product_saved': item.isProductSaved ? 1 : 0,
+          'product_type': item.product.type,
         });
       }
     });
@@ -460,5 +464,167 @@ class InvoiceService {
     }
 
     return invoices;
+  }
+
+  // ─────────────────────────────────────────────
+  // Dashboard-specific targeted queries
+
+  /// Returns invoice count, total revenue collected, and total outstanding
+  /// using batch SQL — avoids loading full Invoice objects for summary data.
+  static Future<({int count, double revenue, double outstanding})>
+      getDashboardFinancials() async {
+    final db = await dbHelper.database;
+
+    // Count
+    final countResult = await db.rawQuery(
+      'SELECT COUNT(*) as cnt FROM invoices WHERE type = ? AND deleted_at IS NULL',
+      ['Invoice'],
+    );
+    final count = (countResult.first['cnt'] as int?) ?? 0;
+
+    // Revenue: pure SQL — no item loading needed
+    final revenueResult = await db.rawQuery(
+      'SELECT COALESCE(SUM(ip.amount_paid), 0.0) as revenue '
+      'FROM invoice_payments ip '
+      'JOIN invoices i ON ip.invoice_id = i.id '
+      'WHERE i.type = ? AND i.deleted_at IS NULL',
+      ['Invoice'],
+    );
+    final revenue =
+        (revenueResult.first['revenue'] as num?)?.toDouble() ?? 0.0;
+
+    // Outstanding: batch-load invoice rows + items + payments (3 queries, no N+1)
+    final invoiceRows = await db.query(
+      'invoices',
+      columns: ['id', 'tax_rate', 'tax_mode', 'additional_costs'],
+      where: 'type = ? AND deleted_at IS NULL',
+      whereArgs: ['Invoice'],
+    );
+
+    if (invoiceRows.isEmpty) {
+      return (count: count, revenue: revenue, outstanding: 0.0);
+    }
+
+    final ids = invoiceRows.map((r) => r['id'] as String).toList();
+    final placeholders = List.filled(ids.length, '?').join(',');
+
+    final itemRows = await db.rawQuery(
+      'SELECT invoice_id, unit_price, product_price, quantity, discount, '
+      'discount_per_unit, extra_cost, product_tax_rate '
+      'FROM invoice_items WHERE invoice_id IN ($placeholders)',
+      ids,
+    );
+
+    final paymentSums = await db.rawQuery(
+      'SELECT invoice_id, COALESCE(SUM(amount_paid), 0.0) as paid '
+      'FROM invoice_payments WHERE invoice_id IN ($placeholders) '
+      'GROUP BY invoice_id',
+      ids,
+    );
+
+    final itemsByInvoice = <String, List<Map<String, dynamic>>>{};
+    for (final row in itemRows) {
+      final invId = row['invoice_id'] as String;
+      itemsByInvoice.putIfAbsent(invId, () => []).add(row as Map<String, dynamic>);
+    }
+
+    final paidByInvoice = <String, double>{};
+    for (final row in paymentSums) {
+      paidByInvoice[row['invoice_id'] as String] =
+          (row['paid'] as num).toDouble();
+    }
+
+    double outstanding = 0.0;
+    for (final inv in invoiceRows) {
+      final invId = inv['id'] as String;
+      final taxRate = (inv['tax_rate'] as num?)?.toDouble() ?? 0.0;
+      final taxMode = inv['tax_mode'] as String? ?? 'global';
+      final items = itemsByInvoice[invId] ?? [];
+
+      double subtotal = 0.0;
+      double itemTax = 0.0;
+      for (final item in items) {
+        final effectivePrice =
+            (item['unit_price'] as num?)?.toDouble() ??
+            (item['product_price'] as num?)?.toDouble() ??
+            0.0;
+        final qty = (item['quantity'] as num?)?.toDouble() ?? 0.0;
+        final discount = (item['discount'] as num?)?.toDouble() ?? 0.0;
+        final discountPerUnit = (item['discount_per_unit'] as int?) == 1;
+        final extraCost = (item['extra_cost'] as num?)?.toDouble() ?? 0.0;
+        final itemTaxRate =
+            (item['product_tax_rate'] as num?)?.toDouble() ?? 0.0;
+
+        final lineTotal = discountPerUnit
+            ? (effectivePrice - discount) * qty + extraCost
+            : (effectivePrice * qty) - discount + extraCost;
+        subtotal += lineTotal;
+        if (taxMode == 'per_item') itemTax += lineTotal * (itemTaxRate / 100);
+      }
+
+      final tax = taxMode == 'global' ? subtotal * (taxRate / 100) : itemTax;
+      final additionalTotal = AdditionalCost.listFromJson(
+              inv['additional_costs'] as String?)
+          .fold(0.0, (sum, c) => sum + c.amount);
+
+      final total = subtotal + tax + additionalTotal;
+      final paid = paidByInvoice[invId] ?? 0.0;
+      outstanding += (total - paid).clamp(0.0, double.infinity);
+    }
+
+    return (count: count, revenue: revenue, outstanding: outstanding);
+  }
+
+  /// Most recent [limit] invoices across all types.
+  static Future<List<Invoice>> getRecentInvoices({int limit = 5}) async {
+    final db = await dbHelper.database;
+    final rows = await db.query(
+      'invoices',
+      where: 'deleted_at IS NULL',
+      orderBy: 'id DESC',
+      limit: limit,
+    );
+    return _buildInvoiceList(rows);
+  }
+
+  /// Invoices with due_date = today or tomorrow that are not fully paid.
+  static Future<List<Invoice>> getDueSoonInvoices() async {
+    final db = await dbHelper.database;
+    final now = DateTime.now();
+    final todayStart =
+        '${now.toIso8601String().substring(0, 10)}T00:00:00.000';
+    final tomorrowEnd = DateTime(now.year, now.month, now.day + 2)
+        .toIso8601String()
+        .substring(0, 10);
+    final rows = await db.query(
+      'invoices',
+      where: 'deleted_at IS NULL AND type = ? AND due_date IS NOT NULL '
+          'AND due_date >= ? AND due_date < ?',
+      whereArgs: ['Invoice', todayStart, '${tomorrowEnd}T00:00:00.000'],
+      orderBy: 'due_date ASC',
+    );
+    final invoices = await _buildInvoiceList(rows);
+    return invoices
+        .where((inv) => inv.paymentStatus != PaymentStatus.paid)
+        .toList();
+  }
+
+  /// Invoices past their due_date that are not fully paid, up to [limit] rows.
+  static Future<List<Invoice>> getOverdueInvoices({int limit = 10}) async {
+    final db = await dbHelper.database;
+    final todayStart = '${DateTime.now().toIso8601String().substring(0, 10)}T00:00:00.000';
+    // Fetch more than limit to account for some already being paid
+    final rows = await db.query(
+      'invoices',
+      where: 'deleted_at IS NULL AND type = ? AND due_date IS NOT NULL AND due_date < ?',
+      whereArgs: ['Invoice', todayStart],
+      orderBy: 'due_date ASC',
+      limit: limit * 3,
+    );
+    final invoices = await _buildInvoiceList(rows);
+    final overdue = invoices
+        .where((inv) => inv.paymentStatus != PaymentStatus.paid)
+        .toList();
+    return overdue.length > limit ? overdue.sublist(0, limit) : overdue;
   }
 }
