@@ -78,6 +78,10 @@ body {
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
 }
 
+.navbar nav ul {
+    align-items: center;
+}
+
 .navbar nav ul a {
     color: var(--text-muted);
     transition: color 0.2s ease;
@@ -101,15 +105,95 @@ body {
     background: rgba(6, 8, 15, 0.98);
     border-top: 1px solid var(--border);
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+    padding-bottom: 4px;
 }
 
-.mobile-menu a {
-    color: var(--text-muted);
-    transition: color 0.2s ease;
+.mob-nav-list {
+    list-style: none;
+    margin: 0;
+    padding: 6px 20px 0;
+    display: flex;
+    flex-direction: column;
 }
 
-.mobile-menu a:hover {
+.mob-nav-link {
+    display: block;
+    padding: 13px 4px;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 0.975rem;
+    font-weight: 500;
+    border-bottom: 1px solid var(--border);
+    transition: color 0.2s ease, padding-left 0.2s ease;
+}
+
+.mob-nav-link:last-of-type {
+    border-bottom: none;
+}
+
+.mob-nav-link:hover {
     color: var(--primary);
+    padding-left: 8px;
+}
+
+.mob-nav-link.mob-nav-active {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.mob-nav-ctas {
+    display: flex;
+    gap: 10px;
+    padding: 14px 20px 18px;
+}
+
+.mob-nav-btn-outline {
+    flex: 1;
+    display: block;
+    text-align: center;
+    padding: 10px 16px;
+    border: 1px solid var(--primary);
+    color: var(--primary);
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.mob-nav-btn-outline:hover {
+    background: var(--primary);
+    color: #fff;
+}
+
+.mob-nav-btn-solid {
+    flex: 1;
+    display: block;
+    text-align: center;
+    padding: 10px 16px;
+    background: var(--primary);
+    color: #fff;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    box-shadow: 0 0 14px rgba(79,142,247,0.2);
+    transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mob-nav-btn-solid:hover {
+    background: #6ba3ff;
+    box-shadow: 0 4px 18px rgba(79,142,247,0.45);
+}
+
+.mob-nav-btn-outline.mob-nav-active {
+    background: rgba(79,142,247,0.12);
+    font-weight: 600;
+}
+
+.mob-nav-btn-solid.mob-nav-active {
+    box-shadow: 0 4px 18px rgba(79,142,247,0.45);
+    font-weight: 700;
 }
 
 /* =============================================
@@ -729,9 +813,9 @@ body {
     color: white;
     border: 1px solid rgba(255,255,255,0.15);
     padding: 15px 22px;
-    border-radius: 50%;
+    border-radius: 8px;
     cursor: pointer;
-    font-size: 24px;
+    font-weight: 600 !important;
     z-index: 10000;
     transition: all 0.3s ease;
     backdrop-filter: blur(10px);
@@ -1255,3 +1339,320 @@ footer .border-t {
         font-size: 2.5rem;
     }
 }
+<<<<<<< Updated upstream
+=======
+
+/* =============================================
+   Enhanced UI/UX — v2
+   ============================================= */
+
+/* ── Hero badge pill ── */
+.hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(79,142,247,0.08);
+    border: 1px solid rgba(79,142,247,0.22);
+    color: var(--primary);
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 7px 18px;
+    border-radius: 999px;
+    letter-spacing: 0.02em;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    margin-bottom: 24px;
+}
+
+/* ── Navbar link hover — slide-up underline ── */
+.navbar nav ul a {
+    position: relative;
+    padding-bottom: 3px;
+}
+
+.navbar nav ul a::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: var(--primary);
+    border-radius: 2px;
+    transition: width 0.25s ease;
+}
+
+.navbar nav ul a:hover::after {
+    width: 100%;
+}
+
+/* ── Nav active link state ── */
+.navbar nav ul a.nav-active {
+    color: var(--primary) !important;
+}
+
+.navbar nav ul a.nav-active::after {
+    width: 100%;
+}
+
+/* ── Nav Download CTA pill ── */
+a.nav-cta,
+.navbar nav ul a.nav-cta {
+    background: var(--primary) !important;
+    color: #fff !important;
+    padding: 7px 18px !important;
+    border-radius: 8px;
+    font-weight: 600 !important;
+    box-shadow: 0 0 14px rgba(79,142,247,0.2);
+    transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease !important;
+}
+
+a.nav-cta:hover,
+.navbar nav ul a.nav-cta:hover {
+    background: #6ba3ff !important;
+    color: #fff !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 18px rgba(79,142,247,0.45) !important;
+}
+
+a.nav-cta::after,
+.navbar nav ul a.nav-cta::after {
+    display: none !important;
+}
+
+/* ── Try Online nav button ── */
+a.nav-btn,
+.navbar nav ul a.nav-btn {
+    border: 1px solid var(--primary) !important;
+    color: var(--primary) !important;
+    padding: 6px 17px !important;
+    border-radius: 8px;
+    font-weight: 600 !important;
+    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease !important;
+}
+
+a.nav-btn:hover,
+.navbar nav ul a.nav-btn:hover {
+    background: var(--primary) !important;
+    color: #fff !important;
+    transform: translateY(-1px) !important;
+}
+
+a.nav-btn::after,
+.navbar nav ul a.nav-btn::after {
+    display: none !important;
+}
+
+/* ── Feature item icon hover animation ── */
+.feature-icon-box {
+    transition: transform 0.25s ease;
+}
+
+.feature-item:hover .feature-icon-box {
+    transform: scale(1.12) rotate(4deg);
+}
+
+/* ── Stronger feature item hover (overrides earlier rule) ── */
+.feature-item:hover {
+    border-color: rgba(79,142,247,0.40);
+    background: rgba(255,255,255,0.055);
+    box-shadow: 0 0 0 1px rgba(79,142,247,0.08),
+                0 14px 45px rgba(0,0,0,0.42),
+                0 0 24px rgba(79,142,247,0.07);
+    transform: translateY(-3px);
+}
+
+/* ── Scroll-reveal ── */
+.reveal {
+    opacity: 0;
+    transform: translateY(22px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.reveal-d1 { transition-delay: 0.08s; }
+.reveal-d2 { transition-delay: 0.16s; }
+.reveal-d3 { transition-delay: 0.24s; }
+.reveal-d4 { transition-delay: 0.32s; }
+.reveal-d5 { transition-delay: 0.40s; }
+
+/* ── Comparison table — Invoiso column highlight ── */
+.comparison-table td:nth-child(2),
+.comparison-table th:nth-child(2) {
+    background: rgba(79,142,247,0.06) !important;
+    border-left: 1px solid rgba(79,142,247,0.18) !important;
+    border-right: 1px solid rgba(79,142,247,0.18) !important;
+}
+
+.comparison-table thead th:nth-child(2) {
+    border-top: 2px solid rgba(79,142,247,0.35) !important;
+}
+
+/* ── Section subtext polish ── */
+.section-subtext {
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: var(--text-muted);
+    max-width: 36rem;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* ── How-It-Works step cards — numbered accent ── */
+.step-card {
+    position: relative;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.step-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(79,142,247,0.3);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.45), 0 0 24px rgba(79,142,247,0.08);
+}
+
+/* ── Improved trust chip ── */
+.trust-chip {
+    transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.trust-chip:hover {
+    border-color: rgba(79,142,247,0.4);
+    background: rgba(79,142,247,0.12);
+    color: var(--text);
+}
+
+/* ── Hero gradient orbs — richer colours ── */
+.hero-gradient::before {
+    background: radial-gradient(circle, rgba(79,142,247,0.28) 0%, transparent 65%);
+}
+
+.hero-gradient::after {
+    background: radial-gradient(circle, rgba(139,92,246,0.22) 0%, transparent 65%);
+}
+
+/* ── Primary button active press feedback ── */
+.btn-primary:active {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 0 18px rgba(79,142,247,0.35), 0 4px 12px rgba(0,0,0,0.3) !important;
+}
+
+/* ── Stat card hover ── */
+.stat-card:hover {
+    transform: translateY(-6px);
+    border-color: rgba(79,142,247,0.25);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 30px rgba(79,142,247,0.08);
+}
+
+/* ── Logo gradient accent ── */
+.logo-text-accent {
+    background: linear-gradient(135deg, var(--primary), #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ── Footer link hover refinement ── */
+footer a:hover {
+    color: var(--primary);
+}
+
+/* ── Extra-small mobile tweaks ── */
+@media (max-width: 480px) {
+    .hero-badge {
+        font-size: 0.75rem;
+        padding: 6px 14px;
+    }
+
+    .hero-trust-strip {
+        gap: 6px;
+    }
+
+    .trust-chip {
+        font-size: 0.73rem;
+        padding: 4px 11px;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+        width: 100%;
+        justify-content: center;
+    }
+    }
+
+    @media (max-width: 900px) {
+      .item-row {
+        grid-template-columns: 1fr; /* Stack all items */
+        gap: 8px;
+        padding: 12px;
+        border: 1px solid var(--card-border);
+        margin-bottom: 8px;
+      }
+      .item-num { display: none; }
+
+      /* Style for the name/sub details */
+      .item-row > div:nth-child(2) { /* This is the div containing item-name and item-sub */
+        margin-bottom: 8px;
+      }
+      .item-name {
+        font-weight: 600;
+        font-size: 13px;
+        margin-bottom: 4px;
+      }
+      .item-sub {
+        font-size: 11px;
+        color: var(--text-muted);
+      }
+
+      /* Container for financial details */
+      /* This will be a new grid within the stacked item-row */
+      .item-row .item-field:nth-of-type(1) { /* Target the first item-field (Qty) */
+        grid-column: 1 / 2;
+      }
+      .item-row .item-field:nth-of-type(2) { /* Target the second item-field (Unit Price) */
+        grid-column: 2 / 3;
+      }
+      .item-row .item-field:nth-of-type(3) { /* Target the third item-field (Discount) */
+        grid-column: 1 / 2;
+      }
+      .item-row .item-field:nth-of-type(4) { /* Target the fourth item-field (Tax) */
+        grid-column: 2 / 3;
+      }
+
+      .item-row .item-field, .item-row .item-total {
+        display: flex;
+        flex-direction: column; /* Stack label and value */
+        align-items: flex-start; /* Align to left */
+        width: 100%;
+        padding: 4px 0;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+      }
+      .item-row .item-field:nth-of-type(2), .item-row .item-field:nth-of-type(4) {
+        border-left: 1px solid rgba(255,255,255,0.05); /* Add a vertical separator */
+        padding-left: 8px;
+      }
+      .item-row .item-field:last-of-type {
+        border-bottom: none; /* No separator for the last field */
+      }
+      .item-row .item-total {
+        font-weight: 700;
+        font-size: 14px;
+        color: var(--success);
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid var(--card-border); /* Separator before total */
+        grid-column: 1 / -1; /* Span full width */
+      }
+
+      .item-row .item-field span, .item-row .item-total span { /* Labels */
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-left: 0;
+        margin-bottom: 2px;
+      }
+      
+    }
+>>>>>>> Stashed changes
