@@ -1,5 +1,35 @@
 
 /* =============================================
+   YouTube Facade
+   ============================================= */
+.yt-facade {
+  cursor: pointer;
+}
+
+.yt-play-btn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 68px;
+  height: 48px;
+  opacity: 0.85;
+  pointer-events: none;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.yt-facade:hover .yt-play-btn,
+.yt-facade:focus .yt-play-btn {
+  transform: translate(-50%, -50%) scale(1.12);
+  opacity: 1;
+}
+
+.yt-facade:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+
+/* =============================================
    Design Tokens
    ============================================= */
 :root {
@@ -1339,8 +1369,6 @@ footer .border-t {
         font-size: 2.5rem;
     }
 }
-<<<<<<< Updated upstream
-=======
 
 /* =============================================
    Enhanced UI/UX — v2
@@ -1655,4 +1683,3 @@ footer a:hover {
       }
       
     }
->>>>>>> Stashed changes

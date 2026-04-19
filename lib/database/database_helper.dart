@@ -14,7 +14,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 16;
+  final dbVersion = 19;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -54,7 +54,9 @@ class DatabaseHelper {
         price REAL,
         stock INTEGER,
         hsncode TEXT,
-        tax_rate INTEGER
+        tax_rate INTEGER,
+        type TEXT DEFAULT 'product',
+        default_discount REAL DEFAULT 0
       )
     ''');
 
@@ -97,6 +99,8 @@ class DatabaseHelper {
         unit_price REAL,
         extra_cost REAL,
         discount_per_unit INTEGER DEFAULT 0,
+        is_product_saved INTEGER DEFAULT 0,
+        product_type TEXT DEFAULT 'product',
         PRIMARY KEY (invoice_id, product_id),
         FOREIGN KEY (invoice_id) REFERENCES invoices(id)
       )
@@ -374,6 +378,35 @@ class DatabaseHelper {
       await _runMigrationStep(db, 15, 'add_additional_costs_to_invoices', () async {
         await db.execute(
           'ALTER TABLE invoices ADD COLUMN additional_costs TEXT',
+        );
+      });
+    }
+
+    if (oldVersion < 17) {
+      await _runMigrationStep(db, 17, 'add_is_product_saved_to_invoice_items', () async {
+        await db.execute(
+          'ALTER TABLE invoice_items ADD COLUMN is_product_saved INTEGER DEFAULT 0',
+        );
+      });
+    }
+
+    if (oldVersion < 18) {
+      await _runMigrationStep(db, 18, 'add_type_to_products', () async {
+        await db.execute(
+          "ALTER TABLE products ADD COLUMN type TEXT DEFAULT 'product'",
+        );
+      });
+      await _runMigrationStep(db, 18, 'add_product_type_to_invoice_items', () async {
+        await db.execute(
+          "ALTER TABLE invoice_items ADD COLUMN product_type TEXT DEFAULT 'product'",
+        );
+      });
+    }
+
+    if (oldVersion < 19) {
+      await _runMigrationStep(db, 19, 'add_default_discount_to_products', () async {
+        await db.execute(
+          'ALTER TABLE products ADD COLUMN default_discount REAL DEFAULT 0',
         );
       });
     }

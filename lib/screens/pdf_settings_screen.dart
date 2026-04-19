@@ -211,8 +211,8 @@ class _TemplateListTile extends StatelessWidget {
               borderRadius: BorderRadius.circular(6),
               child: Image.asset(
                 image,
-                width: 52,
-                height: 68,
+                width: 68,
+                height: 78,
                 fit: BoxFit.cover,
               ),
             ),
@@ -228,7 +228,7 @@ class _TemplateListTile extends StatelessWidget {
                         child: Text(
                           name,
                           style: TextStyle(
-                            fontSize: AppFontSize.medium,
+                            fontSize: AppFontSize.large,
                             fontWeight: FontWeight.w600,
                             color: isPreviewed ? primaryColor : Colors.black87,
                           ),
@@ -243,7 +243,7 @@ class _TemplateListTile extends StatelessWidget {
                   Text(
                     description,
                     style: TextStyle(
-                      fontSize: AppFontSize.xsmall,
+                      fontSize: AppFontSize.small,
                       color: Colors.grey[600],
                     ),
                     maxLines: 2,
@@ -261,7 +261,7 @@ class _TemplateListTile extends StatelessWidget {
                       child: Text(
                         "Default",
                         style: TextStyle(
-                          fontSize: AppFontSize.xsmall,
+                          fontSize: AppFontSize.small,
                           color: Colors.grey[600],
                           fontWeight: FontWeight.w500,
                         ),

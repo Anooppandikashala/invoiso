@@ -17,10 +17,21 @@
     <!-- Open Graph -->
     <meta property="og:title" content="FAQ — Invoiso | Free Offline Invoice Software" />
     <meta property="og:description" content="Answers to common questions about Invoiso — installation, GST invoicing, UPI QR codes, PDF templates, backups and more." />
-    <meta property="og:image" content="https://invoiso.co.in/assets/images/invoiso-banner.webp" />
+    <meta property="og:image" content="https://invoiso.co.in/assets/images/invoiso_banner.webp" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Invoiso — Free Offline Invoice Software for Windows and Linux" />
     <meta property="og:url" content="https://invoiso.co.in/faq.html" />
     <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_US" />
     <meta property="og:site_name" content="Invoiso" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="FAQ — Invoiso | Free Offline Invoice Software" />
+    <meta name="twitter:description" content="Answers to common questions about Invoiso — installation, GST invoicing, UPI QR codes, PDF templates, backups and more." />
+    <meta name="twitter:image" content="https://invoiso.co.in/assets/images/invoiso_banner.webp" />
+    <meta name="twitter:image:alt" content="Invoiso — Free Offline Invoice Software" />
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="assets/images/logo.svg" />
@@ -33,10 +44,25 @@
     <!-- Fonts -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" />
 
-    <!-- CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <!-- CSS: critical (local, render-blocking) -->
+    <link rel="stylesheet" href="tailwind.css" />
     <link rel="stylesheet" href="style.css" />
+
+    <!-- CSS: non-critical (deferred) -->
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" /></noscript>
+
+    <!-- Structured Data: BreadcrumbList -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://invoiso.co.in/" },
+        { "@type": "ListItem", "position": 2, "name": "FAQ", "item": "https://invoiso.co.in/faq.html" }
+      ]
+    }
+    </script>
 
     <!-- Structured Data: FAQPage -->
     <script type="application/ld+json">
@@ -152,13 +178,23 @@
     }
     </script>
 
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-D7RSN6EGR6"></script>
+    <!-- Google Analytics: deferred until browser is idle -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
       gtag('config', 'G-D7RSN6EGR6');
+      (function() {
+        function loadGA() {
+          var s = document.createElement('script');
+          s.async = true;
+          s.src = 'https://www.googletagmanager.com/gtag/js?id=G-D7RSN6EGR6';
+          document.head.appendChild(s);
+        }
+        'requestIdleCallback' in window
+          ? requestIdleCallback(loadGA, { timeout: 4000 })
+          : window.addEventListener('load', function() { setTimeout(loadGA, 1000); });
+      })();
     </script>
   </head>
 

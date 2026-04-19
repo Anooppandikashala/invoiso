@@ -8,6 +8,7 @@ class InvoiceItem {
   double? extraCost;       // optional flat fee added on top of the line total
   bool discountPerUnit;    // true  → (price − discount) × qty  (discount multiplied by qty)
                            // false → (price × qty) − discount   (flat discount off line total)
+  bool isProductSaved;     // true → custom item was saved to product list; hides the save button
 
   InvoiceItem({
     required this.product,
@@ -16,6 +17,7 @@ class InvoiceItem {
     this.unitPrice,
     this.extraCost,
     this.discountPerUnit = false,
+    this.isProductSaved = false,
   });
 
   double get effectivePrice => unitPrice ?? product.price;
