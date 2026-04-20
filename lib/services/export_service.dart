@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:archive/archive.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import '../database/settings_service.dart';
@@ -72,33 +74,58 @@ class ExportService {
     return file.path;
   }
 
-  /// Generates a PDF for each invoice in [invoices], saves them all into a
-  /// timestamped subfolder of the Documents directory, and returns the folder
-  /// path.  [onProgress] is called after each PDF is written.
+  /// Generates a PDF for each invoice in [invoices], saves them into
+  /// [outputDirectory] (or a timestamped subfolder of Documents if null),
+  /// and returns the folder path.  [onProgress] is called after each PDF.
   static Future<String> exportInvoicesToPdfFolder(
     List<Invoice> invoices, {
     void Function(int completed, int total)? onProgress,
+    String? outputDirectory,
   }) async {
-    final docsDir = await getApplicationDocumentsDirectory();
-    final timestamp =
-        DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-    final exportDir =
-        Directory('${docsDir.path}/invoice_pdfs_$timestamp');
+    final Directory exportDir;
+    if (outputDirectory != null) {
+      exportDir = Directory(outputDirectory);
+    } else {
+      final docsDir = await getApplicationDocumentsDirectory();
+      final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      exportDir = Directory('${docsDir.path}/invoice_pdfs_$timestamp');
+    }
     await exportDir.create(recursive: true);
 
     for (int i = 0; i < invoices.length; i++) {
       final invoice = invoices[i];
       final pdf = await PDFService.generateInvoicePDF(invoice);
       final bytes = await pdf.save();
-      // Sanitise the invoice ID so it is safe as a filename on all platforms.
-      final safeName =
-          invoice.id.replaceAll(RegExp(r'[^\w\-]'), '_');
-      final file =
-          File('${exportDir.path}/Invoice_$safeName.pdf');
+      final filename = PDFService.buildPdfFilename(invoice);
+      final file = File('${exportDir.path}/$filename');
       await file.writeAsBytes(bytes);
       onProgress?.call(i + 1, invoices.length);
     }
 
     return exportDir.path;
+  }
+
+  /// Generates a PDF for each invoice, bundles them into a single ZIP file
+  /// written to [savePath], and returns that path.
+  /// [onProgress] is called after each PDF is added to the archive.
+  static Future<String> exportInvoicesToZip(
+    List<Invoice> invoices,
+    String savePath, {
+    void Function(int completed, int total)? onProgress,
+  }) async {
+    final archive = Archive();
+
+    for (int i = 0; i < invoices.length; i++) {
+      final invoice = invoices[i];
+      final pdf = await PDFService.generateInvoicePDF(invoice);
+      final bytes = await pdf.save();
+      final filename = PDFService.buildPdfFilename(invoice);
+      archive.addFile(ArchiveFile(filename, bytes.length, Uint8List.fromList(bytes)));
+      onProgress?.call(i + 1, invoices.length);
+    }
+
+    final zipBytes = ZipEncoder().encode(archive);
+    await File(savePath).writeAsBytes(zipBytes);
+    return savePath;
   }
 }

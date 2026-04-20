@@ -16,7 +16,8 @@ class Invoice {
   String currencySymbol;
   TaxMode taxMode;
   List<InvoicePayment> payments;
-  String? upiId;         // selected UPI account for this invoice
+  String? upiId;           // selected UPI account for this invoice
+  String? bankAccountId;   // selected bank account label key for this invoice
   DateTime? dueDate;
   String? quantityLabel; // custom label for the Qty column (e.g. "Words", "Hours")
   List<AdditionalCost> additionalCosts; // e.g. Shipping, Packaging (zero tax, added after tax)
@@ -34,6 +35,7 @@ class Invoice {
     this.taxMode = TaxMode.global,
     this.payments = const [],
     this.upiId,
+    this.bankAccountId,
     this.dueDate,
     this.quantityLabel,
     this.additionalCosts = const [],

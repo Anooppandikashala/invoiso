@@ -8,6 +8,7 @@ import 'package:invoiso/database/invoice_service.dart';
 import 'package:invoiso/invoisoColors.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/providers/invoice_provider.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:invoiso/services/export_service.dart';
 import 'package:invoiso/services/invoice_pdf_services.dart';
 import 'package:invoiso/services/pdf_service.dart';
@@ -484,10 +485,61 @@ class _InvoiceManagementScreenState
         _pageInvoices.where((inv) => _selectedIds.contains(inv.id)).toList();
     if (selected.isEmpty) return;
 
+    // Ask the user: save as folder or as a ZIP?
+    final saveMode = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.picture_as_pdf, color: Theme.of(ctx).primaryColor),
+            const SizedBox(width: 12),
+            const Text('Download PDFs'),
+          ],
+        ),
+        content: Text(
+          'How would you like to save ${selected.length} PDF${selected.length == 1 ? '' : 's'}?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.folder_outlined),
+            label: const Text('Save to Folder'),
+            onPressed: () => Navigator.pop(ctx, 'folder'),
+          ),
+          FilledButton.icon(
+            icon: const Icon(Icons.folder_zip_outlined),
+            label: const Text('Save as ZIP'),
+            onPressed: () => Navigator.pop(ctx, 'zip'),
+          ),
+        ],
+      ),
+    );
+    if (saveMode == null || !mounted) return;
+
+    String? outputDir;
+    String? zipSavePath;
+
+    if (saveMode == 'folder') {
+      outputDir = await FilePicker.platform.getDirectoryPath(
+        dialogTitle: 'Choose folder to save PDFs',
+      );
+      if (outputDir == null || !mounted) return;
+    } else {
+      zipSavePath = await FilePicker.platform.saveFile(
+        dialogTitle: 'Save ZIP file',
+        fileName: 'invoices_${DateFormat('yyyyMMdd').format(DateTime.now())}.zip',
+        type: FileType.custom,
+        allowedExtensions: ['zip'],
+      );
+      if (zipSavePath == null || !mounted) return;
+    }
+
     setState(() => _isBulkLoading = true);
 
-    // ValueNotifier drives the progress bar inside the dialog without needing
-    // StatefulBuilder + captured setDialogState.
     final progress = ValueNotifier<int>(0);
 
     unawaited(showDialog(
@@ -495,11 +547,14 @@ class _InvoiceManagementScreenState
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.picture_as_pdf, color: Colors.orange),
-            SizedBox(width: 12),
-            Text('Generating PDFs'),
+            Icon(
+              saveMode == 'zip' ? Icons.folder_zip_outlined : Icons.picture_as_pdf,
+              color: Colors.orange,
+            ),
+            const SizedBox(width: 12),
+            Text(saveMode == 'zip' ? 'Creating ZIP' : 'Generating PDFs'),
           ],
         ),
         content: ValueListenableBuilder<int>(
@@ -508,7 +563,7 @@ class _InvoiceManagementScreenState
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Generating ${selected.length} PDF${selected.length == 1 ? '' : 's'}...',
+                'Processing ${selected.length} PDF${selected.length == 1 ? '' : 's'}...',
               ),
               const SizedBox(height: 16),
               LinearProgressIndicator(
@@ -527,13 +582,23 @@ class _InvoiceManagementScreenState
     ));
 
     try {
-      final path = await ExportService.exportInvoicesToPdfFolder(
-        selected,
-        onProgress: (done, _) => progress.value = done,
-      );
+      final String path;
+      if (saveMode == 'zip') {
+        path = await ExportService.exportInvoicesToZip(
+          selected,
+          zipSavePath!,
+          onProgress: (done, _) => progress.value = done,
+        );
+      } else {
+        path = await ExportService.exportInvoicesToPdfFolder(
+          selected,
+          onProgress: (done, _) => progress.value = done,
+          outputDirectory: outputDir,
+        );
+      }
       if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop(); // close dialog
-        AppError.showSuccess(context, 'PDFs saved to: $path');
+        Navigator.of(context, rootNavigator: true).pop();
+        AppError.showSuccess(context, 'Saved to: $path');
         await OpenFile.open(path);
       }
     } catch (e) {

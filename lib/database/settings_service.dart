@@ -149,4 +149,29 @@ class SettingsService
   static Future<void> setShowQuantity(bool show) async {
     await setSetting(SettingKey.showQuantity, show.toString());
   }
+
+  static Future<List<BankAccount>> getBankAccounts() async {
+    final json = await getSetting(SettingKey.bankAccounts);
+    if (json != null && json.isNotEmpty) {
+      final List<dynamic> decoded = jsonDecode(json);
+      return decoded
+          .map((e) => BankAccount.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
+    return [];
+  }
+
+  static Future<void> setBankAccounts(List<BankAccount> accounts) async {
+    final encoded = jsonEncode(accounts.map((e) => e.toJson()).toList());
+    await setSetting(SettingKey.bankAccounts, encoded);
+  }
+
+  static Future<bool> getShowBankDetails() async {
+    final val = await getSetting(SettingKey.showBankDetails);
+    return val == 'true';
+  }
+
+  static Future<void> setShowBankDetails(bool show) async {
+    await setSetting(SettingKey.showBankDetails, show.toString());
+  }
 }

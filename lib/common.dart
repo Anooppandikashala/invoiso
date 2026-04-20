@@ -27,6 +27,8 @@ enum SettingKey {
   logoSize,            // logo size on PDF: 'small' | 'medium' | 'large'
   businessType,        // 'product' | 'service' | 'both'
   showQuantity,        // whether to show quantity field (default true)
+  bankAccounts,        // JSON list of BankAccount objects
+  showBankDetails,     // whether to show bank details on PDF
 }
 
 extension SettingKeyExtension on SettingKey
@@ -61,6 +63,10 @@ extension SettingKeyExtension on SettingKey
         return 'business_type';
       case SettingKey.showQuantity:
         return 'show_quantity';
+      case SettingKey.bankAccounts:
+        return 'bank_accounts';
+      case SettingKey.showBankDetails:
+        return 'show_bank_details';
     }
   }
 }
@@ -115,6 +121,42 @@ class UpiEntry {
 
   /// Returns the label if set, otherwise falls back to the UPI ID itself.
   String get displayLabel => label.trim().isNotEmpty ? label.trim() : id;
+}
+
+/// A single bank account entry.
+class BankAccount {
+  final String label;         // friendly name, e.g. "Business Account"
+  final String bankName;      // e.g. "HDFC Bank"
+  final String accountNumber; // e.g. "123456789012"
+  final String ifscCode;      // e.g. "HDFC0001234"
+  final bool isDefault;
+
+  const BankAccount({
+    required this.label,
+    required this.bankName,
+    required this.accountNumber,
+    required this.ifscCode,
+    this.isDefault = false,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'label': label,
+        'bankName': bankName,
+        'accountNumber': accountNumber,
+        'ifscCode': ifscCode,
+        'isDefault': isDefault,
+      };
+
+  factory BankAccount.fromJson(Map<String, dynamic> json) => BankAccount(
+        label: json['label'] as String? ?? '',
+        bankName: json['bankName'] as String? ?? '',
+        accountNumber: json['accountNumber'] as String? ?? '',
+        ifscCode: json['ifscCode'] as String? ?? '',
+        isDefault: json['isDefault'] as bool? ?? false,
+      );
+
+  String get displayLabel =>
+      label.trim().isNotEmpty ? label.trim() : bankName.trim();
 }
 
 class CurrencyOption {

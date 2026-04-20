@@ -50,12 +50,28 @@ class PDFService {
     final showUpiQr =
         showQrStr == 'true' && effectiveUpiId != null && effectiveUpiId.isNotEmpty;
 
+    // Bank account — resolve from per-invoice ID, fall back to default.
+    BankAccount? effectiveBank;
+    final showBankDetails = await SettingsService.getShowBankDetails();
+    if (showBankDetails) {
+      final bankAccounts = await SettingsService.getBankAccounts();
+      final savedId = invoice.bankAccountId;
+      if (savedId != null && savedId.isNotEmpty) {
+        effectiveBank = bankAccounts
+            .where((e) => e.accountNumber == savedId)
+            .firstOrNull;
+      }
+      effectiveBank ??= bankAccounts.where((e) => e.isDefault).firstOrNull
+          ?? bankAccounts.firstOrNull;
+    }
+
     switch (selectedTemplate) {
       case InvoiceTemplate.classic:
         pdf.addPage(await _buildClassicTemplate(
           invoice, company, currencySymbol, invoicePrefix,
           upiId: effectiveUpiId, showUpiQr: showUpiQr, showGst: showGst,
           showQuantity: showQuantity, businessType: businessType,
+          bankAccount: effectiveBank,
         ));
         break;
       case InvoiceTemplate.modern:
@@ -63,6 +79,7 @@ class PDFService {
           invoice, company, currencySymbol, invoicePrefix,
           upiId: effectiveUpiId, showUpiQr: showUpiQr, showGst: showGst,
           showQuantity: showQuantity, businessType: businessType,
+          bankAccount: effectiveBank,
         ));
         break;
       case InvoiceTemplate.minimal:
@@ -70,6 +87,7 @@ class PDFService {
           invoice, company, currencySymbol, invoicePrefix,
           upiId: effectiveUpiId, showUpiQr: showUpiQr, showGst: showGst,
           showQuantity: showQuantity, businessType: businessType,
+          bankAccount: effectiveBank,
         ));
         break;
     }
@@ -81,6 +99,7 @@ class PDFService {
     Invoice invoice, CompanyInfo? company, String currencySymbol, String invoicePrefix, {
     String? upiId, bool showUpiQr = false, bool showGst = true,
     bool showQuantity = true, BusinessType businessType = BusinessType.both,
+    BankAccount? bankAccount,
   }) async
   {
     final accentColor = PdfColors.indigo900; // Use a strong accent color
@@ -211,6 +230,10 @@ class PDFService {
                     accentColor: accentColor,
                   ),
                 ],
+                if (bankAccount != null) ...[
+                  pw.SizedBox(height: 12),
+                  _buildBankDetailsSection(bankAccount: bankAccount, accentColor: accentColor),
+                ],
               ],
             ),
           ],
@@ -229,6 +252,7 @@ class PDFService {
     Invoice invoice, CompanyInfo? company, String currencySymbol, String invoicePrefix, {
     String? upiId, bool showUpiQr = false, bool showGst = true,
     bool showQuantity = true, BusinessType businessType = BusinessType.both,
+    BankAccount? bankAccount,
   }) async
   {
     final accentColor = PdfColors.grey700; // Use a strong, neutral accent
@@ -345,6 +369,10 @@ class PDFService {
                       accentColor: accentColor,
                     ),
                   ],
+                  if (bankAccount != null) ...[
+                    pw.SizedBox(height: 12),
+                    _buildBankDetailsSection(bankAccount: bankAccount, accentColor: accentColor),
+                  ],
                 ],
               ),
             ]
@@ -365,6 +393,7 @@ class PDFService {
     Invoice invoice, CompanyInfo? company, String currencySymbol, String invoicePrefix, {
     String? upiId, bool showUpiQr = false, bool showGst = true,
     bool showQuantity = true, BusinessType businessType = BusinessType.both,
+    BankAccount? bankAccount,
   }) async
   {
     final accentColor = PdfColors.blue600;
@@ -524,6 +553,10 @@ class PDFService {
                       accentColor: accentColor,
                     ),
                   ],
+                  if (bankAccount != null) ...[
+                    pw.SizedBox(height: 12),
+                    _buildBankDetailsSection(bankAccount: bankAccount, accentColor: accentColor),
+                  ],
                 ],
               ),
             ],
@@ -542,6 +575,56 @@ class PDFService {
           ),
         ),
       ],
+    );
+  }
+
+  static pw.Widget _buildBankDetailsSection({
+    required BankAccount bankAccount,
+    required PdfColor accentColor,
+  }) {
+    pw.Widget row(String label, String value) => pw.Padding(
+          padding: const pw.EdgeInsets.only(bottom: 2),
+          child: pw.RichText(
+            text: pw.TextSpan(
+              children: [
+                pw.TextSpan(
+                  text: '$label: ',
+                  style: pw.TextStyle(fontSize: 7.5, color: PdfColors.grey600),
+                ),
+                pw.TextSpan(
+                  text: value,
+                  style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+        );
+
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(8),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: accentColor, width: 0.5),
+        borderRadius: pw.BorderRadius.circular(4),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        mainAxisSize: pw.MainAxisSize.min,
+        children: [
+          pw.Text(
+            'Bank Account Details',
+            style: pw.TextStyle(
+              fontSize: 8,
+              fontWeight: pw.FontWeight.bold,
+              color: accentColor,
+            ),
+          ),
+          pw.SizedBox(height: 5),
+          if (bankAccount.label.isNotEmpty) row('Account Name', bankAccount.label),
+          if (bankAccount.bankName.isNotEmpty) row('Bank', bankAccount.bankName),
+          row('Account No.', bankAccount.accountNumber),
+          if (bankAccount.ifscCode.isNotEmpty) row('IFSC Code', bankAccount.ifscCode),
+        ],
+      ),
     );
   }
 
@@ -647,7 +730,7 @@ class PDFService {
   /// Shows a save-file dialog so the user can choose where to store the PDF.
   static Future<void> _downloadWithPicker(
       BuildContext context, Uint8List pdfBytes, Invoice invoice) async {
-    final filename = _buildPdfFilename(invoice);
+    final filename = buildPdfFilename(invoice);
     final savePath = await FilePicker.platform.saveFile(
       dialogTitle: 'Save Invoice PDF',
       fileName: filename,
@@ -816,7 +899,6 @@ class PDFService {
   static pw.Widget _buildInvoiceTable(Invoice invoice, {PdfColor headerColor = PdfColors.grey200, PdfColor textColor = PdfColors.black, bool showGst = true, bool showQuantity = true, BusinessType businessType = BusinessType.both})
   {
     final bool showItemTax = invoice.taxMode == TaxMode.perItem;
-    final bool showType = businessType == BusinessType.both;
     final String priceHeader = showQuantity ? 'Price' : 'Rate';
 
     // Build column widths dynamically based on which columns are visible
@@ -862,11 +944,6 @@ class PDFService {
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
                     pw.Text(item.product.name, style: const pw.TextStyle(fontSize: 9)),
-                    if (showType)
-                      pw.Text(
-                        item.product.type == 'service' ? 'Service' : 'Product',
-                        style: pw.TextStyle(fontSize: 7, color: PdfColors.grey600, fontStyle: pw.FontStyle.italic),
-                      ),
                   ],
                 ),
               ),
@@ -929,7 +1006,7 @@ class PDFService {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
-  static String _buildPdfFilename(Invoice invoice) {
+  static String buildPdfFilename(Invoice invoice) {
     final rawNumber = invoice.id.replaceAll(RegExp(r'^0+'), '');
     final invoiceNumber = rawNumber.isEmpty ? '0' : rawNumber;
     final fullName = invoice.customer.name.trim()

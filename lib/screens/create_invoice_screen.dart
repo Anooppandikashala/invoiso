@@ -64,6 +64,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   final taxRateController = TextEditingController();
   final dateController = TextEditingController();
   final dueDateController = TextEditingController();
+  DateTime _selectedOrderDate = DateTime.now();
   DateTime? _selectedDueDate;
 
   final _customerScrollController = ScrollController();
@@ -83,6 +84,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   String _currencySymbol = '₹';
   List<UpiEntry> _upiEntries = [];
   UpiEntry? _selectedUpi;
+  List<BankAccount> _bankAccounts = [];
+  BankAccount? _selectedBankAccount;
   bool _showGstFields = true;
   bool _fractionalQuantity = false;
   String _quantityLabel = '';
@@ -100,7 +103,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     super.initState();
     taxRateController.text = (taxRate * 100).toStringAsFixed(1);
     _loadCustomersAndProducts(widget.invoiceToEdit != null);
-    dateController.text = DateFormat('dd/MM/yyyy').format(DateTime.now());
+    _selectedOrderDate = DateTime.now();
+    dateController.text = DateFormat('dd/MM/yyyy').format(_selectedOrderDate);
     _setAdditionalNote();
     if (widget.invoiceToEdit != null) {
       _invoice = widget.invoiceToEdit;
@@ -119,7 +123,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       _isPerItem    = _invoice!.taxMode == TaxMode.perItem;
       invoiceType = _invoice!.type;
       currentInvoiceNumber = _invoice!.id;
-      dateController.text = DateFormat('dd/MM/yyyy').format(_invoice!.date);
+      _selectedOrderDate = _invoice!.date;
+      dateController.text = DateFormat('dd/MM/yyyy').format(_selectedOrderDate);
       if (_invoice!.dueDate != null) {
         _selectedDueDate = _invoice!.dueDate;
         dueDateController.text = DateFormat('dd/MM/yyyy').format(_invoice!.dueDate!);
@@ -230,6 +235,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       }
 
       final upiEntries = await SettingsService.getUpiIds();
+      final bankAccounts = await SettingsService.getBankAccounts();
       final showGst = await SettingsService.getShowGstFields();
       final fractionalQty = await SettingsService.getFractionalQuantity();
       final quantityLabelSetting = await SettingsService.getQuantityLabel();
@@ -251,6 +257,22 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       preselectedUpi ??= upiEntries.where((e) => e.isDefault).firstOrNull
           ?? upiEntries.firstOrNull;
 
+      // Determine which bank account to pre-select.
+      String? existingBankId;
+      if (isEditing && widget.invoiceToEdit != null) {
+        existingBankId = widget.invoiceToEdit!.bankAccountId;
+      } else if (widget.cloneFrom != null) {
+        existingBankId = widget.cloneFrom!.bankAccountId;
+      }
+      BankAccount? preselectedBank;
+      if (existingBankId != null && existingBankId.isNotEmpty) {
+        preselectedBank = bankAccounts
+            .where((e) => e.accountNumber == existingBankId)
+            .firstOrNull;
+      }
+      preselectedBank ??= bankAccounts.where((e) => e.isDefault).firstOrNull
+          ?? bankAccounts.firstOrNull;
+
       // Pre-mark custom items that were already saved to the product list,
       // using the persisted is_product_saved flag on each InvoiceItem.
       _savedAdHocIds.addAll(
@@ -271,6 +293,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         _currencySymbol = loadedCurrencySymbol;
         _upiEntries = upiEntries;
         _selectedUpi = preselectedUpi;
+        _bankAccounts = bankAccounts;
+        _selectedBankAccount = preselectedBank;
         _showGstFields = showGst;
         if (!showGst) _isTaxEnabled = false;
         _fractionalQuantity = fractionalQty;
@@ -590,7 +614,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               businessName: businessNameController.text,
             ),
         items: List.from(invoiceItems),
-        date: DateTime.now(),
+        date: _selectedOrderDate,
         dueDate: _selectedDueDate,
         notes: notesController.text.isNotEmpty ? notesController.text : null,
         taxRate: _taxMode == TaxMode.global ? taxRate : 0.0,
@@ -599,6 +623,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         currencySymbol: _currencySymbol,
         taxMode: _taxMode,
         upiId: _selectedUpi?.id,
+        bankAccountId: _selectedBankAccount?.accountNumber,
         quantityLabel: _quantityLabel.trim().isEmpty ? null : _quantityLabel.trim(),
         additionalCosts: _buildAdditionalCosts(),
       );
@@ -1352,15 +1377,29 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   child: TextField(
                     controller: dateController,
                     readOnly: true,
-                    enabled: false,
                     style: TextStyle(fontSize: AppFontSize.medium),
                     decoration: InputDecoration(
                       labelText: 'Order Date',
                       labelStyle: TextStyle(fontSize: AppFontSize.medium),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
                       filled: true,
-                      fillColor: Colors.grey[100],
+                      fillColor: Colors.white,
+                      suffixIcon: const Icon(Icons.calendar_today, size: 18),
                     ),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _selectedOrderDate,
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2100),
+                      );
+                      if (picked != null) {
+                        setState(() {
+                          _selectedOrderDate = picked;
+                          dateController.text = DateFormat('dd/MM/yyyy').format(picked);
+                        });
+                      }
+                    },
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -2318,48 +2357,90 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                         maxLines: 3,
                       ),
                     ),
-                    if (_upiEntries.isNotEmpty) ...[
-                      AppSpacing.wSmall,
-                      Expanded(
-                        flex: 2,
-                        child: DropdownButtonFormField<UpiEntry?>(
-                          isExpanded: true,
-                          value: _selectedUpi,
-                          decoration: InputDecoration(
-                            labelText: 'Payment UPI Account',
-                            prefixIcon: const Icon(Icons.qr_code_rounded, size: 20),
-                            border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
-                            filled: true,
-                            fillColor: Colors.white,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                          ),
-                          items: [
-                            const DropdownMenuItem<UpiEntry?>(
-                              value: null,
-                              child: Text('None', style: TextStyle(color: Colors.grey)),
-                            ),
-                            ..._upiEntries.map((e) => DropdownMenuItem<UpiEntry?>(
-                              value: e,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (e.isDefault) ...[
-                                    Icon(Icons.star_rounded, size: 14, color: Colors.amber[700]),
-                                    const SizedBox(width: 4),
-                                  ],
-                                  Text(e.displayLabel),
-                                ],
-                              ),
-                            )),
-                          ],
-                          onChanged: (val) => setState(() => _selectedUpi = val),
-                        ),
-                      ),
-                    ],
                     AppSpacing.wSmall,
                     Expanded(
-                      flex: _upiEntries.isNotEmpty ? 2 : 1,
+                        flex: 2,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (_upiEntries.isNotEmpty) ...[
+                              AppSpacing.wSmall,
+                              DropdownButtonFormField<UpiEntry?>(
+                                isExpanded: true,
+                                value: _selectedUpi,
+                                decoration: InputDecoration(
+                                  labelText: 'Payment UPI Account',
+                                  prefixIcon: const Icon(Icons.qr_code_rounded, size: 20),
+                                  border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                                ),
+                                items: [
+                                  const DropdownMenuItem<UpiEntry?>(
+                                    value: null,
+                                    child: Text('None', style: TextStyle(color: Colors.grey)),
+                                  ),
+                                  ..._upiEntries.map((e) => DropdownMenuItem<UpiEntry?>(
+                                    value: e,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        if (e.isDefault) ...[
+                                          Icon(Icons.star_rounded, size: 14, color: Colors.amber[700]),
+                                          const SizedBox(width: 4),
+                                        ],
+                                        Text(e.displayLabel),
+                                      ],
+                                    ),
+                                  )),
+                                ],
+                                onChanged: (val) => setState(() => _selectedUpi = val),
+                              ),
+                            ],
+                            AppSpacing.hMedium,
+                            if (_bankAccounts.isNotEmpty) ...[
+                              AppSpacing.wSmall,
+                              DropdownButtonFormField<BankAccount?>(
+                                isExpanded: true,
+                                value: _selectedBankAccount,
+                                decoration: InputDecoration(
+                                  labelText: 'Bank Account',
+                                  prefixIcon: const Icon(Icons.account_balance_outlined, size: 20),
+                                  border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                                ),
+                                items: [
+                                  const DropdownMenuItem<BankAccount?>(
+                                    value: null,
+                                    child: Text('None', style: TextStyle(color: Colors.grey)),
+                                  ),
+                                  ..._bankAccounts.map((e) => DropdownMenuItem<BankAccount?>(
+                                    value: e,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        if (e.isDefault) ...[
+                                          Icon(Icons.star_rounded, size: 14, color: Colors.amber[700]),
+                                          const SizedBox(width: 4),
+                                        ],
+                                        Text(e.displayLabel),
+                                      ],
+                                    ),
+                                  )),
+                                ],
+                                onChanged: (val) => setState(() => _selectedBankAccount = val),
+                              ),
+                            ],
+                          ],
+                    )),
+                    AppSpacing.wSmall,
+                    Expanded(
+                      flex: (_upiEntries.isNotEmpty || _bankAccounts.isNotEmpty) ? 2 : 1,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -2650,7 +2731,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               businessName: businessNameController.text,
             ),
         items: List.from(invoiceItems),
-        date: _invoice!.date,
+        date: _selectedOrderDate,
         dueDate: _selectedDueDate,
         notes: notesController.text.isNotEmpty ? notesController.text : null,
         taxRate: _taxMode == TaxMode.global ? taxRate : 0.0,
@@ -2659,6 +2740,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         currencySymbol: _currencySymbol,
         taxMode: _taxMode,
         upiId: _selectedUpi?.id,
+        bankAccountId: _selectedBankAccount?.accountNumber,
         quantityLabel: _quantityLabel.trim().isEmpty ? null : _quantityLabel.trim(),
         additionalCosts: _buildAdditionalCosts(),
       );

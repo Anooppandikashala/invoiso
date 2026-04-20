@@ -39,8 +39,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _upiControllers = [];
   int? _defaultUpiIndex;
 
+  final List<({
+    TextEditingController label,
+    TextEditingController bankName,
+    TextEditingController accountNumber,
+    TextEditingController ifscCode,
+  })> _bankControllers = [];
+  int? _defaultBankIndex;
+
   CompanyInfo? _companyInfo;
   bool _showUpiQr = false;
+  bool _showBankDetails = false;
   BusinessType _businessType = BusinessType.both;
 
   File? _selectedLogoFile;
@@ -56,7 +65,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final info = await CompanyInfoService.getCompanyInfo();
     final base64Logo = await SettingsService.getCompanyLogo();
     final upiEntries = await SettingsService.getUpiIds();
+    final bankEntries = await SettingsService.getBankAccounts();
     final showQrStr = await SettingsService.getSetting(SettingKey.showUpiQr);
+    final showBankDetails = await SettingsService.getShowBankDetails();
     final businessType = await SettingsService.getBusinessType();
     if (info != null) {
       setState(() {
@@ -70,6 +81,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _selectedCountry = info.country.isEmpty ? 'India' : info.country;
         _companyInfoLoadCount++;
         _showUpiQr = showQrStr == 'true';
+        _showBankDetails = showBankDetails;
         _businessType = businessType;
         if (base64Logo != null && base64Logo.isNotEmpty) {
           _base64Logo = base64Logo;
@@ -87,6 +99,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
             id: TextEditingController(text: entry.id),
           ));
           if (entry.isDefault) _defaultUpiIndex = i;
+        }
+
+        for (final row in _bankControllers) {
+          row.label.dispose();
+          row.bankName.dispose();
+          row.accountNumber.dispose();
+          row.ifscCode.dispose();
+        }
+        _bankControllers.clear();
+        _defaultBankIndex = null;
+        for (int i = 0; i < bankEntries.length; i++) {
+          final e = bankEntries[i];
+          _bankControllers.add((
+            label: TextEditingController(text: e.label),
+            bankName: TextEditingController(text: e.bankName),
+            accountNumber: TextEditingController(text: e.accountNumber),
+            ifscCode: TextEditingController(text: e.ifscCode),
+          ));
+          if (e.isDefault) _defaultBankIndex = i;
         }
       });
     }
@@ -126,6 +157,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await SettingsService.setUpiIds(upiEntries);
     await SettingsService.setSetting(
         SettingKey.showUpiQr, _showUpiQr.toString());
+
+    final bankAccounts = <BankAccount>[];
+    for (int i = 0; i < _bankControllers.length; i++) {
+      final accountNum = _bankControllers[i].accountNumber.text.trim();
+      if (accountNum.isEmpty) continue;
+      bankAccounts.add(BankAccount(
+        label: _bankControllers[i].label.text.trim(),
+        bankName: _bankControllers[i].bankName.text.trim(),
+        accountNumber: accountNum,
+        ifscCode: _bankControllers[i].ifscCode.text.trim(),
+        isDefault: i == _defaultBankIndex,
+      ));
+    }
+    await SettingsService.setBankAccounts(bankAccounts);
+    await SettingsService.setShowBankDetails(_showBankDetails);
+
     await SettingsService.setBusinessType(_businessType);
 
     if (!mounted) return;
@@ -149,6 +196,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     for (final row in _upiControllers) {
       row.label.dispose();
       row.id.dispose();
+    }
+    for (final row in _bankControllers) {
+      row.label.dispose();
+      row.bankName.dispose();
+      row.accountNumber.dispose();
+      row.ifscCode.dispose();
     }
     super.dispose();
   }
@@ -596,6 +649,140 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       icon: Icon(Icons.add_circle_outline,
                           color: primaryColor, size: 18),
                       label: Text('Add UPI Account',
+                          style: TextStyle(color: primaryColor)),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // ── Bank Details ─────────────────────────────────────────
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                      border: Border.all(color: Colors.grey[200]!),
+                    ),
+                    child: SwitchListTile(
+                      title: const Text('Show Bank Details on Invoices'),
+                      subtitle: const Text(
+                        'Prints bank account details on generated PDFs',
+                        style: TextStyle(fontSize: AppFontSize.small),
+                      ),
+                      value: _showBankDetails,
+                      onChanged: (val) => setState(() => _showBankDetails = val),
+                      activeColor: primaryColor,
+                      secondary: Icon(
+                        Icons.account_balance_outlined,
+                        color: _showBankDetails ? primaryColor : Colors.grey,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  _sectionLabel('BANK ACCOUNTS'),
+                  const SizedBox(height: 10),
+                  ..._bankControllers.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final row = entry.value;
+                    final isDefault = index == _defaultBankIndex;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Default star
+                          Tooltip(
+                            message: isDefault ? 'Default' : 'Set as Default',
+                            child: IconButton(
+                              icon: Icon(
+                                isDefault ? Icons.star_rounded : Icons.star_outline_rounded,
+                                color: isDefault ? Colors.amber[700] : Colors.grey[400],
+                              ),
+                              onPressed: () => setState(() => _defaultBankIndex = index),
+                            ),
+                          ),
+                          SizedBox(
+                            width: 130,
+                            child: _buildField(
+                              controller: row.label,
+                              label: 'Label',
+                              icon: Icons.label_outline_rounded,
+                              hint: 'e.g. Main Account',
+                              maxLength: 40,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          SizedBox(
+                            width: 140,
+                            child: _buildField(
+                              controller: row.bankName,
+                              label: 'Bank Name',
+                              icon: Icons.account_balance_outlined,
+                              hint: 'e.g. HDFC Bank',
+                              maxLength: 60,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildField(
+                              controller: row.accountNumber,
+                              label: 'Account Number',
+                              icon: Icons.numbers_outlined,
+                              hint: '123456789012',
+                              maxLength: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          SizedBox(
+                            width: 130,
+                            child: _buildField(
+                              controller: row.ifscCode,
+                              label: 'IFSC Code',
+                              icon: Icons.code_outlined,
+                              hint: 'HDFC0001234',
+                              maxLength: 11,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            tooltip: 'Remove',
+                            icon: const Icon(Icons.remove_circle_outline,
+                                color: Colors.redAccent),
+                            onPressed: () {
+                              setState(() {
+                                _bankControllers[index].label.dispose();
+                                _bankControllers[index].bankName.dispose();
+                                _bankControllers[index].accountNumber.dispose();
+                                _bankControllers[index].ifscCode.dispose();
+                                _bankControllers.removeAt(index);
+                                if (_defaultBankIndex == index) {
+                                  _defaultBankIndex = null;
+                                } else if (_defaultBankIndex != null &&
+                                    _defaultBankIndex! > index) {
+                                  _defaultBankIndex = _defaultBankIndex! - 1;
+                                }
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                  const SizedBox(height: 4),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _bankControllers.add((
+                            label: TextEditingController(),
+                            bankName: TextEditingController(),
+                            accountNumber: TextEditingController(),
+                            ifscCode: TextEditingController(),
+                          ));
+                        });
+                      },
+                      icon: Icon(Icons.add_circle_outline,
+                          color: primaryColor, size: 18),
+                      label: Text('Add Bank Account',
                           style: TextStyle(color: primaryColor)),
                     ),
                   ),

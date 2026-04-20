@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class AppError {
   static void show(
@@ -19,6 +20,14 @@ class AppError {
             ),
             const SizedBox(width: 8),
             Expanded(child: Text(message)),
+            if (isError)
+              IconButton(
+                icon: const Icon(Icons.copy, color: Colors.white, size: 16),
+                tooltip: 'Copy error',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: () => Clipboard.setData(ClipboardData(text: message)),
+              ),
           ],
         ),
         backgroundColor: isError ? Colors.red[700] : Colors.blueGrey[700],

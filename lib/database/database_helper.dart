@@ -14,7 +14,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 19;
+  final dbVersion = 20;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -79,6 +79,7 @@ class DatabaseHelper {
         tax_mode TEXT DEFAULT 'global',
         deleted_at TEXT,
         upi_id TEXT,
+        bank_account_id TEXT,
         due_date TEXT,
         quantity_label TEXT,
         additional_costs TEXT
@@ -382,6 +383,24 @@ class DatabaseHelper {
       });
     }
 
+    if (oldVersion < 16) {
+      await _runMigrationStep(db, 16, 'add_business_name_to_customers', () async {
+        await db.execute(
+          "ALTER TABLE customers ADD COLUMN business_name TEXT DEFAULT ''",
+        );
+      });
+      await _runMigrationStep(db, 16, 'add_customer_business_name_to_invoices', () async {
+        await db.execute(
+          "ALTER TABLE invoices ADD COLUMN customer_business_name TEXT DEFAULT ''",
+        );
+      });
+      await _runMigrationStep(db, 16, 'add_country_to_company_info', () async {
+        await db.execute(
+          "ALTER TABLE company_info ADD COLUMN country TEXT DEFAULT 'India'",
+        );
+      });
+    }
+
     if (oldVersion < 17) {
       await _runMigrationStep(db, 17, 'add_is_product_saved_to_invoice_items', () async {
         await db.execute(
@@ -411,20 +430,10 @@ class DatabaseHelper {
       });
     }
 
-    if (oldVersion < 16) {
-      await _runMigrationStep(db, 16, 'add_business_name_to_customers', () async {
+    if (oldVersion < 20) {
+      await _runMigrationStep(db, 20, 'add_bank_account_id_to_invoices', () async {
         await db.execute(
-          "ALTER TABLE customers ADD COLUMN business_name TEXT DEFAULT ''",
-        );
-      });
-      await _runMigrationStep(db, 16, 'add_customer_business_name_to_invoices', () async {
-        await db.execute(
-          "ALTER TABLE invoices ADD COLUMN customer_business_name TEXT DEFAULT ''",
-        );
-      });
-      await _runMigrationStep(db, 16, 'add_country_to_company_info', () async {
-        await db.execute(
-          "ALTER TABLE company_info ADD COLUMN country TEXT DEFAULT 'India'",
+          'ALTER TABLE invoices ADD COLUMN bank_account_id TEXT',
         );
       });
     }
@@ -447,6 +456,21 @@ class DatabaseHelper {
       });
       AppLogger.d(_tag, 'Migration v$version/$step: success');
     } catch (e, stack) {
+      // Treat already-applied schema changes as success so a partial prior run
+      // doesn't block startup (e.g. column added but version not yet bumped).
+      final msg = e.toString().toLowerCase();
+      if (msg.contains('duplicate column name') ||
+          msg.contains('already exists')) {
+        AppLogger.d(_tag, 'Migration v$version/$step: already applied, skipping');
+        await db.insert('_migration_log', {
+          'version': version,
+          'step': step,
+          'status': 'skipped',
+          'message': e.toString(),
+          'applied_at': DateTime.now().toIso8601String(),
+        });
+        return;
+      }
       AppLogger.e(_tag, 'Migration v$version/$step failed', e, stack);
       await db.insert('_migration_log', {
         'version': version,
