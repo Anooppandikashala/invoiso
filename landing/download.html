@@ -197,6 +197,43 @@
         padding: 14px 20px 8px;
       }
 
+      /* ── Total downloads highlight ── */
+      .total-dl-stat {
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        margin: 18px auto 0;
+        width: fit-content;
+        padding: 10px 28px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, rgba(79,142,247,0.18), rgba(139,92,246,0.12));
+        border: 1px solid rgba(79,142,247,0.4);
+        box-shadow: 0 0 28px rgba(79,142,247,0.2);
+        font-size: 1.25rem;
+        font-weight: 500;
+        color: rgba(226,232,240,0.8);
+      }
+      .total-dl-stat i { color: var(--primary); font-size: 2.0rem; }
+      .live-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #4ade80;
+        box-shadow: 0 0 6px #4ade80;
+        animation: live-pulse 1.8s ease-in-out infinite;
+        flex-shrink: 0;
+      }
+      @keyframes live-pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50%       { opacity: 0.3; transform: scale(0.75); }
+      }
+      .total-dl-number {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #fff;
+        letter-spacing: -0.01em;
+      }
+
       .asset-btn {
         display: flex;
         align-items: center;
@@ -515,6 +552,12 @@
               <span class="trust-chip"><i class="fas fa-wifi-slash" aria-hidden="true"></i> Works offline</span>
               <span class="trust-chip"><i class="fas fa-user-slash" aria-hidden="true"></i> No registration</span>
             </div>
+            <div id="total-dl-stat" style="display:none" class="total-dl-stat">
+              <i class="fas fa-download" aria-hidden="true"></i>
+              <span id="total-downloads" class="total-dl-number"></span>
+              <span>total downloads and counting</span>
+              <span class="live-dot" aria-hidden="true"></span>
+            </div>
             <!-- Featured on -->
             <div class="flex flex-wrap justify-center items-center gap-4 mt-6">
 <a href="https://www.producthunt.com/products/invoiso?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-invoiso" target="_blank" rel="noopener noreferrer">
@@ -661,13 +704,20 @@
         return { os: 'other', icon: 'fas fa-file-download' };
       }
 
+      function trackDownload(filename, platform) {
+        if (typeof gtag === 'function') {
+          gtag('event', 'file_download', { file_name: filename, platform: platform });
+        }
+      }
+
       function buildAssetRows(entries) {
         return entries.map(function (e) {
           var size = formatBytes(e.asset.size);
           var dl   = e.asset.download_count || 0;
           var meta = [size, dl ? dl.toLocaleString() + ' downloads' : ''].filter(Boolean).join(' · ');
+          var safeName = e.asset.name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
           return (
-            '<a href="' + escHtml(e.asset.browser_download_url) + '" class="asset-btn" aria-label="Download ' + escHtml(e.asset.name) + '">' +
+            '<a href="' + escHtml(e.asset.browser_download_url) + '" class="asset-btn" onclick="trackDownload(\'' + safeName + '\',\'' + e.info.os + '\')" aria-label="Download ' + escHtml(e.asset.name) + '">' +
               '<span class="asset-icon"><i class="' + e.info.icon + '" aria-hidden="true"></i></span>' +
               '<span class="asset-info">' +
                 '<span class="asset-name">' + escHtml(e.asset.name) + '</span>' +
@@ -692,6 +742,26 @@
           if (!releases.length) {
             list.innerHTML = '<p class="text-center py-8" style="color:var(--text-muted)">No releases found.</p>';
             return;
+          }
+
+          // ── Total downloads badge ──
+          var totalDownloads = releases.reduce(function (sum, r) {
+            return sum + (r.assets || []).reduce(function (s, a) { return s + (a.download_count || 0); }, 0);
+          }, 0);
+          if (totalDownloads > 0) {
+            document.getElementById('total-dl-stat').style.display = 'flex';
+            var el = document.getElementById('total-downloads');
+            var duration = 3000;
+            var start = null;
+            function step(ts) {
+              if (!start) start = ts;
+              var progress = Math.min((ts - start) / duration, 1);
+              var eased = 1 - Math.pow(1 - progress, 3);
+              el.textContent = Math.floor(eased * totalDownloads).toLocaleString();
+              if (progress < 1) requestAnimationFrame(step);
+              else el.textContent = totalDownloads.toLocaleString();
+            }
+            requestAnimationFrame(step);
           }
 
           // ── Latest release: downloads (left) + release notes (right) ──

@@ -1,0 +1,42 @@
+# Invoiso
+
+> Invoiso is a free, open-source, offline invoice and billing desktop application for Windows and Linux. No subscription, no cloud, no account required.
+
+## About
+
+Invoiso is built for freelancers, small businesses, shop owners, and consultants who need professional invoicing without internet dependency or recurring costs. All data is stored locally on the user's device using a SQLite database — nothing is sent to any server.
+
+## Key Features
+
+- 100% offline — no internet required at any point
+- Professional PDF invoices with one click (Classic, Modern, Minimal templates)
+- Customer and product management with search, sort, and filter
+- Payment tracking — record partial or full payments, track outstanding balances
+- PDF payment receipts for every recorded payment
+- GST-ready invoices with GSTIN, HSN codes, and configurable tax rates (India)
+- UPI payment QR code embedded in PDF invoices (GPay, PhonePe, Paytm)
+- Multi-currency support: INR, USD, EUR, GBP, JPY, AED, SGD, AUD, CAD
+- Invoice and quotation document types
+- Duplicate / clone any invoice with one click
+- Role-based access control (admin and standard user roles)
+- Bulk CSV import/export for customers
+- Data backup and restore
+- No subscription, no fees — free forever
+- Open source under the MIT licence
+
+## Pages
+
+- [Home](https://invoiso.co.in/) — Overview, features, comparison, screenshots, and demo
+- [Download](https://invoiso.co.in/download.html) — Latest release for Windows and Linux
+- [FAQ](https://invoiso.co.in/faq.html) — Answers to common questions
+- [Release Notes](https://invoiso.co.in/changelog.html) — Full version history
+
+## Download
+
+Latest release: https://github.com/Anooppandikashala/invoiso/releases/latest
+Source code: https://github.com/Anooppandikashala/invoiso
+
+## Support
+
+- GitHub Issues: https://github.com/Anooppandikashala/invoiso/issues
+- Email: anooppkrishnan96@gmail.com

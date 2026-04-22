@@ -29,6 +29,9 @@ enum SettingKey {
   showQuantity,        // whether to show quantity field (default true)
   bankAccounts,        // JSON list of BankAccount objects
   showBankDetails,     // whether to show bank details on PDF
+  lastUpdateCheck,     // ISO timestamp of last GitHub release API call
+  lastKnownLatestVersion, // latest version tag returned by last API call
+  lastNotifiedVersion, // version for which the update dialog was last shown
 }
 
 extension SettingKeyExtension on SettingKey
@@ -67,6 +70,12 @@ extension SettingKeyExtension on SettingKey
         return 'bank_accounts';
       case SettingKey.showBankDetails:
         return 'show_bank_details';
+      case SettingKey.lastUpdateCheck:
+        return 'last_update_check';
+      case SettingKey.lastKnownLatestVersion:
+        return 'last_known_latest_version';
+      case SettingKey.lastNotifiedVersion:
+        return 'last_notified_version';
     }
   }
 }

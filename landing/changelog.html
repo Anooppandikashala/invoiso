@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Basic Metadata -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Release notes and version history for Invoiso — every new feature, improvement, and bug fix across all versions of the free offline invoice and billing software for Windows and Linux." />
+    <meta name="keywords" content="Invoiso updates, invoice software updates, what's new Invoiso, release notes Invoiso" />
+    <meta name="author" content="Invoiso" />
+    <meta name="robots" content="index, follow" />
+
+    <!-- Title -->
+    <title>Release Notes &amp; Updates — Invoiso | Free Offline Invoice Software</title>
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://invoiso.co.in/changelog.html" />
+
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#06080f" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Release Notes &amp; Updates — Invoiso | Free Offline Invoice Software" />
+    <meta property="og:description" content="Every feature, fix, and improvement in Invoiso — the free offline invoice software for Windows and Linux. Full version history in one place." />
+    <meta property="og:image" content="https://invoiso.co.in/assets/images/invoiso_banner.webp" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Invoiso — Free Offline Invoice Software for Windows and Linux" />
+    <meta property="og:url" content="https://invoiso.co.in/changelog.html" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" content="Invoiso" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Release Notes &amp; Updates — Invoiso | Free Offline Invoice Software" />
+    <meta name="twitter:description" content="Every feature, fix, and improvement in Invoiso. Full release history for the free offline invoice software for Windows and Linux." />
+    <meta name="twitter:image" content="https://invoiso.co.in/assets/images/invoiso_banner.webp" />
+    <meta name="twitter:image:alt" content="Invoiso — Free Offline Invoice Software" />
+
+    <!-- Favicon & Icons -->
+    <link rel="icon" type="image/svg+xml" href="assets/images/logo.svg" />
+    <link rel="apple-touch-icon" href="assets/images/apple-touch-icon.png" />
+
+    <!-- Preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- Fonts -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" />
+
+    <!-- CSS: critical (local, render-blocking) -->
+    <link rel="stylesheet" href="tailwind.css" />
+    <link rel="stylesheet" href="style.css" />
+
+    <!-- CSS: non-critical (deferred) -->
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" /></noscript>
+
+    <style>
+      /* ── Timeline layout ── */
+      .timeline {
+        position: relative;
+        padding-left: 0;
+      }
+
+      @media (min-width: 768px) {
+        .timeline {
+          padding-left: 48px;
+        }
+        .timeline::before {
+          content: '';
+          position: absolute;
+          left: 15px;
+          top: 8px;
+          bottom: 8px;
+          width: 2px;
+          background: linear-gradient(to bottom, var(--primary), var(--accent), transparent);
+          border-radius: 2px;
+        }
+        .timeline-dot {
+          display: flex !important;
+        }
+      }
+
+      .timeline-dot {
+        display: none;
+        position: absolute;
+        left: -41px;
+        top: 28px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--primary);
+        box-shadow: 0 0 0 4px rgba(79,142,247,0.2), 0 0 12px rgba(79,142,247,0.4);
+        z-index: 1;
+      }
+
+      /* ── Release card ── */
+      .release-card {
+        position: relative;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        overflow: hidden;
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        box-shadow: 0 0 0 1px rgba(255,255,255,0.04), 0 20px 60px rgba(0,0,0,0.4);
+        margin-bottom: 32px;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+      }
+
+      .release-card:hover {
+        border-color: rgba(79,142,247,0.25);
+        box-shadow: 0 0 0 1px rgba(79,142,247,0.08), 0 24px 80px rgba(0,0,0,0.5);
+      }
+
+      .release-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 22px 28px;
+        border-bottom: 1px solid var(--border);
+        background: rgba(255,255,255,0.02);
+      }
+
+      .release-card-header-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .version-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(79,142,247,0.15);
+        color: var(--primary);
+        border: 1px solid rgba(79,142,247,0.3);
+        border-radius: 8px;
+        padding: 4px 12px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+      }
+
+      .latest-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: rgba(16,185,129,0.15);
+        color: #10b981;
+        border: 1px solid rgba(16,185,129,0.3);
+        border-radius: 6px;
+        padding: 3px 10px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+
+      .release-date {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      /* ── Release body ── */
+      .release-body {
+        padding: 24px 28px;
+        display: grid;
+        gap: 28px;
+      }
+
+      @media (min-width: 900px) {
+        .release-body {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+
+      /* ── Section block ── */
+      .cl-section {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .cl-section-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .cl-section-title .icon-wrap {
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        flex-shrink: 0;
+      }
+
+      .icon-features  { background: rgba(79,142,247,0.15);  color: var(--primary); }
+      .icon-platform  { background: rgba(139,92,246,0.15);  color: var(--accent); }
+      .icon-ui        { background: rgba(245,158,11,0.15);  color: #f59e0b; }
+      .icon-fixes     { background: rgba(16,185,129,0.15);  color: #10b981; }
+
+      .title-features { color: var(--primary); }
+      .title-platform { color: var(--accent); }
+      .title-ui       { color: #f59e0b; }
+      .title-fixes    { color: #10b981; }
+
+      .cl-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .cl-list li {
+        display: flex;
+        gap: 10px;
+        font-size: 0.875rem;
+        color: var(--text);
+        line-height: 1.55;
+      }
+
+      .cl-list li::before {
+        content: '•';
+        color: var(--primary);
+        font-weight: 700;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+
+      .cl-list li strong {
+        color: #fff;
+        font-weight: 600;
+      }
+
+      /* ── Subscribe CTA ── */
+      .subscribe-cta {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 40px 32px;
+        text-align: center;
+        backdrop-filter: blur(16px);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .subscribe-cta::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(ellipse at 50% 0%, rgba(79,142,247,0.07) 0%, transparent 70%);
+        pointer-events: none;
+      }
+
+      .subscribe-cta h3 {
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 8px;
+      }
+
+      .subscribe-cta p {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        margin-bottom: 20px;
+        max-width: 380px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .subscribe-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(79,142,247,0.12);
+        color: var(--primary);
+        border: 1px solid rgba(79,142,247,0.35);
+        border-radius: 10px;
+        padding: 10px 24px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: background 0.2s, border-color 0.2s, transform 0.15s;
+      }
+
+      .subscribe-btn:hover {
+        background: rgba(79,142,247,0.2);
+        border-color: rgba(79,142,247,0.55);
+        transform: translateY(-1px);
+        text-decoration: none;
+        color: var(--primary);
+      }
+    </style>
+
+    <!-- Structured Data: BreadcrumbList -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://invoiso.co.in/" },
+        { "@type": "ListItem", "position": 2, "name": "Release Notes", "item": "https://invoiso.co.in/changelog.html" }
+      ]
+    }
+    </script>
+  </head>
+
+  <body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <!-- Navbar -->
+    <header class="navbar fixed w-full z-50">
+      <nav class="container mx-auto flex justify-between items-center py-4 px-6 max-w-7xl" aria-label="Main navigation">
+        <a href="index.html" class="logo-link flex items-center text-3xl font-bold tracking-tight" style="text-decoration:none;">
+          <img src="assets/images/logo.svg" alt="" class="w-8 h-8 mr-2" aria-hidden="true" />
+          Invoiso
+        </a>
+        <ul class="hidden md:flex space-x-10 font-medium">
+          <li><a href="index.html" class="transition-colors duration-300">Home</a></li>
+          <li><a href="index.html#features" class="transition-colors duration-300">Features</a></li>
+          <li><a href="faq.html" class="transition-colors duration-300">FAQ</a></li>
+          <li><a href="changelog.html" class="transition-colors duration-300 primary-text" aria-current="page">Updates</a></li>
+          <li><a href="invoice-maker.html" class="nav-btn">Try Online</a></li>
+          <li><a href="download.html" class="nav-cta">Download</a></li>
+        </ul>
+
+        <button
+          class="md:hidden"
+          id="hamburger-btn"
+          aria-label="Toggle navigation menu"
+          aria-expanded="false"
+          aria-controls="mobile-menu"
+        >
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+        </button>
+      </nav>
+
+            <div class="mobile-menu hidden md:hidden" id="mobile-menu">
+        <ul class="mob-nav-list">
+          <li><a href="index.html" class="mob-nav-link">Home</a></li>
+          <li><a href="index.html#features" class="mob-nav-link">Features</a></li>
+          <li><a href="faq.html" class="mob-nav-link">FAQ</a></li>
+          <li><a href="changelog.html" class="mob-nav-link mob-nav-active">Updates</a></li>
+        </ul>
+        <div class="mob-nav-ctas">
+          <a href="invoice-maker.html" class="mob-nav-btn-outline">Try Online</a>
+          <a href="download.html" class="mob-nav-btn-solid">Download</a>
+        </div>
+      </div>
+      </header>
+
+    <main id="main-content">
+
+      <!-- Hero -->
+      <section class="pt-40 pb-16 hero-gradient text-white text-center relative">
+        <div class="hero-noise" aria-hidden="true"></div>
+        <div class="container mx-auto px-6 relative z-10">
+          <div class="fade-in-up">
+            <nav aria-label="Breadcrumb" class="mb-6">
+              <ol class="flex items-center justify-center gap-2 text-sm font-medium" style="color:rgba(79,142,247,0.7)">
+                <li><a href="index.html" class="hover:text-white transition-colors">Home</a></li>
+                <li aria-hidden="true" class="opacity-50">/</li>
+                <li class="text-white" aria-current="page">Updates</li>
+              </ol>
+            </nav>
+            <h1 class="text-5xl md:text-6xl font-bold mb-4 leading-tight">Invoiso Updates</h1>
+            <p class="text-lg md:text-xl max-w-2xl mx-auto leading-relaxed" style="color:rgba(226,232,240,0.85)">
+              A monthly roundup of new features, improvements, and fixes — everything that changed, in a nutshell.
+            </p>
+            <div class="hero-trust-strip">
+              <span class="trust-chip"><i class="fas fa-sync" aria-hidden="true"></i> Updated regularly</span>
+              <span class="trust-chip"><i class="fab fa-github" aria-hidden="true"></i> Open source</span>
+              <span class="trust-chip"><i class="fas fa-heart" aria-hidden="true"></i> Free forever</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Changelog timeline -->
+      <section class="py-20" style="background: var(--bg);">
+        <div class="container mx-auto px-6 max-w-4xl">
+
+          <!-- Current version card (fetched from GitHub) -->
+          <div id="latest-version-card" class="release-card fade-in-up" style="margin-bottom: 24px;">
+            <div class="timeline-dot" aria-hidden="true"></div>
+            <div class="release-card-header">
+              <div class="release-card-header-left">
+                <span class="version-badge" id="lv-badge">
+                  <i class="fas fa-tag" aria-hidden="true"></i>
+                  <span id="lv-tag">—</span>
+                </span>
+                <span class="latest-badge">
+                  <i class="fas fa-circle" style="font-size:0.5em;" aria-hidden="true"></i>
+                  Current
+                </span>
+              </div>
+              <span class="release-date" id="lv-date" style="color:var(--text-muted);font-size:0.85rem;">
+                <i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Fetching…
+              </span>
+            </div>
+            <div style="padding: 12px 16px 4px;">
+              <a id="lv-link" href="https://github.com/Anooppandikashala/invoiso/releases/latest" target="_blank" rel="noopener noreferrer"
+                style="font-size:0.9rem; color:var(--primary); text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+                <i class="fab fa-github" aria-hidden="true"></i>
+                View release on GitHub
+                <i class="fas fa-external-link-alt" style="font-size:0.75em;" aria-hidden="true"></i>
+              </a>
+            </div>
+          </div>
+
+          <div class="timeline">
+
+            <!-- March 2026 -->
+            <div class="release-card fade-in-up">
+              <div class="timeline-dot" aria-hidden="true"></div>
+
+              <div class="release-card-header">
+                <div class="release-card-header-left">
+                  <span class="version-badge">
+                    <i class="far fa-calendar-alt" aria-hidden="true"></i>
+                    March 2026
+                  </span>
+                </div>
+                <span class="release-date">
+                  v3.4.2
+                </span>
+              </div>
+
+              <div class="release-body">
+
+                <!-- New Features -->
+                <div class="cl-section">
+                  <div class="cl-section-title">
+                    <span class="icon-wrap icon-features"><i class="fas fa-sparkles" aria-hidden="true"></i></span>
+                    <span class="title-features">New Features</span>
+                  </div>
+                  <ul class="cl-list" aria-label="New features in March 2026">
+                    <li><span><strong>Multi-Currency Support</strong> — INR, USD, EUR, GBP, JPY, AED, SGD, AUD, CAD, JMD</span></li>
+                    <li><span><strong>Per-Item Tax Rates</strong> — Set different tax rates per line item</span></li>
+                    <li><span><strong>Multiple UPI Accounts</strong> — Manage multiple UPI payment accounts; choose which appears on each invoice PDF</span></li>
+                    <li><span><strong>UPI Payment QR Code</strong> — Scannable QR code auto-appears on PDF invoices</span></li>
+                    <li><span><strong>GST Field Preference</strong> — Toggle GST/GSTIN fields on or off globally from Invoice Settings</span></li>
+                    <li><span><strong>Invoice Cloning / Duplicate</strong> — Duplicate any invoice instantly</span></li>
+                    <li><span><strong>Bulk Actions</strong> — Select multiple invoices for batch operations</span></li>
+                    <li><span><strong>Payment Tracking &amp; Receipts</strong> — Track paid/partial/unpaid; generate PDF receipts</span></li>
+                    <li><span><strong>Role-Based Access Control</strong> — Admin and standard user roles</span></li>
+                  </ul>
+                </div>
+
+                <!-- Platform Support -->
+                <div class="cl-section">
+                  <div class="cl-section-title">
+                    <span class="icon-wrap icon-platform"><i class="fab fa-linux" aria-hidden="true"></i></span>
+                    <span class="title-platform">Platform Support</span>
+                  </div>
+                  <ul class="cl-list" aria-label="Platform support in March 2026">
+                    <li><span><strong>Ubuntu 24.04 LTS</strong> — Now officially supported; builds tested and verified</span></li>
+                  </ul>
+
+                  <!-- UI Improvements -->
+                  <div class="cl-section" style="margin-top: 24px;">
+                    <div class="cl-section-title">
+                      <span class="icon-wrap icon-ui"><i class="fas fa-paint-brush" aria-hidden="true"></i></span>
+                      <span class="title-ui">UI &amp; UX Improvements</span>
+                    </div>
+                    <ul class="cl-list" aria-label="UI improvements in March 2026">
+                      <li><span>Redesigned <strong>PDF Settings</strong>, <strong>Company Info</strong>, and <strong>Software Info</strong> screens</span></li>
+                      <li><span>Search fields no longer lose focus when typing fast</span></li>
+                    </ul>
+                  </div>
+                </div>
+
+                <!-- Bug Fixes — full width -->
+                <div class="cl-section" style="grid-column: 1 / -1; border-top: 1px solid var(--border); padding-top: 20px;">
+                  <div class="cl-section-title">
+                    <span class="icon-wrap icon-fixes"><i class="fas fa-wrench" aria-hidden="true"></i></span>
+                    <span class="title-fixes">Bug Fixes</span>
+                  </div>
+                  <ul class="cl-list" aria-label="Bug fixes in March 2026" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 6px 24px;">
+                    <li><span>Fixed Rupees symbol rendering incorrectly in PDF</span></li>
+                    <li><span>Fixed database connection lost after backup restore</span></li>
+                    <li><span>Fixed window resizing issues on Linux</span></li>
+                    <li><span>Fixed Windows app icon — all sizes (16, 32, 48, 256px)</span></li>
+                    <li><span>Fixed dashboard layout issue in the recent invoices section</span></li>
+                  </ul>
+                </div>
+
+              </div>
+            </div>
+            <!-- / March 2026 -->
+
+          </div>
+          <!-- / timeline -->
+
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-white text-center py-12 relative">
+      <div class="container mx-auto px-6">
+        <div class="flex flex-wrap justify-center gap-8 text-lg mb-8">
+          <a href="https://github.com/Anooppandikashala/invoiso" target="_blank" rel="noopener noreferrer" class="hover:underline">
+            <i class="fab fa-github mr-2" aria-hidden="true"></i>GitHub
+          </a>
+          <a href="https://buymeacoffee.com/anoopp" target="_blank" rel="noopener noreferrer" class="hover:underline">
+            <i class="fas fa-mug-hot mr-2" aria-hidden="true"></i>Support
+          </a>
+          <a href="mailto:anooppkrishnan96@gmail.com" class="hover:underline">
+            <i class="fas fa-envelope mr-2" aria-hidden="true"></i>Email
+          </a>
+        </div>
+        <div class="border-t pt-8" style="border-color:var(--border)">
+          <p class="text-lg">
+            © <span id="year"></span> Invoiso. All rights reserved.
+          </p>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+
+      document.getElementById('year').textContent = new Date().getFullYear();
+
+      // Mobile menu
+      var hamburgerBtn = document.getElementById('hamburger-btn');
+      var mobileMenu   = document.getElementById('mobile-menu');
+      hamburgerBtn.addEventListener('click', function () {
+        var isOpen = !mobileMenu.classList.contains('hidden');
+        mobileMenu.classList.toggle('hidden');
+        hamburgerBtn.setAttribute('aria-expanded', String(!isOpen));
+      });
+      mobileMenu.querySelectorAll('a').forEach(function (link) {
+        link.addEventListener('click', function () {
+          mobileMenu.classList.add('hidden');
+          hamburgerBtn.setAttribute('aria-expanded', 'false');
+        });
+      });
+
+      // Navbar scroll class
+      window.addEventListener('scroll', function () {
+        document.querySelector('.navbar').classList.toggle('scrolled', window.scrollY > 50);
+      }, { passive: true });
+
+    });
+    </script>
+
+    <script>
+      // Fetch latest release from GitHub and populate the current version card
+      fetch('https://api.github.com/repos/Anooppandikashala/invoiso/releases/latest')
+        .then(function (res) { if (!res.ok) throw new Error(); return res.json(); })
+        .then(function (release) {
+          document.getElementById('lv-tag').textContent = release.tag_name;
+          var d = new Date(release.published_at);
+          document.getElementById('lv-date').innerHTML =
+            '<i class="far fa-calendar-alt" aria-hidden="true"></i> ' +
+            d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+          document.getElementById('lv-link').href = release.html_url;
+        })
+        .catch(function () {
+          document.getElementById('lv-date').textContent = 'Could not fetch version';
+        });
+    </script>
+
+  </body>
+</html>

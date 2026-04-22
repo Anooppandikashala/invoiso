@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Free online invoice maker — fill in your details and download a professional PDF invoice instantly. No sign-up, no account, no data stored. Supports GST, multi-currency, and custom items." />
+  <meta name="keywords" content="free invoice maker, online invoice generator, create invoice online, PDF invoice, GST invoice, free invoice template" />
+  <meta name="robots" content="index, follow" />
+  <title>Free Online Invoice Maker — Create PDF Invoices Instantly | Invoiso</title>
+  <link rel="canonical" href="https://invoiso.co.in/invoice-maker.html" />
+  <meta name="theme-color" content="#06080f" />
+  <meta property="og:title" content="Free Online Invoice Maker — Create PDF Invoices Instantly" />
+  <meta property="og:description" content="Create and download professional PDF invoices instantly. No sign-up required, nothing stored. Supports GST, multi-currency, and custom line items." />
+  <meta property="og:url" content="https://invoiso.co.in/invoice-maker.html" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Invoiso" />
+  <meta property="og:image" content="https://invoiso.co.in/assets/images/invoiso_banner.webp" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Free Online Invoice Maker — Invoiso" />
+  <meta name="twitter:description" content="Create and download professional PDF invoices instantly. No sign-up, no data stored." />
+  <meta name="twitter:image" content="https://invoiso.co.in/assets/images/invoiso_banner.webp" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Invoiso — Free Online Invoice Maker",
+    "url": "https://invoiso.co.in/invoice-maker.html",
+    "description": "Create and download professional PDF invoices instantly. No sign-up required, no data stored. Supports GST, multi-currency, and custom line items.",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web Browser",
+    "browserRequirements": "Requires JavaScript",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "featureList": [
+      "Instant PDF download",
+      "GST and tax support",
+      "Multi-currency (INR, USD, EUR, GBP and more)",
+      "No sign-up or account required",
+      "All data stays in your browser",
+      "Quotation and invoice templates",
+      "Per-item and global tax modes"
+    ],
+    "publisher": {
+      "@type": "Organization",
+      "name": "Invoiso",
+      "url": "https://invoiso.co.in"
+    }
+  }
+  </script>
+
+  <link rel="icon" type="image/svg+xml" href="assets/images/logo.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="tailwind.css" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" /></noscript>
+
+  <link rel="stylesheet" href="styles-invoice-maker.css" />
+</head>
+<body>
+
+<!-- ── Welcome modal ─────────────────────────────────── -->
+<div id="welcome-overlay">
+  <div class="welcome-box">
+    <div class="logo-row">
+      <img src="assets/images/logo.svg" alt="" style="width:32px;height:32px;" />
+      <span style="font-size:1.4rem;font-weight:700;color:var(--primary);">Invoiso</span>
+    </div>
+    <p class="welcome-title">Invoice Maker</p>
+    <p>Start a new invoice or continue from a previously exported JSON file.</p>
+    <input type="file" id="welcome-json-input" accept=".json" style="display:none;" onchange="handleWelcomeImport(this)" />
+    <div class="welcome-choices">
+      <div class="choice-card new" onclick="startNewInvoice()">
+        <div class="choice-icon"><i class="fas fa-file-circle-plus"></i></div>
+        <h3>New Invoice</h3>
+        <p>Start fresh with a blank form</p>
+      </div>
+      <div class="choice-card import" onclick="document.getElementById('welcome-json-input').click()">
+        <div class="choice-icon"><i class="fas fa-file-import"></i></div>
+        <h3>Import JSON</h3>
+        <p>Continue from a saved invoice file</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Navbar ───────────────────────────────────────── -->
+<header class="navbar fixed w-full z-50">
+  <nav class="container mx-auto flex justify-between items-center py-4 px-6 max-w-7xl" aria-label="Main navigation">
+    <a href="index.html" class="logo-link flex items-center text-3xl font-bold tracking-tight" style="text-decoration:none;">
+      <img src="assets/images/logo.svg" alt="Invoiso logo" class="w-8 h-8 mr-2" />
+      <span class="logo-text-accent">Invoiso</span>
+    </a>
+    <ul class="hidden md:flex space-x-10 font-medium">
+      <li><a href="index.html" class="transition-colors duration-300">Home</a></li>
+      <li><a href="index.html#features" class="transition-colors duration-300">Features</a></li>
+      <li><a href="faq.html" class="transition-colors duration-300">FAQ</a></li>
+      <li><a href="changelog.html" class="transition-colors duration-300">Updates</a></li>
+      <li><a href="download.html" class="nav-cta">Download App</a></li>
+    </ul>
+    <button class="md:hidden" id="hamburger-btn" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobile-menu">
+      <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+    </button>
+  </nav>
+  <div class="mobile-menu hidden md:hidden" id="mobile-menu">
+    <ul class="mob-nav-list">
+      <li><a href="index.html" class="mob-nav-link">Home</a></li>
+      <li><a href="index.html#features" class="mob-nav-link">Features</a></li>
+      <li><a href="faq.html" class="mob-nav-link">FAQ</a></li>
+      <li><a href="changelog.html" class="mob-nav-link">Updates</a></li>
+    </ul>
+    <div class="mob-nav-ctas">
+      <a href="invoice-maker.html" class="mob-nav-btn-outline mob-nav-active">Try Online</a>
+      <a href="download.html" class="mob-nav-btn-solid">Download</a>
+    </div>
+  </div>
+</header>
+
+<main id="main-content">
+<!-- ── Hero ─────────────────────────────────────────── -->
+<div class="tool-hero">
+  <h1>Free Online <span style="color:var(--primary)">Invoice Maker</span></h1>
+  <p>Fill in the details below, then preview or download your PDF invoice instantly.</p>
+  <div class="notice"><i class="fas fa-shield-halved"></i> Nothing is stored — all data stays in your browser</div>
+  <a  href="#about-this-tool" class="notice notice-help"> <i class="fa-regular fa-circle-question"></i> Help</a>
+</div>
+
+<!-- ── Main tool ─────────────────────────────────────── -->
+<div class="tool-wrap">
+
+  <!-- ─── LEFT SIDEBAR ─────────────────────────────── -->
+  <div class="sidebar-col">
+
+    <!-- Currency + Type -->
+    <div class="card">
+      <div class="card-header"><i class="fas fa-sliders"></i> Settings</div>
+      <div class="form-group">
+        <label>Document Type</label>
+        <div class="seg-ctrl" id="type-ctrl">
+          <button class="active" data-val="Invoice" onclick="setDocType(this)">Invoice</button>
+          <button data-val="Quotation" onclick="setDocType(this)">Quotation</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Currency</label>
+        <select id="currency-sel" onchange="setCurrency(this)">
+          <option value="INR|₹">₹ INR — Indian Rupee</option>
+          <option value="USD|$">$ USD — US Dollar</option>
+          <option value="EUR|€">€ EUR — Euro</option>
+          <option value="GBP|£">£ GBP — British Pound</option>
+          <option value="JPY|¥">¥ JPY — Japanese Yen</option>
+          <option value="AED|AED">AED — UAE Dirham</option>
+          <option value="SGD|S$">S$ SGD — Singapore Dollar</option>
+          <option value="AUD|A$">A$ AUD — Australian Dollar</option>
+          <option value="CAD|C$">C$ CAD — Canadian Dollar</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Your Business Details -->
+    <div class="card" style="margin-top:12px;">
+      <div class="card-header">
+        <i class="fas fa-building"></i> Your Business Details
+      </div>
+      <div id="from-body">
+        <div class="form-group">
+            <label>Business / Your Name *</label>
+            <input type="text" id="from-name" placeholder="Your company name" />
+          </div>
+          <div class="form-group">
+            <label>Address</label>
+            <input type="text" id="from-address" placeholder="Street, City, State" />
+          </div>
+          <div class="form-group">
+            <label>Phone</label>
+            <input type="tel" id="from-phone" placeholder="+91 xxxxx xxxxx" />
+          </div>
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="from-email" placeholder="you@business.com" />
+          </div>
+          <div class="form-group">
+            <label>GSTIN / Tax No.</label>
+            <input type="text" id="from-gstin" placeholder="Optional" />
+          </div>
+          <div class="form-group">
+            <label>Website</label>
+            <input type="text" id="from-website" placeholder="www.yourbusiness.com" />
+          </div>
+      </div>
+    </div>
+
+
+
+
+  </div>
+  <!-- END SIDEBAR -->
+
+  <!-- ─── RIGHT MAIN AREA ───────────────────────────── -->
+  <div class="main-col">
+
+    <!-- Row 1: Invoice Details + Customer Details -->
+    <div class="header-cards-row">
+
+      <!-- Invoice Details card -->
+      <div class="card">
+        <div class="card-header"><i class="fas fa-receipt"></i> <span id="doc-type-label">Invoice</span> Details</div>
+        <div class="form-group">
+          <label>Document Number</label>
+          <input type="text" id="inv-number" value="" placeholder="INV-001" />
+        </div>
+        <div class="form-row cols-2">
+          <div class="form-group">
+            <label>Issue Date</label>
+            <input type="date" id="inv-date" />
+          </div>
+          <div class="form-group">
+            <label>Due Date</label>
+            <input type="date" id="inv-due" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Customer (Bill To) card -->
+      <div class="card">
+        <div class="card-header"><i class="fas fa-user"></i> Bill To</div>
+        <div class="form-row cols-3">
+          <div class="form-group">
+            <label>Customer Name *</label>
+            <input type="text" id="cust-name" placeholder="Full name" />
+          </div>
+          <div class="form-group">
+            <label>Business Name</label>
+            <input type="text" id="cust-biz" placeholder="Company" />
+          </div>
+          <div class="form-group">
+            <label>Phone</label>
+            <input type="tel" id="cust-phone" placeholder="+91 xxxxx xxxxx" />
+          </div>
+        </div>
+        <div class="form-row cols-3">
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="cust-email" placeholder="email@example.com" />
+          </div>
+          <div class="form-group">
+            <label>Address</label>
+            <input type="text" id="cust-address" placeholder="Street, City, State" />
+          </div>
+          <div class="form-group">
+            <label>GSTIN / Tax No.</label>
+            <input type="text" id="cust-gstin" placeholder="Optional" />
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <!-- END Row 1 -->
+
+    <!-- Invoice Items card -->
+    <div class="card" id="invoice-items-card" style="margin-top:12px;">
+      <div class="card-header">
+        <i class="fas fa-shopping-cart"></i>
+        <span id="items-doc-label">Invoice</span> Items
+        <span class="badge" id="items-count">0 items</span>
+      </div>
+
+      <!-- Items list -->
+      <div class="items-scroll">
+        <div class="items-list" id="items-list">
+          <div class="empty-state" id="empty-state">
+            <i class="fas fa-cart-shopping"></i>
+            <div>No items added yet</div>
+            <div style="font-size:12px;">Use the "Add Item" button below</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary add-item-mobile-btn" id="add-item-mobile-btn" onclick="openAddItemDialog()">
+        <i class="fas fa-plus"></i> Add Item
+      </button>
+
+      <!-- Tax settings + Totals -->
+      <hr class="divider" />
+      <div class="totals-section">
+        <!-- Tax settings -->
+        <div>
+          <div class="toggle-row">
+            <label style="font-weight:600;"><i class="fas fa-percent" style="color:var(--primary);margin-right:6px;"></i>Tax / GST</label>
+            <label class="switch">
+              <input type="checkbox" id="tax-toggle" checked onchange="updateTotals()" />
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div id="tax-settings" style="margin-top:8px;">
+            <div class="form-group" style="margin-bottom:8px;">
+              <label>Tax Mode</label>
+              <div class="seg-ctrl">
+                <button class="active" data-val="global" onclick="setTaxMode(this)">Global Rate</button>
+                <button data-val="peritem" onclick="setTaxMode(this)">Per Item</button>
+              </div>
+            </div>
+            <div id="global-rate-wrap" class="form-group">
+              <label>Global Tax Rate (%)</label>
+              <input type="number" id="tax-rate" value="18" min="0" max="100" step="0.1" oninput="updateTotals()" />
+            </div>
+            <div id="peritem-info" style="display:none; font-size:12px; color:var(--primary); background:var(--primary-dim); padding:8px 10px; border-radius:var(--radius-sm);">
+              <i class="fas fa-info-circle"></i> Tax rate is taken per item (set when adding each item)
+            </div>
+          </div>
+
+          <!-- Additional Costs -->
+          <div class="extra-costs" style="margin-top:12px;">
+            <div class="extra-header" id="ec-header" onclick="toggleExtraCosts()">
+              <i class="fas fa-plus-square"></i>
+              Additional Costs
+              <span class="ec-badge" id="ec-badge" style="display:none;">0</span>
+              <i class="fas fa-chevron-down chevron"></i>
+            </div>
+            <div class="extra-body" id="ec-body" style="display:none;">
+              <div id="ec-rows"></div>
+              <button class="btn btn-outline btn-sm" onclick="addExtraCost()" style="margin-top:4px;">
+                <i class="fas fa-plus"></i> Add Row
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Totals panel -->
+        <div class="totals-panel">
+          <div class="total-row">
+            <span>Subtotal</span>
+            <span class="total-val" id="t-subtotal">—</span>
+          </div>
+          <div class="total-row" id="tax-row">
+            <span>Tax</span>
+            <span class="total-val" id="t-tax">—</span>
+          </div>
+          <div id="extra-totals"></div>
+          <div class="total-row grand">
+            <span>Total</span>
+            <span class="total-val" id="t-total">—</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <!-- END Items card -->
+
+    <!-- Notes -->
+    <div class="card" style="margin-top:12px;">
+      <div class="card-header"><i class="fas fa-sticky-note"></i> Notes / Terms</div>
+      <textarea id="notes" placeholder="Payment terms, bank details, thank-you message, etc." style="min-height:80px;"></textarea>
+    </div>
+
+    <!-- Actions -->
+    <input type="file" id="json-import-input" accept=".json" style="display:none;" onchange="handleImport(this)" />
+    <div class="action-bar no-print">
+      <button class="btn btn-outline" onclick="clearAll()" style="font-size:13px; padding:11px 22px;">
+        <i class="fas fa-rotate-left"></i> Clear All
+      </button>
+      <button class="btn btn-outline" onclick="exportJSON()" style="font-size:13px; padding:11px 22px;">
+        <i class="fas fa-file-export"></i> Export JSON
+      </button>
+      <button class="btn btn-outline" onclick="document.getElementById('json-import-input').click()" style="font-size:13px; padding:11px 22px;">
+        <i class="fas fa-file-import"></i> Import JSON
+      </button>
+      <button class="btn btn-purple" onclick="previewPDF()">
+        <i class="fas fa-eye"></i> Preview PDF
+      </button>
+      <button class="btn btn-success" onclick="downloadPDF()">
+        <i class="fas fa-download"></i> Download PDF
+      </button>
+    </div>
+
+  </div>
+  <!-- END MAIN -->
+
+</div>
+<!-- END TOOL WRAP -->
+
+<!-- ── Footer ────────────────────────────────────────── -->
+</main>
+
+<!-- ── SEO Content ──────────────────────────────────── -->
+<section id="about-this-tool" aria-label="About this tool" style="background:rgba(255,255,255,0.02); border-top:1px solid rgba(255,255,255,0.07); padding:48px 24px; margin-top:100px">
+  <div style="max-width:860px; margin:0 auto; margin-top:60px;">
+    <h2 style="font-size:1.4rem; font-weight:700; color:#e2e8f0; margin-bottom:12px;">How to Create a Free Invoice Online</h2>
+    <p style="color:#94a3b8; line-height:1.75; margin-bottom:24px;">Using Invoiso's free invoice maker is simple. Fill in your business details, add your client's information, and add line items for your products or services. Set the tax rate — either a global GST/VAT percentage or per-item rates — then click <strong style="color:#e2e8f0;">Download PDF</strong> to get a professional invoice in seconds. No account needed, no data ever leaves your browser.</p>
+    <h2 style="font-size:1.4rem; font-weight:700; color:#e2e8f0; margin-bottom:12px;">Why Use This Invoice Maker?</h2>
+    <ul style="color:#94a3b8; line-height:1.9; margin-bottom:24px; padding-left:20px;">
+      <li><strong style="color:#e2e8f0;">Completely free</strong> — no subscription, no watermark, no hidden fees</li>
+      <li><strong style="color:#e2e8f0;">Privacy-first</strong> — all invoice data stays in your browser; nothing is sent to any server</li>
+      <li><strong style="color:#e2e8f0;">GST &amp; tax support</strong> — add global tax rates or set tax per line item</li>
+      <li><strong style="color:#e2e8f0;">Multi-currency</strong> — INR, USD, EUR, GBP, AED, and more</li>
+      <li><strong style="color:#e2e8f0;">Instant PDF</strong> — download a clean, professional invoice PDF in one click</li>
+      <li><strong style="color:#e2e8f0;">Save &amp; resume</strong> — export your invoice as JSON and import it later to continue editing</li>
+    </ul>
+    <h2 style="font-size:1.4rem; font-weight:700; color:#e2e8f0; margin-bottom:12px;">Frequently Asked Questions</h2>
+    <div style="display:flex; flex-direction:column; gap:16px;">
+      <div>
+        <h3 style="font-size:1rem; font-weight:600; color:#e2e8f0; margin-bottom:4px;">Is this invoice maker really free?</h3>
+        <p style="color:#94a3b8; line-height:1.7; margin:0;">Yes — completely free, no sign-up, no subscription. Just create and download.</p>
+      </div>
+      <div>
+        <h3 style="font-size:1rem; font-weight:600; color:#e2e8f0; margin-bottom:4px;">Does it support GST invoices?</h3>
+        <p style="color:#94a3b8; line-height:1.7; margin:0;">Yes. You can add your GSTIN, set a global tax rate or per-item tax percentages, and the totals will calculate automatically.</p>
+      </div>
+      <div>
+        <h3 style="font-size:1rem; font-weight:600; color:#e2e8f0; margin-bottom:4px;">Is my invoice data stored anywhere?</h3>
+        <p style="color:#94a3b8; line-height:1.7; margin:0;">No. All data is processed entirely in your browser. Nothing is sent to any server. Use the JSON export to save your work locally.</p>
+      </div>
+      <div>
+        <h3 style="font-size:1rem; font-weight:600; color:#e2e8f0; margin-bottom:4px;">Can I create invoices in currencies other than INR?</h3>
+        <p style="color:#94a3b8; line-height:1.7; margin:0;">Yes — choose from INR, USD, EUR, GBP, JPY, AED, SGD, AUD, and CAD using the currency selector in the Settings panel.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="text-white text-center py-12 relative" style="margin-top:0;">
+  <div class="container mx-auto px-6">
+    <div class="flex flex-wrap justify-center gap-8 text-lg mb-8">
+      <a href="https://github.com/Anooppandikashala/invoiso" target="_blank" rel="noopener noreferrer" class="hover:underline">
+        <i class="fab fa-github mr-2"></i>GitHub
+      </a>
+      <a href="download.html" class="hover:underline">
+        <i class="fas fa-download mr-2"></i>Download Desktop App
+      </a>
+      <a href="mailto:anooppkrishnan96@gmail.com" class="hover:underline">
+        <i class="fas fa-envelope mr-2"></i>Email
+      </a>
+    </div>
+    <div class="border-t pt-8" style="border-color:var(--border)">
+      <p>© <span id="year"></span> Invoiso. All rights reserved.</p>
+      <p style="color:var(--text-muted); font-size:13px; margin-top:6px;">
+        This tool runs entirely in your browser — no data is sent to any server.
+      </p>
+    </div>
+  </div>
+</footer>
+
+<!-- ── Add Item Dialog (Mobile Only) ─────────────────── -->
+<div id="add-item-dialog" class="dialog-overlay">
+  <div class="dialog-box">
+    <div class="dialog-header">
+      <h3 id="dialog-title"><i class="fas fa-cart-plus"></i> Add Item</h3>
+      <button class="btn-icon" onclick="closeAddItemDialog()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="dialog-body">
+      <div class="form-group">
+        <label>Description *</label>
+        <input type="text" id="item-name-mobile" placeholder="Product or service name" />
+      </div>
+      <div class="form-group">
+        <label>Type</label>
+        <div class="seg-ctrl" id="item-type-ctrl-mobile">
+          <button class="active" data-val="product" onclick="setItemType(this)">Product</button>
+          <button data-val="service" onclick="setItemType(this)">Service</button>
+        </div>
+      </div>
+      <div class="form-row cols-2">
+        <div class="form-group">
+          <label>Qty</label>
+          <input type="number" id="item-qty-mobile" value="1" min="0.01" step="0.01" />
+        </div>
+        <div class="form-group">
+          <label>Unit Price</label>
+          <input type="number" id="item-price-mobile" value="0" min="0" step="0.01" placeholder="0.00" />
+        </div>
+      </div>
+      <div class="form-row cols-2">
+        <div class="form-group">
+          <label>Discount</label>
+          <input type="number" id="item-discount-mobile" value="0" min="0" step="0.01" placeholder="0.00" />
+        </div>
+        <div class="form-group">
+          <label>Tax % (per item)</label>
+          <input type="number" id="item-tax-mobile" value="0" min="0" max="100" step="0.1" placeholder="0" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>HSN / SAC Code</label>
+        <input type="text" id="item-hsn-mobile" placeholder="Optional" />
+      </div>
+      <button class="btn btn-primary" id="dialog-submit-btn" onclick="addItemAndCloseDialog()">
+        <i class="fas fa-plus"></i> Add to Invoice
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── jsPDF libraries ────────────────────────────────── -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+<!-- ── App JS ─────────────────────────────────────────── -->
+<script>
+/* ════════════════════════════════════════════════════
+   STATE
+   ════════════════════════════════════════════════════ */
+const state = {
+  docType: 'Invoice',
+  currency: { code: 'INR', symbol: '₹', pdfSym: 'Rs. ' },
+  taxEnabled: true,
+  taxMode: 'global',
+  globalTaxRate: 18,
+  items: [],
+  extraCosts: [],
+  itemType: 'product',
+  editingId: null,
+};
+
+// PDF-safe symbol map (jsPDF standard fonts don't support all Unicode)
+const PDF_SYM = {
+  'INR': 'Rs. ', 'USD': '$', 'EUR': 'EUR ', 'GBP': 'GBP ',
+  'JPY': 'JPY ', 'AED': 'AED ', 'SGD': 'S$ ', 'AUD': 'A$ ', 'CAD': 'C$ ',
+};
+
+/* ════════════════════════════════════════════════════
+   WELCOME SCREEN
+   ════════════════════════════════════════════════════ */
+function startNewInvoice() {
+  document.getElementById('welcome-overlay').style.display = 'none';
+}
+
+function handleWelcomeImport(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = '';
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data._app !== 'invoiso-maker') {
+        alert('This JSON file was not exported from the Invoiso Invoice Maker.');
+        return;
+      }
+      applyImport(data);
+      document.getElementById('welcome-overlay').style.display = 'none';
+    } catch {
+      alert('Invalid JSON file — could not parse.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* ════════════════════════════════════════════════════
+   INIT
+   ════════════════════════════════════════════════════ */
+(function init() {
+  // Set today's date
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('inv-date').value = today;
+
+  // Auto invoice number
+  const d = new Date();
+  const num = `INV-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}-001`;
+  document.getElementById('inv-number').value = num;
+
+  // Footer year
+  document.getElementById('year').textContent = d.getFullYear();
+
+  updateTotals();
+
+  // Hamburger menu (from landing)
+  const btn = document.getElementById('hamburger-btn');
+  const menu = document.getElementById('mobile-menu');
+  if (btn && menu) {
+    btn.addEventListener('click', () => {
+      const open = menu.classList.toggle('hidden');
+      btn.setAttribute('aria-expanded', String(!open));
+    });
+  }
+
+  // Nav click tracking
+  document.querySelectorAll('.navbar a').forEach(a => {
+    a.addEventListener('click', () => {
+      if (typeof gtag !== 'function') return;
+      gtag('event', 'nav_click', {
+        link_text: a.textContent.trim(),
+        link_url: a.getAttribute('href'),
+      });
+    });
+  });
+})();
+
+/* ════════════════════════════════════════════════════
+   DIALOG FUNCTIONS
+   ════════════════════════════════════════════════════ */
+function openAddItemDialog() {
+  state.editingId = null;
+  document.getElementById('dialog-title').innerHTML = '<i class="fas fa-cart-plus"></i> Add Item';
+  document.getElementById('dialog-submit-btn').innerHTML = '<i class="fas fa-plus"></i> Add to Invoice';
+  document.getElementById('item-name-mobile').value = '';
+  document.getElementById('item-qty-mobile').value = '1';
+  document.getElementById('item-price-mobile').value = '0';
+  document.getElementById('item-discount-mobile').value = '0';
+  document.getElementById('item-tax-mobile').value = '0';
+  document.getElementById('item-hsn-mobile').value = '';
+  document.querySelectorAll('#item-type-ctrl-mobile button').forEach(b => {
+    b.classList.toggle('active', b.dataset.val === 'product');
+  });
+  state.itemType = 'product';
+  document.getElementById('add-item-dialog').classList.add('open');
+}
+
+function openEditDialog(id) {
+  const item = state.items.find(i => i.id === id);
+  if (!item) return;
+  state.editingId = id;
+  document.getElementById('dialog-title').innerHTML = '<i class="fas fa-pen"></i> Edit Item';
+  document.getElementById('dialog-submit-btn').innerHTML = '<i class="fas fa-check"></i> Update Item';
+  document.getElementById('item-name-mobile').value = item.name;
+  document.getElementById('item-qty-mobile').value = item.qty;
+  document.getElementById('item-price-mobile').value = item.price;
+  document.getElementById('item-discount-mobile').value = item.discount;
+  document.getElementById('item-tax-mobile').value = item.taxPct;
+  document.getElementById('item-hsn-mobile').value = item.hsn || '';
+  document.querySelectorAll('#item-type-ctrl-mobile button').forEach(b => {
+    b.classList.toggle('active', b.dataset.val === item.type);
+  });
+  state.itemType = item.type;
+  document.getElementById('add-item-dialog').classList.add('open');
+}
+
+function closeAddItemDialog() {
+  const dialog = document.getElementById('add-item-dialog');
+  dialog.classList.remove('open');
+}
+
+function addItemAndCloseDialog() {
+  addItemMobile();
+  closeAddItemDialog(); // Close the dialog after adding the item
+}
+
+/* ════════════════════════════════════════════════════
+   SETTINGS
+   ════════════════════════════════════════════════════ */
+function setDocType(btn) {
+  document.querySelectorAll('#type-ctrl button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  state.docType = btn.dataset.val;
+  document.getElementById('doc-type-label').textContent = state.docType;
+  document.getElementById('items-doc-label').textContent = state.docType;
+  const numEl = document.getElementById('inv-number');
+  if (state.docType === 'Quotation' && numEl.value.startsWith('INV-')) {
+    numEl.value = numEl.value.replace('INV-', 'QUO-');
+  } else if (state.docType === 'Invoice' && numEl.value.startsWith('QUO-')) {
+    numEl.value = numEl.value.replace('QUO-', 'INV-');
+  }
+}
+
+function setCurrency(sel) {
+  const [code, sym] = sel.value.split('|');
+  state.currency = { code, symbol: sym, pdfSym: PDF_SYM[code] || (sym + ' ') };
+  updateTotals();
+  renderItems();
+}
+
+function setItemType(btn) {
+  btn.closest('.seg-ctrl').querySelectorAll('button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  state.itemType = btn.dataset.val;
+}
+
+function setTaxMode(btn) {
+  document.querySelectorAll('.seg-ctrl button[data-val]').forEach(b => {
+    if (b.closest('.seg-ctrl') === btn.closest('.seg-ctrl')) b.classList.remove('active');
+  });
+  btn.classList.add('active');
+  state.taxMode = btn.dataset.val;
+  document.getElementById('global-rate-wrap').style.display = state.taxMode === 'global' ? '' : 'none';
+  document.getElementById('peritem-info').style.display = state.taxMode === 'peritem' ? '' : 'none';
+  updateTotals();
+}
+
+
+function toggleExtraCosts() {
+  const body = document.getElementById('ec-body');
+  const header = document.getElementById('ec-header');
+  const open = body.style.display === 'none';
+  body.style.display = open ? '' : 'none';
+  header.classList.toggle('open', open);
+}
+
+/* ════════════════════════════════════════════════════
+   ITEMS
+   ════════════════════════════════════════════════════ */
+function addItemMobile() {
+  const nameInput = document.getElementById('item-name-mobile');
+  const name = nameInput ? nameInput.value.trim() : '';
+  if (!name) { alert('Please enter an item description.'); return; }
+
+  const qty = parseFloat(document.getElementById('item-qty-mobile').value) || 1;
+  const price = parseFloat(document.getElementById('item-price-mobile').value) || 0;
+  const discount = parseFloat(document.getElementById('item-discount-mobile').value) || 0;
+  const taxPct = parseFloat(document.getElementById('item-tax-mobile').value) || 0;
+  const hsn = document.getElementById('item-hsn-mobile').value.trim();
+  const type = state.itemType;
+  const total = Math.max(0, (price * qty) - discount);
+
+  if (state.editingId !== null) {
+    const idx = state.items.findIndex(i => i.id === state.editingId);
+    if (idx !== -1) state.items[idx] = { id: state.editingId, name, type, qty, price, discount, taxPct, hsn, total };
+    state.editingId = null;
+  } else {
+    state.items.push({ id: Date.now(), name, type, qty, price, discount, taxPct, hsn, total });
+  }
+
+  renderItems();
+  updateTotals();
+}
+
+function removeItem(id) {
+  state.items = state.items.filter(i => i.id !== id);
+  renderItems();
+  updateTotals();
+}
+
+function renderItems() {
+  const list = document.getElementById('items-list');
+  const countEl = document.getElementById('items-count');
+  const sym = state.currency.symbol;
+
+  countEl.textContent = state.items.length + (state.items.length === 1 ? ' item' : ' items');
+
+  const empty = document.getElementById('empty-state');
+
+  if (state.items.length === 0) {
+    list.innerHTML = '';
+    if (empty) { list.appendChild(empty); empty.style.display = 'flex'; }
+    return;
+  }
+
+  if (empty) empty.style.display = 'none';
+
+  list.innerHTML = state.items.map((item, i) => {
+    const typeTag = `<span class="type-tag type-${item.type}">${item.type === 'service' ? 'Service' : 'Product'}</span>`;
+    return `
+      <div class="item-row">
+        <div class="item-num">${i + 1}</div>
+        <div>
+          <div class="item-name">${escHtml(item.name)}</div>
+          <div class="item-sub">${typeTag}${item.hsn ? ` &nbsp;HSN: ${escHtml(item.hsn)}` : ''}</div>
+        </div>
+        <div class="item-nums-group">
+          <div class="item-field">${fmtNum(item.qty)}<span>Qty</span></div>
+          <div class="item-field">${sym}${fmtNum(item.price)}<span>Unit Price</span></div>
+          <div class="item-field">${sym}${fmtNum(item.discount)}<span>Discount</span></div>
+          <div class="item-field">${item.taxPct}%<span>Tax</span></div>
+        </div>
+        <div class="item-footer-row">
+          <div class="item-total">${sym}${fmtNum(item.total)}</div>
+          <div class="item-actions">
+            <button class="btn-icon" onclick="openEditDialog(${item.id})" title="Edit item" style="color:var(--primary);"><i class="fas fa-pen"></i></button>
+            <button class="btn-icon" onclick="removeItem(${item.id})" title="Remove item"><i class="fas fa-trash-alt"></i></button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* ════════════════════════════════════════════════════
+   ADDITIONAL COSTS
+   ════════════════════════════════════════════════════ */
+function addExtraCost() {
+  state.extraCosts.push({ id: Date.now(), label: '', amount: 0 });
+  renderExtraCosts();
+}
+
+function removeExtraCost(id) {
+  state.extraCosts = state.extraCosts.filter(c => c.id !== id);
+  renderExtraCosts();
+  updateTotals();
+}
+
+function renderExtraCosts() {
+  const sym = state.currency.symbol;
+  const rows = document.getElementById('ec-rows');
+  const badge = document.getElementById('ec-badge');
+  rows.innerHTML = state.extraCosts.map(c => `
+    <div class="extra-row">
+      <input type="text" placeholder="e.g. Shipping" value="${escHtml(c.label)}"
+             oninput="updateEC(${c.id},'label',this.value)" />
+      <input type="number" placeholder="0.00" value="${c.amount || ''}" min="0" step="0.01"
+             oninput="updateEC(${c.id},'amount',this.value)" />
+      <button class="btn-icon" onclick="removeExtraCost(${c.id})"><i class="fas fa-times"></i></button>
+    </div>`).join('');
+  badge.textContent = state.extraCosts.length;
+  badge.style.display = state.extraCosts.length ? '' : 'none';
+  updateTotals();
+}
+
+function updateEC(id, key, val) {
+  const c = state.extraCosts.find(x => x.id === id);
+  if (!c) return;
+  c[key] = key === 'amount' ? (parseFloat(val) || 0) : val;
+  updateTotals();
+}
+
+/* ════════════════════════════════════════════════════
+   TOTALS
+   ════════════════════════════════════════════════════ */
+function calculateTotals() {
+  const sym = state.currency.symbol;
+  const taxEnabled = document.getElementById('tax-toggle').checked;
+  state.taxEnabled = taxEnabled;
+  state.globalTaxRate = parseFloat(document.getElementById('tax-rate').value) || 0;
+
+  let subtotal = 0;
+  state.items.forEach(item => { subtotal += item.total; });
+
+  let tax = 0;
+  if (taxEnabled) {
+    if (state.taxMode === 'global') {
+      tax = subtotal * (state.globalTaxRate / 100);
+    } else {
+      state.items.forEach(item => { tax += item.total * (item.taxPct / 100); });
+    }
+  }
+
+  let extraTotal = 0;
+  state.extraCosts.forEach(c => { extraTotal += c.amount; });
+
+  const grand = subtotal + tax + extraTotal;
+  return { subtotal, tax, extraTotal, grand, sym };
+}
+
+function updateTotals() {
+  const { subtotal, tax, extraTotal, grand, sym } = calculateTotals();
+
+  document.getElementById('t-subtotal').textContent = sym + fmtNum(subtotal);
+  document.getElementById('t-tax').textContent = sym + fmtNum(tax);
+  document.getElementById('tax-row').style.display = state.taxEnabled ? '' : 'none';
+  document.getElementById('tax-settings').style.display = state.taxEnabled ? '' : 'none';
+  document.getElementById('t-total').textContent = sym + fmtNum(grand);
+
+  const extraEl = document.getElementById('extra-totals');
+  extraEl.innerHTML = state.extraCosts
+    .filter(c => c.amount > 0)
+    .map(c => `<div class="total-row"><span>${escHtml(c.label) || 'Extra'}</span><span class="total-val">${sym}${fmtNum(c.amount)}</span></div>`)
+    .join('');
+}
+
+/* ════════════════════════════════════════════════════
+   CLEAR
+   ════════════════════════════════════════════════════ */
+function clearAll() {
+  if (!confirm('Clear all invoice data?')) return;
+  state.items = [];
+  state.extraCosts = [];
+  ['cust-name','cust-biz','cust-phone','cust-email','cust-address','cust-gstin',
+   'from-name','from-address','from-phone','from-email','from-gstin','from-website',
+   'notes'].forEach(id => { document.getElementById(id).value = ''; });
+  renderItems();
+  renderExtraCosts();
+  updateTotals();
+}
+
+/* ════════════════════════════════════════════════════
+   PDF GENERATION
+   ════════════════════════════════════════════════════ */
+function buildPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const psym = state.currency.pdfSym;
+  const { subtotal, tax, grand } = calculateTotals();
+  const docType = state.docType.toUpperCase();
+
+  const fromName = v('from-name') || 'Your Business';
+  const fromAddr = v('from-address');
+  const fromPhone = v('from-phone');
+  const fromEmail = v('from-email');
+  const fromGstin = v('from-gstin');
+  const fromWeb = v('from-website');
+
+  const custName = v('cust-name') || 'Customer';
+  const custBiz = v('cust-biz');
+  const custAddr = v('cust-address');
+  const custPhone = v('cust-phone');
+  const custEmail = v('cust-email');
+  const custGstin = v('cust-gstin');
+
+  const invNum = v('inv-number');
+  const invDate = v('inv-date');
+  const invDue = v('inv-due');
+  const notes = v('notes');
+
+  const PW = 210, PH = 297;
+  const ML = 14, MR = 14, MW = PW - ML - MR;
+  let y = 14;
+
+  // ── Header band ──
+  /*
+  doc.setFillColor(79, 142, 247);
+  doc.rect(0, 0, PW, 14, 'F');
+  doc.setFontSize(8);
+  doc.setTextColor(255, 255, 255);
+  doc.text('Generated by Invoiso — invoiso.co.in', ML, 9);
+  doc.text(docType, PW - MR, 9, { align: 'right' });
+
+  y = 20;
+  */
+
+  // ── From (left) ──
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(30, 40, 60);
+  doc.text(fromName, ML, y);
+  y += 6;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  doc.setTextColor(80, 95, 115);
+  if (fromAddr) { doc.text(fromAddr, ML, y); y += 4.5; }
+  if (fromPhone) { doc.text('Phone: ' + fromPhone, ML, y); y += 4.5; }
+  if (fromEmail) { doc.text('Email: ' + fromEmail, ML, y); y += 4.5; }
+  if (fromGstin) { doc.text('GSTIN: ' + fromGstin, ML, y); y += 4.5; }
+  if (fromWeb) { doc.text(fromWeb, ML, y); y += 4.5; }
+
+  // ── Invoice meta (right) ──
+  let ry = 20;
+  doc.setFontSize(22);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(79, 142, 247);
+  doc.text(docType, PW - MR, ry, { align: 'right' });
+  ry += 8;
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(80, 95, 115);
+  if (invNum) { doc.text('No: ' + invNum, PW - MR, ry, { align: 'right' }); ry += 4.5; }
+  if (invDate) { doc.text('Date: ' + fmtDateDisplay(invDate), PW - MR, ry, { align: 'right' }); ry += 4.5; }
+  if (invDue) { doc.text('Due: ' + fmtDateDisplay(invDue), PW - MR, ry, { align: 'right' }); ry += 4.5; }
+
+  // ── Divider ──
+  const divY = Math.max(y, ry) + 4;
+  doc.setDrawColor(220, 228, 240);
+  doc.setLineWidth(0.3);
+  doc.line(ML, divY, PW - MR, divY);
+
+  // ── Bill To ──
+  y = divY + 6;
+  doc.setFontSize(7.5);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(79, 142, 247);
+  doc.text('BILL TO', ML, y);
+  y += 4.5;
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(20, 30, 50);
+  doc.text(custName, ML, y);
+  y += 5;
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(80, 95, 115);
+  if (custBiz) { doc.text(custBiz, ML, y); y += 4.5; }
+  if (custAddr) { doc.text(custAddr, ML, y); y += 4.5; }
+  if (custPhone) { doc.text('Phone: ' + custPhone, ML, y); y += 4.5; }
+  if (custEmail) { doc.text('Email: ' + custEmail, ML, y); y += 4.5; }
+  if (custGstin) { doc.text('GSTIN: ' + custGstin, ML, y); y += 4.5; }
+
+  y += 4;
+
+  // ── Items table ──
+  const headers = ['#', 'Description', 'HSN', 'Qty', psym.trim() + ' Price', psym.trim() + ' Disc.', psym.trim() + ' Amount'];
+  const rows = state.items.map((item, i) => [
+    i + 1,
+    item.name,
+    item.hsn || '',
+    fmtNum(item.qty),
+    fmtNum(item.price),
+    fmtNum(item.discount),
+    fmtNum(item.total),
+  ]);
+
+  doc.autoTable({
+    head: [headers],
+    body: rows,
+    startY: y,
+    styles: { fontSize: 8.5, cellPadding: 3 },
+    headStyles: { fillColor: [79, 142, 247], textColor: 255, fontStyle: 'bold', fontSize: 8 },
+    alternateRowStyles: { fillColor: [246, 249, 255] },
+    columnStyles: {
+      0: { cellWidth: 8, halign: 'center' },
+      1: { cellWidth: 'auto' },
+      2: { cellWidth: 25, halign: 'left' },
+      3: { cellWidth: 15, halign: 'left' },
+      4: { cellWidth: 25, halign: 'left' },
+      5: { cellWidth: 20, halign: 'left' },
+      6: { cellWidth: 30, halign: 'right', fontStyle: 'bold' },
+    },
+    margin: { left: ML, right: MR },
+    tableWidth: MW,
+  });
+
+  y = doc.lastAutoTable.finalY + 10;
+
+  // ── Totals (right-aligned block) ──
+  const totBlockX = PW - MR - 70;
+  const totBlockW = 70;
+
+  const totals = [
+    ['Subtotal', psym + fmtNum(subtotal)],
+  ];
+  if (state.taxEnabled) {
+    const label = state.taxMode === 'global'
+      ? `Tax (${state.globalTaxRate}%)`
+      : 'Tax (per item)';
+    totals.push([label, psym + fmtNum(tax)]);
+  }
+  state.extraCosts.forEach(c => {
+    if (c.amount > 0) totals.push([c.label || 'Extra', psym + fmtNum(c.amount)]);
+  });
+
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica', 'normal');
+  totals.forEach(([lbl, val]) => {
+    doc.setTextColor(80, 95, 115);
+    doc.text(lbl + ':', totBlockX, y);
+    doc.setTextColor(30, 40, 60);
+    doc.text(val, PW - MR, y, { align: 'right' });
+    y += 5;
+  });
+
+  // Grand total
+  doc.setDrawColor(220, 228, 240);
+  doc.line(totBlockX, y - 1, PW - MR, y - 1);
+  y += 6;
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(34, 197, 94);
+  doc.text('Total:', totBlockX, y);
+  doc.text(psym + fmtNum(grand), PW - MR, y, { align: 'right' });
+  y += 10;
+
+  // ── Notes ──
+  if (notes) {
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(79, 142, 247);
+    doc.text('Notes / Terms', ML, y);
+    y += 4.5;
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(80, 95, 115);
+    const lines = doc.splitTextToSize(notes, MW);
+    doc.text(lines, ML, y);
+    y += lines.length * 4.5 + 4;
+  }
+
+  // ── Footer line ──
+  doc.setDrawColor(220, 228, 240);
+  doc.line(ML, PH - 16, PW - MR, PH - 16);
+  doc.setFontSize(7.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(150, 160, 175);
+  doc.text('Created with Invoiso — invoiso.co.in', ML, PH - 11);
+  doc.text('Page 1', PW - MR, PH - 11, { align: 'right' });
+
+  return doc;
+}
+
+function previewPDF() {
+  if (state.items.length === 0) {
+    alert('Add at least one item to preview the invoice.');
+    return;
+  }
+  const doc = buildPDF();
+  const blob = doc.output('blob');
+  const url = URL.createObjectURL(blob);
+  window.open(url, '_blank');
+}
+
+function downloadPDF() {
+  if (state.items.length === 0) {
+    alert('Add at least one item before downloading.');
+    return;
+  }
+  const doc = buildPDF();
+  const invNum = v('inv-number') || 'invoice';
+  const custName = v('cust-name') || 'customer';
+  const filename = `${state.docType}-${invNum}-${custName}.pdf`
+    .replace(/[^a-z0-9\-_.]/gi, '_').toLowerCase();
+  doc.save(filename);
+}
+
+/* ════════════════════════════════════════════════════
+   JSON EXPORT / IMPORT
+   ════════════════════════════════════════════════════ */
+function exportJSON() {
+  const snapshot = {
+    _version: 1,
+    _app: 'invoiso-maker',
+    docType: state.docType,
+    currency: state.currency,
+    taxEnabled: state.taxEnabled,
+    taxMode: state.taxMode,
+    globalTaxRate: state.globalTaxRate,
+    items: state.items,
+    extraCosts: state.extraCosts,
+    invoiceMeta: {
+      number: v('inv-number'),
+      date: v('inv-date'),
+      dueDate: v('inv-due'),
+    },
+    from: {
+      name: v('from-name'),
+      address: v('from-address'),
+      phone: v('from-phone'),
+      email: v('from-email'),
+      gstin: v('from-gstin'),
+      website: v('from-website'),
+    },
+    billTo: {
+      name: v('cust-name'),
+      businessName: v('cust-biz'),
+      phone: v('cust-phone'),
+      email: v('cust-email'),
+      address: v('cust-address'),
+      gstin: v('cust-gstin'),
+    },
+    notes: v('notes'),
+  };
+
+  const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const num = v('inv-number') || 'invoice';
+  a.href = url;
+  a.download = `${state.docType}-${num}.json`.replace(/[^a-z0-9\-_.]/gi, '_').toLowerCase();
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function handleImport(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = ''; // reset so same file can be re-imported
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data._app !== 'invoiso-maker') {
+        alert('This JSON file was not exported from the Invoiso Invoice Maker.');
+        return;
+      }
+      applyImport(data);
+    } catch {
+      alert('Invalid JSON file — could not parse.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function applyImport(data) {
+  // State
+  state.items = (data.items || []).map(i => ({ ...i, id: Date.now() + Math.random() }));
+  state.extraCosts = (data.extraCosts || []).map(c => ({ ...c, id: Date.now() + Math.random() }));
+  state.taxEnabled = data.taxEnabled !== false;
+  state.taxMode = data.taxMode || 'global';
+  state.globalTaxRate = data.globalTaxRate ?? 18;
+
+  // Currency
+  if (data.currency) {
+    state.currency = data.currency;
+    const sel = document.getElementById('currency-sel');
+    const opt = Array.from(sel.options).find(o => o.value.startsWith(data.currency.code + '|'));
+    if (opt) sel.value = opt.value;
+  }
+
+  // Doc type
+  if (data.docType) {
+    state.docType = data.docType;
+    document.querySelectorAll('#type-ctrl button').forEach(b => {
+      b.classList.toggle('active', b.dataset.val === data.docType);
+    });
+    document.getElementById('doc-type-label').textContent = data.docType;
+    document.getElementById('items-doc-label').textContent = data.docType;
+  }
+
+  // Tax toggle
+  const taxToggle = document.getElementById('tax-toggle');
+  taxToggle.checked = state.taxEnabled;
+  document.getElementById('tax-settings').style.display = state.taxEnabled ? '' : 'none';
+  document.getElementById('tax-row').style.display = state.taxEnabled ? '' : 'none';
+
+  // Tax mode buttons
+  document.querySelectorAll('#global-rate-wrap').forEach(el => {
+    el.style.display = state.taxMode === 'global' ? '' : 'none';
+  });
+  document.getElementById('peritem-info').style.display = state.taxMode === 'peritem' ? '' : 'none';
+  document.querySelectorAll('.seg-ctrl button[data-val]').forEach(b => {
+    if (b.parentElement.querySelector('[data-val="global"]')) {
+      b.classList.toggle('active', b.dataset.val === state.taxMode);
+    }
+  });
+  document.getElementById('tax-rate').value = state.globalTaxRate;
+
+  // Invoice meta
+  const m = data.invoiceMeta || {};
+  set('inv-number', m.number);
+  set('inv-date', m.date);
+  set('inv-due', m.dueDate);
+
+  // From
+  const f = data.from || {};
+  set('from-name', f.name);
+  set('from-address', f.address);
+  set('from-phone', f.phone);
+  set('from-email', f.email);
+  set('from-gstin', f.gstin);
+  set('from-website', f.website);
+
+  // Auto-expand From section if it has data
+  if (f.name || f.address || f.email) {
+    const body = document.getElementById('from-body');
+    if (body.style.display === 'none') toggleFrom();
+  }
+
+  // Bill To
+  const t = data.billTo || {};
+  set('cust-name', t.name);
+  set('cust-biz', t.businessName);
+  set('cust-phone', t.phone);
+  set('cust-email', t.email);
+  set('cust-address', t.address);
+  set('cust-gstin', t.gstin);
+
+  // Notes
+  set('notes', data.notes);
+
+  renderItems();
+  renderExtraCosts();
+  updateTotals();
+}
+
+function set(id, val) {
+  const el = document.getElementById(id);
+  if (el && val != null) el.value = val;
+}
+
+/* ════════════════════════════════════════════════════
+   HELPERS
+   ════════════════════════════════════════════════════ */
+function v(id) { return (document.getElementById(id) || {}).value || ''; }
+
+function fmtNum(n) {
+  return Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function fmtDateDisplay(iso) {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+
+</body>
+</html>

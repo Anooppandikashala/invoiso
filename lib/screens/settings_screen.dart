@@ -2,6 +2,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:invoiso/constants.dart';
+import 'package:invoiso/services/update_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:invoiso/database/company_info_service.dart';
 import 'package:invoiso/common.dart';
 import 'package:invoiso/database/settings_service.dart';
@@ -52,6 +54,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _showBankDetails = false;
   BusinessType _businessType = BusinessType.both;
 
+  // Update check state
+  UpdateInfo? _updateInfo;
+  bool _isCheckingUpdate = false;
+  bool _updateCheckFailed = false;
+
   File? _selectedLogoFile;
   String? _base64Logo;
 
@@ -59,6 +66,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _loadCompanyInfo();
+    _loadCachedUpdateInfo();
+  }
+
+  Future<void> _loadCachedUpdateInfo() async {
+    final cached = await SettingsService.getSetting(SettingKey.lastKnownLatestVersion);
+    if (cached != null && cached.isNotEmpty && mounted) {
+      setState(() {
+        _updateInfo = UpdateInfo(latestVersion: cached, currentVersion: AppConfig.version);
+      });
+    }
+  }
+
+  Future<void> _checkForUpdatesNow() async {
+    if (_isCheckingUpdate) return;
+    setState(() {
+      _isCheckingUpdate = true;
+      _updateCheckFailed = false;
+    });
+    final info = await UpdateService.checkForUpdate(force: true);
+    if (!mounted) return;
+    setState(() {
+      _isCheckingUpdate = false;
+      if (info != null) {
+        _updateInfo = info;
+        _updateCheckFailed = false;
+      } else {
+        _updateCheckFailed = true;
+      }
+    });
   }
 
   Future<void> _loadCompanyInfo() async {
@@ -920,6 +956,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ],
                 ),
 
+                const SizedBox(height: 20),
+
+                // ── Update card ──────────────────────────────────────────
+                _buildUpdateCard(),
+
                 const SizedBox(height: 32),
 
                 // ── Footer ───────────────────────────────────────────────
@@ -934,6 +975,173 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUpdateCard() {
+    final primaryColor = Theme.of(context).primaryColor;
+    final info = _updateInfo;
+    final hasUpdate = info != null && info.hasUpdate;
+    final isUpToDate = info != null && !info.hasUpdate;
+
+    Widget statusBadge;
+    if (_isCheckingUpdate) {
+      statusBadge = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 12,
+            height: 12,
+            child: CircularProgressIndicator(strokeWidth: 2, color: primaryColor),
+          ),
+          const SizedBox(width: 8),
+          Text('Checking...', style: TextStyle(fontSize: AppFontSize.xsmall, color: primaryColor)),
+        ],
+      );
+    } else if (hasUpdate) {
+      statusBadge = Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.orange.shade50,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.orange.shade300),
+        ),
+        child: Text(
+          'Update Available',
+          style: TextStyle(fontSize: AppFontSize.xsmall, color: Colors.orange.shade800, fontWeight: FontWeight.w600),
+        ),
+      );
+    } else if (isUpToDate) {
+      statusBadge = Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.green.shade50,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.green.shade300),
+        ),
+        child: Text(
+          'Up to date',
+          style: TextStyle(fontSize: AppFontSize.xsmall, color: Colors.green.shade700, fontWeight: FontWeight.w600),
+        ),
+      );
+    } else if (_updateCheckFailed) {
+      statusBadge = Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.red.shade50,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.red.shade200),
+        ),
+        child: Text(
+          'Check failed',
+          style: TextStyle(fontSize: AppFontSize.xsmall, color: Colors.red.shade600, fontWeight: FontWeight.w600),
+        ),
+      );
+    } else {
+      statusBadge = const SizedBox.shrink();
+    }
+
+    return Card(
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+        side: BorderSide(color: Colors.grey[200]!),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  'UPDATES',
+                  style: TextStyle(
+                    fontSize: AppFontSize.xsmall,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.grey[400],
+                    letterSpacing: 1.0,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                statusBadge,
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Divider(height: 1, color: Color(0xFFF5F5F5)),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      Icon(Icons.tag_rounded, size: 18, color: Colors.grey[400]),
+                      const SizedBox(width: 14),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Current Version',
+                              style: TextStyle(fontSize: AppFontSize.xsmall, color: Colors.grey[500], fontWeight: FontWeight.w500)),
+                          const SizedBox(height: 3),
+                          Text(AppConfig.version,
+                              style: const TextStyle(fontSize: AppFontSize.medium, fontWeight: FontWeight.w500)),
+                        ],
+                      ),
+                      if (info != null) ...[
+                        const SizedBox(width: 32),
+                        Icon(Icons.new_releases_outlined, size: 18, color: hasUpdate ? Colors.orange.shade400 : Colors.grey[400]),
+                        const SizedBox(width: 14),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Latest Version',
+                                style: TextStyle(fontSize: AppFontSize.xsmall, color: Colors.grey[500], fontWeight: FontWeight.w500)),
+                            const SizedBox(height: 3),
+                            Text(
+                              info.latestVersion,
+                              style: TextStyle(
+                                fontSize: AppFontSize.medium,
+                                fontWeight: FontWeight.w600,
+                                color: hasUpdate ? Colors.orange.shade700 : Colors.green.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                Row(
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: _isCheckingUpdate ? null : _checkForUpdatesNow,
+                      icon: const Icon(Icons.refresh_rounded, size: 16),
+                      label: const Text('Check Now'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: primaryColor,
+                        side: BorderSide(color: primaryColor.withValues(alpha: 0.4)),
+                      ),
+                    ),
+                    if (hasUpdate) ...[
+                      const SizedBox(width: 10),
+                      FilledButton.icon(
+                        style: FilledButton.styleFrom(backgroundColor: primaryColor),
+                        icon: const Icon(Icons.download_rounded, size: 16),
+                        label: const Text('Download'),
+                        onPressed: () => launchUrl(
+                          Uri.parse('https://invoiso.co.in/download.html'),
+                          mode: LaunchMode.externalApplication,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -1192,30 +1400,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _selectedIndex = index;
               });
             },
-            destinations: const [
-              NavigationRailDestination(
+            destinations: [
+              const NavigationRailDestination(
                 icon: Icon(Icons.business),
                 label: Text('Company Info'),
               ),
-              NavigationRailDestination(
+              const NavigationRailDestination(
                 icon: Icon(Icons.backup),
                 label: Text('Backup'),
               ),
-              NavigationRailDestination(
+              const NavigationRailDestination(
                 icon: Icon(Icons.people),
                 label: Text('Users'),
               ),
-              NavigationRailDestination(
+              const NavigationRailDestination(
                 icon: Icon(Icons.settings),
                 label: Text('PDF Settings'),
               ),
-              NavigationRailDestination(
+              const NavigationRailDestination(
                 icon: Icon(Icons.file_present),
                 label: Text('Invoice Settings'),
               ),
               NavigationRailDestination(
-                icon: Icon(Icons.info_outline),
-                label: Text('Software Info'),
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const Icon(Icons.info_outline),
+                    if (_updateInfo?.hasUpdate == true)
+                      Positioned(
+                        right: -4,
+                        top: -4,
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: Colors.orange,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                label: const Text('Software Info'),
               ),
             ],
           ),

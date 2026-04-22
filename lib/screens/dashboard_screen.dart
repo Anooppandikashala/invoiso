@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:invoiso/constants.dart';
+import 'package:invoiso/services/update_service.dart';
+import 'package:invoiso/widgets/update_dialog.dart';
 import 'package:invoiso/database/customer_service.dart';
 import 'package:invoiso/database/invoice_service.dart';
 import 'package:invoiso/database/product_service.dart';
@@ -45,12 +47,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Invoice? invoiceToEdit;
   Invoice? _invoiceToClone;
   String _cloneType = 'Invoice';
+  bool _hasUpdate = false;
 
   @override
   void initState() {
     super.initState();
     _currentUser = widget.loggedInUser;
     SessionManager.initialize(_onSessionTimeout);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkForUpdates());
+  }
+
+  Future<void> _checkForUpdates() async {
+    final info = await UpdateService.checkForUpdate();
+    if (info == null) return;
+    if (info.hasUpdate && mounted) setState(() => _hasUpdate = true);
+    if (!await UpdateService.shouldNotify(info)) return;
+    if (!mounted) return;
+    await UpdateDialog.show(context, info);
   }
 
   @override
@@ -273,7 +286,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     _buildComingSoonNavItem(
                         Icons.bar_chart_outlined, 'Reports'),
                     _buildNavItem(
-                        6, Icons.settings_outlined, Icons.settings, 'Settings'),
+                        6, Icons.settings_outlined, Icons.settings, 'Settings',
+                        showDot: _hasUpdate),
                   ],
                 ),
               ),
@@ -286,59 +300,76 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 final useExpanded = constraints.maxWidth > 110;
                 if (useExpanded) {
                   return Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 12, 10, 16),
-                    child: Row(
+                    padding: const EdgeInsets.fromLTRB(14, 12, 10, 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        CircleAvatar(
-                          radius: 15,
-                          backgroundColor: primary.withValues(alpha: 0.12),
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 15,
+                              backgroundColor: primary.withValues(alpha: 0.12),
+                              child: Text(
+                                _currentUser.username.isNotEmpty
+                                    ? _currentUser.username[0].toUpperCase()
+                                    : '?',
+                                style: TextStyle(
+                                    color: primary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    _currentUser.username,
+                                    style: const TextStyle(
+                                        color: Color(0xFF1E293B),
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Text(
+                                    _currentUser.isAdmin() ? 'Admin' : 'User',
+                                    style: const TextStyle(
+                                        color: Color(0xFF64748B), fontSize: 11),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Tooltip(
+                              message: 'Logout',
+                              child: InkWell(
+                                onTap: () {
+                                  SessionManager.dispose();
+                                  Navigator.pushReplacement(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (_) => const LoginScreen()));
+                                },
+                                borderRadius: BorderRadius.circular(6),
+                                child: const Padding(
+                                  padding: EdgeInsets.all(6),
+                                  child: Icon(Icons.logout_rounded,
+                                      color: Color(0xFF64748B), size: 18),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Center(
                           child: Text(
-                            _currentUser.username.isNotEmpty
-                                ? _currentUser.username[0].toUpperCase()
-                                : '?',
-                            style: TextStyle(
-                                color: primary,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                _currentUser.username,
-                                style: const TextStyle(
-                                    color: Color(0xFF1E293B),
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              Text(
-                                _currentUser.isAdmin() ? 'Admin' : 'User',
-                                style: const TextStyle(
-                                    color: Color(0xFF64748B), fontSize: 11),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Tooltip(
-                          message: 'Logout',
-                          child: InkWell(
-                            onTap: () {
-                              SessionManager.dispose();
-                              Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) => const LoginScreen()));
-                            },
-                            borderRadius: BorderRadius.circular(6),
-                            child: const Padding(
-                              padding: EdgeInsets.all(6),
-                              child: Icon(Icons.logout_rounded,
-                                  color: Color(0xFF64748B), size: 18),
+                            AppConfig.version,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFFCBD5E1),
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
@@ -382,11 +413,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       builder: (_) => const LoginScreen()));
                             },
                             borderRadius: BorderRadius.circular(6),
-                            child: Padding(
-                              padding: const EdgeInsets.all(6),
-                              child: const Icon(Icons.logout_rounded,
+                            child: const Padding(
+                              padding: EdgeInsets.all(6),
+                              child: Icon(Icons.logout_rounded,
                                   color: Color(0xFF64748B), size: 18),
                             ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Center(
+                        child: Text(
+                          AppConfig.version,
+                          style: const TextStyle(
+                            fontSize: 9,
+                            color: Color(0xFFCBD5E1),
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
@@ -476,7 +518,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildNavItem(
-      int index, IconData outlinedIcon, IconData filledIcon, String label) {
+      int index, IconData outlinedIcon, IconData filledIcon, String label,
+      {bool showDot = false}) {
     final selected = _selectedIndex == index;
     final primary = Theme.of(context).primaryColor;
 
@@ -514,10 +557,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(
-                      selected ? filledIcon : outlinedIcon,
-                      color: selected ? primary : const Color(0xFF64748B),
-                      size: 20,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Icon(
+                          selected ? filledIcon : outlinedIcon,
+                          color: selected ? primary : const Color(0xFF64748B),
+                          size: 20,
+                        ),
+                        if (showDot)
+                          Positioned(
+                            right: -4,
+                            top: -4,
+                            child: Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                color: Colors.orange,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ),
@@ -548,10 +609,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      selected ? filledIcon : outlinedIcon,
-                      color: selected ? primary : const Color(0xFF64748B),
-                      size: 18,
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Icon(
+                          selected ? filledIcon : outlinedIcon,
+                          color: selected ? primary : const Color(0xFF64748B),
+                          size: 18,
+                        ),
+                        if (showDot)
+                          Positioned(
+                            right: -4,
+                            top: -4,
+                            child: Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                color: Colors.orange,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                     const SizedBox(width: 12),
                     Expanded(
