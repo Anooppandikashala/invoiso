@@ -504,12 +504,65 @@ jobs:
           name: Invoiso-AppImage-Ubuntu24
           path: "Invoiso-*-ubuntu24-x86_64.AppImage"
 
+
+  # ─────────────────────────────────────────────────────────────
+  # macOS — build .dmg installer
+  # ─────────────────────────────────────────────────────────────
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.8'
+          cache: true
+
+      - name: Set version from tag
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          VERSION="${VERSION#v}"
+          sed -i '' "s/^version: .*/version: $VERSION/" pubspec.yaml
+          echo "Building version: $VERSION"
+
+      - name: Install FastForge
+        run: dart pub global activate fastforge
+
+      - name: Flutter Pub Get
+        run: flutter pub get
+
+      - name: Build Flutter macOS Release
+        run: flutter build macos --release
+
+      - name: Build macOS DMG with FastForge
+        run: fastforge package --platform macos --targets dmg
+
+      - name: Verify DMG exists
+        run: |
+          count=$(find dist -name "*.dmg" | wc -l)
+          if [ "$count" -eq 0 ]; then
+            echo "ERROR: No DMG found in dist/"
+            find dist -type f
+            exit 1
+          fi
+          echo "Found DMG(s):"
+          find dist -name "*.dmg"
+
+      - name: Upload macOS DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: Invoiso-macOS
+          path: dist/**/*.dmg
+
   # ─────────────────────────────────────────────────────────────
   # Release — collect artifacts and publish GitHub Release
   # Runs only after all three build jobs succeed
   # ─────────────────────────────────────────────────────────────
   create-release:
-    needs: [build-windows, build-linux, build-linux-ubuntu18, build-linux-ubuntu24, build-appimage, build-appimage-ubuntu24]
+    needs: [build-windows, build-linux, build-linux-ubuntu18, build-linux-ubuntu24, build-appimage, build-appimage-ubuntu24, build-macos]
     runs-on: ubuntu-latest
 
     steps:
@@ -547,6 +600,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: Invoiso-AppImage-Ubuntu24
+          path: release-assets/
+
+      - name: Download macOS DMG
+        uses: actions/download-artifact@v4
+        with:
+          name: Invoiso-macOS
           path: release-assets/
 
       - name: List release assets
