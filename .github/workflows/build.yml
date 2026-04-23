@@ -560,22 +560,25 @@ jobs:
       - name: Build macOS DMG with FastForge
         run: fastforge package --platform macos --targets dmg
 
-      - name: Verify DMG exists
+      - name: Rename DMG with beta tag
         run: |
-          count=$(find dist -name "*.dmg" | wc -l)
-          if [ "$count" -eq 0 ]; then
+          DMG=$(find dist -name "*.dmg" | head -1)
+          if [ -z "$DMG" ]; then
             echo "ERROR: No DMG found in dist/"
             find dist -type f
             exit 1
           fi
-          echo "Found DMG(s):"
-          find dist -name "*.dmg"
+          VERSION="${GITHUB_REF#refs/tags/}"
+          VERSION="${VERSION#v}"
+          BETA_DMG="dist/invoiso-${VERSION}-macos-beta.dmg"
+          mv "$DMG" "$BETA_DMG"
+          echo "Renamed to: $BETA_DMG"
 
       - name: Upload macOS DMG
         uses: actions/upload-artifact@v4
         with:
           name: Invoiso-macOS
-          path: dist/**/*.dmg
+          path: dist/invoiso-*-macos-beta.dmg
 
   # ─────────────────────────────────────────────────────────────
   # Release — collect artifacts and publish GitHub Release
