@@ -3,14 +3,14 @@
 
   <h1>Invoiso</h1>
 
-  <p><strong>Free offline invoice &amp; billing software for Windows &amp; Linux</strong></p>
+  <p><strong>Free offline invoice &amp; billing software for Windows, Linux &amp; macOS</strong></p>
   <p>Create professional PDF invoices, track payments, manage customers, products and inventory — entirely offline. Built for small businesses, shops and freelancers. No subscription, no cloud, no account needed.</p>
 
   <p>
     <a href="https://github.com/Anooppandikashala/invoiso/releases/latest">
       <img src="https://img.shields.io/github/v/release/Anooppandikashala/invoiso?label=Latest%20Release&color=4f8ef7" alt="Latest Release" />
     </a>
-    <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-blue" alt="Platform" />
+    <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-blue" alt="Platform" />
     <img src="https://img.shields.io/badge/License-MIT-green" alt="License" />
     <img src="https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter" alt="Flutter" />
     <img src="https://img.shields.io/badge/Price-Free-brightgreen" alt="Free" />
@@ -111,6 +111,9 @@
 | **Windows** | `.exe` Installer | [Download v3.4.2](https://invoiso.co.in/download.html) |
 | **Linux** | `.AppImage` (portable) | [Download v3.4.2](https://invoiso.co.in/download.html) |
 | **Linux** | `.deb` Package | [Download v3.4.2](https://invoiso.co.in/download.html) |
+| **macOS** *(Beta)* | `.dmg` Installer | [GitHub Releases](https://github.com/Anooppandikashala/invoiso/releases/latest) |
+
+> **macOS note:** The macOS build is in beta — it has not been fully tested on real hardware. If you encounter any issues, please [report them here](https://github.com/Anooppandikashala/invoiso/issues).
 
 > Always download from the [official website](https://invoiso.co.in/download.html) or the [GitHub releases page](https://github.com/Anooppandikashala/invoiso/releases/latest).
 
@@ -123,6 +126,7 @@
 - [Flutter SDK](https://flutter.dev/docs/get-started/install) `>=3.3.3 <4.0.0`
 - Linux: `clang`, `cmake`, `ninja-build`, `libgtk-3-dev`
 - Windows: Visual Studio 2022 with "Desktop development with C++" workload
+- macOS *(Beta)*: Xcode 14+, CocoaPods
 
 ### Steps
 
@@ -137,15 +141,18 @@ flutter pub get
 # 3. Run in debug mode
 flutter run -d linux      # Linux
 flutter run -d windows    # Windows
+flutter run -d macos      # macOS (Beta)
 
 # 4. Build a release binary
 flutter build linux --release    # Linux
 flutter build windows --release  # Windows
+flutter build macos --release    # macOS (Beta)
 ```
 
 Output locations:
 - **Linux:** `build/linux/x64/release/bundle/`
 - **Windows:** `build/windows/x64/runner/Release/`
+- **macOS** *(Beta)*: `build/macos/Build/Products/Release/invoiso.app`
 
 ---
 

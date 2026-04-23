@@ -4,7 +4,7 @@
     <!-- Basic Metadata -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Download Invoiso — free offline invoice and billing software for Windows and Linux. No account, no subscription. Manage customers, products and inventory, generate PDF invoices." />
+    <meta name="description" content="Download Invoiso — free offline invoice and billing software for Windows, Linux and macOS. No account, no subscription. Manage customers, products and inventory, generate PDF invoices." />
     <meta name="keywords" content="Invoiso download, invoice software download, offline invoicing Windows, offline invoicing Linux, free invoice app download" />
     <meta name="author" content="Invoiso" />
     <meta name="robots" content="index, follow" />
@@ -20,7 +20,7 @@
 
     <!-- Open Graph -->
     <meta property="og:title" content="Download Invoiso — Free Offline Invoice & Billing Software" />
-    <meta property="og:description" content="Download Invoiso for Windows and Linux. Free offline invoice and billing software for small businesses. No account, no subscription required." />
+    <meta property="og:description" content="Download Invoiso for Windows, Linux and macOS. Free offline invoice and billing software for small businesses. No account, no subscription required." />
     <meta property="og:image" content="https://invoiso.co.in/assets/images/invoiso_banner.webp" />
     <meta property="og:url" content="https://invoiso.co.in/download.html" />
     <meta property="og:type" content="website" />
@@ -30,7 +30,7 @@
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Download Invoiso — Free Offline Invoice & Billing Software" />
-    <meta name="twitter:description" content="Free offline invoice and billing software for Windows and Linux. No account, no subscription. Download and run instantly." />
+    <meta name="twitter:description" content="Free offline invoice and billing software for Windows, Linux and macOS. No account, no subscription. Download and run instantly." />
     <meta name="twitter:image" content="https://invoiso.co.in/assets/images/invoiso_banner.webp" />
 
     <!-- Favicon & Icons -->
@@ -426,9 +426,9 @@
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
       "name": "Invoiso",
-      "operatingSystem": "Windows, Linux",
+      "operatingSystem": "Windows, Linux, macOS",
       "applicationCategory": "BusinessApplication",
-      "description": "Free and offline invoicing software for Windows and Linux. Create professional PDF invoices, manage customers and products without internet access.",
+      "description": "Free and offline invoicing software for Windows, Linux and macOS. Create professional PDF invoices, manage customers and products without internet access.",
       "softwareVersion": "3.8.0",
       "url": "https://invoiso.co.in/",
       "downloadUrl": "https://invoiso.co.in/download.html",
@@ -544,7 +544,7 @@
             </nav>
             <h1 class="text-5xl md:text-6xl font-bold mb-4 leading-tight">Download Invoiso</h1>
             <p class="text-lg md:text-xl max-w-2xl mx-auto leading-relaxed" style="color:rgba(226,232,240,0.85)">
-              Free for Windows &amp; Linux. No account, no subscription — just download and run.
+              Free for Windows &amp; Linux. macOS beta now available. No account, no subscription — just download and run.
             </p>
             <div class="hero-trust-strip">
               <span class="trust-chip"><i class="fas fa-check-circle" aria-hidden="true"></i> Free forever</span>
@@ -687,6 +687,8 @@
         var n = name.toLowerCase();
         if (n.endsWith('.exe') || n.endsWith('.msi'))
           return { os: 'windows', icon: 'fab fa-windows' };
+        if (n.endsWith('.dmg'))
+          return { os: 'macos', icon: 'fab fa-apple' };
         if (n.endsWith('.appimage'))
           return { os: 'linux', icon: 'fab fa-linux' };
         if (n.endsWith('.deb'))
@@ -770,12 +772,13 @@
             year: 'numeric', month: 'long', day: 'numeric',
           });
 
-          var windows = [], linux = [], other = [];
+          var windows = [], linux = [], macos = [], other = [];
           (latest.assets || []).forEach(function (asset) {
             var info  = classifyAsset(asset.name);
             var entry = { asset: asset, info: info };
             if (info.os === 'windows')    windows.push(entry);
             else if (info.os === 'linux') linux.push(entry);
+            else if (info.os === 'macos') macos.push(entry);
             else                          other.push(entry);
           });
 
@@ -788,11 +791,15 @@
             downloadsHtml += '<p class="os-section-label" style="' + (windows.length ? 'padding-top:8px;' : '') + '"><i class="fab fa-linux mr-1" aria-hidden="true"></i> Linux</p>';
             downloadsHtml += '<div class="assets-grid">' + buildAssetRows(linux) + '</div>';
           }
+          if (macos.length) {
+            downloadsHtml += '<p class="os-section-label" style="' + (windows.length || linux.length ? 'padding-top:8px;' : '') + '"><i class="fab fa-apple mr-1" aria-hidden="true"></i> macOS <span style="font-size:0.7em;font-weight:600;background:rgba(255,165,0,0.15);color:orange;border:1px solid orange;border-radius:4px;padding:1px 6px;vertical-align:middle;">BETA</span></p>';
+            downloadsHtml += '<div class="assets-grid">' + buildAssetRows(macos) + '</div>';
+          }
           if (other.length) {
-            downloadsHtml += '<p class="os-section-label" style="' + (windows.length || linux.length ? 'padding-top:8px;' : '') + '">Other</p>';
+            downloadsHtml += '<p class="os-section-label" style="' + (windows.length || linux.length || macos.length ? 'padding-top:8px;' : '') + '">Other</p>';
             downloadsHtml += '<div class="assets-grid">' + buildAssetRows(other) + '</div>';
           }
-          if (!windows.length && !linux.length && !other.length) {
+          if (!windows.length && !linux.length && !macos.length && !other.length) {
             downloadsHtml = '<p class="no-assets">No downloadable assets for this release.</p>';
           }
 
