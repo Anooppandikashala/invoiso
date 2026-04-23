@@ -537,6 +537,23 @@ jobs:
       - name: Build Flutter macOS Release
         run: flutter build macos --release
 
+      - name: Create .icns for DMG volume icon
+        run: |
+          ICONSET=macos/packaging/dmg/AppIcon.iconset
+          mkdir -p "$ICONSET"
+          APPICONSET=macos/Runner/Assets.xcassets/AppIcon.appiconset
+          cp "$APPICONSET/app_icon_16.png"   "$ICONSET/icon_16x16.png"
+          cp "$APPICONSET/app_icon_32.png"   "$ICONSET/icon_16x16@2x.png"
+          cp "$APPICONSET/app_icon_32.png"   "$ICONSET/icon_32x32.png"
+          cp "$APPICONSET/app_icon_64.png"   "$ICONSET/icon_32x32@2x.png"
+          cp "$APPICONSET/app_icon_128.png"  "$ICONSET/icon_128x128.png"
+          cp "$APPICONSET/app_icon_256.png"  "$ICONSET/icon_128x128@2x.png"
+          cp "$APPICONSET/app_icon_256.png"  "$ICONSET/icon_256x256.png"
+          cp "$APPICONSET/app_icon_512.png"  "$ICONSET/icon_256x256@2x.png"
+          cp "$APPICONSET/app_icon_512.png"  "$ICONSET/icon_512x512.png"
+          cp "$APPICONSET/app_icon_1024.png" "$ICONSET/icon_512x512@2x.png"
+          iconutil -c icns "$ICONSET" -o macos/packaging/dmg/AppIcon.icns
+
       - name: Build macOS DMG with FastForge
         run: fastforge package --platform macos --targets dmg
 
