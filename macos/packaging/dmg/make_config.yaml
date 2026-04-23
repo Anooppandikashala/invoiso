@@ -1,5 +1,5 @@
 title: "Invoiso"
-icon: macos/packaging/dmg/AppIcon.icns
+icon: AppIcon.icns
 icon-size: 80
 window:
   position:
@@ -12,7 +12,7 @@ contents:
   - x: 170
     y: 200
     type: file
-    path: "${APP_PATH}"
+    path: "invoiso.app"
   - x: 430
     y: 200
     type: link
