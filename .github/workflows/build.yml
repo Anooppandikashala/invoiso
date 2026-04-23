@@ -537,6 +537,9 @@ jobs:
       - name: Build Flutter macOS Release
         run: flutter build macos --release
 
+      - name: Install appdmg
+        run: npm install -g appdmg
+
       - name: Create .icns for DMG volume icon
         run: |
           ICONSET=macos/packaging/dmg/AppIcon.iconset

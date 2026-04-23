@@ -1,6 +1,6 @@
 title: "Invoiso"
 icon: macos/packaging/dmg/AppIcon.icns
-icon_size: 80
+icon-size: 80
 window:
   position:
     x: 200
