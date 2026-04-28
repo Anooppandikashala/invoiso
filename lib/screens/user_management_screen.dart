@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:invoiso/database/user_service.dart';
-import 'package:invoiso/invoisoColors.dart';
+import 'package:invoiso/invoiso_colors.dart';
 import '../constants.dart';
 import '../models/user.dart';
 import '../utils/password_utils.dart';

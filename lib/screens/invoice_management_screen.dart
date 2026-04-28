@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/common.dart';
 import 'package:invoiso/constants.dart';
 import 'package:invoiso/database/invoice_service.dart';
-import 'package:invoiso/invoisoColors.dart';
+import 'package:invoiso/invoiso_colors.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/providers/invoice_provider.dart';
 import 'package:file_picker/file_picker.dart';

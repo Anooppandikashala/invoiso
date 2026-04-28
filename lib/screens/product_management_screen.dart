@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:invoiso/constants.dart';
 import 'package:invoiso/database/product_service.dart';
 import 'package:invoiso/database/settings_service.dart';
-import 'package:invoiso/invoisoColors.dart';
+import 'package:invoiso/invoiso_colors.dart';
 import 'package:uuid/uuid.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:file_picker/file_picker.dart';

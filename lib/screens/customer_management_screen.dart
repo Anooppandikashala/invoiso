@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
-import 'package:invoiso/invoisoColors.dart';
+import 'package:invoiso/invoiso_colors.dart';
 import 'package:invoiso/utils/formatters.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

@@ -7,7 +7,7 @@ import 'package:invoiso/database/customer_service.dart';
 import 'package:invoiso/database/invoice_service.dart';
 import 'package:invoiso/database/product_service.dart';
 import 'package:invoiso/database/settings_service.dart';
-import 'package:invoiso/invoisoColors.dart';
+import 'package:invoiso/invoiso_colors.dart';
 import 'package:invoiso/models/customer.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/product.dart';

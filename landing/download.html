@@ -418,6 +418,168 @@
           display: none;
         }
       }
+
+      /* ── Welcome modal ── */
+      .welcome-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.65);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        z-index: 2000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.25s ease, visibility 0.25s ease;
+      }
+      .welcome-overlay.active {
+        opacity: 1;
+        visibility: visible;
+      }
+      .welcome-modal {
+        background: #07080f;
+        border: 1px solid rgba(79,142,247,0.3);
+        border-radius: 20px;
+        box-shadow: 0 0 0 1px rgba(255,255,255,0.04), 0 24px 80px rgba(0,0,0,0.6);
+        max-width: 460px;
+        width: 100%;
+        padding: 32px 28px 28px;
+        position: relative;
+        transform: translateY(20px) scale(0.97);
+        transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      }
+      .welcome-overlay.active .welcome-modal {
+        transform: translateY(0) scale(1);
+      }
+      .welcome-close {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: 1px solid var(--border);
+        background: transparent;
+        color: var(--text-muted);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85rem;
+        transition: all 0.2s ease;
+      }
+      .welcome-close:hover {
+        border-color: rgba(79,142,247,0.4);
+        color: var(--primary);
+        background: rgba(79,142,247,0.08);
+      }
+      .welcome-head {
+        text-align: center;
+        margin-bottom: 22px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--border);
+      }
+      .welcome-emoji {
+        font-size: 2.4rem;
+        margin-bottom: 10px;
+        line-height: 1;
+      }
+      .welcome-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 6px;
+      }
+      .welcome-sub {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        line-height: 1.55;
+      }
+      .welcome-section {
+        display: flex;
+        gap: 14px;
+        align-items: flex-start;
+        padding: 15px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .welcome-section:last-of-type { border-bottom: none; }
+      .welcome-section-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        background: rgba(79,142,247,0.12);
+        border: 1px solid rgba(79,142,247,0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary);
+        font-size: 0.9rem;
+        flex-shrink: 0;
+      }
+      .welcome-section-label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-muted);
+        margin-bottom: 7px;
+      }
+      .welcome-section-body {
+        font-size: 0.875rem;
+        color: rgba(226,232,240,0.85);
+        line-height: 1.6;
+      }
+      .welcome-cred-row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 4px;
+      }
+      .welcome-cred {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(79,142,247,0.1);
+        border: 1px solid rgba(79,142,247,0.2);
+        border-radius: 8px;
+        padding: 4px 10px;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+      }
+      .welcome-cred code {
+        font-family: monospace;
+        color: var(--primary);
+        font-weight: 700;
+      }
+      .welcome-cred-note {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+        font-style: italic;
+        margin-top: 4px;
+      }
+      .welcome-got-it {
+        display: block;
+        width: 100%;
+        margin-top: 22px;
+        padding: 13px;
+        border-radius: 12px;
+        background: var(--primary);
+        color: #fff;
+        font-weight: 700;
+        font-size: 0.95rem;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        letter-spacing: 0.01em;
+      }
+      .welcome-got-it:hover {
+        background: #6ba8ff;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(79,142,247,0.35);
+      }
     </style>
 
     <!-- Structured Data: SoftwareApplication -->
@@ -580,6 +742,18 @@
       <section class="py-14 releases-section">
         <div class="container mx-auto px-6 max-w-5xl">
 
+          <!-- Default credentials tip -->
+          <div style="display:flex;align-items:flex-start;gap:14px;padding:16px 20px;margin-bottom:28px;border-radius:14px;background:rgba(79,142,247,0.07);border:1px solid rgba(79,142,247,0.25);">
+            <i class="fas fa-circle-info" style="color:var(--primary);font-size:1.1rem;margin-top:2px;flex-shrink:0;" aria-hidden="true"></i>
+            <div style="font-size:0.875rem;line-height:1.65;color:rgba(226,232,240,0.85);">
+              <strong style="color:var(--text);">First launch?</strong>
+              Log in with the default credentials —
+              username&nbsp;<code style="background:rgba(79,142,247,0.15);color:var(--primary);padding:1px 6px;border-radius:4px;font-family:monospace;">admin</code>
+              and password&nbsp;<code style="background:rgba(79,142,247,0.15);color:var(--primary);padding:1px 6px;border-radius:4px;font-family:monospace;">admin</code>.
+              You'll be prompted to set a new password on first login for your security.
+            </div>
+          </div>
+
           <div id="releases-list">
             <div class="text-center py-10" style="color:var(--text-muted)">
               <i class="fas fa-spinner fa-spin text-2xl mb-3 primary-text" aria-hidden="true"></i>
@@ -620,10 +794,72 @@
       </div>
     </footer>
 
+    <!-- Welcome modal -->
+    <div class="welcome-overlay" id="welcomeOverlay" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
+      <div class="welcome-modal">
+        <button class="welcome-close" id="welcomeClose" aria-label="Close dialog">
+          <i class="fas fa-times" aria-hidden="true"></i>
+        </button>
+
+        <div class="welcome-head">
+          <div class="welcome-emoji">🎉</div>
+          <h2 class="welcome-title" id="welcomeTitle">Welcome to the Invoiso Family!</h2>
+          <p class="welcome-sub">Your download has started. Here's everything you need to get up and running.</p>
+        </div>
+
+        <div class="welcome-section">
+          <div class="welcome-section-icon"><i class="fas fa-key" aria-hidden="true"></i></div>
+          <div>
+            <p class="welcome-section-label">Default Login Credentials</p>
+            <div class="welcome-section-body">
+              <div class="welcome-cred-row">
+                <span class="welcome-cred">Username&nbsp;<code>admin</code></span>
+                <span class="welcome-cred">Password&nbsp;<code>admin</code></span>
+              </div>
+              <p class="welcome-cred-note">You'll be prompted to set a new password on first login for your security.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="welcome-section">
+          <div class="welcome-section-icon"><i class="fas fa-envelope" aria-hidden="true"></i></div>
+          <div>
+            <p class="welcome-section-label">Need Help?</p>
+            <div class="welcome-section-body">
+              If you run into any issues, drop us a mail at<br>
+              <a href="mailto:anooppkrishnan96@gmail.com" style="color:var(--primary);font-weight:600;">anooppkrishnan96@gmail.com</a>
+              &mdash; we're happy to help.
+            </div>
+          </div>
+        </div>
+
+        <button class="welcome-got-it" id="welcomeGotIt">Got it!</button>
+      </div>
+    </div>
+
     <script>
     document.addEventListener('DOMContentLoaded', function () {
 
       document.getElementById('year').textContent = new Date().getFullYear();
+
+      // Welcome modal
+      var welcomeOverlay = document.getElementById('welcomeOverlay');
+      function openWelcomeModal() {
+        welcomeOverlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      }
+      function closeWelcomeModal() {
+        welcomeOverlay.classList.remove('active');
+        document.body.style.overflow = '';
+      }
+      document.getElementById('welcomeClose').addEventListener('click', closeWelcomeModal);
+      document.getElementById('welcomeGotIt').addEventListener('click', closeWelcomeModal);
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeWelcomeModal();
+      });
+      document.getElementById('releases-list').addEventListener('click', function (e) {
+        if (e.target.closest('.asset-btn')) openWelcomeModal();
+      });
 
       // Mobile menu
       var hamburgerBtn = document.getElementById('hamburger-btn');
@@ -787,13 +1023,13 @@
             downloadsHtml += '<p class="os-section-label"><i class="fab fa-windows mr-1" aria-hidden="true"></i> Windows</p>';
             downloadsHtml += '<div class="assets-grid">' + buildAssetRows(windows) + '</div>';
           }
-          if (linux.length) {
-            downloadsHtml += '<p class="os-section-label" style="' + (windows.length ? 'padding-top:8px;' : '') + '"><i class="fab fa-linux mr-1" aria-hidden="true"></i> Linux</p>';
-            downloadsHtml += '<div class="assets-grid">' + buildAssetRows(linux) + '</div>';
-          }
           if (macos.length) {
             downloadsHtml += '<p class="os-section-label" style="' + (windows.length || linux.length ? 'padding-top:8px;' : '') + '"><i class="fab fa-apple mr-1" aria-hidden="true"></i> macOS <span style="font-size:0.7em;font-weight:600;background:rgba(255,165,0,0.15);color:orange;border:1px solid orange;border-radius:4px;padding:1px 6px;vertical-align:middle;">BETA</span></p>';
             downloadsHtml += '<div class="assets-grid">' + buildAssetRows(macos) + '</div>';
+          }
+          if (linux.length) {
+            downloadsHtml += '<p class="os-section-label" style="' + (windows.length ? 'padding-top:8px;' : '') + '"><i class="fab fa-linux mr-1" aria-hidden="true"></i> Linux</p>';
+            downloadsHtml += '<div class="assets-grid">' + buildAssetRows(linux) + '</div>';
           }
           if (other.length) {
             downloadsHtml += '<p class="os-section-label" style="' + (windows.length || linux.length || macos.length ? 'padding-top:8px;' : '') + '">Other</p>';

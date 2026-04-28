@@ -11,7 +11,7 @@ import 'package:invoiso/screens/backup_management_screen.dart';
 import 'package:invoiso/screens/invoice_settings_screen.dart';
 import 'package:invoiso/screens/pdf_settings_screen.dart';
 import 'package:invoiso/screens/user_management_screen.dart';
-import '../invoisoColors.dart';
+import '../invoiso_colors.dart';
 import '../models/company_info.dart';
 import '../models/user.dart';
 import 'dart:convert';
