@@ -5,7 +5,9 @@ import '../common.dart';
 import '../constants.dart';
 
 class PdfSettingsScreen extends StatefulWidget {
-  const PdfSettingsScreen({super.key});
+  final VoidCallback? onNavigateToCustomization;
+
+  const PdfSettingsScreen({super.key, this.onNavigateToCustomization});
 
   @override
   State<PdfSettingsScreen> createState() => _PdfSettingsScreenState();
@@ -123,6 +125,74 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
                     },
                   ),
                 ),
+                // ── Custom template promo ──────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+                  child: Builder(builder: (context) {
+                    final primaryColor = Theme.of(context).primaryColor;
+                    return Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: primaryColor.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(AppBorderRadius.small),
+                        border: Border.all(color: primaryColor.withValues(alpha: 0.2)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.auto_fix_high_rounded, size: 14, color: primaryColor),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Want a custom template?',
+                                style: TextStyle(
+                                  fontSize: AppFontSize.small,
+                                  fontWeight: FontWeight.w600,
+                                  color: primaryColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Get a design that matches your brand — colors, fonts, and layout.',
+                            style: TextStyle(
+                              fontSize: AppFontSize.xsmall,
+                              color: Colors.grey[600],
+                              height: 1.4,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: widget.onNavigateToCustomization,
+                              icon: const Icon(Icons.arrow_forward_rounded, size: 14),
+                              label: const Text(
+                                'See Customization Options',
+                                style: TextStyle(
+                                  fontSize: AppFontSize.xsmall,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: primaryColor,
+                                side: BorderSide(color: primaryColor.withValues(alpha: 0.5)),
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(AppBorderRadius.small),
+                                ),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ),
+
                 // ── Save button ────────────────────────────────────────
                 Padding(
                   padding: const EdgeInsets.all(16),
