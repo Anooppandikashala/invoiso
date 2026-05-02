@@ -5,7 +5,9 @@ import '../constants.dart';
 import '../database/settings_service.dart';
 
 class InvoiceSettingsScreen extends StatefulWidget {
-  const InvoiceSettingsScreen({super.key});
+  final VoidCallback? onNavigateToCustomization;
+
+  const InvoiceSettingsScreen({super.key, this.onNavigateToCustomization});
 
   @override
   State<InvoiceSettingsScreen> createState() => _InvoiceSettingsScreenState();
@@ -516,7 +518,81 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                       },
                     ),
 
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 32),
+
+                    // ── Custom fields promo ──────────────────────────────
+                    if (widget.onNavigateToCustomization != null)
+                      Builder(builder: (context) {
+                        final primaryColor = Theme.of(context).primaryColor;
+                        return Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: primaryColor.withValues(alpha: 0.06),
+                            borderRadius: BorderRadius.circular(AppBorderRadius.small),
+                            border: Border.all(color: primaryColor.withValues(alpha: 0.2)),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: primaryColor.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(AppBorderRadius.small),
+                                ),
+                                child: Icon(Icons.tune_rounded, size: 18, color: primaryColor),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Need more fields on your invoices?',
+                                      style: TextStyle(
+                                        fontSize: AppFontSize.small,
+                                        fontWeight: FontWeight.w600,
+                                        color: primaryColor,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Add PO number, project code, department, or any custom field.',
+                                      style: TextStyle(
+                                        fontSize: AppFontSize.xsmall,
+                                        color: Colors.grey[600],
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              OutlinedButton.icon(
+                                onPressed: widget.onNavigateToCustomization,
+                                icon: const Icon(Icons.arrow_forward_rounded, size: 14),
+                                label: const Text(
+                                  'See Options',
+                                  style: TextStyle(
+                                    fontSize: AppFontSize.xsmall,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: primaryColor,
+                                  side: BorderSide(color: primaryColor.withValues(alpha: 0.5)),
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.small),
+                                  ),
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+
+                    const SizedBox(height: 24),
 
                     // Save Button
                     SizedBox(
