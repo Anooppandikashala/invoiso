@@ -2171,44 +2171,49 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                           ),
                         ),
                       ),
-                      title: Text(
-                            item.product.name,
-                            style: const TextStyle(
-                              fontSize: AppFontSize.medium,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                      title: Row(
+                        children: [
+                          Text(
+                                item.product.name,
+                                style: const TextStyle(
+                                  fontSize: AppFontSize.medium,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                          AppSpacing.wMedium,
+                          if (_businessType == BusinessType.both)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: item.product.type == 'service'
+                                    ? Colors.purple.withValues(alpha: 0.1)
+                                    : Colors.indigo.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(
+                                  color: item.product.type == 'service'
+                                      ? Colors.purple.withValues(alpha: 0.4)
+                                      : Colors.indigo.withValues(alpha: 0.4),
+                                ),
+                              ),
+                              child: Text(
+                                item.product.type == 'service' ? 'Service' : 'Product',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: item.product.type == 'service'
+                                      ? Colors.purple[700]
+                                      : Colors.indigo[700],
+                                ),
+                              ),
+                            )
+                        ],
+                      ),
                       subtitle: Padding(
                         padding: const EdgeInsets.only(top: 8),
                         child: Wrap(
                           spacing: 16,
                           runSpacing: 4,
                           children: [
-                            if (_businessType == BusinessType.both)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: item.product.type == 'service'
-                                      ? Colors.purple.withValues(alpha: 0.1)
-                                      : Colors.indigo.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(
-                                    color: item.product.type == 'service'
-                                        ? Colors.purple.withValues(alpha: 0.4)
-                                        : Colors.indigo.withValues(alpha: 0.4),
-                                  ),
-                                ),
-                                child: Text(
-                                  item.product.type == 'service' ? 'Service' : 'Product',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                    color: item.product.type == 'service'
-                                        ? Colors.purple[700]
-                                        : Colors.indigo[700],
-                                  ),
-                                ),
-                              ),
                             if (item.unitPrice != null)
                               _buildItemDetail('Price', '$_currencySymbol${item.effectivePrice.toStringAsFixed(2)} *', color: Colors.orange[700])
                             else
