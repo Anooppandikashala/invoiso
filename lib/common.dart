@@ -29,9 +29,12 @@ enum SettingKey {
   showQuantity,        // whether to show quantity field (default true)
   bankAccounts,        // JSON list of BankAccount objects
   showBankDetails,     // whether to show bank details on PDF
+  showDiscount,        // whether to show discount column on PDF (default true)
+  showTypeTag,         // whether to show product/service tag on invoice items (default true)
   lastUpdateCheck,     // ISO timestamp of last GitHub release API call
   lastKnownLatestVersion, // latest version tag returned by last API call
   lastNotifiedVersion, // version for which the update dialog was last shown
+  dateFormat,          // date display pattern: 'dd/MM/yyyy' | 'MM/dd/yyyy' | 'dd MMM yyyy' | 'yyyy-MM-dd'
 }
 
 extension SettingKeyExtension on SettingKey
@@ -70,12 +73,54 @@ extension SettingKeyExtension on SettingKey
         return 'bank_accounts';
       case SettingKey.showBankDetails:
         return 'show_bank_details';
+      case SettingKey.showDiscount:
+        return 'show_discount';
+      case SettingKey.showTypeTag:
+        return 'show_type_tag';
       case SettingKey.lastUpdateCheck:
         return 'last_update_check';
       case SettingKey.lastKnownLatestVersion:
         return 'last_known_latest_version';
       case SettingKey.lastNotifiedVersion:
         return 'last_notified_version';
+      case SettingKey.dateFormat:
+        return 'date_format';
+    }
+  }
+}
+
+enum DateFormatOption {
+  ddmmyyyy,   // dd/MM/yyyy  — default
+  mmddyyyy,   // MM/dd/yyyy  — US
+  ddMmmyyyy,  // dd MMM yyyy — unambiguous
+  yyyymmdd,   // yyyy-MM-dd  — ISO
+}
+
+extension DateFormatOptionExtension on DateFormatOption {
+  String get key {
+    switch (this) {
+      case DateFormatOption.ddmmyyyy:  return 'dd/MM/yyyy';
+      case DateFormatOption.mmddyyyy:  return 'MM/dd/yyyy';
+      case DateFormatOption.ddMmmyyyy: return 'dd MMM yyyy';
+      case DateFormatOption.yyyymmdd:  return 'yyyy-MM-dd';
+    }
+  }
+
+  String get label {
+    switch (this) {
+      case DateFormatOption.ddmmyyyy:  return 'DD/MM/YYYY  (e.g. 15/04/2026)';
+      case DateFormatOption.mmddyyyy:  return 'MM/DD/YYYY  (e.g. 04/15/2026)';
+      case DateFormatOption.ddMmmyyyy: return 'DD MMM YYYY  (e.g. 15 Apr 2026)';
+      case DateFormatOption.yyyymmdd:  return 'YYYY-MM-DD  (e.g. 2026-04-15)';
+    }
+  }
+
+  static DateFormatOption fromKey(String? key) {
+    switch (key) {
+      case 'MM/dd/yyyy':  return DateFormatOption.mmddyyyy;
+      case 'dd MMM yyyy': return DateFormatOption.ddMmmyyyy;
+      case 'yyyy-MM-dd':  return DateFormatOption.yyyymmdd;
+      default:            return DateFormatOption.ddmmyyyy;
     }
   }
 }

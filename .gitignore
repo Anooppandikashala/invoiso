@@ -54,3 +54,5 @@ dist/
 myapp_1.0.0/
 appimage-build/
 *screenshots2/
+# Added by code-review-graph
+.code-review-graph/

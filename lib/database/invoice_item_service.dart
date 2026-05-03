@@ -30,7 +30,7 @@ class InvoiceItemService {
 
   static Future<List<InvoiceItem>> getInvoiceItemsByInvoiceId(String invoiceId) async {
     final db = await dbHelper.database;
-    final maps = await db.query('invoice_items', where: 'invoice_id = ?', whereArgs: [invoiceId]);
+    final maps = await db.query('invoice_items', where: 'invoice_id = ?', whereArgs: [invoiceId], orderBy: 'rowid ASC');
     final List<InvoiceItem> items = [];
 
     for (var map in maps) {

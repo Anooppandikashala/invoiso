@@ -18,6 +18,8 @@ import 'package:intl/intl.dart';
 import 'package:open_file/open_file.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/widgets/customer_info_button.dart';
+import 'package:invoiso/utils/formatters.dart';
+import 'package:invoiso/database/settings_service.dart';
 
 class InvoiceManagementScreen extends ConsumerStatefulWidget {
   final Function(Invoice) onEditInvoice;
@@ -47,6 +49,7 @@ class _InvoiceManagementScreenState
   bool _isBulkLoading = false;
   bool _hidePaid = false;
   String _dueDateFilter = 'all'; // 'all' | 'overdue' | 'due_today' | 'due_week' | 'due_month'
+  String _datePattern = 'dd/MM/yyyy';
   int _totalCount = 0;
   List<Invoice> _pageInvoices = [];
   final Set<String> _selectedIds = {};
@@ -99,6 +102,12 @@ class _InvoiceManagementScreenState
   void initState() {
     super.initState();
     _loadPage();
+    _loadDateFormat();
+  }
+
+  Future<void> _loadDateFormat() async {
+    final opt = await SettingsService.getDateFormat();
+    if (mounted) setState(() => _datePattern = opt.key);
   }
 
   @override
@@ -267,7 +276,7 @@ class _InvoiceManagementScreenState
   // ─── Toolbar actions ───────────────────────────────────────────────────────
 
   Future<void> _exportCsv() async {
-    final fmt = DateFormat('dd/MM/yyyy');
+    final fmt = DateFormat(_datePattern);
     DateTime? fromDate;
     DateTime? toDate;
     bool exportAll = false;
@@ -420,6 +429,7 @@ class _InvoiceManagementScreenState
       context: context,
       builder: (ctx) => _TrashDialog(
         deletedInvoices: deleted,
+        datePattern: _datePattern,
         onRestored: () async {
           ref.read(invoicesProvider.notifier).refresh();
           await _loadPage();
@@ -1366,7 +1376,7 @@ class _InvoiceManagementScreenState
   }
 
   Widget _buildDateCell(Invoice invoice) {
-    final orderStr = invoice.date.toString().split(' ')[0];
+    final orderStr = AppFormatters.formatShortDate(invoice.date, pattern: _datePattern);
     if (invoice.dueDate == null) {
       return Text(orderStr, style: const TextStyle(fontSize: 13));
     }
@@ -1375,7 +1385,7 @@ class _InvoiceManagementScreenState
     final due = DateTime(invoice.dueDate!.year, invoice.dueDate!.month, invoice.dueDate!.day);
     final isOverdue = due.isBefore(today) && invoice.paymentStatus != PaymentStatus.paid;
     final isToday = due == today;
-    final dueStr = invoice.dueDate!.toString().split(' ')[0];
+    final dueStr = AppFormatters.formatShortDate(invoice.dueDate, pattern: _datePattern);
     final dueColor = isOverdue
         ? Colors.red[700]!
         : isToday
@@ -1522,8 +1532,9 @@ void unawaited(Future<void> future) {}
 class _TrashDialog extends StatefulWidget {
   final List<Invoice> deletedInvoices;
   final VoidCallback onRestored;
+  final String datePattern;
 
-  const _TrashDialog({required this.deletedInvoices, required this.onRestored});
+  const _TrashDialog({required this.deletedInvoices, required this.onRestored, required this.datePattern});
 
   @override
   State<_TrashDialog> createState() => _TrashDialogState();
@@ -1619,7 +1630,7 @@ class _TrashDialogState extends State<_TrashDialog> {
                           color: Colors.grey),
                       title: Text('#${inv.id} — ${inv.customer.name}'),
                       subtitle:
-                          Text(inv.date.toString().split(' ')[0]),
+                          Text(AppFormatters.formatShortDate(inv.date, pattern: widget.datePattern)),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [

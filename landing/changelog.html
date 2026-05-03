@@ -310,6 +310,18 @@
         text-decoration: none;
         color: var(--primary);
       }
+
+      /* ── Collapsible release body ── */
+      .release-body.cl-collapsed { display: none; }
+      .cl-toggle-btn {
+        background: none; border: none; cursor: pointer;
+        color: var(--text-muted); padding: 4px 8px; border-radius: 6px;
+        transition: color 0.2s, background 0.2s;
+        display: flex; align-items: center;
+      }
+      .cl-toggle-btn:hover { color: var(--text); background: rgba(255,255,255,0.06); }
+      .cl-toggle-btn i { transition: transform 0.25s; }
+      .cl-toggle-btn.cl-open i { transform: rotate(180deg); }
     </style>
 
     <!-- Structured Data: BreadcrumbList -->
@@ -432,6 +444,80 @@
 
           <div class="timeline">
 
+            <!-- April 2026 -->
+            <div class="release-card fade-in-up">
+              <div class="timeline-dot" aria-hidden="true"></div>
+
+              <div class="release-card-header">
+                <div class="release-card-header-left">
+                  <span class="version-badge">
+                    <i class="far fa-calendar-alt" aria-hidden="true"></i>
+                    April 2026
+                  </span>
+                </div>
+                <span class="release-date">v4.0.5</span>
+              </div>
+
+              <div class="release-body">
+
+                <!-- New Features -->
+                <div class="cl-section">
+                  <div class="cl-section-title">
+                    <span class="icon-wrap icon-features"><i class="fas fa-bolt" aria-hidden="true"></i></span>
+                    <span class="title-features">New Features</span>
+                  </div>
+                  <ul class="cl-list" aria-label="New features in April 2026">
+                    <li><span><strong>Due Dates &amp; Overdue Alerts</strong> — Add a due date to any invoice; overdue flagged in red, due today in amber; filter chips in the invoice list</span></li>
+                    <li><span><strong>Separate Quotations Screen</strong> — Dedicated screen for quotations with its own navigation entry; payment columns hidden from view</span></li>
+                    <li><span><strong>Bank Account on Invoices</strong> — Store multiple bank accounts in Payment Settings; selected account prints on all PDF templates</span></li>
+                    <li><span><strong>Discount per Unit</strong> — Two discount modes per line item: on the line total or deducted per unit before multiplying</span></li>
+                    <li><span><strong>Additional Costs</strong> — Add custom cost rows (Shipping, Packaging, etc.); shown individually in the PDF totals between Tax and Total</span></li>
+                    <li><span><strong>Custom Items &amp; Price Override</strong> — Ad-hoc line items without a catalogue entry; per-line unit price override highlighted in orange</span></li>
+                    <li><span><strong>Bulk PDF Download</strong> — Export selected invoices as individual files to a folder or bundled as a ZIP archive</span></li>
+                    <li><span><strong>Customer CSV Import</strong> — Bulk import with duplicate detection and per-row skip/overwrite; new Business Name field on customers and PDFs</span></li>
+                    <li><span><strong>Product CSV Import / Export</strong> — Import and export the product catalogue; new Product / Service type field for filtering</span></li>
+                    <li><span><strong>Dashboard Enhancements</strong> — Revenue Collected &amp; Outstanding Balance stats; Due Soon, Overdue Invoices, and Out of Stock sections</span></li>
+                  </ul>
+                </div>
+
+                <!-- UI Improvements -->
+                <div class="cl-section">
+                  <div class="cl-section-title">
+                    <span class="icon-wrap icon-ui"><i class="fas fa-paint-brush" aria-hidden="true"></i></span>
+                    <span class="title-ui">UI &amp; UX Improvements</span>
+                  </div>
+                  <ul class="cl-list" aria-label="UI improvements in April 2026">
+                    <li><span>Max-width layout constraints — dashboard 1200 px, invoice list and create screen 1700 px, centered on large displays</span></li>
+                    <li><span>Sidebar shows full horizontal logo when expanded; compact square icon when collapsed</span></li>
+                    <li><span>CSV Export opens a date-range filter dialog before exporting; type-aware (invoices vs. quotations)</span></li>
+                    <li><span>Company website now printed on all three PDF templates</span></li>
+                    <li><span>Country field in Company Info (195 countries); tax label shows GSTIN for India, Tax/VAT No elsewhere</span></li>
+                    <li><span>Fractional Quantities and Show Quantity toggles added in Invoice Settings</span></li>
+                  </ul>
+                </div>
+
+                <!-- Bug Fixes — full width -->
+                <div class="cl-section" style="grid-column: 1 / -1; border-top: 1px solid var(--border); padding-top: 20px;">
+                  <div class="cl-section-title">
+                    <span class="icon-wrap icon-fixes"><i class="fas fa-wrench" aria-hidden="true"></i></span>
+                    <span class="title-fixes">Bug Fixes</span>
+                  </div>
+                  <ul class="cl-list" aria-label="Bug fixes in April 2026" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 6px 24px;">
+                    <li><span>Fixed CSV export encoding — garbled × symbol and missing UTF-8 BOM; Excel and LibreOffice now open correctly</span></li>
+                    <li><span>Fixed "Total Due" disappearing from PDF immediately after updating an invoice</span></li>
+                    <li><span>Fixed invoice notes missing on invoices created from the success screen</span></li>
+                    <li><span>Fixed discount per unit flag not persisting when editing an invoice</span></li>
+                    <li><span>Fixed collapsed sidebar chevron overlapping the logo</span></li>
+                    <li><span>Fixed PDF preview crash with bank details (unbounded Flex width constraint)</span></li>
+                    <li><span>Fixed DB migration ordering and duplicate column crash on re-run</span></li>
+                    <li><span>Fixed layout overflow in date column, totals row, and dropdowns on narrow screens</span></li>
+                  </ul>
+                </div>
+
+              </div>
+            </div>
+            <!-- / April 2026 -->
+
             <!-- March 2026 -->
             <div class="release-card fade-in-up">
               <div class="timeline-dot" aria-hidden="true"></div>
@@ -443,17 +529,20 @@
                     March 2026
                   </span>
                 </div>
-                <span class="release-date">
-                  v3.4.2
-                </span>
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <span class="release-date">v3.4.2</span>
+                  <button class="cl-toggle-btn" data-target="march-body" aria-label="Toggle March 2026 release notes" aria-expanded="false">
+                    <i class="fas fa-chevron-down"></i>
+                  </button>
+                </div>
               </div>
 
-              <div class="release-body">
+              <div class="release-body cl-collapsed" id="march-body">
 
                 <!-- New Features -->
                 <div class="cl-section">
                   <div class="cl-section-title">
-                    <span class="icon-wrap icon-features"><i class="fas fa-sparkles" aria-hidden="true"></i></span>
+                    <span class="icon-wrap icon-features"><i class="fas fa-bolt" aria-hidden="true"></i></span>
                     <span class="title-features">New Features</span>
                   </div>
                   <ul class="cl-list" aria-label="New features in March 2026">
@@ -565,6 +654,17 @@
       window.addEventListener('scroll', function () {
         document.querySelector('.navbar').classList.toggle('scrolled', window.scrollY > 50);
       }, { passive: true });
+
+      // Collapsible release cards
+      document.querySelectorAll('.cl-toggle-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var target = document.getElementById(btn.dataset.target);
+          var wasCollapsed = target.classList.contains('cl-collapsed');
+          target.classList.toggle('cl-collapsed');
+          btn.classList.toggle('cl-open', wasCollapsed);
+          btn.setAttribute('aria-expanded', String(wasCollapsed));
+        });
+      });
 
     });
     </script>

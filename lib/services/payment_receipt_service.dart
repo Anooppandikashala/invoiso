@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:invoiso/common.dart';
 import 'package:invoiso/database/company_info_service.dart';
 import 'package:invoiso/database/settings_service.dart';
@@ -46,6 +47,7 @@ class PaymentReceiptService {
     final logoImage =
         base64Logo != null ? pw.MemoryImage(base64Decode(base64Logo)) : null;
     final sym = invoice.currencySymbol;
+    final dateFmt = (await SettingsService.getDateFormat()).key;
 
     pdf.addPage(
       pw.Page(
@@ -57,6 +59,7 @@ class PaymentReceiptService {
           payment: payment,
           sym: sym,
           logoImage: logoImage,
+          dateFmt: dateFmt,
         ),
       ),
     );
@@ -70,6 +73,7 @@ class PaymentReceiptService {
     required InvoicePayment payment,
     required String sym,
     required pw.MemoryImage? logoImage,
+    required String dateFmt,
   }) {
     const accentColor = PdfColors.indigo800;
     final isPaidInFull = payment.balanceAfter <= 0;
@@ -164,7 +168,7 @@ class PaymentReceiptService {
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.end,
                 children: [
-                  _metaRow('Date', _formatDate(payment.datePaid)),
+                  _metaRow('Date', _formatDate(payment.datePaid, dateFmt)),
                   if ((payment.paymentMethod ?? '').isNotEmpty) ...[
                     pw.SizedBox(height: 4),
                     _metaRow('Method', payment.paymentMethod!),
@@ -355,6 +359,7 @@ class PaymentReceiptService {
 
   static String _fmt(double v) => v.toStringAsFixed(2);
 
-  static String _formatDate(DateTime d) =>
-      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+  static String _formatDate(DateTime d, String pattern) {
+    return DateFormat(pattern).format(d);
+  }
 }

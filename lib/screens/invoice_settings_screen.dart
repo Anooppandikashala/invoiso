@@ -22,9 +22,12 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
   String _selectedLogoPosition = 'left';
   String _selectedCurrencyCode = 'INR';
   String _selectedLogoSize = 'medium';
+  DateFormatOption _selectedDateFormat = DateFormatOption.ddmmyyyy;
   bool _showGstFields = true;
   bool _fractionalQuantity = false;
   bool _showQuantity = true;
+  bool _showDiscount = true;
+  bool _showTypeTag = true;
   bool _isLoading = true;
 
   @override
@@ -39,16 +42,20 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     final info = await SettingsService.getSetting(SettingKey.additionalInfo);
     final thanks = await SettingsService.getSetting(SettingKey.thankYouNote);
     final currency = await SettingsService.getCurrency();
+    final dateFormat = await SettingsService.getDateFormat();
     final showGst = await SettingsService.getShowGstFields();
     final fractionalQty = await SettingsService.getFractionalQuantity();
     final qtyLabel = await SettingsService.getQuantityLabel();
     final logoSize = await SettingsService.getLogoSize();
     final showQuantity = await SettingsService.getShowQuantity();
+    final showDiscount = await SettingsService.getShowDiscount();
+    final showTypeTag = await SettingsService.getShowTypeTag();
 
     setState(() {
       _selectedLogoPosition = position ?? 'left';
       _selectedCurrencyCode = currency.code;
       _selectedLogoSize = logoSize;
+      _selectedDateFormat = dateFormat;
       invoicePrefixController.text = prefix ?? 'INV';
       additionalInfoController.text = info ?? '';
       thankYouController.text = thanks ?? '';
@@ -56,6 +63,8 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
       _fractionalQuantity = fractionalQty;
       quantityLabelController.text = qtyLabel;
       _showQuantity = showQuantity;
+      _showDiscount = showDiscount;
+      _showTypeTag = showTypeTag;
       _isLoading = false;
     });
   }
@@ -67,10 +76,13 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     await SettingsService.setSetting(SettingKey.additionalInfo, additionalInfoController.text);
     await SettingsService.setSetting(SettingKey.thankYouNote, thankYouController.text);
     await SettingsService.setCurrency(_selectedCurrencyCode);
+    await SettingsService.setDateFormat(_selectedDateFormat);
     await SettingsService.setSetting(SettingKey.showGstFields, _showGstFields.toString());
     await SettingsService.setSetting(SettingKey.fractionalQuantity, _fractionalQuantity.toString());
     await SettingsService.setSetting(SettingKey.quantityLabel, quantityLabelController.text.trim());
     await SettingsService.setShowQuantity(_showQuantity);
+    await SettingsService.setShowDiscount(_showDiscount);
+    await SettingsService.setShowTypeTag(_showTypeTag);
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -358,6 +370,43 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                               ),
                             ),
 
+                            // Date Format
+                            SizedBox(
+                              width: fieldWidth,
+                              child: DropdownButtonFormField<DateFormatOption>(
+                                value: _selectedDateFormat,
+                                decoration: InputDecoration(
+                                  labelText: 'Date Format',
+                                  prefixIcon: const Icon(Icons.calendar_today),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderSide: BorderSide(color: Colors.grey[300]!),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderSide: BorderSide(
+                                      color: Theme.of(context).primaryColor,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.grey[50],
+                                ),
+                                items: DateFormatOption.values.map((opt) {
+                                  return DropdownMenuItem<DateFormatOption>(
+                                    value: opt,
+                                    child: Text(opt.label),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  setState(() => _selectedDateFormat = value!);
+                                },
+                              ),
+                            ),
+
                             // GST Fields Toggle
                             SizedBox(
                               width: constraints.maxWidth,
@@ -441,6 +490,65 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                   value: _showQuantity,
                                   onChanged: (val) =>
                                       setState(() => _showQuantity = val),
+                                  activeColor: Theme.of(context).primaryColor,
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 12),
+
+                            // Show Discount Column Toggle
+                            SizedBox(
+                              width: constraints.maxWidth,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[50],
+                                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                  border: Border.all(color: Colors.grey[300]!),
+                                ),
+                                child: SwitchListTile(
+                                  title: const Text('Show Discount Column'),
+                                  subtitle: const Text(
+                                    'Hide discount column for clients who don\'t use item-level discounts',
+                                  ),
+                                  secondary: Icon(
+                                    Icons.discount_outlined,
+                                    color: _showDiscount
+                                        ? Theme.of(context).primaryColor
+                                        : Colors.grey,
+                                  ),
+                                  value: _showDiscount,
+                                  onChanged: (val) =>
+                                      setState(() => _showDiscount = val),
+                                  activeColor: Theme.of(context).primaryColor,
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 12),
+                            // Show Product/Service Tag Toggle
+                            SizedBox(
+                              width: constraints.maxWidth,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[50],
+                                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                  border: Border.all(color: Colors.grey[300]!),
+                                ),
+                                child: SwitchListTile(
+                                  title: const Text('Show Product/Service Tag'),
+                                  subtitle: const Text(
+                                    'Show or hide the Product/Service label on each invoice item',
+                                  ),
+                                  secondary: Icon(
+                                    Icons.label_outline,
+                                    color: _showTypeTag
+                                        ? Theme.of(context).primaryColor
+                                        : Colors.grey,
+                                  ),
+                                  value: _showTypeTag,
+                                  onChanged: (val) =>
+                                      setState(() => _showTypeTag = val),
                                   activeColor: Theme.of(context).primaryColor,
                                 ),
                               ),

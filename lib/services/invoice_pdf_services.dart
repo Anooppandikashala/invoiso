@@ -9,12 +9,14 @@ import 'package:printing/printing.dart';
 
 import '../common.dart';
 import '../database/database_helper.dart';
+import '../database/settings_service.dart';
 
 class InvoicePdfServices
 {
   static Future<void>  generatePDF(BuildContext context,Invoice invoice) async {
     try {
-      final pdf = await PDFService.generateInvoicePDF(invoice);
+      final dateFmt = await SettingsService.getDateFormat();
+      final pdf = await PDFService.generateInvoicePDF(invoice, datePattern: dateFmt.key);
       await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => pdf.save());
     } catch (e) {
       if(context.mounted) {
@@ -27,7 +29,8 @@ class InvoicePdfServices
   static Future<void> previewPDF(BuildContext context, Invoice invoice) async
   {
     try {
-      final pdf = await PDFService.generateInvoicePDF(invoice);
+      final dateFmt = await SettingsService.getDateFormat();
+      final pdf = await PDFService.generateInvoicePDF(invoice, datePattern: dateFmt.key);
       final bytes = await pdf.save();
       if(context.mounted)
       {

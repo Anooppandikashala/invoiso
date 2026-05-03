@@ -13,14 +13,13 @@ String buildQuotedCsv(List<List<dynamic>> rows) {
 
 class AppFormatters {
   static final _dateFormat = DateFormat('dd MMM yyyy');
-  static final _shortDateFormat = DateFormat('dd/MM/yyyy');
   static final _numberFormat = NumberFormat('#,##0.00');
 
   static String formatDate(DateTime? date) =>
       date != null ? _dateFormat.format(date) : 'Unknown date';
 
-  static String formatShortDate(DateTime? date) =>
-      date != null ? _shortDateFormat.format(date) : '-';
+  static String formatShortDate(DateTime? date, {String pattern = 'dd/MM/yyyy'}) =>
+      date != null ? DateFormat(pattern).format(date) : '-';
 
   static String formatAmount(double amount, String symbol) =>
       '$symbol ${_numberFormat.format(amount)}';

@@ -181,7 +181,7 @@ class InvoiceService {
       'business_name': i['customer_business_name'] ?? '',
     });
 
-    final itemRows = await db.query('invoice_items', where: 'invoice_id = ?', whereArgs: [id]);
+    final itemRows = await db.query('invoice_items', where: 'invoice_id = ?', whereArgs: [id], orderBy: 'rowid ASC');
     final items = <InvoiceItem>[];
 
     for (var row in itemRows) {
@@ -514,7 +514,7 @@ class InvoiceService {
     final itemRows = await db.rawQuery(
       'SELECT invoice_id, unit_price, product_price, quantity, discount, '
       'discount_per_unit, extra_cost, product_tax_rate '
-      'FROM invoice_items WHERE invoice_id IN ($placeholders)',
+      'FROM invoice_items WHERE invoice_id IN ($placeholders) ORDER BY rowid ASC',
       ids,
     );
 

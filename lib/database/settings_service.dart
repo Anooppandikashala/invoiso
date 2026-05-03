@@ -174,4 +174,31 @@ class SettingsService
   static Future<void> setShowBankDetails(bool show) async {
     await setSetting(SettingKey.showBankDetails, show.toString());
   }
+
+  static Future<bool> getShowDiscount() async {
+    final val = await getSetting(SettingKey.showDiscount);
+    return val != 'false'; // default true
+  }
+
+  static Future<void> setShowDiscount(bool show) async {
+    await setSetting(SettingKey.showDiscount, show.toString());
+  }
+
+  static Future<bool> getShowTypeTag() async {
+    final val = await getSetting(SettingKey.showTypeTag);
+    return val != 'false'; // default true
+  }
+
+  static Future<void> setShowTypeTag(bool show) async {
+    await setSetting(SettingKey.showTypeTag, show.toString());
+  }
+
+  static Future<DateFormatOption> getDateFormat() async {
+    final val = await getSetting(SettingKey.dateFormat);
+    return DateFormatOptionExtension.fromKey(val);
+  }
+
+  static Future<void> setDateFormat(DateFormatOption option) async {
+    await setSetting(SettingKey.dateFormat, option.key);
+  }
 }

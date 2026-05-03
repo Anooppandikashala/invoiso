@@ -90,7 +90,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   bool _fractionalQuantity = false;
   String _quantityLabel = '';
   bool _showQuantity = true;
+  bool _showTypeTag = true;
   BusinessType _businessType = BusinessType.both;
+  String _datePattern = 'dd/MM/yyyy';
   String _adHocItemType = 'product'; // type for custom items added inline
 
   TaxMode get _taxMode {
@@ -104,7 +106,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     taxRateController.text = (taxRate * 100).toStringAsFixed(1);
     _loadCustomersAndProducts(widget.invoiceToEdit != null);
     _selectedOrderDate = DateTime.now();
-    dateController.text = DateFormat('dd/MM/yyyy').format(_selectedOrderDate);
+    dateController.text = DateFormat(_datePattern).format(_selectedOrderDate);
     _setAdditionalNote();
     if (widget.invoiceToEdit != null) {
       _invoice = widget.invoiceToEdit;
@@ -124,10 +126,10 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       invoiceType = _invoice!.type;
       currentInvoiceNumber = _invoice!.id;
       _selectedOrderDate = _invoice!.date;
-      dateController.text = DateFormat('dd/MM/yyyy').format(_selectedOrderDate);
+      dateController.text = DateFormat(_datePattern).format(_selectedOrderDate);
       if (_invoice!.dueDate != null) {
         _selectedDueDate = _invoice!.dueDate;
-        dueDateController.text = DateFormat('dd/MM/yyyy').format(_invoice!.dueDate!);
+        dueDateController.text = DateFormat(_datePattern).format(_invoice!.dueDate!);
       }
       _quantityLabel = _invoice!.quantityLabel ?? '';
       for (final c in _invoice!.additionalCosts) {
@@ -240,7 +242,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       final fractionalQty = await SettingsService.getFractionalQuantity();
       final quantityLabelSetting = await SettingsService.getQuantityLabel();
       final showQuantity = await SettingsService.getShowQuantity();
+      final showTypeTag = await SettingsService.getShowTypeTag();
       final businessType = await SettingsService.getBusinessType();
+      final dateFormatOpt = await SettingsService.getDateFormat();
 
       // Determine which UPI to pre-select.
       String? existingUpiId;
@@ -299,11 +303,17 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         if (!showGst) _isTaxEnabled = false;
         _fractionalQuantity = fractionalQty;
         _showQuantity = showQuantity;
+        _showTypeTag = showTypeTag;
         _businessType = businessType;
         _adHocItemType = businessType == BusinessType.service ? 'service' : 'product';
         // For new invoices, use the global setting. Edit/clone already set _quantityLabel in initState.
         if (!isEditing && widget.cloneFrom == null) {
           _quantityLabel = quantityLabelSetting;
+        }
+        _datePattern = dateFormatOpt.key;
+        dateController.text = DateFormat(_datePattern).format(_selectedOrderDate);
+        if (_selectedDueDate != null) {
+          dueDateController.text = DateFormat(_datePattern).format(_selectedDueDate!);
         }
         isLoading = false;
       });
@@ -326,7 +336,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     final unitPriceController = TextEditingController(text: product.price.toString());
     final extraCostController = TextEditingController();
 
-    bool discountPerUnit = false;
+    bool discountPerUnit = true;
 
     showDialog(
       context: context,
@@ -556,7 +566,16 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       );
     } else {
       setState(() {
-        invoiceItems.insert(0, invoiceItem);
+        invoiceItems.add(invoiceItem);
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_invoiceItemsScrollController.hasClients) {
+          _invoiceItemsScrollController.animateTo(
+            _invoiceItemsScrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
       });
     }
   }
@@ -839,7 +858,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     final taxRateController = TextEditingController(text: '0');
     final extraCostController = TextEditingController();
 
-    bool discountPerUnit = false;
+    bool discountPerUnit = true;
     String dialogItemType = _adHocItemType;
 
     showDialog(
@@ -1396,7 +1415,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                       if (picked != null) {
                         setState(() {
                           _selectedOrderDate = picked;
-                          dateController.text = DateFormat('dd/MM/yyyy').format(picked);
+                          dateController.text = DateFormat(_datePattern).format(picked);
                         });
                       }
                     },
@@ -1436,7 +1455,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                       if (picked != null) {
                         setState(() {
                           _selectedDueDate = picked;
-                          dueDateController.text = DateFormat('dd/MM/yyyy').format(picked);
+                          dueDateController.text = DateFormat(_datePattern).format(picked);
                         });
                       }
                     },
@@ -2142,6 +2161,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
             )
                 : Scrollbar(
               controller: _invoiceItemsScrollController,
+              thumbVisibility: true,
               child: ListView.builder(
                 controller: _invoiceItemsScrollController,
                 itemCount: invoiceItems.length,
@@ -2181,7 +2201,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                 ),
                               ),
                           AppSpacing.wMedium,
-                          if (_businessType == BusinessType.both)
+                          if (_businessType == BusinessType.both && _showTypeTag)
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
@@ -2222,6 +2242,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                             if (_showQuantity)
                               _buildItemDetail(_quantityLabel.trim().isNotEmpty ? _quantityLabel.trim() : 'Qty', item.quantity == item.quantity.roundToDouble() ? item.quantity.toInt().toString() : item.quantity.toString()),
                             _buildItemDetail('Discount', '$_currencySymbol${item.discount.toStringAsFixed(2)}${item.discountPerUnit ? ' ×qty' : ''}'),
+                            if (item.discountPerUnit && item.discount > 0)
+                              _buildItemDetail('Net', '$_currencySymbol${(item.effectivePrice - item.discount).toStringAsFixed(2)}/item', color: Colors.teal[700]),
                             if (item.extraCost != null && item.extraCost! > 0)
                               _buildItemDetail('Extra', '+$_currencySymbol${item.extraCost!.toStringAsFixed(2)}', color: Colors.teal[700]),
                             if (_taxMode == TaxMode.perItem)
@@ -3083,7 +3105,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 ],
               ],
             ),
-            Text(DateFormat('dd/MM/yyyy').format(DateTime.now())),
+            Text(DateFormat(_datePattern).format(DateTime.now())),
             Padding(
               padding: const EdgeInsets.only(right: 8.0),
               child: Row(

@@ -22,7 +22,7 @@ import '../common.dart';
 
 // PDF Generation Service
 class PDFService {
-  static Future<pw.Document> generateInvoicePDF(Invoice invoice) async
+  static Future<pw.Document> generateInvoicePDF(Invoice invoice, {String datePattern = 'dd/MM/yyyy'}) async
   {
     final pdf = pw.Document();
     final company = await CompanyInfoService.getCompanyInfo();
@@ -32,6 +32,8 @@ class PDFService {
     final invoicePrefix = rawPrefix.isNotEmpty ? '$rawPrefix-' : '';
     final showGst = await SettingsService.getShowGstFields();
     final showQuantity = await SettingsService.getShowQuantity();
+    final showDiscount = await SettingsService.getShowDiscount();
+    final showTypeTag = await SettingsService.getShowTypeTag();
     final businessType = await SettingsService.getBusinessType();
 
     // UPI QR settings — use the per-invoice UPI ID; fall back to the default
@@ -70,24 +72,24 @@ class PDFService {
         pdf.addPage(await _buildClassicTemplate(
           invoice, company, currencySymbol, invoicePrefix,
           upiId: effectiveUpiId, showUpiQr: showUpiQr, showGst: showGst,
-          showQuantity: showQuantity, businessType: businessType,
-          bankAccount: effectiveBank,
+          showQuantity: showQuantity, showDiscount: showDiscount, showTypeTag: showTypeTag, businessType: businessType,
+          bankAccount: effectiveBank, datePattern: datePattern,
         ));
         break;
       case InvoiceTemplate.modern:
         pdf.addPage(await _buildModernTemplate(
           invoice, company, currencySymbol, invoicePrefix,
           upiId: effectiveUpiId, showUpiQr: showUpiQr, showGst: showGst,
-          showQuantity: showQuantity, businessType: businessType,
-          bankAccount: effectiveBank,
+          showQuantity: showQuantity, showDiscount: showDiscount, showTypeTag: showTypeTag, businessType: businessType,
+          bankAccount: effectiveBank, datePattern: datePattern,
         ));
         break;
       case InvoiceTemplate.minimal:
         pdf.addPage(await _buildMinimalTemplate(
           invoice, company, currencySymbol, invoicePrefix,
           upiId: effectiveUpiId, showUpiQr: showUpiQr, showGst: showGst,
-          showQuantity: showQuantity, businessType: businessType,
-          bankAccount: effectiveBank,
+          showQuantity: showQuantity, showDiscount: showDiscount, showTypeTag: showTypeTag, businessType: businessType,
+          bankAccount: effectiveBank, datePattern: datePattern,
         ));
         break;
     }
@@ -98,8 +100,8 @@ class PDFService {
   static Future<pw.MultiPage> _buildClassicTemplate(
     Invoice invoice, CompanyInfo? company, String currencySymbol, String invoicePrefix, {
     String? upiId, bool showUpiQr = false, bool showGst = true,
-    bool showQuantity = true, BusinessType businessType = BusinessType.both,
-    BankAccount? bankAccount,
+    bool showQuantity = true, bool showDiscount = true, bool showTypeTag = true, BusinessType businessType = BusinessType.both,
+    BankAccount? bankAccount, String datePattern = 'dd/MM/yyyy',
   }) async
   {
     final accentColor = PdfColors.indigo900; // Use a strong accent color
@@ -166,9 +168,9 @@ class PDFService {
               crossAxisAlignment: pw.CrossAxisAlignment.end,
               children: [
                 pw.Text("Invoice #: $invoicePrefix${invoice.id}", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
-                pw.Text("Date: ${_formatDate(invoice.date)}", style: const pw.TextStyle(fontSize: 10)),
+                pw.Text("Date: ${_formatDate(invoice.date, datePattern)}", style: const pw.TextStyle(fontSize: 10)),
                 if (invoice.dueDate != null)
-                  pw.Text("Due Date: ${_formatDate(invoice.dueDate!)}", style: const pw.TextStyle(fontSize: 10)),
+                  pw.Text("Due Date: ${_formatDate(invoice.dueDate!, datePattern)}", style: const pw.TextStyle(fontSize: 10)),
               ],
             ),
           ],
@@ -205,7 +207,7 @@ class PDFService {
         pw.SizedBox(height: 25),
 
         // 4. Items Table
-        _buildInvoiceTable(invoice, headerColor: accentColor, textColor: PdfColors.white, showGst: showGst, showQuantity: showQuantity, businessType: businessType),
+        _buildInvoiceTable(invoice, headerColor: accentColor, textColor: PdfColors.white, showGst: showGst, showQuantity: showQuantity, showDiscount: showDiscount, showTypeTag: showTypeTag, businessType: businessType),
 
         pw.SizedBox(height: 20),
 
@@ -251,8 +253,8 @@ class PDFService {
   static Future<pw.MultiPage> _buildMinimalTemplate(
     Invoice invoice, CompanyInfo? company, String currencySymbol, String invoicePrefix, {
     String? upiId, bool showUpiQr = false, bool showGst = true,
-    bool showQuantity = true, BusinessType businessType = BusinessType.both,
-    BankAccount? bankAccount,
+    bool showQuantity = true, bool showDiscount = true, bool showTypeTag = true, BusinessType businessType = BusinessType.both,
+    BankAccount? bankAccount, String datePattern = 'dd/MM/yyyy',
   }) async
   {
     final accentColor = PdfColors.grey700; // Use a strong, neutral accent
@@ -287,11 +289,11 @@ class PDFService {
                 pw.Text("$invoicePrefix${invoice.id}", style: const pw.TextStyle(fontSize: 12)),
                 pw.SizedBox(height: 5),
                 pw.Text("DATE", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: accentColor)),
-                pw.Text(_formatDate(invoice.date), style: const pw.TextStyle(fontSize: 12)),
+                pw.Text(_formatDate(invoice.date, datePattern), style: const pw.TextStyle(fontSize: 12)),
                 if (invoice.dueDate != null) ...[
                   pw.SizedBox(height: 5),
                   pw.Text("DUE DATE", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: accentColor)),
-                  pw.Text(_formatDate(invoice.dueDate!), style: const pw.TextStyle(fontSize: 12)),
+                  pw.Text(_formatDate(invoice.dueDate!, datePattern), style: const pw.TextStyle(fontSize: 12)),
                 ],
               ],
             ),
@@ -344,7 +346,7 @@ class PDFService {
         pw.SizedBox(height: 30),
 
         // 3. Table (Clean, no external borders)
-        _buildInvoiceTable(invoice, headerColor: PdfColors.grey100, textColor: PdfColors.black, showGst: showGst, showQuantity: showQuantity, businessType: businessType),
+        _buildInvoiceTable(invoice, headerColor: PdfColors.grey100, textColor: PdfColors.black, showGst: showGst, showQuantity: showQuantity, showDiscount: showDiscount, showTypeTag: showTypeTag, businessType: businessType),
 
         pw.SizedBox(height: 20),
 
@@ -392,8 +394,8 @@ class PDFService {
   static Future<pw.MultiPage> _buildModernTemplate(
     Invoice invoice, CompanyInfo? company, String currencySymbol, String invoicePrefix, {
     String? upiId, bool showUpiQr = false, bool showGst = true,
-    bool showQuantity = true, BusinessType businessType = BusinessType.both,
-    BankAccount? bankAccount,
+    bool showQuantity = true, bool showDiscount = true, bool showTypeTag = true, BusinessType businessType = BusinessType.both,
+    BankAccount? bankAccount, String datePattern = 'dd/MM/yyyy',
   }) async
   {
     final accentColor = PdfColors.blue600;
@@ -479,9 +481,9 @@ class PDFService {
                 children: [
                   pw.Text("Invoice #: $invoicePrefix${invoice.id}",
                       style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
-                  pw.Text("Date: ${_formatDate(invoice.date)}", style: const pw.TextStyle(fontSize: 10)),
+                  pw.Text("Date: ${_formatDate(invoice.date, datePattern)}", style: const pw.TextStyle(fontSize: 10)),
                   if (invoice.dueDate != null)
-                    pw.Text("Due Date: ${_formatDate(invoice.dueDate!)}", style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text("Due Date: ${_formatDate(invoice.dueDate!, datePattern)}", style: const pw.TextStyle(fontSize: 10)),
                 ],
               ),
             ],
@@ -525,7 +527,7 @@ class PDFService {
         // 4. Table Section
         pw.Padding(
           padding: const pw.EdgeInsets.symmetric(horizontal: 30),
-          child: _buildInvoiceTable(invoice, headerColor: accentColor, textColor: PdfColors.white, showGst: showGst, showQuantity: showQuantity, businessType: businessType),
+          child: _buildInvoiceTable(invoice, headerColor: accentColor, textColor: PdfColors.white, showGst: showGst, showQuantity: showQuantity, showDiscount: showDiscount, showTypeTag: showTypeTag, businessType: businessType),
         ),
 
         pw.SizedBox(height: 25),
@@ -896,7 +898,7 @@ class PDFService {
   }
 
   // Build Invoice Table - MODIFIED
-  static pw.Widget _buildInvoiceTable(Invoice invoice, {PdfColor headerColor = PdfColors.grey200, PdfColor textColor = PdfColors.black, bool showGst = true, bool showQuantity = true, BusinessType businessType = BusinessType.both})
+  static pw.Widget _buildInvoiceTable(Invoice invoice, {PdfColor headerColor = PdfColors.grey200, PdfColor textColor = PdfColors.black, bool showGst = true, bool showQuantity = true, bool showDiscount = true, bool showTypeTag = true, BusinessType businessType = BusinessType.both})
   {
     final bool showItemTax = invoice.taxMode == TaxMode.perItem;
     final String priceHeader = showQuantity ? 'Price' : 'Rate';
@@ -912,7 +914,7 @@ class PDFService {
     if (showQuantity) colWidths[col++] = const pw.FlexColumnWidth(1);    // Qty
     colWidths[col++] = const pw.FlexColumnWidth(1.5);  // Price/Rate
     if (showItemTax) colWidths[col++] = const pw.FlexColumnWidth(1); // Tax %
-    colWidths[col++] = const pw.FlexColumnWidth(1.5);  // Discount
+    if (showDiscount) colWidths[col++] = const pw.FlexColumnWidth(1.5);  // Discount
     colWidths[col++] = const pw.FlexColumnWidth(1.5);  // Total
 
     return pw.Table(
@@ -927,7 +929,7 @@ class PDFService {
             if (showQuantity) _buildTableCell(invoice.quantityLabel?.isNotEmpty == true ? invoice.quantityLabel! : 'Qty', isHeader: true, textColor: textColor),
             _buildTableCell(priceHeader, isHeader: true, textColor: textColor),
             if (showItemTax) _buildTableCell('Tax %', isHeader: true, textColor: textColor),
-            _buildTableCell('Discount', isHeader: true, textColor: textColor),
+            if (showDiscount) _buildTableCell('Discount', isHeader: true, textColor: textColor),
             _buildTableCell('Total', isHeader: true, textColor: textColor),
           ],
         ),
@@ -944,14 +946,27 @@ class PDFService {
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
                     pw.Text(item.product.name, style: const pw.TextStyle(fontSize: 9)),
+                    if (showTypeTag && businessType == BusinessType.both)
+                      pw.Text(
+                        item.product.type == 'service' ? 'Service' : 'Product',
+                        style: pw.TextStyle(
+                          fontSize: 7,
+                          color: item.product.type == 'service' ? PdfColors.purple700 : PdfColors.indigo700,
+                        ),
+                      ),
+                    if (showDiscount && item.discountPerUnit && item.discount > 0)
+                      pw.Text(
+                        '(${item.effectivePrice.toStringAsFixed(2)} - ${item.discount.toStringAsFixed(2)} = ${(item.effectivePrice - item.discount).toStringAsFixed(2)}/item)',
+                        style: pw.TextStyle(fontSize: 7, color: PdfColors.teal700),
+                      ),
                   ],
                 ),
               ),
               if (showGst) _buildTableCell(item.product.hsncode),
               if (showQuantity) _buildTableCell(item.quantity == item.quantity.roundToDouble() ? item.quantity.toInt().toString() : item.quantity.toString()),
-              _buildTableCell(item.effectivePrice.toStringAsFixed(2)),
+              _buildTableCell(showDiscount ? item.effectivePrice.toStringAsFixed(2) : (item.total / item.quantity).toStringAsFixed(2)),
               if (showItemTax) _buildTableCell('${item.product.tax_rate}%'),
-              _buildTableCell(item.discount.toStringAsFixed(2)),
+              if (showDiscount) _buildTableCell(item.discount.toStringAsFixed(2)),
               _buildTableCell(item.total.toStringAsFixed(2)),
             ],
           );
@@ -964,7 +979,7 @@ class PDFService {
             if (showQuantity) pw.Container(height: 1, color: PdfColors.grey400),
             pw.Container(height: 1, color: PdfColors.grey400),
             if (showItemTax) pw.Container(height: 1, color: PdfColors.grey400),
-            pw.Container(height: 1, color: PdfColors.grey400),
+            if (showDiscount) pw.Container(height: 1, color: PdfColors.grey400),
             pw.Container(height: 1, color: PdfColors.grey400),
           ],
         ),
@@ -1002,8 +1017,8 @@ class PDFService {
     );
   }
 
-  static String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  static String _formatDate(DateTime date, String pattern) {
+    return DateFormat(pattern).format(date);
   }
 
   static String buildPdfFilename(Invoice invoice) {
