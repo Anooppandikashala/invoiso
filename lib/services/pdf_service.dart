@@ -211,18 +211,28 @@ class PDFService {
 
         pw.SizedBox(height: 20),
 
-        // 5. Totals, Notes and optional UPI QR
-        pw.Row(
-          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            _buildAdditionalNotes(invoice),
-            pw.Column(
+        // 5. Totals
+        pw.Align(
+          alignment: pw.Alignment.centerRight,
+          child: _buildEnhancedTotals(invoice, PdfColors.grey200, PdfColors.black, accentColor, currencySymbol),
+        ),
+
+        pw.SizedBox(height: 12),
+
+        // 5b. Notes
+        _buildAdditionalNotes(invoice),
+
+        if (showUpiQr && upiId != null || bankAccount != null)
+          pw.SizedBox(height: 12),
+
+        // 5c. QR + Bank Details
+        if (showUpiQr && upiId != null || bankAccount != null)
+          pw.Align(
+            alignment: pw.Alignment.centerRight,
+            child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.end,
               children: [
-                _buildEnhancedTotals(invoice, PdfColors.grey200, PdfColors.black, accentColor, currencySymbol),
-                if (showUpiQr && upiId != null) ...[
-                  pw.SizedBox(height: 12),
+                if (showUpiQr && upiId != null)
                   _buildUpiQrSection(
                     upiId: upiId,
                     companyName: company?.name ?? '',
@@ -231,15 +241,13 @@ class PDFService {
                     invoiceId: invoice.id,
                     accentColor: accentColor,
                   ),
-                ],
                 if (bankAccount != null) ...[
-                  pw.SizedBox(height: 12),
+                  if (showUpiQr && upiId != null) pw.SizedBox(height: 12),
                   _buildBankDetailsSection(bankAccount: bankAccount, accentColor: accentColor),
                 ],
               ],
             ),
-          ],
-        ),
+          ),
 
         pw.SizedBox(height: 30),
         pw.Center(
@@ -350,35 +358,43 @@ class PDFService {
 
         pw.SizedBox(height: 20),
 
-        // 4. Notes + Totals + optional UPI QR
-        pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              _buildAdditionalNotes(invoice),
-              pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.end,
-                children: [
-                  _buildEnhancedTotals(invoice, PdfColors.grey200, PdfColors.black, accentColor, currencySymbol),
-                  if (showUpiQr && upiId != null) ...[
-                    pw.SizedBox(height: 12),
-                    _buildUpiQrSection(
-                      upiId: upiId,
-                      companyName: company?.name ?? '',
-                      amount: invoice.total,
-                      currencyCode: invoice.currencyCode,
-                      invoiceId: invoice.id,
-                      accentColor: accentColor,
-                    ),
-                  ],
-                  if (bankAccount != null) ...[
-                    pw.SizedBox(height: 12),
-                    _buildBankDetailsSection(bankAccount: bankAccount, accentColor: accentColor),
-                  ],
-                ],
-              ),
-            ]
+        // 4. Totals
+        pw.Align(
+          alignment: pw.Alignment.centerRight,
+          child: _buildEnhancedTotals(invoice, PdfColors.grey200, PdfColors.black, accentColor, currencySymbol),
         ),
+
+        pw.SizedBox(height: 12),
+
+        // 4b. Notes
+        _buildAdditionalNotes(invoice),
+
+        if (showUpiQr && upiId != null || bankAccount != null)
+          pw.SizedBox(height: 12),
+
+        // 4c. QR + Bank Details
+        if (showUpiQr && upiId != null || bankAccount != null)
+          pw.Align(
+            alignment: pw.Alignment.centerRight,
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.end,
+              children: [
+                if (showUpiQr && upiId != null)
+                  _buildUpiQrSection(
+                    upiId: upiId,
+                    companyName: company?.name ?? '',
+                    amount: invoice.total,
+                    currencyCode: invoice.currencyCode,
+                    invoiceId: invoice.id,
+                    accentColor: accentColor,
+                  ),
+                if (bankAccount != null) ...[
+                  if (showUpiQr && upiId != null) pw.SizedBox(height: 12),
+                  _buildBankDetailsSection(bankAccount: bankAccount, accentColor: accentColor),
+                ],
+              ],
+            ),
+          ),
 
         pw.SizedBox(height: 30),
 
@@ -533,19 +549,36 @@ class PDFService {
         pw.SizedBox(height: 25),
 
         // 5. Notes + Totals + optional UPI QR
+        // 5. Totals
         pw.Padding(
           padding: const pw.EdgeInsets.symmetric(horizontal: 30),
-          child: pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              _buildAdditionalNotes(invoice),
-              pw.Column(
+          child: pw.Align(
+            alignment: pw.Alignment.centerRight,
+            child: _buildEnhancedTotals(invoice, PdfColors.blue200, PdfColors.black, accentColor, currencySymbol),
+          ),
+        ),
+
+        pw.SizedBox(height: 12),
+
+        // 5b. Notes
+        pw.Padding(
+          padding: const pw.EdgeInsets.symmetric(horizontal: 30),
+          child: _buildAdditionalNotes(invoice),
+        ),
+
+        if (showUpiQr && upiId != null || bankAccount != null)
+          pw.SizedBox(height: 12),
+
+        // 5c. QR + Bank Details
+        if (showUpiQr && upiId != null || bankAccount != null)
+          pw.Padding(
+            padding: const pw.EdgeInsets.symmetric(horizontal: 30),
+            child: pw.Align(
+              alignment: pw.Alignment.centerRight,
+              child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.end,
                 children: [
-                  _buildEnhancedTotals(invoice, PdfColors.blue200, PdfColors.black, accentColor, currencySymbol),
-                  if (showUpiQr && upiId != null) ...[
-                    pw.SizedBox(height: 12),
+                  if (showUpiQr && upiId != null)
                     _buildUpiQrSection(
                       upiId: upiId,
                       companyName: company?.name ?? '',
@@ -554,16 +587,14 @@ class PDFService {
                       invoiceId: invoice.id,
                       accentColor: accentColor,
                     ),
-                  ],
                   if (bankAccount != null) ...[
-                    pw.SizedBox(height: 12),
+                    if (showUpiQr && upiId != null) pw.SizedBox(height: 12),
                     _buildBankDetailsSection(bankAccount: bankAccount, accentColor: accentColor),
                   ],
                 ],
               ),
-            ],
+            ),
           ),
-        ),
 
         pw.Spacer(),
 
