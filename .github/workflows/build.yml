@@ -136,6 +136,16 @@ jobs:
           sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
           echo "Building version: $VERSION"
 
+      - name: Pre-copy libstdc++ from Ubuntu 22.04 host
+        run: |
+          LIBSTDCPP=$(find /usr/lib -name "libstdc++.so.6.0.*" | sort -V | tail -1)
+          echo "Host libstdc++: $LIBSTDCPP"
+          objdump -p "$LIBSTDCPP" | grep -q "GLIBCXX_3.4.29" \
+            || { echo "ERROR: host libstdc++ missing GLIBCXX_3.4.29"; exit 1; }
+          mkdir -p .github_libs
+          cp "$LIBSTDCPP" .github_libs/libstdc++.so.6
+          echo "Copied to .github_libs/libstdc++.so.6 — no PPA needed inside container"
+
       - name: Build .deb inside Ubuntu 18.04 Docker container
         run: |
           docker run --rm \
@@ -150,11 +160,7 @@ jobs:
                 curl git unzip xz-utils zip \
                 clang cmake ninja-build pkg-config \
                 libgtk-3-dev liblzma-dev patchelf squashfs-tools \
-                software-properties-common ca-certificates
-
-              add-apt-repository -y ppa:ubuntu-toolchain-r/test
-              apt-get update -y
-              apt-get install -y gcc-11 g++-11
+                ca-certificates
 
               curl -fsSL \
                 https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.32.8-stable.tar.xz \
@@ -170,7 +176,7 @@ jobs:
               flutter build linux --release
 
               BUNDLE=build/linux/x64/release/bundle
-              LIBSTDCPP=$(find /usr/lib -name "libstdc++.so.6.0.*" | sort -V | tail -1)
+              LIBSTDCPP=/workspace/.github_libs/libstdc++.so.6
               echo "Bundling libstdc++: $LIBSTDCPP"
 
               # Verify the found libstdc++ actually provides GLIBCXX_3.4.29
