@@ -22,6 +22,10 @@ class InvoiceItem {
 
   double get effectivePrice => unitPrice ?? product.price;
 
+  double get grossPrice => effectivePrice * quantity + (extraCost ?? 0.0);
+
+  double get totalDiscount => discountPerUnit ? discount * quantity : discount;
+
   double get total => discountPerUnit
       ? (effectivePrice - discount) * quantity + (extraCost ?? 0.0)
       : (effectivePrice * quantity) - discount + (extraCost ?? 0.0);

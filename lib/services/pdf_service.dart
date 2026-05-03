@@ -801,7 +801,16 @@ class PDFService {
       ),
       child: pw.Column(
         children: [
-          _totalRow("Subtotal", "$currencySymbol ${invoice.subtotal.toStringAsFixed(2)}"),
+          _totalRow(
+            "Subtotal",
+            "$currencySymbol ${(invoice.totalDiscount > 0 ? invoice.grossSubtotal : invoice.subtotal).toStringAsFixed(2)}",
+          ),
+          if (invoice.totalDiscount > 0)
+            _totalRow(
+              "Discount",
+              "-$currencySymbol ${invoice.totalDiscount.toStringAsFixed(2)}",
+              color: PdfColors.orange800,
+            ),
           if (invoice.taxMode != TaxMode.none)
             _totalRow(
                 _taxLabel(invoice),
@@ -884,14 +893,15 @@ class PDFService {
   }
 
 // Total Row helper - UNCHANGED
-  static pw.Widget _totalRow(String label, String value) {
+  static pw.Widget _totalRow(String label, String value, {PdfColor? color}) {
+    final style = pw.TextStyle(fontSize: 10, color: color);
     return pw.Padding(
       padding: const pw.EdgeInsets.all(8),
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
-          pw.Text(label, style: const pw.TextStyle(fontSize: 10)),
-          pw.Text(value, style: const pw.TextStyle(fontSize: 10)),
+          pw.Text(label, style: style),
+          pw.Text(value, style: style),
         ],
       ),
     );

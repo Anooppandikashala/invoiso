@@ -43,6 +43,10 @@ class Invoice {
 
   double get subtotal => items.fold(0.0, (sum, item) => sum + item.total);
 
+  double get grossSubtotal => items.fold(0.0, (sum, item) => sum + item.grossPrice);
+
+  double get totalDiscount => items.fold(0.0, (sum, item) => sum + item.totalDiscount);
+
   double get tax {
     switch (taxMode) {
       case TaxMode.global:

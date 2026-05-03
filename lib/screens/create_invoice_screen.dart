@@ -2103,7 +2103,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     );
   }
 
-  Widget _invoiceItems(double tax, double subtotal, double total) {
+  Widget _invoiceItems(double tax, double subtotal, double total, double grossSubtotal, double totalDiscount) {
     return Card(
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -2576,7 +2576,18 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            _buildTotalRow('Subtotal', subtotal, false),
+                            _buildTotalRow('Subtotal', totalDiscount > 0 ? grossSubtotal : subtotal, false),
+                            if (totalDiscount > 0) ...[
+                              const SizedBox(height: 4),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text('Discount:', style: TextStyle(fontSize: 14, color: Colors.orange[700])),
+                                  Text('-$_currencySymbol${totalDiscount.toStringAsFixed(2)}',
+                                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.orange[700])),
+                                ],
+                              ),
+                            ],
                             const SizedBox(height: 8),
                             _buildTotalRow('Tax', tax, false),
                             ..._buildAdditionalCosts().map((c) => Padding(
@@ -3052,6 +3063,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     }
 
     double subtotal = invoiceItems.fold(0.0, (sum, item) => sum + item.total);
+    double grossSubtotal = invoiceItems.fold(0.0, (sum, item) => sum + item.grossPrice);
+    double totalDiscount = invoiceItems.fold(0.0, (sum, item) => sum + item.totalDiscount);
     double tax;
     switch (_taxMode) {
       case TaxMode.global:
@@ -3149,11 +3162,11 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   child: Column(
                     children: [
                       if (isDesktop)
-                        _buildDesktopLayout(tax, subtotal, total)
+                        _buildDesktopLayout(tax, subtotal, total, grossSubtotal, totalDiscount)
                       else if (isTablet)
-                        _buildTabletLayout(tax, subtotal, total)
+                        _buildTabletLayout(tax, subtotal, total, grossSubtotal, totalDiscount)
                       else
-                        _buildMobileLayout(tax, subtotal, total),
+                        _buildMobileLayout(tax, subtotal, total, grossSubtotal, totalDiscount),
                     ],
                   ),
                 ),
@@ -3165,7 +3178,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     );
   }
 
-  Widget _buildDesktopLayout(double tax, double subtotal, double total) {
+  Widget _buildDesktopLayout(double tax, double subtotal, double total, double grossSubtotal, double totalDiscount) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -3206,7 +3219,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 ],
               ),
               AppSpacing.hSmall,
-              _invoiceItems(tax, subtotal, total),
+              _invoiceItems(tax, subtotal, total, grossSubtotal, totalDiscount),
               AppSpacing.hSmall,
               _actionButtons(),
             ],
@@ -3216,7 +3229,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     );
   }
 
-  Widget _buildTabletLayout(double tax, double subtotal, double total) {
+  Widget _buildTabletLayout(double tax, double subtotal, double total, double grossSubtotal, double totalDiscount) {
     return Column(
       children: [
         Row(
@@ -3247,7 +3260,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  _invoiceItems(tax, subtotal, total),
+                  _invoiceItems(tax, subtotal, total, grossSubtotal, totalDiscount),
                   const SizedBox(height: 16),
                   _actionButtons(),
                 ],
@@ -3259,7 +3272,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     );
   }
 
-  Widget _buildMobileLayout(double tax, double subtotal, double total) {
+  Widget _buildMobileLayout(double tax, double subtotal, double total, double grossSubtotal, double totalDiscount) {
     return Column(
       children: [
         _customerSearchView(),
@@ -3270,7 +3283,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         const SizedBox(height: 16),
         _customerDetailsForm(),
         const SizedBox(height: 16),
-        _invoiceItems(tax, subtotal, total),
+        _invoiceItems(tax, subtotal, total, grossSubtotal, totalDiscount),
         const SizedBox(height: 16),
         _actionButtons(),
       ],
