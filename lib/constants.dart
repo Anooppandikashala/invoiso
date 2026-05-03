@@ -64,10 +64,10 @@ class AppBorderRadius
 class AppConfig
 {
   static const name = "invoiso";
-  static const version = "v4.1.1";
+  static const version = "v4.1.2";
   static const developer = "ANOOP P";
   static const supportEmail = "anooppkrishnan96@gmail.com";
-  static const website = "https://anooppandikashala.github.io/invoisoapp/";
+  static const website = "https://invoiso.co.in/";
   static const license = "MIT";
   static const description = "Invoiso is a modern invoice and quotation management app for freelancers and small businesses.";
 }

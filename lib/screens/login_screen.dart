@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:invoiso/constants.dart';
 import 'package:invoiso/database/user_service.dart';
 import 'package:invoiso/screens/change_password_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'dashboard_screen.dart';
 
@@ -136,6 +137,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 AppSpacing.hLarge,
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () => launchUrl(Uri.parse(AppConfig.website), mode: LaunchMode.externalApplication),
+                    child: Text(
+                      AppConfig.website,
+                      style: TextStyle(fontSize: 12, color: Colors.grey[500], decoration: TextDecoration.underline),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
                 Text(
                   AppConfig.version,
                   style: TextStyle(fontSize: 12, color: Colors.grey[400]),
