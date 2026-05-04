@@ -117,13 +117,13 @@ jobs:
           path: Invoiso-*-ubuntu22.deb
 
   # ─────────────────────────────────────────────────────────────
-  # Linux — build .deb for Ubuntu 18.04
+  # Linux — build .deb for Ubuntu 20.04
   # Runs on ubuntu-22.04 runner (Node.js 20 compatible for GH
-  # Actions tooling); compilation happens inside a ubuntu:18.04
-  # Docker container so the binary links against glibc 2.27.
+  # Actions tooling); compilation happens inside a ubuntu:20.04
+  # Docker container so the binary links against glibc 2.31.
   # GCC 11 libstdc++ is bundled to satisfy GLIBCXX_3.4.29.
   # ─────────────────────────────────────────────────────────────
-  build-linux-ubuntu18:
+  build-linux-ubuntu20:
     runs-on: ubuntu-22.04
 
     steps:
@@ -146,18 +146,14 @@ jobs:
           cp "$LIBSTDCPP" .github_libs/libstdc++.so.6
           echo "Copied to .github_libs/libstdc++.so.6 — no PPA needed inside container"
 
-      - name: Build .deb inside Ubuntu 18.04 Docker container
+      - name: Build .deb inside Ubuntu 20.04 Docker container
         run: |
           docker run --rm \
             -v "$GITHUB_WORKSPACE:/workspace" \
             -w /workspace \
-            ubuntu:18.04 \
+            ubuntu:20.04 \
             bash -c '
               set -e
-
-              # Ubuntu 18.04 reached EOL — packages moved to old-releases.ubuntu.com
-              sed -i "s|http://archive.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g" /etc/apt/sources.list
-              sed -i "s|http://security.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g" /etc/apt/sources.list
 
               apt-get update -y
               apt-get install -y \
@@ -220,7 +216,7 @@ jobs:
               echo "Injected libstdc++.so.6 into deb at /usr/share/invoiso/lib/"
 
               # Inject libsqlite3.so — sqflite_common_ffi calls DynamicLibrary.open("libsqlite3.so")
-              # Ubuntu 18.04 ships only the versioned libsqlite3.so.0; the unversioned name
+              # Ubuntu 20.04 ships only the versioned libsqlite3.so.0; the unversioned name
               # is absent unless libsqlite3-dev is installed.  Bundle it so it is always present.
               LIBSQLITE=$(find /usr/lib -name "libsqlite3.so.0.*" | sort -V | tail -1)
               if [ -z "$LIBSQLITE" ]; then
@@ -241,14 +237,14 @@ jobs:
               echo "Repacked with LD_PRELOAD launcher"
 
               VERSION=$(grep "^version:" pubspec.yaml | head -1 | sed "s/version: //" | tr -d " ")
-              cp "$DEB_FILE" "Invoiso-${VERSION}-ubuntu18.deb"
+              cp "$DEB_FILE" "Invoiso-${VERSION}-ubuntu20.deb"
             '
 
-      - name: Upload Ubuntu18 .deb
+      - name: Upload Ubuntu20 .deb
         uses: actions/upload-artifact@v4
         with:
-          name: Invoiso-Ubuntu18.deb
-          path: Invoiso-*-ubuntu18.deb
+          name: Invoiso-Ubuntu20.deb
+          path: Invoiso-*-ubuntu20.deb
 
   # ─────────────────────────────────────────────────────────────
   # Linux — build .deb for Ubuntu 24.04
@@ -595,7 +591,7 @@ jobs:
   # Runs only after all three build jobs succeed
   # ─────────────────────────────────────────────────────────────
   create-release:
-    needs: [build-windows, build-linux, build-linux-ubuntu18, build-linux-ubuntu24, build-appimage, build-appimage-ubuntu24, build-macos]
+    needs: [build-windows, build-linux, build-linux-ubuntu20, build-linux-ubuntu24, build-appimage, build-appimage-ubuntu24, build-macos]
     runs-on: ubuntu-latest
 
     steps:
@@ -605,10 +601,10 @@ jobs:
           name: Invoiso-Windows-Installer
           path: release-assets/
 
-      - name: Download Ubuntu18 .deb
+      - name: Download Ubuntu20 .deb
         uses: actions/download-artifact@v4
         with:
-          name: Invoiso-Ubuntu18.deb
+          name: Invoiso-Ubuntu20.deb
           path: release-assets/
 
       - name: Download Ubuntu22 .deb
