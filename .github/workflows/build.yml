@@ -138,7 +138,7 @@ jobs:
           sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
           echo "Building version: $VERSION"
 
-      - name: Pre-copy libstdc++ from Ubuntu 22.04 host
+      - name: Pre-copy libstdc++ and CA bundle from Ubuntu 22.04 host
         run: |
           LIBSTDCPP=$(find /usr/lib -name "libstdc++.so.6.0.*" | sort -V | tail -1)
           echo "Host libstdc++: $LIBSTDCPP"
@@ -146,7 +146,8 @@ jobs:
             || { echo "ERROR: host libstdc++ missing GLIBCXX_3.4.29"; exit 1; }
           mkdir -p .github_libs
           cp "$LIBSTDCPP" .github_libs/libstdc++.so.6
-          echo "Copied to .github_libs/libstdc++.so.6"
+          cp /etc/ssl/certs/ca-certificates.crt .github_libs/ca-certificates.crt
+          echo "Copied libstdc++ and ca-certificates.crt"
 
       - name: Build .deb inside Ubuntu 18.04 Docker container
         run: |
@@ -156,6 +157,12 @@ jobs:
             ubuntu:18.04 \
             bash -c '
               set -e
+
+              # ubuntu:18.04 minimal image ships with no ca-certificates;
+              # snapshot.ubuntu.com redirects HTTP→HTTPS so we must provide
+              # a trusted CA bundle before apt can reach the snapshot server
+              mkdir -p /etc/ssl/certs
+              cp /workspace/.github_libs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 
               # bionic repos are EOL — use a frozen pre-EOL snapshot instead
               echo "deb http://snapshot.ubuntu.com/ubuntu/20230401T000000Z bionic main restricted universe multiverse" > /etc/apt/sources.list
