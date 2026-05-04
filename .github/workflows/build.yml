@@ -170,6 +170,14 @@ jobs:
               echo "deb http://snapshot.ubuntu.com/ubuntu/20230401T000000Z bionic-security main restricted universe multiverse" >> /etc/apt/sources.list
               echo "Acquire::Check-Valid-Until \"false\";" > /etc/apt/apt.conf.d/99no-check-valid
 
+              # The ubuntu:18.04 Docker image may contain ESM package versions
+              # (e.g. perl-base 5.26.1-6ubuntu0.7esm1) that are newer than the
+              # public snapshot.  Priority 1001 lets apt downgrade those back to
+              # snapshot versions so the dependency graph is consistent.
+              echo "Package: *" > /etc/apt/preferences.d/99snapshot-priority
+              echo "Pin: origin snapshot.ubuntu.com" >> /etc/apt/preferences.d/99snapshot-priority
+              echo "Pin-Priority: 1001" >> /etc/apt/preferences.d/99snapshot-priority
+
               apt-get update -y
               apt-get dist-upgrade -y
               apt-get install -y \
