@@ -144,42 +144,23 @@ jobs:
             || { echo "ERROR: host libstdc++ missing GLIBCXX_3.4.29"; exit 1; }
           mkdir -p .github_libs
           cp "$LIBSTDCPP" .github_libs/libstdc++.so.6
-          echo "Copied to .github_libs/libstdc++.so.6"
-
-      - name: Pre-install build tools on host for binding into container
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y zip ninja-build pkg-config patchelf
+          echo "Copied to .github_libs/libstdc++.so.6 — no PPA needed inside container"
 
       - name: Build .deb inside Ubuntu 18.04 Docker container
         run: |
           docker run --rm \
             -v "$GITHUB_WORKSPACE:/workspace" \
-            -v /usr/bin/zip:/usr/local/bin/zip:ro \
-            -v /usr/bin/ninja:/usr/local/bin/ninja:ro \
-            -v /usr/bin/pkg-config:/usr/local/bin/pkg-config:ro \
-            -v /usr/sbin/patchelf:/usr/local/sbin/patchelf:ro \
             -w /workspace \
             ubuntu:18.04 \
             bash -c '
               set -e
-              export DEBIAN_FRONTEND=noninteractive
 
-              # Fix Ubuntu 18.04 apt sources
-              cat > /etc/apt/sources.list << 'EOF'
-              deb http://archive.ubuntu.com/ubuntu/ bionic main restricted universe multiverse
-              deb http://security.ubuntu.com/ubuntu bionic-security main restricted universe multiverse
-              deb http://archive.ubuntu.com/ubuntu/ bionic-updates main restricted universe multiverse
-              EOF
-
-              apt-get update -y 2>&1 | grep -v "E: " || true
-
-              # Install only packages that must come from container repos
-              apt-get install -y --no-install-recommends \
-                curl git unzip xz-utils \
-                clang cmake \
-                libgtk-3-dev liblzma-dev squashfs-tools \
-                ca-certificates build-essential
+              apt-get update -y
+              apt-get install -y \
+                curl git unzip xz-utils zip \
+                clang cmake ninja-build pkg-config \
+                libgtk-3-dev liblzma-dev patchelf squashfs-tools \
+                ca-certificates
 
               curl -fsSL \
                 https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.32.8-stable.tar.xz \
@@ -187,17 +168,17 @@ jobs:
               tar xf /tmp/flutter.tar.xz -C /opt
               git config --global --add safe.directory /opt/flutter
               git config --global --add safe.directory /workspace
-              export PATH="/opt/flutter/bin:/usr/local/bin:$PATH"
+              export PATH="/opt/flutter/bin:$PATH"
               flutter config --no-analytics
               flutter precache --linux
-              
+
               flutter pub get
               flutter build linux --release
-              
+
               BUNDLE=build/linux/x64/release/bundle
               LIBSTDCPP=/workspace/.github_libs/libstdc++.so.6
               echo "Bundling libstdc++: $LIBSTDCPP"
-            
+
               # Verify the found libstdc++ actually provides GLIBCXX_3.4.29
               if ! objdump -p "$LIBSTDCPP" | grep -q "GLIBCXX_3.4.29"; then
                 echo "ERROR: found libstdc++ does NOT provide GLIBCXX_3.4.29"
@@ -206,26 +187,37 @@ jobs:
               fi
               echo "Confirmed: $LIBSTDCPP provides GLIBCXX_3.4.29"
               cp "$LIBSTDCPP" "$BUNDLE/lib/libstdc++.so.6"
-              
+
               dart pub global activate fastforge
               export PATH="$PATH:$HOME/.pub-cache/bin"
               fastforge package --platform linux --targets deb
-              
+
               # ── LD_PRELOAD launcher fix ────────────────────────────────────────────
+              # libflutter_linux_gtk.so (a direct dep of invoiso) loads the system
+              # libstdc++.so.6 via the ldconfig cache before any rpath is consulted.
+              # Once that old version is in the process namespace, every dlopen call
+              # (including Syncfusion) reuses it — patchelf cannot fix this.
+              #
+              # LD_PRELOAD forces our bundled libstdc++.so.6 into the namespace FIRST,
+              # before any library processing occurs.  We extract the .deb, replace the
+              # /usr/bin/invoiso launcher with an LD_PRELOAD wrapper, then repack.
               DEB_FILE=$(find dist -name "*.deb" | head -1)
               echo "Repacking launcher in: $DEB_FILE"
               mkdir -p /tmp/deb_root
               dpkg-deb -R "$DEB_FILE" /tmp/deb_root
-              
+
               echo "--- deb contents ---"
               find /tmp/deb_root -type f | sort
-              
-              # Explicitly inject libstdc++.so.6
+
+              # Explicitly inject libstdc++.so.6 — fastforge may not carry it
+              # from bundle/lib/ into the .deb; inject it directly now
               mkdir -p /tmp/deb_root/usr/share/invoiso/lib
               cp "$LIBSTDCPP" /tmp/deb_root/usr/share/invoiso/lib/libstdc++.so.6
               echo "Injected libstdc++.so.6 into deb at /usr/share/invoiso/lib/"
-              
-              # Inject libsqlite3.so
+
+              # Inject libsqlite3.so — sqflite_common_ffi calls DynamicLibrary.open("libsqlite3.so")
+              # Ubuntu 18.04 ships only the versioned libsqlite3.so.0; the unversioned name
+              # is absent unless libsqlite3-dev is installed.  Bundle it so it is always present.
               LIBSQLITE=$(find /usr/lib -name "libsqlite3.so.0.*" | sort -V | tail -1)
               if [ -z "$LIBSQLITE" ]; then
                 apt-get install -y libsqlite3-dev
@@ -234,19 +226,19 @@ jobs:
               echo "Bundling libsqlite3: $LIBSQLITE"
               cp "$LIBSQLITE" /tmp/deb_root/usr/share/invoiso/lib/libsqlite3.so
               echo "Injected libsqlite3.so into deb at /usr/share/invoiso/lib/"
-              
+
               mkdir -p /tmp/deb_root/usr/bin
               printf "#!/bin/sh\nexport LD_PRELOAD=/usr/share/invoiso/lib/libstdc++.so.6\nexport LD_LIBRARY_PATH=/usr/share/invoiso/lib:\$LD_LIBRARY_PATH\nexec /usr/share/invoiso/invoiso \"\$@\"\n" \
-              > /tmp/deb_root/usr/bin/invoiso
+                > /tmp/deb_root/usr/bin/invoiso
               chmod 755 /tmp/deb_root/usr/bin/invoiso
               echo "Created LD_PRELOAD+LD_LIBRARY_PATH launcher at /usr/bin/invoiso"
-              
+
               dpkg-deb -b /tmp/deb_root "$DEB_FILE"
               echo "Repacked with LD_PRELOAD launcher"
-            
+
               VERSION=$(grep "^version:" pubspec.yaml | head -1 | sed "s/version: //" | tr -d " ")
               cp "$DEB_FILE" "Invoiso-${VERSION}-ubuntu18.deb"
-              '
+            '
 
       - name: Upload Ubuntu18 .deb
         uses: actions/upload-artifact@v4
