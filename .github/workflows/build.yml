@@ -118,16 +118,28 @@ jobs:
 
   # ─────────────────────────────────────────────────────────────
   # Linux — build .deb for Ubuntu 20.04
-  # Runs on ubuntu-22.04 runner (Node.js 20 compatible for GH
-  # Actions tooling); compilation happens inside a ubuntu:20.04
-  # Docker container so the binary links against glibc 2.31.
-  # GCC 11 libstdc++ is bundled to satisfy GLIBCXX_3.4.29.
+  # Compiled natively on ubuntu-20.04 (glibc 2.31). GCC 11 is
+  # installed explicitly to bundle a libstdc++ that satisfies
+  # GLIBCXX_3.4.29 (required by Flutter prebuilt engine).
   # ─────────────────────────────────────────────────────────────
   build-linux-ubuntu20:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
 
     steps:
       - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.8'
+          cache: true
+
+      - name: Setup build dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y \
+            clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev patchelf squashfs-tools \
+            gcc-11 g++-11
 
       - name: Set version from tag
         run: |
@@ -136,109 +148,57 @@ jobs:
           sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
           echo "Building version: $VERSION"
 
-      - name: Pre-copy libstdc++ from Ubuntu 22.04 host
+      - name: Install FastForge
+        run: dart pub global activate fastforge
+
+      - name: Flutter Pub Get
+        run: flutter pub get
+
+      - name: Build Flutter Linux Release
+        run: flutter build linux --release
+
+      - name: Build .deb Package
         run: |
-          LIBSTDCPP=$(find /usr/lib -name "libstdc++.so.6.0.*" | sort -V | tail -1)
-          echo "Host libstdc++: $LIBSTDCPP"
-          objdump -p "$LIBSTDCPP" | grep -q "GLIBCXX_3.4.29" \
-            || { echo "ERROR: host libstdc++ missing GLIBCXX_3.4.29"; exit 1; }
-          mkdir -p .github_libs
-          cp "$LIBSTDCPP" .github_libs/libstdc++.so.6
-          echo "Copied to .github_libs/libstdc++.so.6 — no PPA needed inside container"
+          fastforge package --platform linux --targets deb
+          VERSION="${GITHUB_REF#refs/tags/}"
+          VERSION="${VERSION#v}"
+          DEB_FILE=$(find dist/$VERSION -name "*.deb" | head -1)
+          echo "Found deb: $DEB_FILE"
 
-      - name: Build .deb inside Ubuntu 20.04 Docker container
-        run: |
-          docker run --rm \
-            -v "$GITHUB_WORKSPACE:/workspace" \
-            -w /workspace \
-            ubuntu:20.04 \
-            bash -c '
-              set -e
+          mkdir -p /tmp/deb_root
+          dpkg-deb -R "$DEB_FILE" /tmp/deb_root
 
-              apt-get update -y
-              apt-get install -y \
-                curl git unzip xz-utils zip \
-                clang cmake ninja-build pkg-config \
-                libgtk-3-dev liblzma-dev patchelf squashfs-tools \
-                ca-certificates
+          echo "--- deb contents ---"
+          find /tmp/deb_root -type f | sort
 
-              curl -fsSL \
-                https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.32.8-stable.tar.xz \
-                -o /tmp/flutter.tar.xz
-              tar xf /tmp/flutter.tar.xz -C /opt
-              git config --global --add safe.directory /opt/flutter
-              git config --global --add safe.directory /workspace
-              export PATH="/opt/flutter/bin:$PATH"
-              flutter config --no-analytics
-              flutter precache --linux
+          mkdir -p /tmp/deb_root/usr/share/invoiso/lib
 
-              flutter pub get
-              flutter build linux --release
+          # Bundle GCC 11 libstdc++ — satisfies GLIBCXX_3.4.29 required by
+          # Flutter prebuilt engine; ubuntu-20.04 default GCC 9 only has 3.4.28
+          LIBSTDCPP=$(find /usr/lib/gcc/x86_64-linux-gnu/11 -name "libstdc++.so.6*" 2>/dev/null | sort -V | tail -1)
+          if [ -z "$LIBSTDCPP" ]; then
+            LIBSTDCPP=$(find /usr/lib -name "libstdc++.so.6.0.*" | sort -V | tail -1)
+          fi
+          echo "Bundling libstdc++: $LIBSTDCPP"
+          cp "$LIBSTDCPP" /tmp/deb_root/usr/share/invoiso/lib/libstdc++.so.6
 
-              BUNDLE=build/linux/x64/release/bundle
-              LIBSTDCPP=/workspace/.github_libs/libstdc++.so.6
-              echo "Bundling libstdc++: $LIBSTDCPP"
+          # Bundle libsqlite3.so — sqflite_common_ffi calls DynamicLibrary.open("libsqlite3.so")
+          # ubuntu-20.04 ships only the versioned libsqlite3.so.0; bundle it here.
+          LIBSQLITE=$(find /usr/lib -name "libsqlite3.so.0.*" | sort -V | tail -1)
+          if [ -z "$LIBSQLITE" ]; then
+            sudo apt-get install -y libsqlite3-dev
+            LIBSQLITE=$(find /usr/lib -name "libsqlite3.so.0.*" | sort -V | tail -1)
+          fi
+          echo "Bundling libsqlite3: $LIBSQLITE"
+          cp "$LIBSQLITE" /tmp/deb_root/usr/share/invoiso/lib/libsqlite3.so
 
-              # Verify the found libstdc++ actually provides GLIBCXX_3.4.29
-              if ! objdump -p "$LIBSTDCPP" | grep -q "GLIBCXX_3.4.29"; then
-                echo "ERROR: found libstdc++ does NOT provide GLIBCXX_3.4.29"
-                objdump -p "$LIBSTDCPP" | grep GLIBCXX
-                exit 1
-              fi
-              echo "Confirmed: $LIBSTDCPP provides GLIBCXX_3.4.29"
-              cp "$LIBSTDCPP" "$BUNDLE/lib/libstdc++.so.6"
+          mkdir -p /tmp/deb_root/usr/bin
+          printf '#!/bin/sh\nexport LD_PRELOAD=/usr/share/invoiso/lib/libstdc++.so.6\nexport LD_LIBRARY_PATH=/usr/share/invoiso/lib:$LD_LIBRARY_PATH\nexec /usr/share/invoiso/invoiso "$@"\n' \
+            > /tmp/deb_root/usr/bin/invoiso
+          chmod 755 /tmp/deb_root/usr/bin/invoiso
 
-              dart pub global activate fastforge
-              export PATH="$PATH:$HOME/.pub-cache/bin"
-              fastforge package --platform linux --targets deb
-
-              # ── LD_PRELOAD launcher fix ────────────────────────────────────────────
-              # libflutter_linux_gtk.so (a direct dep of invoiso) loads the system
-              # libstdc++.so.6 via the ldconfig cache before any rpath is consulted.
-              # Once that old version is in the process namespace, every dlopen call
-              # (including Syncfusion) reuses it — patchelf cannot fix this.
-              #
-              # LD_PRELOAD forces our bundled libstdc++.so.6 into the namespace FIRST,
-              # before any library processing occurs.  We extract the .deb, replace the
-              # /usr/bin/invoiso launcher with an LD_PRELOAD wrapper, then repack.
-              DEB_FILE=$(find dist -name "*.deb" | head -1)
-              echo "Repacking launcher in: $DEB_FILE"
-              mkdir -p /tmp/deb_root
-              dpkg-deb -R "$DEB_FILE" /tmp/deb_root
-
-              echo "--- deb contents ---"
-              find /tmp/deb_root -type f | sort
-
-              # Explicitly inject libstdc++.so.6 — fastforge may not carry it
-              # from bundle/lib/ into the .deb; inject it directly now
-              mkdir -p /tmp/deb_root/usr/share/invoiso/lib
-              cp "$LIBSTDCPP" /tmp/deb_root/usr/share/invoiso/lib/libstdc++.so.6
-              echo "Injected libstdc++.so.6 into deb at /usr/share/invoiso/lib/"
-
-              # Inject libsqlite3.so — sqflite_common_ffi calls DynamicLibrary.open("libsqlite3.so")
-              # Ubuntu 20.04 ships only the versioned libsqlite3.so.0; the unversioned name
-              # is absent unless libsqlite3-dev is installed.  Bundle it so it is always present.
-              LIBSQLITE=$(find /usr/lib -name "libsqlite3.so.0.*" | sort -V | tail -1)
-              if [ -z "$LIBSQLITE" ]; then
-                apt-get install -y libsqlite3-dev
-                LIBSQLITE=$(find /usr/lib -name "libsqlite3.so.0.*" | sort -V | tail -1)
-              fi
-              echo "Bundling libsqlite3: $LIBSQLITE"
-              cp "$LIBSQLITE" /tmp/deb_root/usr/share/invoiso/lib/libsqlite3.so
-              echo "Injected libsqlite3.so into deb at /usr/share/invoiso/lib/"
-
-              mkdir -p /tmp/deb_root/usr/bin
-              printf "#!/bin/sh\nexport LD_PRELOAD=/usr/share/invoiso/lib/libstdc++.so.6\nexport LD_LIBRARY_PATH=/usr/share/invoiso/lib:\$LD_LIBRARY_PATH\nexec /usr/share/invoiso/invoiso \"\$@\"\n" \
-                > /tmp/deb_root/usr/bin/invoiso
-              chmod 755 /tmp/deb_root/usr/bin/invoiso
-              echo "Created LD_PRELOAD+LD_LIBRARY_PATH launcher at /usr/bin/invoiso"
-
-              dpkg-deb -b /tmp/deb_root "$DEB_FILE"
-              echo "Repacked with LD_PRELOAD launcher"
-
-              VERSION=$(grep "^version:" pubspec.yaml | head -1 | sed "s/version: //" | tr -d " ")
-              cp "$DEB_FILE" "Invoiso-${VERSION}-ubuntu20.deb"
-            '
+          dpkg-deb -b /tmp/deb_root "$DEB_FILE"
+          mv "$DEB_FILE" Invoiso-$VERSION-ubuntu20.deb
 
       - name: Upload Ubuntu20 .deb
         uses: actions/upload-artifact@v4
