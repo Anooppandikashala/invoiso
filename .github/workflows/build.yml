@@ -117,136 +117,6 @@ jobs:
           path: Invoiso-*-ubuntu22.deb
 
   # ─────────────────────────────────────────────────────────────
-  # Linux — build .deb for Ubuntu 18.04
-  # Runs on ubuntu-22.04 runner; compilation happens inside a
-  # ubuntu:18.04 Docker container so the binary links against
-  # glibc 2.27.  Package repos use snapshot.ubuntu.com (a frozen
-  # pre-EOL snapshot) because archive.ubuntu.com no longer serves
-  # bionic.  GCC 11 libstdc++ is bundled from the 22.04 host to
-  # satisfy GLIBCXX_3.4.29 required by the Flutter prebuilt engine.
-  # ─────────────────────────────────────────────────────────────
-  build-linux-ubuntu18:
-    runs-on: ubuntu-22.04
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set version from tag
-        run: |
-          VERSION="${GITHUB_REF#refs/tags/}"
-          VERSION="${VERSION#v}"
-          sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
-          echo "Building version: $VERSION"
-
-      - name: Pre-copy libstdc++ and CA bundle from Ubuntu 22.04 host
-        run: |
-          LIBSTDCPP=$(find /usr/lib -name "libstdc++.so.6.0.*" | sort -V | tail -1)
-          echo "Host libstdc++: $LIBSTDCPP"
-          objdump -p "$LIBSTDCPP" | grep -q "GLIBCXX_3.4.29" \
-            || { echo "ERROR: host libstdc++ missing GLIBCXX_3.4.29"; exit 1; }
-          mkdir -p .github_libs
-          cp "$LIBSTDCPP" .github_libs/libstdc++.so.6
-          cp /etc/ssl/certs/ca-certificates.crt .github_libs/ca-certificates.crt
-          echo "Copied libstdc++ and ca-certificates.crt"
-
-      - name: Build .deb inside Ubuntu 18.04 Docker container
-        run: |
-          docker run --rm \
-            -v "$GITHUB_WORKSPACE:/workspace" \
-            -w /workspace \
-            ubuntu:18.04 \
-            bash -c '
-              set -e
-
-              # ubuntu:18.04 minimal image ships with no ca-certificates;
-              # snapshot.ubuntu.com redirects HTTP→HTTPS so we must provide
-              # a trusted CA bundle before apt can reach the snapshot server
-              mkdir -p /etc/ssl/certs
-              cp /workspace/.github_libs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
-
-              # bionic repos are EOL — use a frozen pre-EOL snapshot instead
-              echo "deb http://snapshot.ubuntu.com/ubuntu/20230401T000000Z bionic main restricted universe multiverse" > /etc/apt/sources.list
-              echo "deb http://snapshot.ubuntu.com/ubuntu/20230401T000000Z bionic-updates main restricted universe multiverse" >> /etc/apt/sources.list
-              echo "deb http://snapshot.ubuntu.com/ubuntu/20230401T000000Z bionic-security main restricted universe multiverse" >> /etc/apt/sources.list
-              echo "Acquire::Check-Valid-Until \"false\";" > /etc/apt/apt.conf.d/99no-check-valid
-
-              # The ubuntu:18.04 Docker image may contain ESM package versions
-              # (e.g. perl-base 5.26.1-6ubuntu0.7esm1) that are newer than the
-              # public snapshot.  Priority 1001 lets apt downgrade those back to
-              # snapshot versions so the dependency graph is consistent.
-              echo "Package: *" > /etc/apt/preferences.d/99snapshot-priority
-              echo "Pin: origin snapshot.ubuntu.com" >> /etc/apt/preferences.d/99snapshot-priority
-              echo "Pin-Priority: 1001" >> /etc/apt/preferences.d/99snapshot-priority
-
-              apt-get update -y
-              apt-get dist-upgrade -y
-              apt-get install -y \
-                curl git unzip xz-utils zip \
-                clang cmake ninja-build pkg-config \
-                libgtk-3-dev liblzma-dev patchelf squashfs-tools \
-                ca-certificates
-
-              curl -fsSL \
-                https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.32.8-stable.tar.xz \
-                -o /tmp/flutter.tar.xz
-              tar xf /tmp/flutter.tar.xz -C /opt
-              git config --global --add safe.directory /opt/flutter
-              git config --global --add safe.directory /workspace
-              export PATH="/opt/flutter/bin:$PATH"
-              flutter config --no-analytics
-              flutter precache --linux
-
-              flutter pub get
-              flutter build linux --release
-
-              BUNDLE=build/linux/x64/release/bundle
-              LIBSTDCPP=/workspace/.github_libs/libstdc++.so.6
-              echo "Bundling libstdc++: $LIBSTDCPP"
-              if ! objdump -p "$LIBSTDCPP" | grep -q "GLIBCXX_3.4.29"; then
-                echo "ERROR: libstdc++ does not provide GLIBCXX_3.4.29"
-                objdump -p "$LIBSTDCPP" | grep GLIBCXX
-                exit 1
-              fi
-              cp "$LIBSTDCPP" "$BUNDLE/lib/libstdc++.so.6"
-
-              dart pub global activate fastforge
-              export PATH="$PATH:$HOME/.pub-cache/bin"
-              fastforge package --platform linux --targets deb
-
-              DEB_FILE=$(find dist -name "*.deb" | head -1)
-              echo "Repacking: $DEB_FILE"
-              mkdir -p /tmp/deb_root
-              dpkg-deb -R "$DEB_FILE" /tmp/deb_root
-
-              mkdir -p /tmp/deb_root/usr/share/invoiso/lib
-              cp "$LIBSTDCPP" /tmp/deb_root/usr/share/invoiso/lib/libstdc++.so.6
-
-              LIBSQLITE=$(find /usr/lib -name "libsqlite3.so.0.*" | sort -V | tail -1)
-              if [ -z "$LIBSQLITE" ]; then
-                apt-get install -y libsqlite3-dev
-                LIBSQLITE=$(find /usr/lib -name "libsqlite3.so.0.*" | sort -V | tail -1)
-              fi
-              echo "Bundling libsqlite3: $LIBSQLITE"
-              cp "$LIBSQLITE" /tmp/deb_root/usr/share/invoiso/lib/libsqlite3.so
-
-              mkdir -p /tmp/deb_root/usr/bin
-              printf "#!/bin/sh\nexport LD_PRELOAD=/usr/share/invoiso/lib/libstdc++.so.6\nexport LD_LIBRARY_PATH=/usr/share/invoiso/lib:\$LD_LIBRARY_PATH\nexec /usr/share/invoiso/invoiso \"\$@\"\n" \
-                > /tmp/deb_root/usr/bin/invoiso
-              chmod 755 /tmp/deb_root/usr/bin/invoiso
-
-              dpkg-deb -b /tmp/deb_root "$DEB_FILE"
-
-              VERSION=$(grep "^version:" pubspec.yaml | head -1 | sed "s/version: //" | tr -d " ")
-              cp "$DEB_FILE" "Invoiso-${VERSION}-ubuntu18.deb"
-            '
-
-      - name: Upload Ubuntu18 .deb
-        uses: actions/upload-artifact@v4
-        with:
-          name: Invoiso-Ubuntu18.deb
-          path: Invoiso-*-ubuntu18.deb
-
-  # ─────────────────────────────────────────────────────────────
   # Linux — build .deb for Ubuntu 24.04
   # Compiled natively on ubuntu-24.04 for modern systems (e.g.
   # Ryzen 7000 series) running Ubuntu 24.04 (Noble).
@@ -591,7 +461,7 @@ jobs:
   # Runs only after all three build jobs succeed
   # ─────────────────────────────────────────────────────────────
   create-release:
-    needs: [build-windows, build-linux, build-linux-ubuntu18, build-linux-ubuntu24, build-appimage, build-appimage-ubuntu24, build-macos]
+    needs: [build-windows, build-linux, build-linux-ubuntu24, build-appimage, build-appimage-ubuntu24, build-macos]
     runs-on: ubuntu-latest
 
     steps:
@@ -601,11 +471,6 @@ jobs:
           name: Invoiso-Windows-Installer
           path: release-assets/
 
-      - name: Download Ubuntu18 .deb
-        uses: actions/download-artifact@v4
-        with:
-          name: Invoiso-Ubuntu18.deb
-          path: release-assets/
 
       - name: Download Ubuntu22 .deb
         uses: actions/download-artifact@v4
