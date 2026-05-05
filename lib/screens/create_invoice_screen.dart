@@ -337,6 +337,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     final extraCostController = TextEditingController();
 
     bool discountPerUnit = true;
+    int insertAt = invoiceItems.length + 1;
 
     showDialog(
       context: context,
@@ -458,6 +459,36 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 ),
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
               ),
+              if (invoiceItems.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                const Divider(height: 1),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Icon(Icons.format_list_numbered, size: 16, color: Colors.grey),
+                    const SizedBox(width: 8),
+                    const Text('Insert at position', style: TextStyle(fontSize: 13, color: Colors.grey)),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.remove_circle_outline),
+                      onPressed: insertAt > 1 ? () => setDialogState(() => insertAt--) : null,
+                      iconSize: 20,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                    const SizedBox(width: 12),
+                    Text('$insertAt', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    const SizedBox(width: 12),
+                    IconButton(
+                      icon: const Icon(Icons.add_circle_outline),
+                      onPressed: insertAt < invoiceItems.length + 1 ? () => setDialogState(() => insertAt++) : null,
+                      iconSize: 20,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -507,7 +538,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   ),
                 );
                 if (addAnyway == true) {
-                  addInvoiceProduct(InvoiceItem(product: product, quantity: qty, discount: discount, unitPrice: unitPrice, extraCost: extraCost, discountPerUnit: discountPerUnit));
+                  addInvoiceProduct(InvoiceItem(product: product, quantity: qty, discount: discount, unitPrice: unitPrice, extraCost: extraCost, discountPerUnit: discountPerUnit), insertAt: insertAt);
                 }
               } else if (product.stock <= 0) {
                 Navigator.pop(context);
@@ -530,11 +561,11 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   ),
                 );
                 if (addAnyway == true) {
-                  addInvoiceProduct(InvoiceItem(product: product, quantity: qty, discount: discount, unitPrice: unitPrice, extraCost: extraCost, discountPerUnit: discountPerUnit));
+                  addInvoiceProduct(InvoiceItem(product: product, quantity: qty, discount: discount, unitPrice: unitPrice, extraCost: extraCost, discountPerUnit: discountPerUnit), insertAt: insertAt);
                 }
               } else {
                 Navigator.pop(context);
-                addInvoiceProduct(InvoiceItem(product: product, quantity: qty, discount: discount, unitPrice: unitPrice, extraCost: extraCost, discountPerUnit: discountPerUnit));
+                addInvoiceProduct(InvoiceItem(product: product, quantity: qty, discount: discount, unitPrice: unitPrice, extraCost: extraCost, discountPerUnit: discountPerUnit), insertAt: insertAt);
               }
             },
             child: const Text('Add'),
@@ -545,7 +576,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     );
   }
 
-  void addInvoiceProduct(InvoiceItem invoiceItem) {
+  void addInvoiceProduct(InvoiceItem invoiceItem, {int? insertAt}) {
     final isAdHoc = invoiceItem.product.id.startsWith('custom-');
     final exists = !isAdHoc && invoiceItems.any((item) => item.product.id == invoiceItem.product.id);
 
@@ -565,11 +596,16 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         ),
       );
     } else {
+      final isAppend = insertAt == null || insertAt >= invoiceItems.length + 1;
       setState(() {
-        invoiceItems.add(invoiceItem);
+        if (!isAppend) {
+          invoiceItems.insert(insertAt - 1, invoiceItem);
+        } else {
+          invoiceItems.add(invoiceItem);
+        }
       });
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_invoiceItemsScrollController.hasClients) {
+        if (_invoiceItemsScrollController.hasClients && isAppend) {
           _invoiceItemsScrollController.animateTo(
             _invoiceItemsScrollController.position.maxScrollExtent,
             duration: const Duration(milliseconds: 300),
@@ -860,6 +896,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
     bool discountPerUnit = true;
     String dialogItemType = _adHocItemType;
+    int insertAt = invoiceItems.length + 1;
 
     showDialog(
       context: context,
@@ -970,6 +1007,36 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   keyboardType: TextInputType.number,
                 ),
               ],
+              if (invoiceItems.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                const Divider(height: 1),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Icon(Icons.format_list_numbered, size: 16, color: Colors.grey),
+                    const SizedBox(width: 8),
+                    const Text('Insert at position', style: TextStyle(fontSize: 13, color: Colors.grey)),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.remove_circle_outline),
+                      onPressed: insertAt > 1 ? () => setDialogState(() => insertAt--) : null,
+                      iconSize: 20,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                    const SizedBox(width: 12),
+                    Text('$insertAt', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    const SizedBox(width: 12),
+                    IconButton(
+                      icon: const Icon(Icons.add_circle_outline),
+                      onPressed: insertAt < invoiceItems.length + 1 ? () => setDialogState(() => insertAt++) : null,
+                      iconSize: 20,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -1015,7 +1082,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 discountPerUnit: discountPerUnit,
               );
               Navigator.pop(context);
-              addInvoiceProduct(item);
+              addInvoiceProduct(item, insertAt: insertAt);
             },
             child: const Text('Add', style: TextStyle(color: Colors.white)),
           ),
@@ -2201,7 +2268,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                 ),
                               ),
                           AppSpacing.wMedium,
-                          if (_businessType == BusinessType.both && _showTypeTag)
+                          if (_businessType == BusinessType.both)
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
