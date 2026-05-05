@@ -20,6 +20,8 @@
     <a href="https://www.producthunt.com/products/invoiso?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-invoiso" target="_blank" rel="noopener noreferrer"><img alt="Invoiso - Free Offline Invoice &amp; Billing Software for all. | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1105229&theme=light&t=1774412242179" /></a>
     &nbsp;
     <a href="https://www.shipit.buzz/products/invoiso?ref=badge" target="_blank" rel="noopener noreferrer"><img src="https://www.shipit.buzz/api/products/invoiso/badge?theme=light" alt="Featured on Shipit" height="54" /></a>
+    &nbsp;
+    <a href="https://sourceforge.net/projects/invoiso/" target="_blank" rel="noopener noreferrer"><img src="https://sourceforge.net/cdn/syndication/badge_img/4068440/oss-rising-star-black" alt="SourceForge OSS Rising Star" height="54" /></a>
   </p>
 
   <p>
