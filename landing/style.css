@@ -173,12 +173,14 @@ body {
 
 .mob-nav-ctas {
     display: flex;
+    flex-wrap: wrap;
     gap: 10px;
     padding: 14px 20px 18px;
 }
 
 .mob-nav-btn-outline {
     flex: 1;
+    min-width: 120px;
     display: block;
     text-align: center;
     padding: 10px 16px;
@@ -198,6 +200,7 @@ body {
 
 .mob-nav-btn-solid {
     flex: 1;
+    min-width: 120px;
     display: block;
     text-align: center;
     padding: 10px 16px;
@@ -219,6 +222,20 @@ body {
 .mob-nav-btn-outline.mob-nav-active {
     background: rgba(79,142,247,0.12);
     font-weight: 600;
+}
+
+.mob-nav-ctas a[href="customization.html"] {
+    border-color: rgba(251,191,36,0.65);
+    color: #fbbf24;
+    background: rgba(251,191,36,0.10);
+}
+
+.mob-nav-ctas a[href="customization.html"]:hover,
+.mob-nav-ctas a[href="customization.html"].mob-nav-active {
+    border-color: #fbbf24;
+    background: #fbbf24;
+    color: #111827;
+    box-shadow: 0 4px 18px rgba(251,191,36,0.28);
 }
 
 .mob-nav-btn-solid.mob-nav-active {
@@ -1316,6 +1333,88 @@ footer .border-t {
 }
 
 /* =============================================
+   Customisation Request Page
+   ============================================= */
+.customization-section {
+    background: linear-gradient(180deg, rgba(13,21,38,0.38), rgba(6,8,15,1));
+}
+
+.customization-options {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 26px;
+}
+
+.customization-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 74px;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: rgba(255,255,255,0.035);
+    color: var(--text);
+    font-weight: 700;
+}
+
+.customization-option i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    color: var(--primary);
+    background: rgba(79,142,247,0.13);
+    flex-shrink: 0;
+}
+
+.customization-form-shell {
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background: var(--card);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+}
+
+.customization-form-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 22px 24px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,0.025);
+}
+
+.customization-form-header h2 {
+    margin: 0 0 6px;
+    color: var(--text);
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.customization-form-header p {
+    color: var(--text-muted);
+    line-height: 1.65;
+}
+
+.customization-form-frame {
+    background: #fff;
+}
+
+.customization-form-frame iframe {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-height: 1341px;
+    border: 0;
+    background: #fff;
+}
+
+/* =============================================
    Buy Me a Coffee Button
    ============================================= */
 .bmc-btn {
@@ -1344,6 +1443,19 @@ footer .border-t {
    Responsive
    ============================================= */
 @media (max-width: 768px) {
+    .customization-options {
+        grid-template-columns: 1fr;
+    }
+
+    .customization-form-header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .customization-form-header .btn-secondary {
+        width: 100%;
+    }
+
     .swiper-button-next,
     .swiper-button-prev {
         width: 45px;
@@ -1469,6 +1581,20 @@ a.nav-btn:hover,
 a.nav-btn::after,
 .navbar nav ul a.nav-btn::after {
     display: none !important;
+}
+
+.navbar nav ul a[href="customization.html"].nav-btn {
+    border-color: rgba(251,191,36,0.65) !important;
+    color: #fbbf24 !important;
+    background: rgba(251,191,36,0.10) !important;
+}
+
+.navbar nav ul a[href="customization.html"].nav-btn:hover,
+.navbar nav ul a[href="customization.html"].nav-btn[aria-current="page"] {
+    border-color: #fbbf24 !important;
+    background: #fbbf24 !important;
+    color: #111827 !important;
+    box-shadow: 0 4px 18px rgba(251,191,36,0.28) !important;
 }
 
 /* ── Feature item icon hover animation ── */
