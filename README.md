@@ -113,7 +113,7 @@
 | **Windows** | `.exe` Installer | [Download v3.4.2](https://invoiso.co.in/download.html) |
 | **Linux** | `.AppImage` (portable) | [Download v3.4.2](https://invoiso.co.in/download.html) |
 | **Linux** | `.deb` Package | [Download v3.4.2](https://invoiso.co.in/download.html) |
-| **macOS** *(Beta)* | `.dmg` Installer | [GitHub Releases](https://github.com/Anooppandikashala/invoiso/releases/latest) |
+| **macOS** | `.dmg` Installer | [GitHub Releases](https://github.com/Anooppandikashala/invoiso/releases/latest) |
 
 ### Linux Quick Install
 
@@ -131,8 +131,6 @@ curl -fsSL https://invoiso.co.in/install.sh | bash -s -- --appimage
 
 The quick-install script downloads the latest release from GitHub. DEB installs through `apt-get`; AppImage is saved to `~/Applications`.
 
-> **macOS note:** The macOS build is in beta — it has not been fully tested on real hardware. If you encounter any issues, please [report them here](https://github.com/Anooppandikashala/invoiso/issues).
-
 > Always download from the [official website](https://invoiso.co.in/download.html) or the [GitHub releases page](https://github.com/Anooppandikashala/invoiso/releases/latest).
 
 ---
@@ -144,7 +142,7 @@ The quick-install script downloads the latest release from GitHub. DEB installs 
 - [Flutter SDK](https://flutter.dev/docs/get-started/install) `>=3.3.3 <4.0.0`
 - Linux: `clang`, `cmake`, `ninja-build`, `libgtk-3-dev`
 - Windows: Visual Studio 2022 with "Desktop development with C++" workload
-- macOS *(Beta)*: Xcode 14+, CocoaPods
+- macOS: Xcode 14+, CocoaPods
 
 ### Steps
 
@@ -159,18 +157,18 @@ flutter pub get
 # 3. Run in debug mode
 flutter run -d linux      # Linux
 flutter run -d windows    # Windows
-flutter run -d macos      # macOS (Beta)
+flutter run -d macos      # macOS
 
 # 4. Build a release binary
 flutter build linux --release    # Linux
 flutter build windows --release  # Windows
-flutter build macos --release    # macOS (Beta)
+flutter build macos --release    # macOS
 ```
 
 Output locations:
 - **Linux:** `build/linux/x64/release/bundle/`
 - **Windows:** `build/windows/x64/runner/Release/`
-- **macOS** *(Beta)*: `build/macos/Build/Products/Release/invoiso.app`
+- **macOS:** `build/macos/Build/Products/Release/invoiso.app`
 
 ---
 
