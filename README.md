@@ -115,6 +115,22 @@
 | **Linux** | `.deb` Package | [Download v3.4.2](https://invoiso.co.in/download.html) |
 | **macOS** *(Beta)* | `.dmg` Installer | [GitHub Releases](https://github.com/Anooppandikashala/invoiso/releases/latest) |
 
+### Linux Quick Install
+
+Use the DEB option for Ubuntu 22.04 or 24.04:
+
+```bash
+curl -fsSL https://invoiso.co.in/install.sh | bash -s -- --deb
+```
+
+Use the AppImage option for other Linux distributions or when you want a portable app:
+
+```bash
+curl -fsSL https://invoiso.co.in/install.sh | bash -s -- --appimage
+```
+
+The quick-install script downloads the latest release from GitHub. DEB installs through `apt-get`; AppImage is saved to `~/Applications`.
+
 > **macOS note:** The macOS build is in beta — it has not been fully tested on real hardware. If you encounter any issues, please [report them here](https://github.com/Anooppandikashala/invoiso/issues).
 
 > Always download from the [official website](https://invoiso.co.in/download.html) or the [GitHub releases page](https://github.com/Anooppandikashala/invoiso/releases/latest).
@@ -181,68 +197,18 @@ Output locations:
 
 ```
 lib/
-├── main.dart                        # App entry point, window setup
+├── main.dart                        # App entry point and window setup
 ├── common.dart                      # Shared enums, extensions, data classes
 ├── constants.dart                   # UI constants, spacing, font sizes
-│
-├── models/                          # Data models
-│   ├── invoice.dart                 # Invoice + PaymentStatus
-│   ├── invoice_item.dart            # Line items
-│   ├── invoice_payment.dart         # Payment records
-│   ├── customer.dart
-│   ├── product.dart
-│   ├── company_info.dart
-│   ├── user.dart                    # User + role (admin/user)
-│   └── backup_info.dart / backup_results.dart
-│
-├── database/                        # SQLite CRUD services
-│   ├── database_helper.dart         # DB init, migrations (v1→v6)
-│   ├── invoice_service.dart
-│   ├── invoice_item_service.dart
-│   ├── payment_service.dart         # Payment recording & history
-│   ├── customer_service.dart
-│   ├── product_service.dart
-│   ├── company_info_service.dart
-│   ├── settings_service.dart        # Key-value settings store
-│   └── user_service.dart
-│
+├── invoiso_colors.dart              # App colour palette
+├── backup/                          # Backup and restore logic
+├── database/                        # SQLite init, migrations, CRUD services
+├── models/                          # Invoice, payment, customer, product, user models
 ├── providers/                       # Riverpod state providers
-│   ├── invoice_provider.dart
-│   └── product_provider.dart
-│
-├── screens/                         # UI screens
-│   ├── splash_screen.dart
-│   ├── login_screen.dart
-│   ├── change_password_screen.dart
-│   ├── dashboard_screen.dart        # Dashboard + DashboardHome widget
-│   ├── create_invoice_screen.dart   # Create / edit invoice & quotation
-│   ├── invoice_management_screen.dart
-│   ├── customer_management_screen.dart
-│   ├── product_management_screen.dart
-│   ├── settings_screen.dart         # Settings hub (admin-only sections)
-│   ├── invoice_settings_screen.dart
-│   ├── pdf_settings_screen.dart
-│   ├── backup_management_screen.dart
-│   └── user_management_screen.dart
-│
-├── services/                        # Business logic & file services
-│   ├── pdf_service.dart             # PDF generation (3 templates)
-│   ├── invoice_pdf_services.dart    # Print, preview, export wrapper
-│   ├── payment_receipt_service.dart # Payment receipt PDF generation
-│   └── export_service.dart          # CSV & bulk PDF export
-│
-├── backup/
-│   └── backup_manager.dart          # Backup & restore logic
-│
-├── widgets/
-│   └── apply_payment_dialog.dart    # Shared payment dialog & summary card
-│
-└── utils/
-    ├── app_logger.dart
-    ├── error_handler.dart
-    ├── formatters.dart
-    ├── password_utils.dart          # HMAC-SHA256 hashing + salt
-    └── session_manager.dart         # Inactivity session timeout
+├── screens/                         # Login, dashboard, invoice, settings, admin screens
+├── services/                        # PDF, receipt, export, update services
+├── utils/                           # Logging, formatting, passwords, sessions, errors
+└── widgets/                         # Shared dialogs, buttons, update UI
 ```
 
 ---

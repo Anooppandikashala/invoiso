@@ -197,6 +197,110 @@
         padding: 14px 20px 8px;
       }
 
+      .quick-install-card {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        padding: 18px 20px;
+        margin-bottom: 28px;
+        border-radius: 14px;
+        border: 1px solid rgba(79,142,247,0.25);
+        background: rgba(255,255,255,0.035);
+      }
+
+      .quick-install-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        color: var(--primary);
+        background: rgba(79,142,247,0.13);
+        flex-shrink: 0;
+      }
+
+      .quick-install-content {
+        min-width: 0;
+        flex: 1;
+      }
+
+      .quick-install-title {
+        margin: 0 0 10px;
+        color: var(--text);
+        font-weight: 700;
+        font-size: 0.95rem;
+      }
+
+      .quick-install-command {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+        margin-top: 10px;
+      }
+
+      .quick-install-command:first-of-type {
+        margin-top: 0;
+      }
+
+      .quick-install-label {
+        width: 86px;
+        color: var(--text);
+        font-size: 0.78rem;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+
+      .quick-install-command code {
+        display: block;
+        min-width: 0;
+        flex: 1;
+        overflow-x: auto;
+        white-space: nowrap;
+        padding: 10px 12px;
+        border-radius: 8px;
+        background: rgba(0,0,0,0.28);
+        color: rgba(226,232,240,0.92);
+        font-family: monospace;
+        font-size: 0.86rem;
+      }
+
+      .copy-install-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        border: 1px solid rgba(79,142,247,0.35);
+        background: rgba(79,142,247,0.1);
+        color: var(--primary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+      }
+
+      .copy-install-btn:hover {
+        background: rgba(79,142,247,0.18);
+        color: #fff;
+      }
+
+      .quick-install-meta {
+        margin: 9px 0 0;
+        color: var(--text-muted);
+        font-size: 0.82rem;
+        line-height: 1.55;
+      }
+
+      .quick-install-meta code {
+        color: var(--primary);
+        background: rgba(79,142,247,0.12);
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-family: monospace;
+      }
+
       /* ── Total downloads highlight ── */
       .total-dl-stat {
         justify-content: center;
@@ -402,6 +506,19 @@
         .latest-downloads {
           border-right: none;
           border-bottom: 1px solid var(--border);
+        }
+
+        .quick-install-card {
+          gap: 12px;
+          padding: 16px;
+        }
+
+        .quick-install-command {
+          align-items: stretch;
+        }
+
+        .quick-install-label {
+          width: 74px;
         }
 
         .release-header {
@@ -763,6 +880,30 @@
             </div>
           </div>
 
+          <div class="quick-install-card" aria-labelledby="quick-install-title">
+            <div class="quick-install-icon">
+              <i class="fab fa-linux" aria-hidden="true"></i>
+            </div>
+            <div class="quick-install-content">
+              <p class="quick-install-title" id="quick-install-title">Linux quick install</p>
+              <div class="quick-install-command">
+                <span class="quick-install-label">DEB</span>
+                <code id="linux-install-deb-command">curl -fsSL https://invoiso.co.in/install.sh | bash -s -- --deb</code>
+                <button type="button" class="copy-install-btn" data-copy-target="linux-install-deb-command" aria-label="Copy DEB install command" title="Copy command">
+                  <i class="fas fa-copy" aria-hidden="true"></i>
+                </button>
+              </div>
+              <div class="quick-install-command">
+                <span class="quick-install-label">AppImage</span>
+                <code id="linux-install-appimage-command">curl -fsSL https://invoiso.co.in/install.sh | bash -s -- --appimage</code>
+                <button type="button" class="copy-install-btn" data-copy-target="linux-install-appimage-command" aria-label="Copy AppImage install command" title="Copy command">
+                  <i class="fas fa-copy" aria-hidden="true"></i>
+                </button>
+              </div>
+              <p class="quick-install-meta">Use DEB for Ubuntu 22.04 or 24.04. Use AppImage for other Linux distributions or when you want a portable app.</p>
+            </div>
+          </div>
+
           <div id="releases-list">
             <div class="text-center py-10" style="color:var(--text-muted)">
               <i class="fas fa-spinner fa-spin text-2xl mb-3 primary-text" aria-hidden="true"></i>
@@ -869,6 +1010,22 @@
       document.getElementById('releases-list').addEventListener('click', function (e) {
         if (e.target.closest('.asset-btn')) openWelcomeModal();
       });
+
+      if (navigator.clipboard) {
+        document.querySelectorAll('[data-copy-target]').forEach(function (copyInstallButton) {
+          copyInstallButton.addEventListener('click', function () {
+            var installCommand = document.getElementById(copyInstallButton.getAttribute('data-copy-target'));
+            if (!installCommand) return;
+
+            navigator.clipboard.writeText(installCommand.textContent).then(function () {
+              copyInstallButton.innerHTML = '<i class="fas fa-check" aria-hidden="true"></i>';
+              setTimeout(function () {
+                copyInstallButton.innerHTML = '<i class="fas fa-copy" aria-hidden="true"></i>';
+              }, 1600);
+            });
+          });
+        });
+      }
 
       // Mobile menu
       var hamburgerBtn = document.getElementById('hamburger-btn');
