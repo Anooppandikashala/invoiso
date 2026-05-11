@@ -20,6 +20,7 @@ import 'package:invoiso/models/user.dart';
 import 'package:invoiso/widgets/customer_info_button.dart';
 import 'package:invoiso/utils/formatters.dart';
 import 'package:invoiso/database/settings_service.dart';
+import 'package:invoiso/database/payment_service.dart';
 
 class InvoiceManagementScreen extends ConsumerStatefulWidget {
   final Function(Invoice) onEditInvoice;
@@ -622,6 +623,290 @@ class _InvoiceManagementScreenState
     }
   }
 
+  static const int _maxBulkPdfExport = 100;
+
+  Future<void> _showFilteredDownloadDialog() async {
+    DateTime? fromDate;
+    DateTime? toDate;
+    final fromIdCtrl = TextEditingController();
+    final toIdCtrl   = TextEditingController();
+    int filterMode   = 0; // 0 = date, 1 = invoice number
+    int matchCount   = 0;
+    bool counting    = false;
+
+    Future<int> fetchCount(StateSetter setS) async {
+      setS(() => counting = true);
+      try {
+        return await InvoiceService.countInvoicesForExport(
+          fromDate: filterMode == 0 ? fromDate : null,
+          toDate:   filterMode == 0 ? toDate   : null,
+          fromId:   filterMode == 1 ? int.tryParse(fromIdCtrl.text) : null,
+          toId:     filterMode == 1 ? int.tryParse(toIdCtrl.text)   : null,
+          filterType: widget.filterType,
+        );
+      } finally {
+        setS(() => counting = false);
+      }
+    }
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.filter_alt_outlined),
+              SizedBox(width: 10),
+              Text('Download PDFs by Filter'),
+            ],
+          ),
+          content: SizedBox(
+            width: 420,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SegmentedButton<int>(
+                  segments: const [
+                    ButtonSegment(value: 0, label: Text('By Date'),           icon: Icon(Icons.calendar_today_outlined, size: 16)),
+                    ButtonSegment(value: 1, label: Text('By Invoice Number'), icon: Icon(Icons.tag_outlined, size: 16)),
+                  ],
+                  selected: {filterMode},
+                  onSelectionChanged: (v) async {
+                    setS(() { filterMode = v.first; matchCount = 0; });
+                  },
+                ),
+                const SizedBox(height: 16),
+                if (filterMode == 0) ...[
+                  Row(children: [
+                    Expanded(child: _DatePickerField(
+                      label: 'From date',
+                      value: fromDate,
+                      formatter: DateFormat('dd/MM/yyyy'),
+                      onPicked: (d) { setS(() { fromDate = d; matchCount = 0; }); },
+                      onCleared: () => setS(() { fromDate = null; matchCount = 0; }),
+                    )),
+                    const SizedBox(width: 12),
+                    Expanded(child: _DatePickerField(
+                      label: 'To date',
+                      value: toDate,
+                      formatter: DateFormat('dd/MM/yyyy'),
+                      onPicked: (d) { setS(() { toDate = d; matchCount = 0; }); },
+                      onCleared: () => setS(() { toDate = null; matchCount = 0; }),
+                    )),
+                  ]),
+                ] else ...[
+                  Row(children: [
+                    Expanded(child: TextField(
+                      controller: fromIdCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'From invoice #', border: OutlineInputBorder()),
+                      onChanged: (_) => setS(() => matchCount = 0),
+                    )),
+                    const SizedBox(width: 12),
+                    Expanded(child: TextField(
+                      controller: toIdCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'To invoice #', border: OutlineInputBorder()),
+                      onChanged: (_) => setS(() => matchCount = 0),
+                    )),
+                  ]),
+                ],
+                const SizedBox(height: 16),
+                Row(children: [
+                  FilledButton.tonal(
+                    onPressed: counting ? null : () async {
+                      final c = await fetchCount(setS);
+                      setS(() => matchCount = c);
+                    },
+                    child: counting
+                        ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Text('Check count'),
+                  ),
+                  const SizedBox(width: 12),
+                  if (matchCount > 0)
+                    Text(
+                      matchCount > _maxBulkPdfExport
+                          ? '$matchCount invoices — exceeds limit of $_maxBulkPdfExport'
+                          : '$matchCount invoice${matchCount == 1 ? '' : 's'} match',
+                      style: TextStyle(
+                        color: matchCount > _maxBulkPdfExport ? Colors.red : Colors.green[700],
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                ]),
+                if (matchCount > _maxBulkPdfExport)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      'Max $_maxBulkPdfExport PDFs per download. Narrow your filter.',
+                      style: const TextStyle(color: Colors.red, fontSize: 12),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.folder_outlined),
+              label: const Text('Save to Folder'),
+              onPressed: matchCount > 0 && matchCount <= _maxBulkPdfExport
+                  ? () => Navigator.pop(ctx, 'folder')
+                  : null,
+            ),
+            FilledButton.icon(
+              icon: const Icon(Icons.folder_zip_outlined),
+              label: const Text('Save as ZIP'),
+              onPressed: matchCount > 0 && matchCount <= _maxBulkPdfExport
+                  ? () => Navigator.pop(ctx, 'zip')
+                  : null,
+            ),
+          ],
+        ),
+      ),
+    ).then((saveMode) async {
+      if (saveMode == null || !mounted) return;
+
+      final invoices = await InvoiceService.getInvoicesForExport(
+        fromDate:   filterMode == 0 ? fromDate : null,
+        toDate:     filterMode == 0 ? toDate   : null,
+        fromId:     filterMode == 1 ? int.tryParse(fromIdCtrl.text) : null,
+        toId:       filterMode == 1 ? int.tryParse(toIdCtrl.text)   : null,
+        filterType: widget.filterType,
+      );
+
+      if (invoices.isEmpty) {
+        if (mounted) AppError.show(context, 'No invoices found for the selected filter.');
+        return;
+      }
+      if (invoices.length > _maxBulkPdfExport) {
+        if (mounted) AppError.show(context, 'Filter returned ${invoices.length} invoices — max is $_maxBulkPdfExport.');
+        return;
+      }
+
+      String? outputDir;
+      String? zipSavePath;
+      if (saveMode == 'folder') {
+        outputDir = await FilePicker.platform.getDirectoryPath(dialogTitle: 'Choose folder to save PDFs');
+        if (outputDir == null || !mounted) return;
+      } else {
+        zipSavePath = await FilePicker.platform.saveFile(
+          dialogTitle: 'Save ZIP file',
+          fileName: 'invoices_${DateFormat('yyyyMMdd').format(DateTime.now())}.zip',
+          type: FileType.custom,
+          allowedExtensions: ['zip'],
+        );
+        if (zipSavePath == null || !mounted) return;
+      }
+
+      setState(() => _isBulkLoading = true);
+      final progress = ValueNotifier<int>(0);
+
+      unawaited(showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(children: [
+            Icon(saveMode == 'zip' ? Icons.folder_zip_outlined : Icons.picture_as_pdf, color: Colors.orange),
+            const SizedBox(width: 12),
+            Text(saveMode == 'zip' ? 'Creating ZIP' : 'Generating PDFs'),
+          ]),
+          content: ValueListenableBuilder<int>(
+            valueListenable: progress,
+            builder: (_, done, __) => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Processing ${invoices.length} PDF${invoices.length == 1 ? '' : 's'}...'),
+                const SizedBox(height: 16),
+                LinearProgressIndicator(value: done / invoices.length, backgroundColor: Colors.grey[200]),
+                const SizedBox(height: 8),
+                Text('$done / ${invoices.length}', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+              ],
+            ),
+          ),
+        ),
+      ));
+
+      try {
+        // Fetch PDF settings once for the entire batch.
+        final settings = await PDFService.fetchPdfSettings();
+        final String path;
+        if (saveMode == 'zip') {
+          path = await ExportService.exportInvoicesToZip(
+            invoices, zipSavePath!,
+            onProgress: (done, _) => progress.value = done,
+            settings: settings,
+          );
+        } else {
+          path = await ExportService.exportInvoicesToPdfFolder(
+            invoices,
+            onProgress: (done, _) => progress.value = done,
+            outputDirectory: outputDir,
+            settings: settings,
+          );
+        }
+        if (mounted) {
+          Navigator.of(context, rootNavigator: true).pop();
+          AppError.showSuccess(context, 'Saved to: $path');
+          await OpenFile.open(path);
+        }
+      } catch (e) {
+        if (mounted) {
+          Navigator.of(context, rootNavigator: true).pop();
+          AppError.show(context, 'Export failed: $e');
+        }
+      } finally {
+        progress.dispose();
+        if (mounted) setState(() => _isBulkLoading = false);
+      }
+    });
+
+    fromIdCtrl.dispose();
+    toIdCtrl.dispose();
+  }
+
+  Future<void> _bulkMarkAsPaid() async {
+    final unpaid = _pageInvoices
+        .where((inv) => _selectedIds.contains(inv.id) && inv.outstandingBalance > 0)
+        .toList();
+    final alreadyPaid = _selectedIds.length - unpaid.length;
+
+    if (unpaid.isEmpty) {
+      AppError.show(context, 'All selected invoices are already fully paid.');
+      return;
+    }
+
+    final confirmed = await AppError.confirm(
+      context,
+      title: 'Mark as Paid',
+      message: 'Mark ${unpaid.length} invoice${unpaid.length == 1 ? '' : 's'} as fully paid?'
+          '${alreadyPaid > 0 ? '\n($alreadyPaid already paid — will be skipped)' : ''}',
+      confirmLabel: 'Mark as Paid',
+      confirmColor: Colors.green,
+    );
+    if (!confirmed || !mounted) return;
+
+    setState(() => _isBulkLoading = true);
+    try {
+      final count = await PaymentService.addPaymentBatch(
+        invoices: unpaid,
+        datePaid: DateTime.now(),
+      );
+      ref.read(invoicesProvider.notifier).refresh();
+      await _loadPage();
+      if (mounted) {
+        AppError.showSuccess(context, '$count invoice${count == 1 ? '' : 's'} marked as paid.');
+      }
+    } catch (e) {
+      if (mounted) AppError.show(context, 'Failed to mark as paid: $e');
+    } finally {
+      if (mounted) setState(() => _isBulkLoading = false);
+    }
+  }
+
   // ─── Pagination ────────────────────────────────────────────────────────────
 
   int get _totalPages => (_totalCount / _pageSize).ceil();
@@ -651,6 +936,11 @@ class _InvoiceManagementScreenState
                 ),
               ),
             ),
+          IconButton(
+            icon: const Icon(Icons.download_for_offline_outlined),
+            onPressed: _showFilteredDownloadDialog,
+            tooltip: 'Download PDFs by date or invoice range',
+          ),
           IconButton(
             icon: const Icon(Icons.file_download_outlined),
             onPressed: _exportCsv,
@@ -1113,6 +1403,14 @@ class _InvoiceManagementScreenState
           ),
 
           const Spacer(),
+
+          _buildBulkButton(
+            icon: Icons.payments_outlined,
+            label: 'Mark as Paid',
+            color: Colors.green[300]!,
+            onPressed: _isBulkLoading ? null : _bulkMarkAsPaid,
+          ),
+          const SizedBox(width: 8),
 
           _buildBulkButton(
             icon: Icons.table_chart_outlined,

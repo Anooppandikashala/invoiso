@@ -2442,6 +2442,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                       flex: _upiEntries.isNotEmpty ? 3 : 4,
                       child: TextField(
                         controller: notesController,
+                        maxLength: DefaultValues.additionalNotesLength,
                         decoration: InputDecoration(
                           labelText: 'Notes (Optional)',
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),

@@ -78,6 +78,62 @@ class PaymentService {
   }
 
   // ─────────────────────────────────────────────
+  // Batch mark-as-paid: single DB transaction for N invoices.
+  // Skips invoices where outstandingBalance <= 0.
+  static Future<int> addPaymentBatch({
+    required List<Invoice> invoices,
+    required DateTime datePaid,
+    String? paymentMethod,
+    String? notes,
+  }) async {
+    final db = await _dbHelper.database;
+    int count = 0;
+    await db.transaction((txn) async {
+      for (final invoice in invoices) {
+        final amountPaid = invoice.outstandingBalance;
+        if (amountPaid <= 0) continue;
+
+        final suffixResult = await txn.rawQuery(
+          'SELECT receipt_number FROM invoice_payments WHERE invoice_id = ?',
+          [invoice.id],
+        );
+        int maxSuffix = 0;
+        for (final row in suffixResult) {
+          final rn = row['receipt_number'] as String;
+          final dashR = rn.lastIndexOf('-R');
+          if (dashR != -1) {
+            final n = int.tryParse(rn.substring(dashR + 2)) ?? 0;
+            if (n > maxSuffix) maxSuffix = n;
+          }
+        }
+
+        final taxAmountPaid = invoice.total > 0
+            ? (amountPaid * (invoice.tax / invoice.total))
+            : 0.0;
+
+        final payment = InvoicePayment(
+          id: _uuid.v4(),
+          invoiceId: invoice.id,
+          invoiceNumber: invoice.id,
+          receiptNumber: '${invoice.id}-R${maxSuffix + 1}',
+          amountPaid: amountPaid,
+          taxAmountPaid: taxAmountPaid,
+          previouslyPaid: invoice.amountPaid,
+          balanceAfter: 0.0,
+          datePaid: datePaid,
+          paymentMethod: paymentMethod,
+          notes: notes,
+        );
+
+        await txn.insert('invoice_payments', payment.toMap());
+        count++;
+      }
+    });
+    AppLogger.d(_tag, 'Batch payment: $count invoice(s) marked as paid.');
+    return count;
+  }
+
+  // ─────────────────────────────────────────────
   // Fetch all payments for an invoice, oldest first
   static Future<List<InvoicePayment>> getPaymentsForInvoice(
       String invoiceId) async {

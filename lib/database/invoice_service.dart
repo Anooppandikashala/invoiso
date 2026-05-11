@@ -252,6 +252,8 @@ class InvoiceService {
   static Future<List<Invoice>> getInvoicesForExport({
     DateTime? fromDate,
     DateTime? toDate,
+    int? fromId,
+    int? toId,
     String? filterType,
   }) async {
     final db = await dbHelper.database;
@@ -270,6 +272,14 @@ class InvoiceService {
       whereParts.add('date <= ?');
       whereArgs.add('${toDate.toIso8601String().substring(0, 10)}T23:59:59.999');
     }
+    if (fromId != null) {
+      whereParts.add('CAST(id AS INTEGER) >= ?');
+      whereArgs.add(fromId);
+    }
+    if (toId != null) {
+      whereParts.add('CAST(id AS INTEGER) <= ?');
+      whereArgs.add(toId);
+    }
 
     final invoiceMaps = await db.query(
       'invoices',
@@ -279,6 +289,46 @@ class InvoiceService {
     );
 
     return _buildInvoiceList(invoiceMaps);
+  }
+
+  // Lightweight COUNT — no object construction, used for filter preview + cap check.
+  static Future<int> countInvoicesForExport({
+    DateTime? fromDate,
+    DateTime? toDate,
+    int? fromId,
+    int? toId,
+    String? filterType,
+  }) async {
+    final db = await dbHelper.database;
+    final whereParts = <String>['deleted_at IS NULL'];
+    final whereArgs = <dynamic>[];
+
+    if (filterType != null && filterType.isNotEmpty) {
+      whereParts.add('type = ?');
+      whereArgs.add(filterType);
+    }
+    if (fromDate != null) {
+      whereParts.add('date >= ?');
+      whereArgs.add('${fromDate.toIso8601String().substring(0, 10)}T00:00:00.000');
+    }
+    if (toDate != null) {
+      whereParts.add('date <= ?');
+      whereArgs.add('${toDate.toIso8601String().substring(0, 10)}T23:59:59.999');
+    }
+    if (fromId != null) {
+      whereParts.add('CAST(id AS INTEGER) >= ?');
+      whereArgs.add(fromId);
+    }
+    if (toId != null) {
+      whereParts.add('CAST(id AS INTEGER) <= ?');
+      whereArgs.add(toId);
+    }
+
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) AS cnt FROM invoices WHERE ${whereParts.join(' AND ')}',
+      whereArgs.isEmpty ? null : whereArgs,
+    );
+    return (result.first['cnt'] as int?) ?? 0;
   }
 
   // ─────────────────────────────────────────────
