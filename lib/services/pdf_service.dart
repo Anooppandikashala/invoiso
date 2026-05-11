@@ -211,16 +211,16 @@ class PDFService {
 
         pw.SizedBox(height: 20),
 
-        // 5. Totals
-        pw.Align(
-          alignment: pw.Alignment.centerRight,
-          child: _buildEnhancedTotals(invoice, PdfColors.grey200, PdfColors.black, accentColor, currencySymbol),
+        // 5. Notes + Totals (side by side)
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Expanded(child: _buildAdditionalNotes(invoice)),
+            pw.SizedBox(width: 20),
+            _buildEnhancedTotals(invoice, PdfColors.grey200, PdfColors.black, accentColor, currencySymbol),
+          ],
         ),
-
-        pw.SizedBox(height: 12),
-
-        // 5b. Notes
-        _buildAdditionalNotes(invoice),
 
         if (showUpiQr && upiId != null || bankAccount != null)
           pw.SizedBox(height: 12),
@@ -358,16 +358,16 @@ class PDFService {
 
         pw.SizedBox(height: 20),
 
-        // 4. Totals
-        pw.Align(
-          alignment: pw.Alignment.centerRight,
-          child: _buildEnhancedTotals(invoice, PdfColors.grey200, PdfColors.black, accentColor, currencySymbol),
+        // 4. Notes + Totals (side by side)
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Expanded(child: _buildAdditionalNotes(invoice)),
+            pw.SizedBox(width: 20),
+            _buildEnhancedTotals(invoice, PdfColors.grey200, PdfColors.black, accentColor, currencySymbol),
+          ],
         ),
-
-        pw.SizedBox(height: 12),
-
-        // 4b. Notes
-        _buildAdditionalNotes(invoice),
 
         if (showUpiQr && upiId != null || bankAccount != null)
           pw.SizedBox(height: 12),
@@ -548,22 +548,18 @@ class PDFService {
 
         pw.SizedBox(height: 25),
 
-        // 5. Notes + Totals + optional UPI QR
-        // 5. Totals
+        // 5. Notes + Totals (side by side)
         pw.Padding(
           padding: const pw.EdgeInsets.symmetric(horizontal: 30),
-          child: pw.Align(
-            alignment: pw.Alignment.centerRight,
-            child: _buildEnhancedTotals(invoice, PdfColors.blue200, PdfColors.black, accentColor, currencySymbol),
+          child: pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Expanded(child: _buildAdditionalNotes(invoice)),
+              pw.SizedBox(width: 20),
+              _buildEnhancedTotals(invoice, PdfColors.blue200, PdfColors.black, accentColor, currencySymbol),
+            ],
           ),
-        ),
-
-        pw.SizedBox(height: 12),
-
-        // 5b. Notes
-        pw.Padding(
-          padding: const pw.EdgeInsets.symmetric(horizontal: 30),
-          child: _buildAdditionalNotes(invoice),
         ),
 
         if (showUpiQr && upiId != null || bankAccount != null)
@@ -1007,7 +1003,7 @@ class PDFService {
               if (showQuantity) _buildTableCell(item.quantity == item.quantity.roundToDouble() ? item.quantity.toInt().toString() : item.quantity.toString()),
               _buildTableCell(showDiscount ? item.effectivePrice.toStringAsFixed(2) : (item.total / item.quantity).toStringAsFixed(2)),
               if (showItemTax) _buildTableCell('${item.product.tax_rate}%'),
-              if (showDiscount) _buildTableCell(item.discount.toStringAsFixed(2)),
+              if (showDiscount) _buildTableCell(item.totalDiscount.toStringAsFixed(2)),
               _buildTableCell(item.total.toStringAsFixed(2)),
             ],
           );
