@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:archive/archive.dart';
+import 'package:archive/archive_io.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import '../database/settings_service.dart';
@@ -77,10 +78,12 @@ class ExportService {
   /// Generates a PDF for each invoice in [invoices], saves them into
   /// [outputDirectory] (or a timestamped subfolder of Documents if null),
   /// and returns the folder path.  [onProgress] is called after each PDF.
+  /// Pass [settings] to skip redundant DB reads when bulk-exporting.
   static Future<String> exportInvoicesToPdfFolder(
     List<Invoice> invoices, {
     void Function(int completed, int total)? onProgress,
     String? outputDirectory,
+    PdfGenerationSettings? settings,
   }) async {
     final Directory exportDir;
     if (outputDirectory != null) {
@@ -92,40 +95,43 @@ class ExportService {
     }
     await exportDir.create(recursive: true);
 
+    final s = settings ?? await PDFService.fetchPdfSettings();
     for (int i = 0; i < invoices.length; i++) {
       final invoice = invoices[i];
-      final pdf = await PDFService.generateInvoicePDF(invoice);
+      final pdf = PDFService.generateInvoicePDFWithSettings(invoice, s);
       final bytes = await pdf.save();
       final filename = PDFService.buildPdfFilename(invoice);
-      final file = File('${exportDir.path}/$filename');
-      await file.writeAsBytes(bytes);
+      await File('${exportDir.path}/$filename').writeAsBytes(bytes);
       onProgress?.call(i + 1, invoices.length);
     }
 
     return exportDir.path;
   }
 
-  /// Generates a PDF for each invoice, bundles them into a single ZIP file
-  /// written to [savePath], and returns that path.
-  /// [onProgress] is called after each PDF is added to the archive.
+  /// Generates a PDF for each invoice, streams them directly into a ZIP file
+  /// at [savePath] — never holds more than one PDF in memory at a time.
+  /// Pass [settings] to skip redundant DB reads when bulk-exporting.
   static Future<String> exportInvoicesToZip(
     List<Invoice> invoices,
     String savePath, {
     void Function(int completed, int total)? onProgress,
+    PdfGenerationSettings? settings,
   }) async {
-    final archive = Archive();
+    final s = settings ?? await PDFService.fetchPdfSettings();
+    final output = OutputFileStream(savePath);
+    final encoder = ZipEncoder()..startEncode(output);
 
     for (int i = 0; i < invoices.length; i++) {
       final invoice = invoices[i];
-      final pdf = await PDFService.generateInvoicePDF(invoice);
+      final pdf = PDFService.generateInvoicePDFWithSettings(invoice, s);
       final bytes = await pdf.save();
       final filename = PDFService.buildPdfFilename(invoice);
-      archive.addFile(ArchiveFile(filename, bytes.length, Uint8List.fromList(bytes)));
+      encoder.add(ArchiveFile(filename, bytes.length, Uint8List.fromList(bytes)));
       onProgress?.call(i + 1, invoices.length);
     }
 
-    final zipBytes = ZipEncoder().encode(archive);
-    await File(savePath).writeAsBytes(zipBytes);
+    encoder.endEncode();
+    await output.close();
     return savePath;
   }
 }

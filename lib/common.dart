@@ -237,7 +237,6 @@ class SupportedCurrencies {
     CurrencyOption(code: 'GBP', symbol: '£',   name: 'British Pound'),
     CurrencyOption(code: 'JMD', symbol: 'J\$', name: 'Jamaican Dollar'),
     CurrencyOption(code: 'JPY', symbol: '¥',   name: 'Japanese Yen'),
-    CurrencyOption(code: 'OMR', symbol: 'OMR', name: 'Omani Rial'),
     CurrencyOption(code: 'SGD', symbol: 'S\$', name: 'Singapore Dollar'),
     CurrencyOption(code: 'USD', symbol: '\$',  name: 'US Dollar'),
     CurrencyOption(code: 'ZAR', symbol: 'R',   name: 'South African Rand'),

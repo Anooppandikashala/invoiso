@@ -20,96 +20,201 @@ import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 
 import '../common.dart';
 
+/// All per-session settings needed to render a PDF.
+/// Fetch once via [PDFService.fetchPdfSettings], reuse for every invoice in a batch.
+class PdfGenerationSettings {
+  final CompanyInfo? company;
+  final InvoiceTemplate template;
+  final String invoicePrefix;
+  final bool showGst;
+  final bool showQuantity;
+  final bool showDiscount;
+  final bool showTypeTag;
+  final BusinessType businessType;
+  final List<UpiEntry> upiEntries;
+  final String? showQrStr;
+  final bool showBankDetails;
+  final List<BankAccount> bankAccounts;
+  final LogoPosition logoPosition;
+  final double logoSizePx;
+  final Uint8List? logoBytes;
+  final String thankYouNote;
+  final String datePattern;
+
+  const PdfGenerationSettings({
+    required this.company,
+    required this.template,
+    required this.invoicePrefix,
+    required this.showGst,
+    required this.showQuantity,
+    required this.showDiscount,
+    required this.showTypeTag,
+    required this.businessType,
+    required this.upiEntries,
+    required this.showQrStr,
+    required this.showBankDetails,
+    required this.bankAccounts,
+    required this.logoPosition,
+    required this.logoSizePx,
+    required this.logoBytes,
+    required this.thankYouNote,
+    required this.datePattern,
+  });
+}
+
 // PDF Generation Service
 class PDFService {
-  static Future<pw.Document> generateInvoicePDF(Invoice invoice, {String datePattern = 'dd/MM/yyyy'}) async
-  {
-    final pdf = pw.Document();
-    final company = await CompanyInfoService.getCompanyInfo();
-    final selectedTemplate = await SettingsService.getInvoiceTemplate();
-    final currencySymbol = invoice.currencySymbol;
-    final rawPrefix = await SettingsService.getSetting(SettingKey.invoicePrefix) ?? 'INV';
-    final invoicePrefix = rawPrefix.isNotEmpty ? '$rawPrefix-' : '';
-    final showGst = await SettingsService.getShowGstFields();
-    final showQuantity = await SettingsService.getShowQuantity();
-    final showDiscount = await SettingsService.getShowDiscount();
-    final showTypeTag = await SettingsService.getShowTypeTag();
-    final businessType = await SettingsService.getBusinessType();
+  // Logo bytes cache — avoids re-decoding base64 on every preview open.
+  static Uint8List? _logoBytesCache;
+  static String? _logoBase64Cache;
 
-    // UPI QR settings — use the per-invoice UPI ID; fall back to the default
-    // UPI from settings so that invoices created before this feature still
-    // show a QR code when the global toggle is on.
+  static Uint8List? _cachedLogoBytes(String? base64Logo) {
+    if (base64Logo == null || base64Logo.isEmpty) {
+      _logoBytesCache = null;
+      _logoBase64Cache = null;
+      return null;
+    }
+    if (base64Logo == _logoBase64Cache && _logoBytesCache != null) return _logoBytesCache;
+    _logoBase64Cache = base64Logo;
+    _logoBytesCache = base64Decode(base64Logo);
+    return _logoBytesCache;
+  }
+
+  /// Call to invalidate the logo cache when the user changes their logo.
+  static void clearLogoCache() {
+    _logoBytesCache = null;
+    _logoBase64Cache = null;
+  }
+
+  /// Fetch all PDF generation settings in one parallel batch.
+  /// Call once before a bulk export, then pass to [generateInvoicePDFWithSettings].
+  static Future<PdfGenerationSettings> fetchPdfSettings({
+    String datePattern = 'dd/MM/yyyy',
+  }) async {
+    final results = await Future.wait<dynamic>([
+      CompanyInfoService.getCompanyInfo(),                          // 0
+      SettingsService.getInvoiceTemplate(),                         // 1
+      SettingsService.getSetting(SettingKey.invoicePrefix),         // 2
+      SettingsService.getShowGstFields(),                           // 3
+      SettingsService.getShowQuantity(),                            // 4
+      SettingsService.getShowDiscount(),                            // 5
+      SettingsService.getShowTypeTag(),                             // 6
+      SettingsService.getBusinessType(),                            // 7
+      SettingsService.getUpiIds(),                                  // 8
+      SettingsService.getSetting(SettingKey.showUpiQr),             // 9
+      SettingsService.getShowBankDetails(),                         // 10
+      SettingsService.getBankAccounts(),                            // 11
+      SettingsService.getLogoPosition(),                            // 12
+      SettingsService.getLogoSize(),                                // 13
+      SettingsService.getCompanyLogo(),                             // 14
+      SettingsService.getSetting(SettingKey.thankYouNote),          // 15
+    ]);
+
+    final rawPrefix = (results[2] as String?) ?? 'INV';
+    final base64Logo = results[14] as String?;
+
+    return PdfGenerationSettings(
+      company:       results[0]  as CompanyInfo?,
+      template:      results[1]  as InvoiceTemplate,
+      invoicePrefix: rawPrefix.isNotEmpty ? '$rawPrefix-' : '',
+      showGst:       results[3]  as bool,
+      showQuantity:  results[4]  as bool,
+      showDiscount:  results[5]  as bool,
+      showTypeTag:   results[6]  as bool,
+      businessType:  results[7]  as BusinessType,
+      upiEntries:    results[8]  as List<UpiEntry>,
+      showQrStr:     results[9]  as String?,
+      showBankDetails: results[10] as bool,
+      bankAccounts:  results[11] as List<BankAccount>,
+      logoPosition:  results[12] as LogoPosition,
+      logoSizePx:    _logoSizePx(results[13] as String),
+      logoBytes:     _cachedLogoBytes(base64Logo),
+      thankYouNote:  (results[15] as String?) ?? DefaultValues.thankYouNote,
+      datePattern:   datePattern,
+    );
+  }
+
+  /// Build a PDF document using pre-fetched settings — no DB reads.
+  /// Use this in batch exports to avoid redundant settings fetches per invoice.
+  static pw.Document generateInvoicePDFWithSettings(
+    Invoice invoice,
+    PdfGenerationSettings s,
+  ) {
+    final pdf = pw.Document();
+    final currencySymbol = invoice.currencySymbol;
+
     String? effectiveUpiId = invoice.upiId;
     if (effectiveUpiId == null || effectiveUpiId.trim().isEmpty) {
-      final upiEntries = await SettingsService.getUpiIds();
-      final fallback = upiEntries.where((e) => e.isDefault).firstOrNull
-          ?? upiEntries.firstOrNull;
+      final fallback = s.upiEntries.where((e) => e.isDefault).firstOrNull
+          ?? s.upiEntries.firstOrNull;
       effectiveUpiId = fallback?.id;
     } else {
       effectiveUpiId = effectiveUpiId.trim();
     }
-    final showQrStr = await SettingsService.getSetting(SettingKey.showUpiQr);
-    final showUpiQr =
-        showQrStr == 'true' && effectiveUpiId != null && effectiveUpiId.isNotEmpty;
+    final showUpiQr = s.showQrStr == 'true' && effectiveUpiId != null && effectiveUpiId.isNotEmpty;
 
-    // Bank account — resolve from per-invoice ID, fall back to default.
     BankAccount? effectiveBank;
-    final showBankDetails = await SettingsService.getShowBankDetails();
-    if (showBankDetails) {
-      final bankAccounts = await SettingsService.getBankAccounts();
+    if (s.showBankDetails) {
       final savedId = invoice.bankAccountId;
       if (savedId != null && savedId.isNotEmpty) {
-        effectiveBank = bankAccounts
-            .where((e) => e.accountNumber == savedId)
-            .firstOrNull;
+        effectiveBank = s.bankAccounts.where((e) => e.accountNumber == savedId).firstOrNull;
       }
-      effectiveBank ??= bankAccounts.where((e) => e.isDefault).firstOrNull
-          ?? bankAccounts.firstOrNull;
+      effectiveBank ??= s.bankAccounts.where((e) => e.isDefault).firstOrNull
+          ?? s.bankAccounts.firstOrNull;
     }
 
-    switch (selectedTemplate) {
+    switch (s.template) {
       case InvoiceTemplate.classic:
-        pdf.addPage(await _buildClassicTemplate(
-          invoice, company, currencySymbol, invoicePrefix,
-          upiId: effectiveUpiId, showUpiQr: showUpiQr, showGst: showGst,
-          showQuantity: showQuantity, showDiscount: showDiscount, showTypeTag: showTypeTag, businessType: businessType,
-          bankAccount: effectiveBank, datePattern: datePattern,
+        pdf.addPage(_buildClassicTemplate(
+          invoice, s.company, currencySymbol, s.invoicePrefix,
+          upiId: effectiveUpiId, showUpiQr: showUpiQr, showGst: s.showGst,
+          showQuantity: s.showQuantity, showDiscount: s.showDiscount,
+          showTypeTag: s.showTypeTag, businessType: s.businessType,
+          bankAccount: effectiveBank, datePattern: s.datePattern,
+          logoPosition: s.logoPosition, logoSizePx: s.logoSizePx,
+          logoBytes: s.logoBytes, thankYouNote: s.thankYouNote,
         ));
-        break;
       case InvoiceTemplate.modern:
-        pdf.addPage(await _buildModernTemplate(
-          invoice, company, currencySymbol, invoicePrefix,
-          upiId: effectiveUpiId, showUpiQr: showUpiQr, showGst: showGst,
-          showQuantity: showQuantity, showDiscount: showDiscount, showTypeTag: showTypeTag, businessType: businessType,
-          bankAccount: effectiveBank, datePattern: datePattern,
+        pdf.addPage(_buildModernTemplate(
+          invoice, s.company, currencySymbol, s.invoicePrefix,
+          upiId: effectiveUpiId, showUpiQr: showUpiQr, showGst: s.showGst,
+          showQuantity: s.showQuantity, showDiscount: s.showDiscount,
+          showTypeTag: s.showTypeTag, businessType: s.businessType,
+          bankAccount: effectiveBank, datePattern: s.datePattern,
+          logoPosition: s.logoPosition, logoSizePx: s.logoSizePx,
+          logoBytes: s.logoBytes, thankYouNote: s.thankYouNote,
         ));
-        break;
       case InvoiceTemplate.minimal:
-        pdf.addPage(await _buildMinimalTemplate(
-          invoice, company, currencySymbol, invoicePrefix,
-          upiId: effectiveUpiId, showUpiQr: showUpiQr, showGst: showGst,
-          showQuantity: showQuantity, showDiscount: showDiscount, showTypeTag: showTypeTag, businessType: businessType,
-          bankAccount: effectiveBank, datePattern: datePattern,
+        pdf.addPage(_buildMinimalTemplate(
+          invoice, s.company, currencySymbol, s.invoicePrefix,
+          upiId: effectiveUpiId, showUpiQr: showUpiQr, showGst: s.showGst,
+          showQuantity: s.showQuantity, showDiscount: s.showDiscount,
+          showTypeTag: s.showTypeTag, businessType: s.businessType,
+          bankAccount: effectiveBank, datePattern: s.datePattern,
+          logoPosition: s.logoPosition, logoSizePx: s.logoSizePx,
+          logoBytes: s.logoBytes, thankYouNote: s.thankYouNote,
         ));
-        break;
     }
-
     return pdf;
   }
 
-  static Future<pw.MultiPage> _buildClassicTemplate(
+  static Future<pw.Document> generateInvoicePDF(Invoice invoice, {String datePattern = 'dd/MM/yyyy'}) async {
+    final settings = await fetchPdfSettings(datePattern: datePattern);
+    return generateInvoicePDFWithSettings(invoice, settings);
+  }
+
+  static pw.MultiPage _buildClassicTemplate(
     Invoice invoice, CompanyInfo? company, String currencySymbol, String invoicePrefix, {
     String? upiId, bool showUpiQr = false, bool showGst = true,
     bool showQuantity = true, bool showDiscount = true, bool showTypeTag = true, BusinessType businessType = BusinessType.both,
     BankAccount? bankAccount, String datePattern = 'dd/MM/yyyy',
-  }) async
+    LogoPosition logoPosition = LogoPosition.left, double logoSizePx = 90,
+    Uint8List? logoBytes, String thankYouNote = '',
+  })
   {
-    final accentColor = PdfColors.indigo900; // Use a strong accent color
-    final LogoPosition logoPosition = await SettingsService.getLogoPosition();
-    final logoSizePx = _logoSizePx(await SettingsService.getLogoSize());
-    final base64Logo = await SettingsService.getCompanyLogo();
-    final logoImage = base64Logo != null ? pw.MemoryImage(base64Decode(base64Logo)) : null;
-    final String thankyouNote = await SettingsService.getSetting(SettingKey.thankYouNote) ?? DefaultValues.thankYouNote;
+    final accentColor = PdfColors.indigo900;
+    final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
+    final thankyouNote = thankYouNote;
 
     return pw.MultiPage(
       pageFormat: PdfPageFormat.a4,
@@ -258,19 +363,18 @@ class PDFService {
     );
   }
 
-  static Future<pw.MultiPage> _buildMinimalTemplate(
+  static pw.MultiPage _buildMinimalTemplate(
     Invoice invoice, CompanyInfo? company, String currencySymbol, String invoicePrefix, {
     String? upiId, bool showUpiQr = false, bool showGst = true,
     bool showQuantity = true, bool showDiscount = true, bool showTypeTag = true, BusinessType businessType = BusinessType.both,
     BankAccount? bankAccount, String datePattern = 'dd/MM/yyyy',
-  }) async
+    LogoPosition logoPosition = LogoPosition.left, double logoSizePx = 90,
+    Uint8List? logoBytes, String thankYouNote = '',
+  })
   {
-    final accentColor = PdfColors.grey700; // Use a strong, neutral accent
-    final LogoPosition logoPosition = await SettingsService.getLogoPosition();
-    final logoSizePx = _logoSizePx(await SettingsService.getLogoSize());
-    final base64Logo = await SettingsService.getCompanyLogo();
-    final logoImage = base64Logo != null ? pw.MemoryImage(base64Decode(base64Logo)) : null;
-    final String thankyouNote = await SettingsService.getSetting(SettingKey.thankYouNote) ?? "";
+    final accentColor = PdfColors.grey700;
+    final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
+    final thankyouNote = thankYouNote;
 
     return pw.MultiPage(
       pageFormat: PdfPageFormat.a4,
@@ -407,19 +511,18 @@ class PDFService {
     );
   }
 
-  static Future<pw.MultiPage> _buildModernTemplate(
+    static pw.MultiPage _buildModernTemplate(
     Invoice invoice, CompanyInfo? company, String currencySymbol, String invoicePrefix, {
     String? upiId, bool showUpiQr = false, bool showGst = true,
     bool showQuantity = true, bool showDiscount = true, bool showTypeTag = true, BusinessType businessType = BusinessType.both,
     BankAccount? bankAccount, String datePattern = 'dd/MM/yyyy',
-  }) async
+    LogoPosition logoPosition = LogoPosition.left, double logoSizePx = 90,
+    Uint8List? logoBytes, String thankYouNote = '',
+  })
   {
     final accentColor = PdfColors.blue600;
-    final LogoPosition logoPosition = await SettingsService.getLogoPosition();
-    final logoSizePx = _logoSizePx(await SettingsService.getLogoSize());
-    final base64Logo = await SettingsService.getCompanyLogo();
-    final logoImage = base64Logo != null ? pw.MemoryImage(base64Decode(base64Logo)) : null;
-    final String thankyouNote = await SettingsService.getSetting(SettingKey.thankYouNote) ?? "";
+    final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
+    final thankyouNote = thankYouNote;
 
     return pw.MultiPage(
       pageFormat: PdfPageFormat.a4,
@@ -821,7 +924,7 @@ class PDFService {
     final isPaidInFull = invoice.outstandingBalance <= 0;
 
     return pw.Container(
-      width: 250,
+      width: 200,
       decoration: pw.BoxDecoration(
         border: pw.Border.all(color: PdfColors.grey300),
         borderRadius: pw.BorderRadius.circular(6),
@@ -1075,8 +1178,8 @@ class PDFService {
       builder: (dialogContext) => Dialog(
         insetPadding: const EdgeInsets.all(16),
         child: SizedBox(
-          width: MediaQuery.sizeOf(dialogContext).width * 0.75,
-          height: MediaQuery.sizeOf(dialogContext).height * 0.8,
+          width: (MediaQuery.sizeOf(dialogContext).width * 0.8).clamp(300.0, AppLayout.maxWidthNarrow),
+          height: (MediaQuery.sizeOf(dialogContext).height * 0.9).clamp(400.0, 1000.0),
           child: Column(
             children: [
               AppBar(
@@ -1103,7 +1206,12 @@ class PDFService {
                 ],
               ),
               Expanded(
-                child: SfPdfViewer.memory(pdfBytes),
+                child: SfPdfViewer.memory(
+                  pdfBytes,
+                  pageLayoutMode: PdfPageLayoutMode.continuous,
+                  canShowPageLoadingIndicator: false,
+                  canShowScrollStatus: false,
+                ),
               ),
             ],
           ),

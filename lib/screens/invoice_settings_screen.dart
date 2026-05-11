@@ -560,7 +560,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                               width: constraints.maxWidth,
                               child: TextField(
                                 controller: additionalInfoController,
-                                maxLength: 300,
+                                maxLength: DefaultValues.additionalNotesLength,
                                 maxLines: 3,
                                 decoration: InputDecoration(
                                   labelText: 'Additional Information',
