@@ -1510,8 +1510,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
             label: Text('Name', style: TextStyle(fontWeight: FontWeight.bold))),
         if (_businessType == BusinessType.both)
           const DataColumn(
-              label:
-                  Text('Type', style: TextStyle(fontWeight: FontWeight.bold))),
+              label:Text('Type', style: TextStyle(fontWeight: FontWeight.bold))),
         const DataColumn(
             label: Text('HSN Code',
                 style: TextStyle(fontWeight: FontWeight.bold))),

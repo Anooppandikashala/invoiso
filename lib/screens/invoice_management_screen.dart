@@ -71,11 +71,11 @@ class _InvoiceManagementScreenState
   // Invoice table: checkbox | # | ID | Customer | Date | Items | Total | Status | Outstanding | Actions
   static const Map<int, TableColumnWidth> _invoiceColumnWidths = {
     0: FixedColumnWidth(48),
-    1: FixedColumnWidth(56),
-    2: FlexColumnWidth(0.6),
+    1: FixedColumnWidth(100),
+    2: FlexColumnWidth(0.7),
     3: FlexColumnWidth(0.9),
     4: FixedColumnWidth(150),
-    5: FixedColumnWidth(80),
+    5: FixedColumnWidth(100),
     6: FlexColumnWidth(1.0),
     7: FixedColumnWidth(90),
     8: FlexColumnWidth(1.0),
@@ -85,7 +85,7 @@ class _InvoiceManagementScreenState
   // Quotation table: checkbox | # | ID | Customer | Date | Items | Total | Actions
   static const Map<int, TableColumnWidth> _quotationColumnWidths = {
     0: FixedColumnWidth(48),
-    1: FixedColumnWidth(56),
+    1: FixedColumnWidth(100),
     2: FlexColumnWidth(0.9),
     3: FlexColumnWidth(1.0),
     4: FixedColumnWidth(120),
@@ -1473,6 +1473,7 @@ class _InvoiceManagementScreenState
         style: const TextStyle(
           color: Colors.white,
           fontSize: 14,
+          overflow: TextOverflow.ellipsis,
           fontWeight: FontWeight.w600,
           letterSpacing: 0.5,
         ),
@@ -1533,6 +1534,7 @@ class _InvoiceManagementScreenState
               _buildTableCell(
                 Text('#${invoice.id}',
                     style: const TextStyle(
+                        overflow: TextOverflow.ellipsis,
                         fontSize: 15, fontWeight: FontWeight.w600)),
               ),
               _buildTableCell(
@@ -1584,6 +1586,7 @@ class _InvoiceManagementScreenState
                   '${invoice.currencySymbol} ${invoice.total.toStringAsFixed(2)}',
                   style: const TextStyle(
                       fontSize: 15,
+                      overflow: TextOverflow.ellipsis,
                       fontWeight: FontWeight.bold,
                       color: Colors.green),
                 ),
