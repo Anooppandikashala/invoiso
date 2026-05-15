@@ -117,6 +117,11 @@ class SettingsService
     return val != 'false';
   }
 
+  static Future<bool> getShowInvoiceFooterBranding() async {
+    final val = await getSetting(SettingKey.showInvoiceFooterBranding);
+    return val != 'false'; // default ON
+  }
+
   static Future<bool> getFractionalQuantity() async {
     final val = await getSetting(SettingKey.fractionalQuantity);
     return val == 'true';  // off by default

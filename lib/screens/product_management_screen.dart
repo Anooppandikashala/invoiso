@@ -8,6 +8,7 @@ import 'package:invoiso/database/product_service.dart';
 import 'package:invoiso/database/settings_service.dart';
 import 'package:invoiso/invoiso_colors.dart';
 import 'package:uuid/uuid.dart';
+import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:file_picker/file_picker.dart';
 import 'package:csv/csv.dart';
@@ -66,7 +67,9 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
     'description',
     'price',
     'tax_rate',
-    'stock'
+    'stock',
+    'type',
+    'default_discount',
   ];
 
   @override
@@ -445,9 +448,10 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
 
   Future<void> _downloadSampleCSV() async {
     const sample =
-        '"name","hsn_code","description","price","tax_rate","stock"\n'
-        '"Wireless Mouse","84716010","Ergonomic wireless mouse","599.00","18","50"\n'
-        '"USB Hub","84734000","4-port USB 3.0 hub","299.00","18","100"\n';
+        '"name","hsn_code","description","price","tax_rate","stock","type","default_discount"\n'
+        '"Wireless Mouse","84716010","Ergonomic wireless mouse","599.00","18","50","product","5.00"\n'
+        '"USB Hub","84734000","4-port USB 3.0 hub","299.00","18","100","product","0"\n'
+        '"Annual Support","998314","Annual technical support plan","4999.00","18","0","service","10.00"\n';
 
     final savePath = await FilePicker.platform.saveFile(
       dialogTitle: 'Save Sample CSV',
@@ -513,6 +517,8 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                     _csvRuleRow('description', 'No', 'Short description'),
                     _csvRuleRow('tax_rate', 'No', 'Tax % (0–100), default 0'),
                     _csvRuleRow('stock', 'No', 'Stock quantity, default 0'),
+                    _csvRuleRow('type', 'No', '"product" or "service", default product'),
+                    _csvRuleRow('default_discount', 'No', 'Flat discount amount (currency), default 0'),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -685,8 +691,12 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
 
         final taxStr = getField(row, 'tax_rate');
         final stockStr = getField(row, 'stock');
+        final typeStr = getField(row, 'type');
+        final discountStr = getField(row, 'default_discount');
         final taxRate = taxStr.isEmpty ? 0 : (int.tryParse(taxStr) ?? 0);
         final stock = stockStr.isEmpty ? 0 : (int.tryParse(stockStr) ?? 0);
+        final discount = discountStr.isEmpty ? 0.0 : (double.tryParse(discountStr) ?? 0.0);
+        final type = (typeStr == 'service') ? 'service' : 'product';
 
         final existing = await ProductService.findDuplicateByName(name);
         final product = Product(
@@ -697,6 +707,8 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
           price: price,
           tax_rate: taxRate.clamp(0, 100),
           stock: stock < 0 ? 0 : stock,
+          type: type,
+          defaultDiscount: discount < 0 ? 0.0 : discount,
         );
 
         if (existing != null) {
@@ -932,9 +944,17 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
     try {
       final allProducts = await ProductService.getAllProducts();
       final List<List<dynamic>> rows = [
-        ['name', 'hsn_code', 'description', 'price', 'tax_rate', 'stock'],
-        ...allProducts.map((p) =>
-            [p.name, p.hsncode, p.description, p.price, p.tax_rate, p.stock]),
+        ['name', 'hsn_code', 'description', 'price', 'tax_rate', 'stock', 'type', 'default_discount'],
+        ...allProducts.map((p) => [
+              p.name,
+              p.hsncode,
+              p.description,
+              p.price,
+              p.tax_rate,
+              p.stock,
+              p.type,
+              p.defaultDiscount,
+            ]),
       ];
       final csvData = buildQuotedCsv(rows);
       final savePath = await FilePicker.platform.saveFile(
@@ -983,22 +1003,53 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
           choice == 'all' ? await ProductService.getAllProducts() : _products;
 
       final pdf = pw.Document();
+      final totalCount = productsToExport.length;
       pdf.addPage(
-        pw.Page(
-          build: (context) => pw.TableHelper.fromTextArray(
-            context: context,
-            data: [
-              ['Name', 'HSN Code', 'Description', 'Price', 'Tax Rate', 'Stock'],
-              ...productsToExport.map((p) => [
-                    p.name,
-                    p.hsncode,
-                    p.description,
-                    p.price.toStringAsFixed(2),
-                    '${p.tax_rate}%',
-                    p.stock,
-                  ]),
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4.landscape,
+          margin: const pw.EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          header: (context) => pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                'Product Export - $totalCount product${totalCount == 1 ? '' : 's'}',
+                style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+              ),
+              pw.SizedBox(height: 8),
             ],
           ),
+          footer: (context) => pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text(
+                'Generated by Invoiso',
+                style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+              ),
+              pw.Text(
+                'Page ${context.pageNumber} of ${context.pagesCount}',
+                style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+              ),
+            ],
+          ),
+          build: (context) => [
+            pw.TableHelper.fromTextArray(
+              context: context,
+              data: [
+                ['#', 'Name', 'HSN Code', 'Description', 'Price', 'Tax Rate', 'Stock', 'Type', 'Discount'],
+                ...productsToExport.indexed.map(((int, dynamic) e) => [
+                      e.$1 + 1,
+                      e.$2.name,
+                      e.$2.hsncode,
+                      e.$2.description,
+                      e.$2.price.toStringAsFixed(2),
+                      '${e.$2.tax_rate}%',
+                      e.$2.stock,
+                      e.$2.type,
+                      e.$2.defaultDiscount > 0 ? e.$2.defaultDiscount.toStringAsFixed(2) : '-',
+                    ]),
+              ],
+            ),
+          ],
         ),
       );
 
