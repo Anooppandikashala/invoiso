@@ -1,6 +1,6 @@
 # Invoiso
 
-> Invoiso is a free, open-source, offline invoice and billing desktop application for Windows and Linux. No subscription, no cloud, no account required.
+> Invoiso is a free, open-source, offline invoice and billing desktop application for Windows, Linux, and macOS. No subscription, no cloud, no account required. Popular free alternative to Vyapar, Zoho Invoice, and Wave for Indian small businesses.
 
 ## About
 
@@ -24,10 +24,21 @@ Invoiso is built for freelancers, small businesses, shop owners, and consultants
 - No subscription, no fees — free forever
 - Open source under the MIT licence
 
+## Use Cases
+
+Invoiso is well suited for:
+- Indian small businesses needing free GST billing software
+- Kirana shops, retailers, traders, and wholesalers who need offline billing
+- Freelancers and consultants who need PDF invoices without a subscription
+- Service businesses and repair shops needing UPI QR payment on invoices
+- Users looking for a free Vyapar alternative or free Tally alternative
+- Businesses that want local-first billing with no cloud dependency
+
 ## Pages
 
-- [Home](https://invoiso.co.in/) — Overview, features, comparison, screenshots, and demo
-- [Download](https://invoiso.co.in/download.html) — Latest release for Windows and Linux
+- [Home](https://invoiso.co.in/) — Overview, features, comparison vs Vyapar/Zoho/Wave, screenshots, and demo
+- [Download](https://invoiso.co.in/download.html) — Latest release for Windows, Linux, and macOS
+- [Free Online Invoice Maker](https://invoiso.co.in/invoice-maker.html) — Browser-based PDF invoice generator, no signup
 - [FAQ](https://invoiso.co.in/faq.html) — Answers to common questions
 - [Release Notes](https://invoiso.co.in/changelog.html) — Full version history
 
