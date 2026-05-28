@@ -953,9 +953,7 @@ class _ReportsScreenState extends State<ReportsScreen>
                     Icons.pie_chart_outline),
               ),
               const SizedBox(width: 12),
-              Expanded(child: const SizedBox.shrink()),
-              const SizedBox(width: 12),
-              Expanded(child: const SizedBox.shrink()),
+              const Spacer(flex: 2),
             ],
           ),
         ),
@@ -1323,7 +1321,7 @@ class _ReportsScreenState extends State<ReportsScreen>
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
                   child: Column(
-                    children: _topProducts.take(5).map((p) {
+                    children: _topProducts.take(10).map((p) {
                       final pct = p.revenue / maxRevenue;
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 6),
@@ -1487,7 +1485,7 @@ class _ReportsScreenState extends State<ReportsScreen>
             crossAxisCount: 3,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            childAspectRatio: 2.4,
+            childAspectRatio: 3.5,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             children: [
