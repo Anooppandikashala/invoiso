@@ -28,6 +28,7 @@ import 'create_invoice_screen.dart';
 import 'product_management_screen.dart';
 import 'invoice_management_screen.dart';
 import 'login_screen.dart';
+import 'reports_screen.dart';
 
 // Dashboard Screen
 class DashboardScreen extends StatefulWidget {
@@ -141,6 +142,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 5:
         return ProductManagementScreen(user: _currentUser);
       case 6:
+        return const ReportsScreen();
+      case 7:
         return SettingsScreen(currentUser: _currentUser);
       default:
         return const Center(child: Text('Unknown tab'));
@@ -283,10 +286,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         4, Icons.people_outline, Icons.people, 'Customers'),
                     _buildNavItem(5, Icons.inventory_2_outlined,
                         Icons.inventory_2, 'Products'),
-                    _buildComingSoonNavItem(
-                        Icons.bar_chart_outlined, 'Reports'),
+                    _buildNavItem(6, Icons.bar_chart_outlined,
+                        Icons.bar_chart, 'Reports'),
                     _buildNavItem(
-                        6, Icons.settings_outlined, Icons.settings, 'Settings',
+                        7, Icons.settings_outlined, Icons.settings, 'Settings',
                         showDot: _hasUpdate),
                   ],
                 ),
@@ -443,6 +446,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  /*
   Widget _buildComingSoonNavItem(IconData icon, String label) {
     const disabledColor = Color(0xFFCBD5E1);
 
@@ -516,6 +520,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       },
     );
   }
+  */
 
   Widget _buildNavItem(
       int index, IconData outlinedIcon, IconData filledIcon, String label,
@@ -524,7 +529,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final primary = Theme.of(context).primaryColor;
 
     void onTap() {
-      if (_selectedIndex == 6 && index != 6) _refreshUser();
+      if (_selectedIndex == 7 && index != 7) _refreshUser();
       setState(() => _selectedIndex = index);
     }
 

@@ -32,7 +32,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
 
   // Pagination
   int _currentPage = 0;
-  static const int _pageSize = 10;
+  int _pageSize = 10;
   int _totalProducts = 0;
   int _allProductsCount = 0;
 
@@ -1742,9 +1742,29 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            'Showing ${_currentPage * _pageSize + 1} - ${(_currentPage * _pageSize + _pageSize).clamp(0, _totalProducts)} of $_totalProducts',
-            style: TextStyle(color: Colors.grey.shade700),
+          Row(
+            children: [
+              Text('Rows per page:', style: TextStyle(color: Colors.grey.shade700, fontSize: 13)),
+              const SizedBox(width: 8),
+              DropdownButton<int>(
+                value: _pageSize,
+                underline: const SizedBox(),
+                items: [10, 25, 50, 100].map((n) => DropdownMenuItem(value: n, child: Text('$n'))).toList(),
+                onChanged: (n) {
+                  if (n == null) return;
+                  setState(() {
+                    _pageSize = n;
+                    _currentPage = 0;
+                  });
+                  _loadProducts();
+                },
+              ),
+              const SizedBox(width: 16),
+              Text(
+                'Showing ${_currentPage * _pageSize + 1} - ${(_currentPage * _pageSize + _pageSize).clamp(0, _totalProducts)} of $_totalProducts',
+                style: TextStyle(color: Colors.grey.shade700),
+              ),
+            ],
           ),
           Row(
             children: [

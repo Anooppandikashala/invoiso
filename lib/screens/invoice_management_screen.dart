@@ -44,7 +44,7 @@ class InvoiceManagementScreen extends ConsumerStatefulWidget {
 class _InvoiceManagementScreenState
     extends ConsumerState<InvoiceManagementScreen> {
   int _currentPage = 0;
-  static const int _pageSize = 10;
+  int _pageSize = 10;
   String _searchQuery = '';
   bool _isLoadingPage = false;
   bool _isBulkLoading = false;
@@ -1274,8 +1274,35 @@ class _InvoiceManagementScreenState
                     padding: const EdgeInsets.symmetric(
                         vertical: 16, horizontal: 24),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
+                        Row(
+                          children: [
+                            Text('Rows per page:',
+                                style: TextStyle(
+                                    color: Colors.grey.shade700,
+                                    fontSize: 13)),
+                            const SizedBox(width: 8),
+                            DropdownButton<int>(
+                              value: _pageSize,
+                              underline: const SizedBox(),
+                              items: [10, 25, 50, 100]
+                                  .map((n) => DropdownMenuItem(
+                                      value: n, child: Text('$n')))
+                                  .toList(),
+                              onChanged: (n) {
+                                if (n == null) return;
+                                setState(() {
+                                  _pageSize = n;
+                                  _currentPage = 0;
+                                });
+                                _loadPage();
+                              },
+                            ),
+                          ],
+                        ),
+                        Row(
+                          children: [
                         ElevatedButton.icon(
                           onPressed: _currentPage > 0
                               ? () {
@@ -1345,6 +1372,8 @@ class _InvoiceManagementScreenState
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 20, vertical: 12),
                           ),
+                        ),
+                          ],
                         ),
                       ],
                     ),
