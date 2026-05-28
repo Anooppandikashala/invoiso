@@ -57,6 +57,238 @@
     <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" /></noscript>
 
     <style>
+      /* ── Premium updates hero ── */
+      .updates-hero {
+        padding: 136px 0 76px;
+        overflow: hidden;
+      }
+
+      .updates-hero-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 0.98fr) minmax(390px, 0.72fr);
+        gap: 54px;
+        align-items: center;
+      }
+
+      .updates-hero-copy {
+        max-width: 700px;
+      }
+
+      .updates-breadcrumb {
+        margin-bottom: 22px;
+      }
+
+      .updates-breadcrumb ol {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: rgba(79,142,247,0.72);
+        font-size: 0.86rem;
+        font-weight: 650;
+      }
+
+      .updates-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 16px;
+        padding: 7px 12px;
+        border-radius: 999px;
+        border: 1px solid rgba(79,142,247,0.22);
+        background: rgba(79,142,247,0.08);
+        color: #93c5fd;
+        font-size: 0.74rem;
+        font-weight: 850;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .updates-hero h1 {
+        max-width: 620px;
+        margin: 0 0 16px;
+        color: var(--text);
+        font-size: clamp(2.1rem, 4vw, 3.45rem) !important;
+        line-height: 1.05 !important;
+        letter-spacing: -0.045em;
+        font-weight: 850;
+      }
+
+      .updates-hero-copy > p {
+        max-width: 620px;
+        margin: 0;
+        color: rgba(226,232,240,0.80);
+        font-size: clamp(0.96rem, 1.2vw, 1.08rem);
+        line-height: 1.72;
+      }
+
+      .updates-hero .hero-trust-strip {
+        justify-content: flex-start;
+        margin-top: 24px !important;
+      }
+
+      .updates-hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 28px;
+      }
+
+      .updates-hero-panel {
+        border-radius: 28px;
+        border: 1px solid rgba(226,232,240,0.12);
+        background:
+          linear-gradient(135deg, rgba(255,255,255,0.075), rgba(255,255,255,0.024)),
+          rgba(6,8,15,0.62);
+        box-shadow: 0 34px 110px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.08);
+        backdrop-filter: blur(22px);
+        -webkit-backdrop-filter: blur(22px);
+        padding: 18px;
+      }
+
+      .updates-panel-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 14px;
+        padding: 14px;
+        border-radius: 18px;
+        border: 1px solid rgba(226,232,240,0.09);
+        background: rgba(6,8,15,0.42);
+      }
+
+      .updates-panel-top span {
+        color: var(--text-muted);
+        font-size: 0.78rem;
+        font-weight: 750;
+      }
+
+      .updates-panel-top strong {
+        color: #34d399;
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .updates-stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .updates-stat-card {
+        min-height: 112px;
+        display: grid;
+        grid-template-columns: 34px minmax(0, 1fr);
+        grid-template-rows: 34px auto;
+        column-gap: 12px;
+        row-gap: 7px;
+        align-items: start;
+        padding: 16px;
+        border-radius: 18px;
+        border: 1px solid rgba(226,232,240,0.10);
+        background: rgba(255,255,255,0.035);
+      }
+
+      .updates-stat-card i {
+        color: var(--primary);
+        font-size: 1.24rem;
+        grid-row: 1;
+        align-self: center;
+      }
+
+      .updates-stat-card strong {
+        color: var(--text);
+        font-size: 1.08rem;
+        line-height: 1.2;
+        align-self: center;
+      }
+
+      .updates-stat-card span {
+        color: var(--text-muted);
+        font-size: 0.74rem;
+        font-weight: 700;
+        grid-column: 2;
+      }
+
+      .updates-panel-note {
+        display: grid;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .updates-panel-note span {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        min-height: 38px;
+        padding: 9px 12px;
+        border-radius: 14px;
+        border: 1px solid rgba(226,232,240,0.08);
+        background: rgba(6,8,15,0.34);
+        color: rgba(226,232,240,0.78);
+        font-size: 0.82rem;
+        font-weight: 700;
+      }
+
+      .updates-panel-note i {
+        color: var(--primary);
+      }
+
+      .updates-section {
+        position: relative;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 14% 8%, rgba(79,142,247,0.08), transparent 30%),
+          radial-gradient(circle at 86% 18%, rgba(139,92,246,0.07), transparent 34%),
+          var(--bg);
+      }
+
+      .updates-section-head {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 24px;
+      }
+
+      .updates-section-head h2 {
+        color: var(--text);
+        font-size: clamp(1.45rem, 2.1vw, 2rem);
+        font-weight: 850;
+        letter-spacing: -0.03em;
+        line-height: 1.15;
+        margin: 0;
+      }
+
+      .updates-section-head p {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        line-height: 1.65;
+        margin: 8px 0 0;
+      }
+
+      .updates-section-link {
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 13px;
+        border-radius: 999px;
+        border: 1px solid rgba(226,232,240,0.11);
+        background: rgba(255,255,255,0.035);
+        color: rgba(226,232,240,0.82);
+        font-size: 0.84rem;
+        font-weight: 750;
+        text-decoration: none;
+      }
+
+      .updates-section-link:hover {
+        border-color: rgba(79,142,247,0.32);
+        background: rgba(79,142,247,0.10);
+        color: #fff;
+      }
+
       /* ── Timeline layout ── */
       .timeline {
         position: relative;
@@ -98,14 +330,16 @@
       /* ── Release card ── */
       .release-card {
         position: relative;
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: 20px;
+        background:
+          linear-gradient(135deg, rgba(255,255,255,0.055), rgba(255,255,255,0.02)),
+          var(--card);
+        border: 1px solid rgba(226,232,240,0.10);
+        border-radius: 24px;
         overflow: hidden;
         backdrop-filter: blur(16px);
         -webkit-backdrop-filter: blur(16px);
-        box-shadow: 0 0 0 1px rgba(255,255,255,0.04), 0 20px 60px rgba(0,0,0,0.4);
-        margin-bottom: 32px;
+        box-shadow: 0 24px 80px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.06);
+        margin-bottom: 22px;
         transition: border-color 0.3s ease, box-shadow 0.3s ease;
       }
 
@@ -120,9 +354,9 @@
         justify-content: space-between;
         flex-wrap: wrap;
         gap: 12px;
-        padding: 22px 28px;
-        border-bottom: 1px solid var(--border);
-        background: rgba(255,255,255,0.02);
+        padding: 20px 24px;
+        border-bottom: 1px solid rgba(226,232,240,0.09);
+        background: rgba(255,255,255,0.025);
       }
 
       .release-card-header-left {
@@ -139,9 +373,9 @@
         background: rgba(79,142,247,0.15);
         color: var(--primary);
         border: 1px solid rgba(79,142,247,0.3);
-        border-radius: 8px;
+        border-radius: 999px;
         padding: 4px 12px;
-        font-size: 0.9rem;
+        font-size: 0.82rem;
         font-weight: 700;
         letter-spacing: 0.02em;
       }
@@ -153,7 +387,7 @@
         background: rgba(16,185,129,0.15);
         color: #10b981;
         border: 1px solid rgba(16,185,129,0.3);
-        border-radius: 6px;
+        border-radius: 999px;
         padding: 3px 10px;
         font-size: 0.75rem;
         font-weight: 700;
@@ -171,9 +405,9 @@
 
       /* ── Release body ── */
       .release-body {
-        padding: 24px 28px;
+        padding: 24px;
         display: grid;
-        gap: 28px;
+        gap: 18px;
       }
 
       @media (min-width: 900px) {
@@ -187,6 +421,10 @@
         display: flex;
         flex-direction: column;
         gap: 10px;
+        padding: 16px;
+        border-radius: 18px;
+        border: 1px solid rgba(226,232,240,0.08);
+        background: rgba(6,8,15,0.26);
       }
 
       .cl-section-title {
@@ -198,7 +436,7 @@
         text-transform: uppercase;
         letter-spacing: 0.08em;
         padding-bottom: 8px;
-        border-bottom: 1px solid var(--border);
+        border-bottom: 1px solid rgba(226,232,240,0.08);
       }
 
       .cl-section-title .icon-wrap {
@@ -234,7 +472,7 @@
       .cl-list li {
         display: flex;
         gap: 10px;
-        font-size: 0.875rem;
+        font-size: 0.84rem;
         color: var(--text);
         line-height: 1.55;
       }
@@ -322,6 +560,87 @@
       .cl-toggle-btn:hover { color: var(--text); background: rgba(255,255,255,0.06); }
       .cl-toggle-btn i { transition: transform 0.25s; }
       .cl-toggle-btn.cl-open i { transform: rotate(180deg); }
+
+      @media (max-width: 1024px) {
+        .updates-hero-grid {
+          grid-template-columns: 1fr;
+          gap: 36px;
+        }
+
+        .updates-hero-copy,
+        .updates-hero h1,
+        .updates-hero-copy > p {
+          max-width: 760px;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .updates-hero {
+          padding: 118px 0 56px;
+        }
+
+        .updates-hero-copy,
+        .updates-hero h1,
+        .updates-hero-copy > p {
+          text-align: center;
+          margin-left: auto;
+          margin-right: auto;
+        }
+
+        .updates-breadcrumb ol,
+        .updates-hero .hero-trust-strip,
+        .updates-hero-actions {
+          justify-content: center;
+        }
+
+        .updates-hero h1 {
+          font-size: clamp(1.9rem, 9vw, 2.65rem) !important;
+          letter-spacing: -0.035em;
+        }
+
+        .updates-hero-copy > p {
+          font-size: 0.94rem;
+        }
+
+        .updates-hero-panel {
+          border-radius: 22px;
+          padding: 14px;
+        }
+
+        .updates-stats {
+          grid-template-columns: 1fr;
+        }
+
+        .updates-stat-card {
+          min-height: auto;
+          padding: 13px;
+        }
+
+        .updates-stat-card i {
+          grid-row: 1;
+          align-self: center;
+          font-size: 1.05rem;
+        }
+
+        .updates-section-head {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .release-card-header {
+          align-items: flex-start;
+          flex-direction: column;
+          padding: 18px;
+        }
+
+        .release-body {
+          padding: 18px;
+        }
+
+        .cl-section {
+          padding: 14px;
+        }
+      }
     </style>
 
     <!-- Structured Data: BreadcrumbList -->
@@ -342,23 +661,25 @@
 
     <!-- Navbar -->
     <header class="navbar fixed w-full z-50">
-      <nav class="container mx-auto flex justify-between items-center py-4 px-6 max-w-7xl" aria-label="Main navigation">
-        <a href="index.html" class="logo-link flex items-center text-3xl font-bold tracking-tight" style="text-decoration:none;">
-          <img src="assets/images/logo.svg" alt="" class="w-8 h-8 mr-2" aria-hidden="true" />
-          Invoiso
+      <nav class="nav-shell container mx-auto px-4 md:px-6 max-w-7xl" aria-label="Main navigation">
+        <a href="/" class="logo-link nav-brand" style="text-decoration:none;">
+          <span class="nav-logo-mark"><img src="assets/images/logo.svg" alt="Invoiso" aria-hidden="true" /></span>
+          <span class="nav-brand-text logo-text-accent">Invoiso</span>
         </a>
-        <ul class="hidden md:flex space-x-10 font-medium">
-          <li><a href="index.html" class="transition-colors duration-300">Home</a></li>
+        <ul class="nav-links hidden md:flex">
+          <li><a href="/" class="transition-colors duration-300">Home</a></li>
           <li><a href="index.html#features" class="transition-colors duration-300">Features</a></li>
           <li><a href="faq.html" class="transition-colors duration-300">FAQ</a></li>
           <li><a href="changelog.html" class="transition-colors duration-300 primary-text" aria-current="page">Updates</a></li>
-          <li><a href="customization.html" class="nav-btn">Customization</a></li>
-          <li><a href="invoice-maker.html" class="nav-btn">Try Online</a></li>
-          <li><a href="download.html" class="nav-cta">Download</a></li>
         </ul>
+        <div class="nav-actions hidden md:flex">
+          <a href="customization.html" class="nav-btn">Customization</a>
+          <a href="invoice-maker.html" class="nav-btn">Try Online</a>
+          <a href="download.html" class="nav-cta">Download</a>
+        </div>
 
         <button
-          class="md:hidden"
+          class="mobile-menu-toggle md:hidden"
           id="hamburger-btn"
           aria-label="Toggle navigation menu"
           aria-expanded="false"
@@ -370,51 +691,105 @@
         </button>
       </nav>
 
-            <div class="mobile-menu hidden md:hidden" id="mobile-menu">
-        <ul class="mob-nav-list">
-          <li><a href="index.html" class="mob-nav-link">Home</a></li>
-          <li><a href="index.html#features" class="mob-nav-link">Features</a></li>
-          <li><a href="faq.html" class="mob-nav-link">FAQ</a></li>
-          <li><a href="changelog.html" class="mob-nav-link mob-nav-active">Updates</a></li>
-        </ul>
-        <div class="mob-nav-ctas">
-          <a href="customization.html" class="mob-nav-btn-outline">Customization</a>
-          <a href="invoice-maker.html" class="mob-nav-btn-outline">Try Online</a>
-          <a href="download.html" class="mob-nav-btn-solid">Download</a>
+      <div class="mobile-menu hidden md:hidden" id="mobile-menu">
+        <div class="mobile-menu-panel">
+          <ul class="mob-nav-list">
+            <li><a href="/" class="mob-nav-link">Home</a></li>
+            <li><a href="index.html#features" class="mob-nav-link">Features</a></li>
+            <li><a href="faq.html" class="mob-nav-link">FAQ</a></li>
+            <li><a href="changelog.html" class="mob-nav-link mob-nav-active">Updates</a></li>
+          </ul>
+          <div class="mob-nav-ctas">
+            <a href="customization.html" class="mob-nav-btn-outline">Customization</a>
+            <a href="invoice-maker.html" class="mob-nav-btn-outline">Try Online</a>
+            <a href="download.html" class="mob-nav-btn-solid">Download</a>
+          </div>
         </div>
       </div>
-      </header>
+    </header>
 
     <main id="main-content">
 
       <!-- Hero -->
-      <section class="pt-40 pb-16 hero-gradient text-white text-center relative">
+      <section class="updates-hero hero-gradient text-white relative">
         <div class="hero-noise" aria-hidden="true"></div>
-        <div class="container mx-auto px-6 relative z-10">
-          <div class="fade-in-up">
-            <nav aria-label="Breadcrumb" class="mb-6">
-              <ol class="flex items-center justify-center gap-2 text-sm font-medium" style="color:rgba(79,142,247,0.7)">
-                <li><a href="index.html" class="hover:text-white transition-colors">Home</a></li>
-                <li aria-hidden="true" class="opacity-50">/</li>
-                <li class="text-white" aria-current="page">Updates</li>
-              </ol>
-            </nav>
-            <h1 class="text-5xl md:text-6xl font-bold mb-4 leading-tight">Invoiso Updates</h1>
-            <p class="text-lg md:text-xl max-w-2xl mx-auto leading-relaxed" style="color:rgba(226,232,240,0.85)">
-              A monthly roundup of new features, improvements, and fixes — everything that changed, in a nutshell.
-            </p>
-            <div class="hero-trust-strip">
-              <span class="trust-chip"><i class="fas fa-sync" aria-hidden="true"></i> Updated regularly</span>
-              <span class="trust-chip"><i class="fab fa-github" aria-hidden="true"></i> Open source</span>
-              <span class="trust-chip"><i class="fas fa-heart" aria-hidden="true"></i> Free forever</span>
+        <div class="container mx-auto px-6 max-w-7xl relative z-10">
+          <div class="updates-hero-grid fade-in-up">
+            <div class="updates-hero-copy">
+              <nav aria-label="Breadcrumb" class="updates-breadcrumb">
+                <ol>
+                  <li><a href="/" class="hover:text-white transition-colors">Home</a></li>
+                  <li aria-hidden="true" class="opacity-50">/</li>
+                  <li class="text-white" aria-current="page">Updates</li>
+                </ol>
+              </nav>
+              <span class="updates-eyebrow"><i class="fas fa-clock-rotate-left" aria-hidden="true"></i> Product changelog</span>
+              <h1>Invoiso Updates</h1>
+              <p>
+                A monthly roundup of new features, improvements, and fixes — everything that changed, in a nutshell.
+              </p>
+              <div class="hero-trust-strip">
+                <span class="trust-chip"><i class="fas fa-sync" aria-hidden="true"></i> Updated regularly</span>
+                <span class="trust-chip"><i class="fab fa-github" aria-hidden="true"></i> Open source</span>
+                <span class="trust-chip"><i class="fas fa-heart" aria-hidden="true"></i> Free forever</span>
+              </div>
+              <div class="updates-hero-actions">
+                <a href="#release-history" class="btn-primary font-semibold px-6 py-3 rounded-lg inline-flex items-center justify-center gap-2">
+                  <i class="fas fa-list-check" aria-hidden="true"></i>
+                  View Release History
+                </a>
+                <a href="https://github.com/Anooppandikashala/invoiso/releases" target="_blank" rel="noopener noreferrer" class="btn-secondary font-semibold px-6 py-3 rounded-lg inline-flex items-center justify-center gap-2">
+                  <i class="fab fa-github" aria-hidden="true"></i>
+                  GitHub Releases
+                </a>
+              </div>
             </div>
+
+            <aside class="updates-hero-panel" aria-label="Updates page summary">
+              <div class="updates-panel-top">
+                <span>Release notes</span>
+                <strong>Maintained openly</strong>
+              </div>
+              <div class="updates-stats">
+                <div class="updates-stat-card">
+                  <i class="fas fa-calendar-check" aria-hidden="true"></i>
+                  <strong>2026</strong>
+                  <span>Latest cycle</span>
+                </div>
+                <div class="updates-stat-card">
+                  <i class="fas fa-bolt" aria-hidden="true"></i>
+                  <strong>Features</strong>
+                  <span>Workflow updates</span>
+                </div>
+                <div class="updates-stat-card">
+                  <i class="fas fa-wrench" aria-hidden="true"></i>
+                  <strong>Fixes</strong>
+                  <span>Stability work</span>
+                </div>
+              </div>
+              <div class="updates-panel-note">
+                <span><i class="fas fa-desktop" aria-hidden="true"></i> Desktop app improvements across Windows, Linux, and macOS</span>
+                <span><i class="fas fa-file-invoice" aria-hidden="true"></i> Billing, PDF, quotation, payment, and backup updates</span>
+                <span><i class="fas fa-code-branch" aria-hidden="true"></i> Latest release pulled from GitHub below</span>
+              </div>
+            </aside>
           </div>
         </div>
       </section>
 
       <!-- Changelog timeline -->
-      <section class="py-20" style="background: var(--bg);">
+      <section class="updates-section py-20" id="release-history">
         <div class="container mx-auto px-6 max-w-4xl">
+          <div class="updates-section-head">
+            <div>
+              <h2>Release History</h2>
+              <p>Review the latest GitHub release and the major monthly milestones for Invoiso.</p>
+            </div>
+            <a href="download.html" class="updates-section-link">
+              <i class="fas fa-download" aria-hidden="true"></i>
+              Download latest
+            </a>
+          </div>
 
           <!-- Current version card (fetched from GitHub) -->
           <div id="latest-version-card" class="release-card fade-in-up" style="margin-bottom: 24px;">
@@ -611,23 +986,71 @@
     </main>
 
     <!-- Footer -->
-    <footer class="text-white text-center py-12 relative">
-      <div class="container mx-auto px-6">
-        <div class="flex flex-wrap justify-center gap-8 text-lg mb-8">
-          <a href="https://github.com/Anooppandikashala/invoiso" target="_blank" rel="noopener noreferrer" class="hover:underline">
-            <i class="fab fa-github mr-2" aria-hidden="true"></i>GitHub
-          </a>
-          <a href="https://buymeacoffee.com/anoopp" target="_blank" rel="noopener noreferrer" class="hover:underline">
-            <i class="fas fa-mug-hot mr-2" aria-hidden="true"></i>Support
-          </a>
-          <a href="mailto:anooppkrishnan96@gmail.com" class="hover:underline">
-            <i class="fas fa-envelope mr-2" aria-hidden="true"></i>Email
-          </a>
+    <footer class="site-footer">
+      <div class="container mx-auto px-6 max-w-7xl site-footer-inner">
+        <div class="site-footer-top">
+          <div class="site-footer-brand">
+            <a href="/" class="site-footer-logo">
+              <img src="assets/images/logo.svg" alt="Invoiso" aria-hidden="true" />
+              <span>Invoiso</span>
+            </a>
+            <p class="site-footer-text">Free, open-source billing software for small businesses. Create GST-ready invoices offline on Windows, Linux, and macOS.</p>
+            <div class="site-footer-badges" aria-label="Product highlights">
+              <span class="site-footer-badge"><i class="fas fa-check-circle" aria-hidden="true"></i> Free forever</span>
+              <span class="site-footer-badge"><i class="fas fa-wifi-slash" aria-hidden="true"></i> Offline first</span>
+              <span class="site-footer-badge"><i class="fab fa-github" aria-hidden="true"></i> Open source</span>
+            </div>
+          </div>
+
+          <div class="site-footer-grid">
+            <div>
+              <h2 class="site-footer-title">Product</h2>
+              <ul class="site-footer-links">
+                <li><a href="download.html" class="site-footer-link"><i class="fas fa-download" aria-hidden="true"></i>Download app</a></li>
+                <li><a href="invoice-maker.html" class="site-footer-link"><i class="fas fa-file-invoice" aria-hidden="true"></i>Invoice maker</a></li>
+                <li><a href="index.html#features" class="site-footer-link"><i class="fas fa-layer-group" aria-hidden="true"></i>Features</a></li>
+                <li><a href="download.html#install-guide" class="site-footer-link"><i class="fas fa-list-check" aria-hidden="true"></i>Install guide</a></li>
+              </ul>
+            </div>
+            <div>
+              <h2 class="site-footer-title">Resources</h2>
+              <ul class="site-footer-links">
+                <li><a href="faq.html" class="site-footer-link"><i class="fas fa-circle-question" aria-hidden="true"></i>FAQ</a></li>
+                <li><a href="changelog.html" class="site-footer-link"><i class="fas fa-clock-rotate-left" aria-hidden="true"></i>Updates</a></li>
+                <li><a href="customization.html" class="site-footer-link"><i class="fas fa-sliders" aria-hidden="true"></i>Customization</a></li>
+                <li><a href="privacy.html" class="site-footer-link"><i class="fas fa-shield-halved" aria-hidden="true"></i>Privacy</a></li>
+                <li><a href="terms.html" class="site-footer-link"><i class="fas fa-file-contract" aria-hidden="true"></i>Terms</a></li>
+              </ul>
+            </div>
+            <div>
+              <h2 class="site-footer-title">Community</h2>
+              <ul class="site-footer-links">
+                <li><a href="https://github.com/Anooppandikashala/invoiso" target="_blank" rel="noopener noreferrer" class="site-footer-link"><i class="fab fa-github" aria-hidden="true"></i>GitHub</a></li>
+                <li><a href="https://github.com/Anooppandikashala/invoiso/issues" target="_blank" rel="noopener noreferrer" class="site-footer-link"><i class="fas fa-bug" aria-hidden="true"></i>Report issue</a></li>
+                <li><a href="https://buymeacoffee.com/anoopp" target="_blank" rel="noopener noreferrer" class="site-footer-link"><i class="fas fa-mug-hot" aria-hidden="true"></i>Support project</a></li>
+              </ul>
+            </div>
+            <div>
+              <h2 class="site-footer-title">Contact</h2>
+              <ul class="site-footer-links">
+                <li><a href="contact.html" class="site-footer-link"><i class="fas fa-headset" aria-hidden="true"></i>Contact support</a></li>
+                <li><a href="mailto:anooppkrishnan96@gmail.com" class="site-footer-link"><i class="fas fa-envelope" aria-hidden="true"></i>Email</a></li>
+                <li><a href="customization.html" class="site-footer-link"><i class="fas fa-briefcase" aria-hidden="true"></i>Custom work</a></li>
+              </ul>
+            </div>
+          </div>
         </div>
-        <div class="border-t pt-8" style="border-color:var(--border)">
-          <p class="text-lg">
-            © <span id="year"></span> Invoiso. All rights reserved.
-          </p>
+
+        <div class="site-footer-bottom">
+          <div>
+            <p class="site-footer-copy">© <span id="year"></span> Invoiso. All rights reserved.</p>
+            <p class="site-footer-note">Offline-first billing software. No account required.</p>
+          </div>
+          <div class="site-footer-social" aria-label="Social links">
+            <a href="https://github.com/Anooppandikashala/invoiso" target="_blank" rel="noopener noreferrer" aria-label="Invoiso on GitHub"><i class="fab fa-github" aria-hidden="true"></i></a>
+            <a href="https://buymeacoffee.com/anoopp" target="_blank" rel="noopener noreferrer" aria-label="Support Invoiso"><i class="fas fa-mug-hot" aria-hidden="true"></i></a>
+            <a href="mailto:anooppkrishnan96@gmail.com" aria-label="Email Invoiso"><i class="fas fa-envelope" aria-hidden="true"></i></a>
+          </div>
         </div>
       </div>
     </footer>

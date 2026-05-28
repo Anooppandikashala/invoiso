@@ -4,9 +4,11 @@
   "private": true,
   "scripts": {
     "build:css": "tailwindcss -i tailwind-input.css -o tailwind.css --minify",
-    "watch:css": "tailwindcss -i tailwind-input.css -o tailwind.css --watch"
+    "watch:css": "tailwindcss -i tailwind-input.css -o tailwind.css --watch",
+    "build": "npm run build:css"
   },
   "devDependencies": {
+    "clean-css-cli": "^5.6.3",
     "tailwindcss": "^3.4.0"
   }
 }

@@ -5,7 +5,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Download Invoiso free billing software for Windows, Linux and macOS. Create GST-ready PDF invoices offline with no account, subscription, or cloud login." />
-    <meta name="keywords" content="free billing software download, billing software for PC, offline billing software download, GST billing software download, invoice software download, offline invoicing Windows, offline invoicing Linux, free invoice app download, Invoiso download" />
     <meta name="author" content="Invoiso" />
     <meta name="robots" content="index, follow" />
 
@@ -53,6 +52,341 @@
     <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" /></noscript>
 
     <style>
+      /* ── Premium download hero ── */
+      .download-hero {
+        min-height: auto;
+        padding: 136px 0 72px;
+        overflow: hidden;
+      }
+
+      .download-hero-shell {
+        display: grid;
+        grid-template-columns: minmax(0, 0.98fr) minmax(390px, 0.72fr);
+        align-items: center;
+        gap: 54px;
+      }
+
+      .download-hero-copy {
+        text-align: left;
+        max-width: 690px;
+      }
+
+      .download-breadcrumb ol {
+        justify-content: flex-start;
+      }
+
+      .download-hero-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 16px;
+        padding: 7px 12px;
+        border-radius: 999px;
+        border: 1px solid rgba(79,142,247,0.22);
+        background: rgba(79,142,247,0.08);
+        color: #93c5fd;
+        font-size: 0.74rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .download-hero h1 {
+        max-width: 620px;
+        margin: 0 0 16px;
+        color: var(--text);
+        font-size: clamp(2.1rem, 4vw, 3.45rem) !important;
+        line-height: 1.05 !important;
+        letter-spacing: -0.045em;
+        font-weight: 850;
+      }
+
+      .download-hero-copy > p {
+        max-width: 610px;
+        margin: 0;
+        color: rgba(226,232,240,0.80);
+        font-size: clamp(0.96rem, 1.2vw, 1.08rem);
+        line-height: 1.72;
+      }
+
+      .download-hero .hero-trust-strip {
+        justify-content: flex-start;
+        margin-top: 24px !important;
+      }
+
+      .download-hero-panel {
+        position: relative;
+        border-radius: 28px;
+        border: 1px solid rgba(226,232,240,0.12);
+        background:
+          linear-gradient(135deg, rgba(255,255,255,0.075), rgba(255,255,255,0.024)),
+          rgba(6,8,15,0.62);
+        box-shadow: 0 34px 110px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.08);
+        backdrop-filter: blur(22px);
+        -webkit-backdrop-filter: blur(22px);
+        padding: 18px;
+        overflow: hidden;
+      }
+
+      .download-hero-panel::before {
+        content: '';
+        position: absolute;
+        inset: -40% -20% auto 28%;
+        height: 220px;
+        background: radial-gradient(circle, rgba(79,142,247,0.22), transparent 68%);
+        pointer-events: none;
+      }
+
+      .download-panel-topbar,
+      .download-platforms,
+      .download-panel-note,
+      .download-hero .total-dl-stat {
+        position: relative;
+        z-index: 1;
+      }
+
+      .download-panel-topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 14px;
+        padding: 12px 14px;
+        border-radius: 18px;
+        border: 1px solid rgba(226,232,240,0.09);
+        background: rgba(6,8,15,0.42);
+      }
+
+      .download-panel-topbar span {
+        color: var(--text-muted);
+        font-size: 0.78rem;
+        font-weight: 750;
+      }
+
+      .download-panel-topbar strong {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        color: #34d399;
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .download-platforms {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .download-platform-card {
+        min-height: 112px;
+        display: grid;
+        grid-template-columns: 34px minmax(0, 1fr);
+        grid-template-rows: 34px auto;
+        column-gap: 12px;
+        row-gap: 7px;
+        align-items: start;
+        padding: 16px;
+        border-radius: 18px;
+        border: 1px solid rgba(226,232,240,0.10);
+        background: rgba(255,255,255,0.035);
+        color: var(--text);
+        transition: border-color 0.22s ease, background 0.22s ease, transform 0.22s ease, box-shadow 0.22s ease;
+      }
+
+      .download-platform-card:hover {
+        border-color: rgba(79,142,247,0.48);
+        background: rgba(79,142,247,0.11);
+        transform: translateY(-4px);
+        box-shadow: 0 10px 32px rgba(79,142,247,0.20), inset 0 1px 0 rgba(255,255,255,0.08);
+      }
+
+      .download-platform-card i {
+        color: var(--primary);
+        font-size: 1.35rem;
+        grid-row: 1;
+        align-self: center;
+        transition: color 0.22s ease, filter 0.22s ease;
+      }
+
+      .download-platform-card:hover i {
+        color: #90bfff;
+        filter: drop-shadow(0 0 7px rgba(79,142,247,0.55));
+      }
+
+      .download-platform-card strong {
+        font-size: 0.95rem;
+        line-height: 1.2;
+        align-self: center;
+        transition: color 0.22s ease;
+      }
+
+      .download-platform-card:hover strong {
+        color: #fff;
+      }
+
+      .download-platform-card span {
+        color: var(--text-muted);
+        font-size: 0.74rem;
+        font-weight: 700;
+        grid-column: 2;
+        transition: color 0.22s ease;
+      }
+
+      .download-platform-card:hover span {
+        color: rgba(144,191,255,0.85);
+      }
+
+      .download-hero .total-dl-stat {
+        justify-content: flex-start;
+        width: 100%;
+        margin: 12px 0 0;
+        padding: 14px 15px;
+        border-radius: 18px;
+        font-size: 0.86rem;
+        box-shadow: none;
+      }
+
+      .download-hero .total-dl-stat i {
+        width: 34px;
+        height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        background: rgba(79,142,247,0.14);
+        font-size: 0.95rem;
+      }
+
+      .download-hero .total-dl-number {
+        font-size: 1.28rem;
+      }
+
+      .download-panel-note {
+        display: grid;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .download-panel-note span {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        min-height: 38px;
+        padding: 9px 12px;
+        border-radius: 14px;
+        border: 1px solid rgba(226,232,240,0.08);
+        background: rgba(6,8,15,0.34);
+        color: rgba(226,232,240,0.78);
+        font-size: 0.82rem;
+        font-weight: 700;
+      }
+
+      .download-panel-note i {
+        color: var(--primary);
+      }
+
+      .download-scroll-cue {
+        grid-column: 1 / -1;
+        justify-self: center;
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        margin-top: -6px;
+        padding: 9px 13px;
+        border-radius: 999px;
+        border: 1px solid rgba(226,232,240,0.11);
+        background: rgba(255,255,255,0.035);
+        color: rgba(226,232,240,0.82);
+        font-size: 0.84rem;
+        font-weight: 750;
+        text-decoration: none;
+        transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+      }
+
+      .download-scroll-cue:hover {
+        border-color: rgba(79,142,247,0.32);
+        background: rgba(79,142,247,0.10);
+        color: #fff;
+        transform: translateY(1px);
+      }
+
+      .download-scroll-cue i {
+        color: var(--primary);
+        font-size: 0.78rem;
+      }
+
+      .dl-os-section { border-radius: 8px; }
+      .dl-os-section.dl-highlight {
+        box-shadow: inset 3px 0 0 var(--primary);
+        background-color: rgba(99,102,241,0.07);
+      }
+
+      .download-featured-badges {
+        grid-column: 1 / -1;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        width: min(100%, 900px);
+        max-width: 900px;
+        margin: 0 auto;
+        padding-top: 22px;
+        border-top: 1px solid rgba(226,232,240,0.08);
+        opacity: 0.86;
+      }
+
+      .download-featured-badges img {
+        max-height: 42px;
+        width: auto;
+      }
+
+      .download-tip-card {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        padding: 16px 18px;
+        margin-bottom: 24px;
+        border-radius: 18px;
+        background:
+          linear-gradient(135deg, rgba(79,142,247,0.10), rgba(255,255,255,0.025)),
+          rgba(255,255,255,0.03);
+        border: 1px solid rgba(79,142,247,0.22);
+        box-shadow: 0 18px 60px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.06);
+      }
+
+      .download-tip-card > i {
+        width: 34px;
+        height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        color: var(--primary);
+        background: rgba(79,142,247,0.14);
+        flex-shrink: 0;
+      }
+
+      .download-tip-card div {
+        color: rgba(226,232,240,0.82);
+        font-size: 0.86rem;
+        line-height: 1.65;
+      }
+
+      .download-tip-card strong {
+        color: var(--text);
+      }
+
+      .download-tip-card code {
+        background: rgba(79,142,247,0.15);
+        color: var(--primary);
+        padding: 1px 6px;
+        border-radius: 4px;
+        font-family: monospace;
+      }
+
       /* ── Release card ── */
       .release-card {
         background: var(--card);
@@ -454,6 +788,30 @@
         font-size: 0.875rem;
       }
 
+      .archive-downloads {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(79,142,247,0.18);
+        background: rgba(79,142,247,0.08);
+        color: rgba(226,232,240,0.82);
+        font-size: 0.78rem;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .archive-downloads i {
+        color: var(--primary);
+        font-size: 0.72rem;
+      }
+
+      .archive-row:hover .archive-downloads {
+        border-color: rgba(79,142,247,0.34);
+        color: #fff;
+      }
+
       .archive-title {
         font-size: 0.95rem;
         font-weight: 500;
@@ -498,7 +856,99 @@
       }
 
       /* ── Responsive ── */
+      @media (max-width: 1024px) {
+        .download-hero {
+          padding: 128px 0 64px;
+        }
+
+        .download-hero-shell {
+          grid-template-columns: 1fr;
+          gap: 36px;
+        }
+
+        .download-hero-copy,
+        .download-hero h1,
+        .download-hero-copy > p {
+          max-width: 760px;
+        }
+      }
+
       @media (max-width: 768px) {
+        .download-hero {
+          padding: 116px 0 52px;
+        }
+
+        .download-hero-copy,
+        .download-hero h1,
+        .download-hero-copy > p {
+          text-align: center;
+          margin-left: auto;
+          margin-right: auto;
+        }
+
+        .download-breadcrumb ol,
+        .download-hero .hero-trust-strip {
+          justify-content: center;
+        }
+
+        .download-hero h1 {
+          font-size: clamp(1.9rem, 9vw, 2.65rem) !important;
+          letter-spacing: -0.035em;
+        }
+
+        .download-hero-copy > p {
+          font-size: 0.94rem;
+        }
+
+        .download-hero-panel {
+          border-radius: 22px;
+          padding: 14px;
+        }
+
+        .download-platforms {
+          grid-template-columns: 1fr;
+        }
+
+        .download-platform-card {
+          min-height: auto;
+          padding: 13px;
+        }
+
+        .download-platform-card i {
+          grid-row: 1;
+          align-self: center;
+          font-size: 1.1rem;
+        }
+
+        .download-platform-card strong {
+          font-size: 0.92rem;
+        }
+
+        .download-hero .total-dl-stat {
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 8px;
+          font-size: 0.8rem;
+        }
+
+        .download-hero .total-dl-number {
+          font-size: 1.1rem;
+        }
+
+        .download-featured-badges {
+          gap: 10px;
+          padding-top: 18px;
+        }
+
+        .download-featured-badges img {
+          max-height: 36px;
+        }
+
+        .download-tip-card {
+          border-radius: 16px;
+          padding: 14px;
+        }
+
         .latest-body {
           grid-template-columns: 1fr;
         }
@@ -533,6 +983,11 @@
 
         .archive-row-right .release-date {
           display: none;
+        }
+
+        .archive-downloads {
+          font-size: 0.76rem;
+          padding: 4px 9px;
         }
       }
 
@@ -677,6 +1132,27 @@
         font-style: italic;
         margin-top: 4px;
       }
+      .welcome-star-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 7px 14px;
+        border-radius: 8px;
+        background: rgba(79,142,247,0.1);
+        border: 1px solid rgba(79,142,247,0.25);
+        color: var(--primary);
+        font-weight: 700;
+        font-size: 0.85rem;
+        text-decoration: none;
+        transition: background 0.2s ease, border-color 0.2s ease;
+      }
+      .welcome-star-btn:hover {
+        background: rgba(79,142,247,0.2);
+        border-color: rgba(79,142,247,0.45);
+        color: #fff;
+      }
+      .welcome-star-btn .fa-star { color: #fbbf24; }
+
       .welcome-got-it {
         display: block;
         width: 100%;
@@ -697,6 +1173,149 @@
         transform: translateY(-1px);
         box-shadow: 0 6px 20px rgba(79,142,247,0.35);
       }
+
+      /* ── Installation Guide ── */
+      .install-guide-section {
+        background: rgba(255,255,255,0.015);
+        border-top: 1px solid var(--border);
+      }
+      .install-guide-heading {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 6px;
+      }
+      .install-guide-sub {
+        color: var(--text-muted);
+        font-size: 0.93rem;
+        margin-bottom: 28px;
+      }
+      .install-tabs {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-bottom: 24px;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 0;
+      }
+      .install-tab {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        font-size: 0.88rem;
+        font-weight: 600;
+        padding: 9px 18px;
+        border-radius: 8px 8px 0 0;
+        cursor: pointer;
+        transition: color 0.18s, background 0.18s;
+        position: relative;
+        bottom: -1px;
+        border-bottom: 2px solid transparent;
+        font-family: inherit;
+      }
+      .install-tab:hover {
+        color: var(--text);
+        background: rgba(79,142,247,0.06);
+      }
+      .install-tab.active {
+        color: var(--primary);
+        border-bottom: 2px solid var(--primary);
+        background: rgba(79,142,247,0.06);
+      }
+      .install-panel {
+        display: none;
+      }
+      .install-panel.active {
+        display: block;
+      }
+      .install-steps {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .install-step {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+        padding: 16px 20px;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid var(--border);
+        transition: background 0.2s;
+      }
+      .install-step:hover {
+        background: rgba(79,142,247,0.05);
+      }
+      .install-step-num {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: rgba(79,142,247,0.15);
+        color: var(--primary);
+        font-size: 0.8rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+      .install-step-body {
+        flex: 1;
+        min-width: 0;
+      }
+      .install-step-title {
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: var(--text);
+        margin-bottom: 4px;
+      }
+      .install-step-desc {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        line-height: 1.6;
+      }
+      .install-step-desc code {
+        background: rgba(79,142,247,0.15);
+        color: var(--primary);
+        padding: 1px 6px;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 0.85em;
+      }
+      .install-note {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        margin-top: 20px;
+        padding: 14px 18px;
+        border-radius: 10px;
+        background: rgba(79,142,247,0.07);
+        border: 1px solid rgba(79,142,247,0.2);
+        font-size: 0.875rem;
+        color: rgba(226,232,240,0.85);
+        line-height: 1.6;
+      }
+      .install-note i {
+        color: var(--primary);
+        margin-top: 2px;
+        flex-shrink: 0;
+      }
+      .install-coming-soon {
+        text-align: center;
+        padding: 48px 24px;
+        color: var(--text-muted);
+        font-size: 0.95rem;
+      }
+      .install-coming-soon i {
+        font-size: 2.5rem;
+        margin-bottom: 14px;
+        opacity: 0.4;
+        display: block;
+      }
     </style>
 
     <!-- Structured Data: SoftwareApplication -->
@@ -708,7 +1327,7 @@
       "operatingSystem": "Windows, Linux, macOS",
       "applicationCategory": "BusinessApplication",
       "description": "Free billing software and offline invoicing software for Windows, Linux and macOS. Create GST-ready PDF invoices, manage customers and products without internet access.",
-      "softwareVersion": "3.8.0",
+      "softwareVersion": "4.1.7",
       "url": "https://invoiso.co.in/",
       "downloadUrl": "https://invoiso.co.in/download.html",
       "offers": {
@@ -767,23 +1386,25 @@
 
     <!-- Navbar -->
     <header class="navbar fixed w-full z-50">
-      <nav class="container mx-auto flex justify-between items-center py-4 px-6 max-w-7xl" aria-label="Main navigation">
-        <a href="index.html" class="logo-link flex items-center text-3xl font-bold tracking-tight" style="text-decoration:none;">
-          <img src="assets/images/logo.svg" alt="" class="w-8 h-8 mr-2" aria-hidden="true" />
-          Invoiso
+      <nav class="nav-shell container mx-auto px-4 md:px-6 max-w-7xl" aria-label="Main navigation">
+        <a href="/" class="logo-link nav-brand" style="text-decoration:none;">
+          <span class="nav-logo-mark"><img src="assets/images/logo.svg" alt="Invoiso" aria-hidden="true" /></span>
+          <span class="nav-brand-text logo-text-accent">Invoiso</span>
         </a>
-        <ul class="hidden md:flex space-x-10 font-medium">
-          <li><a href="index.html" class="transition-colors duration-300">Home</a></li>
+        <ul class="nav-links hidden md:flex">
+          <li><a href="/" class="transition-colors duration-300">Home</a></li>
           <li><a href="index.html#features" class="transition-colors duration-300">Features</a></li>
           <li><a href="faq.html" class="transition-colors duration-300">FAQ</a></li>
           <li><a href="changelog.html" class="transition-colors duration-300">Updates</a></li>
-          <li><a href="customization.html" class="nav-btn">Customization</a></li>
-          <li><a href="invoice-maker.html" class="nav-btn">Try Online</a></li>
-          <li><a href="download.html" class="nav-cta primary-text" aria-current="page">Download</a></li>
         </ul>
+        <div class="nav-actions hidden md:flex">
+          <a href="customization.html" class="nav-btn">Customization</a>
+          <a href="invoice-maker.html" class="nav-btn">Try Online</a>
+          <a href="download.html" class="nav-cta primary-text" aria-current="page">Download</a>
+        </div>
 
         <button
-          class="md:hidden"
+          class="mobile-menu-toggle md:hidden"
           id="hamburger-btn"
           aria-label="Toggle navigation menu"
           aria-expanded="false"
@@ -795,53 +1416,88 @@
         </button>
       </nav>
 
-            <div class="mobile-menu hidden md:hidden" id="mobile-menu">
-        <ul class="mob-nav-list">
-          <li><a href="index.html" class="mob-nav-link">Home</a></li>
-          <li><a href="index.html#features" class="mob-nav-link">Features</a></li>
-          <li><a href="faq.html" class="mob-nav-link">FAQ</a></li>
-          <li><a href="changelog.html" class="mob-nav-link">Updates</a></li>
-        </ul>
-        <div class="mob-nav-ctas">
-          <a href="customization.html" class="mob-nav-btn-outline">Customization</a>
-          <a href="invoice-maker.html" class="mob-nav-btn-outline">Try Online</a>
-          <a href="download.html" class="mob-nav-btn-solid mob-nav-active">Download</a>
+      <div class="mobile-menu hidden md:hidden" id="mobile-menu">
+        <div class="mobile-menu-panel">
+          <ul class="mob-nav-list">
+            <li><a href="/" class="mob-nav-link">Home</a></li>
+            <li><a href="index.html#features" class="mob-nav-link">Features</a></li>
+            <li><a href="faq.html" class="mob-nav-link">FAQ</a></li>
+            <li><a href="changelog.html" class="mob-nav-link">Updates</a></li>
+          </ul>
+          <div class="mob-nav-ctas">
+            <a href="customization.html" class="mob-nav-btn-outline">Customization</a>
+            <a href="invoice-maker.html" class="mob-nav-btn-outline">Try Online</a>
+            <a href="download.html" class="mob-nav-btn-solid mob-nav-active">Download</a>
+          </div>
         </div>
       </div>
-      </header>
+    </header>
 
     <main id="main-content">
       <!-- Page Hero -->
-      <section class="pt-40 pb-16 hero-gradient text-white text-center relative">
+      <section class="download-hero hero-gradient text-white relative">
         <div class="hero-noise" aria-hidden="true"></div>
-        <div class="container mx-auto px-6 relative z-10">
-          <div class="fade-in-up">
-            <nav aria-label="Breadcrumb" class="mb-6">
-              <ol class="flex items-center justify-center gap-2 text-sm font-medium" style="color:rgba(79,142,247,0.7)">
-                <li><a href="index.html" class="hover:text-white transition-colors">Home</a></li>
+        <div class="container mx-auto px-6 max-w-7xl relative z-10">
+          <div class="download-hero-shell fade-in-up">
+            <div class="download-hero-copy">
+              <nav aria-label="Breadcrumb" class="download-breadcrumb mb-6">
+                <ol class="flex items-center gap-2 text-sm font-medium" style="color:rgba(79,142,247,0.7)">
+                <li><a href="/" class="hover:text-white transition-colors">Home</a></li>
                 <li aria-hidden="true" class="opacity-50">/</li>
                 <li class="text-white" aria-current="page">Download</li>
               </ol>
             </nav>
-            <h1 class="text-5xl md:text-6xl font-bold mb-4 leading-tight">Download Free Billing Software</h1>
-            <p class="text-lg md:text-xl max-w-2xl mx-auto leading-relaxed" style="color:rgba(226,232,240,0.85)">
+              <span class="download-hero-eyebrow"><i class="fas fa-desktop" aria-hidden="true"></i> Desktop billing app</span>
+              <h1>Download Free Billing Software</h1>
+              <p>
               Invoiso is free billing software for Windows, Linux, and macOS. Create GST-ready PDF invoices offline with no account, no subscription, and no cloud login.
             </p>
-            <div class="hero-trust-strip">
+              <div class="hero-trust-strip">
               <span class="trust-chip"><i class="fas fa-check-circle" aria-hidden="true"></i> Free forever</span>
               <span class="trust-chip"><i class="fab fa-github" aria-hidden="true"></i> Open source</span>
               <span class="trust-chip"><i class="fas fa-wifi-slash" aria-hidden="true"></i> Works offline</span>
               <span class="trust-chip"><i class="fas fa-user-slash" aria-hidden="true"></i> No registration</span>
             </div>
-            <div id="total-dl-stat" style="display:none" class="total-dl-stat">
-              <i class="fas fa-download" aria-hidden="true"></i>
-              <span id="total-downloads" class="total-dl-number"></span>
-              <span>total downloads and counting</span>
-              <span class="live-dot" aria-hidden="true"></span>
             </div>
+
+            <aside class="download-hero-panel" aria-label="Supported download platforms">
+              <div class="download-panel-topbar">
+                <span>Current release</span>
+                <strong><span class="live-dot" aria-hidden="true"></span> GitHub powered</strong>
+              </div>
+              <div class="download-platforms">
+                <a href="#latest-downloads" class="download-platform-card" data-platform="windows" style="text-decoration:none;cursor:pointer;">
+                  <i class="fab fa-windows" aria-hidden="true"></i>
+                  <strong>Windows</strong>
+                  <span>Installer</span>
+                </a>
+                <a href="#latest-downloads" class="download-platform-card" data-platform="linux-deb" style="text-decoration:none;cursor:pointer;">
+                  <i class="fab fa-linux" aria-hidden="true"></i>
+                  <strong>Linux</strong>
+                  <span>DEB / AppImage</span>
+                </a>
+                <a href="#latest-downloads" class="download-platform-card" data-platform="macos" style="text-decoration:none;cursor:pointer;">
+                  <i class="fab fa-apple" aria-hidden="true"></i>
+                  <strong>macOS</strong>
+                  <span>DMG package</span>
+                </a>
+              </div>
+              <div id="total-dl-stat" style="display:none" class="total-dl-stat">
+                <i class="fas fa-download" aria-hidden="true"></i>
+                <span id="total-downloads" class="total-dl-number"></span>
+                <span>total downloads and counting</span>
+                <span class="live-dot" aria-hidden="true"></span>
+              </div>
+              <div class="download-panel-note">
+                <span><i class="fas fa-wifi-slash" aria-hidden="true"></i> Works fully offline after install</span>
+                <span><i class="fas fa-shield-halved" aria-hidden="true"></i> Your billing data stays on your device</span>
+                <span><i class="fas fa-list-check" aria-hidden="true"></i> Install guide included below</span>
+              </div>
+            </aside>
+
             <!-- Featured on -->
-            <div class="flex flex-wrap justify-center items-center gap-4 mt-6">
-<a href="https://www.producthunt.com/products/invoiso?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-invoiso" target="_blank" rel="noopener noreferrer">
+            <div class="download-featured-badges">
+              <a href="https://www.producthunt.com/products/invoiso?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-invoiso" target="_blank" rel="noopener noreferrer">
                 <img alt="Invoiso - Free Offline Invoice &amp; Billing Software for all. | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1105229&amp;theme=light&amp;t=1774412242179" style="display:block;" />
               </a>
               <a href="https://www.shipit.buzz/products/invoiso?ref=badge" target="_blank" rel="noopener noreferrer">
@@ -851,7 +1507,7 @@
               <!-- <a href="https://www.nxgntools.com/tools/invoiso?utm_source=invoiso" target="_blank" rel="noopener noreferrer">
                 <img src="https://www.nxgntools.com/api/embed/invoiso?type=LAUNCHING_SOON_ON&amp;hideUpvotes=true" alt="Launching Soon on NextGen Tools" style="height:43px;width:auto;display:block;" />
               </a> -->
-              
+
               <a href="https://sellwithboost.com" target="_blank" rel="noopener noreferrer">
                 <img src="https://sellwithboost.com/badge/listing-dark.svg" alt="Listed on Sell With boost" style="height: 40px; width: auto;" />
               </a>
@@ -862,47 +1518,27 @@
               <script>(function () {var sc=document.createElement('script');sc.async=true;sc.src='https://b.sf-syn.com/badge_js?sf_id=4068440';var p=document.getElementsByTagName('script')[0];p.parentNode.insertBefore(sc, p);})();
               </script>
             </div>
-          </div>
+            <a href="#latest-downloads" class="download-scroll-cue">
+              <span>Scroll down to download for your platform</span>
+              <i class="fas fa-arrow-down" aria-hidden="true"></i>
+            </a>
+            </div>
         </div>
       </section>
 
       <!-- Content -->
-      <section class="py-14 releases-section">
+      <section class="py-14 releases-section" id="latest-downloads">
         <div class="container mx-auto px-6 max-w-5xl">
 
           <!-- Default credentials tip -->
-          <div style="display:flex;align-items:flex-start;gap:14px;padding:16px 20px;margin-bottom:28px;border-radius:14px;background:rgba(79,142,247,0.07);border:1px solid rgba(79,142,247,0.25);">
-            <i class="fas fa-circle-info" style="color:var(--primary);font-size:1.1rem;margin-top:2px;flex-shrink:0;" aria-hidden="true"></i>
-            <div style="font-size:0.875rem;line-height:1.65;color:rgba(226,232,240,0.85);">
-              <strong style="color:var(--text);">First launch?</strong>
+          <div class="download-tip-card">
+            <i class="fas fa-circle-info" aria-hidden="true"></i>
+            <div>
+              <strong>First launch?</strong>
               Log in with the default credentials —
-              username&nbsp;<code style="background:rgba(79,142,247,0.15);color:var(--primary);padding:1px 6px;border-radius:4px;font-family:monospace;">admin</code>
-              and password&nbsp;<code style="background:rgba(79,142,247,0.15);color:var(--primary);padding:1px 6px;border-radius:4px;font-family:monospace;">admin</code>.
+              username&nbsp;<code>admin</code>
+              and password&nbsp;<code>admin</code>.
               You'll be prompted to set a new password on first login for your security.
-            </div>
-          </div>
-
-          <div class="quick-install-card" aria-labelledby="quick-install-title">
-            <div class="quick-install-icon">
-              <i class="fab fa-linux" aria-hidden="true"></i>
-            </div>
-            <div class="quick-install-content">
-              <p class="quick-install-title" id="quick-install-title">Linux quick install</p>
-              <div class="quick-install-command">
-                <span class="quick-install-label">DEB</span>
-                <code id="linux-install-deb-command">curl -fsSL https://invoiso.co.in/install.sh | bash -s -- --deb</code>
-                <button type="button" class="copy-install-btn" data-copy-target="linux-install-deb-command" aria-label="Copy DEB install command" title="Copy command">
-                  <i class="fas fa-copy" aria-hidden="true"></i>
-                </button>
-              </div>
-              <div class="quick-install-command">
-                <span class="quick-install-label">AppImage</span>
-                <code id="linux-install-appimage-command">curl -fsSL https://invoiso.co.in/install.sh | bash -s -- --appimage</code>
-                <button type="button" class="copy-install-btn" data-copy-target="linux-install-appimage-command" aria-label="Copy AppImage install command" title="Copy command">
-                  <i class="fas fa-copy" aria-hidden="true"></i>
-                </button>
-              </div>
-              <p class="quick-install-meta">Use DEB for Ubuntu 22.04 or 24.04. Use AppImage for other Linux distributions or when you want a portable app.</p>
             </div>
           </div>
 
@@ -912,6 +1548,222 @@
               <p class="text-sm">Loading releases...</p>
             </div>
           </div>
+        </div>
+      </section>
+
+      <!-- Installation Guide -->
+      <section class="py-14 install-guide-section" id="install-guide">
+        <div class="container mx-auto px-6 max-w-5xl">
+          <h2 class="install-guide-heading">Installation Guide</h2>
+          <p class="install-guide-sub">Step-by-step setup instructions for each platform.</p>
+
+          <!-- Platform tabs -->
+          <div class="install-tabs" role="tablist" aria-label="Platform installation guides">
+            <button class="install-tab active" data-tab="windows" role="tab" aria-selected="true" aria-controls="panel-windows">
+              <i class="fab fa-windows" aria-hidden="true" style="margin-right:6px;"></i>Windows
+            </button>
+            <button class="install-tab" data-tab="linux-deb" role="tab" aria-selected="false" aria-controls="panel-linux-deb">
+              <i class="fab fa-linux" aria-hidden="true" style="margin-right:6px;"></i>Linux (DEB)
+            </button>
+            <button class="install-tab" data-tab="linux-appimage" role="tab" aria-selected="false" aria-controls="panel-linux-appimage">
+              <i class="fab fa-linux" aria-hidden="true" style="margin-right:6px;"></i>Linux (AppImage)
+            </button>
+            <button class="install-tab" data-tab="macos" role="tab" aria-selected="false" aria-controls="panel-macos">
+              <i class="fab fa-apple" aria-hidden="true" style="margin-right:6px;"></i>macOS
+            </button>
+          </div>
+
+          <!-- Windows -->
+          <div class="install-panel active" id="panel-windows" role="tabpanel">
+            <ol class="install-steps">
+              <li class="install-step">
+                <span class="install-step-num">1</span>
+                <div class="install-step-body">
+                  <p class="install-step-title">Download the installer</p>
+                  <p class="install-step-desc">Download the <code>.exe</code> setup file from the releases section above. Look for the file named <code>Invoiso-Setup-x.x.x.exe</code>.</p>
+                </div>
+              </li>
+              <li class="install-step">
+                <span class="install-step-num">2</span>
+                <div class="install-step-body">
+                  <p class="install-step-title">Run the installer</p>
+                  <p class="install-step-desc">Double-click the downloaded <code>.exe</code> file. If Windows SmartScreen shows a warning, click <strong>More info</strong> → <strong>Run anyway</strong>. The app is safe — it may show this warning because it's not yet widely known.</p>
+                </div>
+              </li>
+              <li class="install-step">
+                <span class="install-step-num">3</span>
+                <div class="install-step-body">
+                  <p class="install-step-title">Follow the setup wizard</p>
+                  <p class="install-step-desc">Accept the license agreement, choose your install location (default is fine), and click <strong>Install</strong>. The wizard will complete in under a minute.</p>
+                </div>
+              </li>
+              <li class="install-step">
+                <span class="install-step-num">4</span>
+                <div class="install-step-body">
+                  <p class="install-step-title">Launch Invoiso</p>
+                  <p class="install-step-desc">Open Invoiso from the Start Menu or the desktop shortcut created by the installer.</p>
+                </div>
+              </li>
+              <li class="install-step">
+                <span class="install-step-num">5</span>
+                <div class="install-step-body">
+                  <p class="install-step-title">Log in for the first time</p>
+                  <p class="install-step-desc">Use the default credentials — username <code>admin</code> and password <code>admin</code>. You'll be prompted to set a new password immediately after your first login.</p>
+                </div>
+              </li>
+            </ol>
+            <div class="install-note">
+              <i class="fas fa-shield-halved" aria-hidden="true"></i>
+              <span>Invoiso stores all data locally on your PC. No internet connection or account is required after installation.</span>
+            </div>
+          </div>
+
+          <!-- Linux DEB -->
+          <div class="install-panel" id="panel-linux-deb" role="tabpanel">
+            <ol class="install-steps">
+              <li class="install-step">
+                <span class="install-step-num">1</span>
+                <div class="install-step-body">
+                  <p class="install-step-title">Run the one-line installer (recommended)</p>
+                  <p class="install-step-desc">Open a terminal and run:</p>
+                  <div class="quick-install-command" style="margin-top:10px;">
+                    <code id="guide-deb-cmd">curl -fsSL https://invoiso.co.in/install.sh | bash -s -- --deb</code>
+                    <button type="button" class="copy-install-btn" data-copy-target="guide-deb-cmd" aria-label="Copy DEB install command" title="Copy command">
+                      <i class="fas fa-copy" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                  <p class="install-step-desc" style="margin-top:8px;">The script fetches the latest release from GitHub, downloads the <code>.deb</code> package, and installs it automatically. Requires <code>curl</code> and <code>sudo</code> access.</p>
+                </div>
+              </li>
+              <li class="install-step">
+                <span class="install-step-num">2</span>
+                <div class="install-step-body">
+                  <p class="install-step-title">Or install manually</p>
+                  <p class="install-step-desc">Download <code>invoiso_x.x.x_amd64.deb</code> from the releases above, then run:</p>
+                  <div class="quick-install-command" style="margin-top:10px;">
+                    <code id="guide-deb-manual">sudo dpkg -i invoiso_*.deb</code>
+                    <button type="button" class="copy-install-btn" data-copy-target="guide-deb-manual" aria-label="Copy dpkg command" title="Copy command">
+                      <i class="fas fa-copy" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                </div>
+              </li>
+              <li class="install-step">
+                <span class="install-step-num">3</span>
+                <div class="install-step-body">
+                  <p class="install-step-title">Launch Invoiso</p>
+                  <p class="install-step-desc">Find Invoiso in your application launcher or run <code>invoiso</code> in the terminal.</p>
+                </div>
+              </li>
+              <li class="install-step">
+                <span class="install-step-num">4</span>
+                <div class="install-step-body">
+                  <p class="install-step-title">Log in for the first time</p>
+                  <p class="install-step-desc">Use username <code>admin</code> and password <code>admin</code>. You'll be asked to set a new password on your first login.</p>
+                </div>
+              </li>
+            </ol>
+            <div class="install-note">
+              <i class="fas fa-circle-info" aria-hidden="true"></i>
+              <span>DEB packages are officially supported on <strong>Ubuntu 22.04</strong> and <strong>Ubuntu 24.04</strong>. For other distros, use the AppImage instead.</span>
+            </div>
+          </div>
+
+          <!-- Linux AppImage -->
+          <div class="install-panel" id="panel-linux-appimage" role="tabpanel">
+            <ol class="install-steps">
+              <li class="install-step">
+                <span class="install-step-num">1</span>
+                <div class="install-step-body">
+                  <p class="install-step-title">Run the one-line installer (recommended)</p>
+                  <p class="install-step-desc">Open a terminal and run:</p>
+                  <div class="quick-install-command" style="margin-top:10px;">
+                    <code id="guide-appimage-cmd">curl -fsSL https://invoiso.co.in/install.sh | bash -s -- --appimage</code>
+                    <button type="button" class="copy-install-btn" data-copy-target="guide-appimage-cmd" aria-label="Copy AppImage install command" title="Copy command">
+                      <i class="fas fa-copy" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                  <p class="install-step-desc" style="margin-top:8px;">The script downloads the AppImage, sets it as executable, and creates a desktop entry for you.</p>
+                </div>
+              </li>
+              <li class="install-step">
+                <span class="install-step-num">2</span>
+                <div class="install-step-body">
+                  <p class="install-step-title">Or install manually</p>
+                  <p class="install-step-desc">Download <code>Invoiso-x.x.x-x86_64.AppImage</code> from the releases above, then make it executable:</p>
+                  <div class="quick-install-command" style="margin-top:10px;">
+                    <code id="guide-appimage-chmod">chmod +x Invoiso-*.AppImage</code>
+                    <button type="button" class="copy-install-btn" data-copy-target="guide-appimage-chmod" aria-label="Copy chmod command" title="Copy command">
+                      <i class="fas fa-copy" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                </div>
+              </li>
+              <li class="install-step">
+                <span class="install-step-num">3</span>
+                <div class="install-step-body">
+                  <p class="install-step-title">Run the AppImage</p>
+                  <p class="install-step-desc">Double-click the file in your file manager, or run it from the terminal: <code>./Invoiso-*.AppImage</code></p>
+                </div>
+              </li>
+              <li class="install-step">
+                <span class="install-step-num">4</span>
+                <div class="install-step-body">
+                  <p class="install-step-title">Log in for the first time</p>
+                  <p class="install-step-desc">Use username <code>admin</code> and password <code>admin</code>. You'll be asked to set a new password on your first login.</p>
+                </div>
+              </li>
+            </ol>
+            <div class="install-note">
+              <i class="fas fa-circle-info" aria-hidden="true"></i>
+              <span>AppImage runs on any 64-bit Linux distribution without installation. No <code>sudo</code> access needed. Your data is stored in <code>~/.local/share/invoiso/</code>.</span>
+            </div>
+          </div>
+
+          <!-- macOS -->
+          <div class="install-panel" id="panel-macos" role="tabpanel">
+            <ol class="install-steps">
+              <li class="install-step">
+                <span class="install-step-num">1</span>
+                <div class="install-step-body">
+                  <p class="install-step-title">Download the macOS package</p>
+                  <p class="install-step-desc">Download the <code>.dmg</code> file from the releases section above. Look for the file named similar to <code>Invoiso-x.x.x.dmg</code>.</p>
+                </div>
+              </li>
+              <li class="install-step">
+                <span class="install-step-num">2</span>
+                <div class="install-step-body">
+                  <p class="install-step-title">Open the disk image</p>
+                  <p class="install-step-desc">Double-click the downloaded <code>.dmg</code> file, then drag Invoiso into the <strong>Applications</strong> folder if the installer window asks you to do so.</p>
+                </div>
+              </li>
+              <li class="install-step">
+                <span class="install-step-num">3</span>
+                <div class="install-step-body">
+                  <p class="install-step-title">Launch Invoiso</p>
+                  <p class="install-step-desc">Open Invoiso from the Applications folder or Launchpad. If macOS shows a security prompt, open <strong>System Settings</strong> → <strong>Privacy &amp; Security</strong> and allow Invoiso to run.</p>
+                </div>
+              </li>
+              <li class="install-step">
+                <span class="install-step-num">4</span>
+                <div class="install-step-body">
+                  <p class="install-step-title">Log in for the first time</p>
+                  <p class="install-step-desc">Use username <code>admin</code> and password <code>admin</code>. You'll be asked to set a new password on your first login.</p>
+                </div>
+              </li>
+            </ol>
+            <div class="install-note">
+              <i class="fas fa-shield-halved" aria-hidden="true"></i>
+              <span>Invoiso stores your billing data locally on your Mac. No cloud account or internet connection is required after installation.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Previous Releases -->
+      <section class="py-14 releases-section" id="previous-releases-section">
+        <div class="container mx-auto px-6 max-w-5xl">
+          <div id="previous-releases-list"></div>
 
           <div class="text-center mt-10">
             <a href="https://github.com/Anooppandikashala/invoiso/releases" target="_blank" rel="noopener noreferrer" class="gh-all-link">
@@ -925,23 +1777,71 @@
     </main>
 
     <!-- Footer -->
-    <footer class="text-white text-center py-12 relative">
-      <div class="container mx-auto px-6">
-        <div class="flex flex-wrap justify-center gap-8 text-lg mb-8">
-          <a href="https://github.com/Anooppandikashala/invoiso" target="_blank" rel="noopener noreferrer" class="hover:underline">
-            <i class="fab fa-github mr-2" aria-hidden="true"></i>GitHub
-          </a>
-          <a href="https://buymeacoffee.com/anoopp" target="_blank" rel="noopener noreferrer" class="hover:underline">
-            <i class="fas fa-mug-hot mr-2" aria-hidden="true"></i>Support
-          </a>
-          <a href="mailto:anooppkrishnan96@gmail.com" class="hover:underline">
-            <i class="fas fa-envelope mr-2" aria-hidden="true"></i>Email
-          </a>
+    <footer class="site-footer">
+      <div class="container mx-auto px-6 max-w-7xl site-footer-inner">
+        <div class="site-footer-top">
+          <div class="site-footer-brand">
+            <a href="/" class="site-footer-logo">
+              <img src="assets/images/logo.svg" alt="Invoiso" aria-hidden="true" />
+              <span>Invoiso</span>
+            </a>
+            <p class="site-footer-text">Free, open-source billing software for small businesses. Create GST-ready invoices offline on Windows, Linux, and macOS.</p>
+            <div class="site-footer-badges" aria-label="Product highlights">
+              <span class="site-footer-badge"><i class="fas fa-check-circle" aria-hidden="true"></i> Free forever</span>
+              <span class="site-footer-badge"><i class="fas fa-wifi-slash" aria-hidden="true"></i> Offline first</span>
+              <span class="site-footer-badge"><i class="fab fa-github" aria-hidden="true"></i> Open source</span>
+            </div>
+          </div>
+
+          <div class="site-footer-grid">
+            <div>
+              <h2 class="site-footer-title">Product</h2>
+              <ul class="site-footer-links">
+                <li><a href="download.html" class="site-footer-link"><i class="fas fa-download" aria-hidden="true"></i>Download app</a></li>
+                <li><a href="invoice-maker.html" class="site-footer-link"><i class="fas fa-file-invoice" aria-hidden="true"></i>Invoice maker</a></li>
+                <li><a href="index.html#features" class="site-footer-link"><i class="fas fa-layer-group" aria-hidden="true"></i>Features</a></li>
+                <li><a href="download.html#install-guide" class="site-footer-link"><i class="fas fa-list-check" aria-hidden="true"></i>Install guide</a></li>
+              </ul>
+            </div>
+            <div>
+              <h2 class="site-footer-title">Resources</h2>
+              <ul class="site-footer-links">
+                <li><a href="faq.html" class="site-footer-link"><i class="fas fa-circle-question" aria-hidden="true"></i>FAQ</a></li>
+                <li><a href="changelog.html" class="site-footer-link"><i class="fas fa-clock-rotate-left" aria-hidden="true"></i>Updates</a></li>
+                <li><a href="customization.html" class="site-footer-link"><i class="fas fa-sliders" aria-hidden="true"></i>Customization</a></li>
+                <li><a href="privacy.html" class="site-footer-link"><i class="fas fa-shield-halved" aria-hidden="true"></i>Privacy</a></li>
+                <li><a href="terms.html" class="site-footer-link"><i class="fas fa-file-contract" aria-hidden="true"></i>Terms</a></li>
+              </ul>
+            </div>
+            <div>
+              <h2 class="site-footer-title">Community</h2>
+              <ul class="site-footer-links">
+                <li><a href="https://github.com/Anooppandikashala/invoiso" target="_blank" rel="noopener noreferrer" class="site-footer-link"><i class="fab fa-github" aria-hidden="true"></i>GitHub</a></li>
+                <li><a href="https://github.com/Anooppandikashala/invoiso/issues" target="_blank" rel="noopener noreferrer" class="site-footer-link"><i class="fas fa-bug" aria-hidden="true"></i>Report issue</a></li>
+                <li><a href="https://buymeacoffee.com/anoopp" target="_blank" rel="noopener noreferrer" class="site-footer-link"><i class="fas fa-mug-hot" aria-hidden="true"></i>Support project</a></li>
+              </ul>
+            </div>
+            <div>
+              <h2 class="site-footer-title">Contact</h2>
+              <ul class="site-footer-links">
+                <li><a href="contact.html" class="site-footer-link"><i class="fas fa-headset" aria-hidden="true"></i>Contact support</a></li>
+                <li><a href="mailto:anooppkrishnan96@gmail.com" class="site-footer-link"><i class="fas fa-envelope" aria-hidden="true"></i>Email</a></li>
+                <li><a href="customization.html" class="site-footer-link"><i class="fas fa-briefcase" aria-hidden="true"></i>Custom work</a></li>
+              </ul>
+            </div>
+          </div>
         </div>
-        <div class="border-t pt-8" style="border-color:var(--border)">
-          <p class="text-lg">
-            © <span id="year"></span> Invoiso. All rights reserved.
-          </p>
+
+        <div class="site-footer-bottom">
+          <div>
+            <p class="site-footer-copy">© <span id="year"></span> Invoiso. All rights reserved.</p>
+            <p class="site-footer-note">Install once and keep your billing data on your own device.</p>
+          </div>
+          <div class="site-footer-social" aria-label="Social links">
+            <a href="https://github.com/Anooppandikashala/invoiso" target="_blank" rel="noopener noreferrer" aria-label="Invoiso on GitHub"><i class="fab fa-github" aria-hidden="true"></i></a>
+            <a href="https://buymeacoffee.com/anoopp" target="_blank" rel="noopener noreferrer" aria-label="Support Invoiso"><i class="fas fa-mug-hot" aria-hidden="true"></i></a>
+            <a href="mailto:anooppkrishnan96@gmail.com" aria-label="Email Invoiso"><i class="fas fa-envelope" aria-hidden="true"></i></a>
+          </div>
         </div>
       </div>
     </footer>
@@ -985,6 +1885,21 @@
           </div>
         </div>
 
+        <div class="welcome-section">
+          <div class="welcome-section-icon"><i class="fas fa-star" aria-hidden="true"></i></div>
+          <div>
+            <p class="welcome-section-label">Enjoying Invoiso?</p>
+            <div class="welcome-section-body">
+              A GitHub star takes 2 seconds and helps others discover the app.
+              <div style="margin-top:10px;">
+                <a href="https://github.com/Anooppandikashala/invoiso" target="_blank" rel="noopener noreferrer" class="welcome-star-btn">
+                  <i class="fas fa-star" aria-hidden="true"></i> Star on GitHub
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <button class="welcome-got-it" id="welcomeGotIt">Got it!</button>
       </div>
     </div>
@@ -1011,6 +1926,69 @@
       });
       document.getElementById('releases-list').addEventListener('click', function (e) {
         if (e.target.closest('.asset-btn')) openWelcomeModal();
+      });
+
+      // Installation guide tabs
+      var installTabs = Array.prototype.slice.call(document.querySelectorAll('.install-tab'));
+      var installPanels = Array.prototype.slice.call(document.querySelectorAll('.install-panel'));
+      function activateInstallTab(tab) {
+        var targetPanel = document.getElementById('panel-' + tab.getAttribute('data-tab'));
+        if (!targetPanel) return;
+
+        installTabs.forEach(function (item) {
+          var isActive = item === tab;
+          item.classList.toggle('active', isActive);
+          item.setAttribute('aria-selected', String(isActive));
+          item.setAttribute('tabindex', isActive ? '0' : '-1');
+        });
+
+        installPanels.forEach(function (panel) {
+          var isActive = panel === targetPanel;
+          panel.classList.toggle('active', isActive);
+          panel.setAttribute('aria-hidden', String(!isActive));
+        });
+      }
+      installTabs.forEach(function (tab, index) {
+        tab.addEventListener('click', function () {
+          activateInstallTab(tab);
+        });
+        tab.addEventListener('keydown', function (e) {
+          var nextIndex;
+          if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextIndex = (index + 1) % installTabs.length;
+          else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') nextIndex = (index - 1 + installTabs.length) % installTabs.length;
+          else if (e.key === 'Home') nextIndex = 0;
+          else if (e.key === 'End') nextIndex = installTabs.length - 1;
+          else return;
+
+          e.preventDefault();
+          installTabs[nextIndex].focus();
+          activateInstallTab(installTabs[nextIndex]);
+        });
+      });
+      if (installTabs.length) activateInstallTab(document.querySelector('.install-tab.active') || installTabs[0]);
+
+      document.querySelectorAll('.download-platform-card[data-platform]').forEach(function (card) {
+        card.addEventListener('click', function (e) {
+          e.preventDefault();
+          var platform = card.getAttribute('data-platform');
+          var osKey = platform === 'linux-deb' ? 'linux' : platform;
+          var section = document.getElementById('dl-section-' + osKey);
+
+          if (section) {
+            var navHeight = (document.querySelector('.navbar') || {offsetHeight: 80}).offsetHeight;
+            var top = section.getBoundingClientRect().top + window.pageYOffset - navHeight - 16;
+            window.scrollTo({ top: top, behavior: 'smooth' });
+            document.querySelectorAll('.dl-os-section.dl-highlight').forEach(function (el) {
+              el.classList.remove('dl-highlight');
+            });
+            section.classList.add('dl-highlight');
+          } else {
+            document.getElementById('latest-downloads').scrollIntoView({ behavior: 'smooth' });
+          }
+
+          var tab = document.querySelector('.install-tab[data-tab="' + platform + '"]');
+          if (tab) activateInstallTab(tab);
+        });
       });
 
       if (navigator.clipboard) {
@@ -1135,6 +2113,16 @@
         }).join('');
       }
 
+      function releaseDownloadTotal(release) {
+        return (release.assets || []).reduce(function (sum, asset) {
+          return sum + (asset.download_count || 0);
+        }, 0);
+      }
+
+      function formatDownloadLabel(count) {
+        return count.toLocaleString() + ' ' + (count === 1 ? 'download' : 'downloads');
+      }
+
       // --- Fetch releases ---
       fetch('https://api.github.com/repos/Anooppandikashala/invoiso/releases?per_page=100')
         .then(function (res) {
@@ -1143,7 +2131,9 @@
         })
         .then(function (releases) {
           var list = document.getElementById('releases-list');
+          var previousList = document.getElementById('previous-releases-list');
           list.innerHTML = '';
+          previousList.innerHTML = '';
 
           if (!releases.length) {
             list.innerHTML = '<p class="text-center py-8" style="color:var(--text-muted)">No releases found.</p>';
@@ -1152,7 +2142,7 @@
 
           // ── Total downloads badge ──
           var totalDownloads = releases.reduce(function (sum, r) {
-            return sum + (r.assets || []).reduce(function (s, a) { return s + (a.download_count || 0); }, 0);
+            return sum + releaseDownloadTotal(r);
           }, 0);
           if (totalDownloads > 0) {
             document.getElementById('total-dl-stat').style.display = 'flex';
@@ -1188,16 +2178,19 @@
 
           var downloadsHtml = '';
           if (windows.length) {
+            downloadsHtml += '<div class="dl-os-section" id="dl-section-windows">';
             downloadsHtml += '<p class="os-section-label"><i class="fab fa-windows mr-1" aria-hidden="true"></i> Windows</p>';
-            downloadsHtml += '<div class="assets-grid">' + buildAssetRows(windows) + '</div>';
+            downloadsHtml += '<div class="assets-grid">' + buildAssetRows(windows) + '</div></div>';
           }
           if (macos.length) {
-            downloadsHtml += '<p class="os-section-label" style="' + (windows.length || linux.length ? 'padding-top:8px;' : '') + '"><i class="fab fa-apple mr-1" aria-hidden="true"></i> macOS</p>';
-            downloadsHtml += '<div class="assets-grid">' + buildAssetRows(macos) + '</div>';
+            downloadsHtml += '<div class="dl-os-section" id="dl-section-macos"' + (windows.length || linux.length ? ' style="margin-top:8px;"' : '') + '>';
+            downloadsHtml += '<p class="os-section-label"><i class="fab fa-apple mr-1" aria-hidden="true"></i> macOS</p>';
+            downloadsHtml += '<div class="assets-grid">' + buildAssetRows(macos) + '</div></div>';
           }
           if (linux.length) {
-            downloadsHtml += '<p class="os-section-label" style="' + (windows.length ? 'padding-top:8px;' : '') + '"><i class="fab fa-linux mr-1" aria-hidden="true"></i> Linux</p>';
-            downloadsHtml += '<div class="assets-grid">' + buildAssetRows(linux) + '</div>';
+            downloadsHtml += '<div class="dl-os-section" id="dl-section-linux"' + (windows.length ? ' style="margin-top:8px;"' : '') + '>';
+            downloadsHtml += '<p class="os-section-label"><i class="fab fa-linux mr-1" aria-hidden="true"></i> Linux</p>';
+            downloadsHtml += '<div class="assets-grid">' + buildAssetRows(linux) + '</div></div>';
           }
           if (other.length) {
             downloadsHtml += '<p class="os-section-label" style="' + (windows.length || linux.length || macos.length ? 'padding-top:8px;' : '') + '">Other</p>';
@@ -1238,7 +2231,6 @@
           // ── Older releases: archive rows linking to GitHub ──
           if (releases.length > 1) {
             var archiveWrap = document.createElement('div');
-            archiveWrap.style.marginTop = '40px';
 
             var archiveHeading = document.createElement('h2');
             archiveHeading.className = 'archive-section-heading';
@@ -1248,10 +2240,11 @@
             var archiveCard = document.createElement('div');
             archiveCard.className = 'release-card';
             archiveCard.style.overflow = 'visible';
-            archiveCard.innerHTML = releases.slice(1).map(function (r) {
+            archiveCard.innerHTML = releases.slice(1, 11).map(function (r) {
               var date = new Date(r.published_at).toLocaleDateString('en-US', {
                 year: 'numeric', month: 'long', day: 'numeric',
               });
+              var releaseDownloads = releaseDownloadTotal(r);
               return (
                 '<a href="' + escHtml(r.html_url) + '" target="_blank" rel="noopener noreferrer" class="archive-row">' +
                   '<div class="archive-row-left">' +
@@ -1259,6 +2252,7 @@
                     '<span class="archive-title">' + escHtml(r.name || r.tag_name) + '</span>' +
                   '</div>' +
                   '<div class="archive-row-right">' +
+                    '<span class="archive-downloads"><i class="fas fa-download" aria-hidden="true"></i>' + escHtml(formatDownloadLabel(releaseDownloads)) + '</span>' +
                     '<span class="release-date">' + date + '</span>' +
                     '<i class="fab fa-github" aria-hidden="true"></i>' +
                   '</div>' +
@@ -1267,10 +2261,11 @@
             }).join('');
 
             archiveWrap.appendChild(archiveCard);
-            list.appendChild(archiveWrap);
+            previousList.appendChild(archiveWrap);
           }
         })
         .catch(function () {
+          document.getElementById('previous-releases-list').innerHTML = '';
           document.getElementById('releases-list').innerHTML =
             '<p class="text-center py-8" style="color:var(--text-muted)">Could not load releases. ' +
             '<a href="https://github.com/Anooppandikashala/invoiso/releases" target="_blank" rel="noopener noreferrer" class="primary-text underline">View on GitHub →</a></p>';

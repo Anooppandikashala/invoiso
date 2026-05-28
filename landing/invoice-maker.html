@@ -93,34 +93,39 @@
 
 <!-- ── Navbar ───────────────────────────────────────── -->
 <header class="navbar fixed w-full z-50">
-  <nav class="container mx-auto flex justify-between items-center py-4 px-6 max-w-7xl" aria-label="Main navigation">
-    <a href="index.html" class="logo-link flex items-center text-3xl font-bold tracking-tight" style="text-decoration:none;">
-      <img src="assets/images/logo.svg" alt="Invoiso logo" class="w-8 h-8 mr-2" />
-      <span class="logo-text-accent">Invoiso</span>
+  <nav class="nav-shell container mx-auto px-4 md:px-6 max-w-7xl" aria-label="Main navigation">
+    <a href="/" class="logo-link nav-brand" style="text-decoration:none;">
+      <span class="nav-logo-mark"><img src="assets/images/logo.svg" alt="Invoiso" aria-hidden="true" /></span>
+      <span class="nav-brand-text logo-text-accent">Invoiso</span>
     </a>
-    <ul class="hidden md:flex space-x-10 font-medium">
-      <li><a href="index.html" class="transition-colors duration-300">Home</a></li>
+    <ul class="nav-links hidden md:flex">
+      <li><a href="/" class="transition-colors duration-300">Home</a></li>
       <li><a href="index.html#features" class="transition-colors duration-300">Features</a></li>
       <li><a href="faq.html" class="transition-colors duration-300">FAQ</a></li>
       <li><a href="changelog.html" class="transition-colors duration-300">Updates</a></li>
-      <li><a href="customization.html" class="nav-btn">Customization</a></li>
-      <li><a href="download.html" class="nav-cta">Download App</a></li>
     </ul>
-    <button class="md:hidden" id="hamburger-btn" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobile-menu">
-      <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+    <div class="nav-actions hidden md:flex">
+      <a href="customization.html" class="nav-btn">Customization</a>
+      <a href="invoice-maker.html" class="nav-btn" aria-current="page">Try Online</a>
+      <a href="download.html" class="nav-cta">Download</a>
+    </div>
+    <button class="mobile-menu-toggle md:hidden" id="hamburger-btn" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobile-menu">
+      <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
     </button>
   </nav>
   <div class="mobile-menu hidden md:hidden" id="mobile-menu">
-    <ul class="mob-nav-list">
-      <li><a href="index.html" class="mob-nav-link">Home</a></li>
-      <li><a href="index.html#features" class="mob-nav-link">Features</a></li>
-      <li><a href="faq.html" class="mob-nav-link">FAQ</a></li>
-      <li><a href="changelog.html" class="mob-nav-link">Updates</a></li>
-    </ul>
-    <div class="mob-nav-ctas">
-      <a href="customization.html" class="mob-nav-btn-outline">Customization</a>
-      <a href="invoice-maker.html" class="mob-nav-btn-outline mob-nav-active">Try Online</a>
-      <a href="download.html" class="mob-nav-btn-solid">Download</a>
+    <div class="mobile-menu-panel">
+      <ul class="mob-nav-list">
+        <li><a href="/" class="mob-nav-link">Home</a></li>
+        <li><a href="index.html#features" class="mob-nav-link">Features</a></li>
+        <li><a href="faq.html" class="mob-nav-link">FAQ</a></li>
+        <li><a href="changelog.html" class="mob-nav-link">Updates</a></li>
+      </ul>
+      <div class="mob-nav-ctas">
+        <a href="customization.html" class="mob-nav-btn-outline">Customization</a>
+        <a href="invoice-maker.html" class="mob-nav-btn-outline mob-nav-active">Try Online</a>
+        <a href="download.html" class="mob-nav-btn-solid">Download</a>
+      </div>
     </div>
   </div>
 </header>
@@ -427,24 +432,71 @@
   </div>
 </section>
 
-<footer class="text-white text-center py-12 relative" style="margin-top:0;">
-  <div class="container mx-auto px-6">
-    <div class="flex flex-wrap justify-center gap-8 text-lg mb-8">
-      <a href="https://github.com/Anooppandikashala/invoiso" target="_blank" rel="noopener noreferrer" class="hover:underline">
-        <i class="fab fa-github mr-2"></i>GitHub
-      </a>
-      <a href="download.html" class="hover:underline">
-        <i class="fas fa-download mr-2"></i>Download Desktop App
-      </a>
-      <a href="mailto:anooppkrishnan96@gmail.com" class="hover:underline">
-        <i class="fas fa-envelope mr-2"></i>Email
-      </a>
+<footer class="site-footer">
+  <div class="container mx-auto px-6 max-w-7xl site-footer-inner">
+    <div class="site-footer-top">
+      <div class="site-footer-brand">
+        <a href="/" class="site-footer-logo">
+          <img src="assets/images/logo.svg" alt="Invoiso" aria-hidden="true" />
+          <span>Invoiso</span>
+        </a>
+        <p class="site-footer-text">Free, open-source billing software for small businesses. Create GST-ready invoices offline on Windows, Linux, and macOS.</p>
+        <div class="site-footer-badges" aria-label="Product highlights">
+          <span class="site-footer-badge"><i class="fas fa-check-circle" aria-hidden="true"></i> Free forever</span>
+          <span class="site-footer-badge"><i class="fas fa-wifi-slash" aria-hidden="true"></i> Offline first</span>
+          <span class="site-footer-badge"><i class="fab fa-github" aria-hidden="true"></i> Open source</span>
+        </div>
+      </div>
+
+      <div class="site-footer-grid">
+        <div>
+          <h2 class="site-footer-title">Product</h2>
+          <ul class="site-footer-links">
+            <li><a href="download.html" class="site-footer-link"><i class="fas fa-download" aria-hidden="true"></i>Download app</a></li>
+            <li><a href="invoice-maker.html" class="site-footer-link"><i class="fas fa-file-invoice" aria-hidden="true"></i>Invoice maker</a></li>
+            <li><a href="index.html#features" class="site-footer-link"><i class="fas fa-layer-group" aria-hidden="true"></i>Features</a></li>
+            <li><a href="download.html#install-guide" class="site-footer-link"><i class="fas fa-list-check" aria-hidden="true"></i>Install guide</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2 class="site-footer-title">Resources</h2>
+          <ul class="site-footer-links">
+            <li><a href="faq.html" class="site-footer-link"><i class="fas fa-circle-question" aria-hidden="true"></i>FAQ</a></li>
+            <li><a href="changelog.html" class="site-footer-link"><i class="fas fa-clock-rotate-left" aria-hidden="true"></i>Updates</a></li>
+            <li><a href="customization.html" class="site-footer-link"><i class="fas fa-sliders" aria-hidden="true"></i>Customization</a></li>
+            <li><a href="privacy.html" class="site-footer-link"><i class="fas fa-shield-halved" aria-hidden="true"></i>Privacy</a></li>
+            <li><a href="terms.html" class="site-footer-link"><i class="fas fa-file-contract" aria-hidden="true"></i>Terms</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2 class="site-footer-title">Community</h2>
+          <ul class="site-footer-links">
+            <li><a href="https://github.com/Anooppandikashala/invoiso" target="_blank" rel="noopener noreferrer" class="site-footer-link"><i class="fab fa-github" aria-hidden="true"></i>GitHub</a></li>
+            <li><a href="https://github.com/Anooppandikashala/invoiso/issues" target="_blank" rel="noopener noreferrer" class="site-footer-link"><i class="fas fa-bug" aria-hidden="true"></i>Report issue</a></li>
+            <li><a href="https://buymeacoffee.com/anoopp" target="_blank" rel="noopener noreferrer" class="site-footer-link"><i class="fas fa-mug-hot" aria-hidden="true"></i>Support project</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2 class="site-footer-title">Contact</h2>
+          <ul class="site-footer-links">
+            <li><a href="contact.html" class="site-footer-link"><i class="fas fa-headset" aria-hidden="true"></i>Contact support</a></li>
+            <li><a href="mailto:anooppkrishnan96@gmail.com" class="site-footer-link"><i class="fas fa-envelope" aria-hidden="true"></i>Email</a></li>
+            <li><a href="customization.html" class="site-footer-link"><i class="fas fa-briefcase" aria-hidden="true"></i>Custom work</a></li>
+          </ul>
+        </div>
+      </div>
     </div>
-    <div class="border-t pt-8" style="border-color:var(--border)">
-      <p>© <span id="year"></span> Invoiso. All rights reserved.</p>
-      <p style="color:var(--text-muted); font-size:13px; margin-top:6px;">
-        This tool runs entirely in your browser — no data is sent to any server.
-      </p>
+
+    <div class="site-footer-bottom">
+      <div>
+        <p class="site-footer-copy">© <span id="year"></span> Invoiso. All rights reserved.</p>
+        <p class="site-footer-note">This invoice maker runs entirely in your browser. No invoice data is sent to any server.</p>
+      </div>
+      <div class="site-footer-social" aria-label="Social links">
+        <a href="https://github.com/Anooppandikashala/invoiso" target="_blank" rel="noopener noreferrer" aria-label="Invoiso on GitHub"><i class="fab fa-github" aria-hidden="true"></i></a>
+        <a href="https://buymeacoffee.com/anoopp" target="_blank" rel="noopener noreferrer" aria-label="Support Invoiso"><i class="fas fa-mug-hot" aria-hidden="true"></i></a>
+        <a href="mailto:anooppkrishnan96@gmail.com" aria-label="Email Invoiso"><i class="fas fa-envelope" aria-hidden="true"></i></a>
+      </div>
     </div>
   </div>
 </footer>

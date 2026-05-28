@@ -41,6 +41,12 @@ Invoiso is well suited for:
 - [Free Online Invoice Maker](https://invoiso.co.in/invoice-maker.html) — Browser-based PDF invoice generator, no signup
 - [FAQ](https://invoiso.co.in/faq.html) — Answers to common questions
 - [Release Notes](https://invoiso.co.in/changelog.html) — Full version history
+- [Free GST Billing Software](https://invoiso.co.in/free-gst-billing-software.html) — GST-ready invoice workflow for Indian small businesses
+- [Offline Billing Software](https://invoiso.co.in/offline-billing-software.html) — Desktop billing with local data and no cloud dependency
+- [Free Vyapar Alternative](https://invoiso.co.in/vyapar-alternative.html) — Comparison-focused page for businesses evaluating alternatives
+- [Open Source Invoice Software](https://invoiso.co.in/open-source-invoice-software.html) — Source-code and transparency focused overview
+- [Invoice Software for Linux](https://invoiso.co.in/invoice-software-for-linux.html) — Linux AppImage and DEB invoice app overview
+- [Blog](https://invoiso.co.in/blog/) — Practical guides for GST invoices, UPI QR payments, offline billing, and Linux invoicing
 
 ## Download
 

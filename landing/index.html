@@ -5,7 +5,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Free billing software for small businesses. Create GST-ready PDF invoices, track payments and manage customers offline. Open source, no subscription or login." />
-    <meta name="keywords" content="free billing software, free open source billing software, free GST billing software, offline billing software, billing software for small business, free invoice software, open source billing software, open source invoice software, free invoice generator, desktop billing software, invoice software for small business, GST invoice software free, invoice software no subscription, free invoice maker desktop, Linux invoice app, Windows invoice app, billing software India, UPI invoice QR code, shop billing software, Invoiso" />
     <meta name="author" content="Invoiso" />
     <meta name="robots" content="index, follow" />
 
@@ -103,7 +102,7 @@
       "applicationCategory": "BusinessApplication",
       "description": "Free billing software and open source offline invoicing app for Windows, Linux and macOS. Create GST-ready PDF invoices, manage customers, products and payments without internet access.",
       "applicationSubCategory": "Billing software",
-      "softwareVersion": "3.8.0",
+      "softwareVersion": "4.1.7",
       "releaseNotes": "https://invoiso.co.in/changelog.html",
       "license": "https://github.com/Anooppandikashala/invoiso/blob/main/LICENSE",
       "codeRepository": "https://github.com/Anooppandikashala/invoiso",
@@ -387,23 +386,26 @@
 
     <!-- Navbar -->
     <header class="navbar fixed w-full z-50">
-      <nav class="container mx-auto flex justify-between items-center py-4 px-6 max-w-7xl" aria-label="Main navigation">
-        <a href="#home" class="logo-link flex items-center text-3xl font-bold tracking-tight" style="text-decoration:none;">
-          <img src="assets/images/logo.svg" alt="" class="w-8 h-8 mr-2" aria-hidden="true" />
-          <span class="logo-text-accent">Invoiso</span>
+      <nav class="nav-shell container mx-auto px-4 md:px-6 max-w-7xl" aria-label="Main navigation">
+        <a href="/" class="logo-link nav-brand" style="text-decoration:none;">
+          <span class="nav-logo-mark"><img src="assets/images/logo.svg" alt="Invoiso" aria-hidden="true" /></span>
+          <span class="nav-brand-text logo-text-accent">Invoiso</span>
         </a>
-        <ul class="hidden md:flex space-x-10 font-medium">
+        <ul class="nav-links hidden md:flex">
           <li><a href="#features" class="transition-colors duration-300">Features</a></li>
           <li><a href="#demo" class="transition-colors duration-300">Demo</a></li>
+          <li><a href="blog/" class="transition-colors duration-300">Blog</a></li>
           <li><a href="faq.html" class="transition-colors duration-300">FAQ</a></li>
           <li><a href="changelog.html" class="transition-colors duration-300">Updates</a></li>
-          <li><a href="customization.html" class="nav-btn">Customization</a></li>
-          <li><a href="invoice-maker.html" class="nav-btn">Try Online</a></li>
-          <li><a href="download.html" class="nav-cta">Download</a></li>
         </ul>
+        <div class="nav-actions hidden md:flex">
+          <a href="customization.html" class="nav-btn">Customization</a>
+          <a href="invoice-maker.html" class="nav-btn">Try Online</a>
+          <a href="download.html" class="nav-cta">Download</a>
+        </div>
 
         <button
-          class="md:hidden"
+          class="mobile-menu-toggle md:hidden"
           id="hamburger-btn"
           aria-label="Toggle navigation menu"
           aria-expanded="false"
@@ -415,28 +417,31 @@
         </button>
       </nav>
 
-            <div class="mobile-menu hidden md:hidden" id="mobile-menu">
-        <ul class="mob-nav-list">
-          <li><a href="#home" class="mob-nav-link">Home</a></li>
-          <li><a href="#features" class="mob-nav-link">Features</a></li>
-          <li><a href="#demo" class="mob-nav-link">Demo</a></li>
-          <li><a href="faq.html" class="mob-nav-link">FAQ</a></li>
-          <li><a href="changelog.html" class="mob-nav-link">Updates</a></li>
-        </ul>
-        <div class="mob-nav-ctas">
-          <a href="customization.html" class="mob-nav-btn-outline">Customization</a>
-          <a href="invoice-maker.html" class="mob-nav-btn-outline">Try Online</a>
-          <a href="download.html" class="mob-nav-btn-solid">Download</a>
+      <div class="mobile-menu hidden md:hidden" id="mobile-menu">
+        <div class="mobile-menu-panel">
+          <ul class="mob-nav-list">
+            <li><a href="#home" class="mob-nav-link">Home</a></li>
+            <li><a href="#features" class="mob-nav-link">Features</a></li>
+            <li><a href="#demo" class="mob-nav-link">Demo</a></li>
+            <li><a href="blog/" class="mob-nav-link">Blog</a></li>
+            <li><a href="faq.html" class="mob-nav-link">FAQ</a></li>
+            <li><a href="changelog.html" class="mob-nav-link">Updates</a></li>
+          </ul>
+          <div class="mob-nav-ctas">
+            <a href="customization.html" class="mob-nav-btn-outline">Customization</a>
+            <a href="invoice-maker.html" class="mob-nav-btn-outline">Try Online</a>
+            <a href="download.html" class="mob-nav-btn-solid">Download</a>
+          </div>
         </div>
       </div>
-      </header>
+    </header>
 
     <main id="main-content">
       <!-- Hero Section -->
-      <section id="home" class="pt-40 pb-24 hero-gradient text-white text-center relative flex items-center">
+      <section id="home" class="hero-gradient hero-premium text-white relative">
         <div class="hero-noise" aria-hidden="true"></div>
-        <div class="container mx-auto px-6 relative z-10">
-          <div class="fade-in-up">
+        <div class="container mx-auto px-6 relative z-10 hero-premium-shell">
+          <div class="fade-in-up hero-premium-copy">
             <div class="hero-badge">
               <i class="fab fa-github" aria-hidden="true"></i>
               Open Source &nbsp;&middot;&nbsp; Free Forever &nbsp;&middot;&nbsp; Windows &amp; Linux &amp; macOS
@@ -448,433 +453,481 @@
               Simple. Fast. Offline.
             </p>
             <p class="text-base md:text-lg mb-12 max-w-2xl mx-auto leading-relaxed" style="color:rgba(226,232,240,0.80)">
-              Create GST-ready PDF invoices, manage clients and products, track payments, and run your billing entirely offline on Windows, Linux &amp; macOS. Invoiso is free forever, open source, and requires no subscription, cloud account, or registration.
+              Invoiso lets you create GST-ready PDF invoices, manage clients and products, track payments, and run your billing entirely offline on Windows, Linux, and macOS. It is free forever, open source, and requires no subscription, cloud account, or registration.
             </p>
-            <div class="flex flex-col md:flex-row justify-center gap-6 mb-6">
+            <div class="hero-actions flex flex-col md:flex-row justify-center gap-6 mb-6">
               <a href="download.html" class="btn-primary font-semibold px-8 py-4 rounded-lg inline-flex items-center justify-center gap-3 text-lg">
                 <i class="fab fa-windows download-icon" aria-hidden="true"></i>
                 <i class="fab fa-linux download-icon" aria-hidden="true"></i>
                 <i class="fab fa-apple download-icon" aria-hidden="true"></i>
                 Download
               </a>
-              <a href="https://github.com/Anooppandikashala/invoiso" target="_blank" rel="noopener noreferrer" class="btn-secondary font-semibold px-8 py-4 rounded-lg inline-flex items-center justify-center gap-3 text-lg">
+              <a href="https://github.com/Anooppandikashala/invoiso" target="_blank" rel="noopener noreferrer" class="btn-secondary font-semibold px-8 py-4 rounded-lg inline-flex items-center justify-center gap-3 text-lg" id="gh-repo-btn">
                 <i class="fab fa-github download-icon" aria-hidden="true"></i>
                 GitHub Repository
+                <span id="gh-star-badge" style="display:none;align-items:center;gap:4px;padding:2px 9px;border-radius:999px;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.35);color:#fbbf24;font-size:0.78rem;font-weight:700;"><i class="fas fa-star" style="font-size:0.72rem;" aria-hidden="true"></i><span id="gh-star-count"></span></span>
               </a>
-            </div>
-            <!-- Featured on -->
-            <div class="flex flex-wrap justify-center items-center gap-4 mt-4">
-<a href="https://www.producthunt.com/products/invoiso?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-invoiso" target="_blank" rel="noopener noreferrer">
-                <img alt="Invoiso - Free Offline Invoice &amp; Billing Software for all. | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1105229&amp;theme=light&amp;t=1774412242179" style="display:block;" />
-              </a>
-              <a href="https://www.shipit.buzz/products/invoiso?ref=badge" target="_blank" rel="noopener noreferrer">
-                <img src="https://www.shipit.buzz/api/products/invoiso/badge?theme=light" alt="Featured on Shipit" style="height:43px;display:block;" />
-              </a>
-              <!-- nxgntools badge hidden until working
-              <a href="https://www.nxgntools.com/tools/invoiso?utm_source=invoiso" target="_blank" rel="noopener noreferrer">
-                <img src="https://www.nxgntools.com/api/embed/invoiso?type=LAUNCHING_SOON_ON&amp;hideUpvotes=true" alt="Launching Soon on NextGen Tools" style="height:43px;width:auto;display:block;" />
-              </a>
-              -->
-            <a href="https://sellwithboost.com" target="_blank" rel="noopener noreferrer">
-              <img src="https://sellwithboost.com/badge/listing-dark.svg" alt="Listed on Sell With boost" style="height: 40px; width: auto;" />
-            </a>
-              <!-- SourceForge Rising Star -->
-              <div class="sf-root" data-id="4068440" data-badge="oss-rising-star-black" data-metadata="achievement=oss-rising-star" style="width:100px">
-                <a href="https://sourceforge.net/projects/invoiso/" target="_blank">Invoiso</a>
-              </div>
-              <script>(function () {var sc=document.createElement('script');sc.async=true;sc.src='https://b.sf-syn.com/badge_js?sf_id=4068440';var p=document.getElementsByTagName('script')[0];p.parentNode.insertBefore(sc, p);})();
-              </script>
             </div>
             <!-- Trust indicators -->
             <div class="hero-trust-strip" style="margin-top:32px;">
-              <span class="trust-chip"><i class="fas fa-check-circle" aria-hidden="true"></i> Free forever</span>
-              <span class="trust-chip"><i class="fab fa-github" aria-hidden="true"></i> Open source</span>
+              <span id="gh-star-chip" class="trust-chip" style="display:none;"><i class="fas fa-star" style="color:#fbbf24" aria-hidden="true"></i> <span id="gh-star-chip-count"></span> stars on GitHub</span>
               <span class="trust-chip"><i class="fas fa-plug-circle-xmark" aria-hidden="true"></i> Works offline</span>
               <span class="trust-chip"><i class="fas fa-user-slash" aria-hidden="true"></i> No registration</span>
               <span class="trust-chip"><i class="fas fa-file-invoice" aria-hidden="true"></i> GST ready</span>
               <span class="trust-chip"><i class="fas fa-qrcode" aria-hidden="true"></i> UPI QR support</span>
             </div>
           </div>
+
+          <div class="hero-3d-stage fade-in-up" aria-label="Invoiso app preview">
+            <div class="hero-3d-glow" aria-hidden="true"></div>
+            <div class="hero-3d-card hero-3d-card-back" aria-hidden="true">
+              <div class="hero-window-bar">
+                <span></span><span></span><span></span>
+              </div>
+              <img src="assets/images/screenshots/invoice_pdf_view.png" alt="" width="1920" height="1080" loading="lazy" decoding="async" />
+            </div>
+            <div class="hero-3d-card hero-3d-card-side" aria-hidden="true">
+              <div class="hero-window-bar">
+                <span></span><span></span><span></span>
+              </div>
+              <img src="assets/images/screenshots/create_new_invoice1.png" alt="" width="1920" height="1080" loading="lazy" decoding="async" />
+            </div>
+            <div class="hero-3d-card hero-3d-card-main">
+              <div class="hero-window-bar" aria-hidden="true">
+                <span></span><span></span><span></span>
+              </div>
+              <img src="assets/images/screenshots/dashboard.png" alt="Invoiso dashboard for free billing software showing invoices, revenue and business overview" width="1920" height="1080" loading="eager" decoding="async" />
+            </div>
+            <div class="hero-floating-card hero-floating-card-top" aria-hidden="true">
+              <i class="fas fa-file-invoice"></i>
+              <span>GST ready invoices</span>
+            </div>
+            <div class="hero-floating-card hero-floating-card-bottom" aria-hidden="true">
+              <i class="fas fa-lock"></i>
+              <span>Data stays offline</span>
+            </div>
+          </div>
+
+          <!-- Featured on -->
+          <div class="hero-featured-badges flex flex-wrap justify-center items-center gap-4 mt-4">
+<a href="https://www.producthunt.com/products/invoiso?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-invoiso" target="_blank" rel="noopener noreferrer">
+              <img alt="Invoiso - Free Offline Invoice &amp; Billing Software for all. | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1105229&amp;theme=light&amp;t=1774412242179" style="display:block;" />
+            </a>
+            <a href="https://www.shipit.buzz/products/invoiso?ref=badge" target="_blank" rel="noopener noreferrer">
+              <img src="https://www.shipit.buzz/api/products/invoiso/badge?theme=light" alt="Featured on Shipit" style="height:43px;display:block;" />
+            </a>
+            <!-- nxgntools badge hidden until working
+            <a href="https://www.nxgntools.com/tools/invoiso?utm_source=invoiso" target="_blank" rel="noopener noreferrer">
+              <img src="https://www.nxgntools.com/api/embed/invoiso?type=LAUNCHING_SOON_ON&amp;hideUpvotes=true" alt="Launching Soon on NextGen Tools" style="height:43px;width:auto;display:block;" />
+            </a>
+            -->
+            <a href="https://sellwithboost.com" target="_blank" rel="noopener noreferrer">
+              <img src="https://sellwithboost.com/badge/listing-dark.svg" alt="Listed on Sell With boost" style="height: 40px; width: auto;" />
+            </a>
+            <!-- SourceForge Rising Star -->
+            <div class="sf-root" data-id="4068440" data-badge="oss-rising-star-black" data-metadata="achievement=oss-rising-star" style="width:100px">
+              <a href="https://sourceforge.net/projects/invoiso/" target="_blank">Invoiso</a>
+            </div>
+            <script>(function () {var sc=document.createElement('script');sc.async=true;sc.src='https://b.sf-syn.com/badge_js?sf_id=4068440';var p=document.getElementsByTagName('script')[0];p.parentNode.insertBefore(sc, p);})();
+            </script>
+          </div>
         </div>
       </section>
 
       <!-- Features Section -->
-      <section id="features" class="py-20 features-section">
-        <div class="container mx-auto px-6">
-          <div class="text-center mb-10 reveal">
+      <section id="features" class="py-20 features-section premium-features">
+        <div class="container mx-auto px-6 max-w-7xl">
+          <div class="premium-section-head reveal">
+            <span class="section-eyebrow">Billing workflow</span>
             <h2 class="section-title text-4xl font-bold mb-3 primary-text">Free Billing Software Features</h2>
-            <p style="color:var(--text-muted)">Everything you need to manage invoices professionally — 100% free, open source, and offline</p>
+            <p>Everything you need to manage invoices professionally — 100% free, open source, and offline</p>
           </div>
 
-          <div class="grid md:grid-cols-2 gap-4 max-w-4xl mx-auto">
+          <div class="premium-features-grid">
+            <article class="premium-feature-spotlight">
+              <div class="premium-feature-copy">
+                <div class="premium-icon premium-icon-blue">
+                  <i class="fas fa-route" aria-hidden="true"></i>
+                </div>
+                <h3>Run the full billing cycle from one offline desktop app</h3>
+                <p>Create GST-ready invoices, manage clients and products, track payments, export PDFs, and keep backups without depending on cloud software.</p>
+                <ul class="premium-feature-checklist">
+                  <li><i class="fas fa-check" aria-hidden="true"></i>Customer, product, and invoice records stay on your device</li>
+                  <li><i class="fas fa-check" aria-hidden="true"></i>Payment status, outstanding balance, and receipt generation built in</li>
+                  <li><i class="fas fa-check" aria-hidden="true"></i>Professional PDF invoices with Classic, Modern, and Minimal templates</li>
+                </ul>
+              </div>
 
-            <div class="feature-item">
-              <div class="feature-icon-box" style="background:rgba(79,142,247,0.14)">
-                <i class="fas fa-lock" style="color:#4f8ef7" aria-hidden="true"></i>
+              <div class="premium-workflow-card" aria-hidden="true">
+                <div class="workflow-topbar">
+                  <span>Invoice workflow</span>
+                  <strong>Local</strong>
+                </div>
+                <div class="workflow-steps">
+                  <div class="workflow-step active">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Client</span>
+                  </div>
+                  <div class="workflow-line"></div>
+                  <div class="workflow-step active">
+                    <i class="fas fa-file-invoice"></i>
+                    <span>Invoice</span>
+                  </div>
+                  <div class="workflow-line"></div>
+                  <div class="workflow-step">
+                    <i class="fas fa-indian-rupee-sign"></i>
+                    <span>Payment</span>
+                  </div>
+                  <div class="workflow-line"></div>
+                  <div class="workflow-step">
+                    <i class="fas fa-file-pdf"></i>
+                    <span>PDF</span>
+                  </div>
+                </div>
+                <div class="workflow-metric-grid">
+                  <div>
+                    <span>Storage</span>
+                    <strong>Offline</strong>
+                  </div>
+                  <div>
+                    <span>Access</span>
+                    <strong>Roles</strong>
+                  </div>
+                  <div>
+                    <span>Export</span>
+                    <strong>PDF/CSV</strong>
+                  </div>
+                </div>
               </div>
-              <div>
-                <h3>Offline &amp; Secure</h3>
-                <p>Your data never leaves your device. No cloud, no internet required.</p>
+            </article>
+
+            <div class="premium-feature-card">
+              <div class="premium-icon premium-icon-green">
+                <i class="fas fa-lock" aria-hidden="true"></i>
               </div>
+              <h3>Offline &amp; Secure</h3>
+              <p>Your data never leaves your device. No cloud, no internet required.</p>
             </div>
 
-            <div class="feature-item">
-              <div class="feature-icon-box" style="background:rgba(16,185,129,0.14)">
-                <i class="fas fa-file-invoice" style="color:#10b981" aria-hidden="true"></i>
+            <div class="premium-feature-card">
+              <div class="premium-icon premium-icon-violet">
+                <i class="fas fa-file-invoice" aria-hidden="true"></i>
               </div>
-              <div>
-                <h3>Invoice Management</h3>
-                <p>Create, edit, and manage invoices with status tracking and history.</p>
-              </div>
+              <h3>Invoice Management</h3>
+              <p>Create, edit, and manage invoices with status tracking and history.</p>
             </div>
 
-            <div class="feature-item">
-              <div class="feature-icon-box" style="background:rgba(249,115,22,0.14)">
-                <i class="fas fa-file-pdf" style="color:#f97316" aria-hidden="true"></i>
+            <div class="premium-feature-card">
+              <div class="premium-icon premium-icon-orange">
+                <i class="fas fa-users" aria-hidden="true"></i>
               </div>
-              <div>
-                <h3>Export to PDF</h3>
-                <p>Generate polished, professional PDF invoices in one click. Share-ready instantly.</p>
-              </div>
+              <h3>Client &amp; Product Tracking</h3>
+              <p>Store clients and products with built-in search, sort, and filter.</p>
             </div>
 
-            <div class="feature-item">
-              <div class="feature-icon-box" style="background:rgba(139,92,246,0.14)">
-                <i class="fas fa-users" style="color:#8b5cf6" aria-hidden="true"></i>
+            <div class="premium-feature-card">
+              <div class="premium-icon premium-icon-cyan">
+                <i class="fas fa-file-pdf" aria-hidden="true"></i>
               </div>
-              <div>
-                <h3>Client &amp; Product Tracking</h3>
-                <p>Store clients and products with built-in search, sort, and filter.</p>
-              </div>
+              <h3>PDFs &amp; Templates</h3>
+              <p>Generate polished PDF invoices and choose Classic, Modern, or Minimal templates.</p>
             </div>
 
-            <div class="feature-item">
-              <div class="feature-icon-box" style="background:rgba(236,72,153,0.14)">
-                <i class="fas fa-palette" style="color:#ec4899" aria-hidden="true"></i>
+            <div class="premium-feature-card">
+              <div class="premium-icon premium-icon-green">
+                <i class="fas fa-money-bill-wave" aria-hidden="true"></i>
               </div>
-              <div>
-                <h3>Multiple Templates</h3>
-                <p>Classic, Modern, or Minimal — pick a template that fits your brand.</p>
-              </div>
+              <h3>Payment Tracking</h3>
+              <p>Record partial or full payments, track outstanding balances, and download PDF receipts.</p>
             </div>
 
-            <div class="feature-item">
-              <div class="feature-icon-box" style="background:rgba(6,182,212,0.14)">
-                <i class="fas fa-database" style="color:#06b6d4" aria-hidden="true"></i>
+            <div class="premium-feature-card">
+              <div class="premium-icon premium-icon-violet">
+                <i class="fas fa-user-shield" aria-hidden="true"></i>
               </div>
-              <div>
-                <h3>Easy Backup</h3>
-                <p>One-click backup and restore to keep your data safe and portable.</p>
-              </div>
+              <h3>Role-Based Access</h3>
+              <p>Use admin and standard user roles to protect deletes, settings, backup, and restore actions.</p>
             </div>
 
-            <div class="feature-item">
-              <div class="feature-icon-box" style="background:rgba(16,185,129,0.14)">
-                <i class="fas fa-money-bill-wave" style="color:#10b981" aria-hidden="true"></i>
+            <div class="premium-feature-card">
+              <div class="premium-icon premium-icon-orange">
+                <i class="fas fa-tags" aria-hidden="true"></i>
               </div>
-              <div>
-                <h3>Payment Tracking</h3>
-                <p>Record partial or full payments, track outstanding balances, and download a PDF receipt for every payment.</p>
-              </div>
+              <h3>Flexible Line Items</h3>
+              <p>Override unit prices per invoice or add one-off custom items without creating products first.</p>
             </div>
 
-            <div class="feature-item">
-              <div class="feature-icon-box" style="background:rgba(139,92,246,0.14)">
-                <i class="fas fa-user-shield" style="color:#8b5cf6" aria-hidden="true"></i>
+            <div class="premium-feature-card">
+              <div class="premium-icon premium-icon-cyan">
+                <i class="fas fa-database" aria-hidden="true"></i>
               </div>
-              <div>
-                <h3>Role-Based Access</h3>
-                <p>Admin and standard user roles. Restrict deletes, settings, and backup to admins only.</p>
-              </div>
+              <h3>Easy Backup</h3>
+              <p>Create portable backups and restore your billing data whenever you move or reinstall.</p>
             </div>
-
-            <div class="feature-item">
-              <div class="feature-icon-box" style="background:rgba(249,115,22,0.14)">
-                <i class="fas fa-tags" style="color:#f97316" aria-hidden="true"></i>
-              </div>
-              <div>
-                <h3>Flexible Line Items</h3>
-                <p>Override the unit price of any line item per invoice, or add one-off custom items on the fly — no product catalogue entry needed.</p>
-              </div>
-            </div>
-
-            <div class="feature-item">
-              <div class="feature-icon-box" style="background:rgba(6,182,212,0.14)">
-                <i class="fas fa-ruler" style="color:#06b6d4" aria-hidden="true"></i>
-              </div>
-              <div>
-                <h3>Custom Quantity Label</h3>
-                <p>Rename the quantity column to match your business — use "Hrs" for services, "Units" for goods, or any label you need.</p>
-              </div>
-            </div>
-
           </div>
-          
+
+          <div class="premium-feature-strip" aria-label="More Invoiso features">
+            <span><i class="fas fa-ruler" aria-hidden="true"></i>Custom Quantity Label</span>
+            <span><i class="fas fa-qrcode" aria-hidden="true"></i>UPI QR Support</span>
+            <span><i class="fas fa-file-csv" aria-hidden="true"></i>CSV Export</span>
+            <span><i class="fas fa-clone" aria-hidden="true"></i>Duplicate Invoices</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- How It Works Section -->
+      <section id="how-it-works" class="py-16 features-section premium-invoice-guide">
+        <div class="container mx-auto px-6 max-w-7xl">
+          <div class="invoice-guide-head reveal">
+            <div>
+              <span class="section-eyebrow">Create invoices faster</span>
+              <h2 class="section-title text-4xl font-bold mb-3 primary-text">How to Create Free Invoices with Invoiso</h2>
+              <p>Get started in minutes — no account, no setup, no internet required</p>
+            </div>
+            <div class="invoice-guide-summary" aria-label="Invoiso invoice creation summary">
+              <span><i class="fas fa-user-slash" aria-hidden="true"></i>No account</span>
+              <span><i class="fas fa-wifi-slash" aria-hidden="true"></i>No internet</span>
+              <span><i class="fas fa-file-pdf" aria-hidden="true"></i>PDF ready</span>
+            </div>
+          </div>
+
+          <div class="invoice-steps-grid">
+            <article class="invoice-step-card reveal reveal-d1">
+              <div class="invoice-step-number">01</div>
+              <div class="invoice-step-icon"><i class="fas fa-download" aria-hidden="true"></i></div>
+              <h3>Download &amp; Install</h3>
+              <p>Install Invoiso on Windows, Linux or macOS. No account or registration required.</p>
+            </article>
+
+            <article class="invoice-step-card reveal reveal-d2">
+              <div class="invoice-step-number">02</div>
+              <div class="invoice-step-icon"><i class="fas fa-building" aria-hidden="true"></i></div>
+              <h3>Set Up Your Company</h3>
+              <p>Enter your business name, logo, GSTIN, and UPI ID in settings. Takes under a minute.</p>
+            </article>
+
+            <article class="invoice-step-card reveal reveal-d3">
+              <div class="invoice-step-number">03</div>
+              <div class="invoice-step-icon"><i class="fas fa-file-invoice" aria-hidden="true"></i></div>
+              <h3>Create an Invoice</h3>
+              <p>Select a customer, add products, configure tax, and choose a PDF template.</p>
+            </article>
+
+            <article class="invoice-step-card reveal reveal-d4">
+              <div class="invoice-step-number">04</div>
+              <div class="invoice-step-icon"><i class="fas fa-share-alt" aria-hidden="true"></i></div>
+              <h3>Export &amp; Share</h3>
+              <p>Export a professional PDF with one click and send it to your client instantly.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- About Section -->
+      <section id="about" class="py-16 about-section premium-trust-section">
+        <div class="container mx-auto px-6 max-w-7xl">
+          <div class="trust-section-grid">
+            <div class="trust-copy reveal">
+              <span class="section-eyebrow">Why businesses choose it</span>
+              <h2 class="section-title text-4xl font-bold mb-3 primary-text">Why Invoiso Is the Best Free Billing Software for Offline Invoicing</h2>
+              <p>
+                Invoiso is <strong>free billing software</strong> and <strong>free open source billing software</strong> for cross-platform
+                desktop invoicing app built for freelancers and small businesses. Manage customers, products, payments,
+                and invoices seamlessly — entirely offline. Your data never leaves your device, ensuring complete privacy
+                and control.
+              </p>
+              <div class="trust-tag-row">
+                <span class="tag-badge">Cross-Platform</span>
+                <span class="tag-badge-green">Open Source</span>
+                <span class="tag-badge-violet">No Subscription</span>
+                <span class="tag-badge-orange">Lightweight</span>
+              </div>
+            </div>
+
+            <aside class="trust-proof-panel reveal reveal-d2">
+              <div class="trust-proof-top">
+                <div>
+                  <span>Local-first desktop app</span>
+                  <strong>Windows, Linux &amp; macOS</strong>
+                </div>
+                <i class="fas fa-shield-halved" aria-hidden="true"></i>
+              </div>
+
+              <div class="trust-platforms" aria-label="Supported platforms">
+                <span><i class="fab fa-windows" aria-hidden="true"></i> Windows</span>
+                <span><i class="fab fa-linux" aria-hidden="true"></i> Linux</span>
+                <span><i class="fab fa-apple" aria-hidden="true"></i> macOS</span>
+              </div>
+
+              <div class="trust-proof-list">
+                <div>
+                  <i class="fas fa-database" aria-hidden="true"></i>
+                  <span>Your data stays on your computer</span>
+                </div>
+                <div>
+                  <i class="fas fa-code-branch" aria-hidden="true"></i>
+                  <span>Free &amp; open source</span>
+                </div>
+                <div>
+                  <i class="fas fa-credit-card" aria-hidden="true"></i>
+                  <span>No paid plan required</span>
+                </div>
+              </div>
+
+              <div class="trust-support-row">
+                <p>Free &amp; open source. If Invoiso saves you time, consider supporting its development.</p>
+                <a href="https://buymeacoffee.com/anoopp" target="_blank" rel="noopener noreferrer" class="bmc-btn">
+                  <i class="fas fa-mug-hot" aria-hidden="true"></i>
+                  Buy Me a Coffee
+                </a>
+              </div>
+            </aside>
+          </div>
         </div>
       </section>
 
       <!-- Free Billing Software Intent Section -->
-      <section id="free-billing-software" class="py-16 features-section">
-        <div class="container mx-auto px-6 max-w-5xl">
-          <div class="text-center mb-10 reveal">
+      <section id="free-billing-software" class="py-20 features-section premium-positioning">
+        <div class="container mx-auto px-6 max-w-7xl">
+          <div class="premium-positioning-head reveal">
+            <span class="section-eyebrow">Built for local business</span>
             <h2 class="section-title text-4xl font-bold mb-3 primary-text">Free Billing Software for GST, Offline Invoicing and Small Business</h2>
-            <p style="color:var(--text-muted)">Built for Indian small businesses, freelancers, and shops that need a simple desktop billing app without monthly fees, forced signup, or cloud storage</p>
+            <p>Built for Indian small businesses, freelancers, and shops that need a simple desktop billing app without monthly fees, forced signup, or cloud storage</p>
           </div>
 
-          <div class="grid md:grid-cols-3 gap-4">
-            <div class="feature-item">
-              <div class="feature-icon-box" style="background:rgba(16,185,129,0.14)">
-                <i class="fas fa-file-invoice-dollar" style="color:#10b981" aria-hidden="true"></i>
+          <div class="positioning-grid">
+            <article class="positioning-card positioning-card-large reveal">
+              <div class="positioning-card-icon positioning-green">
+                <i class="fas fa-file-invoice-dollar" aria-hidden="true"></i>
               </div>
-              <div>
-                <h3>Free GST Billing Software for India</h3>
-                <p>Create GST-compliant invoices with GSTIN and customer GSTIN fields, HSN codes, CGST/SGST/IGST tax rates, UPI QR code payments, and one-click PDF export.</p>
+              <h3>Free GST Billing Software for India</h3>
+              <p>Create GST-compliant invoices with GSTIN and customer GSTIN fields, HSN codes, CGST/SGST/IGST tax rates, UPI QR code payments, and one-click PDF export.</p>
+              <div class="positioning-tags">
+                <span>GSTIN</span>
+                <span>HSN</span>
+                <span>UPI QR</span>
+                <span>PDF export</span>
               </div>
-            </div>
+            </article>
 
-            <div class="feature-item">
-              <div class="feature-icon-box" style="background:rgba(79,142,247,0.14)">
-                <i class="fas fa-desktop" style="color:#4f8ef7" aria-hidden="true"></i>
+            <article class="positioning-card reveal">
+              <div class="positioning-card-icon positioning-blue">
+                <i class="fas fa-desktop" aria-hidden="true"></i>
               </div>
-              <div>
-                <h3>Desktop Billing Software for PC</h3>
-                <p>Install Invoiso on Windows, Linux, or macOS. Keeps billing fast even when internet is unreliable — ideal for shops across India without stable connectivity.</p>
-              </div>
-            </div>
+              <h3>Desktop Billing Software for PC</h3>
+              <p>Install Invoiso on Windows, Linux, or macOS. Keeps billing fast even when internet is unreliable — ideal for shops across India without stable connectivity.</p>
+            </article>
 
-            <div class="feature-item">
-              <div class="feature-icon-box" style="background:rgba(249,115,22,0.14)">
-                <i class="fas fa-store" style="color:#f97316" aria-hidden="true"></i>
+            <article class="positioning-card reveal">
+              <div class="positioning-card-icon positioning-orange">
+                <i class="fas fa-store" aria-hidden="true"></i>
               </div>
-              <div>
-                <h3>For Kirana Shops, Traders &amp; Services</h3>
-                <p>Used by kirana shop owners, retailers, wholesalers, service businesses, consultants, and freelancers across India for fast, professional invoice creation.</p>
-              </div>
-            </div>
+              <h3>For Kirana Shops, Traders &amp; Services</h3>
+              <p>Used by kirana shop owners, retailers, wholesalers, service businesses, consultants, and freelancers across India for fast, professional invoice creation.</p>
+            </article>
           </div>
 
-          <div class="glass-card p-6 rounded-2xl mt-8">
-            <p class="text-base leading-relaxed" style="color:var(--text-muted)">
-              If you are searching for <strong style="color:var(--text)">free billing software for India</strong>, <strong style="color:var(--text)">free GST billing software</strong>, <strong style="color:var(--text)">offline billing software</strong>, or a <strong style="color:var(--text)">free Vyapar alternative</strong> — Invoiso gives you a fully private, local-first alternative with no subscription and no data leaving your device. Your invoices, customers, products, payments, and backups stay on your own computer.
+          <div class="positioning-seo-note reveal">
+            <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
+            <p>
+              If you are searching for <strong>free billing software for India</strong>, <strong>free GST billing software</strong>, <strong>offline billing software</strong>, or a <strong>free Vyapar alternative</strong> — Invoiso gives you a fully private, local-first alternative with no subscription and no data leaving your device. Your invoices, customers, products, payments, and backups stay on your own computer.
             </p>
+          </div>
+
+          <div id="who" class="audience-panel reveal">
+            <div class="audience-panel-head">
+              <h3>Free Billing Software for Shops, Freelancers &amp; Small Business in India</h3>
+              <p>Used by kirana shops, retailers, traders, consultants, and service businesses across India</p>
+            </div>
+
+            <div class="audience-grid">
+              <article>
+                <i class="fas fa-laptop-code" aria-hidden="true"></i>
+                <h4>Freelancers &amp; Consultants</h4>
+                <p>Send GST-ready professional invoices to clients without paying a monthly fee. All client data stays private on your own machine — no cloud, no subscription.</p>
+              </article>
+              <article>
+                <i class="fas fa-store" aria-hidden="true"></i>
+                <h4>Kirana Shops &amp; Retailers</h4>
+                <p>Free billing software for kirana, hardware, textile, and general stores. Works offline on your shop PC — no internet required, no monthly charges.</p>
+              </article>
+              <article>
+                <i class="fas fa-truck" aria-hidden="true"></i>
+                <h4>Traders &amp; Wholesalers</h4>
+                <p>Manage large customer and product lists with CSV import/export. Create quotations and invoices, track outstanding payments, and export data for your accountant.</p>
+              </article>
+              <article>
+                <i class="fas fa-tools" aria-hidden="true"></i>
+                <h4>Service Businesses &amp; Repair Shops</h4>
+                <p>Bill clients for services with custom line items, hourly rates, or fixed charges. Add a UPI QR code so customers can pay via GPay, PhonePe, or Paytm instantly.</p>
+              </article>
+            </div>
           </div>
         </div>
       </section>
 
       <!-- Open Source Billing Section -->
-      <section id="open-source-billing" class="py-16 features-section">
-        <div class="container mx-auto px-6 max-w-5xl">
-          <div class="text-center mb-10 reveal">
-            <h2 class="section-title text-4xl font-bold mb-3 primary-text">Free Open Source Billing Software You Can Trust</h2>
-            <p style="color:var(--text-muted)">Auditable source code, local data storage, and no vendor lock-in for your business billing workflow</p>
-          </div>
+      <section id="open-source-billing" class="py-20 features-section premium-open-source">
+        <div class="container mx-auto px-6 max-w-7xl">
+          <div class="open-source-panel reveal">
+            <div class="open-source-copy">
+              <span class="section-eyebrow">Transparent by design</span>
+              <h2 class="section-title text-3xl font-bold mb-3 primary-text">Free Open Source Billing Software You Can Trust</h2>
+              <p>Auditable source code, local data storage, and no vendor lock-in for your business billing workflow</p>
+            </div>
 
-          <div class="grid md:grid-cols-3 gap-4">
-            <div class="feature-item">
-              <div class="feature-icon-box" style="background:rgba(16,185,129,0.14)">
-                <i class="fab fa-github" style="color:#10b981" aria-hidden="true"></i>
-              </div>
-              <div>
+            <div class="open-source-cards">
+              <article>
+                <i class="fab fa-github" aria-hidden="true"></i>
                 <h3>Source Code on GitHub</h3>
                 <p>Inspect the code, report issues, request features, or contribute improvements directly in the public repository.</p>
-              </div>
-            </div>
-
-            <div class="feature-item">
-              <div class="feature-icon-box" style="background:rgba(79,142,247,0.14)">
-                <i class="fas fa-unlock" style="color:#4f8ef7" aria-hidden="true"></i>
-              </div>
-              <div>
+              </article>
+              <article>
+                <i class="fas fa-unlock" aria-hidden="true"></i>
                 <h3>No Vendor Lock-In</h3>
                 <p>Use Invoiso without a paid plan, online workspace, forced login, or hosted account controlled by a third party.</p>
-              </div>
-            </div>
-
-            <div class="feature-item">
-              <div class="feature-icon-box" style="background:rgba(249,115,22,0.14)">
-                <i class="fas fa-laptop-house" style="color:#f97316" aria-hidden="true"></i>
-              </div>
-              <div>
+              </article>
+              <article>
+                <i class="fas fa-laptop-house" aria-hidden="true"></i>
                 <h3>Local-First Billing</h3>
                 <p>Invoices, customers, products, payments, and backups stay on your computer, so billing keeps working offline.</p>
-              </div>
+              </article>
             </div>
           </div>
         </div>
       </section>
 
       <!-- Offline Emphasis Section -->
-      <section id="offline" class="py-16 about-section relative overflow-hidden">
-        <div class="container mx-auto px-6 max-w-5xl relative z-10">
-          <div class="glass-card p-8 rounded-2xl">
-            <div class="grid md:grid-cols-2 gap-8 items-center">
-              <div>
-                <h2 class="text-3xl font-bold mb-4" style="color:var(--text)">
-                  100% Offline Invoice App — No Internet, Ever
-                </h2>
-                <p class="text-base leading-relaxed mb-4" style="color:var(--text-muted)">
-                  Unlike cloud-based tools, Invoiso is a <strong style="color:var(--text)">desktop invoice app</strong> that installs directly on your Windows, Linux or macOS machine. All your customer data, invoices, and product catalogue live in a local database on your device — no servers, no syncing, no connectivity required.
-                </p>
-                <p class="text-base leading-relaxed" style="color:var(--text-muted)">
-                  Perfect for shops with unreliable internet, field workers, or anyone who values <strong style="color:var(--text)">complete data privacy</strong>. Your business data is yours — not stored in someone else's cloud.
-                </p>
-              </div>
-              <div class="grid grid-cols-2 gap-4">
-                <div class="glass-card p-4 rounded-xl text-center">
-                  <div class="text-3xl mb-2" style="color:var(--primary)"><i class="fas fa-plug-circle-xmark" aria-hidden="true"></i></div>
-                  <div class="font-semibold text-sm" style="color:var(--text)">No internet needed</div>
-                </div>
-                <div class="glass-card p-4 rounded-xl text-center">
-                  <div class="text-3xl mb-2" style="color:var(--primary)"><i class="fas fa-shield-alt" aria-hidden="true"></i></div>
-                  <div class="font-semibold text-sm" style="color:var(--text)">Data never leaves your PC</div>
-                </div>
-                <div class="glass-card p-4 rounded-xl text-center">
-                  <div class="text-3xl mb-2" style="color:var(--primary)"><i class="fas fa-bolt" aria-hidden="true"></i></div>
-                  <div class="font-semibold text-sm" style="color:var(--text)">Instant — no page loads</div>
-                </div>
-                <div class="glass-card p-4 rounded-xl text-center">
-                  <div class="text-3xl mb-2" style="color:var(--primary)"><i class="fas fa-hdd" aria-hidden="true"></i></div>
-                  <div class="font-semibold text-sm" style="color:var(--text)">Local backup anytime</div>
-                </div>
-              </div>
+      <section id="offline" class="py-20 about-section premium-offline">
+        <div class="container mx-auto px-6 max-w-7xl">
+          <div class="offline-panel reveal">
+            <div class="offline-copy">
+              <span class="section-eyebrow">Private by default</span>
+              <h2>100% Offline Invoice App — No Internet, Ever</h2>
+              <p>
+                Unlike cloud-based tools, Invoiso is a <strong>desktop invoice app</strong> that installs directly on your Windows, Linux or macOS machine. All your customer data, invoices, and product catalogue live in a local database on your device — no servers, no syncing, no connectivity required.
+              </p>
+              <p>
+                Perfect for shops with unreliable internet, field workers, or anyone who values <strong>complete data privacy</strong>. Your business data is yours — not stored in someone else's cloud.
+              </p>
             </div>
-          </div>
-        </div>
-      </section>
 
-      <!-- Who Is This For Section -->
-      <section id="who" class="py-20 features-section">
-        <div class="container mx-auto px-6">
-          <div class="text-center mb-10 reveal">
-            <h2 class="section-title text-4xl font-bold mb-3 primary-text">Free Billing Software for Shops, Freelancers &amp; Small Business in India</h2>
-            <p style="color:var(--text-muted)">Used by kirana shops, retailers, traders, consultants, and service businesses across India</p>
-          </div>
-          <div class="grid md:grid-cols-2 gap-4 max-w-4xl mx-auto">
-
-            <div class="feature-item">
-              <div class="feature-icon-box" style="background:rgba(79,142,247,0.14)">
-                <i class="fas fa-laptop-code" style="color:#4f8ef7" aria-hidden="true"></i>
+            <div class="offline-proof-grid" aria-label="Offline app benefits">
+              <div>
+                <i class="fas fa-plug-circle-xmark" aria-hidden="true"></i>
+                <span>No internet needed</span>
               </div>
               <div>
-                <h3>Freelancers &amp; Consultants</h3>
-                <p>Send GST-ready professional invoices to clients without paying a monthly fee. All client data stays private on your own machine — no cloud, no subscription.</p>
-              </div>
-            </div>
-
-            <div class="feature-item">
-              <div class="feature-icon-box" style="background:rgba(16,185,129,0.14)">
-                <i class="fas fa-store" style="color:#10b981" aria-hidden="true"></i>
+                <i class="fas fa-shield-alt" aria-hidden="true"></i>
+                <span>Data never leaves your PC</span>
               </div>
               <div>
-                <h3>Kirana Shops &amp; Retailers</h3>
-                <p>Free billing software for kirana, hardware, textile, and general stores. Works offline on your shop PC — no internet required, no monthly charges.</p>
-              </div>
-            </div>
-
-            <div class="feature-item">
-              <div class="feature-icon-box" style="background:rgba(249,115,22,0.14)">
-                <i class="fas fa-truck" style="color:#f97316" aria-hidden="true"></i>
+                <i class="fas fa-bolt" aria-hidden="true"></i>
+                <span>Instant — no page loads</span>
               </div>
               <div>
-                <h3>Traders &amp; Wholesalers</h3>
-                <p>Manage large customer and product lists with CSV import/export. Create quotations and invoices, track outstanding payments, and export data for your accountant.</p>
-              </div>
-            </div>
-
-            <div class="feature-item">
-              <div class="feature-icon-box" style="background:rgba(139,92,246,0.14)">
-                <i class="fas fa-tools" style="color:#8b5cf6" aria-hidden="true"></i>
-              </div>
-              <div>
-                <h3>Service Businesses &amp; Repair Shops</h3>
-                <p>Bill clients for services with custom line items, hourly rates, or fixed charges. Add a UPI QR code so customers can pay via GPay, PhonePe, or Paytm instantly.</p>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      <!-- How It Works Section -->
-      <section id="how-it-works" class="py-20 about-section relative overflow-hidden">
-        <div class="container mx-auto px-6 max-w-6xl relative z-10">
-          <div class="text-center mb-12 reveal">
-            <h2 class="section-title text-4xl font-bold mb-3 primary-text">How to Create Free Invoices with Invoiso</h2>
-            <p style="color:var(--text-muted)">Get started in minutes — no account, no setup, no internet required</p>
-          </div>
-          <div class="grid md:grid-cols-4 gap-6 text-center">
-
-            <div class="glass-card p-6 rounded-2xl step-card reveal reveal-d1">
-              <div class="text-3xl mb-4" style="color:var(--primary)"><i class="fas fa-download" aria-hidden="true"></i></div>
-              <div class="text-xs font-bold mb-2 tracking-widest" style="color:var(--primary)">STEP 1</div>
-              <h3 class="font-bold mb-2 text-base" style="color:var(--text)">Download &amp; Install</h3>
-              <p class="text-sm" style="color:var(--text-muted)">Install Invoiso on Windows, Linux or macOS. No account or registration required.</p>
-            </div>
-
-            <div class="glass-card p-6 rounded-2xl step-card reveal reveal-d2">
-              <div class="text-3xl mb-4" style="color:var(--primary)"><i class="fas fa-building" aria-hidden="true"></i></div>
-              <div class="text-xs font-bold mb-2 tracking-widest" style="color:var(--primary)">STEP 2</div>
-              <h3 class="font-bold mb-2 text-base" style="color:var(--text)">Set Up Your Company</h3>
-              <p class="text-sm" style="color:var(--text-muted)">Enter your business name, logo, GSTIN, and UPI ID in settings. Takes under a minute.</p>
-            </div>
-
-            <div class="glass-card p-6 rounded-2xl step-card reveal reveal-d3">
-              <div class="text-3xl mb-4" style="color:var(--primary)"><i class="fas fa-file-invoice" aria-hidden="true"></i></div>
-              <div class="text-xs font-bold mb-2 tracking-widest" style="color:var(--primary)">STEP 3</div>
-              <h3 class="font-bold mb-2 text-base" style="color:var(--text)">Create an Invoice</h3>
-              <p class="text-sm" style="color:var(--text-muted)">Select a customer, add products, configure tax, and choose a PDF template.</p>
-            </div>
-
-            <div class="glass-card p-6 rounded-2xl step-card reveal reveal-d4">
-              <div class="text-3xl mb-4" style="color:var(--primary)"><i class="fas fa-share-alt" aria-hidden="true"></i></div>
-              <div class="text-xs font-bold mb-2 tracking-widest" style="color:var(--primary)">STEP 4</div>
-              <h3 class="font-bold mb-2 text-base" style="color:var(--text)">Export &amp; Share</h3>
-              <p class="text-sm" style="color:var(--text-muted)">Export a professional PDF with one click and send it to your client instantly.</p>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      <!-- About Section -->
-      <section id="about" class="py-16 about-section relative overflow-hidden">
-        <div class="absolute inset-0 opacity-10" aria-hidden="true">
-          <div class="absolute top-20 left-20 w-96 h-96 bg-blue-600 rounded-full blur-3xl"></div>
-          <div class="absolute bottom-20 right-20 w-96 h-96 bg-purple-600 rounded-full blur-3xl"></div>
-        </div>
-        <div class="container mx-auto px-6 max-w-5xl relative z-10">
-          <div class="text-center mb-10 reveal">
-            <h2 class="section-title text-4xl font-bold mb-3 primary-text">Why Invoiso Is the Best Free Billing Software for Offline Invoicing</h2>
-          </div>
-          <div class="glass-card p-8 rounded-2xl">
-            <div class="about-grid">
-              <!-- Left: description + badges -->
-              <div>
-                <p class="text-base leading-relaxed mb-6" style="color:var(--text-muted)">
-                  Invoiso is <strong style="color:var(--text)">free billing software</strong> and <strong style="color:var(--text)">free open source billing software</strong> for cross-platform
-                  desktop invoicing app built for freelancers and small businesses. Manage customers, products, payments,
-                  and invoices seamlessly — entirely offline. Your data never leaves your device, ensuring complete privacy
-                  and control.
-                </p>
-                <div class="flex flex-wrap gap-2">
-                  <span class="px-3 py-1 rounded-full text-xs font-semibold tag-badge">Cross-Platform</span>
-                  <span class="px-3 py-1 rounded-full text-xs font-semibold tag-badge-green">Open Source</span>
-                  <span class="px-3 py-1 rounded-full text-xs font-semibold tag-badge-violet">No Subscription</span>
-                  <span class="px-3 py-1 rounded-full text-xs font-semibold tag-badge-orange">Lightweight</span>
-                </div>
-              </div>
-              <!-- Right: platforms + support -->
-              <div class="about-support">
-                <div class="about-platforms">
-                  <span class="about-platform-chip"><i class="fab fa-windows" aria-hidden="true"></i> Windows</span>
-                  <span class="about-platform-chip"><i class="fab fa-linux" aria-hidden="true"></i> Linux</span>
-                  <span class="about-platform-chip"><i class="fab fa-apple" aria-hidden="true"></i> macOS</span>
-                </div>
-                <p class="text-sm" style="color:var(--text-muted)">Free &amp; open source. If Invoiso saves you time, consider supporting its development.</p>
-                <a href="https://buymeacoffee.com/anoopp" target="_blank" rel="noopener noreferrer" class="bmc-btn" style="align-self:flex-start">
-                  <i class="fas fa-mug-hot" aria-hidden="true"></i>
-                  Buy Me a Coffee
-                </a>
+                <i class="fas fa-hdd" aria-hidden="true"></i>
+                <span>Local backup anytime</span>
               </div>
             </div>
           </div>
@@ -882,18 +935,19 @@
       </section>
 
       <!-- Screenshots Section -->
-      <section id="screenshots" class="py-20 screenshots-section">
-        <div class="container mx-auto px-6 text-center">
-          <h2 class="section-title text-4xl font-bold mb-3 primary-text reveal">Invoiso in Action — Free Invoice Software Screenshots</h2>
-          <p class="mb-8 max-w-2xl mx-auto reveal" style="color:var(--text-muted)">Explore the intuitive interface designed for seamless invoice management</p>
-
-          <!-- Category filter chips -->
-          <div class="screenshots-chips" id="screenshots-chips" role="group" aria-label="Filter screenshots by category"></div>
-
-          <!-- Caption -->
-          <div class="screenshots-caption" aria-live="polite">
-            <span class="caption-category" id="caption-category"></span>
-            <span id="custom-bottom-text"></span>
+      <section id="screenshots" class="py-20 screenshots-section premium-screenshots">
+        <div class="container mx-auto px-6 max-w-7xl">
+          <div class="screenshots-head reveal">
+            <div>
+              <span class="section-eyebrow">Product tour</span>
+              <h2 class="section-title text-3xl font-bold mb-3 primary-text">Invoiso in Action — Free Invoice Software Screenshots</h2>
+              <p>Explore the intuitive interface designed for seamless invoice management</p>
+            </div>
+            <div class="screenshots-highlights" aria-label="Screenshot highlights">
+              <span><i class="fas fa-layer-group" aria-hidden="true"></i>24 screens</span>
+              <span><i class="fas fa-desktop" aria-hidden="true"></i>Desktop app</span>
+              <span><i class="fas fa-magnifying-glass-plus" aria-hidden="true"></i>Click to preview</span>
+            </div>
           </div>
 
           <noscript>
@@ -905,38 +959,95 @@
             </div>
           </noscript>
 
-          <div class="swiper screenshots-swiper" role="region" aria-label="App screenshots carousel">
-            <div class="swiper-wrapper" id="screenshots-wrapper"></div>
-            <div class="swiper-button-next" aria-label="Next screenshot"></div>
-            <div class="swiper-button-prev" aria-label="Previous screenshot"></div>
-            <div class="swiper-pagination"></div>
+          <div class="screenshots-gallery-shell reveal">
+            <div class="screenshots-toolbar">
+              <div class="screenshots-toolbar-left">
+                <div class="screenshots-caption" aria-live="polite">
+                  <span class="caption-category" id="caption-category"></span>
+                  <span id="custom-bottom-text"></span>
+                </div>
+                <div class="screenshots-nav">
+                  <div class="swiper-button-prev" aria-label="Previous screenshot"></div>
+                  <div class="swiper-button-next" aria-label="Next screenshot"></div>
+                </div>
+              </div>
+
+              <!-- Category filter chips -->
+              <div class="screenshots-chips" id="screenshots-chips" role="group" aria-label="Filter screenshots by category"></div>
+            </div>
+
+            <div class="screenshots-browser-frame">
+              <div class="screenshots-frame-topbar" aria-hidden="true">
+                <div class="screenshots-window-dots"><span></span><span></span><span></span></div>
+                <span class="screenshots-frame-title">Invoiso desktop app</span>
+                <span class="screenshots-frame-status">Offline preview</span>
+              </div>
+
+              <div class="swiper screenshots-swiper" role="region" aria-label="App screenshots carousel">
+                <div class="swiper-wrapper" id="screenshots-wrapper"></div>
+                <div class="swiper-pagination"></div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       <!-- App Walkthrough Video Section -->
-      <section id="demo" class="py-20 about-section">
-        <div class="container mx-auto px-6 max-w-4xl">
-          <div class="text-center mb-10 reveal">
-            <h2 class="section-title text-4xl font-bold mb-3 primary-text">Invoiso Demo — Free Offline Invoice Software Walkthrough</h2>
-            <p style="color:var(--text-muted)">Full walkthrough of Invoiso — from setup to your first invoice</p>
-          </div>
-          <div class="glass-card rounded-2xl overflow-hidden yt-facade"
-               data-id="HH17FE3C4tM"
-               data-title="Invoiso App Walkthrough"
-               style="position:relative;padding-top:56.25%;"
-               role="button" tabindex="0"
-               aria-label="Play: Invoiso App Walkthrough">
-            <img src="https://i.ytimg.com/vi/HH17FE3C4tM/maxresdefault.jpg"
-                 alt="Invoiso App Walkthrough — click to play"
-                 width="1280" height="720" loading="lazy"
-                 style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;" />
-            <button class="yt-play-btn" type="button" tabindex="-1" aria-hidden="true">
-              <svg viewBox="0 0 68 48" width="68" height="48">
-                <path d="M66.52,7.74c-0.78-2.93-2.49-5.41-5.42-6.19C55.79,.13,34,0,34,0S12.21,.13,6.9,1.55 C3.97,2.33,2.27,4.81,1.48,7.74C0.06,13.05,0,24,0,24s0.06,10.95,1.48,16.26c0.78,2.93,2.49,5.41,5.42,6.19 C12.21,47.87,34,48,34,48s21.79-0.13,27.1-1.55c2.93-0.78,4.64-3.26,5.42-6.19C67.94,34.95,68,24,68,24S67.94,13.05,66.52,7.74z" fill="#f00"></path>
-                <path d="M 45,24 27,14 27,34" fill="#fff"></path>
-              </svg>
-            </button>
+      <section id="demo" class="py-20 about-section premium-demo">
+        <div class="container mx-auto px-6 max-w-7xl">
+          <div class="premium-demo-grid">
+            <div class="premium-demo-copy reveal">
+              <span class="section-eyebrow">Watch the workflow</span>
+              <h2 class="section-title text-4xl font-bold mb-3 primary-text">Invoiso Demo — Free Offline Invoice Software Walkthrough</h2>
+              <p>Full walkthrough of Invoiso — from setup to your first invoice</p>
+
+              <div class="demo-topic-list" aria-label="Demo topics">
+                <div>
+                  <i class="fas fa-building" aria-hidden="true"></i>
+                  <span>Company setup</span>
+                </div>
+                <div>
+                  <i class="fas fa-users" aria-hidden="true"></i>
+                  <span>Customers and products</span>
+                </div>
+                <div>
+                  <i class="fas fa-file-invoice" aria-hidden="true"></i>
+                  <span>Invoice creation</span>
+                </div>
+                <div>
+                  <i class="fas fa-file-pdf" aria-hidden="true"></i>
+                  <span>PDF export</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="premium-demo-player reveal">
+              <div class="demo-video-frame">
+                <div class="demo-video-topbar" aria-hidden="true">
+                  <div class="screenshots-window-dots"><span></span><span></span><span></span></div>
+                  <span>Invoiso App Walkthrough</span>
+                </div>
+                <div class="yt-facade demo-video-surface"
+                     data-id="HH17FE3C4tM"
+                     data-title="Invoiso App Walkthrough"
+                     role="button" tabindex="0"
+                     aria-label="Play: Invoiso App Walkthrough">
+                  <img src="https://i.ytimg.com/vi/HH17FE3C4tM/maxresdefault.jpg"
+                       alt="Invoiso App Walkthrough — click to play"
+                       width="1280" height="720" loading="lazy" />
+                  <button class="yt-play-btn" type="button" tabindex="-1" aria-hidden="true">
+                    <svg viewBox="0 0 68 48" width="68" height="48">
+                      <path d="M66.52,7.74c-0.78-2.93-2.49-5.41-5.42-6.19C55.79,.13,34,0,34,0S12.21,.13,6.9,1.55 C3.97,2.33,2.27,4.81,1.48,7.74C0.06,13.05,0,24,0,24s0.06,10.95,1.48,16.26c0.78,2.93,2.49,5.41,5.42,6.19 C12.21,47.87,34,48,34,48s21.79-0.13,27.1-1.55c2.93-0.78,4.64-3.26,5.42-6.19C67.94,34.95,68,24,68,24S67.94,13.05,66.52,7.74z" fill="#f00"></path>
+                      <path d="M 45,24 27,14 27,34" fill="#fff"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <p class="demo-video-note">
+                <i class="fas fa-bolt" aria-hidden="true"></i>
+                Video loads only when you press play.
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -1039,6 +1150,23 @@
             <p class="text-xs p-4" style="color:var(--text-muted);border-top:1px solid var(--border)">
               Comparison based on publicly available information as of May 2026. Features may vary by plan or region.
             </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="seo-section seo-section-alt" aria-labelledby="billing-guides-title">
+        <div class="container mx-auto px-6 max-w-7xl">
+          <div class="mb-10 reveal text-center">
+            <h2 id="billing-guides-title" class="section-title text-4xl font-bold mb-3 primary-text">Billing Software Guides</h2>
+            <p style="color:var(--text-muted)">Focused pages and practical guides for common invoice software searches.</p>
+          </div>
+          <div class="seo-grid">
+            <a class="article-card" href="free-gst-billing-software.html"><i class="fas fa-receipt" aria-hidden="true"></i><h3>Free GST Billing Software</h3><p>GST-ready invoice PDFs with GSTIN, HSN, tax fields, and UPI QR support.</p></a>
+            <a class="article-card" href="offline-billing-software.html"><i class="fas fa-wifi-slash" aria-hidden="true"></i><h3>Offline Billing Software</h3><p>Desktop invoicing for businesses that want local data and no cloud dependency.</p></a>
+            <a class="article-card" href="vyapar-alternative.html"><i class="fas fa-right-left" aria-hidden="true"></i><h3>Free Vyapar Alternative</h3><p>Compare Invoiso with paid billing tools when you need a free open-source option.</p></a>
+            <a class="article-card" href="open-source-invoice-software.html"><i class="fab fa-github" aria-hidden="true"></i><h3>Open Source Invoice Software</h3><p>Transparent billing software with source code available on GitHub.</p></a>
+            <a class="article-card" href="invoice-software-for-linux.html"><i class="fab fa-linux" aria-hidden="true"></i><h3>Invoice Software for Linux</h3><p>Linux desktop billing with AppImage and DEB options.</p></a>
+            <a class="article-card" href="blog/"><i class="fas fa-book-open" aria-hidden="true"></i><h3>Invoiso Blog</h3><p>How-to guides for GST invoices, UPI QR payments, offline billing, and Linux invoicing.</p></a>
           </div>
         </div>
       </section>
@@ -1189,7 +1317,7 @@
 
               <a href="customization.html" class="contact-link-row">
                 <div class="feature-icon-box" style="background:rgba(34,197,94,0.14)">
-                  <i class="fas fa-wand-magic-sparkles" style="color:#22c55e" aria-hidden="true"></i>
+                  <i class="fas fa-sliders" style="color:#22c55e" aria-hidden="true"></i>
                 </div>
                 <div style="flex:1; min-width:0">
                   <div class="text-sm font-semibold" style="color:var(--text)">Customisation Request</div>
@@ -1210,40 +1338,115 @@
     </main>
 
     <!-- Footer -->
-    <footer class="text-white text-center py-12 relative">
-      <div class="container mx-auto px-6">
-        <div class="flex flex-wrap justify-center gap-8 text-lg mb-8">
-          <a href="download.html" class="hover:underline">
-            <i class="fas fa-download mr-2" aria-hidden="true"></i>Download Free Billing Software
-          </a>
-          <a href="invoice-maker.html" class="hover:underline">
-            <i class="fas fa-file-invoice mr-2" aria-hidden="true"></i>Free Invoice Generator
-          </a>
-          <a href="faq.html" class="hover:underline">
-            <i class="fas fa-circle-question mr-2" aria-hidden="true"></i>Billing Software FAQ
-          </a>
-          <a href="https://github.com/Anooppandikashala/invoiso" target="_blank" rel="noopener noreferrer" class="hover:underline">
-            <i class="fab fa-github mr-2" aria-hidden="true"></i>GitHub
-          </a>
-          <a href="https://buymeacoffee.com/anoopp" target="_blank" rel="noopener noreferrer" class="hover:underline">
-            <i class="fas fa-mug-hot mr-2" aria-hidden="true"></i>Support
-          </a>
-          <a href="mailto:anooppkrishnan96@gmail.com" class="hover:underline">
-            <i class="fas fa-envelope mr-2" aria-hidden="true"></i>Email
-          </a>
+    <footer class="site-footer">
+      <div class="container mx-auto px-6 max-w-7xl site-footer-inner">
+        <div class="site-footer-top">
+          <div class="site-footer-brand">
+            <a href="/" class="site-footer-logo">
+              <img src="assets/images/logo.svg" alt="Invoiso" aria-hidden="true" />
+              <span>Invoiso</span>
+            </a>
+            <p class="site-footer-text">Free, open-source billing software for small businesses. Create GST-ready invoices offline on Windows, Linux, and macOS.</p>
+            <div class="site-footer-badges" aria-label="Product highlights">
+              <span class="site-footer-badge"><i class="fas fa-check-circle" aria-hidden="true"></i> Free forever</span>
+              <span class="site-footer-badge"><i class="fas fa-wifi-slash" aria-hidden="true"></i> Offline first</span>
+              <span class="site-footer-badge"><i class="fab fa-github" aria-hidden="true"></i> Open source</span>
+            </div>
+          </div>
+
+          <div class="site-footer-grid">
+            <div>
+              <h2 class="site-footer-title">Product</h2>
+              <ul class="site-footer-links">
+                <li><a href="download.html" class="site-footer-link"><i class="fas fa-download" aria-hidden="true"></i>Download app</a></li>
+                <li><a href="invoice-maker.html" class="site-footer-link"><i class="fas fa-file-invoice" aria-hidden="true"></i>Invoice maker</a></li>
+                <li><a href="free-gst-billing-software.html" class="site-footer-link"><i class="fas fa-receipt" aria-hidden="true"></i>GST billing</a></li>
+                <li><a href="offline-billing-software.html" class="site-footer-link"><i class="fas fa-database" aria-hidden="true"></i>Offline billing</a></li>
+                <li><a href="index.html#features" class="site-footer-link"><i class="fas fa-layer-group" aria-hidden="true"></i>Features</a></li>
+              </ul>
+            </div>
+            <div>
+              <h2 class="site-footer-title">Resources</h2>
+              <ul class="site-footer-links">
+                <li><a href="blog/" class="site-footer-link"><i class="fas fa-book-open" aria-hidden="true"></i>Blog</a></li>
+                <li><a href="faq.html" class="site-footer-link"><i class="fas fa-circle-question" aria-hidden="true"></i>FAQ</a></li>
+                <li><a href="changelog.html" class="site-footer-link"><i class="fas fa-clock-rotate-left" aria-hidden="true"></i>Updates</a></li>
+                <li><a href="vyapar-alternative.html" class="site-footer-link"><i class="fas fa-right-left" aria-hidden="true"></i>Vyapar alternative</a></li>
+                <li><a href="invoice-software-for-linux.html" class="site-footer-link"><i class="fab fa-linux" aria-hidden="true"></i>Linux invoice app</a></li>
+                <li><a href="customization.html" class="site-footer-link"><i class="fas fa-sliders" aria-hidden="true"></i>Customization</a></li>
+              </ul>
+            </div>
+            <div>
+              <h2 class="site-footer-title">Community</h2>
+              <ul class="site-footer-links">
+                <li><a href="https://github.com/Anooppandikashala/invoiso" target="_blank" rel="noopener noreferrer" class="site-footer-link"><i class="fab fa-github" aria-hidden="true"></i>GitHub</a></li>
+                <li><a href="https://github.com/Anooppandikashala/invoiso/issues" target="_blank" rel="noopener noreferrer" class="site-footer-link"><i class="fas fa-bug" aria-hidden="true"></i>Report issue</a></li>
+                <li><a href="https://buymeacoffee.com/anoopp" target="_blank" rel="noopener noreferrer" class="site-footer-link"><i class="fas fa-mug-hot" aria-hidden="true"></i>Support project</a></li>
+              </ul>
+            </div>
+            <div>
+              <h2 class="site-footer-title">Contact</h2>
+              <ul class="site-footer-links">
+                <li><a href="contact.html" class="site-footer-link"><i class="fas fa-headset" aria-hidden="true"></i>Contact support</a></li>
+                <li><a href="mailto:anooppkrishnan96@gmail.com" class="site-footer-link"><i class="fas fa-envelope" aria-hidden="true"></i>Email</a></li>
+                <li><a href="customization.html" class="site-footer-link"><i class="fas fa-briefcase" aria-hidden="true"></i>Custom work</a></li>
+              </ul>
+            </div>
+          </div>
         </div>
 
-        <div class="border-t pt-8" style="border-color:var(--border)">
-          <p class="text-lg">
-            © <span id="year"></span> Invoiso. All rights reserved.
-          </p>
-          <p class="text-sm mt-2" style="color:var(--text-muted)">
-            <time datetime="2026-04-12">Last updated April 2026</time>
-          </p>
+        <div class="site-footer-bottom">
+          <div>
+            <p class="site-footer-copy">© <span id="year"></span> Invoiso. All rights reserved.</p>
+            <p class="site-footer-note"><time datetime="2026-05-25">Last updated May 2026</time></p>
+          </div>
+          <div class="site-footer-social" aria-label="Social links">
+            <a href="https://github.com/Anooppandikashala/invoiso" target="_blank" rel="noopener noreferrer" aria-label="Invoiso on GitHub"><i class="fab fa-github" aria-hidden="true"></i></a>
+            <a href="https://buymeacoffee.com/anoopp" target="_blank" rel="noopener noreferrer" aria-label="Support Invoiso"><i class="fas fa-mug-hot" aria-hidden="true"></i></a>
+            <a href="mailto:anooppkrishnan96@gmail.com" aria-label="Email Invoiso"><i class="fas fa-envelope" aria-hidden="true"></i></a>
+          </div>
         </div>
       </div>
     </footer>
 
     <script defer src="assets/js/app.js"></script>
+    <script>
+    (function () {
+      var THRESHOLD = 50;
+      var CACHE_KEY = 'invoiso_gh_stars';
+      var CACHE_TTL = 3600000; // 1 hour
+
+      function showStars(count) {
+        if (count < THRESHOLD) return;
+        var label = count >= 1000 ? (count / 1000).toFixed(1) + 'k' : String(count);
+        var badge = document.getElementById('gh-star-badge');
+        var badgeCount = document.getElementById('gh-star-count');
+        var chip = document.getElementById('gh-star-chip');
+        var chipCount = document.getElementById('gh-star-chip-count');
+        if (badge && badgeCount) { badgeCount.textContent = label; badge.style.display = 'inline-flex'; }
+        if (chip && chipCount) { chipCount.textContent = label; chip.style.display = 'inline-flex'; }
+      }
+
+      function fetchStars() {
+        var cached = null;
+        try { cached = JSON.parse(localStorage.getItem(CACHE_KEY)); } catch(e) {}
+        if (cached && Date.now() - cached.ts < CACHE_TTL) { showStars(cached.count); return; }
+        fetch('https://api.github.com/repos/Anooppandikashala/invoiso')
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            var count = d.stargazers_count || 0;
+            try { localStorage.setItem(CACHE_KEY, JSON.stringify({ count: count, ts: Date.now() })); } catch(e) {}
+            showStars(count);
+          })
+          .catch(function() {});
+      }
+
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(fetchStars, { timeout: 3000 });
+      } else {
+        window.addEventListener('load', fetchStars);
+      }
+    })();
+    </script>
   </body>
 </html>
