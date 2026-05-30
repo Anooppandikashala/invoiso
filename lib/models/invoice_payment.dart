@@ -1,3 +1,5 @@
+import '../utils/app_date.dart';
+
 class InvoicePayment {
   final String id;
   final String invoiceId;
@@ -34,7 +36,7 @@ class InvoicePayment {
         'tax_amount_paid': taxAmountPaid,
         'previously_paid': previouslyPaid,
         'balance_after': balanceAfter,
-        'date_paid': datePaid.toIso8601String().split('T').first,
+        'date_paid': AppDate.dateKey(datePaid),
         'payment_method': paymentMethod,
         'notes': notes,
       };

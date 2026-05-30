@@ -1,8 +1,10 @@
 import 'package:uuid/uuid.dart';
 
 import '../domain/invoice_calculator.dart';
+import '../domain/payment_receipt_numbers.dart';
 import '../models/invoice.dart';
 import '../models/invoice_payment.dart';
+import '../utils/app_date.dart';
 import '../utils/app_logger.dart';
 import 'database_helper.dart';
 
@@ -38,15 +40,11 @@ class PaymentService {
         'SELECT receipt_number FROM invoice_payments WHERE invoice_id = ?',
         [invoice.id],
       );
-      int maxSuffix = 0;
-      for (final row in suffixResult) {
-        final rn = row['receipt_number'] as String;
-        final dashR = rn.lastIndexOf('-R');
-        if (dashR != -1) {
-          final n = int.tryParse(rn.substring(dashR + 2)) ?? 0;
-          if (n > maxSuffix) maxSuffix = n;
-        }
-      }
+      final receiptNumber = PaymentReceiptNumbers.nextReceiptNumber(
+        invoiceId: invoice.id,
+        existingReceiptNumbers:
+            suffixResult.map((row) => row['receipt_number'] as String?),
+      );
 
       // 3. Compute tax portion proportionally
       final taxAmountPaid = invoice.total > 0
@@ -63,7 +61,7 @@ class PaymentService {
         id: _uuid.v4(),
         invoiceId: invoice.id,
         invoiceNumber: invoice.id,
-        receiptNumber: '${invoice.id}-R${maxSuffix + 1}',
+        receiptNumber: receiptNumber,
         amountPaid: amountPaid,
         taxAmountPaid: taxAmountPaid,
         previouslyPaid: previouslyPaid,
@@ -100,15 +98,11 @@ class PaymentService {
           'SELECT receipt_number FROM invoice_payments WHERE invoice_id = ?',
           [invoice.id],
         );
-        int maxSuffix = 0;
-        for (final row in suffixResult) {
-          final rn = row['receipt_number'] as String;
-          final dashR = rn.lastIndexOf('-R');
-          if (dashR != -1) {
-            final n = int.tryParse(rn.substring(dashR + 2)) ?? 0;
-            if (n > maxSuffix) maxSuffix = n;
-          }
-        }
+        final receiptNumber = PaymentReceiptNumbers.nextReceiptNumber(
+          invoiceId: invoice.id,
+          existingReceiptNumbers:
+              suffixResult.map((row) => row['receipt_number'] as String?),
+        );
 
         final taxAmountPaid = invoice.total > 0
             ? (amountPaid * (invoice.tax / invoice.total))
@@ -118,7 +112,7 @@ class PaymentService {
           id: _uuid.v4(),
           invoiceId: invoice.id,
           invoiceNumber: invoice.id,
-          receiptNumber: '${invoice.id}-R${maxSuffix + 1}',
+          receiptNumber: receiptNumber,
           amountPaid: amountPaid,
           taxAmountPaid: taxAmountPaid,
           previouslyPaid: invoice.amountPaid,
@@ -200,8 +194,8 @@ class PaymentService {
       'invoice_payments',
       where: 'date_paid >= ? AND date_paid <= ?',
       whereArgs: [
-        from.toIso8601String().split('T').first,
-        to.toIso8601String().split('T').first,
+        AppDate.dateKey(from),
+        AppDate.dateKey(to),
       ],
       orderBy: 'date_paid ASC',
     );
@@ -216,8 +210,8 @@ class PaymentService {
       'FROM invoice_payments '
       'WHERE date_paid >= ? AND date_paid <= ?',
       [
-        from.toIso8601String().split('T').first,
-        to.toIso8601String().split('T').first,
+        AppDate.dateKey(from),
+        AppDate.dateKey(to),
       ],
     );
     return (result.first['total'] as num).toDouble();

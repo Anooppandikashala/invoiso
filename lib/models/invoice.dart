@@ -1,5 +1,6 @@
 import '../common.dart';
 import '../domain/invoice_calculator.dart';
+import '../domain/invoice_totals_calculator.dart';
 import 'additional_cost.dart';
 import 'customer.dart';
 import 'invoice_item.dart';
@@ -44,32 +45,26 @@ class Invoice {
     this.additionalCosts = const [],
   });
 
-  double get subtotal => items.fold(0.0, (sum, item) => sum + item.total);
+  InvoiceTotals get _totals => InvoiceTotalsCalculator.totals(
+        lines: items.map((item) => item._amountsForInvoice),
+        taxMode: taxMode,
+        globalTaxRate: taxRate,
+        globalTaxRateFormat: TaxRateFormat.fraction,
+        additionalCostsTotal: additionalCostsTotal,
+      );
 
-  double get grossSubtotal =>
-      items.fold(0.0, (sum, item) => sum + item.grossPrice);
+  double get subtotal => _totals.subtotal;
 
-  double get totalDiscount =>
-      items.fold(0.0, (sum, item) => sum + item.totalDiscount);
+  double get grossSubtotal => _totals.grossSubtotal;
 
-  double get tax {
-    switch (taxMode) {
-      case TaxMode.global:
-        return subtotal * taxRate;
-      case TaxMode.perItem:
-        return items.fold(
-          0.0,
-          (sum, item) => sum + item.total * (item.product.tax_rate / 100),
-        );
-      case TaxMode.none:
-        return 0.0;
-    }
-  }
+  double get totalDiscount => _totals.totalDiscount;
+
+  double get tax => _totals.tax;
 
   double get additionalCostsTotal =>
       additionalCosts.fold(0.0, (sum, c) => sum + c.amount);
 
-  double get total => subtotal + tax + additionalCostsTotal;
+  double get total => _totals.total;
 
   double get amountPaid => payments.fold(0.0, (sum, p) => sum + p.amountPaid);
 
@@ -78,4 +73,15 @@ class Invoice {
 
   PaymentStatus get paymentStatus =>
       InvoiceCalculator.paymentStatus(total: total, paid: amountPaid);
+}
+
+extension _InvoiceItemTotals on InvoiceItem {
+  InvoiceLineAmount get _amountsForInvoice => InvoiceTotalsCalculator.line(
+        price: effectivePrice,
+        quantity: quantity,
+        discount: discount,
+        discountPerUnit: discountPerUnit,
+        extraCost: extraCost ?? 0.0,
+        taxRatePercent: product.tax_rate.toDouble(),
+      );
 }

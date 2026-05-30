@@ -1,7 +1,11 @@
 import 'package:invoiso/database/database_helper.dart';
 import 'package:invoiso/common.dart';
+import 'package:invoiso/domain/customer_identity.dart';
 import 'package:invoiso/domain/invoice_calculator.dart';
+import 'package:invoiso/domain/invoice_totals_calculator.dart';
 import 'package:invoiso/models/additional_cost.dart';
+import 'package:invoiso/utils/app_date.dart';
+import 'package:invoiso/utils/formatters.dart';
 
 // ─── Result types ──────────────────────────────────────────────────────────────
 
@@ -269,6 +273,13 @@ class _StatementLineDraft {
 
 class ReportService {
   static final _db = DatabaseHelper();
+  static const _invoiceItemNetSql = 'CASE WHEN ii.discount_per_unit = 1 '
+      'THEN (COALESCE(ii.unit_price, ii.product_price) - ii.discount) * ii.quantity '
+      '+ COALESCE(ii.extra_cost, 0) '
+      'ELSE COALESCE(ii.unit_price, ii.product_price) * ii.quantity '
+      '- ii.discount + COALESCE(ii.extra_cost, 0) END';
+  static const _invoiceItemDiscountSql = 'CASE WHEN ii.discount_per_unit = 1 '
+      'THEN ii.discount * ii.quantity ELSE ii.discount END';
 
   // ── Batch loader: invoice totals computed in Dart (accurate, no N+1) ────────
 
@@ -285,11 +296,11 @@ class ReportService {
     final args = <dynamic>[type];
     if (from != null) {
       sb.write(' AND date >= ?');
-      args.add(from.toIso8601String().split('T').first);
+      args.add(AppDate.dateKey(from));
     }
     if (to != null) {
       sb.write(' AND date <= ?');
-      args.add(to.toIso8601String().split('T').first);
+      args.add(AppDate.dateKey(to));
     }
     if (currencyCode != null) {
       sb.write(' AND (currency_code = ? OR currency_code IS NULL)');
@@ -354,43 +365,28 @@ class ReportService {
       final items = itemsByInv[id] ?? [];
       final paid = paidByInv[id] ?? 0.0;
 
-      double subtotal = 0.0, itemTax = 0.0;
-      for (final it in items) {
-        final price = (it['unit_price'] as num?)?.toDouble() ??
-            (it['product_price'] as num?)?.toDouble() ??
-            0.0;
-        final qty = (it['quantity'] as num?)?.toDouble() ?? 0.0;
-        final disc = (it['discount'] as num?)?.toDouble() ?? 0.0;
-        final dpu = (it['discount_per_unit'] as int?) == 1;
-        final extra = (it['extra_cost'] as num?)?.toDouble() ?? 0.0;
-        final itRate = (it['product_tax_rate'] as num?)?.toDouble() ?? 0.0;
-
-        final lt =
-            dpu ? (price - disc) * qty + extra : price * qty - disc + extra;
-        subtotal += lt;
-        if (taxMode == TaxMode.perItem) itemTax += lt * (itRate / 100);
-      }
-
-      final tax = switch (taxMode) {
-        TaxMode.global => subtotal * (taxRate / 100),
-        TaxMode.perItem => itemTax,
-        TaxMode.none => 0.0,
-      };
-
       final addCosts =
           AdditionalCost.listFromJson(inv['additional_costs'] as String?)
               .fold(0.0, (s, c) => s + c.amount);
-
-      final total = subtotal + tax + addCosts;
+      final totals = InvoiceTotalsCalculator.totals(
+        lines: items.map(InvoiceTotalsCalculator.lineFromDbRow),
+        taxMode: taxMode,
+        globalTaxRate: taxRate,
+        globalTaxRateFormat: TaxRateFormat.percent,
+        additionalCostsTotal: addCosts,
+      );
+      final total = totals.total;
       final outstanding =
           InvoiceCalculator.outstanding(total: total, paid: paid);
 
       return _InvRow(
         id: id,
-        customerKey: (inv['customer_id'] as String?)?.isNotEmpty == true
-            ? inv['customer_id'] as String
-            : inv['customer_name'] as String? ?? '',
-        customerName: inv['customer_name'] as String? ?? '',
+        customerKey: CustomerIdentity.key(
+          id: inv['customer_id'] as String?,
+          name: inv['customer_name'] as String?,
+        ),
+        customerName:
+            CustomerIdentity.displayName(inv['customer_name'] as String?),
         date: inv['date'] as String? ?? '',
         dueDate: inv['due_date'] as String?,
         total: total,
@@ -434,8 +430,8 @@ class ReportService {
         await _loadRows(from: from, to: to, currencyCode: currencyCode);
     final db = await _db.database;
 
-    final f = from.toIso8601String().split('T').first;
-    final t = to.toIso8601String().split('T').first;
+    final f = AppDate.dateKey(from);
+    final t = AppDate.dateKey(to);
     final currencyFilter = currencyCode != null
         ? 'AND (i.currency_code = ? OR i.currency_code IS NULL) '
         : '';
@@ -540,8 +536,8 @@ class ReportService {
   static Future<List<TaxBucket>> getTaxByRate(DateTime from, DateTime to,
       {String? currencyCode}) async {
     final db = await _db.database;
-    final f = from.toIso8601String().split('T').first;
-    final t = to.toIso8601String().split('T').first;
+    final f = AppDate.dateKey(from);
+    final t = AppDate.dateKey(to);
     final ccFilter = currencyCode != null
         ? 'AND (i.currency_code = ? OR i.currency_code IS NULL) '
         : '';
@@ -556,12 +552,7 @@ class ReportService {
     // Per-item mode: tax computed per line item's product_tax_rate
     final perItemRows = await db.rawQuery(
       "SELECT ii.product_tax_rate AS rate, "
-      "SUM(CASE WHEN ii.discount_per_unit = 1 "
-      "  THEN (COALESCE(ii.unit_price, ii.product_price) - ii.discount) * ii.quantity "
-      "       + COALESCE(ii.extra_cost, 0) "
-      "  ELSE  COALESCE(ii.unit_price, ii.product_price) * ii.quantity "
-      "       - ii.discount + COALESCE(ii.extra_cost, 0) "
-      "END * ii.product_tax_rate / 100) AS tax_amount "
+      "SUM($_invoiceItemNetSql * ii.product_tax_rate / 100) AS tax_amount "
       "FROM invoice_items ii "
       "JOIN invoices i ON i.id = ii.invoice_id "
       "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
@@ -606,19 +597,14 @@ class ReportService {
       for (final inv in globalInvRows) {
         final id = inv['id'] as String;
         final taxRate = (inv['tax_rate'] as num?)?.toDouble() ?? 0.0;
-        double subtotal = 0.0;
-        for (final it in itemsByInv[id] ?? []) {
-          final price = (it['unit_price'] as num?)?.toDouble() ??
-              (it['product_price'] as num?)?.toDouble() ??
-              0.0;
-          final qty = (it['quantity'] as num?)?.toDouble() ?? 0.0;
-          final disc = (it['discount'] as num?)?.toDouble() ?? 0.0;
-          final dpu = (it['discount_per_unit'] as int?) == 1;
-          final extra = (it['extra_cost'] as num?)?.toDouble() ?? 0.0;
-          subtotal +=
-              dpu ? (price - disc) * qty + extra : price * qty - disc + extra;
-        }
-        final tax = subtotal * (taxRate / 100);
+        final totals = InvoiceTotalsCalculator.totals(
+          lines:
+              (itemsByInv[id] ?? []).map(InvoiceTotalsCalculator.lineFromDbRow),
+          taxMode: TaxMode.global,
+          globalTaxRate: taxRate,
+          globalTaxRateFormat: TaxRateFormat.percent,
+        );
+        final tax = totals.tax;
         if (tax > 0) buckets[taxRate] = (buckets[taxRate] ?? 0) + tax;
       }
     }
@@ -642,7 +628,7 @@ class ReportService {
 
     final byCustomer = <String, List<_InvRow>>{};
     for (final r in rows) {
-      (byCustomer[r.customerName] ??= []).add(r);
+      (byCustomer[r.customerKey] ??= []).add(r);
     }
 
     final result = byCustomer.entries.map((e) {
@@ -653,7 +639,7 @@ class ReportService {
         outstanding += r.outstanding;
       }
       return TopCustomer(
-        name: e.key,
+        name: e.value.first.customerName,
         invoiceCount: e.value.length,
         billed: billed,
         collected: collected,
@@ -692,8 +678,11 @@ class ReportService {
 
     return rows
         .map((r) => CustomerStatementCustomer(
-              key: r['customer_key'] as String,
-              name: r['customer_name'] as String,
+              key: CustomerIdentity.key(
+                id: r['customer_key'] as String?,
+                name: r['customer_name'] as String?,
+              ),
+              name: CustomerIdentity.displayName(r['customer_name'] as String?),
               invoiceCount: (r['invoice_count'] as num).toInt(),
             ))
         .toList();
@@ -712,8 +701,8 @@ class ReportService {
     if (rows.isEmpty) return [];
 
     final db = await _db.database;
-    final f = from.toIso8601String().split('T').first;
-    final t = to.toIso8601String().split('T').first;
+    final f = AppDate.dateKey(from);
+    final t = AppDate.dateKey(to);
     final byCurrency = <String, List<_InvRow>>{};
     for (final row in rows) {
       (byCurrency[row.currencyCode] ??= []).add(row);
@@ -834,8 +823,8 @@ class ReportService {
     String? currencyCode,
   }) async {
     final db = await _db.database;
-    final f = from.toIso8601String().split('T').first;
-    final t = to.toIso8601String().split('T').first;
+    final f = AppDate.dateKey(from);
+    final t = AppDate.dateKey(to);
     final ccFilter = currencyCode != null
         ? 'AND (i.currency_code = ? OR i.currency_code IS NULL) '
         : '';
@@ -848,14 +837,8 @@ class ReportService {
     final rows = await db.rawQuery(
       "SELECT ii.product_name, "
       "SUM(ii.quantity) AS units_sold, "
-      "SUM(CASE WHEN ii.discount_per_unit = 1 "
-      "  THEN (COALESCE(ii.unit_price, ii.product_price) - ii.discount) * ii.quantity "
-      "       + COALESCE(ii.extra_cost, 0) "
-      "  ELSE  COALESCE(ii.unit_price, ii.product_price) * ii.quantity "
-      "       - ii.discount + COALESCE(ii.extra_cost, 0) "
-      "END) AS revenue, "
-      "SUM(CASE WHEN ii.discount_per_unit = 1 "
-      "  THEN ii.discount * ii.quantity ELSE ii.discount END) AS discount_given "
+      "SUM($_invoiceItemNetSql) AS revenue, "
+      "SUM($_invoiceItemDiscountSql) AS discount_given "
       "FROM invoice_items ii "
       "JOIN invoices i ON i.id = ii.invoice_id "
       "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
@@ -882,8 +865,8 @@ class ReportService {
     String? currencyCode,
   }) async {
     final db = await _db.database;
-    final f = from.toIso8601String().split('T').first;
-    final t = to.toIso8601String().split('T').first;
+    final f = AppDate.dateKey(from);
+    final t = AppDate.dateKey(to);
     final currencyFilter = currencyCode != null
         ? 'AND (currency_code = ? OR currency_code IS NULL) '
         : '';
@@ -925,76 +908,100 @@ class ReportService {
   // ── CSV export helpers ─────────────────────────────────────────────────────
 
   static String exportTrendCsv(List<MonthlyPoint> trend) {
-    final sb = StringBuffer('Month,Billed,Collected\n');
-    for (final p in trend) {
-      sb.writeln(
-          '${p.month},${p.billed.toStringAsFixed(2)},${p.collected.toStringAsFixed(2)}');
-    }
-    return sb.toString();
+    return buildQuotedCsv([
+      ['Month', 'Billed', 'Collected'],
+      for (final p in trend)
+        [p.month, p.billed.toStringAsFixed(2), p.collected.toStringAsFixed(2)],
+    ]);
   }
 
   static String exportTopCustomersCsv(List<TopCustomer> list) {
-    final sb = StringBuffer('Customer,Invoices,Billed,Collected,Outstanding\n');
-    for (final c in list) {
-      sb.writeln(
-          '"${c.name}",${c.invoiceCount},${c.billed.toStringAsFixed(2)},${c.collected.toStringAsFixed(2)},${c.outstanding.toStringAsFixed(2)}');
-    }
-    return sb.toString();
+    return buildQuotedCsv([
+      ['Customer', 'Invoices', 'Billed', 'Collected', 'Outstanding'],
+      for (final c in list)
+        [
+          c.name,
+          c.invoiceCount,
+          c.billed.toStringAsFixed(2),
+          c.collected.toStringAsFixed(2),
+          c.outstanding.toStringAsFixed(2),
+        ],
+    ]);
   }
 
   static String exportCustomerStatementsCsv(
       List<CustomerStatement> statements) {
-    final sb = StringBuffer();
+    final blocks = <String>[];
     for (final statement in statements) {
-      sb.writeln(
-          '"Customer","${statement.customerName}","Currency","${statement.currencyCode}"');
-      sb.writeln(
-          '"Opening Balance",${statement.openingBalance.toStringAsFixed(2)}');
-      sb.writeln('"Invoiced",${statement.invoiced.toStringAsFixed(2)}');
-      sb.writeln('"Paid",${statement.paid.toStringAsFixed(2)}');
-      sb.writeln(
-          '"Closing Balance",${statement.closingBalance.toStringAsFixed(2)}');
-      sb.writeln(
-          '"Overdue Balance",${statement.overdueBalance.toStringAsFixed(2)}');
-      sb.writeln('Date,Type,Reference,Description,Debit,Credit,Balance');
-      for (final line in statement.lines) {
-        sb.writeln(
-          '"${line.date}","${line.type}","${line.reference}",'
-          '"${line.description}",${line.debit.toStringAsFixed(2)},'
-          '${line.credit.toStringAsFixed(2)},${line.balance.toStringAsFixed(2)}',
-        );
-      }
-      sb.writeln();
+      blocks.add(buildQuotedCsv([
+        [
+          'Customer',
+          statement.customerName,
+          'Currency',
+          statement.currencyCode
+        ],
+        ['Opening Balance', statement.openingBalance.toStringAsFixed(2)],
+        ['Invoiced', statement.invoiced.toStringAsFixed(2)],
+        ['Paid', statement.paid.toStringAsFixed(2)],
+        ['Closing Balance', statement.closingBalance.toStringAsFixed(2)],
+        ['Overdue Balance', statement.overdueBalance.toStringAsFixed(2)],
+        [
+          'Date',
+          'Type',
+          'Reference',
+          'Description',
+          'Debit',
+          'Credit',
+          'Balance'
+        ],
+        for (final line in statement.lines)
+          [
+            line.date,
+            line.type,
+            line.reference,
+            line.description,
+            line.debit.toStringAsFixed(2),
+            line.credit.toStringAsFixed(2),
+            line.balance.toStringAsFixed(2),
+          ],
+      ]));
     }
-    return sb.toString();
+    return blocks.join('\n\n');
   }
 
   static String exportTopProductsCsv(List<TopProduct> list) {
-    final sb = StringBuffer('SL,Product,Units Sold,Revenue,Discount Given\n');
-    for (var i = 0; i < list.length; i++) {
-      final p = list[i];
-      sb.writeln(
-          '${i + 1},"${p.name}",${p.unitsSold.toStringAsFixed(2)},${p.revenue.toStringAsFixed(2)},${p.discountGiven.toStringAsFixed(2)}');
-    }
-    return sb.toString();
+    return buildQuotedCsv([
+      ['SL', 'Product', 'Units Sold', 'Revenue', 'Discount Given'],
+      for (var i = 0; i < list.length; i++)
+        [
+          i + 1,
+          list[i].name,
+          list[i].unitsSold.toStringAsFixed(2),
+          list[i].revenue.toStringAsFixed(2),
+          list[i].discountGiven.toStringAsFixed(2),
+        ],
+    ]);
   }
 
   static String exportAgedReceivablesCsv(List<AgedReceivable> list) {
-    final sb = StringBuffer('Invoice ID,Customer,Outstanding,Days Overdue\n');
-    for (final r in list) {
-      sb.writeln(
-          '"${r.invoiceId}","${r.customerName}",${r.outstanding.toStringAsFixed(2)},${r.daysOverdue}');
-    }
-    return sb.toString();
+    return buildQuotedCsv([
+      ['Invoice ID', 'Customer', 'Outstanding', 'Days Overdue'],
+      for (final r in list)
+        [
+          r.invoiceId,
+          r.customerName,
+          r.outstanding.toStringAsFixed(2),
+          r.daysOverdue,
+        ],
+    ]);
   }
 
   static String exportTaxCsv(List<TaxBucket> list) {
-    final sb = StringBuffer('Tax Rate (%),Tax Collected\n');
-    for (final b in list) {
-      sb.writeln(
-          '${b.rate.toStringAsFixed(0)},${b.taxCollected.toStringAsFixed(2)}');
-    }
-    return sb.toString();
+    return buildQuotedCsv([
+      ['Tax Rate (%)', 'Tax Collected'],
+      for (final b in list)
+        [b.rate.toStringAsFixed(0), b.taxCollected.toStringAsFixed(2)],
+    ]);
   }
 
   // ── 9. Invoice status list ─────────────────────────────────────────────────
@@ -1048,16 +1055,28 @@ class ReportService {
   }
 
   static String exportInvoiceStatusCsv(List<InvoiceStatusRow> list) {
-    final sb = StringBuffer(
-        'Date,Invoice ID,Customer,Total,Paid,Outstanding,Status,Days Overdue\n');
-    for (final r in list) {
-      sb.writeln(
-        '"${r.date}","${r.id}","${r.customerName}",'
-        '${r.total.toStringAsFixed(2)},${r.paid.toStringAsFixed(2)},'
-        '${r.outstanding.toStringAsFixed(2)},"${r.status}",'
-        '${r.hasNoDueDate ? "" : r.daysOverdue}',
-      );
-    }
-    return sb.toString();
+    return buildQuotedCsv([
+      [
+        'Date',
+        'Invoice ID',
+        'Customer',
+        'Total',
+        'Paid',
+        'Outstanding',
+        'Status',
+        'Days Overdue',
+      ],
+      for (final r in list)
+        [
+          r.date,
+          r.id,
+          r.customerName,
+          r.total.toStringAsFixed(2),
+          r.paid.toStringAsFixed(2),
+          r.outstanding.toStringAsFixed(2),
+          r.status,
+          r.hasNoDueDate ? '' : r.daysOverdue,
+        ],
+    ]);
   }
 }

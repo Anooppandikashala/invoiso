@@ -1167,7 +1167,7 @@ class _DashboardHomeState extends State<DashboardHome> {
                                                                   width: 6),
                                                               Flexible(
                                                                 child: Text(
-                                                                  'Due: ${invoice.dueDate!.toString().split(' ')[0]}',
+                                                                  'Due: ${AppFormatters.formatShortDate(invoice.dueDate)}',
                                                                   overflow:
                                                                       TextOverflow
                                                                           .ellipsis,

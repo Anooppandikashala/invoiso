@@ -1,6 +1,7 @@
 import 'package:invoiso/common.dart';
 import 'package:invoiso/database/invoice_item_service.dart';
 import 'package:invoiso/domain/invoice_calculator.dart';
+import 'package:invoiso/domain/invoice_totals_calculator.dart';
 import 'package:invoiso/database/product_service.dart';
 import 'package:invoiso/models/additional_cost.dart';
 import 'package:invoiso/models/invoice.dart';
@@ -8,6 +9,7 @@ import 'package:invoiso/models/product.dart';
 import '../models/customer.dart';
 import '../models/invoice_item.dart';
 import '../models/invoice_payment.dart';
+import '../utils/app_date.dart';
 import '../utils/app_logger.dart';
 import 'database_helper.dart';
 import 'payment_service.dart';
@@ -615,32 +617,17 @@ class InvoiceService {
       final taxMode = inv['tax_mode'] as String? ?? 'global';
       final items = itemsByInvoice[invId] ?? [];
 
-      double subtotal = 0.0;
-      double itemTax = 0.0;
-      for (final item in items) {
-        final effectivePrice = (item['unit_price'] as num?)?.toDouble() ??
-            (item['product_price'] as num?)?.toDouble() ??
-            0.0;
-        final qty = (item['quantity'] as num?)?.toDouble() ?? 0.0;
-        final discount = (item['discount'] as num?)?.toDouble() ?? 0.0;
-        final discountPerUnit = (item['discount_per_unit'] as int?) == 1;
-        final extraCost = (item['extra_cost'] as num?)?.toDouble() ?? 0.0;
-        final itemTaxRate =
-            (item['product_tax_rate'] as num?)?.toDouble() ?? 0.0;
-
-        final lineTotal = discountPerUnit
-            ? (effectivePrice - discount) * qty + extraCost
-            : (effectivePrice * qty) - discount + extraCost;
-        subtotal += lineTotal;
-        if (taxMode == 'per_item') itemTax += lineTotal * (itemTaxRate / 100);
-      }
-
-      final tax = taxMode == 'global' ? subtotal * (taxRate / 100) : itemTax;
       final additionalTotal =
           AdditionalCost.listFromJson(inv['additional_costs'] as String?)
               .fold(0.0, (sum, c) => sum + c.amount);
-
-      final total = subtotal + tax + additionalTotal;
+      final totals = InvoiceTotalsCalculator.totals(
+        lines: items.map(InvoiceTotalsCalculator.lineFromDbRow),
+        taxMode: TaxModeExtension.fromKey(taxMode),
+        globalTaxRate: taxRate,
+        globalTaxRateFormat: TaxRateFormat.percent,
+        additionalCostsTotal: additionalTotal,
+      );
+      final total = totals.total;
       final paid = paidByInvoice[invId] ?? 0.0;
       outstanding += InvoiceCalculator.outstanding(total: total, paid: paid);
     }
@@ -664,10 +651,10 @@ class InvoiceService {
   static Future<List<Invoice>> getDueSoonInvoices() async {
     final db = await dbHelper.database;
     final now = DateTime.now();
-    final todayStart = '${now.toIso8601String().substring(0, 10)}T00:00:00.000';
-    final tomorrowEnd = DateTime(now.year, now.month, now.day + 2)
-        .toIso8601String()
-        .substring(0, 10);
+    final todayStart = '${AppDate.dateKey(now)}T00:00:00.000';
+    final tomorrowEnd = AppDate.dateKey(
+      DateTime(now.year, now.month, now.day + 2),
+    );
     final rows = await db.query(
       'invoices',
       where: 'deleted_at IS NULL AND type = ? AND due_date IS NOT NULL '
@@ -684,8 +671,7 @@ class InvoiceService {
   /// Invoices past their due_date that are not fully paid, up to [limit] rows.
   static Future<List<Invoice>> getOverdueInvoices({int limit = 10}) async {
     final db = await dbHelper.database;
-    final todayStart =
-        '${DateTime.now().toIso8601String().substring(0, 10)}T00:00:00.000';
+    final todayStart = '${AppDate.dateKey(DateTime.now())}T00:00:00.000';
     // Fetch more than limit to account for some already being paid
     final rows = await db.query(
       'invoices',

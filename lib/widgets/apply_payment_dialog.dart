@@ -4,6 +4,7 @@ import 'package:invoiso/domain/invoice_calculator.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/invoice_payment.dart';
 import 'package:invoiso/services/payment_receipt_service.dart';
+import 'package:invoiso/utils/app_date.dart';
 
 class ApplyPaymentDialog extends StatefulWidget {
   final Invoice invoice;
@@ -542,7 +543,7 @@ class _ApplyPaymentDialogState extends State<ApplyPaymentDialog> {
           SizedBox(
             width: 90,
             child: Text(
-              payment.datePaid.toString().split(' ')[0],
+              AppDate.format(payment.datePaid),
               style: const TextStyle(fontSize: 13),
             ),
           ),
