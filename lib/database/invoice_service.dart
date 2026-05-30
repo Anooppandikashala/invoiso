@@ -1,5 +1,6 @@
 import 'package:invoiso/common.dart';
 import 'package:invoiso/database/invoice_item_service.dart';
+import 'package:invoiso/domain/invoice_calculator.dart';
 import 'package:invoiso/database/product_service.dart';
 import 'package:invoiso/models/additional_cost.dart';
 import 'package:invoiso/models/invoice.dart';
@@ -103,7 +104,8 @@ class InvoiceService {
           'upi_id': invoice.upiId,
           'due_date': invoice.dueDate?.toIso8601String(),
           'quantity_label': invoice.quantityLabel,
-          'additional_costs': AdditionalCost.listToJson(invoice.additionalCosts),
+          'additional_costs':
+              AdditionalCost.listToJson(invoice.additionalCosts),
         },
         where: 'id = ?',
         whereArgs: [invoice.id],
@@ -139,7 +141,8 @@ class InvoiceService {
 
     // Restore stock for old items (outside transaction)
     for (var oldItem in oldItems) {
-      final product = await ProductService.getProductById(oldItem['product_id'] as String);
+      final product =
+          await ProductService.getProductById(oldItem['product_id'] as String);
       if (product != null) {
         final rawQty = oldItem['quantity'];
         final oldQty = rawQty is int ? rawQty : (rawQty as double).round();
@@ -181,7 +184,8 @@ class InvoiceService {
       'business_name': i['customer_business_name'] ?? '',
     });
 
-    final itemRows = await db.query('invoice_items', where: 'invoice_id = ?', whereArgs: [id], orderBy: 'rowid ASC');
+    final itemRows = await db.query('invoice_items',
+        where: 'invoice_id = ?', whereArgs: [id], orderBy: 'rowid ASC');
     final items = <InvoiceItem>[];
 
     for (var row in itemRows) {
@@ -190,11 +194,15 @@ class InvoiceService {
         final rawUnitPrice = row['unit_price'];
         final unitPrice = rawUnitPrice == null
             ? null
-            : (rawUnitPrice is int ? rawUnitPrice.toDouble() : rawUnitPrice as double);
+            : (rawUnitPrice is int
+                ? rawUnitPrice.toDouble()
+                : rawUnitPrice as double);
         final rawExtraCost = row['extra_cost'];
         final extraCost = rawExtraCost == null
             ? null
-            : (rawExtraCost is int ? rawExtraCost.toDouble() : rawExtraCost as double);
+            : (rawExtraCost is int
+                ? rawExtraCost.toDouble()
+                : rawExtraCost as double);
         items.add(InvoiceItem(
           product: product,
           quantity: (row['quantity'] is int)
@@ -230,9 +238,12 @@ class InvoiceService {
       taxMode: TaxModeExtension.fromKey(i['tax_mode'] as String?),
       upiId: i['upi_id'] as String?,
       bankAccountId: i['bank_account_id'] as String?,
-      dueDate: i['due_date'] != null ? DateTime.tryParse(i['due_date'] as String) : null,
+      dueDate: i['due_date'] != null
+          ? DateTime.tryParse(i['due_date'] as String)
+          : null,
       quantityLabel: i['quantity_label'] as String?,
-      additionalCosts: AdditionalCost.listFromJson(i['additional_costs'] as String?),
+      additionalCosts:
+          AdditionalCost.listFromJson(i['additional_costs'] as String?),
       payments: payments,
     );
   }
@@ -266,11 +277,13 @@ class InvoiceService {
     }
     if (fromDate != null) {
       whereParts.add('date >= ?');
-      whereArgs.add('${fromDate.toIso8601String().substring(0, 10)}T00:00:00.000');
+      whereArgs
+          .add('${fromDate.toIso8601String().substring(0, 10)}T00:00:00.000');
     }
     if (toDate != null) {
       whereParts.add('date <= ?');
-      whereArgs.add('${toDate.toIso8601String().substring(0, 10)}T23:59:59.999');
+      whereArgs
+          .add('${toDate.toIso8601String().substring(0, 10)}T23:59:59.999');
     }
     if (fromId != null) {
       whereParts.add('CAST(id AS INTEGER) >= ?');
@@ -309,11 +322,13 @@ class InvoiceService {
     }
     if (fromDate != null) {
       whereParts.add('date >= ?');
-      whereArgs.add('${fromDate.toIso8601String().substring(0, 10)}T00:00:00.000');
+      whereArgs
+          .add('${fromDate.toIso8601String().substring(0, 10)}T00:00:00.000');
     }
     if (toDate != null) {
       whereParts.add('date <= ?');
-      whereArgs.add('${toDate.toIso8601String().substring(0, 10)}T23:59:59.999');
+      whereArgs
+          .add('${toDate.toIso8601String().substring(0, 10)}T23:59:59.999');
     }
     if (fromId != null) {
       whereParts.add('CAST(id AS INTEGER) >= ?');
@@ -417,7 +432,8 @@ class InvoiceService {
   static Future<void> permanentDeleteInvoice(String id) async {
     final db = await dbHelper.database;
     await db.transaction((txn) async {
-      await txn.delete('invoice_items', where: 'invoice_id = ?', whereArgs: [id]);
+      await txn
+          .delete('invoice_items', where: 'invoice_id = ?', whereArgs: [id]);
       await txn.delete('invoices', where: 'id = ?', whereArgs: [id]);
     });
   }
@@ -467,7 +483,8 @@ class InvoiceService {
         'business_name': map['customer_business_name'] ?? '',
       });
 
-      final items = await InvoiceItemService.getInvoiceItemsByInvoiceId(invoiceId);
+      final items =
+          await InvoiceItemService.getInvoiceItemsByInvoiceId(invoiceId);
       invoices.add(
         Invoice(
           id: invoiceId,
@@ -484,9 +501,12 @@ class InvoiceService {
           taxMode: TaxModeExtension.fromKey(map['tax_mode'] as String?),
           upiId: map['upi_id'] as String?,
           bankAccountId: map['bank_account_id'] as String?,
-          dueDate: map['due_date'] != null ? DateTime.tryParse(map['due_date'] as String) : null,
+          dueDate: map['due_date'] != null
+              ? DateTime.tryParse(map['due_date'] as String)
+              : null,
           quantityLabel: map['quantity_label'] as String?,
-          additionalCosts: AdditionalCost.listFromJson(map['additional_costs'] as String?),
+          additionalCosts:
+              AdditionalCost.listFromJson(map['additional_costs'] as String?),
         ),
       );
     }
@@ -543,8 +563,7 @@ class InvoiceService {
       'WHERE i.type = ? AND i.deleted_at IS NULL',
       ['Invoice'],
     );
-    final revenue =
-        (revenueResult.first['revenue'] as num?)?.toDouble() ?? 0.0;
+    final revenue = (revenueResult.first['revenue'] as num?)?.toDouble() ?? 0.0;
 
     // Outstanding: batch-load invoice rows + items + payments (3 queries, no N+1)
     final invoiceRows = await db.query(
@@ -578,7 +597,9 @@ class InvoiceService {
     final itemsByInvoice = <String, List<Map<String, dynamic>>>{};
     for (final row in itemRows) {
       final invId = row['invoice_id'] as String;
-      itemsByInvoice.putIfAbsent(invId, () => []).add(row as Map<String, dynamic>);
+      itemsByInvoice
+          .putIfAbsent(invId, () => [])
+          .add(row as Map<String, dynamic>);
     }
 
     final paidByInvoice = <String, double>{};
@@ -597,8 +618,7 @@ class InvoiceService {
       double subtotal = 0.0;
       double itemTax = 0.0;
       for (final item in items) {
-        final effectivePrice =
-            (item['unit_price'] as num?)?.toDouble() ??
+        final effectivePrice = (item['unit_price'] as num?)?.toDouble() ??
             (item['product_price'] as num?)?.toDouble() ??
             0.0;
         final qty = (item['quantity'] as num?)?.toDouble() ?? 0.0;
@@ -616,13 +636,13 @@ class InvoiceService {
       }
 
       final tax = taxMode == 'global' ? subtotal * (taxRate / 100) : itemTax;
-      final additionalTotal = AdditionalCost.listFromJson(
-              inv['additional_costs'] as String?)
-          .fold(0.0, (sum, c) => sum + c.amount);
+      final additionalTotal =
+          AdditionalCost.listFromJson(inv['additional_costs'] as String?)
+              .fold(0.0, (sum, c) => sum + c.amount);
 
       final total = subtotal + tax + additionalTotal;
       final paid = paidByInvoice[invId] ?? 0.0;
-      outstanding += (total - paid).clamp(0.0, double.infinity);
+      outstanding += InvoiceCalculator.outstanding(total: total, paid: paid);
     }
 
     return (count: count, revenue: revenue, outstanding: outstanding);
@@ -644,8 +664,7 @@ class InvoiceService {
   static Future<List<Invoice>> getDueSoonInvoices() async {
     final db = await dbHelper.database;
     final now = DateTime.now();
-    final todayStart =
-        '${now.toIso8601String().substring(0, 10)}T00:00:00.000';
+    final todayStart = '${now.toIso8601String().substring(0, 10)}T00:00:00.000';
     final tomorrowEnd = DateTime(now.year, now.month, now.day + 2)
         .toIso8601String()
         .substring(0, 10);
@@ -658,25 +677,30 @@ class InvoiceService {
     );
     final invoices = await _buildInvoiceList(rows);
     return invoices
-        .where((inv) => inv.paymentStatus != PaymentStatus.paid)
+        .where((inv) => inv.outstandingBalance > InvoiceCalculator.moneyEpsilon)
         .toList();
   }
 
   /// Invoices past their due_date that are not fully paid, up to [limit] rows.
   static Future<List<Invoice>> getOverdueInvoices({int limit = 10}) async {
     final db = await dbHelper.database;
-    final todayStart = '${DateTime.now().toIso8601String().substring(0, 10)}T00:00:00.000';
+    final todayStart =
+        '${DateTime.now().toIso8601String().substring(0, 10)}T00:00:00.000';
     // Fetch more than limit to account for some already being paid
     final rows = await db.query(
       'invoices',
-      where: 'deleted_at IS NULL AND type = ? AND due_date IS NOT NULL AND due_date < ?',
+      where:
+          'deleted_at IS NULL AND type = ? AND due_date IS NOT NULL AND due_date < ?',
       whereArgs: ['Invoice', todayStart],
       orderBy: 'due_date ASC',
       limit: limit * 3,
     );
     final invoices = await _buildInvoiceList(rows);
     final overdue = invoices
-        .where((inv) => inv.paymentStatus != PaymentStatus.paid)
+        .where((inv) => InvoiceCalculator.isOverdue(
+              dueDate: inv.dueDate,
+              outstanding: inv.outstandingBalance,
+            ))
         .toList();
     return overdue.length > limit ? overdue.sublist(0, limit) : overdue;
   }

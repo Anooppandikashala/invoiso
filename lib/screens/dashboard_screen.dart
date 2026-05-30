@@ -5,6 +5,7 @@ import 'package:invoiso/services/update_service.dart';
 import 'package:invoiso/widgets/update_dialog.dart';
 import 'package:invoiso/database/customer_service.dart';
 import 'package:invoiso/database/invoice_service.dart';
+import 'package:invoiso/domain/invoice_calculator.dart';
 import 'package:invoiso/database/product_service.dart';
 import 'package:invoiso/database/settings_service.dart';
 import 'package:invoiso/invoiso_colors.dart';
@@ -286,8 +287,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         4, Icons.people_outline, Icons.people, 'Customers'),
                     _buildNavItem(5, Icons.inventory_2_outlined,
                         Icons.inventory_2, 'Products'),
-                    _buildNavItem(6, Icons.bar_chart_outlined,
-                        Icons.bar_chart, 'Reports'),
+                    _buildNavItem(6, Icons.bar_chart_outlined, Icons.bar_chart,
+                        'Reports'),
                     _buildNavItem(
                         7, Icons.settings_outlined, Icons.settings, 'Settings',
                         showDot: _hasUpdate),
@@ -766,7 +767,8 @@ class _DashboardHomeState extends State<DashboardHome> {
               padding: const EdgeInsets.all(28),
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: AppLayout.maxWidthNormal),
+                  constraints:
+                      const BoxConstraints(maxWidth: AppLayout.maxWidthNormal),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -956,20 +958,12 @@ class _DashboardHomeState extends State<DashboardHome> {
                                             ),
                                           if (invoice.dueDate != null)
                                             () {
-                                              final now = DateTime.now();
-                                              final today = DateTime(
-                                                  now.year, now.month, now.day);
-                                              final due = DateTime(
-                                                  invoice.dueDate!.year,
-                                                  invoice.dueDate!.month,
-                                                  invoice.dueDate!.day);
                                               final isOverdue =
-                                                  due.isBefore(today) &&
-                                                      invoice.paymentStatus !=
-                                                          PaymentStatus.paid;
-                                              final color = isOverdue
-                                                  ? Colors.red[700]!
-                                                  : Colors.grey[600]!;
+                                                  InvoiceCalculator.isOverdue(
+                                                dueDate: invoice.dueDate,
+                                                outstanding:
+                                                    invoice.outstandingBalance,
+                                              );
                                               return Container(
                                                 width: 38,
                                                 height: 38,
@@ -1143,25 +1137,14 @@ class _DashboardHomeState extends State<DashboardHome> {
                                                     ),
                                                     if (invoice.dueDate != null)
                                                       () {
-                                                        final now =
-                                                            DateTime.now();
-                                                        final today = DateTime(
-                                                            now.year,
-                                                            now.month,
-                                                            now.day);
-                                                        final due = DateTime(
-                                                            invoice
-                                                                .dueDate!.year,
-                                                            invoice
-                                                                .dueDate!.month,
-                                                            invoice
-                                                                .dueDate!.day);
-                                                        final isOverdue = due
-                                                                .isBefore(
-                                                                    today) &&
-                                                            invoice.paymentStatus !=
-                                                                PaymentStatus
-                                                                    .paid;
+                                                        final isOverdue =
+                                                            InvoiceCalculator
+                                                                .isOverdue(
+                                                          dueDate:
+                                                              invoice.dueDate,
+                                                          outstanding: invoice
+                                                              .outstandingBalance,
+                                                        );
                                                         final color = isOverdue
                                                             ? Colors.red[700]!
                                                             : Colors.grey[600]!;
@@ -1562,8 +1545,7 @@ class _DashboardHomeState extends State<DashboardHome> {
   }
 
   Widget _buildOverdueSection() {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    final today = InvoiceCalculator.dateOnly(DateTime.now());
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1614,9 +1596,10 @@ class _DashboardHomeState extends State<DashboardHome> {
         ),
         const SizedBox(height: 16),
         ...overdueInvoices.map((invoice) {
-          final due = DateTime(invoice.dueDate!.year, invoice.dueDate!.month,
-              invoice.dueDate!.day);
-          final daysOverdue = today.difference(due).inDays;
+          final daysOverdue = InvoiceCalculator.daysOverdue(
+            dueDate: invoice.dueDate,
+            asOf: today,
+          );
 
           return Container(
             margin: const EdgeInsets.only(bottom: 10),
@@ -1947,9 +1930,7 @@ class _DashboardHomeState extends State<DashboardHome> {
                   ),
                   child: Icon(icon, color: color, size: 22),
                 ),
-
                 const SizedBox(width: 8),
-
                 if (subtitle?.isNotEmpty ?? false)
                   Expanded(
                     child: Align(
@@ -1982,9 +1963,7 @@ class _DashboardHomeState extends State<DashboardHome> {
                   ),
               ],
             ),
-
             const SizedBox(height: 16),
-
             Text(
               value,
               style: TextStyle(
@@ -1994,9 +1973,7 @@ class _DashboardHomeState extends State<DashboardHome> {
                 letterSpacing: -0.5,
               ),
             ),
-
             const SizedBox(height: 4),
-
             Text(
               title,
               maxLines: 1,
@@ -2007,9 +1984,7 @@ class _DashboardHomeState extends State<DashboardHome> {
                 fontWeight: FontWeight.w700,
               ),
             ),
-
             const SizedBox(height: 14),
-
             Container(
               height: 3,
               decoration: BoxDecoration(

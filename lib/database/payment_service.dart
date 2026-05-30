@@ -1,5 +1,6 @@
 import 'package:uuid/uuid.dart';
 
+import '../domain/invoice_calculator.dart';
 import '../models/invoice.dart';
 import '../models/invoice_payment.dart';
 import '../utils/app_logger.dart';
@@ -53,8 +54,10 @@ class PaymentService {
           : 0.0;
 
       // 4. Snapshot: balance remaining after this installment
-      final balanceAfter =
-          (invoice.total - previouslyPaid - amountPaid).clamp(0.0, double.infinity);
+      final balanceAfter = InvoiceCalculator.outstanding(
+        total: invoice.total,
+        paid: previouslyPaid + amountPaid,
+      );
 
       saved = InvoicePayment(
         id: _uuid.v4(),
@@ -79,7 +82,7 @@ class PaymentService {
 
   // ─────────────────────────────────────────────
   // Batch mark-as-paid: single DB transaction for N invoices.
-  // Skips invoices where outstandingBalance <= 0.
+  // Skips invoices that are already paid within the standard money tolerance.
   static Future<int> addPaymentBatch({
     required List<Invoice> invoices,
     required DateTime datePaid,
@@ -91,7 +94,7 @@ class PaymentService {
     await db.transaction((txn) async {
       for (final invoice in invoices) {
         final amountPaid = invoice.outstandingBalance;
-        if (amountPaid <= 0) continue;
+        if (amountPaid <= InvoiceCalculator.moneyEpsilon) continue;
 
         final suffixResult = await txn.rawQuery(
           'SELECT receipt_number FROM invoice_payments WHERE invoice_id = ?',
@@ -183,7 +186,8 @@ class PaymentService {
   // Delete a single payment (admin action — hard delete)
   static Future<void> deletePayment(String paymentId) async {
     final db = await _dbHelper.database;
-    await db.delete('invoice_payments', where: 'id = ?', whereArgs: [paymentId]);
+    await db
+        .delete('invoice_payments', where: 'id = ?', whereArgs: [paymentId]);
     AppLogger.d(_tag, 'Payment deleted: $paymentId');
   }
 

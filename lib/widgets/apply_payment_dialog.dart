@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:invoiso/database/payment_service.dart';
+import 'package:invoiso/domain/invoice_calculator.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/invoice_payment.dart';
 import 'package:invoiso/services/payment_receipt_service.dart';
@@ -57,8 +58,8 @@ class _ApplyPaymentDialogState extends State<ApplyPaymentDialog> {
   }
 
   double get _totalPaid => _payments.fold(0.0, (s, p) => s + p.amountPaid);
-  double get _outstanding =>
-      (widget.invoice.total - _totalPaid).clamp(0.0, double.infinity);
+  double get _outstanding => InvoiceCalculator.outstanding(
+      total: widget.invoice.total, paid: _totalPaid);
   double get _enteredAmount =>
       double.tryParse(_amountController.text.trim()) ?? 0.0;
   double get _taxOnEnteredAmount {
@@ -97,7 +98,7 @@ class _ApplyPaymentDialogState extends State<ApplyPaymentDialog> {
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(_outstanding <= 0
+            content: Text(_outstanding <= InvoiceCalculator.moneyEpsilon
                 ? 'Invoice fully paid!'
                 : 'Payment recorded. Outstanding: ${widget.invoice.currencySymbol} ${_outstanding.toStringAsFixed(2)}'),
             backgroundColor: Colors.green,
@@ -207,7 +208,8 @@ class _ApplyPaymentDialogState extends State<ApplyPaymentDialog> {
                       children: [
                         PaymentSummaryCard(
                           label: 'Invoice Total',
-                          value: '$sym ${widget.invoice.total.toStringAsFixed(2)}',
+                          value:
+                              '$sym ${widget.invoice.total.toStringAsFixed(2)}',
                           color: Colors.blue,
                         ),
                         const SizedBox(width: 12),
@@ -220,7 +222,9 @@ class _ApplyPaymentDialogState extends State<ApplyPaymentDialog> {
                         PaymentSummaryCard(
                           label: 'Outstanding',
                           value: '$sym ${_outstanding.toStringAsFixed(2)}',
-                          color: _outstanding <= 0 ? Colors.green : Colors.orange,
+                          color: _outstanding <= InvoiceCalculator.moneyEpsilon
+                              ? Colors.green
+                              : Colors.orange,
                         ),
                       ],
                     ),
@@ -258,7 +262,8 @@ class _ApplyPaymentDialogState extends State<ApplyPaymentDialog> {
                       _buildPaymentHistoryTable(sym),
 
                     // Paid-in-full banner
-                    if (!_isLoadingPayments && _outstanding <= 0) ...[
+                    if (!_isLoadingPayments &&
+                        _outstanding <= InvoiceCalculator.moneyEpsilon) ...[
                       const SizedBox(height: 16),
                       Container(
                         width: double.infinity,
@@ -286,7 +291,8 @@ class _ApplyPaymentDialogState extends State<ApplyPaymentDialog> {
                     ],
 
                     // New payment form (only if outstanding > 0)
-                    if (!_isLoadingPayments && _outstanding > 0) ...[
+                    if (!_isLoadingPayments &&
+                        _outstanding > InvoiceCalculator.moneyEpsilon) ...[
                       const SizedBox(height: 20),
                       const Divider(),
                       const SizedBox(height: 12),
@@ -324,7 +330,9 @@ class _ApplyPaymentDialogState extends State<ApplyPaymentDialog> {
                                       if (n == null || n <= 0) {
                                         return 'Enter a valid amount';
                                       }
-                                      if (n > _outstanding + 0.005) {
+                                      if (n >
+                                          _outstanding +
+                                              InvoiceCalculator.moneyEpsilon) {
                                         return 'Exceeds outstanding balance';
                                       }
                                       return null;
@@ -429,7 +437,8 @@ class _ApplyPaymentDialogState extends State<ApplyPaymentDialog> {
                     onPressed: () => Navigator.pop(context),
                     child: const Text('Close'),
                   ),
-                  if (!_isLoadingPayments && _outstanding > 0) ...[
+                  if (!_isLoadingPayments &&
+                      _outstanding > InvoiceCalculator.moneyEpsilon) ...[
                     const SizedBox(width: 12),
                     ElevatedButton.icon(
                       onPressed: _isSaving ? null : _savePayment,
@@ -604,7 +613,10 @@ class PaymentSummaryCard extends StatelessWidget {
   final Color color;
 
   const PaymentSummaryCard(
-      {super.key, required this.label, required this.value, required this.color});
+      {super.key,
+      required this.label,
+      required this.value,
+      required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -627,9 +639,7 @@ class PaymentSummaryCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(value,
                 style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: color)),
+                    fontSize: 15, fontWeight: FontWeight.bold, color: color)),
           ],
         ),
       ),

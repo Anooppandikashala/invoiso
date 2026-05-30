@@ -1,5 +1,6 @@
 import 'package:invoiso/database/database_helper.dart';
 import 'package:invoiso/common.dart';
+import 'package:invoiso/domain/invoice_calculator.dart';
 import 'package:invoiso/models/additional_cost.dart';
 
 // ─── Result types ──────────────────────────────────────────────────────────────
@@ -381,7 +382,8 @@ class ReportService {
               .fold(0.0, (s, c) => s + c.amount);
 
       final total = subtotal + tax + addCosts;
-      final outstanding = (total - paid).clamp(0.0, double.infinity);
+      final outstanding =
+          InvoiceCalculator.outstanding(total: total, paid: paid);
 
       return _InvRow(
         id: id,
@@ -491,12 +493,13 @@ class ReportService {
         await _loadRows(from: from, to: to, currencyCode: currencyCode);
     int paid = 0, partial = 0, unpaid = 0;
     for (final r in rows) {
-      if (r.paid <= 0) {
-        unpaid++;
-      } else if (r.outstanding <= 0.005) {
-        paid++;
-      } else {
-        partial++;
+      switch (InvoiceCalculator.paymentStatus(total: r.total, paid: r.paid)) {
+        case PaymentStatus.unpaid:
+          unpaid++;
+        case PaymentStatus.paid:
+          paid++;
+        case PaymentStatus.partial:
+          partial++;
       }
     }
     return StatusBreakdown(paid: paid, partial: partial, unpaid: unpaid);
@@ -511,15 +514,16 @@ class ReportService {
     final result = <AgedReceivable>[];
 
     for (final r in rows) {
-      if (r.outstanding <= 0.005) continue;
+      if (r.outstanding <= InvoiceCalculator.moneyEpsilon) continue;
       final dueDate = r.dueDate != null ? DateTime.tryParse(r.dueDate!) : null;
       final bool noDueDate = dueDate == null;
-      final daysOverdue = dueDate != null ? now.difference(dueDate).inDays : 0;
+      final daysOverdue =
+          InvoiceCalculator.daysOverdue(dueDate: dueDate, asOf: now);
       result.add(AgedReceivable(
         invoiceId: r.id,
         customerName: r.customerName,
         outstanding: r.outstanding,
-        daysOverdue: daysOverdue > 0 ? daysOverdue : 0,
+        daysOverdue: daysOverdue,
         hasNoDueDate: noDueDate,
       ));
     }
@@ -710,7 +714,6 @@ class ReportService {
     final db = await _db.database;
     final f = from.toIso8601String().split('T').first;
     final t = to.toIso8601String().split('T').first;
-    final nowDate = DateTime.now().toIso8601String().split('T').first;
     final byCurrency = <String, List<_InvRow>>{};
     for (final row in rows) {
       (byCurrency[row.currencyCode] ??= []).add(row);
@@ -752,9 +755,10 @@ class ReportService {
         }
 
         final dueDate = invoice.dueDate;
-        if (invoice.outstanding > 0.005 &&
-            dueDate != null &&
-            dueDate.compareTo(nowDate) < 0) {
+        if (InvoiceCalculator.isOverdue(
+          dueDate: dueDate == null ? null : DateTime.tryParse(dueDate),
+          outstanding: invoice.outstanding,
+        )) {
           overdue += invoice.outstanding;
         }
       }
@@ -1009,22 +1013,21 @@ class ReportService {
     final result = rows.map((r) {
       final dueDate = r.dueDate != null ? DateTime.tryParse(r.dueDate!) : null;
       final noDueDate = r.dueDate == null;
-      final rawDays = dueDate != null ? now.difference(dueDate).inDays : 0;
-      final daysOverdue = rawDays > 0 ? rawDays : 0;
+      final daysOverdue =
+          InvoiceCalculator.daysOverdue(dueDate: dueDate, asOf: now);
 
-      // Match Invoice model PaymentStatus exactly:
-      // amountPaid <= 0 → unpaid, outstandingBalance <= 0 → paid, else partial
-      final String status;
-      if (r.paid <= 0) {
-        status = 'Unpaid';
-      } else if (r.outstanding <= 0.005) {
-        status = 'Paid';
-      } else {
-        status = 'Partial';
-      }
+      final status = switch (
+          InvoiceCalculator.paymentStatus(total: r.total, paid: r.paid)) {
+        PaymentStatus.paid => 'Paid',
+        PaymentStatus.partial => 'Partial',
+        PaymentStatus.unpaid => 'Unpaid',
+      };
 
-      // Overdue is a separate flag — outstanding > 0 and past due date
-      final isOverdue = r.outstanding > 0.005 && daysOverdue > 0;
+      final isOverdue = InvoiceCalculator.isOverdue(
+        dueDate: dueDate,
+        outstanding: r.outstanding,
+        asOf: now,
+      );
 
       return InvoiceStatusRow(
         id: r.id,

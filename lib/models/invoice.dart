@@ -1,4 +1,5 @@
 import '../common.dart';
+import '../domain/invoice_calculator.dart';
 import 'additional_cost.dart';
 import 'customer.dart';
 import 'invoice_item.dart';
@@ -16,11 +17,13 @@ class Invoice {
   String currencySymbol;
   TaxMode taxMode;
   List<InvoicePayment> payments;
-  String? upiId;           // selected UPI account for this invoice
-  String? bankAccountId;   // selected bank account label key for this invoice
+  String? upiId; // selected UPI account for this invoice
+  String? bankAccountId; // selected bank account label key for this invoice
   DateTime? dueDate;
-  String? quantityLabel; // custom label for the Qty column (e.g. "Words", "Hours")
-  List<AdditionalCost> additionalCosts; // e.g. Shipping, Packaging (zero tax, added after tax)
+  String?
+      quantityLabel; // custom label for the Qty column (e.g. "Words", "Hours")
+  List<AdditionalCost>
+      additionalCosts; // e.g. Shipping, Packaging (zero tax, added after tax)
 
   Invoice({
     required this.id,
@@ -43,9 +46,11 @@ class Invoice {
 
   double get subtotal => items.fold(0.0, (sum, item) => sum + item.total);
 
-  double get grossSubtotal => items.fold(0.0, (sum, item) => sum + item.grossPrice);
+  double get grossSubtotal =>
+      items.fold(0.0, (sum, item) => sum + item.grossPrice);
 
-  double get totalDiscount => items.fold(0.0, (sum, item) => sum + item.totalDiscount);
+  double get totalDiscount =>
+      items.fold(0.0, (sum, item) => sum + item.totalDiscount);
 
   double get tax {
     switch (taxMode) {
@@ -68,11 +73,9 @@ class Invoice {
 
   double get amountPaid => payments.fold(0.0, (sum, p) => sum + p.amountPaid);
 
-  double get outstandingBalance => (total - amountPaid).clamp(0.0, double.infinity);
+  double get outstandingBalance =>
+      InvoiceCalculator.outstanding(total: total, paid: amountPaid);
 
-  PaymentStatus get paymentStatus {
-    if (amountPaid <= 0) return PaymentStatus.unpaid;
-    if (outstandingBalance <= 0) return PaymentStatus.paid;
-    return PaymentStatus.partial;
-  }
+  PaymentStatus get paymentStatus =>
+      InvoiceCalculator.paymentStatus(total: total, paid: amountPaid);
 }

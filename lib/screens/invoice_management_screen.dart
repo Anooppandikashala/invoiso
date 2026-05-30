@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/common.dart';
 import 'package:invoiso/constants.dart';
 import 'package:invoiso/database/invoice_service.dart';
+import 'package:invoiso/domain/invoice_calculator.dart';
 import 'package:invoiso/invoiso_colors.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/providers/invoice_provider.dart';
@@ -49,7 +50,8 @@ class _InvoiceManagementScreenState
   bool _isLoadingPage = false;
   bool _isBulkLoading = false;
   bool _hidePaid = false;
-  String _dueDateFilter = 'all'; // 'all' | 'overdue' | 'due_today' | 'due_week' | 'due_month'
+  String _dueDateFilter =
+      'all'; // 'all' | 'overdue' | 'due_today' | 'due_week' | 'due_month'
   String _datePattern = 'dd/MM/yyyy';
   int _totalCount = 0;
   List<Invoice> _pageInvoices = [];
@@ -61,11 +63,11 @@ class _InvoiceManagementScreenState
   /// Shared column widths used by both the header table and every row table so
   /// they always align pixel-perfectly.
   static const List<(String, String, Color)> _dueDateFilterOptions = [
-    ('all',        'All Dues',      Colors.grey),
-    ('overdue',    'Overdue',       Colors.red),
-    ('due_today',  'Due Today',     Colors.orange),
-    ('due_week',   'Due This Week', Colors.blue),
-    ('due_month',  'Due This Month',Colors.teal),
+    ('all', 'All Dues', Colors.grey),
+    ('overdue', 'Overdue', Colors.red),
+    ('due_today', 'Due Today', Colors.orange),
+    ('due_week', 'Due This Week', Colors.blue),
+    ('due_month', 'Due This Month', Colors.teal),
   ];
 
   // Invoice table: checkbox | # | ID | Customer | Date | Items | Total | Status | Outstanding | Actions
@@ -95,7 +97,9 @@ class _InvoiceManagementScreenState
   };
 
   Map<int, TableColumnWidth> get _columnWidths =>
-      widget.filterType == 'Quotation' ? _quotationColumnWidths : _invoiceColumnWidths;
+      widget.filterType == 'Quotation'
+          ? _quotationColumnWidths
+          : _invoiceColumnWidths;
 
   // ─── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -144,24 +148,31 @@ class _InvoiceManagementScreenState
         if (_hidePaid) {
           // Keep Quotations; for Invoices only keep those with an outstanding balance
           pageInvoices = pageInvoices
-              .where((inv) => inv.type != 'Invoice' || inv.outstandingBalance > 0)
+              .where((inv) =>
+                  inv.type != 'Invoice' ||
+                  inv.outstandingBalance > InvoiceCalculator.moneyEpsilon)
               .toList();
         }
         if (_dueDateFilter != 'all') {
-          final now = DateTime.now();
-          final today = DateTime(now.year, now.month, now.day);
           pageInvoices = pageInvoices.where((inv) {
             if (inv.dueDate == null) return false;
-            final due = DateTime(inv.dueDate!.year, inv.dueDate!.month, inv.dueDate!.day);
+            final today = InvoiceCalculator.dateOnly(DateTime.now());
+            final due = InvoiceCalculator.dateOnly(inv.dueDate!);
             switch (_dueDateFilter) {
               case 'overdue':
-                return due.isBefore(today) && inv.paymentStatus != PaymentStatus.paid;
+                return InvoiceCalculator.isOverdue(
+                  dueDate: inv.dueDate,
+                  outstanding: inv.outstandingBalance,
+                );
               case 'due_today':
                 return due == today;
               case 'due_week':
-                return !due.isBefore(today) && due.isBefore(today.add(const Duration(days: 7)));
+                return !due.isBefore(today) &&
+                    due.isBefore(today.add(const Duration(days: 7)));
               case 'due_month':
-                return !due.isBefore(today) && due.isBefore(DateTime(today.year, today.month + 1, today.day));
+                return !due.isBefore(today) &&
+                    due.isBefore(
+                        DateTime(today.year, today.month + 1, today.day));
               default:
                 return true;
             }
@@ -176,7 +187,8 @@ class _InvoiceManagementScreenState
     } catch (e) {
       if (mounted) {
         setState(() => _isLoadingPage = false);
-        AppError.show(context, 'Failed to load invoices: $e', onRetry: _loadPage);
+        AppError.show(context, 'Failed to load invoices: $e',
+            onRetry: _loadPage);
       }
     }
   }
@@ -326,7 +338,8 @@ class _InvoiceManagementScreenState
                         ),
                         const SizedBox(width: 4),
                         const Text('Export All Records',
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                            style: TextStyle(
+                                fontSize: 14, fontWeight: FontWeight.w500)),
                       ],
                     ),
                   ),
@@ -412,7 +425,8 @@ class _InvoiceManagementScreenState
         toDate: exportAll ? null : toDate,
         filterType: widget.filterType,
       );
-      final path = await ExportService.exportInvoicesToCsv(invoices, type: widget.filterType);
+      final path = await ExportService.exportInvoicesToCsv(invoices,
+          type: widget.filterType);
       if (mounted) {
         AppError.showSuccess(context,
             'Exported ${invoices.length} record${invoices.length == 1 ? '' : 's'} to: $path');
@@ -479,8 +493,7 @@ class _InvoiceManagementScreenState
     try {
       final path = await ExportService.exportInvoicesToCsv(selected);
       if (mounted) {
-        AppError.showSuccess(
-            context,
+        AppError.showSuccess(context,
             'Exported ${selected.length} invoice${selected.length == 1 ? '' : 's'} to CSV');
         await OpenFile.open(path);
       }
@@ -542,7 +555,8 @@ class _InvoiceManagementScreenState
     } else {
       zipSavePath = await FilePicker.platform.saveFile(
         dialogTitle: 'Save ZIP file',
-        fileName: 'invoices_${DateFormat('yyyyMMdd').format(DateTime.now())}.zip',
+        fileName:
+            'invoices_${DateFormat('yyyyMMdd').format(DateTime.now())}.zip',
         type: FileType.custom,
         allowedExtensions: ['zip'],
       );
@@ -561,7 +575,9 @@ class _InvoiceManagementScreenState
         title: Row(
           children: [
             Icon(
-              saveMode == 'zip' ? Icons.folder_zip_outlined : Icons.picture_as_pdf,
+              saveMode == 'zip'
+                  ? Icons.folder_zip_outlined
+                  : Icons.picture_as_pdf,
               color: Colors.orange,
             ),
             const SizedBox(width: 12),
@@ -629,19 +645,19 @@ class _InvoiceManagementScreenState
     DateTime? fromDate;
     DateTime? toDate;
     final fromIdCtrl = TextEditingController();
-    final toIdCtrl   = TextEditingController();
-    int filterMode   = 0; // 0 = date, 1 = invoice number
-    int matchCount   = 0;
-    bool counting    = false;
+    final toIdCtrl = TextEditingController();
+    int filterMode = 0; // 0 = date, 1 = invoice number
+    int matchCount = 0;
+    bool counting = false;
 
     Future<int> fetchCount(StateSetter setS) async {
       setS(() => counting = true);
       try {
         return await InvoiceService.countInvoicesForExport(
           fromDate: filterMode == 0 ? fromDate : null,
-          toDate:   filterMode == 0 ? toDate   : null,
-          fromId:   filterMode == 1 ? int.tryParse(fromIdCtrl.text) : null,
-          toId:     filterMode == 1 ? int.tryParse(toIdCtrl.text)   : null,
+          toDate: filterMode == 0 ? toDate : null,
+          fromId: filterMode == 1 ? int.tryParse(fromIdCtrl.text) : null,
+          toId: filterMode == 1 ? int.tryParse(toIdCtrl.text) : null,
           filterType: widget.filterType,
         );
       } finally {
@@ -653,7 +669,8 @@ class _InvoiceManagementScreenState
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setS) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Row(
             children: [
               Icon(Icons.filter_alt_outlined),
@@ -669,46 +686,79 @@ class _InvoiceManagementScreenState
               children: [
                 SegmentedButton<int>(
                   segments: const [
-                    ButtonSegment(value: 0, label: Text('By Date'),           icon: Icon(Icons.calendar_today_outlined, size: 16)),
-                    ButtonSegment(value: 1, label: Text('By Invoice Number'), icon: Icon(Icons.tag_outlined, size: 16)),
+                    ButtonSegment(
+                        value: 0,
+                        label: Text('By Date'),
+                        icon: Icon(Icons.calendar_today_outlined, size: 16)),
+                    ButtonSegment(
+                        value: 1,
+                        label: Text('By Invoice Number'),
+                        icon: Icon(Icons.tag_outlined, size: 16)),
                   ],
                   selected: {filterMode},
                   onSelectionChanged: (v) async {
-                    setS(() { filterMode = v.first; matchCount = 0; });
+                    setS(() {
+                      filterMode = v.first;
+                      matchCount = 0;
+                    });
                   },
                 ),
                 const SizedBox(height: 16),
                 if (filterMode == 0) ...[
                   Row(children: [
-                    Expanded(child: _DatePickerField(
+                    Expanded(
+                        child: _DatePickerField(
                       label: 'From date',
                       value: fromDate,
                       formatter: DateFormat('dd/MM/yyyy'),
-                      onPicked: (d) { setS(() { fromDate = d; matchCount = 0; }); },
-                      onCleared: () => setS(() { fromDate = null; matchCount = 0; }),
+                      onPicked: (d) {
+                        setS(() {
+                          fromDate = d;
+                          matchCount = 0;
+                        });
+                      },
+                      onCleared: () => setS(() {
+                        fromDate = null;
+                        matchCount = 0;
+                      }),
                     )),
                     const SizedBox(width: 12),
-                    Expanded(child: _DatePickerField(
+                    Expanded(
+                        child: _DatePickerField(
                       label: 'To date',
                       value: toDate,
                       formatter: DateFormat('dd/MM/yyyy'),
-                      onPicked: (d) { setS(() { toDate = d; matchCount = 0; }); },
-                      onCleared: () => setS(() { toDate = null; matchCount = 0; }),
+                      onPicked: (d) {
+                        setS(() {
+                          toDate = d;
+                          matchCount = 0;
+                        });
+                      },
+                      onCleared: () => setS(() {
+                        toDate = null;
+                        matchCount = 0;
+                      }),
                     )),
                   ]),
                 ] else ...[
                   Row(children: [
-                    Expanded(child: TextField(
+                    Expanded(
+                        child: TextField(
                       controller: fromIdCtrl,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'From invoice #', border: OutlineInputBorder()),
+                      decoration: const InputDecoration(
+                          labelText: 'From invoice #',
+                          border: OutlineInputBorder()),
                       onChanged: (_) => setS(() => matchCount = 0),
                     )),
                     const SizedBox(width: 12),
-                    Expanded(child: TextField(
+                    Expanded(
+                        child: TextField(
                       controller: toIdCtrl,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'To invoice #', border: OutlineInputBorder()),
+                      decoration: const InputDecoration(
+                          labelText: 'To invoice #',
+                          border: OutlineInputBorder()),
                       onChanged: (_) => setS(() => matchCount = 0),
                     )),
                   ]),
@@ -716,12 +766,17 @@ class _InvoiceManagementScreenState
                 const SizedBox(height: 16),
                 Row(children: [
                   FilledButton.tonal(
-                    onPressed: counting ? null : () async {
-                      final c = await fetchCount(setS);
-                      setS(() => matchCount = c);
-                    },
+                    onPressed: counting
+                        ? null
+                        : () async {
+                            final c = await fetchCount(setS);
+                            setS(() => matchCount = c);
+                          },
                     child: counting
-                        ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2))
                         : const Text('Check count'),
                   ),
                   const SizedBox(width: 12),
@@ -731,7 +786,9 @@ class _InvoiceManagementScreenState
                           ? '$matchCount invoices — exceeds limit of $_maxBulkPdfExport'
                           : '$matchCount invoice${matchCount == 1 ? '' : 's'} match',
                       style: TextStyle(
-                        color: matchCount > _maxBulkPdfExport ? Colors.red : Colors.green[700],
+                        color: matchCount > _maxBulkPdfExport
+                            ? Colors.red
+                            : Colors.green[700],
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -748,7 +805,9 @@ class _InvoiceManagementScreenState
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel')),
             OutlinedButton.icon(
               icon: const Icon(Icons.folder_outlined),
               label: const Text('Save to Folder'),
@@ -770,31 +829,38 @@ class _InvoiceManagementScreenState
       if (saveMode == null || !mounted) return;
 
       final invoices = await InvoiceService.getInvoicesForExport(
-        fromDate:   filterMode == 0 ? fromDate : null,
-        toDate:     filterMode == 0 ? toDate   : null,
-        fromId:     filterMode == 1 ? int.tryParse(fromIdCtrl.text) : null,
-        toId:       filterMode == 1 ? int.tryParse(toIdCtrl.text)   : null,
+        fromDate: filterMode == 0 ? fromDate : null,
+        toDate: filterMode == 0 ? toDate : null,
+        fromId: filterMode == 1 ? int.tryParse(fromIdCtrl.text) : null,
+        toId: filterMode == 1 ? int.tryParse(toIdCtrl.text) : null,
         filterType: widget.filterType,
       );
 
       if (invoices.isEmpty) {
-        if (mounted) AppError.show(context, 'No invoices found for the selected filter.');
+        if (mounted) {
+          AppError.show(context, 'No invoices found for the selected filter.');
+        }
         return;
       }
       if (invoices.length > _maxBulkPdfExport) {
-        if (mounted) AppError.show(context, 'Filter returned ${invoices.length} invoices — max is $_maxBulkPdfExport.');
+        if (mounted) {
+          AppError.show(context,
+              'Filter returned ${invoices.length} invoices — max is $_maxBulkPdfExport.');
+        }
         return;
       }
 
       String? outputDir;
       String? zipSavePath;
       if (saveMode == 'folder') {
-        outputDir = await FilePicker.platform.getDirectoryPath(dialogTitle: 'Choose folder to save PDFs');
+        outputDir = await FilePicker.platform
+            .getDirectoryPath(dialogTitle: 'Choose folder to save PDFs');
         if (outputDir == null || !mounted) return;
       } else {
         zipSavePath = await FilePicker.platform.saveFile(
           dialogTitle: 'Save ZIP file',
-          fileName: 'invoices_${DateFormat('yyyyMMdd').format(DateTime.now())}.zip',
+          fileName:
+              'invoices_${DateFormat('yyyyMMdd').format(DateTime.now())}.zip',
           type: FileType.custom,
           allowedExtensions: ['zip'],
         );
@@ -808,9 +874,14 @@ class _InvoiceManagementScreenState
         context: context,
         barrierDismissible: false,
         builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Row(children: [
-            Icon(saveMode == 'zip' ? Icons.folder_zip_outlined : Icons.picture_as_pdf, color: Colors.orange),
+            Icon(
+                saveMode == 'zip'
+                    ? Icons.folder_zip_outlined
+                    : Icons.picture_as_pdf,
+                color: Colors.orange),
             const SizedBox(width: 12),
             Text(saveMode == 'zip' ? 'Creating ZIP' : 'Generating PDFs'),
           ]),
@@ -819,11 +890,15 @@ class _InvoiceManagementScreenState
             builder: (_, done, __) => Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Processing ${invoices.length} PDF${invoices.length == 1 ? '' : 's'}...'),
+                Text(
+                    'Processing ${invoices.length} PDF${invoices.length == 1 ? '' : 's'}...'),
                 const SizedBox(height: 16),
-                LinearProgressIndicator(value: done / invoices.length, backgroundColor: Colors.grey[200]),
+                LinearProgressIndicator(
+                    value: done / invoices.length,
+                    backgroundColor: Colors.grey[200]),
                 const SizedBox(height: 8),
-                Text('$done / ${invoices.length}', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+                Text('$done / ${invoices.length}',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 13)),
               ],
             ),
           ),
@@ -836,7 +911,8 @@ class _InvoiceManagementScreenState
         final String path;
         if (saveMode == 'zip') {
           path = await ExportService.exportInvoicesToZip(
-            invoices, zipSavePath!,
+            invoices,
+            zipSavePath!,
             onProgress: (done, _) => progress.value = done,
             settings: settings,
           );
@@ -870,7 +946,9 @@ class _InvoiceManagementScreenState
 
   Future<void> _bulkMarkAsPaid() async {
     final unpaid = _pageInvoices
-        .where((inv) => _selectedIds.contains(inv.id) && inv.outstandingBalance > 0)
+        .where((inv) =>
+            _selectedIds.contains(inv.id) &&
+            inv.outstandingBalance > InvoiceCalculator.moneyEpsilon)
         .toList();
     final alreadyPaid = _selectedIds.length - unpaid.length;
 
@@ -882,7 +960,8 @@ class _InvoiceManagementScreenState
     final confirmed = await AppError.confirm(
       context,
       title: 'Mark as Paid',
-      message: 'Mark ${unpaid.length} invoice${unpaid.length == 1 ? '' : 's'} as fully paid?'
+      message:
+          'Mark ${unpaid.length} invoice${unpaid.length == 1 ? '' : 's'} as fully paid?'
           '${alreadyPaid > 0 ? '\n($alreadyPaid already paid — will be skipped)' : ''}',
       confirmLabel: 'Mark as Paid',
       confirmColor: Colors.green,
@@ -898,7 +977,8 @@ class _InvoiceManagementScreenState
       ref.read(invoicesProvider.notifier).refresh();
       await _loadPage();
       if (mounted) {
-        AppError.showSuccess(context, '$count invoice${count == 1 ? '' : 's'} marked as paid.');
+        AppError.showSuccess(
+            context, '$count invoice${count == 1 ? '' : 's'} marked as paid.');
       }
     } catch (e) {
       if (mounted) AppError.show(context, 'Failed to mark as paid: $e');
@@ -983,10 +1063,8 @@ class _InvoiceManagementScreenState
                             decoration: InputDecoration(
                               labelText:
                                   'Search by Invoice ID or Customer Name',
-                              hintText:
-                                  'Enter invoice ID or customer name...',
-                              prefixIcon:
-                                  const Icon(Icons.search, size: 22),
+                              hintText: 'Enter invoice ID or customer name...',
+                              prefixIcon: const Icon(Icons.search, size: 22),
                               suffixIcon: _searchQuery.isNotEmpty
                                   ? IconButton(
                                       icon: const Icon(Icons.clear, size: 20),
@@ -1046,93 +1124,102 @@ class _InvoiceManagementScreenState
                         Icons.pages,
                       ),
                       if (widget.filterType == 'Invoice') ...[
-                      const SizedBox(width: 16),
-                      // Hide Paid toggle
-                      InkWell(
-                        onTap: () {
-                          setState(() {
-                            _hidePaid = !_hidePaid;
-                            _currentPage = 0;
-                          });
-                          _loadPage();
-                        },
-                        borderRadius: BorderRadius.circular(8),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: _hidePaid
-                                ? Colors.orange.withValues(alpha:0.12)
-                                : Colors.grey.withValues(alpha:0.08),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
+                        const SizedBox(width: 16),
+                        // Hide Paid toggle
+                        InkWell(
+                          onTap: () {
+                            setState(() {
+                              _hidePaid = !_hidePaid;
+                              _currentPage = 0;
+                            });
+                            _loadPage();
+                          },
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 10),
+                            decoration: BoxDecoration(
                               color: _hidePaid
-                                  ? Colors.orange.withValues(alpha:0.4)
-                                  : Colors.grey[300]!,
+                                  ? Colors.orange.withValues(alpha: 0.12)
+                                  : Colors.grey.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: _hidePaid
+                                    ? Colors.orange.withValues(alpha: 0.4)
+                                    : Colors.grey[300]!,
+                              ),
                             ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                _hidePaid
-                                    ? Icons.visibility_off_outlined
-                                    : Icons.visibility_outlined,
-                                size: 18,
-                                color: _hidePaid ? Colors.orange[700] : Colors.grey[600],
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                'Hide Paid',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  color: _hidePaid ? Colors.orange[700] : Colors.grey[700],
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  _hidePaid
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                  size: 18,
+                                  color: _hidePaid
+                                      ? Colors.orange[700]
+                                      : Colors.grey[600],
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Hide Paid',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    color: _hidePaid
+                                        ? Colors.orange[700]
+                                        : Colors.grey[700],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
                       ], // end filterType == 'Invoice'
                       if (widget.filterType == 'Invoice') ...[
-                      const SizedBox(width: 16),
-                      // Due date filter chips
-                      ..._dueDateFilterOptions.map((option) {
-                        final isActive = _dueDateFilter == option.$1;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: InkWell(
-                            onTap: () {
-                              setState(() {
-                                _dueDateFilter = option.$1;
-                                _currentPage = 0;
-                              });
-                              _loadPage();
-                            },
-                            borderRadius: BorderRadius.circular(8),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                              decoration: BoxDecoration(
-                                color: isActive
-                                    ? option.$3.withValues(alpha: 0.12)
-                                    : Colors.grey.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: isActive ? option.$3.withValues(alpha: 0.4) : Colors.grey[300]!,
+                        const SizedBox(width: 16),
+                        // Due date filter chips
+                        ..._dueDateFilterOptions.map((option) {
+                          final isActive = _dueDateFilter == option.$1;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: InkWell(
+                              onTap: () {
+                                setState(() {
+                                  _dueDateFilter = option.$1;
+                                  _currentPage = 0;
+                                });
+                                _loadPage();
+                              },
+                              borderRadius: BorderRadius.circular(8),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: isActive
+                                      ? option.$3.withValues(alpha: 0.12)
+                                      : Colors.grey.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: isActive
+                                        ? option.$3.withValues(alpha: 0.4)
+                                        : Colors.grey[300]!,
+                                  ),
                                 ),
-                              ),
-                              child: Text(
-                                option.$2,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  color: isActive ? option.$3 : Colors.grey[700],
+                                child: Text(
+                                  option.$2,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    color:
+                                        isActive ? option.$3 : Colors.grey[700],
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        );
-                      }),
+                          );
+                        }),
                       ], // end filterType == 'Invoice' (due date chips)
                     ],
                   ),
@@ -1182,89 +1269,94 @@ class _InvoiceManagementScreenState
                       : Align(
                           alignment: Alignment.topCenter,
                           child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: AppLayout.maxWidthWide),
-                          child: SingleChildScrollView(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 24),
-                            child: Card(
-                              elevation: 2,
-                              shadowColor:
-                                  Colors.black.withValues(alpha: 0.1),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                    AppBorderRadius.xsmall),
-                              ),
-                              child: Column(
-                                children: [
-                                  // Table header
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      gradient: InvoiceManagementScreenColors.topBarBackgroundGradientColor,
-                                      borderRadius: const BorderRadius.only(
-                                        topLeft: Radius.circular(12),
-                                        topRight: Radius.circular(12),
+                            constraints: const BoxConstraints(
+                                maxWidth: AppLayout.maxWidthWide),
+                            child: SingleChildScrollView(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 24),
+                              child: Card(
+                                elevation: 2,
+                                shadowColor:
+                                    Colors.black.withValues(alpha: 0.1),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                      AppBorderRadius.xsmall),
+                                ),
+                                child: Column(
+                                  children: [
+                                    // Table header
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        gradient: InvoiceManagementScreenColors
+                                            .topBarBackgroundGradientColor,
+                                        borderRadius: const BorderRadius.only(
+                                          topLeft: Radius.circular(12),
+                                          topRight: Radius.circular(12),
+                                        ),
+                                      ),
+                                      child: Table(
+                                        columnWidths: _columnWidths,
+                                        children: [
+                                          TableRow(
+                                            children: [
+                                              // Select-all checkbox
+                                              Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        vertical: 8,
+                                                        horizontal: 4),
+                                                child: Checkbox(
+                                                  value: _isAllPageSelected,
+                                                  tristate:
+                                                      _isSomePageSelected &&
+                                                          !_isAllPageSelected,
+                                                  onChanged: (_) =>
+                                                      _toggleSelectAll(),
+                                                  activeColor: Colors.white,
+                                                  checkColor: Theme.of(context)
+                                                      .primaryColor,
+                                                  side: const BorderSide(
+                                                      color: Colors.white70,
+                                                      width: 2),
+                                                ),
+                                              ),
+                                              _buildTableHeader('#'),
+                                              _buildTableHeader('Invoice ID'),
+                                              _buildTableHeader('Customer'),
+                                              _buildTableHeader('Date'),
+                                              _buildTableHeader('Items'),
+                                              _buildTableHeader('Total'),
+                                              if (widget.filterType ==
+                                                  'Invoice') ...[
+                                                _buildTableHeader('Status'),
+                                                _buildTableHeader(
+                                                    'Outstanding'),
+                                              ],
+                                              _buildTableHeader('Actions'),
+                                            ],
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                    child: Table(
-                                      columnWidths: _columnWidths,
-                                      children: [
-                                        TableRow(
-                                          children: [
-                                            // Select-all checkbox
-                                            Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      vertical: 8,
-                                                      horizontal: 4),
-                                              child: Checkbox(
-                                                value: _isAllPageSelected,
-                                                tristate: _isSomePageSelected &&
-                                                    !_isAllPageSelected,
-                                                onChanged: (_) =>
-                                                    _toggleSelectAll(),
-                                                activeColor: Colors.white,
-                                                checkColor: Theme.of(context)
-                                                    .primaryColor,
-                                                side: const BorderSide(
-                                                    color: Colors.white70,
-                                                    width: 2),
-                                              ),
-                                            ),
-                                            _buildTableHeader('#'),
-                                            _buildTableHeader('Invoice ID'),
-                                            _buildTableHeader('Customer'),
-                                            _buildTableHeader('Date'),
-                                            _buildTableHeader('Items'),
-                                            _buildTableHeader('Total'),
-                                            if (widget.filterType == 'Invoice') ...[
-                                              _buildTableHeader('Status'),
-                                              _buildTableHeader('Outstanding'),
-                                            ],
-                                            _buildTableHeader('Actions'),
-                                          ],
-                                        ),
-                                      ],
+                                    // Table rows
+                                    ..._pageInvoices.asMap().entries.map(
+                                      (entry) {
+                                        final invoice = entry.value;
+                                        final index = entry.key;
+                                        final globalIndex =
+                                            (_currentPage * _pageSize) +
+                                                index +
+                                                1;
+                                        return _buildInvoiceRow(
+                                            invoice, globalIndex, index.isEven);
+                                      },
                                     ),
-                                  ),
-                                  // Table rows
-                                  ..._pageInvoices.asMap().entries.map(
-                                    (entry) {
-                                      final invoice = entry.value;
-                                      final index = entry.key;
-                                      final globalIndex =
-                                          (_currentPage * _pageSize) +
-                                              index +
-                                              1;
-                                      return _buildInvoiceRow(
-                                          invoice, globalIndex, index.isEven);
-                                    },
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
                 ),
 
                 // ── Pagination ────────────────────────────────────────────
@@ -1280,8 +1372,7 @@ class _InvoiceManagementScreenState
                           children: [
                             Text('Rows per page:',
                                 style: TextStyle(
-                                    color: Colors.grey.shade700,
-                                    fontSize: 13)),
+                                    color: Colors.grey.shade700, fontSize: 13)),
                             const SizedBox(width: 8),
                             DropdownButton<int>(
                               value: _pageSize,
@@ -1303,76 +1394,74 @@ class _InvoiceManagementScreenState
                         ),
                         Row(
                           children: [
-                        ElevatedButton.icon(
-                          onPressed: _currentPage > 0
-                              ? () {
-                                  setState(() => _currentPage--);
-                                  _loadPage();
-                                }
-                              : null,
-                          icon: const Icon(Icons.chevron_left, size: 20),
-                          label: const Text('Previous'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor:
-                                Theme.of(context).primaryColor,
-                            disabledBackgroundColor: Colors.grey[200],
-                            disabledForegroundColor: Colors.grey[400],
-                            elevation: 0,
-                            side: BorderSide(color: Colors.grey[300]!),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8)),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 20, vertical: 12),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 24, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context)
-                                .primaryColor
-                                .withValues(alpha:0.1),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
+                            ElevatedButton.icon(
+                              onPressed: _currentPage > 0
+                                  ? () {
+                                      setState(() => _currentPage--);
+                                      _loadPage();
+                                    }
+                                  : null,
+                              icon: const Icon(Icons.chevron_left, size: 20),
+                              label: const Text('Previous'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: Theme.of(context).primaryColor,
+                                disabledBackgroundColor: Colors.grey[200],
+                                disabledForegroundColor: Colors.grey[400],
+                                elevation: 0,
+                                side: BorderSide(color: Colors.grey[300]!),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8)),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20, vertical: 12),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 24, vertical: 12),
+                              decoration: BoxDecoration(
                                 color: Theme.of(context)
                                     .primaryColor
-                                    .withValues(alpha:0.3)),
-                          ),
-                          child: Text(
-                            'Page ${_currentPage + 1} of ${_totalPages > 0 ? _totalPages : 1}',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: Theme.of(context).primaryColor,
+                                    .withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                    color: Theme.of(context)
+                                        .primaryColor
+                                        .withValues(alpha: 0.3)),
+                              ),
+                              child: Text(
+                                'Page ${_currentPage + 1} of ${_totalPages > 0 ? _totalPages : 1}',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: Theme.of(context).primaryColor,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        ElevatedButton.icon(
-                          onPressed: (_currentPage + 1 < _totalPages)
-                              ? () {
-                                  setState(() => _currentPage++);
-                                  _loadPage();
-                                }
-                              : null,
-                          icon: const Icon(Icons.chevron_right, size: 20),
-                          label: const Text('Next'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor:
-                                Theme.of(context).primaryColor,
-                            disabledBackgroundColor: Colors.grey[200],
-                            disabledForegroundColor: Colors.grey[400],
-                            elevation: 0,
-                            side: BorderSide(color: Colors.grey[300]!),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8)),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 20, vertical: 12),
-                          ),
-                        ),
+                            const SizedBox(width: 16),
+                            ElevatedButton.icon(
+                              onPressed: (_currentPage + 1 < _totalPages)
+                                  ? () {
+                                      setState(() => _currentPage++);
+                                      _loadPage();
+                                    }
+                                  : null,
+                              icon: const Icon(Icons.chevron_right, size: 20),
+                              label: const Text('Next'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: Theme.of(context).primaryColor,
+                                disabledBackgroundColor: Colors.grey[200],
+                                disabledForegroundColor: Colors.grey[400],
+                                elevation: 0,
+                                side: BorderSide(color: Colors.grey[300]!),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8)),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20, vertical: 12),
+                              ),
+                            ),
                           ],
                         ),
                       ],
@@ -1395,8 +1484,7 @@ class _InvoiceManagementScreenState
         children: [
           // Selected count badge
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
@@ -1483,7 +1571,9 @@ class _InvoiceManagementScreenState
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
           side: BorderSide(
-              color: onPressed != null ? c.withValues(alpha:0.5) : Colors.white24),
+              color: onPressed != null
+                  ? c.withValues(alpha: 0.5)
+                  : Colors.white24),
         ),
       ),
       icon: Icon(icon, size: 18),
@@ -1515,13 +1605,12 @@ class _InvoiceManagementScreenState
     return Container(
       decoration: BoxDecoration(
         color: isSelected
-            ? Theme.of(context).primaryColor.withValues(alpha:0.08)
+            ? Theme.of(context).primaryColor.withValues(alpha: 0.08)
             : (isEven ? Colors.grey[50] : Colors.white),
         border: Border(
           bottom: BorderSide(color: Colors.grey[200]!, width: 1),
           left: isSelected
-              ? BorderSide(
-                  color: Theme.of(context).primaryColor, width: 3)
+              ? BorderSide(color: Theme.of(context).primaryColor, width: 3)
               : BorderSide.none,
         ),
       ),
@@ -1532,8 +1621,7 @@ class _InvoiceManagementScreenState
             children: [
               // Per-row checkbox
               Padding(
-                padding: const EdgeInsets.symmetric(
-                    vertical: 8, horizontal: 4),
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                 child: Checkbox(
                   value: isSelected,
                   onChanged: (_) => _toggleOne(invoice.id),
@@ -1542,12 +1630,11 @@ class _InvoiceManagementScreenState
               ),
               _buildTableCell(
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Theme.of(context)
-                        .primaryColor
-                        .withValues(alpha:0.1),
+                    color:
+                        Theme.of(context).primaryColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -1564,7 +1651,8 @@ class _InvoiceManagementScreenState
                 Text('#${invoice.id}',
                     style: const TextStyle(
                         overflow: TextOverflow.ellipsis,
-                        fontSize: 15, fontWeight: FontWeight.w600)),
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600)),
               ),
               _buildTableCell(
                 LayoutBuilder(
@@ -1574,7 +1662,8 @@ class _InvoiceManagementScreenState
                     return Row(
                       children: [
                         if (showIcon) ...[
-                          Icon(Icons.person_outline, size: 16, color: Colors.grey[600]),
+                          Icon(Icons.person_outline,
+                              size: 16, color: Colors.grey[600]),
                           const SizedBox(width: 6),
                         ],
                         Expanded(
@@ -1595,10 +1684,10 @@ class _InvoiceManagementScreenState
               // Items count
               _buildTableCell(
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withValues(alpha:0.1),
+                    color: Colors.blue.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -1632,9 +1721,10 @@ class _InvoiceManagementScreenState
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: invoice.paymentStatus == PaymentStatus.partial
-                                ? Colors.orange[700]
-                                : Colors.red[700],
+                            color:
+                                invoice.paymentStatus == PaymentStatus.partial
+                                    ? Colors.orange[700]
+                                    : Colors.red[700],
                           ),
                         ),
                 ),
@@ -1644,35 +1734,34 @@ class _InvoiceManagementScreenState
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     _buildActionButton(
-                        Icons.visibility_outlined, Colors.green, 'View',
+                        Icons.visibility_outlined,
+                        Colors.green,
+                        'View',
                         () => InvoicePdfServices.showInvoiceDetails(
                             context, invoice)),
                     const SizedBox(width: 4),
-                    _buildActionButton(
-                        Icons.edit_outlined, Colors.blue, 'Edit',
+                    _buildActionButton(Icons.edit_outlined, Colors.blue, 'Edit',
                         () => widget.onEditInvoice(invoice)),
                     const SizedBox(width: 4),
                     if (widget.filterType == 'Invoice') ...[
-                    _buildActionButton(
-                      Icons.payments_outlined,
-                      invoice.paymentStatus == PaymentStatus.paid
-                          ? Colors.green
-                          : Colors.purple,
-                      'Apply Payment',
-                      () => _showApplyPaymentDialog(invoice),
-                    ),
-                    const SizedBox(width: 4),
+                      _buildActionButton(
+                        Icons.payments_outlined,
+                        invoice.paymentStatus == PaymentStatus.paid
+                            ? Colors.green
+                            : Colors.purple,
+                        'Apply Payment',
+                        () => _showApplyPaymentDialog(invoice),
+                      ),
+                      const SizedBox(width: 4),
                     ],
-                    _buildActionButton(
-                        Icons.copy_all_outlined, Colors.teal, 'Duplicate',
-                        () => _showCloneDialog(invoice)),
+                    _buildActionButton(Icons.copy_all_outlined, Colors.teal,
+                        'Duplicate', () => _showCloneDialog(invoice)),
                     const SizedBox(width: 4),
                     _buildActionButton(
                         Icons.picture_as_pdf_outlined,
                         Colors.orange,
                         'PDF Preview',
-                        () => InvoicePdfServices.previewPDF(
-                            context, invoice)),
+                        () => InvoicePdfServices.previewPDF(context, invoice)),
                     const SizedBox(width: 4),
                     _buildActionButton(
                         Icons.download_outlined,
@@ -1681,13 +1770,18 @@ class _InvoiceManagementScreenState
                         () => PDFService.downloadPDF(context, invoice)),
                     const SizedBox(width: 4),
                     _buildActionButton(
-                        Icons.print_outlined, Colors.blueGrey, 'Print',
-                        () => InvoicePdfServices.generatePDF(
-                            context, invoice)),
+                        Icons.print_outlined,
+                        Colors.blueGrey,
+                        'Print',
+                        () => InvoicePdfServices.generatePDF(context, invoice)),
                     const SizedBox(width: 4),
                     _buildActionButton(
-                        Icons.delete_outline, Colors.red, 'Move to Trash',
-                        widget.user.isAdmin() ? () => _softDelete(invoice) : null),
+                        Icons.delete_outline,
+                        Colors.red,
+                        'Move to Trash',
+                        widget.user.isAdmin()
+                            ? () => _softDelete(invoice)
+                            : null),
                   ],
                 ),
               ),
@@ -1706,16 +1800,20 @@ class _InvoiceManagementScreenState
   }
 
   Widget _buildDateCell(Invoice invoice) {
-    final orderStr = AppFormatters.formatShortDate(invoice.date, pattern: _datePattern);
+    final orderStr =
+        AppFormatters.formatShortDate(invoice.date, pattern: _datePattern);
     if (invoice.dueDate == null) {
       return Text(orderStr, style: const TextStyle(fontSize: 13));
     }
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final due = DateTime(invoice.dueDate!.year, invoice.dueDate!.month, invoice.dueDate!.day);
-    final isOverdue = due.isBefore(today) && invoice.paymentStatus != PaymentStatus.paid;
+    final today = InvoiceCalculator.dateOnly(DateTime.now());
+    final due = InvoiceCalculator.dateOnly(invoice.dueDate!);
+    final isOverdue = InvoiceCalculator.isOverdue(
+      dueDate: invoice.dueDate,
+      outstanding: invoice.outstandingBalance,
+    );
     final isToday = due == today;
-    final dueStr = AppFormatters.formatShortDate(invoice.dueDate, pattern: _datePattern);
+    final dueStr =
+        AppFormatters.formatShortDate(invoice.dueDate, pattern: _datePattern);
     final dueColor = isOverdue
         ? Colors.red[700]!
         : isToday
@@ -1731,7 +1829,14 @@ class _InvoiceManagementScreenState
           mainAxisSize: MainAxisSize.min,
           children: [
             Flexible(
-              child: Text(dueStr, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: dueColor, fontWeight: (isOverdue || isToday) ? FontWeight.w600 : FontWeight.normal)),
+              child: Text(dueStr,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: dueColor,
+                      fontWeight: (isOverdue || isToday)
+                          ? FontWeight.w600
+                          : FontWeight.normal)),
             ),
             if (isOverdue || isToday) ...[
               const SizedBox(width: 4),
@@ -1744,7 +1849,10 @@ class _InvoiceManagementScreenState
                 ),
                 child: Text(
                   isOverdue ? 'Overdue' : 'Today',
-                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: dueColor),
+                  style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w600,
+                      color: dueColor),
                 ),
               ),
             ],
@@ -1759,9 +1867,9 @@ class _InvoiceManagementScreenState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: color.withValues(alpha:0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha:0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1778,9 +1886,7 @@ class _InvoiceManagementScreenState
                       fontWeight: FontWeight.w500)),
               Text(value,
                   style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: color)),
+                      fontSize: 18, fontWeight: FontWeight.bold, color: color)),
             ],
           ),
         ],
@@ -1826,13 +1932,14 @@ class _InvoiceManagementScreenState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha:0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withValues(alpha:0.4)),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Text(
         label,
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color),
+        style:
+            TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color),
       ),
     );
   }
@@ -1856,7 +1963,6 @@ class _InvoiceManagementScreenState
 // progress overlay (we close it programmatically via Navigator.pop).
 void unawaited(Future<void> future) {}
 
-
 // ─────────────────────────────────────────────
 // Trash Dialog
 class _TrashDialog extends StatefulWidget {
@@ -1864,7 +1970,10 @@ class _TrashDialog extends StatefulWidget {
   final VoidCallback onRestored;
   final String datePattern;
 
-  const _TrashDialog({required this.deletedInvoices, required this.onRestored, required this.datePattern});
+  const _TrashDialog(
+      {required this.deletedInvoices,
+      required this.onRestored,
+      required this.datePattern});
 
   @override
   State<_TrashDialog> createState() => _TrashDialogState();
@@ -1886,8 +1995,7 @@ class _TrashDialogState extends State<_TrashDialog> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Invoice restored.'),
-            backgroundColor: Colors.green),
+            content: Text('Invoice restored.'), backgroundColor: Colors.green),
       );
     }
   }
@@ -1921,15 +2029,15 @@ class _TrashDialogState extends State<_TrashDialog> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.red.withValues(alpha:0.1),
+                    color: Colors.red.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(Icons.delete_sweep, color: Colors.red),
                 ),
                 const SizedBox(width: 12),
                 const Text('Trash',
-                    style: TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.bold)),
+                    style:
+                        TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                 const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.close),
@@ -1956,11 +2064,11 @@ class _TrashDialogState extends State<_TrashDialog> {
                   itemBuilder: (ctx, index) {
                     final inv = _invoices[index];
                     return ListTile(
-                      leading: const Icon(Icons.receipt_long,
-                          color: Colors.grey),
+                      leading:
+                          const Icon(Icons.receipt_long, color: Colors.grey),
                       title: Text('#${inv.id} — ${inv.customer.name}'),
-                      subtitle:
-                          Text(AppFormatters.formatShortDate(inv.date, pattern: widget.datePattern)),
+                      subtitle: Text(AppFormatters.formatShortDate(inv.date,
+                          pattern: widget.datePattern)),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -1974,8 +2082,7 @@ class _TrashDialogState extends State<_TrashDialog> {
                           const SizedBox(width: 4),
                           TextButton.icon(
                             onPressed: () => _permanentDelete(inv),
-                            icon: const Icon(Icons.delete_forever,
-                                size: 16),
+                            icon: const Icon(Icons.delete_forever, size: 16),
                             label: const Text('Delete'),
                             style: TextButton.styleFrom(
                                 foregroundColor: Colors.red),
@@ -2000,7 +2107,6 @@ class _TrashDialogState extends State<_TrashDialog> {
     );
   }
 }
-
 
 class _DatePickerField extends StatelessWidget {
   final String label;
