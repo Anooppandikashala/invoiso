@@ -62,12 +62,14 @@ class AgedReceivable {
   final String customerName;
   final double outstanding;
   final int daysOverdue;
+  final bool hasNoDueDate;
 
   const AgedReceivable({
     required this.invoiceId,
     required this.customerName,
     required this.outstanding,
     required this.daysOverdue,
+    this.hasNoDueDate = false,
   });
 }
 
@@ -91,6 +93,64 @@ class TopCustomer {
     required this.billed,
     required this.collected,
     required this.outstanding,
+  });
+}
+
+class CustomerStatementCustomer {
+  final String key;
+  final String name;
+  final int invoiceCount;
+
+  const CustomerStatementCustomer({
+    required this.key,
+    required this.name,
+    required this.invoiceCount,
+  });
+}
+
+class CustomerStatementLine {
+  final String date;
+  final String type;
+  final String reference;
+  final String description;
+  final double debit;
+  final double credit;
+  final double balance;
+
+  const CustomerStatementLine({
+    required this.date,
+    required this.type,
+    required this.reference,
+    required this.description,
+    required this.debit,
+    required this.credit,
+    required this.balance,
+  });
+}
+
+class CustomerStatement {
+  final String customerKey;
+  final String customerName;
+  final String currencyCode;
+  final String currencySymbol;
+  final double openingBalance;
+  final double invoiced;
+  final double paid;
+  final double closingBalance;
+  final double overdueBalance;
+  final List<CustomerStatementLine> lines;
+
+  const CustomerStatement({
+    required this.customerKey,
+    required this.customerName,
+    required this.currencyCode,
+    required this.currencySymbol,
+    required this.openingBalance,
+    required this.invoiced,
+    required this.paid,
+    required this.closingBalance,
+    required this.overdueBalance,
+    required this.lines,
   });
 }
 
@@ -126,25 +186,81 @@ class QuotationStats {
   );
 }
 
+class InvoiceStatusRow {
+  final String id;
+  final String date;
+  final String? dueDate;
+  final String customerName;
+  final double total;
+  final double paid;
+  final double outstanding;
+  final int daysOverdue;
+  final bool hasNoDueDate;
+  // 'Paid' | 'Partial' | 'Unpaid' — matches Invoice model PaymentStatus
+  final String status;
+  // outstanding > 0 and past due — separate indicator, not a status override
+  final bool isOverdue;
+
+  const InvoiceStatusRow({
+    required this.id,
+    required this.date,
+    this.dueDate,
+    required this.customerName,
+    required this.total,
+    required this.paid,
+    required this.outstanding,
+    required this.daysOverdue,
+    required this.hasNoDueDate,
+    required this.status,
+    required this.isOverdue,
+  });
+}
+
 // ─── Internal row ─────────────────────────────────────────────────────────────
 
 class _InvRow {
   final String id;
+  final String customerKey;
   final String customerName;
   final String date;
   final String? dueDate;
   final double total;
   final double paid;
   final double outstanding;
+  final String currencyCode;
+  final String currencySymbol;
 
   const _InvRow({
     required this.id,
+    required this.customerKey,
     required this.customerName,
     required this.date,
     this.dueDate,
     required this.total,
     required this.paid,
     required this.outstanding,
+    required this.currencyCode,
+    required this.currencySymbol,
+  });
+}
+
+class _StatementLineDraft {
+  final String date;
+  final int order;
+  final String type;
+  final String reference;
+  final String description;
+  final double debit;
+  final double credit;
+
+  const _StatementLineDraft({
+    required this.date,
+    required this.order,
+    required this.type,
+    required this.reference,
+    required this.description,
+    required this.debit,
+    required this.credit,
   });
 }
 
@@ -159,6 +275,8 @@ class ReportService {
     String type = 'Invoice',
     DateTime? from,
     DateTime? to,
+    String? currencyCode,
+    String? customerKey,
   }) async {
     final db = await _db.database;
 
@@ -172,17 +290,28 @@ class ReportService {
       sb.write(' AND date <= ?');
       args.add(to.toIso8601String().split('T').first);
     }
+    if (currencyCode != null) {
+      sb.write(' AND (currency_code = ? OR currency_code IS NULL)');
+      args.add(currencyCode);
+    }
+    if (customerKey != null) {
+      sb.write(" AND COALESCE(NULLIF(customer_id, ''), customer_name) = ?");
+      args.add(customerKey);
+    }
 
     final invRows = await db.query(
       'invoices',
       columns: [
         'id',
+        'customer_id',
         'customer_name',
         'date',
         'due_date',
         'tax_rate',
         'tax_mode',
-        'additional_costs'
+        'additional_costs',
+        'currency_code',
+        'currency_symbol',
       ],
       where: sb.toString(),
       whereArgs: args,
@@ -233,12 +362,10 @@ class ReportService {
         final disc = (it['discount'] as num?)?.toDouble() ?? 0.0;
         final dpu = (it['discount_per_unit'] as int?) == 1;
         final extra = (it['extra_cost'] as num?)?.toDouble() ?? 0.0;
-        final itRate =
-            (it['product_tax_rate'] as num?)?.toDouble() ?? 0.0;
+        final itRate = (it['product_tax_rate'] as num?)?.toDouble() ?? 0.0;
 
-        final lt = dpu
-            ? (price - disc) * qty + extra
-            : price * qty - disc + extra;
+        final lt =
+            dpu ? (price - disc) * qty + extra : price * qty - disc + extra;
         subtotal += lt;
         if (taxMode == TaxMode.perItem) itemTax += lt * (itRate / 100);
       }
@@ -254,26 +381,31 @@ class ReportService {
               .fold(0.0, (s, c) => s + c.amount);
 
       final total = subtotal + tax + addCosts;
-      final outstanding =
-          (total - paid).clamp(0.0, double.infinity);
+      final outstanding = (total - paid).clamp(0.0, double.infinity);
 
       return _InvRow(
         id: id,
+        customerKey: (inv['customer_id'] as String?)?.isNotEmpty == true
+            ? inv['customer_id'] as String
+            : inv['customer_name'] as String? ?? '',
         customerName: inv['customer_name'] as String? ?? '',
         date: inv['date'] as String? ?? '',
         dueDate: inv['due_date'] as String?,
         total: total,
         paid: paid,
         outstanding: outstanding,
+        currencyCode: inv['currency_code'] as String? ?? 'INR',
+        currencySymbol: inv['currency_symbol'] as String? ?? 'Rs.',
       );
     }).toList();
   }
 
   // ── 1. Revenue KPIs ────────────────────────────────────────────────────────
 
-  static Future<RevenueKpi> getRevenueSummary(
-      DateTime from, DateTime to) async {
-    final rows = await _loadRows(from: from, to: to);
+  static Future<RevenueKpi> getRevenueSummary(DateTime from, DateTime to,
+      {String? currencyCode}) async {
+    final rows =
+        await _loadRows(from: from, to: to, currencyCode: currencyCode);
     if (rows.isEmpty) return RevenueKpi.empty;
 
     double billed = 0, collected = 0, outstanding = 0;
@@ -294,9 +426,22 @@ class ReportService {
   // ── 2. Monthly revenue trend ───────────────────────────────────────────────
 
   static Future<List<MonthlyPoint>> getMonthlyRevenueTrend(
-      DateTime from, DateTime to) async {
-    final rows = await _loadRows(from: from, to: to);
+      DateTime from, DateTime to,
+      {String? currencyCode}) async {
+    final rows =
+        await _loadRows(from: from, to: to, currencyCode: currencyCode);
     final db = await _db.database;
+
+    final f = from.toIso8601String().split('T').first;
+    final t = to.toIso8601String().split('T').first;
+    final currencyFilter = currencyCode != null
+        ? 'AND (i.currency_code = ? OR i.currency_code IS NULL) '
+        : '';
+    final args = <Object?>[
+      if (currencyCode != null) currencyCode,
+      f,
+      t,
+    ];
 
     // Collected grouped by payment date (more accurate for cash-flow view)
     final collectedRows = await db.rawQuery(
@@ -305,12 +450,10 @@ class ReportService {
       "FROM invoice_payments ip "
       "JOIN invoices i ON ip.invoice_id = i.id "
       "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "$currencyFilter"
       "AND ip.date_paid >= ? AND ip.date_paid <= ? "
       "GROUP BY month ORDER BY month",
-      [
-        from.toIso8601String().split('T').first,
-        to.toIso8601String().split('T').first
-      ],
+      args,
     );
 
     final collectedByMonth = <String, double>{
@@ -327,10 +470,7 @@ class ReportService {
       }
     }
 
-    final allMonths = {
-      ...billedByMonth.keys,
-      ...collectedByMonth.keys
-    }.toList()
+    final allMonths = {...billedByMonth.keys, ...collectedByMonth.keys}.toList()
       ..sort();
 
     return allMonths
@@ -345,8 +485,10 @@ class ReportService {
   // ── 3. Payment status breakdown ────────────────────────────────────────────
 
   static Future<StatusBreakdown> getPaymentStatusBreakdown(
-      DateTime from, DateTime to) async {
-    final rows = await _loadRows(from: from, to: to);
+      DateTime from, DateTime to,
+      {String? currencyCode}) async {
+    final rows =
+        await _loadRows(from: from, to: to, currencyCode: currencyCode);
     int paid = 0, partial = 0, unpaid = 0;
     for (final r in rows) {
       if (r.paid <= 0) {
@@ -362,34 +504,53 @@ class ReportService {
 
   // ── 4. Aged receivables (all time, all overdue) ────────────────────────────
 
-  static Future<List<AgedReceivable>> getAgedReceivables() async {
-    final rows = await _loadRows();
+  static Future<List<AgedReceivable>> getAgedReceivables(
+      {String? currencyCode}) async {
+    final rows = await _loadRows(currencyCode: currencyCode);
     final now = DateTime.now();
     final result = <AgedReceivable>[];
 
     for (final r in rows) {
       if (r.outstanding <= 0.005) continue;
-      final dueDate =
-          r.dueDate != null ? DateTime.tryParse(r.dueDate!) : null;
-      final daysOverdue =
-          dueDate != null ? now.difference(dueDate).inDays : 0;
+      final dueDate = r.dueDate != null ? DateTime.tryParse(r.dueDate!) : null;
+      final bool noDueDate = dueDate == null;
+      final daysOverdue = dueDate != null ? now.difference(dueDate).inDays : 0;
       result.add(AgedReceivable(
         invoiceId: r.id,
         customerName: r.customerName,
         outstanding: r.outstanding,
         daysOverdue: daysOverdue > 0 ? daysOverdue : 0,
+        hasNoDueDate: noDueDate,
       ));
     }
-    result.sort((a, b) => b.daysOverdue.compareTo(a.daysOverdue));
+    // Sort: no-due-date last, then by days overdue descending
+    result.sort((a, b) {
+      if (a.hasNoDueDate != b.hasNoDueDate) return a.hasNoDueDate ? 1 : -1;
+      return b.daysOverdue.compareTo(a.daysOverdue);
+    });
     return result;
   }
 
   // ── 5. Tax collected by rate ───────────────────────────────────────────────
 
-  static Future<List<TaxBucket>> getTaxByRate(
-      DateTime from, DateTime to) async {
+  static Future<List<TaxBucket>> getTaxByRate(DateTime from, DateTime to,
+      {String? currencyCode}) async {
     final db = await _db.database;
-    final rows = await db.rawQuery(
+    final f = from.toIso8601String().split('T').first;
+    final t = to.toIso8601String().split('T').first;
+    final ccFilter = currencyCode != null
+        ? 'AND (i.currency_code = ? OR i.currency_code IS NULL) '
+        : '';
+    final dateArgs = <Object?>[
+      if (currencyCode != null) currencyCode,
+      f,
+      t,
+    ];
+
+    final buckets = <double, double>{};
+
+    // Per-item mode: tax computed per line item's product_tax_rate
+    final perItemRows = await db.rawQuery(
       "SELECT ii.product_tax_rate AS rate, "
       "SUM(CASE WHEN ii.discount_per_unit = 1 "
       "  THEN (COALESCE(ii.unit_price, ii.product_price) - ii.discount) * ii.quantity "
@@ -400,20 +561,68 @@ class ReportService {
       "FROM invoice_items ii "
       "JOIN invoices i ON i.id = ii.invoice_id "
       "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "AND i.tax_mode = 'per_item' "
+      "$ccFilter"
       "AND i.date >= ? AND i.date <= ? "
       "AND ii.product_tax_rate > 0 "
-      "GROUP BY ii.product_tax_rate ORDER BY rate",
-      [
-        from.toIso8601String().split('T').first,
-        to.toIso8601String().split('T').first
-      ],
+      "GROUP BY ii.product_tax_rate",
+      dateArgs,
     );
-    return rows
-        .map((r) => TaxBucket(
-              rate: (r['rate'] as num).toDouble(),
-              taxCollected: (r['tax_amount'] as num).toDouble(),
-            ))
-        .toList();
+    for (final r in perItemRows) {
+      final rate = (r['rate'] as num).toDouble();
+      buckets[rate] =
+          (buckets[rate] ?? 0) + (r['tax_amount'] as num).toDouble();
+    }
+
+    // Global mode: single tax rate applied to the invoice subtotal
+    final globalInvRows = await db.rawQuery(
+      "SELECT i.id, i.tax_rate, i.additional_costs "
+      "FROM invoices i "
+      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "AND i.tax_mode = 'global' AND i.tax_rate > 0 "
+      "$ccFilter"
+      "AND i.date >= ? AND i.date <= ?",
+      dateArgs,
+    );
+
+    if (globalInvRows.isNotEmpty) {
+      final ids = globalInvRows.map((r) => r['id'] as String).toList();
+      final ph = List.filled(ids.length, '?').join(',');
+      final itemRows = await db.rawQuery(
+        "SELECT invoice_id, quantity, unit_price, product_price, discount, "
+        "discount_per_unit, extra_cost "
+        "FROM invoice_items WHERE invoice_id IN ($ph)",
+        ids,
+      );
+      final itemsByInv = <String, List<Map<String, dynamic>>>{};
+      for (final r in itemRows) {
+        (itemsByInv[r['invoice_id'] as String] ??= [])
+            .add(r as Map<String, dynamic>);
+      }
+      for (final inv in globalInvRows) {
+        final id = inv['id'] as String;
+        final taxRate = (inv['tax_rate'] as num?)?.toDouble() ?? 0.0;
+        double subtotal = 0.0;
+        for (final it in itemsByInv[id] ?? []) {
+          final price = (it['unit_price'] as num?)?.toDouble() ??
+              (it['product_price'] as num?)?.toDouble() ??
+              0.0;
+          final qty = (it['quantity'] as num?)?.toDouble() ?? 0.0;
+          final disc = (it['discount'] as num?)?.toDouble() ?? 0.0;
+          final dpu = (it['discount_per_unit'] as int?) == 1;
+          final extra = (it['extra_cost'] as num?)?.toDouble() ?? 0.0;
+          subtotal +=
+              dpu ? (price - disc) * qty + extra : price * qty - disc + extra;
+        }
+        final tax = subtotal * (taxRate / 100);
+        if (tax > 0) buckets[taxRate] = (buckets[taxRate] ?? 0) + tax;
+      }
+    }
+
+    return (buckets.entries
+        .map((e) => TaxBucket(rate: e.key, taxCollected: e.value))
+        .toList()
+      ..sort((a, b) => a.rate.compareTo(b.rate)));
   }
 
   // ── 6. Top customers ──────────────────────────────────────────────────────
@@ -421,9 +630,11 @@ class ReportService {
   static Future<List<TopCustomer>> getTopCustomers(
     DateTime from,
     DateTime to, {
-    int limit = 10,
+    int limit = 500,
+    String? currencyCode,
   }) async {
-    final rows = await _loadRows(from: from, to: to);
+    final rows =
+        await _loadRows(from: from, to: to, currencyCode: currencyCode);
 
     final byCustomer = <String, List<_InvRow>>{};
     for (final r in rows) {
@@ -445,9 +656,169 @@ class ReportService {
         outstanding: outstanding,
       );
     }).toList()
-      ..sort((a, b) => b.collected.compareTo(a.collected));
+      ..sort((a, b) => b.billed.compareTo(a.billed));
 
     return result.take(limit).toList();
+  }
+
+  static Future<List<CustomerStatementCustomer>> getStatementCustomers({
+    String? currencyCode,
+  }) async {
+    final db = await _db.database;
+    final sb = StringBuffer(
+      "type = 'Invoice' AND deleted_at IS NULL "
+      "AND COALESCE(NULLIF(customer_id, ''), customer_name) IS NOT NULL",
+    );
+    final args = <Object?>[];
+    if (currencyCode != null) {
+      sb.write(' AND (currency_code = ? OR currency_code IS NULL)');
+      args.add(currencyCode);
+    }
+
+    final rows = await db.rawQuery(
+      "SELECT COALESCE(NULLIF(customer_id, ''), customer_name) AS customer_key, "
+      "COALESCE(NULLIF(customer_name, ''), 'Unknown') AS customer_name, "
+      'COUNT(*) AS invoice_count '
+      'FROM invoices '
+      'WHERE ${sb.toString()} '
+      'GROUP BY customer_key '
+      'ORDER BY customer_name COLLATE NOCASE',
+      args,
+    );
+
+    return rows
+        .map((r) => CustomerStatementCustomer(
+              key: r['customer_key'] as String,
+              name: r['customer_name'] as String,
+              invoiceCount: (r['invoice_count'] as num).toInt(),
+            ))
+        .toList();
+  }
+
+  static Future<List<CustomerStatement>> getCustomerStatements(
+    String customerKey,
+    DateTime from,
+    DateTime to, {
+    String? currencyCode,
+  }) async {
+    final rows = await _loadRows(
+      customerKey: customerKey,
+      currencyCode: currencyCode,
+    );
+    if (rows.isEmpty) return [];
+
+    final db = await _db.database;
+    final f = from.toIso8601String().split('T').first;
+    final t = to.toIso8601String().split('T').first;
+    final nowDate = DateTime.now().toIso8601String().split('T').first;
+    final byCurrency = <String, List<_InvRow>>{};
+    for (final row in rows) {
+      (byCurrency[row.currencyCode] ??= []).add(row);
+    }
+
+    final statements = <CustomerStatement>[];
+    for (final entry in byCurrency.entries) {
+      final currencyRows = entry.value;
+      final ids = currencyRows.map((r) => r.id).toList();
+      final ph = List.filled(ids.length, '?').join(',');
+      final paymentRows = await db.rawQuery(
+        'SELECT invoice_id, receipt_number, amount_paid, date_paid, '
+        'payment_method, notes '
+        'FROM invoice_payments WHERE invoice_id IN ($ph) '
+        'ORDER BY date_paid ASC, rowid ASC',
+        ids,
+      );
+      final invoicesById = {for (final r in currencyRows) r.id: r};
+      final drafts = <_StatementLineDraft>[];
+      double opening = 0;
+      double invoiced = 0;
+      double paid = 0;
+      double overdue = 0;
+
+      for (final invoice in currencyRows) {
+        if (invoice.date.compareTo(f) < 0) {
+          opening += invoice.total;
+        } else if (invoice.date.compareTo(t) <= 0) {
+          invoiced += invoice.total;
+          drafts.add(_StatementLineDraft(
+            date: invoice.date,
+            order: 0,
+            type: 'Invoice',
+            reference: invoice.id,
+            description: 'Invoice raised',
+            debit: invoice.total,
+            credit: 0,
+          ));
+        }
+
+        final dueDate = invoice.dueDate;
+        if (invoice.outstanding > 0.005 &&
+            dueDate != null &&
+            dueDate.compareTo(nowDate) < 0) {
+          overdue += invoice.outstanding;
+        }
+      }
+
+      for (final payment in paymentRows) {
+        final invoice = invoicesById[payment['invoice_id'] as String];
+        if (invoice == null) continue;
+        final date = payment['date_paid'] as String? ?? '';
+        final amount = (payment['amount_paid'] as num?)?.toDouble() ?? 0;
+        if (date.compareTo(f) < 0) {
+          opening -= amount;
+        } else if (date.compareTo(t) <= 0) {
+          paid += amount;
+          final method = payment['payment_method'] as String?;
+          drafts.add(_StatementLineDraft(
+            date: date,
+            order: 1,
+            type: 'Payment',
+            reference: payment['receipt_number'] as String? ?? invoice.id,
+            description: method == null || method.isEmpty
+                ? 'Payment for ${invoice.id}'
+                : 'Payment for ${invoice.id} ($method)',
+            debit: 0,
+            credit: amount,
+          ));
+        }
+      }
+
+      drafts.sort((a, b) {
+        final byDate = a.date.compareTo(b.date);
+        if (byDate != 0) return byDate;
+        return a.order.compareTo(b.order);
+      });
+
+      var running = opening;
+      final lines = drafts.map((draft) {
+        running += draft.debit - draft.credit;
+        return CustomerStatementLine(
+          date: draft.date,
+          type: draft.type,
+          reference: draft.reference,
+          description: draft.description,
+          debit: draft.debit,
+          credit: draft.credit,
+          balance: running,
+        );
+      }).toList();
+
+      statements.add(CustomerStatement(
+        customerKey: customerKey,
+        customerName: currencyRows.first.customerName,
+        currencyCode: entry.key,
+        currencySymbol: currencyRows.first.currencySymbol,
+        openingBalance: opening,
+        invoiced: invoiced,
+        paid: paid,
+        closingBalance: running,
+        overdueBalance: overdue,
+        lines: lines,
+      ));
+    }
+
+    statements.sort((a, b) => a.currencyCode.compareTo(b.currencyCode));
+    return statements;
   }
 
   // ── 7. Top products ───────────────────────────────────────────────────────
@@ -455,9 +826,21 @@ class ReportService {
   static Future<List<TopProduct>> getTopProducts(
     DateTime from,
     DateTime to, {
-    int limit = 10,
+    int limit = 500,
+    String? currencyCode,
   }) async {
     final db = await _db.database;
+    final f = from.toIso8601String().split('T').first;
+    final t = to.toIso8601String().split('T').first;
+    final ccFilter = currencyCode != null
+        ? 'AND (i.currency_code = ? OR i.currency_code IS NULL) '
+        : '';
+    final args = <Object?>[
+      if (currencyCode != null) currencyCode,
+      f,
+      t,
+      limit,
+    ];
     final rows = await db.rawQuery(
       "SELECT ii.product_name, "
       "SUM(ii.quantity) AS units_sold, "
@@ -472,13 +855,10 @@ class ReportService {
       "FROM invoice_items ii "
       "JOIN invoices i ON i.id = ii.invoice_id "
       "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "$ccFilter"
       "AND i.date >= ? AND i.date <= ? "
       "GROUP BY ii.product_name ORDER BY revenue DESC LIMIT ?",
-      [
-        from.toIso8601String().split('T').first,
-        to.toIso8601String().split('T').first,
-        limit,
-      ],
+      args,
     );
     return rows
         .map((r) => TopProduct(
@@ -493,24 +873,37 @@ class ReportService {
   // ── 8. Quotation conversion ───────────────────────────────────────────────
 
   static Future<QuotationStats> getQuotationStats(
-      DateTime from, DateTime to) async {
+    DateTime from,
+    DateTime to, {
+    String? currencyCode,
+  }) async {
     final db = await _db.database;
     final f = from.toIso8601String().split('T').first;
     final t = to.toIso8601String().split('T').first;
+    final currencyFilter = currencyCode != null
+        ? 'AND (currency_code = ? OR currency_code IS NULL) '
+        : '';
+    final args = <Object?>[
+      if (currencyCode != null) currencyCode,
+      f,
+      t,
+    ];
 
     final qr = await db.rawQuery(
       "SELECT COUNT(*) AS cnt FROM invoices "
       "WHERE type = 'Quotation' AND deleted_at IS NULL "
+      "$currencyFilter"
       "AND date >= ? AND date <= ?",
-      [f, t],
+      args,
     );
     final quotationsIssued = (qr.first['cnt'] as int?) ?? 0;
 
     final ir = await db.rawQuery(
       "SELECT COUNT(*) AS cnt FROM invoices "
       "WHERE type = 'Invoice' AND deleted_at IS NULL "
+      "$currencyFilter"
       "AND date >= ? AND date <= ?",
-      [f, t],
+      args,
     );
     final invoicesInPeriod = (ir.first['cnt'] as int?) ?? 0;
 
@@ -537,8 +930,7 @@ class ReportService {
   }
 
   static String exportTopCustomersCsv(List<TopCustomer> list) {
-    final sb =
-        StringBuffer('Customer,Invoices,Billed,Collected,Outstanding\n');
+    final sb = StringBuffer('Customer,Invoices,Billed,Collected,Outstanding\n');
     for (final c in list) {
       sb.writeln(
           '"${c.name}",${c.invoiceCount},${c.billed.toStringAsFixed(2)},${c.collected.toStringAsFixed(2)},${c.outstanding.toStringAsFixed(2)}');
@@ -546,19 +938,45 @@ class ReportService {
     return sb.toString();
   }
 
-  static String exportTopProductsCsv(List<TopProduct> list) {
-    final sb =
-        StringBuffer('Product,Units Sold,Revenue,Discount Given\n');
-    for (final p in list) {
+  static String exportCustomerStatementsCsv(
+      List<CustomerStatement> statements) {
+    final sb = StringBuffer();
+    for (final statement in statements) {
       sb.writeln(
-          '"${p.name}",${p.unitsSold.toStringAsFixed(2)},${p.revenue.toStringAsFixed(2)},${p.discountGiven.toStringAsFixed(2)}');
+          '"Customer","${statement.customerName}","Currency","${statement.currencyCode}"');
+      sb.writeln(
+          '"Opening Balance",${statement.openingBalance.toStringAsFixed(2)}');
+      sb.writeln('"Invoiced",${statement.invoiced.toStringAsFixed(2)}');
+      sb.writeln('"Paid",${statement.paid.toStringAsFixed(2)}');
+      sb.writeln(
+          '"Closing Balance",${statement.closingBalance.toStringAsFixed(2)}');
+      sb.writeln(
+          '"Overdue Balance",${statement.overdueBalance.toStringAsFixed(2)}');
+      sb.writeln('Date,Type,Reference,Description,Debit,Credit,Balance');
+      for (final line in statement.lines) {
+        sb.writeln(
+          '"${line.date}","${line.type}","${line.reference}",'
+          '"${line.description}",${line.debit.toStringAsFixed(2)},'
+          '${line.credit.toStringAsFixed(2)},${line.balance.toStringAsFixed(2)}',
+        );
+      }
+      sb.writeln();
+    }
+    return sb.toString();
+  }
+
+  static String exportTopProductsCsv(List<TopProduct> list) {
+    final sb = StringBuffer('SL,Product,Units Sold,Revenue,Discount Given\n');
+    for (var i = 0; i < list.length; i++) {
+      final p = list[i];
+      sb.writeln(
+          '${i + 1},"${p.name}",${p.unitsSold.toStringAsFixed(2)},${p.revenue.toStringAsFixed(2)},${p.discountGiven.toStringAsFixed(2)}');
     }
     return sb.toString();
   }
 
   static String exportAgedReceivablesCsv(List<AgedReceivable> list) {
-    final sb =
-        StringBuffer('Invoice ID,Customer,Outstanding,Days Overdue\n');
+    final sb = StringBuffer('Invoice ID,Customer,Outstanding,Days Overdue\n');
     for (final r in list) {
       sb.writeln(
           '"${r.invoiceId}","${r.customerName}",${r.outstanding.toStringAsFixed(2)},${r.daysOverdue}');
@@ -571,6 +989,71 @@ class ReportService {
     for (final b in list) {
       sb.writeln(
           '${b.rate.toStringAsFixed(0)},${b.taxCollected.toStringAsFixed(2)}');
+    }
+    return sb.toString();
+  }
+
+  // ── 9. Invoice status list ─────────────────────────────────────────────────
+
+  static Future<List<InvoiceStatusRow>> getInvoiceStatusList(
+    DateTime from,
+    DateTime to, {
+    String? currencyCode,
+  }) async {
+    final rows = await _loadRows(
+      from: from,
+      to: to,
+      currencyCode: currencyCode,
+    );
+    final now = DateTime.now();
+    final result = rows.map((r) {
+      final dueDate = r.dueDate != null ? DateTime.tryParse(r.dueDate!) : null;
+      final noDueDate = r.dueDate == null;
+      final rawDays = dueDate != null ? now.difference(dueDate).inDays : 0;
+      final daysOverdue = rawDays > 0 ? rawDays : 0;
+
+      // Match Invoice model PaymentStatus exactly:
+      // amountPaid <= 0 → unpaid, outstandingBalance <= 0 → paid, else partial
+      final String status;
+      if (r.paid <= 0) {
+        status = 'Unpaid';
+      } else if (r.outstanding <= 0.005) {
+        status = 'Paid';
+      } else {
+        status = 'Partial';
+      }
+
+      // Overdue is a separate flag — outstanding > 0 and past due date
+      final isOverdue = r.outstanding > 0.005 && daysOverdue > 0;
+
+      return InvoiceStatusRow(
+        id: r.id,
+        date: r.date,
+        dueDate: r.dueDate,
+        customerName: r.customerName,
+        total: r.total,
+        paid: r.paid,
+        outstanding: r.outstanding,
+        daysOverdue: daysOverdue,
+        hasNoDueDate: noDueDate,
+        status: status,
+        isOverdue: isOverdue,
+      );
+    }).toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+    return result;
+  }
+
+  static String exportInvoiceStatusCsv(List<InvoiceStatusRow> list) {
+    final sb = StringBuffer(
+        'Date,Invoice ID,Customer,Total,Paid,Outstanding,Status,Days Overdue\n');
+    for (final r in list) {
+      sb.writeln(
+        '"${r.date}","${r.id}","${r.customerName}",'
+        '${r.total.toStringAsFixed(2)},${r.paid.toStringAsFixed(2)},'
+        '${r.outstanding.toStringAsFixed(2)},"${r.status}",'
+        '${r.hasNoDueDate ? "" : r.daysOverdue}',
+      );
     }
     return sb.toString();
   }
