@@ -64,6 +64,15 @@ Special thanks to [sparsh1220](https://github.com/sparsh1220) for thoroughly tes
 - **GST Ready** — GSTIN fields, HSN codes, per-item or global tax rates for Indian businesses.
 - **UPI Payment QR** — Embed a scannable UPI QR code in every PDF (GPay, PhonePe, Paytm).
 
+### Reports
+- **Reports Dashboard** — Dedicated reports section with sidebar navigation for instant tab switching.
+- **Revenue by Period** — Total revenue, collected payments, and outstanding balances by date range, month, quarter, or year.
+- **Top Customers & Products** — Ranked by revenue and invoice count; exportable as CSV.
+- **Tax Summary** — Aggregated tax collected per rate across a selected period.
+- **Payment Collection** — Paid vs. outstanding invoices over time with average payment delay metrics.
+- **Invoice Status Report** — Full invoice list with paid, unpaid, and overdue status; filter chips included.
+- **CSV Export** — One-click CSV export on every report tab.
+
 ### Data Management
 - **Customer Management** — Full CRUD with search, sort, and pagination.
 - **Product & Inventory Management** — Full CRUD with search, sort, and pagination.
@@ -92,6 +101,10 @@ Special thanks to [sparsh1220](https://github.com/sparsh1220) for thoroughly tes
 | Classic Template | Modern Template | Minimal Template |
 |:---------------:|:---------------:|:----------------:|
 | ![Classic](landing/assets/images/screenshots/template_classic.png) | ![Modern](landing/assets/images/screenshots/template_modern.png) | ![Minimal](landing/assets/images/screenshots/template_minimal.png) |
+
+| Reports Dashboard | Invoice Status Report | Customer Statement |
+|:-----------------:|:---------------------:|:------------------:|
+| ![Reports](landing/assets/images/screenshots/report_screen_with_multiple_types.png) | ![Invoice Status](landing/assets/images/screenshots/report_invoice_status.png) | ![Customer Statement](landing/assets/images/screenshots/report_customer_wise_statement.png) |
 
 </div>
 

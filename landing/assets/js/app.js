@@ -161,6 +161,9 @@ function initScreenshots() {
     { src: 'invoice_settings_page.png',          text: 'Invoice Settings',              alt: 'Invoice settings screen in Invoiso \u2014 configure prefix, currency, tax and UPI QR code',             category: 'Settings' },
     { src: 'backup_and_restore_page.png',        text: 'Backup Management',             alt: 'Backup and restore screen in Invoiso \u2014 one-click database backup to keep your data safe',          category: 'Settings' },
     { src: 'software_info_page.png',             text: 'About Invoiso',                 alt: 'About Invoiso screen \u2014 version, developer info and open source license details',                   category: 'Settings' },
+    { src: 'report_screen_with_multiple_types.png', text: 'Reports Dashboard',           alt: 'Invoiso reports dashboard with sidebar navigation showing multiple report types',                      category: 'Reports' },
+    { src: 'report_invoice_status.png',          text: 'Invoice Status Report',          alt: 'Invoice status report in Invoiso \u2014 paid, unpaid and overdue invoices with filter chips',             category: 'Reports' },
+    { src: 'report_customer_wise_statement.png', text: 'Customer Statement Report',      alt: 'Customer-wise statement report in Invoiso showing revenue and outstanding balance per client',          category: 'Reports' },
   ];
 
   // Build slides
@@ -198,6 +201,7 @@ function initScreenshots() {
     { id: 'Clients',  icon: 'fas fa-users'       },
     { id: 'Products', icon: 'fas fa-box'         },
     { id: 'Settings', icon: 'fas fa-cog'         },
+    { id: 'Reports',  icon: 'fas fa-chart-bar'  },
   ];
   var chipsEl = document.getElementById('screenshots-chips');
   chipCategories.forEach(function (cat) {
