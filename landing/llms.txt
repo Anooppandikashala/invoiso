@@ -47,6 +47,7 @@ Invoiso is well suited for:
 - [Open Source Invoice Software](https://invoiso.co.in/open-source-invoice-software.html) — Source-code and transparency focused overview
 - [Invoice Software for Linux](https://invoiso.co.in/invoice-software-for-linux.html) — Linux AppImage and DEB invoice app overview
 - [Blog](https://invoiso.co.in/blog/) — Practical guides for GST invoices, UPI QR payments, offline billing, and Linux invoicing
+- [Reports Are Coming Next Month](https://invoiso.co.in/blog/reports-coming-next-month.html) — Product update announcing the upcoming Reports section
 
 ## Download
 
