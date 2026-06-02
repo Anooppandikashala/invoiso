@@ -51,6 +51,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Invoice? _invoiceToClone;
   String _cloneType = 'Invoice';
   bool _hasUpdate = false;
+  final InvoiceFormGuard _invoiceFormGuard = InvoiceFormGuard();
 
   @override
   void initState() {
@@ -97,12 +98,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget buildScreen() {
-    if (_selectedIndex != 1) {
-      setState(() {
-        invoiceToEdit = null;
-        _invoiceToClone = null;
-      });
-    }
     switch (_selectedIndex) {
       case 0:
         return DashboardHome(
@@ -116,6 +111,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           invoiceToEdit: invoiceToEdit,
           cloneFrom: _invoiceToClone,
           cloneType: _invoiceToClone != null ? _cloneType : null,
+          guard: _invoiceFormGuard,
           onCreateNewInvoice: () {
             setState(() {
               invoiceToEdit = null;
@@ -153,6 +149,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void editInvoice(Invoice invoice) {
+    _openEditInvoice(invoice);
+  }
+
+  Future<void> _openEditInvoice(Invoice invoice) async {
+    if (!await _canLeaveInvoiceForm()) return;
     setState(() {
       _selectedIndex = 1;
       invoiceToEdit = invoice;
@@ -161,11 +162,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void cloneInvoice(Invoice invoice, String type) {
+    _openCloneInvoice(invoice, type);
+  }
+
+  Future<void> _openCloneInvoice(Invoice invoice, String type) async {
+    if (!await _canLeaveInvoiceForm()) return;
     setState(() {
       _selectedIndex = 1;
       invoiceToEdit = null;
       _invoiceToClone = invoice;
       _cloneType = type;
+    });
+  }
+
+  Future<bool> _canLeaveInvoiceForm() async {
+    return await _invoiceFormGuard.canLeave?.call() ?? true;
+  }
+
+  Future<void> _selectTab(int index) async {
+    if (_selectedIndex == index) return;
+    if (_selectedIndex == 1 && !await _canLeaveInvoiceForm()) return;
+    if (_selectedIndex == 7 && index != 7) await _refreshUser();
+    if (!mounted) return;
+    setState(() {
+      _selectedIndex = index;
+      if (index != 1) {
+        invoiceToEdit = null;
+        _invoiceToClone = null;
+      }
     });
   }
 
@@ -530,10 +554,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final selected = _selectedIndex == index;
     final primary = Theme.of(context).primaryColor;
 
-    void onTap() {
-      if (_selectedIndex == 7 && index != 7) _refreshUser();
-      setState(() => _selectedIndex = index);
-    }
+    Future<void> onTap() => _selectTab(index);
 
     // Use LayoutBuilder so the layout switches based on actual rendered width,
     // not just state — prevents overflow errors during the AnimatedContainer transition.
@@ -802,171 +823,199 @@ class _DashboardHomeState extends State<DashboardHome> {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(28),
       child: Center(
-                child: ConstrainedBox(
-                  constraints:
-                      const BoxConstraints(maxWidth: AppLayout.maxWidthNormal),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // ── Greeting Banner ──────────────────────────────
-                      _buildGreetingBanner(),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: AppLayout.maxWidthNormal),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Greeting Banner ──────────────────────────────
+              _buildGreetingBanner(),
 
-                      const SizedBox(height: 28),
+              const SizedBox(height: 28),
 
-                      // ── Stats Row ────────────────────────────────────
-                      IntrinsicHeight(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
+              // ── Stats Row ────────────────────────────────────
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildStatCard('Customers', totalCustomers.toString(),
+                        const Color(0xFF1565C0), Icons.people_outline),
+                    const SizedBox(width: 16),
+                    _buildStatCard(
+                      'Products',
+                      totalProducts.toString(),
+                      const Color(0xFF2E7D32),
+                      Icons.inventory_2_outlined,
+                      subtitle: outOfStockProducts.isNotEmpty
+                          ? '${outOfStockProducts.length} out of stock'
+                          : null,
+                      subtitleColor: Colors.red[600],
+                    ),
+                    const SizedBox(width: 16),
+                    _buildStatCard('Invoices', totalInvoices.toString(),
+                        const Color(0xFFE65100), Icons.receipt_long_outlined),
+                    const SizedBox(width: 16),
+                    _buildStatCard(
+                      'Revenue Collected',
+                      '$_currencySymbol ${totalRevenue.toStringAsFixed(2)}',
+                      const Color(0xFF6A1B9A),
+                      Icons.account_balance_wallet_outlined,
+                    ),
+                    const SizedBox(width: 16),
+                    _buildStatCard(
+                      'Outstanding',
+                      '$_currencySymbol ${totalOutstanding.toStringAsFixed(2)}',
+                      const Color(0xFFC62828),
+                      Icons.hourglass_top_outlined,
+                      subtitle: overdueInvoices.isNotEmpty
+                          ? '${overdueInvoices.length} overdue'
+                          : null,
+                      subtitleColor: Colors.red[700],
+                    ),
+                  ],
+                ),
+              ),
+
+              // ── Due Soon ─────────────────────────────────────
+              if (dueSoonInvoices.isNotEmpty) ...[
+                const SizedBox(height: 36),
+                _buildDueSoonSection(),
+              ],
+
+              // ── Out of Stock ──────────────────────────────────
+              if (outOfStockProducts.isNotEmpty) ...[
+                const SizedBox(height: 36),
+                _buildOutOfStockSection(),
+              ],
+
+              // ── Overdue Invoices ──────────────────────────────
+              if (overdueInvoices.isNotEmpty) ...[
+                const SizedBox(height: 36),
+                _buildOverdueSection(),
+              ],
+
+              const SizedBox(height: 36),
+
+              // ── Recent Invoices Header ────────────────────────
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 4,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Recent Invoices',
+                    style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: -0.3),
+                  ),
+                  const Spacer(),
+                  Text(
+                    'Last 5 invoices',
+                    style: TextStyle(fontSize: 13, color: Colors.grey[400]),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              recentInvoices.isEmpty
+                  ? Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(48),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            _buildStatCard(
-                                'Customers',
-                                totalCustomers.toString(),
-                                const Color(0xFF1565C0),
-                                Icons.people_outline),
-                            const SizedBox(width: 16),
-                            _buildStatCard(
-                              'Products',
-                              totalProducts.toString(),
-                              const Color(0xFF2E7D32),
-                              Icons.inventory_2_outlined,
-                              subtitle: outOfStockProducts.isNotEmpty
-                                  ? '${outOfStockProducts.length} out of stock'
-                                  : null,
-                              subtitleColor: Colors.red[600],
+                            Icon(Icons.receipt_long_outlined,
+                                size: 80, color: Colors.grey[300]),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No invoices yet',
+                              style: TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w500),
                             ),
-                            const SizedBox(width: 16),
-                            _buildStatCard(
-                                'Invoices',
-                                totalInvoices.toString(),
-                                const Color(0xFFE65100),
-                                Icons.receipt_long_outlined),
-                            const SizedBox(width: 16),
-                            _buildStatCard(
-                              'Revenue Collected',
-                              '$_currencySymbol ${totalRevenue.toStringAsFixed(2)}',
-                              const Color(0xFF6A1B9A),
-                              Icons.account_balance_wallet_outlined,
-                            ),
-                            const SizedBox(width: 16),
-                            _buildStatCard(
-                              'Outstanding',
-                              '$_currencySymbol ${totalOutstanding.toStringAsFixed(2)}',
-                              const Color(0xFFC62828),
-                              Icons.hourglass_top_outlined,
-                              subtitle: overdueInvoices.isNotEmpty
-                                  ? '${overdueInvoices.length} overdue'
-                                  : null,
-                              subtitleColor: Colors.red[700],
+                            const SizedBox(height: 8),
+                            Text(
+                              'Create your first invoice to see it here',
+                              style: TextStyle(
+                                  fontSize: 14, color: Colors.grey[400]),
                             ),
                           ],
                         ),
                       ),
-
-                      // ── Due Soon ─────────────────────────────────────
-                      if (dueSoonInvoices.isNotEmpty) ...[
-                        const SizedBox(height: 36),
-                        _buildDueSoonSection(),
-                      ],
-
-                      // ── Out of Stock ──────────────────────────────────
-                      if (outOfStockProducts.isNotEmpty) ...[
-                        const SizedBox(height: 36),
-                        _buildOutOfStockSection(),
-                      ],
-
-                      // ── Overdue Invoices ──────────────────────────────
-                      if (overdueInvoices.isNotEmpty) ...[
-                        const SizedBox(height: 36),
-                        _buildOverdueSection(),
-                      ],
-
-                      const SizedBox(height: 36),
-
-                      // ── Recent Invoices Header ────────────────────────
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 4,
-                            height: 24,
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).primaryColor,
-                              borderRadius: BorderRadius.circular(2),
+                    )
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: recentInvoices.length,
+                      itemBuilder: (context, index) {
+                        final invoice = recentInvoices[index];
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          child: Card(
+                            elevation: 2,
+                            shadowColor: Colors.black.withValues(alpha: 0.1),
+                            shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(AppBorderRadius.xsmall),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          const Text(
-                            'Recent Invoices',
-                            style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: -0.3),
-                          ),
-                          const Spacer(),
-                          Text(
-                            'Last 5 invoices',
-                            style: TextStyle(
-                                fontSize: 13, color: Colors.grey[400]),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      recentInvoices.isEmpty
-                          ? Center(
-                              child: Container(
-                                padding: const EdgeInsets.all(48),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.receipt_long_outlined,
-                                        size: 80, color: Colors.grey[300]),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      'No invoices yet',
-                                      style: TextStyle(
-                                          fontSize: 18,
-                                          color: Colors.grey[600],
-                                          fontWeight: FontWeight.w500),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                children: [
+                                  if (invoice.dueDate == null)
+                                    Container(
+                                      width: 38,
+                                      height: 38,
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                          colors: [
+                                            Theme.of(context).primaryColor,
+                                            Theme.of(context)
+                                                .primaryColor
+                                                .withValues(alpha: 0.7),
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(
+                                            AppBorderRadius.xsmall),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          '${index + 1}',
+                                          style: const TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
                                     ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Create your first invoice to see it here',
-                                      style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.grey[400]),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            )
-                          : ListView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: recentInvoices.length,
-                              itemBuilder: (context, index) {
-                                final invoice = recentInvoices[index];
-                                return Container(
-                                  margin: const EdgeInsets.only(bottom: 12),
-                                  child: Card(
-                                    elevation: 2,
-                                    shadowColor:
-                                        Colors.black.withValues(alpha: 0.1),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(
-                                          AppBorderRadius.xsmall),
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(16),
-                                      child: Row(
-                                        children: [
-                                          if (invoice.dueDate == null)
-                                            Container(
-                                              width: 38,
-                                              height: 38,
-                                              decoration: BoxDecoration(
-                                                gradient: LinearGradient(
+                                  if (invoice.dueDate != null)
+                                    () {
+                                      final isOverdue =
+                                          InvoiceCalculator.isOverdue(
+                                        dueDate: invoice.dueDate,
+                                        outstanding: invoice.outstandingBalance,
+                                      );
+                                      return Container(
+                                        width: 38,
+                                        height: 38,
+                                        decoration: BoxDecoration(
+                                          gradient: isOverdue
+                                              ? DashboardScreenColors
+                                                  .invoiceNumberOverDueLinearGradient
+                                              : LinearGradient(
                                                   begin: Alignment.topLeft,
                                                   end: Alignment.bottomRight,
                                                   colors: [
@@ -977,364 +1026,274 @@ class _DashboardHomeState extends State<DashboardHome> {
                                                         .withValues(alpha: 0.7),
                                                   ],
                                                 ),
+                                          borderRadius: BorderRadius.circular(
+                                              AppBorderRadius.xsmall),
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            '${index + 1}',
+                                            style: const TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    }(),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Wrap(
+                                          spacing: 8,
+                                          runSpacing: 4,
+                                          crossAxisAlignment:
+                                              WrapCrossAlignment.center,
+                                          children: [
+                                            Text(
+                                              '${invoice.type} #${invoice.id}',
+                                              style: const TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.bold),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4),
+                                              decoration: BoxDecoration(
+                                                color: invoice.type == 'Invoice'
+                                                    ? Colors.indigo
+                                                        .withValues(alpha: 0.1)
+                                                    : Colors.orange
+                                                        .withValues(alpha: 0.1),
                                                 borderRadius:
-                                                    BorderRadius.circular(
-                                                        AppBorderRadius.xsmall),
+                                                    BorderRadius.circular(6),
+                                                border: Border.all(
+                                                  color:
+                                                      invoice.type == 'Invoice'
+                                                          ? Colors.indigo
+                                                              .withValues(
+                                                                  alpha: 0.35)
+                                                          : Colors.orange
+                                                              .withValues(
+                                                                  alpha: 0.35),
+                                                ),
                                               ),
-                                              child: Center(
-                                                child: Text(
-                                                  '${index + 1}',
-                                                  style: const TextStyle(
-                                                    fontSize: 20,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: Colors.white,
-                                                  ),
+                                              child: Text(
+                                                invoice.type,
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w600,
+                                                  color:
+                                                      invoice.type == 'Invoice'
+                                                          ? Colors.indigo[700]
+                                                          : Colors.orange[800],
+                                                  letterSpacing: 0.5,
                                                 ),
                                               ),
                                             ),
-                                          if (invoice.dueDate != null)
-                                            () {
-                                              final isOverdue =
-                                                  InvoiceCalculator.isOverdue(
-                                                dueDate: invoice.dueDate,
-                                                outstanding:
-                                                    invoice.outstandingBalance,
-                                              );
-                                              return Container(
-                                                width: 38,
-                                                height: 38,
-                                                decoration: BoxDecoration(
-                                                  gradient: isOverdue
-                                                      ? DashboardScreenColors
-                                                          .invoiceNumberOverDueLinearGradient
-                                                      : LinearGradient(
-                                                          begin:
-                                                              Alignment.topLeft,
-                                                          end: Alignment
-                                                              .bottomRight,
-                                                          colors: [
-                                                            Theme.of(context)
-                                                                .primaryColor,
-                                                            Theme.of(context)
-                                                                .primaryColor
-                                                                .withValues(
-                                                                    alpha: 0.7),
-                                                          ],
-                                                        ),
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                          AppBorderRadius
-                                                              .xsmall),
-                                                ),
-                                                child: Center(
-                                                  child: Text(
-                                                    '${index + 1}',
-                                                    style: const TextStyle(
-                                                      fontSize: 20,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      color: Colors.white,
-                                                    ),
-                                                  ),
-                                                ),
-                                              );
-                                            }(),
-                                          const SizedBox(width: 16),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
+                                            if (invoice.type == 'Invoice')
+                                              _buildPaymentStatusChip(
+                                                  invoice.paymentStatus),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Wrap(
+                                          spacing: 6,
+                                          runSpacing: 4,
+                                          crossAxisAlignment:
+                                              WrapCrossAlignment.center,
+                                          children: [
+                                            Row(
+                                              mainAxisSize: MainAxisSize.min,
                                               children: [
-                                                Wrap(
-                                                  spacing: 8,
-                                                  runSpacing: 4,
-                                                  crossAxisAlignment: WrapCrossAlignment.center,
-                                                  children: [
-                                                    Text(
-                                                      '${invoice.type} #${invoice.id}',
-                                                      style: const TextStyle(
-                                                          fontSize: 18,
-                                                          fontWeight:
-                                                              FontWeight
-                                                                  .bold),
-                                                      overflow: TextOverflow
-                                                          .ellipsis,
-                                                    ),
-                                                    Container(
-                                                      padding: const EdgeInsets
-                                                          .symmetric(
-                                                          horizontal: 8,
-                                                          vertical: 4),
-                                                      decoration: BoxDecoration(
-                                                        color: invoice.type ==
-                                                                'Invoice'
-                                                            ? Colors.indigo
-                                                                .withValues(
-                                                                    alpha: 0.1)
-                                                            : Colors.orange
-                                                                .withValues(
-                                                                    alpha: 0.1),
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(6),
-                                                        border: Border.all(
-                                                          color: invoice.type ==
-                                                                  'Invoice'
-                                                              ? Colors.indigo
-                                                                  .withValues(
-                                                                      alpha:
-                                                                          0.35)
-                                                              : Colors.orange
-                                                                  .withValues(
-                                                                      alpha:
-                                                                          0.35),
-                                                        ),
-                                                      ),
-                                                      child: Text(
-                                                        invoice.type,
-                                                        style: TextStyle(
-                                                          fontSize: 11,
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                          color: invoice.type ==
-                                                                  'Invoice'
-                                                              ? Colors
-                                                                  .indigo[700]
-                                                              : Colors
-                                                                  .orange[800],
-                                                          letterSpacing: 0.5,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    if (invoice.type ==
-                                                        'Invoice')
-                                                      _buildPaymentStatusChip(
-                                                          invoice
-                                                              .paymentStatus),
-                                                  ],
-                                                ),
-                                                const SizedBox(height: 6),
-                                                Wrap(
-                                                  spacing: 6,
-                                                  runSpacing: 4,
-                                                  crossAxisAlignment:
-                                                      WrapCrossAlignment.center,
-                                                  children: [
-                                                    Row(
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
-                                                      children: [
-                                                        Icon(
-                                                            Icons
-                                                                .person_outline,
-                                                            size: 16,
-                                                            color: Colors
-                                                                .grey[600]),
-                                                        const SizedBox(
-                                                            width: 6),
-                                                        Text(
-                                                          invoice.customer.name
-                                                              .limit(15),
-                                                          overflow: TextOverflow
-                                                              .ellipsis,
-                                                          style: TextStyle(
-                                                              fontSize: 15,
-                                                              color: Colors
-                                                                  .grey[700]),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    Row(
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
-                                                      children: [
-                                                        Icon(
-                                                            Icons
-                                                                .calendar_today,
-                                                            size: 16,
-                                                            color: Colors
-                                                                .grey[600]),
-                                                        const SizedBox(
-                                                            width: 6),
-                                                        Text(
-                                                          invoice.date
-                                                              .toString()
-                                                              .split(' ')[0],
-                                                          overflow: TextOverflow
-                                                              .ellipsis,
-                                                          style: TextStyle(
-                                                              fontSize: 15,
-                                                              color: Colors
-                                                                  .grey[700]),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    if (invoice.dueDate != null)
-                                                      () {
-                                                        final isOverdue =
-                                                            InvoiceCalculator
-                                                                .isOverdue(
-                                                          dueDate:
-                                                              invoice.dueDate,
-                                                          outstanding: invoice
-                                                              .outstandingBalance,
-                                                        );
-                                                        final color = isOverdue
-                                                            ? Colors.red[700]!
-                                                            : Colors.grey[600]!;
-                                                        return ConstrainedBox(
-                                                          constraints:
-                                                              const BoxConstraints(
-                                                                  maxWidth:
-                                                                      260),
-                                                          child: Row(
-                                                            mainAxisSize:
-                                                                MainAxisSize
-                                                                    .min,
-                                                            children: [
-                                                              Icon(
-                                                                  Icons
-                                                                      .event_outlined,
-                                                                  size: 16,
-                                                                  color: color),
-                                                              const SizedBox(
-                                                                  width: 6),
-                                                              Flexible(
-                                                                child: Text(
-                                                                  'Due: ${AppFormatters.formatShortDate(invoice.dueDate)}',
-                                                                  overflow:
-                                                                      TextOverflow
-                                                                          .ellipsis,
-                                                                  style:
-                                                                      TextStyle(
-                                                                    fontSize:
-                                                                        15,
-                                                                    color:
-                                                                        color,
-                                                                    fontWeight: isOverdue
-                                                                        ? FontWeight
-                                                                            .w600
-                                                                        : FontWeight
-                                                                            .normal,
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        );
-                                                      }(),
-                                                  ],
+                                                Icon(Icons.person_outline,
+                                                    size: 16,
+                                                    color: Colors.grey[600]),
+                                                const SizedBox(width: 6),
+                                                Text(
+                                                  invoice.customer.name
+                                                      .limit(15),
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: TextStyle(
+                                                      fontSize: 15,
+                                                      color: Colors.grey[700]),
                                                 ),
                                               ],
                                             ),
-                                          ),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 16, vertical: 8),
-                                            decoration: BoxDecoration(
-                                              color: Colors.purple
-                                                  .withValues(alpha: 0.1),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
+                                            Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(Icons.calendar_today,
+                                                    size: 16,
+                                                    color: Colors.grey[600]),
+                                                const SizedBox(width: 6),
+                                                Text(
+                                                  invoice.date
+                                                      .toString()
+                                                      .split(' ')[0],
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: TextStyle(
+                                                      fontSize: 15,
+                                                      color: Colors.grey[700]),
+                                                ),
+                                              ],
                                             ),
-                                            child: Text(
-                                              '${invoice.currencySymbol} ${invoice.total.toStringAsFixed(2)}',
-                                              style: const TextStyle(
-                                                fontSize: 20,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.purple,
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 16),
-                                          Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              _buildActionButton(
-                                                  Icons.visibility_outlined,
-                                                  Colors.green,
-                                                  'View',
-                                                  () => InvoicePdfServices
-                                                      .showInvoiceDetails(
-                                                          context, invoice)),
-                                              const SizedBox(width: 8),
-                                              _buildActionButton(
-                                                  Icons.edit_outlined,
-                                                  Colors.blue,
-                                                  'Edit',
-                                                  () => widget
-                                                      .onEditInvoice(invoice)),
-                                              const SizedBox(width: 8),
-                                              _buildActionButton(
-                                                  Icons.copy_all_outlined,
-                                                  Colors.teal,
-                                                  'Duplicate',
-                                                  () => _showCloneDialog(
-                                                      invoice)),
-                                              const SizedBox(width: 8),
-                                              _buildActionButton(
-                                                  Icons.picture_as_pdf_outlined,
-                                                  Colors.orange,
-                                                  'PDF Preview',
-                                                  () => InvoicePdfServices
-                                                      .previewPDF(
-                                                          context, invoice)),
-                                              const SizedBox(width: 8),
-                                              _buildActionButton(
-                                                  Icons.download_outlined,
-                                                  Colors.deepPurple,
-                                                  'Download PDF',
-                                                  () => PDFService.downloadPDF(
-                                                      context, invoice)),
-                                              const SizedBox(width: 8),
-                                              _buildActionButton(
-                                                  Icons.print_outlined,
-                                                  Colors.blueGrey,
-                                                  'Print',
-                                                  () => InvoicePdfServices
-                                                      .generatePDF(
-                                                          context, invoice)),
-                                              const SizedBox(width: 8),
-                                              _buildActionButton(
-                                                  Icons.payments_outlined,
-                                                  Colors.purple,
-                                                  'Payment',
-                                                  invoice.type == 'Invoice'
-                                                      ? () => showDialog(
-                                                            context: context,
-                                                            barrierDismissible:
-                                                                false,
-                                                            builder: (_) =>
-                                                                ApplyPaymentDialog(
-                                                              invoice: invoice,
-                                                              onPaymentRecorded:
-                                                                  () => setState(
-                                                                      () {}),
-                                                            ),
-                                                          )
-                                                      : null),
-                                              const SizedBox(width: 8),
-                                              _buildActionButton(
-                                                  Icons.delete_outline,
-                                                  Colors.red,
-                                                  'Delete',
-                                                  widget.user.isAdmin()
-                                                      ? () => _showDeleteDialog(
-                                                          invoice)
-                                                      : null),
-                                            ],
-                                          ),
-                                        ],
+                                            if (invoice.dueDate != null)
+                                              () {
+                                                final isOverdue =
+                                                    InvoiceCalculator.isOverdue(
+                                                  dueDate: invoice.dueDate,
+                                                  outstanding: invoice
+                                                      .outstandingBalance,
+                                                );
+                                                final color = isOverdue
+                                                    ? Colors.red[700]!
+                                                    : Colors.grey[600]!;
+                                                return ConstrainedBox(
+                                                  constraints:
+                                                      const BoxConstraints(
+                                                          maxWidth: 260),
+                                                  child: Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Icon(Icons.event_outlined,
+                                                          size: 16,
+                                                          color: color),
+                                                      const SizedBox(width: 6),
+                                                      Flexible(
+                                                        child: Text(
+                                                          'Due: ${AppFormatters.formatShortDate(invoice.dueDate)}',
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
+                                                          style: TextStyle(
+                                                            fontSize: 15,
+                                                            color: color,
+                                                            fontWeight:
+                                                                isOverdue
+                                                                    ? FontWeight
+                                                                        .w600
+                                                                    : FontWeight
+                                                                        .normal,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                );
+                                              }(),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color:
+                                          Colors.purple.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      '${invoice.currencySymbol} ${invoice.total.toStringAsFixed(2)}',
+                                      style: const TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.purple,
                                       ),
                                     ),
                                   ),
-                                );
-                              },
+                                  const SizedBox(width: 16),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      _buildActionButton(
+                                          Icons.visibility_outlined,
+                                          Colors.green,
+                                          'View',
+                                          () => InvoicePdfServices
+                                              .showInvoiceDetails(
+                                                  context, invoice)),
+                                      const SizedBox(width: 8),
+                                      _buildActionButton(
+                                          Icons.edit_outlined,
+                                          Colors.blue,
+                                          'Edit',
+                                          () => widget.onEditInvoice(invoice)),
+                                      const SizedBox(width: 8),
+                                      _buildActionButton(
+                                          Icons.copy_all_outlined,
+                                          Colors.teal,
+                                          'Duplicate',
+                                          () => _showCloneDialog(invoice)),
+                                      const SizedBox(width: 8),
+                                      _buildActionButton(
+                                          Icons.picture_as_pdf_outlined,
+                                          Colors.orange,
+                                          'PDF Preview',
+                                          () => InvoicePdfServices.previewPDF(
+                                              context, invoice)),
+                                      const SizedBox(width: 8),
+                                      _buildActionButton(
+                                          Icons.download_outlined,
+                                          Colors.deepPurple,
+                                          'Download PDF',
+                                          () => PDFService.downloadPDF(
+                                              context, invoice)),
+                                      const SizedBox(width: 8),
+                                      _buildActionButton(
+                                          Icons.print_outlined,
+                                          Colors.blueGrey,
+                                          'Print',
+                                          () => InvoicePdfServices.generatePDF(
+                                              context, invoice)),
+                                      const SizedBox(width: 8),
+                                      _buildActionButton(
+                                          Icons.payments_outlined,
+                                          Colors.purple,
+                                          'Payment',
+                                          invoice.type == 'Invoice'
+                                              ? () => showDialog(
+                                                    context: context,
+                                                    barrierDismissible: false,
+                                                    builder: (_) =>
+                                                        ApplyPaymentDialog(
+                                                      invoice: invoice,
+                                                      onPaymentRecorded: () =>
+                                                          setState(() {}),
+                                                    ),
+                                                  )
+                                              : null),
+                                      const SizedBox(width: 8),
+                                      _buildActionButton(
+                                          Icons.delete_outline,
+                                          Colors.red,
+                                          'Delete',
+                                          widget.user.isAdmin()
+                                              ? () => _showDeleteDialog(invoice)
+                                              : null),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
-                    ],
-                  ),
-                ),
-              ),
+                          ),
+                        );
+                      },
+                    ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -1972,19 +1931,26 @@ class _DashboardHomeState extends State<DashboardHome> {
                           title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 11, color: Colors.grey[500], fontWeight: FontWeight.w500),
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey[500],
+                              fontWeight: FontWeight.w500),
                         ),
                       ),
                       if (subtitle?.isNotEmpty ?? false) ...[
                         const SizedBox(width: 4),
-                        Icon(Icons.warning_amber_rounded, size: 11, color: subtitleColor ?? Colors.red),
+                        Icon(Icons.warning_amber_rounded,
+                            size: 11, color: subtitleColor ?? Colors.red),
                         const SizedBox(width: 2),
                         Flexible(
                           child: Text(
                             subtitle!,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontSize: 10, color: subtitleColor ?? Colors.red, fontWeight: FontWeight.w600),
+                            style: TextStyle(
+                                fontSize: 10,
+                                color: subtitleColor ?? Colors.red,
+                                fontWeight: FontWeight.w600),
                           ),
                         ),
                       ],
@@ -1995,7 +1961,10 @@ class _DashboardHomeState extends State<DashboardHome> {
                     value,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey[900]),
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[900]),
                   ),
                 ],
               ),
@@ -2156,15 +2125,20 @@ class _DashboardHomeState extends State<DashboardHome> {
         setState(() => _dashboardLayout = value);
       },
       itemBuilder: (ctx) => [
-        _layoutMenuItem('default', Icons.view_agenda_outlined, 'Default', 'Original layout'),
-        _layoutMenuItem('classic', Icons.grid_view_outlined, 'Classic', 'Charts + KPI grid'),
-        _layoutMenuItem('bento', Icons.auto_awesome_mosaic_outlined, 'Bento', 'Hero chart + card grid'),
-        _layoutMenuItem('simple', Icons.view_list_outlined, 'Simple Feed', 'Clean list view'),
+        _layoutMenuItem('default', Icons.view_agenda_outlined, 'Default',
+            'Original layout'),
+        _layoutMenuItem('classic', Icons.grid_view_outlined, 'Classic',
+            'Charts + KPI grid'),
+        _layoutMenuItem('bento', Icons.auto_awesome_mosaic_outlined, 'Bento',
+            'Hero chart + card grid'),
+        _layoutMenuItem('simple', Icons.view_list_outlined, 'Simple Feed',
+            'Clean list view'),
       ],
     );
   }
 
-  PopupMenuItem<String> _layoutMenuItem(String value, IconData icon, String title, String sub) {
+  PopupMenuItem<String> _layoutMenuItem(
+      String value, IconData icon, String title, String sub) {
     final active = _dashboardLayout == value;
     final primary = Theme.of(context).primaryColor;
     return PopupMenuItem(
@@ -2178,8 +2152,14 @@ class _DashboardHomeState extends State<DashboardHome> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(title, style: TextStyle(fontSize: 13, fontWeight: active ? FontWeight.w700 : FontWeight.normal, color: active ? primary : Colors.grey[800])),
-                Text(sub, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                Text(title,
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight:
+                            active ? FontWeight.w700 : FontWeight.normal,
+                        color: active ? primary : Colors.grey[800])),
+                Text(sub,
+                    style: TextStyle(fontSize: 11, color: Colors.grey[500])),
               ],
             ),
           ),
@@ -2206,11 +2186,17 @@ class _DashboardHomeState extends State<DashboardHome> {
               // KPI row
               Row(
                 children: [
-                  _buildKpiCard('Revenue Collected', '$_currencySymbol ${_fmtAmt(totalRevenue)}',
-                      Icons.account_balance_wallet_outlined, const Color(0xFF6A1B9A)),
+                  _buildKpiCard(
+                      'Revenue Collected',
+                      '$_currencySymbol ${_fmtAmt(totalRevenue)}',
+                      Icons.account_balance_wallet_outlined,
+                      const Color(0xFF6A1B9A)),
                   const SizedBox(width: 14),
-                  _buildKpiCard('Outstanding', '$_currencySymbol ${_fmtAmt(totalOutstanding)}',
-                      Icons.hourglass_top_outlined, const Color(0xFFC62828)),
+                  _buildKpiCard(
+                      'Outstanding',
+                      '$_currencySymbol ${_fmtAmt(totalOutstanding)}',
+                      Icons.hourglass_top_outlined,
+                      const Color(0xFFC62828)),
                   const SizedBox(width: 14),
                   _buildKpiCard('Total Invoices', totalInvoices.toString(),
                       Icons.receipt_long_outlined, const Color(0xFFE65100)),
@@ -2237,7 +2223,8 @@ class _DashboardHomeState extends State<DashboardHome> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(flex: 3, child: _buildCompactRecentInvoices(limit: 7)),
+                  Expanded(
+                      flex: 3, child: _buildCompactRecentInvoices(limit: 7)),
                   const SizedBox(width: 16),
                   Expanded(
                     flex: 2,
@@ -2281,11 +2268,17 @@ class _DashboardHomeState extends State<DashboardHome> {
               // Mini KPI strip
               Row(
                 children: [
-                  _buildKpiCard('Revenue', '$_currencySymbol ${_fmtAmt(totalRevenue)}',
-                      Icons.account_balance_wallet_outlined, const Color(0xFF6A1B9A)),
+                  _buildKpiCard(
+                      'Revenue',
+                      '$_currencySymbol ${_fmtAmt(totalRevenue)}',
+                      Icons.account_balance_wallet_outlined,
+                      const Color(0xFF6A1B9A)),
                   const SizedBox(width: 12),
-                  _buildKpiCard('Outstanding', '$_currencySymbol ${_fmtAmt(totalOutstanding)}',
-                      Icons.hourglass_top_outlined, const Color(0xFFC62828)),
+                  _buildKpiCard(
+                      'Outstanding',
+                      '$_currencySymbol ${_fmtAmt(totalOutstanding)}',
+                      Icons.hourglass_top_outlined,
+                      const Color(0xFFC62828)),
                   const SizedBox(width: 12),
                   _buildKpiCard('Invoices', totalInvoices.toString(),
                       Icons.receipt_long_outlined, const Color(0xFFE65100)),
@@ -2357,16 +2350,23 @@ class _DashboardHomeState extends State<DashboardHome> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
-          border: alert ? Border.all(color: color.withValues(alpha: 0.35), width: 1.5) : null,
+          border: alert
+              ? Border.all(color: color.withValues(alpha: 0.35), width: 1.5)
+              : null,
           boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 12, offset: const Offset(0, 3)),
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 12,
+                offset: const Offset(0, 3)),
           ],
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(9),
-              decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+              decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10)),
               child: Icon(icon, color: color, size: 19),
             ),
             const SizedBox(width: 12),
@@ -2375,9 +2375,21 @@ class _DashboardHomeState extends State<DashboardHome> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(title, style: TextStyle(fontSize: 11, color: Colors.grey[500], fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  Text(title,
+                      style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey[500],
+                          fontWeight: FontWeight.w500),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 3),
-                  Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey[900]), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  Text(value,
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[900]),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
                 ],
               ),
             ),
@@ -2392,7 +2404,10 @@ class _DashboardHomeState extends State<DashboardHome> {
   Widget _buildRevenueBarChart(Color primary) {
     final hasData = _monthlyRevenue.isNotEmpty;
     final maxY = hasData
-        ? _monthlyRevenue.map((e) => (e['revenue'] as num).toDouble()).reduce((a, b) => a > b ? a : b) * 1.25
+        ? _monthlyRevenue
+                .map((e) => (e['revenue'] as num).toDouble())
+                .reduce((a, b) => a > b ? a : b) *
+            1.25
         : 1000.0;
 
     return Container(
@@ -2400,13 +2415,22 @@ class _DashboardHomeState extends State<DashboardHome> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 12, offset: const Offset(0, 3))],
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 3))
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('Revenue — Last 6 Months', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.grey[800])),
+          Text('Revenue — Last 6 Months',
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.grey[800])),
           const SizedBox(height: 16),
           SizedBox(
             height: 190,
@@ -2423,33 +2447,46 @@ class _DashboardHomeState extends State<DashboardHome> {
                             BarChartRodData(
                               toY: rev,
                               gradient: LinearGradient(
-                                colors: [primary, primary.withValues(alpha: 0.55)],
+                                colors: [
+                                  primary,
+                                  primary.withValues(alpha: 0.55)
+                                ],
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
                               ),
                               width: 28,
-                              borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                              borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(6)),
                             ),
                           ],
                         );
                       }).toList(),
                       titlesData: FlTitlesData(
-                        leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        leftTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false)),
+                        rightTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false)),
+                        topTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false)),
                         bottomTitles: AxisTitles(
                           sideTitles: SideTitles(
                             showTitles: true,
                             getTitlesWidget: (value, meta) {
                               final idx = value.toInt();
-                              if (idx < 0 || idx >= _monthlyRevenue.length) return const SizedBox.shrink();
-                              final monthStr = _monthlyRevenue[idx]['month'] as String;
+                              if (idx < 0 || idx >= _monthlyRevenue.length) {
+                                return const SizedBox.shrink();
+                              }
+                              final monthStr =
+                                  _monthlyRevenue[idx]['month'] as String;
                               try {
-                                final date = DateFormat('yyyy-MM').parse(monthStr);
+                                final date =
+                                    DateFormat('yyyy-MM').parse(monthStr);
                                 return Padding(
                                   padding: const EdgeInsets.only(top: 5),
                                   child: Text(DateFormat('MMM').format(date),
-                                      style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                                      style: TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.grey[500])),
                                 );
                               } catch (_) {
                                 return const SizedBox.shrink();
@@ -2461,15 +2498,19 @@ class _DashboardHomeState extends State<DashboardHome> {
                       gridData: FlGridData(
                         show: true,
                         drawVerticalLine: false,
-                        getDrawingHorizontalLine: (_) =>
-                            FlLine(color: Colors.grey.withValues(alpha: 0.12), strokeWidth: 1),
+                        getDrawingHorizontalLine: (_) => FlLine(
+                            color: Colors.grey.withValues(alpha: 0.12),
+                            strokeWidth: 1),
                       ),
                       borderData: FlBorderData(show: false),
                       barTouchData: BarTouchData(
                         touchTooltipData: BarTouchTooltipData(
                           getTooltipItem: (group, _, rod, __) => BarTooltipItem(
                             '$_currencySymbol ${_fmtAmt(rod.toY)}',
-                            const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                            const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13),
                           ),
                         ),
                       ),
@@ -2479,9 +2520,12 @@ class _DashboardHomeState extends State<DashboardHome> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.bar_chart_outlined, size: 48, color: Colors.grey[200]),
+                        Icon(Icons.bar_chart_outlined,
+                            size: 48, color: Colors.grey[200]),
                         const SizedBox(height: 8),
-                        Text('No payment data yet', style: TextStyle(color: Colors.grey[400], fontSize: 13)),
+                        Text('No payment data yet',
+                            style: TextStyle(
+                                color: Colors.grey[400], fontSize: 13)),
                       ],
                     ),
                   ),
@@ -2502,13 +2546,22 @@ class _DashboardHomeState extends State<DashboardHome> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 12, offset: const Offset(0, 3))],
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 3))
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('Financial Overview', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.grey[800])),
+          Text('Financial Overview',
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.grey[800])),
           const SizedBox(height: 12),
           SizedBox(
             height: 160,
@@ -2533,12 +2586,17 @@ class _DashboardHomeState extends State<DashboardHome> {
                       ],
                     ),
                   )
-                : Center(child: Text('No invoices yet', style: TextStyle(color: Colors.grey[400], fontSize: 13))),
+                : Center(
+                    child: Text('No invoices yet',
+                        style:
+                            TextStyle(color: Colors.grey[400], fontSize: 13))),
           ),
           const SizedBox(height: 14),
-          _buildDonutLegend('Collected', const Color(0xFF2E7D32), '$_currencySymbol ${_fmtAmt(totalRevenue)}'),
+          _buildDonutLegend('Collected', const Color(0xFF2E7D32),
+              '$_currencySymbol ${_fmtAmt(totalRevenue)}'),
           const SizedBox(height: 6),
-          _buildDonutLegend('Outstanding', const Color(0xFFC62828), '$_currencySymbol ${_fmtAmt(totalOutstanding)}'),
+          _buildDonutLegend('Outstanding', const Color(0xFFC62828),
+              '$_currencySymbol ${_fmtAmt(totalOutstanding)}'),
           if (overdueInvoices.isNotEmpty) ...[
             const SizedBox(height: 10),
             Container(
@@ -2549,10 +2607,15 @@ class _DashboardHomeState extends State<DashboardHome> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.warning_amber_rounded, size: 13, color: Color(0xFFB71C1C)),
+                  const Icon(Icons.warning_amber_rounded,
+                      size: 13, color: Color(0xFFB71C1C)),
                   const SizedBox(width: 6),
-                  Text('${overdueInvoices.length} invoice${overdueInvoices.length == 1 ? '' : 's'} overdue',
-                      style: const TextStyle(fontSize: 12, color: Color(0xFFB71C1C), fontWeight: FontWeight.w600)),
+                  Text(
+                      '${overdueInvoices.length} invoice${overdueInvoices.length == 1 ? '' : 's'} overdue',
+                      style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFFB71C1C),
+                          fontWeight: FontWeight.w600)),
                 ],
               ),
             ),
@@ -2565,10 +2628,19 @@ class _DashboardHomeState extends State<DashboardHome> {
   Widget _buildDonutLegend(String label, Color color, String amount) {
     return Row(
       children: [
-        Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
         const SizedBox(width: 8),
-        Expanded(child: Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600]))),
-        Text(amount, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.grey[800])),
+        Expanded(
+            child: Text(label,
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]))),
+        Text(amount,
+            style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: Colors.grey[800])),
       ],
     );
   }
@@ -2582,7 +2654,12 @@ class _DashboardHomeState extends State<DashboardHome> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 12, offset: const Offset(0, 3))],
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 3))
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2590,9 +2667,14 @@ class _DashboardHomeState extends State<DashboardHome> {
         children: [
           Row(
             children: [
-              Text('Recent Invoices', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.grey[800])),
+              Text('Recent Invoices',
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.grey[800])),
               const Spacer(),
-              Text('Last $limit', style: TextStyle(fontSize: 11, color: Colors.grey[400])),
+              Text('Last $limit',
+                  style: TextStyle(fontSize: 11, color: Colors.grey[400])),
             ],
           ),
           const SizedBox(height: 4),
@@ -2601,9 +2683,28 @@ class _DashboardHomeState extends State<DashboardHome> {
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Row(
               children: [
-                Expanded(flex: 2, child: Text('Invoice', style: TextStyle(fontSize: 11, color: Colors.grey[400], fontWeight: FontWeight.w600))),
-                Expanded(flex: 3, child: Text('Customer', style: TextStyle(fontSize: 11, color: Colors.grey[400], fontWeight: FontWeight.w600))),
-                Expanded(flex: 2, child: Text('Amount', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, color: Colors.grey[400], fontWeight: FontWeight.w600))),
+                Expanded(
+                    flex: 2,
+                    child: Text('Invoice',
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey[400],
+                            fontWeight: FontWeight.w600))),
+                Expanded(
+                    flex: 3,
+                    child: Text('Customer',
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey[400],
+                            fontWeight: FontWeight.w600))),
+                Expanded(
+                    flex: 2,
+                    child: Text('Amount',
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey[400],
+                            fontWeight: FontWeight.w600))),
                 const SizedBox(width: 60),
               ],
             ),
@@ -2613,7 +2714,9 @@ class _DashboardHomeState extends State<DashboardHome> {
           if (invoices.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 32),
-              child: Center(child: Text('No invoices yet', style: TextStyle(color: Colors.grey[400], fontSize: 13))),
+              child: Center(
+                  child: Text('No invoices yet',
+                      style: TextStyle(color: Colors.grey[400], fontSize: 13))),
             )
           else
             ...invoices.map(_buildCompactInvoiceRow),
@@ -2636,8 +2739,10 @@ class _DashboardHomeState extends State<DashboardHome> {
         statusLabel = 'Partial';
         break;
       default:
-        final isOver = InvoiceCalculator.isOverdue(dueDate: inv.dueDate, outstanding: inv.outstandingBalance);
-        statusColor = isOver ? const Color(0xFFC62828) : const Color(0xFF546E7A);
+        final isOver = InvoiceCalculator.isOverdue(
+            dueDate: inv.dueDate, outstanding: inv.outstandingBalance);
+        statusColor =
+            isOver ? const Color(0xFFC62828) : const Color(0xFF546E7A);
         statusLabel = isOver ? 'Overdue' : 'Unpaid';
     }
     return Padding(
@@ -2646,23 +2751,39 @@ class _DashboardHomeState extends State<DashboardHome> {
         children: [
           Expanded(
             flex: 2,
-            child: Text('#${inv.id.length > 8 ? inv.id.substring(inv.id.length - 8) : inv.id}',
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
+            child: Text(
+                '#${inv.id.length > 8 ? inv.id.substring(inv.id.length - 8) : inv.id}',
+                style:
+                    const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis),
           ),
           Expanded(
             flex: 3,
-            child: Text(inv.customer.name, style: TextStyle(fontSize: 12, color: Colors.grey[600]), maxLines: 1, overflow: TextOverflow.ellipsis),
+            child: Text(inv.customer.name,
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis),
           ),
           Expanded(
             flex: 2,
             child: Text('$_currencySymbol ${_fmtAmt(inv.total)}',
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600), textAlign: TextAlign.right, maxLines: 1),
+                style:
+                    const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                textAlign: TextAlign.right,
+                maxLines: 1),
           ),
           const SizedBox(width: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-            decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-            child: Text(statusLabel, style: TextStyle(fontSize: 10, color: statusColor, fontWeight: FontWeight.w700)),
+            decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(6)),
+            child: Text(statusLabel,
+                style: TextStyle(
+                    fontSize: 10,
+                    color: statusColor,
+                    fontWeight: FontWeight.w700)),
           ),
           const SizedBox(width: 8),
           Tooltip(
@@ -2672,7 +2793,8 @@ class _DashboardHomeState extends State<DashboardHome> {
               borderRadius: BorderRadius.circular(6),
               child: Padding(
                 padding: const EdgeInsets.all(4),
-                child: Icon(Icons.edit_outlined, size: 15, color: Colors.grey[400]),
+                child: Icon(Icons.edit_outlined,
+                    size: 15, color: Colors.grey[400]),
               ),
             ),
           ),
@@ -2684,7 +2806,8 @@ class _DashboardHomeState extends State<DashboardHome> {
               borderRadius: BorderRadius.circular(6),
               child: Padding(
                 padding: const EdgeInsets.all(4),
-                child: Icon(Icons.download_outlined, size: 15, color: Colors.grey[400]),
+                child: Icon(Icons.download_outlined,
+                    size: 15, color: Colors.grey[400]),
               ),
             ),
           ),
@@ -2701,7 +2824,12 @@ class _DashboardHomeState extends State<DashboardHome> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 12, offset: const Offset(0, 3))],
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 3))
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2711,32 +2839,50 @@ class _DashboardHomeState extends State<DashboardHome> {
             children: [
               Container(
                 padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(color: const Color(0xFFF57C00).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                child: const Icon(Icons.event_outlined, color: Color(0xFFF57C00), size: 15),
+                decoration: BoxDecoration(
+                    color: const Color(0xFFF57C00).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8)),
+                child: const Icon(Icons.event_outlined,
+                    color: Color(0xFFF57C00), size: 15),
               ),
               const SizedBox(width: 8),
-              Text('Due Soon', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.grey[800])),
+              Text('Due Soon',
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.grey[800])),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(color: const Color(0xFFF57C00).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
-                child: Text('${dueSoonInvoices.length}', style: const TextStyle(fontSize: 12, color: Color(0xFFF57C00), fontWeight: FontWeight.w700)),
+                decoration: BoxDecoration(
+                    color: const Color(0xFFF57C00).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10)),
+                child: Text('${dueSoonInvoices.length}',
+                    style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFFF57C00),
+                        fontWeight: FontWeight.w700)),
               ),
             ],
           ),
           const SizedBox(height: 12),
           ...dueSoonInvoices.take(5).map((inv) => Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Row(
-              children: [
-                Expanded(child: Text(inv.customer.name, style: const TextStyle(fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis)),
-                Text('$_currencySymbol ${_fmtAmt(inv.outstandingBalance)}',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                const SizedBox(width: 2),
-                _buildInvoiceActionMenu(inv),
-              ],
-            ),
-          )),
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                        child: Text(inv.customer.name,
+                            style: const TextStyle(fontSize: 12),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis)),
+                    Text('$_currencySymbol ${_fmtAmt(inv.outstandingBalance)}',
+                        style: const TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.w600)),
+                    const SizedBox(width: 2),
+                    _buildInvoiceActionMenu(inv),
+                  ],
+                ),
+              )),
         ],
       ),
     );
@@ -2751,7 +2897,12 @@ class _DashboardHomeState extends State<DashboardHome> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.red.withValues(alpha: 0.18), width: 1),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2))
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2761,52 +2912,79 @@ class _DashboardHomeState extends State<DashboardHome> {
             children: [
               Container(
                 padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(color: Colors.red.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                child: const Icon(Icons.inventory_2_outlined, color: Colors.red, size: 15),
+                decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8)),
+                child: const Icon(Icons.inventory_2_outlined,
+                    color: Colors.red, size: 15),
               ),
               const SizedBox(width: 8),
-              Text('Out of Stock', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.grey[800])),
+              Text('Out of Stock',
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.grey[800])),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(color: Colors.red.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
-                child: Text('${outOfStockProducts.length}', style: const TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.w700)),
+                decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10)),
+                child: Text('${outOfStockProducts.length}',
+                    style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.red,
+                        fontWeight: FontWeight.w700)),
               ),
             ],
           ),
           const SizedBox(height: 12),
           ...outOfStockProducts.take(5).map((p) => Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: Row(
-              children: [
-                Expanded(child: Text(p.name, style: const TextStyle(fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis)),
-                const Text('0 left', style: TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.w600)),
-                const SizedBox(width: 6),
-Tooltip(
-                  message: 'Update Stock',
-                  child: InkWell(
-                    onTap: () => _showUpdateStockDialog(p),
-                    borderRadius: BorderRadius.circular(7),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withValues(alpha: 0.1),
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  children: [
+                    Expanded(
+                        child: Text(p.name,
+                            style: const TextStyle(fontSize: 12),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis)),
+                    const Text('0 left',
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.red,
+                            fontWeight: FontWeight.w600)),
+                    const SizedBox(width: 6),
+                    Tooltip(
+                      message: 'Update Stock',
+                      child: InkWell(
+                        onTap: () => _showUpdateStockDialog(p),
                         borderRadius: BorderRadius.circular(7),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.add_box_outlined, size: 13, color: Colors.green),
-                          SizedBox(width: 4),
-                          Text('Stock', style: TextStyle(fontSize: 11, color: Colors.green, fontWeight: FontWeight.w600)),
-                        ],
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(7),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.add_box_outlined,
+                                  size: 13, color: Colors.green),
+                              SizedBox(width: 4),
+                              Text('Stock',
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.green,
+                                      fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
-          )),
+              )),
         ],
       ),
     );
@@ -2820,8 +2998,14 @@ Tooltip(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFC62828).withValues(alpha: 0.2), width: 1),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 2))],
+        border: Border.all(
+            color: const Color(0xFFC62828).withValues(alpha: 0.2), width: 1),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2))
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2831,62 +3015,89 @@ Tooltip(
             children: [
               Container(
                 padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(color: const Color(0xFFC62828).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                child: const Icon(Icons.warning_amber_rounded, color: Color(0xFFC62828), size: 15),
+                decoration: BoxDecoration(
+                    color: const Color(0xFFC62828).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8)),
+                child: const Icon(Icons.warning_amber_rounded,
+                    color: Color(0xFFC62828), size: 15),
               ),
               const SizedBox(width: 8),
-              Text('Overdue', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.grey[800])),
+              Text('Overdue',
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.grey[800])),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(color: const Color(0xFFC62828).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
-                child: Text('${overdueInvoices.length}', style: const TextStyle(fontSize: 12, color: Color(0xFFC62828), fontWeight: FontWeight.w700)),
+                decoration: BoxDecoration(
+                    color: const Color(0xFFC62828).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10)),
+                child: Text('${overdueInvoices.length}',
+                    style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFFC62828),
+                        fontWeight: FontWeight.w700)),
               ),
             ],
           ),
           const SizedBox(height: 12),
           ...overdueInvoices.take(5).map((inv) => Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Row(
-              children: [
-                Expanded(child: Text(inv.customer.name, style: const TextStyle(fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis)),
-                Text('$_currencySymbol ${_fmtAmt(inv.outstandingBalance)}',
-                    style: const TextStyle(fontSize: 12, color: Color(0xFFC62828), fontWeight: FontWeight.w600)),
-                const SizedBox(width: 4),
-                Tooltip(
-                  message: 'Record Payment',
-                  child: InkWell(
-                    onTap: () => showDialog(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (_) => ApplyPaymentDialog(
-                        invoice: inv,
-                        onPaymentRecorded: _loadDashboardData,
-                      ),
-                    ),
-                    borderRadius: BorderRadius.circular(7),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF6A1B9A).withValues(alpha: 0.1),
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                        child: Text(inv.customer.name,
+                            style: const TextStyle(fontSize: 12),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis)),
+                    Text('$_currencySymbol ${_fmtAmt(inv.outstandingBalance)}',
+                        style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFFC62828),
+                            fontWeight: FontWeight.w600)),
+                    const SizedBox(width: 4),
+                    Tooltip(
+                      message: 'Record Payment',
+                      child: InkWell(
+                        onTap: () => showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (_) => ApplyPaymentDialog(
+                            invoice: inv,
+                            onPaymentRecorded: _loadDashboardData,
+                          ),
+                        ),
                         borderRadius: BorderRadius.circular(7),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.payments_outlined, size: 13, color: Color(0xFF6A1B9A)),
-                          SizedBox(width: 4),
-                          Text('Pay', style: TextStyle(fontSize: 11, color: Color(0xFF6A1B9A), fontWeight: FontWeight.w600)),
-                        ],
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 5),
+                          decoration: BoxDecoration(
+                            color:
+                                const Color(0xFF6A1B9A).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(7),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.payments_outlined,
+                                  size: 13, color: Color(0xFF6A1B9A)),
+                              SizedBox(width: 4),
+                              Text('Pay',
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      color: Color(0xFF6A1B9A),
+                                      fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                    const SizedBox(width: 2),
+                    _buildPdfActionMenu(inv),
+                  ],
                 ),
-                const SizedBox(width: 2),
-                _buildPdfActionMenu(inv),
-              ],
-            ),
-          )),
+              )),
         ],
       ),
     );
@@ -2900,29 +3111,54 @@ Tooltip(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 12, offset: const Offset(0, 3))],
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 3))
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('Quick Actions', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.grey[800])),
+          Text('Quick Actions',
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.grey[800])),
           const SizedBox(height: 12),
-          _buildQuickActionRow(Icons.add_circle_outline_rounded, 'New Invoice', Theme.of(context).primaryColor, () {
-            context.findAncestorStateOfType<_DashboardScreenState>()?.setState(() {
-              context.findAncestorStateOfType<_DashboardScreenState>()?._selectedIndex = 1;
+          _buildQuickActionRow(Icons.add_circle_outline_rounded, 'New Invoice',
+              Theme.of(context).primaryColor, () {
+            context
+                .findAncestorStateOfType<_DashboardScreenState>()
+                ?.setState(() {
+              context
+                  .findAncestorStateOfType<_DashboardScreenState>()
+                  ?._selectedIndex = 1;
             });
           }),
           const SizedBox(height: 4),
-          _buildQuickActionRow(Icons.person_add_outlined, 'Customers', const Color(0xFF1565C0), () {
-            context.findAncestorStateOfType<_DashboardScreenState>()?.setState(() {
-              context.findAncestorStateOfType<_DashboardScreenState>()?._selectedIndex = 4;
+          _buildQuickActionRow(
+              Icons.person_add_outlined, 'Customers', const Color(0xFF1565C0),
+              () {
+            context
+                .findAncestorStateOfType<_DashboardScreenState>()
+                ?.setState(() {
+              context
+                  .findAncestorStateOfType<_DashboardScreenState>()
+                  ?._selectedIndex = 4;
             });
           }),
           const SizedBox(height: 4),
-          _buildQuickActionRow(Icons.bar_chart_outlined, 'Reports', const Color(0xFF2E7D32), () {
-            context.findAncestorStateOfType<_DashboardScreenState>()?.setState(() {
-              context.findAncestorStateOfType<_DashboardScreenState>()?._selectedIndex = 6;
+          _buildQuickActionRow(
+              Icons.bar_chart_outlined, 'Reports', const Color(0xFF2E7D32), () {
+            context
+                .findAncestorStateOfType<_DashboardScreenState>()
+                ?.setState(() {
+              context
+                  .findAncestorStateOfType<_DashboardScreenState>()
+                  ?._selectedIndex = 6;
             });
           }),
         ],
@@ -2930,7 +3166,8 @@ Tooltip(
     );
   }
 
-  Widget _buildQuickActionRow(IconData icon, String label, Color color, VoidCallback onTap) {
+  Widget _buildQuickActionRow(
+      IconData icon, String label, Color color, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
@@ -2940,12 +3177,20 @@ Tooltip(
           children: [
             Container(
               padding: const EdgeInsets.all(7),
-              decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+              decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8)),
               child: Icon(icon, color: color, size: 15),
             ),
             const SizedBox(width: 10),
-            Expanded(child: Text(label, style: TextStyle(fontSize: 13, color: Colors.grey[800], fontWeight: FontWeight.w500))),
-            Icon(Icons.chevron_right_rounded, size: 16, color: Colors.grey[400]),
+            Expanded(
+                child: Text(label,
+                    style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey[800],
+                        fontWeight: FontWeight.w500))),
+            Icon(Icons.chevron_right_rounded,
+                size: 16, color: Colors.grey[400]),
           ],
         ),
       ),
@@ -2955,12 +3200,13 @@ Tooltip(
   // ── Shared: Amount Formatter ─────────────────────────────────────────────────
 
   String _fmtAmt(double amount) {
-    if (amount >= 10000000) return '${(amount / 10000000).toStringAsFixed(2)}Cr';
+    if (amount >= 10000000) {
+      return '${(amount / 10000000).toStringAsFixed(2)}Cr';
+    }
     if (amount >= 100000) return '${(amount / 100000).toStringAsFixed(2)}L';
     if (amount >= 1000) return '${(amount / 1000).toStringAsFixed(1)}K';
     return amount.toStringAsFixed(2);
   }
-
 
   // ── Layout: Bento Grid ──────────────────────────────────────────────────────
 
@@ -3079,7 +3325,6 @@ Tooltip(
     );
   }
 
-
   // ── Shared: PDF-Only Action Menu (⋯) ───────────────────────────────────────
 
   Widget _buildPdfActionMenu(Invoice inv) {
@@ -3183,7 +3428,12 @@ Tooltip(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 12, offset: const Offset(0, 3))],
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 3))
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3193,11 +3443,18 @@ Tooltip(
             children: [
               Container(
                 padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(color: const Color(0xFF1565C0).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                child: const Icon(Icons.emoji_events_outlined, color: Color(0xFF1565C0), size: 15),
+                decoration: BoxDecoration(
+                    color: const Color(0xFF1565C0).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8)),
+                child: const Icon(Icons.emoji_events_outlined,
+                    color: Color(0xFF1565C0), size: 15),
               ),
               const SizedBox(width: 8),
-              Text('Top Customers', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.grey[800])),
+              Text('Top Customers',
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.grey[800])),
             ],
           ),
           const SizedBox(height: 12),
@@ -3210,16 +3467,27 @@ Tooltip(
                 children: [
                   CircleAvatar(
                     radius: 13,
-                    backgroundColor: const Color(0xFF1565C0).withValues(alpha: 0.1),
+                    backgroundColor:
+                        const Color(0xFF1565C0).withValues(alpha: 0.1),
                     child: Text(
                       name.isNotEmpty ? name[0].toUpperCase() : '?',
-                      style: const TextStyle(fontSize: 11, color: Color(0xFF1565C0), fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF1565C0),
+                          fontWeight: FontWeight.bold),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Expanded(child: Text(name, style: const TextStyle(fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                  Expanded(
+                      child: Text(name,
+                          style: const TextStyle(fontSize: 12),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis)),
                   Text('$_currencySymbol ${_fmtAmt(paid)}',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey[700])),
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[700])),
                 ],
               ),
             );
@@ -3237,7 +3505,12 @@ Tooltip(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 12, offset: const Offset(0, 3))],
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 3))
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3247,11 +3520,18 @@ Tooltip(
             children: [
               Container(
                 padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(color: const Color(0xFF2E7D32).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                child: const Icon(Icons.trending_up_outlined, color: Color(0xFF2E7D32), size: 15),
+                decoration: BoxDecoration(
+                    color: const Color(0xFF2E7D32).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8)),
+                child: const Icon(Icons.trending_up_outlined,
+                    color: Color(0xFF2E7D32), size: 15),
               ),
               const SizedBox(width: 8),
-              Text('Top Products', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.grey[800])),
+              Text('Top Products',
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.grey[800])),
             ],
           ),
           const SizedBox(height: 12),
@@ -3264,13 +3544,24 @@ Tooltip(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(5),
-                    decoration: BoxDecoration(color: const Color(0xFF2E7D32).withValues(alpha: 0.08), borderRadius: BorderRadius.circular(7)),
-                    child: const Icon(Icons.inventory_2_outlined, size: 13, color: Color(0xFF2E7D32)),
+                    decoration: BoxDecoration(
+                        color: const Color(0xFF2E7D32).withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(7)),
+                    child: const Icon(Icons.inventory_2_outlined,
+                        size: 13, color: Color(0xFF2E7D32)),
                   ),
                   const SizedBox(width: 8),
-                  Expanded(child: Text(name, style: const TextStyle(fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis)),
-                  Text('${qty % 1 == 0 ? qty.toInt() : qty.toStringAsFixed(1)} units',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey[700])),
+                  Expanded(
+                      child: Text(name,
+                          style: const TextStyle(fontSize: 12),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis)),
+                  Text(
+                      '${qty % 1 == 0 ? qty.toInt() : qty.toStringAsFixed(1)} units',
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[700])),
                 ],
               ),
             );
@@ -3279,5 +3570,4 @@ Tooltip(
       ),
     );
   }
-
 }

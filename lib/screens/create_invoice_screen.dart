@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:invoiso/common.dart';
@@ -17,6 +19,10 @@ import '../services/invoice_pdf_services.dart';
 import '../services/pdf_service.dart';
 import 'package:invoiso/constants.dart';
 
+class InvoiceFormGuard {
+  Future<bool> Function()? canLeave;
+}
+
 class CreateInvoiceScreen extends StatefulWidget {
   final Invoice? invoiceToEdit;
 
@@ -31,6 +37,7 @@ class CreateInvoiceScreen extends StatefulWidget {
   /// Called when the user taps "New Invoice" while in edit mode.
   /// The parent (DashboardScreen) resets invoiceToEdit to null.
   final VoidCallback? onCreateNewInvoice;
+  final InvoiceFormGuard? guard;
 
   const CreateInvoiceScreen({
     super.key,
@@ -38,6 +45,7 @@ class CreateInvoiceScreen extends StatefulWidget {
     this.cloneFrom,
     this.cloneType,
     this.onCreateNewInvoice,
+    this.guard,
   });
 
   @override
@@ -98,6 +106,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   BusinessType _businessType = BusinessType.both;
   String _datePattern = 'dd/MM/yyyy';
   String _adHocItemType = 'product'; // type for custom items added inline
+  String? _cleanFormSnapshot;
+  int _pendingInitialLoads = 2;
 
   TaxMode get _taxMode {
     if (!_isTaxEnabled) return TaxMode.none;
@@ -107,6 +117,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   @override
   void initState() {
     super.initState();
+    widget.guard?.canLeave = _confirmLeaveIfDirty;
     taxRateController.text = (taxRate * 100).toStringAsFixed(1);
     _loadCustomersAndProducts(widget.invoiceToEdit != null);
     _selectedOrderDate = DateTime.now();
@@ -173,11 +184,22 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     }
   }
 
-  Future<void> _setAdditionalNote() async {
+  @override
+  void didUpdateWidget(covariant CreateInvoiceScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.guard != widget.guard) {
+      if (oldWidget.guard?.canLeave == _confirmLeaveIfDirty) {
+        oldWidget.guard?.canLeave = null;
+      }
+      widget.guard?.canLeave = _confirmLeaveIfDirty;
+    }
+  }
+
+  Future<void> _setAdditionalNote({bool forceDefault = false}) async {
     final String addNote;
-    if (widget.invoiceToEdit != null) {
+    if (!forceDefault && widget.invoiceToEdit != null) {
       addNote = widget.invoiceToEdit!.notes ?? '';
-    } else if (widget.cloneFrom != null) {
+    } else if (!forceDefault && widget.cloneFrom != null) {
       addNote = widget.cloneFrom!.notes ?? '';
     } else {
       addNote = await SettingsService.getSetting(SettingKey.additionalInfo) ??
@@ -186,10 +208,14 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     setState(() {
       notesController.text = addNote;
     });
+    _completeInitialLoad();
   }
 
   @override
   void dispose() {
+    if (widget.guard?.canLeave == _confirmLeaveIfDirty) {
+      widget.guard?.canLeave = null;
+    }
     notesController.dispose();
     searchController.dispose();
     customerSearchController.dispose();
@@ -210,6 +236,120 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       row.amount.dispose();
     }
     super.dispose();
+  }
+
+  void _completeInitialLoad() {
+    if (_pendingInitialLoads <= 0) return;
+    _pendingInitialLoads--;
+    if (_pendingInitialLoads == 0) {
+      _markFormClean();
+    }
+  }
+
+  void _markFormClean() {
+    _cleanFormSnapshot = _currentFormSnapshot();
+  }
+
+  bool get _hasUnsavedChanges {
+    if (!isEditing && _invoice != null) return false;
+    final clean = _cleanFormSnapshot;
+    if (clean == null) return false;
+    return _currentFormSnapshot() != clean;
+  }
+
+  String _currentFormSnapshot() {
+    return jsonEncode({
+      'mode': widget.invoiceToEdit != null
+          ? 'edit:${widget.invoiceToEdit!.id}'
+          : widget.cloneFrom != null
+              ? 'clone:${widget.cloneFrom!.id}:$invoiceType'
+              : 'create',
+      'selectedCustomerId': selectedCustomer?.id ?? '',
+      'customer': {
+        'name': nameController.text.trim(),
+        'email': emailController.text.trim(),
+        'phone': phoneController.text.trim(),
+        'address': addressController.text.trim(),
+        'gstin': gstinController.text.trim(),
+        'businessName': businessNameController.text.trim(),
+      },
+      'items': invoiceItems.map((item) {
+        final product = item.product;
+        return {
+          'productId': product.id,
+          'name': product.name,
+          'price': product.price,
+          'quantity': item.quantity,
+          'discount': item.discount,
+          'discountPerUnit': item.discountPerUnit,
+          'extraCost': item.extraCost ?? 0.0,
+          'taxRate': product.tax_rate,
+          'hsn': product.hsncode,
+          'type': product.type,
+          'isProductSaved': item.isProductSaved,
+        };
+      }).toList(),
+      'additionalCosts': _additionalCostControllers
+          .map((row) => {
+                'label': row.label.text.trim(),
+                'amount': row.amount.text.trim(),
+              })
+          .toList(),
+      'showAdditionalCosts': _showAdditionalCosts,
+      'notes': notesController.text.trim(),
+      'invoiceType': invoiceType,
+      'taxEnabled': _isTaxEnabled,
+      'perItemTax': _isPerItem,
+      'taxRate': taxRate,
+      'taxRateText': taxRateController.text.trim(),
+      'date': _selectedOrderDate.toIso8601String(),
+      'dueDate': _selectedDueDate?.toIso8601String() ?? '',
+      'currencyCode': _currencyCode,
+      'upiId': _selectedUpi?.id ?? '',
+      'bankAccount': _selectedBankAccount?.accountNumber ?? '',
+      'quantityLabel': _quantityLabel.trim(),
+    });
+  }
+
+  Future<bool> _confirmLeaveIfDirty() async {
+    if (!_hasUnsavedChanges || isLoading) return true;
+
+    final action = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Unsaved changes'),
+        content: const Text(
+          'You have unsaved changes in this invoice. Save them before leaving?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, 'keep'),
+            child: const Text('Keep Editing'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, 'discard'),
+            child: const Text('Discard'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(dialogContext, 'save'),
+            icon: const Icon(Icons.save_rounded, size: 18),
+            label: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    switch (action) {
+      case 'discard':
+        return true;
+      case 'save':
+        return widget.invoiceToEdit != null
+            ? await _updateInvoice()
+            : await _createInvoice();
+      default:
+        return false;
+    }
   }
 
   Future<void> _loadCustomersAndProducts(bool isEditing) async {
@@ -325,8 +465,10 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         }
         isLoading = false;
       });
+      _completeInitialLoad();
     } catch (e) {
       setState(() => isLoading = false);
+      _completeInitialLoad();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error loading data: $e')),
@@ -693,7 +835,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     }
   }
 
-  Future<void> _createInvoice() async {
+  Future<bool> _createInvoice() async {
     if (nameController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -710,7 +852,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         ),
       );
-      return;
+      return false;
     }
 
     if (invoiceItems.isEmpty) {
@@ -729,7 +871,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         ),
       );
-      return;
+      return false;
     }
 
     setState(() => isLoading = true);
@@ -769,8 +911,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         _invoice = invoice;
         isLoading = false;
       });
+      _markFormClean();
 
-      if (!mounted) return;
+      if (!mounted) return true;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -786,12 +929,14 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         ),
       );
+      return true;
     } catch (e) {
       setState(() => isLoading = false);
-      if (!mounted) return;
+      if (!mounted) return false;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error creating invoice: $e')),
       );
+      return false;
     }
   }
 
@@ -1823,6 +1968,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       invoiceType = invoiceType_;
       currentInvoiceNumber = invType;
       _invoice = null;
+      isEditing = false;
       selectedCustomer = null;
       invoiceItems.clear();
       for (final row in _additionalCostControllers) {
@@ -1840,8 +1986,13 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       businessNameController.clear();
       taxRate = Tax.defaultTaxRate;
       taxRateController.text = (taxRate * 100).toStringAsFixed(1);
+      _selectedOrderDate = DateTime.now();
+      dateController.text = DateFormat(_datePattern).format(_selectedOrderDate);
+      _selectedDueDate = null;
+      dueDateController.clear();
     });
-    await _setAdditionalNote();
+    await _setAdditionalNote(forceDefault: true);
+    _markFormClean();
   }
 
   Future<void> _saveCustomer() async {
@@ -3183,8 +3334,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     );
   }
 
-  Future<void> _updateInvoice() async {
-    if (_invoice == null) return;
+  Future<bool> _updateInvoice() async {
+    if (_invoice == null) return false;
 
     if (nameController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -3202,7 +3353,26 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         ),
       );
-      return;
+      return false;
+    }
+
+    if (invoiceItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.error_outline, color: Colors.white),
+              SizedBox(width: 12),
+              Text('Please add at least one item'),
+            ],
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+        ),
+      );
+      return false;
     }
 
     setState(() => isLoading = true);
@@ -3243,8 +3413,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         _invoice = refreshedInvoice ?? updatedInvoice;
         isLoading = false;
       });
+      _markFormClean();
 
-      if (!mounted) return;
+      if (!mounted) return true;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -3260,12 +3431,14 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         ),
       );
+      return true;
     } catch (e) {
       setState(() => isLoading = false);
-      if (!mounted) return;
+      if (!mounted) return false;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error updating invoice: $e')),
       );
+      return false;
     }
   }
 
@@ -3520,10 +3693,23 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     );
   }
 
+  Widget _withUnsavedChangesPopScope(Widget child) {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        if (await _confirmLeaveIfDirty() && mounted) {
+          Navigator.of(context).pop(result);
+        }
+      },
+      child: child,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (isLoading && customers.isEmpty) {
-      return Scaffold(
+      return _withUnsavedChangesPopScope(Scaffold(
         appBar: AppBar(
           title: Text('Create New $invoiceType'),
           backgroundColor: Theme.of(context).primaryColor,
@@ -3539,7 +3725,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
             ],
           ),
         ),
-      );
+      ));
     }
 
     final additionalTotal =
@@ -3564,7 +3750,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     final tax = totals.tax;
     final total = totals.total;
 
-    return Scaffold(
+    return _withUnsavedChangesPopScope(Scaffold(
       appBar: AppBar(
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -3584,7 +3770,12 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 if (isEditing) ...[
                   const SizedBox(width: 12),
                   ElevatedButton.icon(
-                    onPressed: () => widget.onCreateNewInvoice?.call(),
+                    onPressed: () async {
+                      if (await _confirmLeaveIfDirty()) {
+                        widget.onCreateNewInvoice?.call();
+                        await resetValues('Invoice');
+                      }
+                    },
                     icon: const Icon(Icons.add, size: 16),
                     label: const Text('New Invoice',
                         style: TextStyle(fontSize: 13)),
@@ -3666,7 +3857,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 );
               },
             ),
-    );
+    ));
   }
 
   Widget _buildDesktopLayout(double tax, double subtotal, double total,
