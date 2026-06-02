@@ -5,9 +5,7 @@ import 'package:sqflite/sqflite.dart';
 import '../common.dart';
 import 'database_helper.dart';
 
-
-class SettingsService
-{
+class SettingsService {
   static final dbHelper = DatabaseHelper();
 
   static Future<void> setInvoiceTemplate(InvoiceTemplate template) async {
@@ -21,16 +19,48 @@ class SettingsService
 
   static Future<InvoiceTemplate> getInvoiceTemplate() async {
     final db = await dbHelper.database;
-    final result = await db.query('settings',
-        where: 'key = ?', whereArgs: ['invoice_template']);
+    final result = await db
+        .query('settings', where: 'key = ?', whereArgs: ['invoice_template']);
 
     if (result.isNotEmpty) {
       return InvoiceTemplate.values.firstWhere(
-            (e) => e.name == result.first['value'],
+        (e) => e.name == result.first['value'],
         orElse: () => InvoiceTemplate.classic,
       );
     }
     return InvoiceTemplate.classic;
+  }
+
+  static Future<void> setPdfThemeColor(String hexColor) async {
+    await setSetting(
+        SettingKey.pdfThemeColor, normalizePdfThemeColor(hexColor));
+  }
+
+  static Future<void> clearPdfThemeColor() async {
+    final db = await dbHelper.database;
+    await db.delete(
+      'settings',
+      where: 'key = ?',
+      whereArgs: [SettingKey.pdfThemeColor.key],
+    );
+  }
+
+  static Future<String?> getPdfThemeColor() async {
+    final value = await getSetting(SettingKey.pdfThemeColor);
+    if (value == null || value.trim().isEmpty) return null;
+    try {
+      return normalizePdfThemeColor(value);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static String normalizePdfThemeColor(String hexColor) {
+    final normalized = hexColor.trim().replaceFirst('#', '').toUpperCase();
+    if (!RegExp(r'^[0-9A-F]{6}$').hasMatch(normalized)) {
+      throw ArgumentError('PDF theme color must be a 6-digit hex value.');
+    }
+    return '#$normalized';
   }
 
   static Future<void> setCompanyLogo(String base64Logo) async {
@@ -44,13 +74,13 @@ class SettingsService
 
   static Future<String?> getCompanyLogo() async {
     final db = await dbHelper.database;
-    final result = await db.query('settings', where: 'key = ?', whereArgs: ['company_logo']);
+    final result = await db
+        .query('settings', where: 'key = ?', whereArgs: ['company_logo']);
     return result.isNotEmpty ? result.first['value'] as String : null;
   }
 
   // general services
-  static Future<void> setSetting(SettingKey key, String value) async
-  {
+  static Future<void> setSetting(SettingKey key, String value) async {
     final db = await dbHelper.database;
     await db.insert(
       'settings',
@@ -59,21 +89,18 @@ class SettingsService
     );
   }
 
-  static Future<LogoPosition> getLogoPosition() async
-  {
-      String pos = await getSetting(SettingKey.logoPosition) ?? "left";
-      if(pos == "right")
-      {
-        return LogoPosition.right;
-      }
-      return LogoPosition.left;
+  static Future<LogoPosition> getLogoPosition() async {
+    String pos = await getSetting(SettingKey.logoPosition) ?? "left";
+    if (pos == "right") {
+      return LogoPosition.right;
+    }
+    return LogoPosition.left;
   }
 
-  static Future<String?> getSetting(SettingKey key) async
-  {
+  static Future<String?> getSetting(SettingKey key) async {
     final db = await dbHelper.database;
     final result =
-    await db.query('settings', where: 'key = ?', whereArgs: [key.key]);
+        await db.query('settings', where: 'key = ?', whereArgs: [key.key]);
     return result.isNotEmpty ? result.first['value'] as String : null;
   }
 
@@ -124,7 +151,7 @@ class SettingsService
 
   static Future<bool> getFractionalQuantity() async {
     final val = await getSetting(SettingKey.fractionalQuantity);
-    return val == 'true';  // off by default
+    return val == 'true'; // off by default
   }
 
   static Future<String> getQuantityLabel() async {

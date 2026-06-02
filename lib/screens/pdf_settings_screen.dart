@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:invoiso/database/settings_service.dart';
 
 import '../common.dart';
@@ -16,6 +17,18 @@ class PdfSettingsScreen extends StatefulWidget {
 class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
   InvoiceTemplate _savedTemplate = InvoiceTemplate.classic;
   InvoiceTemplate _previewedTemplate = InvoiceTemplate.classic;
+  String? _savedThemeColorHex;
+  String? _previewedThemeColorHex;
+  final _themeColorController = TextEditingController();
+  bool _themeColorInputValid = true;
+
+  static const _presetThemeColors = [
+    Color(0xFF002E78),
+    Color(0xFF2563EB),
+    Color(0xFF047857),
+    Color(0xFF7C2D12),
+    Color(0xFF6D28D9),
+  ];
 
   final _templates = [
     {
@@ -34,7 +47,11 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
       "template": InvoiceTemplate.minimal,
       "name": "Minimal",
       "description": "Simple and distraction-free",
-      "image": "assets/templates/minimal.png",
+    },
+    {
+      "template": InvoiceTemplate.executive,
+      "name": "Executive",
+      "description": "Premium business layout with structured billing blocks",
     },
   ];
 
@@ -46,29 +63,78 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
 
   Future<void> _loadTemplate() async {
     final saved = await SettingsService.getInvoiceTemplate();
+    final savedThemeColor = await SettingsService.getPdfThemeColor();
     setState(() {
       _savedTemplate = saved;
       _previewedTemplate = saved;
+      _savedThemeColorHex = savedThemeColor;
+      _previewedThemeColorHex = savedThemeColor;
+      _themeColorController.text = savedThemeColor ?? '';
     });
   }
 
   Future<void> _saveTemplate() async {
     await SettingsService.setInvoiceTemplate(_previewedTemplate);
+    if (_previewedThemeColorHex == null) {
+      await SettingsService.clearPdfThemeColor();
+    } else {
+      await SettingsService.setPdfThemeColor(_previewedThemeColorHex!);
+    }
     setState(() {
       _savedTemplate = _previewedTemplate;
+      _savedThemeColorHex = _previewedThemeColorHex;
     });
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text("Template '${_previewedTemplate.name}' saved"),
+        content: Text("PDF settings saved"),
         behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
   @override
+  void dispose() {
+    _themeColorController.dispose();
+    super.dispose();
+  }
+
+  void _setPreviewedThemeColor(String? hexColor) {
+    setState(() {
+      _previewedThemeColorHex = hexColor;
+      _themeColorController.text = hexColor ?? '';
+      _themeColorInputValid = true;
+    });
+  }
+
+  void _handleCustomThemeColor(String value) {
+    if (value.trim().isEmpty) {
+      setState(() {
+        _previewedThemeColorHex = null;
+        _themeColorInputValid = true;
+      });
+      return;
+    }
+    try {
+      final normalized = SettingsService.normalizePdfThemeColor(value);
+      setState(() {
+        _previewedThemeColorHex = normalized;
+        _themeColorInputValid = true;
+      });
+    } catch (_) {
+      setState(() => _themeColorInputValid = false);
+    }
+  }
+
+  Color get _activePreviewColor =>
+      _colorFromHex(_previewedThemeColorHex) ??
+      _defaultThemeColor(_previewedTemplate);
+
+  @override
   Widget build(BuildContext context) {
-    final hasUnsavedChange = _previewedTemplate != _savedTemplate;
+    final hasUnsavedChange = _themeColorInputValid &&
+        (_previewedTemplate != _savedTemplate ||
+            _previewedThemeColorHex != _savedThemeColorHex);
 
     return Scaffold(
       appBar: AppBar(
@@ -78,156 +144,190 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
         elevation: 0,
       ),
       backgroundColor: Colors.grey[50],
-      body: Row(
-        children: [
-          // ── Left panel ──────────────────────────────────────────────
-          SizedBox(
-            width: 260,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isNarrow = constraints.maxWidth < 760;
+          final panelWidth =
+              (constraints.maxWidth * 0.34).clamp(240.0, 300.0).toDouble();
+          final previewPanel = _PreviewPanel(
+            templates: _templates,
+            previewedTemplate: _previewedTemplate,
+            savedTemplate: _savedTemplate,
+            themeColor: _activePreviewColor,
+          );
+
+          if (isNarrow) {
+            return Column(
               children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
-                  child: Text(
-                    "Templates",
-                    style: TextStyle(
-                      fontSize: AppFontSize.large,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey[700],
-                      letterSpacing: 0.4,
-                    ),
-                  ),
+                SizedBox(
+                  height: (constraints.maxHeight * 0.56)
+                      .clamp(340.0, 520.0)
+                      .toDouble(),
+                  child: _buildSettingsPanel(hasUnsavedChange),
                 ),
-                Expanded(
-                  child: ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    itemCount: _templates.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (context, index) {
-                      final entry = _templates[index];
-                      final template = entry["template"] as InvoiceTemplate;
-                      final name = entry["name"] as String;
-                      final description = entry["description"] as String;
-                      final image = entry["image"] as String;
-
-                      final isPreviewed = _previewedTemplate == template;
-                      final isSaved = _savedTemplate == template;
-
-                      return _TemplateListTile(
-                        name: name,
-                        description: description,
-                        image: image,
-                        isPreviewed: isPreviewed,
-                        isSaved: isSaved,
-                        isDefault: index == 0,
-                        onTap: () => setState(() => _previewedTemplate = template),
-                      );
-                    },
-                  ),
-                ),
-                // ── Custom template promo ──────────────────────────────
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-                  child: Builder(builder: (context) {
-                    final primaryColor = Theme.of(context).primaryColor;
-                    return Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: primaryColor.withValues(alpha: 0.06),
-                        borderRadius: BorderRadius.circular(AppBorderRadius.small),
-                        border: Border.all(color: primaryColor.withValues(alpha: 0.2)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.auto_fix_high_rounded, size: 14, color: primaryColor),
-                              const SizedBox(width: 6),
-                              Text(
-                                'Want a custom template?',
-                                style: TextStyle(
-                                  fontSize: AppFontSize.small,
-                                  fontWeight: FontWeight.w600,
-                                  color: primaryColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Get a design that matches your brand — colors, fonts, and layout.',
-                            style: TextStyle(
-                              fontSize: AppFontSize.xsmall,
-                              color: Colors.grey[600],
-                              height: 1.4,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          SizedBox(
-                            width: double.infinity,
-                            child: OutlinedButton.icon(
-                              onPressed: widget.onNavigateToCustomization,
-                              icon: const Icon(Icons.arrow_forward_rounded, size: 14),
-                              label: const Text(
-                                'See Customization Options',
-                                style: TextStyle(
-                                  fontSize: AppFontSize.xsmall,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: primaryColor,
-                                side: BorderSide(color: primaryColor.withValues(alpha: 0.5)),
-                                padding: const EdgeInsets.symmetric(vertical: 8),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(AppBorderRadius.small),
-                                ),
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
-                ),
-
-                // ── Save button ────────────────────────────────────────
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: hasUnsavedChange ? _saveTemplate : null,
-                      icon: const Icon(Icons.save_rounded),
-                      label: const Text("Save"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).primaryColor,
-                        foregroundColor: Colors.white,
-                        disabledBackgroundColor: Colors.grey[300],
-                        disabledForegroundColor: Colors.grey[500],
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppBorderRadius.small),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+                Divider(height: 1, color: Colors.grey[300]),
+                Expanded(child: previewPanel),
               ],
+            );
+          }
+
+          return Row(
+            children: [
+              SizedBox(
+                width: panelWidth,
+                child: _buildSettingsPanel(hasUnsavedChange),
+              ),
+              VerticalDivider(width: 1, color: Colors.grey[300]),
+              Expanded(child: previewPanel),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSettingsPanel(bool hasUnsavedChange) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
+          child: Text(
+            "Templates",
+            style: TextStyle(
+              fontSize: AppFontSize.large,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[700],
+              letterSpacing: 0.4,
             ),
           ),
+        ),
+        Expanded(
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            itemCount: _templates.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (context, index) {
+              final entry = _templates[index];
+              final template = entry["template"] as InvoiceTemplate;
+              final name = entry["name"] as String;
+              final description = entry["description"] as String;
 
-          // ── Divider ─────────────────────────────────────────────────
-          VerticalDivider(width: 1, color: Colors.grey[300]),
+              return _TemplateListTile(
+                template: template,
+                name: name,
+                description: description,
+                themeColor: _activePreviewColor,
+                isPreviewed: _previewedTemplate == template,
+                isSaved: _savedTemplate == template,
+                isDefault: index == 0,
+                onTap: () => setState(() => _previewedTemplate = template),
+              );
+            },
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+          child: _ThemeColorCard(
+            controller: _themeColorController,
+            presetColors: _presetThemeColors,
+            selectedHex: _previewedThemeColorHex,
+            isValid: _themeColorInputValid,
+            onPresetSelected: (color) =>
+                _setPreviewedThemeColor(_colorToHex(color)),
+            onCustomChanged: _handleCustomThemeColor,
+            onUseTemplateDefault: () => _setPreviewedThemeColor(null),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+          child: _buildCustomTemplatePromo(),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: hasUnsavedChange ? _saveTemplate : null,
+              icon: const Icon(Icons.save_rounded),
+              label: const Text("Save"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).primaryColor,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: Colors.grey[300],
+                disabledForegroundColor: Colors.grey[500],
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppBorderRadius.small),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
-          // ── Right preview panel ──────────────────────────────────────
-          Expanded(
-            child: _PreviewPanel(
-              templates: _templates,
-              previewedTemplate: _previewedTemplate,
-              savedTemplate: _savedTemplate,
+  Widget _buildCustomTemplatePromo() {
+    final primaryColor = Theme.of(context).primaryColor;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: primaryColor.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(AppBorderRadius.small),
+        border: Border.all(color: primaryColor.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.auto_fix_high_rounded, size: 14, color: primaryColor),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Want a custom template?',
+                  style: TextStyle(
+                    fontSize: AppFontSize.small,
+                    fontWeight: FontWeight.w600,
+                    color: primaryColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Get a design that matches your brand — colors, fonts, and layout.',
+            style: TextStyle(
+              fontSize: AppFontSize.xsmall,
+              color: Colors.grey[600],
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: widget.onNavigateToCustomization,
+              icon: const Icon(Icons.arrow_forward_rounded, size: 14),
+              label: const Text(
+                'Customization Options',
+                style: TextStyle(
+                  fontSize: AppFontSize.xsmall,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: primaryColor,
+                side: BorderSide(color: primaryColor.withValues(alpha: 0.5)),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppBorderRadius.small),
+                ),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
             ),
           ),
         ],
@@ -236,21 +336,47 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
   }
 }
 
+String _colorToHex(Color color) {
+  final rgb = color.toARGB32() & 0xFFFFFF;
+  return '#${rgb.toRadixString(16).padLeft(6, '0').toUpperCase()}';
+}
+
+Color? _colorFromHex(String? hexColor) {
+  if (hexColor == null || hexColor.trim().isEmpty) return null;
+  try {
+    final normalized = SettingsService.normalizePdfThemeColor(hexColor);
+    return Color(int.parse('FF${normalized.substring(1)}', radix: 16));
+  } catch (_) {
+    return null;
+  }
+}
+
+Color _defaultThemeColor(InvoiceTemplate template) {
+  return switch (template) {
+    InvoiceTemplate.classic => const Color(0xFF1A237E),
+    InvoiceTemplate.modern => const Color(0xFF1E88E5),
+    InvoiceTemplate.minimal => const Color(0xFF616161),
+    InvoiceTemplate.executive => const Color(0xFF37474F),
+  };
+}
+
 // ── Left list tile ───────────────────────────────────────────────────────────
 
 class _TemplateListTile extends StatelessWidget {
+  final InvoiceTemplate template;
   final String name;
   final String description;
-  final String image;
+  final Color themeColor;
   final bool isPreviewed;
   final bool isSaved;
   final bool isDefault;
   final VoidCallback onTap;
 
   const _TemplateListTile({
+    required this.template,
     required this.name,
     required this.description,
-    required this.image,
+    required this.themeColor,
     required this.isPreviewed,
     required this.isSaved,
     required this.isDefault,
@@ -266,7 +392,8 @@ class _TemplateListTile extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         decoration: BoxDecoration(
-          color: isPreviewed ? primaryColor.withValues(alpha: 0.08) : Colors.white,
+          color:
+              isPreviewed ? primaryColor.withValues(alpha: 0.08) : Colors.white,
           border: Border.all(
             color: isPreviewed ? primaryColor : Colors.grey[300]!,
             width: isPreviewed ? 2 : 1,
@@ -279,11 +406,11 @@ class _TemplateListTile extends StatelessWidget {
             // Thumbnail
             ClipRRect(
               borderRadius: BorderRadius.circular(6),
-              child: Image.asset(
-                image,
+              child: _TemplatePreviewSketch(
+                template: template,
+                themeColor: themeColor,
                 width: 68,
                 height: 78,
-                fit: BoxFit.cover,
               ),
             ),
             const SizedBox(width: 12),
@@ -354,11 +481,13 @@ class _PreviewPanel extends StatelessWidget {
   final List<Map<String, dynamic>> templates;
   final InvoiceTemplate previewedTemplate;
   final InvoiceTemplate savedTemplate;
+  final Color themeColor;
 
   const _PreviewPanel({
     required this.templates,
     required this.previewedTemplate,
     required this.savedTemplate,
+    required this.themeColor,
   });
 
   @override
@@ -368,7 +497,6 @@ class _PreviewPanel extends StatelessWidget {
     );
     final name = entry["name"] as String;
     final description = entry["description"] as String;
-    final image = entry["image"] as String;
     final isSaved = savedTemplate == previewedTemplate;
 
     return Column(
@@ -378,9 +506,13 @@ class _PreviewPanel extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           color: Colors.white,
-          child: Row(
+          child: Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Expanded(
+              ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: 160, maxWidth: 520),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -425,29 +557,409 @@ class _PreviewPanel extends StatelessWidget {
         Divider(height: 1, color: Colors.grey[200]),
         // Large preview
         Expanded(
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
-              child: Container(
-                key: ValueKey(previewedTemplate),
-                decoration: BoxDecoration(
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.15),
-                      blurRadius: 24,
-                      offset: const Offset(0, 8),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final horizontalPadding =
+                  constraints.maxWidth < 520 ? 16.0 : 32.0;
+              final verticalPadding = constraints.maxHeight < 620 ? 16.0 : 32.0;
+
+              return Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: horizontalPadding,
+                  vertical: verticalPadding,
+                ),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 250),
+                  child: FittedBox(
+                    key: ValueKey(
+                        '${previewedTemplate.name}-${_colorToHex(themeColor)}'),
+                    fit: BoxFit.contain,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.15),
+                            blurRadius: 24,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: _TemplatePreviewSketch(
+                        template: previewedTemplate,
+                        themeColor: themeColor,
+                        width: 390,
+                        height: 520,
+                        showDetails: true,
+                      ),
                     ),
-                  ],
+                  ),
                 ),
-                child: Image.asset(
-                  image,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
+              );
+            },
           ),
         ),
+      ],
+    );
+  }
+}
+
+class _ThemeColorCard extends StatelessWidget {
+  final TextEditingController controller;
+  final List<Color> presetColors;
+  final String? selectedHex;
+  final bool isValid;
+  final ValueChanged<Color> onPresetSelected;
+  final ValueChanged<String> onCustomChanged;
+  final VoidCallback onUseTemplateDefault;
+
+  const _ThemeColorCard({
+    required this.controller,
+    required this.presetColors,
+    required this.selectedHex,
+    required this.isValid,
+    required this.onPresetSelected,
+    required this.onCustomChanged,
+    required this.onUseTemplateDefault,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final primaryColor = Theme.of(context).primaryColor;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppBorderRadius.small),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Theme color',
+            style: TextStyle(
+              fontSize: AppFontSize.small,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[700],
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 6,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              ...presetColors.map((color) {
+                final hex = _colorToHex(color);
+                final selected = selectedHex == hex;
+                return Tooltip(
+                  message: hex,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () => onPresetSelected(color),
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: selected ? Colors.black87 : Colors.white,
+                          width: selected ? 2 : 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.12),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }),
+              TextButton(
+                onPressed: onUseTemplateDefault,
+                style: TextButton.styleFrom(
+                  foregroundColor: primaryColor,
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text(
+                  'Default',
+                  style: TextStyle(fontSize: AppFontSize.xsmall),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: controller,
+            maxLength: 7,
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'[#0-9a-fA-F]')),
+            ],
+            decoration: InputDecoration(
+              hintText: '#002E78',
+              errorText: isValid ? null : 'Use #RRGGBB',
+              counterText: '',
+              isDense: true,
+              prefixIcon: const Icon(Icons.tag_rounded, size: 16),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                borderSide: BorderSide(color: Colors.grey[300]!),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                borderSide: BorderSide(color: primaryColor, width: 2),
+              ),
+            ),
+            onChanged: onCustomChanged,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TemplatePreviewSketch extends StatelessWidget {
+  final InvoiceTemplate template;
+  final Color themeColor;
+  final double width;
+  final double height;
+  final bool showDetails;
+
+  const _TemplatePreviewSketch({
+    required this.template,
+    required this.themeColor,
+    required this.width,
+    required this.height,
+    this.showDetails = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      color: Colors.white,
+      padding: EdgeInsets.all(showDetails ? 24 : 4),
+      child: switch (template) {
+        InvoiceTemplate.classic => _classic(),
+        InvoiceTemplate.modern => _modern(),
+        InvoiceTemplate.minimal => _minimal(),
+        InvoiceTemplate.executive => _executive(),
+      },
+    );
+  }
+
+  Widget _line(double widthFactor, {double? height, Color? color}) {
+    return FractionallySizedBox(
+      widthFactor: widthFactor,
+      alignment: Alignment.centerLeft,
+      child: Container(
+        height: height ?? (showDetails ? 6 : 3),
+        decoration: BoxDecoration(
+          color: color ?? const Color(0xFFE5E7EB),
+          borderRadius: BorderRadius.circular(2),
+        ),
+      ),
+    );
+  }
+
+  Widget _fixedLine(double width, {double? height, Color? color}) {
+    return Container(
+      width: width,
+      height: height ?? (showDetails ? 6 : 3),
+      decoration: BoxDecoration(
+        color: color ?? const Color(0xFFE5E7EB),
+        borderRadius: BorderRadius.circular(2),
+      ),
+    );
+  }
+
+  Widget _table({bool filledHeader = true}) {
+    final rowCount = showDetails ? 5 : 3;
+    return Column(
+      children: [
+        Container(
+            height: showDetails ? 22 : 5,
+            color: filledHeader ? themeColor : const Color(0xFFE5E7EB)),
+        ...List.generate(rowCount, (index) {
+          return Container(
+            height: showDetails ? 26 : 4,
+            margin: EdgeInsets.only(top: showDetails ? 2 : 1),
+            color: index.isEven ? const Color(0xFFF8FAFC) : Colors.white,
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _totals() {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Container(
+        width: showDetails ? 130 : 34,
+        height: showDetails ? 58 : 10,
+        decoration: BoxDecoration(
+          color: const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: Container(height: showDetails ? 18 : 3, color: themeColor),
+        ),
+      ),
+    );
+  }
+
+  Widget _classic() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+                width: showDetails ? 54 : 14,
+                height: showDetails ? 42 : 12,
+                color: const Color(0xFFE5E7EB)),
+            const Spacer(),
+            SizedBox(
+                width: showDetails ? 170 : 38,
+                child: Column(children: [
+                  _line(1, height: showDetails ? 9 : 3),
+                  const SizedBox(height: 4),
+                  _line(.72, height: showDetails ? 7 : 3)
+                ])),
+          ],
+        ),
+        SizedBox(height: showDetails ? 16 : 4),
+        Container(height: showDetails ? 3 : 1.5, color: themeColor),
+        SizedBox(height: showDetails ? 22 : 5),
+        _line(.28, color: const Color(0xFFE5E7EB)),
+        SizedBox(height: showDetails ? 18 : 4),
+        _table(),
+        const Spacer(),
+        _totals(),
+      ],
+    );
+  }
+
+  Widget _modern() {
+    return Column(
+      children: [
+        Container(
+          height: showDetails ? 96 : 22,
+          width: double.infinity,
+          color: themeColor,
+          padding: EdgeInsets.all(showDetails ? 16 : 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _line(.45, height: showDetails ? 10 : 3, color: Colors.white),
+              SizedBox(height: showDetails ? 8 : 3),
+              _line(.7, height: showDetails ? 7 : 2.5, color: Colors.white70),
+            ],
+          ),
+        ),
+        SizedBox(height: showDetails ? 24 : 5),
+        _table(),
+        const Spacer(),
+        _totals(),
+        SizedBox(height: showDetails ? 18 : 4),
+        Container(height: showDetails ? 34 : 7, color: themeColor),
+      ],
+    );
+  }
+
+  Widget _minimal() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: showDetails ? 160 : 36,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _line(.7),
+                  SizedBox(height: showDetails ? 5 : 3),
+                  _line(.5)
+                ],
+              ),
+            ),
+            const Spacer(),
+            Container(
+                width: showDetails ? 48 : 14,
+                height: showDetails ? 38 : 12,
+                color: const Color(0xFFE5E7EB)),
+          ],
+        ),
+        SizedBox(height: showDetails ? 22 : 5),
+        Container(height: 1, color: const Color(0xFFCBD5E1)),
+        SizedBox(height: showDetails ? 28 : 6),
+        _table(filledHeader: false),
+        const Spacer(),
+        _totals(),
+        SizedBox(height: showDetails ? 16 : 3),
+        Container(height: showDetails ? 2 : 1, color: themeColor),
+      ],
+    );
+  }
+
+  Widget _executive() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+                width: showDetails ? 8 : 3,
+                height: showDetails ? 72 : 14,
+                color: themeColor),
+            SizedBox(width: showDetails ? 14 : 4),
+            Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                  _line(.55, height: showDetails ? 11 : 3),
+                  SizedBox(height: showDetails ? 6 : 3),
+                  _line(.8, height: showDetails ? 7 : 2.5)
+                ])),
+            SizedBox(width: showDetails ? 18 : 4),
+            _fixedLine(showDetails ? 72 : 16,
+                height: showDetails ? 18 : 5, color: themeColor),
+          ],
+        ),
+        SizedBox(height: showDetails ? 24 : 4),
+        Row(
+          children: [
+            Expanded(
+                child: Container(
+                    height: showDetails ? 72 : 12,
+                    color: const Color(0xFFF8FAFC))),
+            SizedBox(width: showDetails ? 16 : 4),
+            Expanded(
+                child: Container(
+                    height: showDetails ? 72 : 12,
+                    color: const Color(0xFFF8FAFC))),
+          ],
+        ),
+        SizedBox(height: showDetails ? 24 : 4),
+        _table(),
+        const Spacer(),
+        _totals(),
+        SizedBox(height: showDetails ? 18 : 3),
+        Container(height: showDetails ? 3 : 1.5, color: themeColor),
       ],
     );
   }
