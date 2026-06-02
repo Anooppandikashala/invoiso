@@ -690,4 +690,66 @@ class InvoiceService {
         .toList();
     return overdue.length > limit ? overdue.sublist(0, limit) : overdue;
   }
+
+  /// Revenue grouped by month for the last [months] calendar months.
+  /// Returns rows with keys 'month' (YYYY-MM string) and 'revenue' (double).
+  static Future<List<Map<String, dynamic>>> getMonthlyRevenue({int months = 6}) async {
+    final db = await dbHelper.database;
+    final cutoff = DateTime.now().subtract(Duration(days: months * 31));
+    final cutoffStr = '${cutoff.year.toString().padLeft(4, '0')}-${cutoff.month.toString().padLeft(2, '0')}-01';
+    final rows = await db.rawQuery(
+      "SELECT substr(ip.date_paid, 1, 7) as month, "
+      "COALESCE(SUM(ip.amount_paid), 0.0) as revenue "
+      "FROM invoice_payments ip "
+      "JOIN invoices i ON ip.invoice_id = i.id "
+      "WHERE i.type = 'Invoice' AND i.deleted_at IS NULL "
+      "AND substr(ip.date_paid, 1, 10) >= ? "
+      "GROUP BY substr(ip.date_paid, 1, 7) "
+      "ORDER BY month ASC",
+      [cutoffStr],
+    );
+    return rows.map((r) => {'month': r['month'] as String, 'revenue': (r['revenue'] as num).toDouble()}).toList();
+  }
+
+  /// Top [limit] customers by total payments received.
+  static Future<List<Map<String, dynamic>>> getTopCustomers({int limit = 5}) async {
+    final db = await dbHelper.database;
+    final rows = await db.rawQuery(
+      'SELECT i.customer_name, '
+      'COALESCE(SUM(ip.amount_paid), 0.0) as total_paid, '
+      'COUNT(DISTINCT i.id) as invoice_count '
+      'FROM invoices i '
+      'LEFT JOIN invoice_payments ip ON i.id = ip.invoice_id '
+      "WHERE i.type = 'Invoice' AND i.deleted_at IS NULL "
+      'GROUP BY i.customer_name '
+      'ORDER BY total_paid DESC, invoice_count DESC '
+      'LIMIT ?',
+      [limit],
+    );
+    return rows.map((r) => {
+      'customer_name': r['customer_name'] as String? ?? '',
+      'total_paid': (r['total_paid'] as num).toDouble(),
+      'invoice_count': (r['invoice_count'] as int?) ?? 0,
+    }).toList();
+  }
+
+  /// Top [limit] products by total units sold across all invoices.
+  static Future<List<Map<String, dynamic>>> getTopProducts({int limit = 5}) async {
+    final db = await dbHelper.database;
+    final rows = await db.rawQuery(
+      'SELECT ii.product_name, COALESCE(SUM(ii.quantity), 0) as total_qty '
+      'FROM invoice_items ii '
+      'JOIN invoices i ON ii.invoice_id = i.id '
+      "WHERE i.type = 'Invoice' AND i.deleted_at IS NULL "
+      "AND ii.product_name IS NOT NULL AND ii.product_name != '' "
+      'GROUP BY ii.product_name '
+      'ORDER BY total_qty DESC '
+      'LIMIT ?',
+      [limit],
+    );
+    return rows.map((r) => {
+      'product_name': r['product_name'] as String? ?? '',
+      'total_qty': (r['total_qty'] as num).toDouble(),
+    }).toList();
+  }
 }

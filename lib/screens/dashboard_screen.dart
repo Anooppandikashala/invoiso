@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:invoiso/constants.dart';
 import 'package:invoiso/services/update_service.dart';
@@ -698,6 +699,10 @@ class _DashboardHomeState extends State<DashboardHome> {
   List<Invoice> overdueInvoices = [];
   String _currencySymbol = '₹';
   bool isLoading = true;
+  String _dashboardLayout = 'default';
+  List<Map<String, dynamic>> _monthlyRevenue = [];
+  List<Map<String, dynamic>> _topCustomers = [];
+  List<Map<String, dynamic>> _topProducts = [];
 
   @override
   void initState() {
@@ -716,6 +721,10 @@ class _DashboardHomeState extends State<DashboardHome> {
       InvoiceService.getDueSoonInvoices(), // 4
       InvoiceService.getOverdueInvoices(limit: 10), // 5
       SettingsService.getCurrency(), // 6
+      InvoiceService.getMonthlyRevenue(), // 7
+      SettingsService.getSetting(SettingKey.dashboardLayout), // 8
+      InvoiceService.getTopCustomers(), // 9
+      InvoiceService.getTopProducts(), // 10
     ]);
 
     final customers = results[0] as List<Customer>;
@@ -726,6 +735,10 @@ class _DashboardHomeState extends State<DashboardHome> {
     final dueSoon = results[4] as List<Invoice>;
     final overdue = results[5] as List<Invoice>;
     final currency = results[6] as CurrencyOption;
+    final monthly = results[7] as List<Map<String, dynamic>>;
+    final layout = results[8] as String?;
+    final topCust = results[9] as List<Map<String, dynamic>>;
+    final topProd = results[10] as List<Map<String, dynamic>>;
 
     setState(() {
       totalCustomers = customers.length;
@@ -738,6 +751,10 @@ class _DashboardHomeState extends State<DashboardHome> {
       dueSoonInvoices = dueSoon;
       overdueInvoices = overdue;
       _currencySymbol = currency.symbol;
+      _monthlyRevenue = monthly;
+      _dashboardLayout = layout ?? 'default';
+      _topCustomers = topCust;
+      _topProducts = topProd;
       isLoading = false;
     });
   }
@@ -753,6 +770,7 @@ class _DashboardHomeState extends State<DashboardHome> {
         elevation: 0,
         centerTitle: true,
         actions: [
+          _buildLayoutToggle(),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadDashboardData,
@@ -763,9 +781,27 @@ class _DashboardHomeState extends State<DashboardHome> {
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(28),
-              child: Center(
+          : _buildContent(),
+    );
+  }
+
+  Widget _buildContent() {
+    switch (_dashboardLayout) {
+      case 'classic':
+        return _buildClassicLayout();
+      case 'simple':
+        return _buildSimpleFeedLayout();
+      case 'bento':
+        return _buildBentoLayout();
+      default:
+        return _buildDefaultLayout();
+    }
+  }
+
+  Widget _buildDefaultLayout() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(28),
+      child: Center(
                 child: ConstrainedBox(
                   constraints:
                       const BoxConstraints(maxWidth: AppLayout.maxWidthNormal),
@@ -1009,21 +1045,21 @@ class _DashboardHomeState extends State<DashboardHome> {
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               children: [
-                                                Row(
+                                                Wrap(
+                                                  spacing: 8,
+                                                  runSpacing: 4,
+                                                  crossAxisAlignment: WrapCrossAlignment.center,
                                                   children: [
-                                                    Flexible(
-                                                      child: Text(
-                                                        '${invoice.type} #${invoice.id}',
-                                                        style: const TextStyle(
-                                                            fontSize: 18,
-                                                            fontWeight:
-                                                                FontWeight
-                                                                    .bold),
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                      ),
+                                                    Text(
+                                                      '${invoice.type} #${invoice.id}',
+                                                      style: const TextStyle(
+                                                          fontSize: 18,
+                                                          fontWeight:
+                                                              FontWeight
+                                                                  .bold),
+                                                      overflow: TextOverflow
+                                                          .ellipsis,
                                                     ),
-                                                    const SizedBox(width: 12),
                                                     Container(
                                                       padding: const EdgeInsets
                                                           .symmetric(
@@ -1071,12 +1107,10 @@ class _DashboardHomeState extends State<DashboardHome> {
                                                       ),
                                                     ),
                                                     if (invoice.type ==
-                                                        'Invoice') ...[
-                                                      const SizedBox(width: 8),
+                                                        'Invoice')
                                                       _buildPaymentStatusChip(
                                                           invoice
                                                               .paymentStatus),
-                                                    ],
                                                   ],
                                                 ),
                                                 const SizedBox(height: 6),
@@ -1301,7 +1335,6 @@ class _DashboardHomeState extends State<DashboardHome> {
                   ),
                 ),
               ),
-            ),
     );
   }
 
@@ -1904,97 +1937,67 @@ class _DashboardHomeState extends State<DashboardHome> {
       {String? subtitle, Color? subtitleColor}) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.07),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min, // important for safety
+        child: Row(
           children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(icon, color: color, size: 22),
-                ),
-                const SizedBox(width: 8),
-                if (subtitle?.isNotEmpty ?? false)
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.warning_amber_rounded,
-                            size: 12,
-                            color: subtitleColor ?? Colors.red,
-                          ),
-                          const SizedBox(width: 4),
-                          Flexible(
-                            child: Text(
-                              subtitle!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.right,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: subtitleColor ?? Colors.red,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[900],
-                letterSpacing: -0.5,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[700],
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 14),
             Container(
-              height: 3,
+              padding: const EdgeInsets.all(9),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(2),
-                gradient: LinearGradient(
-                  colors: [
-                    color.withValues(alpha: 0.6),
-                    color.withValues(alpha: 0.1),
-                  ],
-                ),
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 19),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 11, color: Colors.grey[500], fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                      if (subtitle?.isNotEmpty ?? false) ...[
+                        const SizedBox(width: 4),
+                        Icon(Icons.warning_amber_rounded, size: 11, color: subtitleColor ?? Colors.red),
+                        const SizedBox(width: 2),
+                        Flexible(
+                          child: Text(
+                            subtitle!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 10, color: subtitleColor ?? Colors.red, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey[900]),
+                  ),
+                ],
               ),
             ),
           ],
@@ -2140,4 +2143,1141 @@ class _DashboardHomeState extends State<DashboardHome> {
       ),
     );
   }
+
+  // ── Layout Toggle ───────────────────────────────────────────────────────────
+
+  Widget _buildLayoutToggle() {
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.dashboard_customize_outlined, size: 20),
+      tooltip: 'Dashboard Layout',
+      offset: const Offset(0, 40),
+      onSelected: (value) async {
+        await SettingsService.setSetting(SettingKey.dashboardLayout, value);
+        setState(() => _dashboardLayout = value);
+      },
+      itemBuilder: (ctx) => [
+        _layoutMenuItem('default', Icons.view_agenda_outlined, 'Default', 'Original layout'),
+        _layoutMenuItem('classic', Icons.grid_view_outlined, 'Classic', 'Charts + KPI grid'),
+        _layoutMenuItem('bento', Icons.auto_awesome_mosaic_outlined, 'Bento', 'Hero chart + card grid'),
+        _layoutMenuItem('simple', Icons.view_list_outlined, 'Simple Feed', 'Clean list view'),
+      ],
+    );
+  }
+
+  PopupMenuItem<String> _layoutMenuItem(String value, IconData icon, String title, String sub) {
+    final active = _dashboardLayout == value;
+    final primary = Theme.of(context).primaryColor;
+    return PopupMenuItem(
+      value: value,
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: active ? primary : Colors.grey[600]),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(title, style: TextStyle(fontSize: 13, fontWeight: active ? FontWeight.w700 : FontWeight.normal, color: active ? primary : Colors.grey[800])),
+                Text(sub, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+              ],
+            ),
+          ),
+          if (active) Icon(Icons.check_rounded, size: 16, color: primary),
+        ],
+      ),
+    );
+  }
+
+  // ── Layout: Classic ─────────────────────────────────────────────────────────
+
+  Widget _buildClassicLayout() {
+    final primary = Theme.of(context).primaryColor;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: AppLayout.maxWidthNormal),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildGreetingBanner(),
+              const SizedBox(height: 20),
+              // KPI row
+              Row(
+                children: [
+                  _buildKpiCard('Revenue Collected', '$_currencySymbol ${_fmtAmt(totalRevenue)}',
+                      Icons.account_balance_wallet_outlined, const Color(0xFF6A1B9A)),
+                  const SizedBox(width: 14),
+                  _buildKpiCard('Outstanding', '$_currencySymbol ${_fmtAmt(totalOutstanding)}',
+                      Icons.hourglass_top_outlined, const Color(0xFFC62828)),
+                  const SizedBox(width: 14),
+                  _buildKpiCard('Total Invoices', totalInvoices.toString(),
+                      Icons.receipt_long_outlined, const Color(0xFFE65100)),
+                  const SizedBox(width: 14),
+                  _buildKpiCard('Overdue', overdueInvoices.length.toString(),
+                      Icons.warning_amber_outlined, const Color(0xFFB71C1C),
+                      alert: overdueInvoices.isNotEmpty),
+                ],
+              ),
+              const SizedBox(height: 20),
+              // Charts row
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(flex: 3, child: _buildRevenueBarChart(primary)),
+                    const SizedBox(width: 16),
+                    Expanded(flex: 2, child: _buildRevenueDonut()),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Bottom row
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(flex: 3, child: _buildCompactRecentInvoices(limit: 7)),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      children: [
+                        if (dueSoonInvoices.isNotEmpty) ...[
+                          _buildDueSoonCard(),
+                          const SizedBox(height: 14),
+                        ],
+                        if (outOfStockProducts.isNotEmpty) ...[
+                          _buildOutOfStockCard(),
+                          const SizedBox(height: 14),
+                        ],
+                        _buildQuickActionsCard(),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Layout: Simple Feed ─────────────────────────────────────────────────────
+
+  Widget _buildSimpleFeedLayout() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: AppLayout.maxWidthNormal),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildGreetingBanner(),
+              const SizedBox(height: 20),
+              // Mini KPI strip
+              Row(
+                children: [
+                  _buildKpiCard('Revenue', '$_currencySymbol ${_fmtAmt(totalRevenue)}',
+                      Icons.account_balance_wallet_outlined, const Color(0xFF6A1B9A)),
+                  const SizedBox(width: 12),
+                  _buildKpiCard('Outstanding', '$_currencySymbol ${_fmtAmt(totalOutstanding)}',
+                      Icons.hourglass_top_outlined, const Color(0xFFC62828)),
+                  const SizedBox(width: 12),
+                  _buildKpiCard('Invoices', totalInvoices.toString(),
+                      Icons.receipt_long_outlined, const Color(0xFFE65100)),
+                  const SizedBox(width: 12),
+                  _buildKpiCard('Customers', totalCustomers.toString(),
+                      Icons.people_outline, const Color(0xFF1565C0)),
+                ],
+              ),
+              const SizedBox(height: 20),
+              // Two-column body
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Left: recent invoices + top customers + top products
+                  Expanded(
+                    flex: 3,
+                    child: Column(
+                      children: [
+                        _buildCompactRecentInvoices(limit: 10),
+                        if (_topCustomers.isNotEmpty) ...[
+                          const SizedBox(height: 14),
+                          _buildTopCustomersCard(),
+                        ],
+                        if (_topProducts.isNotEmpty) ...[
+                          const SizedBox(height: 14),
+                          _buildTopProductsCard(),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  // Right sidebar
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      children: [
+                        _buildQuickActionsCard(),
+                        const SizedBox(height: 14),
+                        if (overdueInvoices.isNotEmpty) ...[
+                          _buildOverdueCompactCard(),
+                          const SizedBox(height: 14),
+                        ],
+                        if (dueSoonInvoices.isNotEmpty) ...[
+                          _buildDueSoonCard(),
+                          const SizedBox(height: 14),
+                        ],
+                        if (outOfStockProducts.isNotEmpty)
+                          _buildOutOfStockCard(),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Shared: KPI Card ────────────────────────────────────────────────────────
+
+  Widget _buildKpiCard(String title, String value, IconData icon, Color color,
+      {bool alert = false}) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: alert ? Border.all(color: color.withValues(alpha: 0.35), width: 1.5) : null,
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 12, offset: const Offset(0, 3)),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(9),
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+              child: Icon(icon, color: color, size: 19),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(title, style: TextStyle(fontSize: 11, color: Colors.grey[500], fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 3),
+                  Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey[900]), maxLines: 1, overflow: TextOverflow.ellipsis),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Shared: Revenue Bar Chart ────────────────────────────────────────────────
+
+  Widget _buildRevenueBarChart(Color primary) {
+    final hasData = _monthlyRevenue.isNotEmpty;
+    final maxY = hasData
+        ? _monthlyRevenue.map((e) => (e['revenue'] as num).toDouble()).reduce((a, b) => a > b ? a : b) * 1.25
+        : 1000.0;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 12, offset: const Offset(0, 3))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('Revenue — Last 6 Months', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.grey[800])),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 190,
+            child: hasData
+                ? BarChart(
+                    BarChartData(
+                      alignment: BarChartAlignment.spaceAround,
+                      maxY: maxY,
+                      barGroups: _monthlyRevenue.asMap().entries.map((entry) {
+                        final rev = (entry.value['revenue'] as num).toDouble();
+                        return BarChartGroupData(
+                          x: entry.key,
+                          barRods: [
+                            BarChartRodData(
+                              toY: rev,
+                              gradient: LinearGradient(
+                                colors: [primary, primary.withValues(alpha: 0.55)],
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                              ),
+                              width: 28,
+                              borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                      titlesData: FlTitlesData(
+                        leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            getTitlesWidget: (value, meta) {
+                              final idx = value.toInt();
+                              if (idx < 0 || idx >= _monthlyRevenue.length) return const SizedBox.shrink();
+                              final monthStr = _monthlyRevenue[idx]['month'] as String;
+                              try {
+                                final date = DateFormat('yyyy-MM').parse(monthStr);
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 5),
+                                  child: Text(DateFormat('MMM').format(date),
+                                      style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                                );
+                              } catch (_) {
+                                return const SizedBox.shrink();
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                      gridData: FlGridData(
+                        show: true,
+                        drawVerticalLine: false,
+                        getDrawingHorizontalLine: (_) =>
+                            FlLine(color: Colors.grey.withValues(alpha: 0.12), strokeWidth: 1),
+                      ),
+                      borderData: FlBorderData(show: false),
+                      barTouchData: BarTouchData(
+                        touchTooltipData: BarTouchTooltipData(
+                          getTooltipItem: (group, _, rod, __) => BarTooltipItem(
+                            '$_currencySymbol ${_fmtAmt(rod.toY)}',
+                            const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                : Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.bar_chart_outlined, size: 48, color: Colors.grey[200]),
+                        const SizedBox(height: 8),
+                        Text('No payment data yet', style: TextStyle(color: Colors.grey[400], fontSize: 13)),
+                      ],
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Shared: Revenue Donut ────────────────────────────────────────────────────
+
+  Widget _buildRevenueDonut() {
+    final total = totalRevenue + totalOutstanding;
+    final hasData = total > 0.01;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 12, offset: const Offset(0, 3))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('Financial Overview', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.grey[800])),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 160,
+            child: hasData
+                ? PieChart(
+                    PieChartData(
+                      centerSpaceRadius: 46,
+                      sectionsSpace: 3,
+                      sections: [
+                        PieChartSectionData(
+                          value: totalRevenue,
+                          color: const Color(0xFF2E7D32),
+                          title: '',
+                          radius: 38,
+                        ),
+                        PieChartSectionData(
+                          value: totalOutstanding,
+                          color: const Color(0xFFC62828),
+                          title: '',
+                          radius: 38,
+                        ),
+                      ],
+                    ),
+                  )
+                : Center(child: Text('No invoices yet', style: TextStyle(color: Colors.grey[400], fontSize: 13))),
+          ),
+          const SizedBox(height: 14),
+          _buildDonutLegend('Collected', const Color(0xFF2E7D32), '$_currencySymbol ${_fmtAmt(totalRevenue)}'),
+          const SizedBox(height: 6),
+          _buildDonutLegend('Outstanding', const Color(0xFFC62828), '$_currencySymbol ${_fmtAmt(totalOutstanding)}'),
+          if (overdueInvoices.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFB71C1C).withValues(alpha: 0.07),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.warning_amber_rounded, size: 13, color: Color(0xFFB71C1C)),
+                  const SizedBox(width: 6),
+                  Text('${overdueInvoices.length} invoice${overdueInvoices.length == 1 ? '' : 's'} overdue',
+                      style: const TextStyle(fontSize: 12, color: Color(0xFFB71C1C), fontWeight: FontWeight.w600)),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDonutLegend(String label, Color color, String amount) {
+    return Row(
+      children: [
+        Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 8),
+        Expanded(child: Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600]))),
+        Text(amount, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.grey[800])),
+      ],
+    );
+  }
+
+  // ── Shared: Compact Recent Invoices ─────────────────────────────────────────
+
+  Widget _buildCompactRecentInvoices({int limit = 7}) {
+    final invoices = recentInvoices.take(limit).toList();
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 12, offset: const Offset(0, 3))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Text('Recent Invoices', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.grey[800])),
+              const Spacer(),
+              Text('Last $limit', style: TextStyle(fontSize: 11, color: Colors.grey[400])),
+            ],
+          ),
+          const SizedBox(height: 4),
+          // Header row
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              children: [
+                Expanded(flex: 2, child: Text('Invoice', style: TextStyle(fontSize: 11, color: Colors.grey[400], fontWeight: FontWeight.w600))),
+                Expanded(flex: 3, child: Text('Customer', style: TextStyle(fontSize: 11, color: Colors.grey[400], fontWeight: FontWeight.w600))),
+                Expanded(flex: 2, child: Text('Amount', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, color: Colors.grey[400], fontWeight: FontWeight.w600))),
+                const SizedBox(width: 60),
+              ],
+            ),
+          ),
+          const Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
+          const SizedBox(height: 4),
+          if (invoices.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 32),
+              child: Center(child: Text('No invoices yet', style: TextStyle(color: Colors.grey[400], fontSize: 13))),
+            )
+          else
+            ...invoices.map(_buildCompactInvoiceRow),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactInvoiceRow(Invoice inv) {
+    final status = inv.paymentStatus;
+    final Color statusColor;
+    final String statusLabel;
+    switch (status) {
+      case PaymentStatus.paid:
+        statusColor = const Color(0xFF2E7D32);
+        statusLabel = 'Paid';
+        break;
+      case PaymentStatus.partial:
+        statusColor = const Color(0xFFF57C00);
+        statusLabel = 'Partial';
+        break;
+      default:
+        final isOver = InvoiceCalculator.isOverdue(dueDate: inv.dueDate, outstanding: inv.outstandingBalance);
+        statusColor = isOver ? const Color(0xFFC62828) : const Color(0xFF546E7A);
+        statusLabel = isOver ? 'Overdue' : 'Unpaid';
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 7),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text('#${inv.id.length > 8 ? inv.id.substring(inv.id.length - 8) : inv.id}',
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
+          ),
+          Expanded(
+            flex: 3,
+            child: Text(inv.customer.name, style: TextStyle(fontSize: 12, color: Colors.grey[600]), maxLines: 1, overflow: TextOverflow.ellipsis),
+          ),
+          Expanded(
+            flex: 2,
+            child: Text('$_currencySymbol ${_fmtAmt(inv.total)}',
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600), textAlign: TextAlign.right, maxLines: 1),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+            decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
+            child: Text(statusLabel, style: TextStyle(fontSize: 10, color: statusColor, fontWeight: FontWeight.w700)),
+          ),
+          const SizedBox(width: 8),
+          Tooltip(
+            message: 'Edit',
+            child: InkWell(
+              onTap: () => widget.onEditInvoice(inv),
+              borderRadius: BorderRadius.circular(6),
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: Icon(Icons.edit_outlined, size: 15, color: Colors.grey[400]),
+              ),
+            ),
+          ),
+          const SizedBox(width: 2),
+          Tooltip(
+            message: 'Download PDF',
+            child: InkWell(
+              onTap: () => PDFService.downloadPDF(context, inv),
+              borderRadius: BorderRadius.circular(6),
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: Icon(Icons.download_outlined, size: 15, color: Colors.grey[400]),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Shared: Due Soon Card ────────────────────────────────────────────────────
+
+  Widget _buildDueSoonCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 12, offset: const Offset(0, 3))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(color: const Color(0xFFF57C00).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                child: const Icon(Icons.event_outlined, color: Color(0xFFF57C00), size: 15),
+              ),
+              const SizedBox(width: 8),
+              Text('Due Soon', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.grey[800])),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(color: const Color(0xFFF57C00).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+                child: Text('${dueSoonInvoices.length}', style: const TextStyle(fontSize: 12, color: Color(0xFFF57C00), fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...dueSoonInvoices.take(5).map((inv) => Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              children: [
+                Expanded(child: Text(inv.customer.name, style: const TextStyle(fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                Text('$_currencySymbol ${_fmtAmt(inv.outstandingBalance)}',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                const SizedBox(width: 2),
+                _buildInvoiceActionMenu(inv),
+              ],
+            ),
+          )),
+        ],
+      ),
+    );
+  }
+
+  // ── Shared: Out of Stock Card ────────────────────────────────────────────────
+
+  Widget _buildOutOfStockCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.red.withValues(alpha: 0.18), width: 1),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 2))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(color: Colors.red.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                child: const Icon(Icons.inventory_2_outlined, color: Colors.red, size: 15),
+              ),
+              const SizedBox(width: 8),
+              Text('Out of Stock', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.grey[800])),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(color: Colors.red.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+                child: Text('${outOfStockProducts.length}', style: const TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...outOfStockProducts.take(5).map((p) => Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(
+              children: [
+                Expanded(child: Text(p.name, style: const TextStyle(fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                const Text('0 left', style: TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.w600)),
+                const SizedBox(width: 6),
+Tooltip(
+                  message: 'Update Stock',
+                  child: InkWell(
+                    onTap: () => _showUpdateStockDialog(p),
+                    borderRadius: BorderRadius.circular(7),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(7),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.add_box_outlined, size: 13, color: Colors.green),
+                          SizedBox(width: 4),
+                          Text('Stock', style: TextStyle(fontSize: 11, color: Colors.green, fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )),
+        ],
+      ),
+    );
+  }
+
+  // ── Shared: Overdue Compact Card ─────────────────────────────────────────────
+
+  Widget _buildOverdueCompactCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFC62828).withValues(alpha: 0.2), width: 1),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 2))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(color: const Color(0xFFC62828).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                child: const Icon(Icons.warning_amber_rounded, color: Color(0xFFC62828), size: 15),
+              ),
+              const SizedBox(width: 8),
+              Text('Overdue', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.grey[800])),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(color: const Color(0xFFC62828).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+                child: Text('${overdueInvoices.length}', style: const TextStyle(fontSize: 12, color: Color(0xFFC62828), fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...overdueInvoices.take(5).map((inv) => Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              children: [
+                Expanded(child: Text(inv.customer.name, style: const TextStyle(fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                Text('$_currencySymbol ${_fmtAmt(inv.outstandingBalance)}',
+                    style: const TextStyle(fontSize: 12, color: Color(0xFFC62828), fontWeight: FontWeight.w600)),
+                const SizedBox(width: 4),
+                Tooltip(
+                  message: 'Record Payment',
+                  child: InkWell(
+                    onTap: () => showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (_) => ApplyPaymentDialog(
+                        invoice: inv,
+                        onPaymentRecorded: _loadDashboardData,
+                      ),
+                    ),
+                    borderRadius: BorderRadius.circular(7),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF6A1B9A).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(7),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.payments_outlined, size: 13, color: Color(0xFF6A1B9A)),
+                          SizedBox(width: 4),
+                          Text('Pay', style: TextStyle(fontSize: 11, color: Color(0xFF6A1B9A), fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 2),
+                _buildPdfActionMenu(inv),
+              ],
+            ),
+          )),
+        ],
+      ),
+    );
+  }
+
+  // ── Shared: Quick Actions Card ───────────────────────────────────────────────
+
+  Widget _buildQuickActionsCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 12, offset: const Offset(0, 3))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('Quick Actions', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.grey[800])),
+          const SizedBox(height: 12),
+          _buildQuickActionRow(Icons.add_circle_outline_rounded, 'New Invoice', Theme.of(context).primaryColor, () {
+            context.findAncestorStateOfType<_DashboardScreenState>()?.setState(() {
+              context.findAncestorStateOfType<_DashboardScreenState>()?._selectedIndex = 1;
+            });
+          }),
+          const SizedBox(height: 4),
+          _buildQuickActionRow(Icons.person_add_outlined, 'Customers', const Color(0xFF1565C0), () {
+            context.findAncestorStateOfType<_DashboardScreenState>()?.setState(() {
+              context.findAncestorStateOfType<_DashboardScreenState>()?._selectedIndex = 4;
+            });
+          }),
+          const SizedBox(height: 4),
+          _buildQuickActionRow(Icons.bar_chart_outlined, 'Reports', const Color(0xFF2E7D32), () {
+            context.findAncestorStateOfType<_DashboardScreenState>()?.setState(() {
+              context.findAncestorStateOfType<_DashboardScreenState>()?._selectedIndex = 6;
+            });
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickActionRow(IconData icon, String label, Color color, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 4),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+              child: Icon(icon, color: color, size: 15),
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: Text(label, style: TextStyle(fontSize: 13, color: Colors.grey[800], fontWeight: FontWeight.w500))),
+            Icon(Icons.chevron_right_rounded, size: 16, color: Colors.grey[400]),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Shared: Amount Formatter ─────────────────────────────────────────────────
+
+  String _fmtAmt(double amount) {
+    if (amount >= 10000000) return '${(amount / 10000000).toStringAsFixed(2)}Cr';
+    if (amount >= 100000) return '${(amount / 100000).toStringAsFixed(2)}L';
+    if (amount >= 1000) return '${(amount / 1000).toStringAsFixed(1)}K';
+    return amount.toStringAsFixed(2);
+  }
+
+
+  // ── Layout: Bento Grid ──────────────────────────────────────────────────────
+
+  Widget _buildBentoLayout() {
+    final primary = Theme.of(context).primaryColor;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: AppLayout.maxWidthNormal),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildGreetingBanner(),
+              const SizedBox(height: 20),
+              // ── Top row: Hero chart + 2×2 KPI grid ──────────────────────────
+              SizedBox(
+                height: 290,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Hero: Revenue bar chart
+                    Expanded(
+                      flex: 3,
+                      child: _buildRevenueBarChart(primary),
+                    ),
+                    const SizedBox(width: 14),
+                    // 2×2 KPI tiles
+                    Expanded(
+                      flex: 2,
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: Row(
+                              children: [
+                                _buildKpiCard(
+                                  'Revenue',
+                                  '$_currencySymbol ${_fmtAmt(totalRevenue)}',
+                                  Icons.account_balance_wallet_outlined,
+                                  const Color(0xFF6A1B9A),
+                                ),
+                                const SizedBox(width: 14),
+                                _buildKpiCard(
+                                  'Invoices',
+                                  totalInvoices.toString(),
+                                  Icons.receipt_long_outlined,
+                                  const Color(0xFFE65100),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          Expanded(
+                            child: Row(
+                              children: [
+                                _buildKpiCard(
+                                  'Outstanding',
+                                  '$_currencySymbol ${_fmtAmt(totalOutstanding)}',
+                                  Icons.hourglass_top_outlined,
+                                  const Color(0xFFC62828),
+                                ),
+                                const SizedBox(width: 14),
+                                _buildKpiCard(
+                                  'Overdue',
+                                  overdueInvoices.length.toString(),
+                                  Icons.warning_amber_outlined,
+                                  const Color(0xFFB71C1C),
+                                  alert: overdueInvoices.isNotEmpty,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              // ── Bottom row: Wide invoice table + narrow sidebar ───────────────
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: _buildCompactRecentInvoices(limit: 8),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      children: [
+                        _buildQuickActionsCard(),
+                        if (overdueInvoices.isNotEmpty) ...[
+                          const SizedBox(height: 14),
+                          _buildOverdueCompactCard(),
+                        ],
+                        if (dueSoonInvoices.isNotEmpty) ...[
+                          const SizedBox(height: 14),
+                          _buildDueSoonCard(),
+                        ],
+                        if (outOfStockProducts.isNotEmpty) ...[
+                          const SizedBox(height: 14),
+                          _buildOutOfStockCard(),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+
+  // ── Shared: PDF-Only Action Menu (⋯) ───────────────────────────────────────
+
+  Widget _buildPdfActionMenu(Invoice inv) {
+    return PopupMenuButton<String>(
+      icon: Icon(Icons.more_vert_rounded, size: 15, color: Colors.grey[400]),
+      iconSize: 22,
+      padding: EdgeInsets.zero,
+      tooltip: 'PDF Actions',
+      offset: const Offset(0, 24),
+      onSelected: (value) {
+        if (value == 'preview') {
+          InvoicePdfServices.previewPDF(context, inv);
+        } else if (value == 'download') {
+          PDFService.downloadPDF(context, inv);
+        }
+      },
+      itemBuilder: (ctx) => const [
+        PopupMenuItem(
+          value: 'preview',
+          child: Row(children: [
+            Icon(Icons.visibility_outlined, size: 16, color: Colors.green),
+            SizedBox(width: 10),
+            Text('Preview PDF', style: TextStyle(fontSize: 13)),
+          ]),
+        ),
+        PopupMenuItem(
+          value: 'download',
+          child: Row(children: [
+            Icon(Icons.download_outlined, size: 16, color: Colors.deepPurple),
+            SizedBox(width: 10),
+            Text('Download PDF', style: TextStyle(fontSize: 13)),
+          ]),
+        ),
+      ],
+    );
+  }
+
+  // ── Shared: Invoice Action Menu (⋯) ────────────────────────────────────────
+
+  Widget _buildInvoiceActionMenu(Invoice inv) {
+    return PopupMenuButton<String>(
+      icon: Icon(Icons.more_vert_rounded, size: 15, color: Colors.grey[400]),
+      iconSize: 22,
+      padding: EdgeInsets.zero,
+      tooltip: 'Actions',
+      offset: const Offset(0, 24),
+      onSelected: (value) {
+        switch (value) {
+          case 'payment':
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (_) => ApplyPaymentDialog(
+                invoice: inv,
+                onPaymentRecorded: _loadDashboardData,
+              ),
+            );
+            break;
+          case 'preview':
+            InvoicePdfServices.previewPDF(context, inv);
+            break;
+          case 'download':
+            PDFService.downloadPDF(context, inv);
+            break;
+        }
+      },
+      itemBuilder: (ctx) => const [
+        PopupMenuItem(
+          value: 'payment',
+          child: Row(children: [
+            Icon(Icons.payments_outlined, size: 16, color: Color(0xFF6A1B9A)),
+            SizedBox(width: 10),
+            Text('Record Payment', style: TextStyle(fontSize: 13)),
+          ]),
+        ),
+        PopupMenuItem(
+          value: 'preview',
+          child: Row(children: [
+            Icon(Icons.visibility_outlined, size: 16, color: Colors.green),
+            SizedBox(width: 10),
+            Text('Preview PDF', style: TextStyle(fontSize: 13)),
+          ]),
+        ),
+        PopupMenuItem(
+          value: 'download',
+          child: Row(children: [
+            Icon(Icons.download_outlined, size: 16, color: Colors.deepPurple),
+            SizedBox(width: 10),
+            Text('Download PDF', style: TextStyle(fontSize: 13)),
+          ]),
+        ),
+      ],
+    );
+  }
+
+  // ── Shared: Top Customers Card ───────────────────────────────────────────────
+
+  Widget _buildTopCustomersCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 12, offset: const Offset(0, 3))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(color: const Color(0xFF1565C0).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                child: const Icon(Icons.emoji_events_outlined, color: Color(0xFF1565C0), size: 15),
+              ),
+              const SizedBox(width: 8),
+              Text('Top Customers', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.grey[800])),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ..._topCustomers.map((c) {
+            final name = c['customer_name'] as String? ?? '';
+            final paid = (c['total_paid'] as num).toDouble();
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 13,
+                    backgroundColor: const Color(0xFF1565C0).withValues(alpha: 0.1),
+                    child: Text(
+                      name.isNotEmpty ? name[0].toUpperCase() : '?',
+                      style: const TextStyle(fontSize: 11, color: Color(0xFF1565C0), fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(name, style: const TextStyle(fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                  Text('$_currencySymbol ${_fmtAmt(paid)}',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey[700])),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  // ── Shared: Top Products Card ────────────────────────────────────────────────
+
+  Widget _buildTopProductsCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 12, offset: const Offset(0, 3))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(color: const Color(0xFF2E7D32).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                child: const Icon(Icons.trending_up_outlined, color: Color(0xFF2E7D32), size: 15),
+              ),
+              const SizedBox(width: 8),
+              Text('Top Products', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.grey[800])),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ..._topProducts.map((p) {
+            final name = p['product_name'] as String? ?? '';
+            final qty = (p['total_qty'] as num).toDouble();
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(color: const Color(0xFF2E7D32).withValues(alpha: 0.08), borderRadius: BorderRadius.circular(7)),
+                    child: const Icon(Icons.inventory_2_outlined, size: 13, color: Color(0xFF2E7D32)),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(name, style: const TextStyle(fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                  Text('${qty % 1 == 0 ? qty.toInt() : qty.toStringAsFixed(1)} units',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey[700])),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
 }
