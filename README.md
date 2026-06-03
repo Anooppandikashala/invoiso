@@ -33,7 +33,7 @@
 
   <br/>
 
-  <img src="landing/assets/images/pngs/invoiso_banner.png" alt="Invoiso — Free Offline Invoice &amp; Billing Software for Windows and Linux" width="100%" />
+  <img src="landing/assets/images/invoiso_banner.webp" alt="Invoiso — Free Offline Invoice &amp; Billing Software for Windows and Linux" width="100%" />
 </div>
 
 ---
