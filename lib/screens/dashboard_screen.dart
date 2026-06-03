@@ -3328,7 +3328,15 @@ class _DashboardHomeState extends State<DashboardHome> {
                 children: [
                   Expanded(
                     flex: 3,
-                    child: _buildCompactRecentInvoices(limit: 8),
+                    child: Column(
+                      children: [
+                        _buildCompactRecentInvoices(limit: 8),
+                        if (_topProducts.isNotEmpty) ...[
+                          const SizedBox(height: 14),
+                          _buildTopProductsCard(),
+                        ],
+                      ],
+                    ),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
