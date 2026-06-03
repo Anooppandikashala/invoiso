@@ -721,6 +721,7 @@ class _DashboardHomeState extends State<DashboardHome> {
   String _currencySymbol = '₹';
   bool isLoading = true;
   String _dashboardLayout = 'default';
+  bool _showLayoutBanner = false;
   List<Map<String, dynamic>> _monthlyRevenue = [];
   List<Map<String, dynamic>> _topCustomers = [];
   List<Map<String, dynamic>> _topProducts = [];
@@ -746,6 +747,7 @@ class _DashboardHomeState extends State<DashboardHome> {
       SettingsService.getSetting(SettingKey.dashboardLayout), // 8
       InvoiceService.getTopCustomers(), // 9
       InvoiceService.getTopProducts(), // 10
+      SettingsService.getSetting(SettingKey.layoutBannerDismissed), // 11
     ]);
 
     final customers = results[0] as List<Customer>;
@@ -760,6 +762,7 @@ class _DashboardHomeState extends State<DashboardHome> {
     final layout = results[8] as String?;
     final topCust = results[9] as List<Map<String, dynamic>>;
     final topProd = results[10] as List<Map<String, dynamic>>;
+    final bannerDismissed = results[11] as String?;
 
     setState(() {
       totalCustomers = customers.length;
@@ -776,8 +779,82 @@ class _DashboardHomeState extends State<DashboardHome> {
       _dashboardLayout = layout ?? 'default';
       _topCustomers = topCust;
       _topProducts = topProd;
+      _showLayoutBanner = bannerDismissed != '1';
       isLoading = false;
     });
+  }
+
+  Future<void> _dismissLayoutBanner() async {
+    await SettingsService.setSetting(SettingKey.layoutBannerDismissed, '1');
+    if (mounted) setState(() => _showLayoutBanner = false);
+  }
+
+  Widget _buildLayoutDiscoveryBanner() {
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+      child: _showLayoutBanner
+          ? Container(
+              margin: const EdgeInsets.only(bottom: 20),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEFF6FF),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFBFDBFE)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.dashboard_customize_outlined,
+                      color: Color(0xFF2563EB), size: 20),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'New: Multiple dashboard layouts',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: Color(0xFF1E40AF),
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Switch between Default, Classic, Bento, and Simple Feed using the grid icon in the top-right.',
+                          style:
+                              TextStyle(fontSize: 12, color: Color(0xFF3B82F6)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: _dismissLayoutBanner,
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFF2563EB),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text('Got it',
+                        style: TextStyle(fontWeight: FontWeight.w600)),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 16),
+                    color: const Color(0xFF93C5FD),
+                    onPressed: _dismissLayoutBanner,
+                    tooltip: 'Dismiss',
+                    padding: EdgeInsets.zero,
+                    constraints:
+                        const BoxConstraints(minWidth: 28, minHeight: 28),
+                  ),
+                ],
+              ),
+            )
+          : const SizedBox.shrink(),
+    );
   }
 
   @override
@@ -828,6 +905,7 @@ class _DashboardHomeState extends State<DashboardHome> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _buildLayoutDiscoveryBanner(),
               // ── Greeting Banner ──────────────────────────────
               _buildGreetingBanner(),
 
@@ -2117,12 +2195,31 @@ class _DashboardHomeState extends State<DashboardHome> {
 
   Widget _buildLayoutToggle() {
     return PopupMenuButton<String>(
-      icon: const Icon(Icons.dashboard_customize_outlined, size: 20),
+      icon: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          const Icon(Icons.dashboard_customize_outlined, size: 20),
+          if (_showLayoutBanner)
+            Positioned(
+              top: -3,
+              right: -3,
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+        ],
+      ),
       tooltip: 'Dashboard Layout',
       offset: const Offset(0, 40),
       onSelected: (value) async {
         await SettingsService.setSetting(SettingKey.dashboardLayout, value);
         setState(() => _dashboardLayout = value);
+        if (_showLayoutBanner) _dismissLayoutBanner();
       },
       itemBuilder: (ctx) => [
         _layoutMenuItem('default', Icons.view_agenda_outlined, 'Default',
@@ -2181,6 +2278,7 @@ class _DashboardHomeState extends State<DashboardHome> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _buildLayoutDiscoveryBanner(),
               _buildGreetingBanner(),
               const SizedBox(height: 20),
               // KPI row
@@ -2275,6 +2373,7 @@ class _DashboardHomeState extends State<DashboardHome> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _buildLayoutDiscoveryBanner(),
               _buildGreetingBanner(),
               const SizedBox(height: 20),
               // Mini KPI strip
@@ -3239,6 +3338,7 @@ class _DashboardHomeState extends State<DashboardHome> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _buildLayoutDiscoveryBanner(),
               _buildGreetingBanner(),
               const SizedBox(height: 20),
               // ── Top row: Hero chart + 2×2 KPI grid ──────────────────────────
