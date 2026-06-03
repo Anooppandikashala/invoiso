@@ -137,8 +137,9 @@ function loadSwiper() {
 // ─── Screenshots + Swiper init (runs only after Swiper JS loads) ──────────────
 function initScreenshots() {
   var screenshots = [
-    { src: 'login.png',                          text: 'Invoice Login Page',            alt: 'Invoiso login screen \u2014 secure desktop invoicing app for Windows and Linux',                          category: 'Invoices' },
-    { src: 'dashboard.png',                      text: 'Invoice Dashboard Page',        alt: 'Invoiso dashboard showing total revenue, invoice count, and recent invoices overview',               category: 'Invoices' },
+    { src: 'login.png',                          text: 'Invoiso Login Page',            alt: 'Invoiso login screen \u2014 secure desktop invoicing app for Windows and Linux',                          category: 'Invoices' },
+    { src: 'dashboard.png',                      text: 'Invoiso Dashboard Page',        alt: 'Invoiso dashboard showing total revenue, invoice count, and recent invoices overview',               category: 'Invoices' },
+    { src: 'dashboard_layouts.png',              text: 'Invoiso Dashboard Layouts Page',alt: 'Invoiso 4 dashboard layouts: Default view, Classic, Bento and Simple Feed ',                         category: 'Invoices' },
     { src: 'create_new_invoice1.png',            text: 'Create Invoice Page',           alt: 'Create a new invoice in Invoiso \u2014 select customer, add products, apply tax rate',                    category: 'Invoices' },
     { src: 'create_new_invoice2.png',            text: 'Create Invoice with Products',  alt: 'Invoiso invoice creation screen with products and line items added',                                 category: 'Invoices' },
     { src: 'invoice_actions.png',                text: 'Invoice Created Successfully',  alt: 'Invoice created successfully in Invoiso \u2014 ready to preview, print or export as PDF',                 category: 'Invoices' },
@@ -150,6 +151,7 @@ function initScreenshots() {
     { src: 'invoice_print_view.png',             text: 'Sample Invoice PDF Print View', alt: 'Professional PDF invoice Print View',                                                                category: 'PDF' },
     { src: 'Invoice_template_selection_screen.png', text: 'Invoice Templates',          alt: 'Invoiso PDF template selection \u2014 Classic, Modern and Minimal invoice templates side by side',      category: 'PDF' },
     { src: 'template_classic.png',               text: 'Classic Invoice Template',      alt: 'Classic PDF invoice template with branded company header and itemised table \u2014 Invoiso',            category: 'PDF' },
+    { src: 'template_executive.png',             text: 'Executive Invoice Template',    alt: 'Executive PDF invoice template with blue header block and professional layout \u2014 Invoiso',             category: 'PDF' },
     { src: 'template_modern.png',                text: 'Modern Invoice Template',       alt: 'Modern PDF invoice template with blue header block and professional layout \u2014 Invoiso',             category: 'PDF' },
     { src: 'template_minimal.png',               text: 'Minimal Invoice Template',      alt: 'Minimal PDF invoice template \u2014 clean, simple and distraction-free design \u2014 Invoiso',           category: 'PDF' },
     { src: 'customer_list.png',                  text: 'Customer Management Page',      alt: 'Customer management screen in Invoiso showing client list with search, sort and edit options',       category: 'Clients' },
