@@ -1,3 +1,4 @@
+import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:invoiso/database/settings_service.dart';
@@ -126,6 +127,48 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
     }
   }
 
+  Future<void> _openColorPicker() async {
+    Color picked = _activePreviewColor;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Pick theme color'),
+          content: SizedBox(
+            width: 300,
+            child: ColorPicker(
+              color: picked,
+              onColorChanged: (c) => setDialogState(() => picked = c),
+              pickersEnabled: const {
+                ColorPickerType.primary: false,
+                ColorPickerType.accent: false,
+                ColorPickerType.wheel: true,
+              },
+              showColorCode: true,
+              colorCodeHasColor: true,
+              enableShadesSelection: false,
+              wheelDiameter: 220,
+              wheelWidth: 24,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Apply'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (confirmed == true && mounted) {
+      _setPreviewedThemeColor(_colorToHex(picked));
+    }
+  }
+
   Color get _activePreviewColor =>
       _colorFromHex(_previewedThemeColorHex) ??
       _defaultThemeColor(_previewedTemplate);
@@ -237,6 +280,7 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
                 _setPreviewedThemeColor(_colorToHex(color)),
             onCustomChanged: _handleCustomThemeColor,
             onUseTemplateDefault: () => _setPreviewedThemeColor(null),
+            onPickColor: _openColorPicker,
           ),
         ),
         Padding(
@@ -611,6 +655,7 @@ class _ThemeColorCard extends StatelessWidget {
   final ValueChanged<Color> onPresetSelected;
   final ValueChanged<String> onCustomChanged;
   final VoidCallback onUseTemplateDefault;
+  final VoidCallback onPickColor;
 
   const _ThemeColorCard({
     required this.controller,
@@ -620,6 +665,7 @@ class _ThemeColorCard extends StatelessWidget {
     required this.onPresetSelected,
     required this.onCustomChanged,
     required this.onUseTemplateDefault,
+    required this.onPickColor,
   });
 
   @override
@@ -706,7 +752,34 @@ class _ThemeColorCard extends StatelessWidget {
               errorText: isValid ? null : 'Use #RRGGBB',
               counterText: '',
               isDense: true,
-              prefixIcon: const Icon(Icons.tag_rounded, size: 16),
+              prefixIcon: GestureDetector(
+                onTap: onPickColor,
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Container(
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: _colorFromHex(selectedHex) ?? Colors.grey[300]!,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.black.withValues(alpha: 0.15),
+                        width: 0.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              suffixIcon: Tooltip(
+                message: 'Open color picker',
+                child: IconButton(
+                  icon: const Icon(Icons.palette_outlined, size: 18),
+                  onPressed: onPickColor,
+                  padding: EdgeInsets.zero,
+                  constraints:
+                      const BoxConstraints(minWidth: 36, minHeight: 36),
+                ),
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
               ),

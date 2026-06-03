@@ -907,13 +907,13 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
       await InvoiceService.insertInvoice(invoice);
 
+      if (!mounted) return true;
       setState(() {
         _invoice = invoice;
         isLoading = false;
       });
       _markFormClean();
 
-      if (!mounted) return true;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -931,8 +931,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       );
       return true;
     } catch (e) {
-      setState(() => isLoading = false);
       if (!mounted) return false;
+      setState(() => isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error creating invoice: $e')),
       );
@@ -3409,13 +3409,14 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
       final refreshedInvoice =
           await InvoiceService.getInvoiceById(updatedInvoice.id);
+
+      if (!mounted) return true;
       setState(() {
         _invoice = refreshedInvoice ?? updatedInvoice;
         isLoading = false;
       });
       _markFormClean();
 
-      if (!mounted) return true;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -3433,8 +3434,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       );
       return true;
     } catch (e) {
-      setState(() => isLoading = false);
       if (!mounted) return false;
+      setState(() => isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error updating invoice: $e')),
       );
@@ -3771,7 +3772,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   const SizedBox(width: 12),
                   ElevatedButton.icon(
                     onPressed: () async {
-                      if (await _confirmLeaveIfDirty()) {
+                      if (await _confirmLeaveIfDirty() && mounted) {
                         widget.onCreateNewInvoice?.call();
                         await resetValues('Invoice');
                       }

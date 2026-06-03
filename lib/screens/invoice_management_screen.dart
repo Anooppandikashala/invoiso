@@ -1720,6 +1720,7 @@ class _InvoiceManagementScreenState
                           '${invoice.currencySymbol} ${invoice.outstandingBalance.toStringAsFixed(2)}',
                           style: TextStyle(
                             fontSize: 14,
+                            overflow: TextOverflow.ellipsis,
                             fontWeight: FontWeight.w600,
                             color:
                                 invoice.paymentStatus == PaymentStatus.partial

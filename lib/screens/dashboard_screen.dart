@@ -2191,19 +2191,27 @@ class _DashboardHomeState extends State<DashboardHome> {
                       '$_currencySymbol ${_fmtAmt(totalRevenue)}',
                       Icons.account_balance_wallet_outlined,
                       const Color(0xFF6A1B9A)),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 10),
                   _buildKpiCard(
                       'Outstanding',
                       '$_currencySymbol ${_fmtAmt(totalOutstanding)}',
                       Icons.hourglass_top_outlined,
                       const Color(0xFFC62828)),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 10),
                   _buildKpiCard('Total Invoices', totalInvoices.toString(),
                       Icons.receipt_long_outlined, const Color(0xFFE65100)),
-                  const SizedBox(width: 14),
-                  _buildKpiCard('Overdue', overdueInvoices.length.toString(),
-                      Icons.warning_amber_outlined, const Color(0xFFB71C1C),
-                      alert: overdueInvoices.isNotEmpty),
+                  const SizedBox(width: 10),
+                  _buildKpiCard(
+                      'Customers',
+                      totalCustomers.toString(),
+                      Icons.people_outline,
+                      const Color(0xFF1565C0)),
+                  const SizedBox(width: 10),
+                  _buildKpiCard(
+                    'Products',
+                    totalProducts.toString(),
+                    Icons.inventory_2_outlined,
+                    const Color(0xFF2E7D32)),
                 ],
               ),
               const SizedBox(height: 20),
@@ -2232,6 +2240,10 @@ class _DashboardHomeState extends State<DashboardHome> {
                       children: [
                         if (dueSoonInvoices.isNotEmpty) ...[
                           _buildDueSoonCard(),
+                          const SizedBox(height: 14),
+                        ],
+                        if (overdueInvoices.isNotEmpty) ...[
+                          _buildOverdueCompactCard(),
                           const SizedBox(height: 14),
                         ],
                         if (outOfStockProducts.isNotEmpty) ...[
@@ -2285,6 +2297,13 @@ class _DashboardHomeState extends State<DashboardHome> {
                   const SizedBox(width: 12),
                   _buildKpiCard('Customers', totalCustomers.toString(),
                       Icons.people_outline, const Color(0xFF1565C0)),
+                  const SizedBox(width: 12),
+                  _buildKpiCard(
+                    'Products',
+                    totalProducts.toString(),
+                    Icons.inventory_2_outlined,
+                    const Color(0xFF2E7D32),
+                  ),
                 ],
               ),
               const SizedBox(height: 20),
@@ -3258,7 +3277,6 @@ class _DashboardHomeState extends State<DashboardHome> {
                               ],
                             ),
                           ),
-                          const SizedBox(height: 14),
                           Expanded(
                             child: Row(
                               children: [
@@ -3275,6 +3293,24 @@ class _DashboardHomeState extends State<DashboardHome> {
                                   Icons.warning_amber_outlined,
                                   const Color(0xFFB71C1C),
                                   alert: overdueInvoices.isNotEmpty,
+                                ),
+                              ],
+                            ),
+                          ),
+                          Expanded(
+                            child: Row(
+                              children: [
+                                _buildKpiCard(
+                                    'Customers',
+                                    totalCustomers.toString(),
+                                    Icons.people_outline,
+                                    const Color(0xFF1565C0)),
+                                const SizedBox(width: 14),
+                                _buildKpiCard(
+                                  'Products',
+                                  totalProducts.toString(),
+                                  Icons.inventory_2_outlined,
+                                  const Color(0xFF2E7D32),
                                 ),
                               ],
                             ),

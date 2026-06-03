@@ -38,6 +38,7 @@ dependencies:
   flutter_svg: ^2.0.10+1
   image: ^4.2.0
   qr: ^3.0.1
+  flex_color_picker: ^3.6.0
 
 dev_dependencies:
   flutter_test:
