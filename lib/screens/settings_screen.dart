@@ -337,7 +337,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
-        centerTitle: true,
+        centerTitle: false,
       ),
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1088,7 +1088,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
-        centerTitle: true,
+        centerTitle: false,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(32),

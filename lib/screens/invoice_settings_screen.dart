@@ -152,7 +152,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
           title: const Text('Invoice Settings'),
           backgroundColor: Theme.of(context).primaryColor,
           foregroundColor: Colors.white,
-          centerTitle: true,
+          centerTitle: false,
         ),
         body: const Center(child: CircularProgressIndicator()),
       );
@@ -165,7 +165,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
-        centerTitle: true,
+        centerTitle: false,
       ),
       body: Center(
         child: SingleChildScrollView(

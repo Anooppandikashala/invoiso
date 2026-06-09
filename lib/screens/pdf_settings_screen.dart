@@ -230,6 +230,7 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
+        centerTitle: false,
       ),
       backgroundColor: Colors.grey[50],
       body: LayoutBuilder(

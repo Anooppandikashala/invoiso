@@ -451,7 +451,6 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         _bankAccounts = bankAccounts;
         _selectedBankAccount = preselectedBank;
         _showGstFields = showGst;
-        if (!showGst) _isTaxEnabled = false;
         _fractionalQuantity = fractionalQty;
         _showQuantity = showQuantity;
         _showPreviousBalance = showPrevBalance;
@@ -3210,9 +3209,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Enable Tax toggle (only when GST fields are enabled)
-                          if (_showGstFields) ...[
-                            Row(
+                          Row(
                               //mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 const Flexible(
@@ -3236,7 +3233,6 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                 ),
                               ],
                             ),
-                          ],
                           if (_isTaxEnabled) ...[
                             const SizedBox(height: 8),
                             // Global / Per Item selector
