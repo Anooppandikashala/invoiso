@@ -154,6 +154,7 @@ function initScreenshots() {
     { src: 'template_executive.png',             text: 'Executive Invoice Template',    alt: 'Executive PDF invoice template with blue header block and professional layout \u2014 Invoiso',             category: 'PDF' },
     { src: 'template_modern.png',                text: 'Modern Invoice Template',       alt: 'Modern PDF invoice template with blue header block and professional layout \u2014 Invoiso',             category: 'PDF' },
     { src: 'template_minimal.png',               text: 'Minimal Invoice Template',      alt: 'Minimal PDF invoice template \u2014 clean, simple and distraction-free design \u2014 Invoiso',           category: 'PDF' },
+    { src: 'template_compact_a6.png',            text: 'A6 Size Compact Invoice Template', alt: 'Compact PDF invoice template \u2014 Space efficient receipt layout design \u2014 Invoiso',           category: 'PDF' },
     { src: 'customer_list.png',                  text: 'Customer Management Page',      alt: 'Customer management screen in Invoiso showing client list with search, sort and edit options',       category: 'Clients' },
     { src: 'edit_customer.png',                  text: 'Customer Editing Page',         alt: 'Edit customer details in Invoiso \u2014 name, email, phone, address and GSTIN fields',                  category: 'Clients' },
     { src: 'product_list.png',                   text: 'Product Management Page',       alt: 'Product management screen in Invoiso showing items with price, stock and HSN code',                  category: 'Products' },

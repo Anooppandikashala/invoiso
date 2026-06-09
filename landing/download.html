@@ -1016,9 +1016,9 @@
         border: 1px solid rgba(79,142,247,0.3);
         border-radius: 20px;
         box-shadow: 0 0 0 1px rgba(255,255,255,0.04), 0 24px 80px rgba(0,0,0,0.6);
-        max-width: 460px;
+        max-width: 560px;
         width: 100%;
-        padding: 32px 28px 28px;
+        padding: 32px 32px 28px;
         position: relative;
         transform: translateY(20px) scale(0.97);
         transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
@@ -1152,6 +1152,47 @@
         color: #fff;
       }
       .welcome-star-btn .fa-star { color: #fbbf24; }
+
+      .welcome-support-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+      }
+      .welcome-support-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        flex: 1;
+        justify-content: center;
+        min-width: 140px;
+      }
+      .welcome-support-btn.bmc {
+        background: rgba(255,221,0,0.12);
+        border: 1px solid rgba(255,221,0,0.3);
+        color: #fbbf24;
+      }
+      .welcome-support-btn.bmc:hover {
+        background: rgba(255,221,0,0.22);
+        border-color: rgba(255,221,0,0.5);
+        color: #fde68a;
+      }
+      .welcome-support-btn.gh-sponsor {
+        background: rgba(234,74,170,0.1);
+        border: 1px solid rgba(234,74,170,0.25);
+        color: #f472b6;
+      }
+      .welcome-support-btn.gh-sponsor:hover {
+        background: rgba(234,74,170,0.2);
+        border-color: rgba(234,74,170,0.45);
+        color: #fbcfe8;
+      }
 
       .welcome-got-it {
         display: block;
@@ -1900,7 +1941,27 @@
           </div>
         </div>
 
-        <button class="welcome-got-it" id="welcomeGotIt">Got it!</button>
+        <div class="welcome-section">
+          <div class="welcome-section-icon" style="background:rgba(255,221,0,0.08);border-color:rgba(255,221,0,0.2);color:#fbbf24;">
+            <i class="fas fa-heart" aria-hidden="true"></i>
+          </div>
+          <div>
+            <p class="welcome-section-label">Support the Project</p>
+            <div class="welcome-section-body">
+              Invoiso is free and open source. If it saves you time, consider supporting its development — even a small contribution keeps it going.
+              <div class="welcome-support-row">
+                <a href="https://buymeacoffee.com/anoopp" target="_blank" rel="noopener noreferrer" class="welcome-support-btn bmc">
+                  <i class="fas fa-coffee" aria-hidden="true"></i> Buy Me a Coffee
+                </a>
+                <a href="https://github.com/sponsors/anooppandikashala" target="_blank" rel="noopener noreferrer" class="welcome-support-btn gh-sponsor">
+                  <i class="fas fa-heart" aria-hidden="true"></i> GitHub Sponsors
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button class="welcome-got-it" id="welcomeGotIt">Got it, let's go!</button>
       </div>
     </div>
 
