@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:invoiso/common.dart';
 
@@ -15,7 +19,8 @@ class InvoiceSettingsScreen extends StatefulWidget {
 
 class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
   final TextEditingController invoicePrefixController = TextEditingController();
-  final TextEditingController additionalInfoController = TextEditingController();
+  final TextEditingController additionalInfoController =
+      TextEditingController();
   final TextEditingController thankYouController = TextEditingController();
   final TextEditingController quantityLabelController = TextEditingController();
 
@@ -28,6 +33,9 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
   bool _showQuantity = true;
   bool _showDiscount = true;
   bool _showTypeTag = true;
+  bool _showPreviousBalance = false;
+  String? _signatureBase64;
+  String _signaturePosition = 'left';
   bool _isLoading = true;
 
   @override
@@ -50,6 +58,9 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     final showQuantity = await SettingsService.getShowQuantity();
     final showDiscount = await SettingsService.getShowDiscount();
     final showTypeTag = await SettingsService.getShowTypeTag();
+    final showPrevBalance = await SettingsService.getShowPreviousBalance();
+    final sigImage = await SettingsService.getSignatureImage();
+    final sigPosition = await SettingsService.getSignaturePosition();
 
     setState(() {
       _selectedLogoPosition = position ?? 'left';
@@ -65,24 +76,37 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
       _showQuantity = showQuantity;
       _showDiscount = showDiscount;
       _showTypeTag = showTypeTag;
+      _showPreviousBalance = showPrevBalance;
+      _signatureBase64 = sigImage;
+      _signaturePosition = sigPosition;
       _isLoading = false;
     });
   }
 
   Future<void> _saveSettings() async {
     await SettingsService.setSetting(SettingKey.logoSize, _selectedLogoSize);
-    await SettingsService.setSetting(SettingKey.logoPosition, _selectedLogoPosition);
-    await SettingsService.setSetting(SettingKey.invoicePrefix, invoicePrefixController.text);
-    await SettingsService.setSetting(SettingKey.additionalInfo, additionalInfoController.text);
-    await SettingsService.setSetting(SettingKey.thankYouNote, thankYouController.text);
+    await SettingsService.setSetting(
+        SettingKey.logoPosition, _selectedLogoPosition);
+    await SettingsService.setSetting(
+        SettingKey.invoicePrefix, invoicePrefixController.text);
+    await SettingsService.setSetting(
+        SettingKey.additionalInfo, additionalInfoController.text);
+    await SettingsService.setSetting(
+        SettingKey.thankYouNote, thankYouController.text);
     await SettingsService.setCurrency(_selectedCurrencyCode);
     await SettingsService.setDateFormat(_selectedDateFormat);
-    await SettingsService.setSetting(SettingKey.showGstFields, _showGstFields.toString());
-    await SettingsService.setSetting(SettingKey.fractionalQuantity, _fractionalQuantity.toString());
-    await SettingsService.setSetting(SettingKey.quantityLabel, quantityLabelController.text.trim());
+    await SettingsService.setSetting(
+        SettingKey.showGstFields, _showGstFields.toString());
+    await SettingsService.setSetting(
+        SettingKey.fractionalQuantity, _fractionalQuantity.toString());
+    await SettingsService.setSetting(
+        SettingKey.quantityLabel, quantityLabelController.text.trim());
     await SettingsService.setShowQuantity(_showQuantity);
     await SettingsService.setShowDiscount(_showDiscount);
     await SettingsService.setShowTypeTag(_showTypeTag);
+    await SettingsService.setShowPreviousBalance(_showPreviousBalance);
+    await SettingsService.setSetting(
+        SettingKey.signaturePosition, _signaturePosition);
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -91,6 +115,32 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
         behavior: SnackBarBehavior.floating,
       ),
     );
+  }
+
+  Future<void> _pickSignature() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['png', 'jpg', 'jpeg'],
+    );
+    if (result == null || result.files.single.path == null) return;
+    final bytes = await File(result.files.single.path!).readAsBytes();
+    if (bytes.length > 2 * 1024 * 1024) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Signature image must be less than 2 MB.')),
+        );
+      }
+      return;
+    }
+    final base64Sig = base64Encode(bytes);
+    await SettingsService.setSignatureImage(base64Sig);
+    setState(() => _signatureBase64 = base64Sig);
+  }
+
+  Future<void> _clearSignature() async {
+    await SettingsService.setSignatureImage('');
+    setState(() => _signatureBase64 = null);
   }
 
   @override
@@ -125,7 +175,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
             child: Card(
               elevation: 4,
               color: Colors.white,
-              shadowColor: Colors.black.withValues(alpha:0.1),
+              shadowColor: Colors.black.withValues(alpha: 0.1),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -165,7 +215,6 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                           spacing: 24,
                           runSpacing: 24,
                           children: [
-
                             // Invoice Prefix
                             SizedBox(
                               width: fieldWidth,
@@ -175,17 +224,20 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                 decoration: InputDecoration(
                                   labelText: 'Invoice Prefix',
                                   prefixIcon:
-                                  const Icon(Icons.confirmation_number),
+                                      const Icon(Icons.confirmation_number),
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderRadius: BorderRadius.circular(
+                                        AppBorderRadius.xsmall),
                                   ),
                                   enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderRadius: BorderRadius.circular(
+                                        AppBorderRadius.xsmall),
                                     borderSide:
-                                    BorderSide(color: Colors.grey[300]!),
+                                        BorderSide(color: Colors.grey[300]!),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderRadius: BorderRadius.circular(
+                                        AppBorderRadius.xsmall),
                                     borderSide: BorderSide(
                                       color: Theme.of(context).primaryColor,
                                       width: 2,
@@ -202,23 +254,29 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                             SizedBox(
                               width: fieldWidth,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 10),
                                 decoration: BoxDecoration(
                                   color: Colors.blue[50],
-                                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                  borderRadius: BorderRadius.circular(
+                                      AppBorderRadius.xsmall),
                                   border: Border.all(color: Colors.blue[200]!),
                                 ),
                                 child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Icon(Icons.info_outline, size: 16, color: Colors.blue[700]),
+                                    Icon(Icons.info_outline,
+                                        size: 16, color: Colors.blue[700]),
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
                                         'Invoice numbers are auto-generated and cannot be edited manually. '
-                                            'Each new invoice number is derived from the last invoice number stored in the database — including soft-deleted invoices. '
-                                            'If you created test invoices and deleted them, the counter will continue from where it left off.',
-                                        style: TextStyle(fontSize: 12, color: Colors.blue[800], height: 1.4),
+                                        'Each new invoice number is derived from the last invoice number stored in the database — including soft-deleted invoices. '
+                                        'If you created test invoices and deleted them, the counter will continue from where it left off.',
+                                        style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.blue[800],
+                                            height: 1.4),
                                       ),
                                     ),
                                   ],
@@ -233,15 +291,18 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                 decoration: InputDecoration(
                                   labelText: 'Company Logo Position',
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderRadius: BorderRadius.circular(
+                                        AppBorderRadius.xsmall),
                                   ),
                                   enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderRadius: BorderRadius.circular(
+                                        AppBorderRadius.xsmall),
                                     borderSide:
-                                    BorderSide(color: Colors.grey[300]!),
+                                        BorderSide(color: Colors.grey[300]!),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderRadius: BorderRadius.circular(
+                                        AppBorderRadius.xsmall),
                                     borderSide: BorderSide(
                                       color: Theme.of(context).primaryColor,
                                       width: 2,
@@ -272,14 +333,18 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                 decoration: InputDecoration(
                                   labelText: 'Company Logo Size',
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderRadius: BorderRadius.circular(
+                                        AppBorderRadius.xsmall),
                                   ),
                                   enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                                    borderSide: BorderSide(color: Colors.grey[300]!),
+                                    borderRadius: BorderRadius.circular(
+                                        AppBorderRadius.xsmall),
+                                    borderSide:
+                                        BorderSide(color: Colors.grey[300]!),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderRadius: BorderRadius.circular(
+                                        AppBorderRadius.xsmall),
                                     borderSide: BorderSide(
                                       color: Theme.of(context).primaryColor,
                                       width: 2,
@@ -289,9 +354,12 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                   fillColor: Colors.grey[50],
                                 ),
                                 items: const [
-                                  DropdownMenuItem(value: 'small',  child: Text('Small')),
-                                  DropdownMenuItem(value: 'medium', child: Text('Medium')),
-                                  DropdownMenuItem(value: 'large',  child: Text('Large')),
+                                  DropdownMenuItem(
+                                      value: 'small', child: Text('Small')),
+                                  DropdownMenuItem(
+                                      value: 'medium', child: Text('Medium')),
+                                  DropdownMenuItem(
+                                      value: 'large', child: Text('Large')),
                                 ],
                                 onChanged: (value) {
                                   setState(() => _selectedLogoSize = value!);
@@ -308,17 +376,22 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                 decoration: InputDecoration(
                                   labelText: 'Quantity Column Label',
                                   hintText: 'e.g. Words, Hours, Units',
-                                  helperText: 'Leave blank to use default "Qty"',
+                                  helperText:
+                                      'Leave blank to use default "Qty"',
                                   prefixIcon: const Icon(Icons.tag),
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderRadius: BorderRadius.circular(
+                                        AppBorderRadius.xsmall),
                                   ),
                                   enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                                    borderSide: BorderSide(color: Colors.grey[300]!),
+                                    borderRadius: BorderRadius.circular(
+                                        AppBorderRadius.xsmall),
+                                    borderSide:
+                                        BorderSide(color: Colors.grey[300]!),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderRadius: BorderRadius.circular(
+                                        AppBorderRadius.xsmall),
                                     borderSide: BorderSide(
                                       color: Theme.of(context).primaryColor,
                                       width: 2,
@@ -340,14 +413,18 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                   labelText: 'Currency',
                                   prefixIcon: const Icon(Icons.attach_money),
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderRadius: BorderRadius.circular(
+                                        AppBorderRadius.xsmall),
                                   ),
                                   enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                                    borderSide: BorderSide(color: Colors.grey[300]!),
+                                    borderRadius: BorderRadius.circular(
+                                        AppBorderRadius.xsmall),
+                                    borderSide:
+                                        BorderSide(color: Colors.grey[300]!),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderRadius: BorderRadius.circular(
+                                        AppBorderRadius.xsmall),
                                     borderSide: BorderSide(
                                       color: Theme.of(context).primaryColor,
                                       width: 2,
@@ -359,7 +436,8 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                 items: SupportedCurrencies.all.map((c) {
                                   return DropdownMenuItem<String>(
                                     value: c.code,
-                                    child: Text('${c.symbol}  ${c.name} (${c.code})'),
+                                    child: Text(
+                                        '${c.symbol}  ${c.name} (${c.code})'),
                                   );
                                 }).toList(),
                                 onChanged: (value) {
@@ -379,14 +457,18 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                   labelText: 'Date Format',
                                   prefixIcon: const Icon(Icons.calendar_today),
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderRadius: BorderRadius.circular(
+                                        AppBorderRadius.xsmall),
                                   ),
                                   enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                                    borderSide: BorderSide(color: Colors.grey[300]!),
+                                    borderRadius: BorderRadius.circular(
+                                        AppBorderRadius.xsmall),
+                                    borderSide:
+                                        BorderSide(color: Colors.grey[300]!),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderRadius: BorderRadius.circular(
+                                        AppBorderRadius.xsmall),
                                     borderSide: BorderSide(
                                       color: Theme.of(context).primaryColor,
                                       width: 2,
@@ -413,7 +495,8 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                               child: Container(
                                 decoration: BoxDecoration(
                                   color: Colors.grey[50],
-                                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                  borderRadius: BorderRadius.circular(
+                                      AppBorderRadius.xsmall),
                                   border: Border.all(color: Colors.grey[300]!),
                                 ),
                                 child: SwitchListTile(
@@ -443,11 +526,13 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                               child: Container(
                                 decoration: BoxDecoration(
                                   color: Colors.grey[50],
-                                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                  borderRadius: BorderRadius.circular(
+                                      AppBorderRadius.xsmall),
                                   border: Border.all(color: Colors.grey[300]!),
                                 ),
                                 child: SwitchListTile(
-                                  title: const Text('Allow Fractional Quantities'),
+                                  title:
+                                      const Text('Allow Fractional Quantities'),
                                   subtitle: const Text(
                                     'Enable decimal quantities (e.g. 1.5 hrs, 0.5 kg)',
                                   ),
@@ -473,7 +558,8 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                               child: Container(
                                 decoration: BoxDecoration(
                                   color: Colors.grey[50],
-                                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                  borderRadius: BorderRadius.circular(
+                                      AppBorderRadius.xsmall),
                                   border: Border.all(color: Colors.grey[300]!),
                                 ),
                                 child: SwitchListTile(
@@ -503,7 +589,8 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                               child: Container(
                                 decoration: BoxDecoration(
                                   color: Colors.grey[50],
-                                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                  borderRadius: BorderRadius.circular(
+                                      AppBorderRadius.xsmall),
                                   border: Border.all(color: Colors.grey[300]!),
                                 ),
                                 child: SwitchListTile(
@@ -532,7 +619,8 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                               child: Container(
                                 decoration: BoxDecoration(
                                   color: Colors.grey[50],
-                                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                  borderRadius: BorderRadius.circular(
+                                      AppBorderRadius.xsmall),
                                   border: Border.all(color: Colors.grey[300]!),
                                 ),
                                 child: SwitchListTile(
@@ -555,6 +643,138 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                             ),
 
                             const SizedBox(height: 12),
+                            // Previous Balance Due Toggle
+                            SizedBox(
+                              width: constraints.maxWidth,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[50],
+                                  borderRadius: BorderRadius.circular(
+                                      AppBorderRadius.xsmall),
+                                  border: Border.all(color: Colors.grey[300]!),
+                                ),
+                                child: SwitchListTile(
+                                  title:
+                                      const Text('Show Previous Balance Due'),
+                                  subtitle: const Text(
+                                    'Show calculated prior outstanding balance on invoice PDFs',
+                                  ),
+                                  secondary: Icon(
+                                    Icons.account_balance_wallet_outlined,
+                                    color: _showPreviousBalance
+                                        ? Theme.of(context).primaryColor
+                                        : Colors.grey,
+                                  ),
+                                  value: _showPreviousBalance,
+                                  onChanged: (val) => setState(
+                                      () => _showPreviousBalance = val),
+                                  activeColor: Theme.of(context).primaryColor,
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 12),
+                            // Signature Image
+                            SizedBox(
+                              width: constraints.maxWidth,
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[50],
+                                  borderRadius: BorderRadius.circular(
+                                      AppBorderRadius.xsmall),
+                                  border: Border.all(color: Colors.grey[300]!),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('Signature Image',
+                                        style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500)),
+                                    const SizedBox(height: 4),
+                                    const Text(
+                                      'Printed on invoices as Authorised Signature',
+                                      style: TextStyle(
+                                          fontSize: 12, color: Colors.grey),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    if (_signatureBase64 != null &&
+                                        _signatureBase64!.isNotEmpty) ...[
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(4),
+                                        child: Image.memory(
+                                          base64Decode(_signatureBase64!),
+                                          height: 60,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                    ],
+                                    Row(
+                                      children: [
+                                        OutlinedButton.icon(
+                                          onPressed: _pickSignature,
+                                          icon: const Icon(
+                                              Icons.upload_outlined,
+                                              size: 16),
+                                          label: Text(_signatureBase64 !=
+                                                      null &&
+                                                  _signatureBase64!.isNotEmpty
+                                              ? 'Change Signature'
+                                              : 'Upload Signature'),
+                                        ),
+                                        if (_signatureBase64 != null &&
+                                            _signatureBase64!.isNotEmpty) ...[
+                                          const SizedBox(width: 8),
+                                          TextButton.icon(
+                                            onPressed: _clearSignature,
+                                            icon: const Icon(
+                                                Icons.delete_outline,
+                                                size: 16,
+                                                color: Colors.red),
+                                            label: const Text('Remove',
+                                                style: TextStyle(
+                                                    color: Colors.red)),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    DropdownButtonFormField<String>(
+                                      value: _signaturePosition,
+                                      decoration: InputDecoration(
+                                        labelText: 'Signature Position',
+                                        prefixIcon: const Icon(
+                                            Icons.format_align_left_outlined),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                              AppBorderRadius.xsmall),
+                                        ),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                              AppBorderRadius.xsmall),
+                                          borderSide: BorderSide(
+                                              color: Colors.grey[300]!),
+                                        ),
+                                        filled: true,
+                                        fillColor: Colors.white,
+                                      ),
+                                      items: const [
+                                        DropdownMenuItem(
+                                            value: 'left', child: Text('Left')),
+                                        DropdownMenuItem(
+                                            value: 'right',
+                                            child: Text('Right')),
+                                      ],
+                                      onChanged: (val) => setState(
+                                          () => _signaturePosition = val!),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 12),
                             // Additional Info
                             SizedBox(
                               width: constraints.maxWidth,
@@ -567,15 +787,18 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                   prefixIcon: const Icon(Icons.info_outline),
                                   alignLabelWithHint: true,
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderRadius: BorderRadius.circular(
+                                        AppBorderRadius.xsmall),
                                   ),
                                   enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderRadius: BorderRadius.circular(
+                                        AppBorderRadius.xsmall),
                                     borderSide:
-                                    BorderSide(color: Colors.grey[300]!),
+                                        BorderSide(color: Colors.grey[300]!),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderRadius: BorderRadius.circular(
+                                        AppBorderRadius.xsmall),
                                     borderSide: BorderSide(
                                       color: Theme.of(context).primaryColor,
                                       width: 2,
@@ -598,18 +821,21 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                 decoration: InputDecoration(
                                   labelText: 'Thank You Note',
                                   prefixIcon:
-                                  const Icon(Icons.favorite_outline),
+                                      const Icon(Icons.favorite_outline),
                                   alignLabelWithHint: true,
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderRadius: BorderRadius.circular(
+                                        AppBorderRadius.xsmall),
                                   ),
                                   enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderRadius: BorderRadius.circular(
+                                        AppBorderRadius.xsmall),
                                     borderSide:
-                                    BorderSide(color: Colors.grey[300]!),
+                                        BorderSide(color: Colors.grey[300]!),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderRadius: BorderRadius.circular(
+                                        AppBorderRadius.xsmall),
                                     borderSide: BorderSide(
                                       color: Theme.of(context).primaryColor,
                                       width: 2,
@@ -636,8 +862,10 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
                             color: primaryColor.withValues(alpha: 0.06),
-                            borderRadius: BorderRadius.circular(AppBorderRadius.small),
-                            border: Border.all(color: primaryColor.withValues(alpha: 0.2)),
+                            borderRadius:
+                                BorderRadius.circular(AppBorderRadius.small),
+                            border: Border.all(
+                                color: primaryColor.withValues(alpha: 0.2)),
                           ),
                           child: Row(
                             children: [
@@ -645,9 +873,11 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
                                   color: primaryColor.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(AppBorderRadius.small),
+                                  borderRadius: BorderRadius.circular(
+                                      AppBorderRadius.small),
                                 ),
-                                child: Icon(Icons.tune_rounded, size: 18, color: primaryColor),
+                                child: Icon(Icons.tune_rounded,
+                                    size: 18, color: primaryColor),
                               ),
                               const SizedBox(width: 14),
                               Expanded(
@@ -677,7 +907,8 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                               const SizedBox(width: 12),
                               OutlinedButton.icon(
                                 onPressed: widget.onNavigateToCustomization,
-                                icon: const Icon(Icons.arrow_forward_rounded, size: 14),
+                                icon: const Icon(Icons.arrow_forward_rounded,
+                                    size: 14),
                                 label: const Text(
                                   'See Options',
                                   style: TextStyle(
@@ -687,12 +918,17 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                 ),
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: primaryColor,
-                                  side: BorderSide(color: primaryColor.withValues(alpha: 0.5)),
-                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                  side: BorderSide(
+                                      color:
+                                          primaryColor.withValues(alpha: 0.5)),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 14, vertical: 10),
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.small),
+                                    borderRadius: BorderRadius.circular(
+                                        AppBorderRadius.small),
                                   ),
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
                                 ),
                               ),
                             ],
@@ -712,10 +948,12 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                           backgroundColor: Theme.of(context).primaryColor,
                           foregroundColor: Colors.white,
                           elevation: 2,
-                          shadowColor:
-                          Theme.of(context).primaryColor.withValues(alpha:0.4),
+                          shadowColor: Theme.of(context)
+                              .primaryColor
+                              .withValues(alpha: 0.4),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                            borderRadius:
+                                BorderRadius.circular(AppBorderRadius.xsmall),
                           ),
                         ),
                         child: const Row(

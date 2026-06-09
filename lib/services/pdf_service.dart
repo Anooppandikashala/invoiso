@@ -3,12 +3,14 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:intl/intl.dart';
 import 'package:open_file/open_file.dart';
 import 'package:printing/printing.dart';
 import 'package:qr/qr.dart';
 import 'package:invoiso/constants.dart';
 import 'package:invoiso/database/company_info_service.dart';
+import 'package:invoiso/database/invoice_service.dart';
 import 'package:invoiso/database/settings_service.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:pdf/pdf.dart';
@@ -42,6 +44,12 @@ class PdfGenerationSettings {
   final String datePattern;
   final bool showFooterBranding;
   final PdfColor? themeColor;
+  final Uint8List? signatureBytes;
+  final String signaturePosition;
+  final bool showPreviousBalance;
+  final PdfPageFormat pageFormat;
+  final bool showTotalQuantity;
+  final List<pw.Font> fontFallback;
 
   const PdfGenerationSettings({
     required this.company,
@@ -63,6 +71,12 @@ class PdfGenerationSettings {
     required this.datePattern,
     required this.showFooterBranding,
     required this.themeColor,
+    required this.showPreviousBalance,
+    required this.pageFormat,
+    required this.showTotalQuantity,
+    required this.fontFallback,
+    this.signatureBytes,
+    this.signaturePosition = 'left',
   });
 }
 
@@ -116,15 +130,31 @@ class PDFService {
       SettingsService.getSetting(SettingKey.thankYouNote), // 15
       SettingsService.getShowInvoiceFooterBranding(), // 16
       SettingsService.getPdfThemeColor(), // 17
+      SettingsService.getSignatureImage(), // 18
+      SettingsService.getSignaturePosition(), // 19
+      SettingsService.getShowPreviousBalance(), // 20
+      SettingsService.getPageSize(), // 21
+      SettingsService.getShowTotalQuantity(), // 22
     ]);
 
     final rawPrefix = (results[2] as String?) ?? 'INV';
+    final pageSize = results[21] as PageSize;
+    final template = effectiveInvoiceTemplateForPageSize(
+      results[1] as InvoiceTemplate,
+      pageSize,
+    );
     final base64Logo = results[14] as String?;
     final themeColorHex = results[17] as String?;
+    final base64Sig = results[18] as String?;
+    final sigBytes = (base64Sig != null && base64Sig.isNotEmpty)
+        ? base64Decode(base64Sig)
+        : null;
+    final lkrFontData = await rootBundle.load('assets/fonts/lklug.ttf');
+    final lkrFont = pw.Font.ttf(lkrFontData);
 
     return PdfGenerationSettings(
       company: results[0] as CompanyInfo?,
-      template: results[1] as InvoiceTemplate,
+      template: template,
       invoicePrefix: rawPrefix.isNotEmpty ? '$rawPrefix-' : '',
       showGst: results[3] as bool,
       showQuantity: results[4] as bool,
@@ -143,17 +173,27 @@ class PDFService {
       showFooterBranding: results[16] as bool,
       themeColor:
           themeColorHex == null ? null : PdfColor.fromHex(themeColorHex),
+      signatureBytes: sigBytes,
+      signaturePosition: results[19] as String,
+      showPreviousBalance: results[20] as bool,
+      pageFormat: _pageSizeToFormat(pageSize),
+      showTotalQuantity: results[22] as bool,
+      fontFallback: [lkrFont],
     );
   }
 
   /// Build a PDF document using pre-fetched settings — no DB reads.
   /// Use this in batch exports to avoid redundant settings fetches per invoice.
   static pw.Document generateInvoicePDFWithSettings(
-    Invoice invoice,
-    PdfGenerationSettings s,
-  ) {
+      Invoice invoice, PdfGenerationSettings s,
+      {double previousBalanceDue = 0.0}) {
     final pdf = pw.Document();
     final currencySymbol = invoice.currencySymbol;
+    final effectivePreviousBalance =
+        s.showPreviousBalance ? previousBalanceDue : 0.0;
+    final pdfTheme = s.fontFallback.isEmpty
+        ? null
+        : pw.ThemeData.withFont(fontFallback: s.fontFallback);
 
     String? effectiveUpiId = invoice.upiId;
     if (effectiveUpiId == null || effectiveUpiId.trim().isEmpty) {
@@ -200,6 +240,11 @@ class PDFService {
           thankYouNote: s.thankYouNote,
           showFooterBranding: s.showFooterBranding,
           themeColor: s.themeColor,
+          signatureBytes: s.signatureBytes,
+          signaturePosition: s.signaturePosition,
+          previousBalanceDue: effectivePreviousBalance,
+          pageFormat: s.pageFormat,
+          pdfTheme: pdfTheme,
         ));
       case InvoiceTemplate.modern:
         pdf.addPage(_buildModernTemplate(
@@ -222,6 +267,11 @@ class PDFService {
           thankYouNote: s.thankYouNote,
           showFooterBranding: s.showFooterBranding,
           themeColor: s.themeColor,
+          signatureBytes: s.signatureBytes,
+          signaturePosition: s.signaturePosition,
+          previousBalanceDue: effectivePreviousBalance,
+          pageFormat: s.pageFormat,
+          pdfTheme: pdfTheme,
         ));
       case InvoiceTemplate.minimal:
         pdf.addPage(_buildMinimalTemplate(
@@ -244,6 +294,11 @@ class PDFService {
           thankYouNote: s.thankYouNote,
           showFooterBranding: s.showFooterBranding,
           themeColor: s.themeColor,
+          signatureBytes: s.signatureBytes,
+          signaturePosition: s.signaturePosition,
+          previousBalanceDue: effectivePreviousBalance,
+          pageFormat: s.pageFormat,
+          pdfTheme: pdfTheme,
         ));
       case InvoiceTemplate.executive:
         pdf.addPage(_buildExecutiveTemplate(
@@ -266,6 +321,39 @@ class PDFService {
           thankYouNote: s.thankYouNote,
           showFooterBranding: s.showFooterBranding,
           themeColor: s.themeColor,
+          signatureBytes: s.signatureBytes,
+          signaturePosition: s.signaturePosition,
+          previousBalanceDue: effectivePreviousBalance,
+          pageFormat: s.pageFormat,
+          pdfTheme: pdfTheme,
+        ));
+      case InvoiceTemplate.compact:
+        pdf.addPage(_buildCompactTemplate(
+          invoice,
+          s.company,
+          currencySymbol,
+          s.invoicePrefix,
+          upiId: effectiveUpiId,
+          showUpiQr: showUpiQr,
+          showGst: s.showGst,
+          showQuantity: s.showQuantity,
+          showDiscount: s.showDiscount,
+          showTypeTag: s.showTypeTag,
+          businessType: s.businessType,
+          bankAccount: effectiveBank,
+          datePattern: s.datePattern,
+          logoPosition: s.logoPosition,
+          logoSizePx: s.logoSizePx,
+          logoBytes: s.logoBytes,
+          thankYouNote: s.thankYouNote,
+          showFooterBranding: s.showFooterBranding,
+          themeColor: s.themeColor,
+          signatureBytes: s.signatureBytes,
+          signaturePosition: s.signaturePosition,
+          previousBalanceDue: effectivePreviousBalance,
+          showTotalQuantity: s.showTotalQuantity,
+          pageFormat: s.pageFormat,
+          pdfTheme: pdfTheme,
         ));
     }
     return pdf;
@@ -274,7 +362,14 @@ class PDFService {
   static Future<pw.Document> generateInvoicePDF(Invoice invoice,
       {String datePattern = 'dd/MM/yyyy'}) async {
     final settings = await fetchPdfSettings(datePattern: datePattern);
-    return generateInvoicePDFWithSettings(invoice, settings);
+    final previousBalanceDue = settings.showPreviousBalance
+        ? await InvoiceService.getPreviousBalanceDueForInvoice(invoice)
+        : 0.0;
+    return generateInvoicePDFWithSettings(
+      invoice,
+      settings,
+      previousBalanceDue: previousBalanceDue,
+    );
   }
 
   static pw.MultiPage _buildClassicTemplate(
@@ -297,13 +392,21 @@ class PDFService {
     String thankYouNote = '',
     bool showFooterBranding = true,
     PdfColor? themeColor,
+    Uint8List? signatureBytes,
+    String signaturePosition = 'left',
+    double previousBalanceDue = 0.0,
+    PdfPageFormat pageFormat = PdfPageFormat.a4,
+    pw.ThemeData? pdfTheme,
   }) {
     final accentColor = themeColor ?? PdfColors.indigo900;
     final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
+    final signatureImage =
+        signatureBytes != null ? pw.MemoryImage(signatureBytes) : null;
     final thankyouNote = thankYouNote;
 
     return pw.MultiPage(
-      pageFormat: PdfPageFormat.a4,
+      pageFormat: pageFormat,
+      theme: pdfTheme,
       margin: const pw.EdgeInsets.all(36),
       footer: (context) => pw.Container(
         alignment: pw.Alignment.centerRight,
@@ -456,10 +559,21 @@ class PDFService {
           children: [
             pw.Expanded(child: _buildAdditionalNotes(invoice)),
             pw.SizedBox(width: 20),
-            _buildEnhancedTotals(invoice, PdfColors.grey200, PdfColors.black,
-                accentColor, currencySymbol),
+            _buildEnhancedTotals(
+              invoice,
+              PdfColors.grey200,
+              PdfColors.black,
+              accentColor,
+              currencySymbol,
+              previousBalanceDue: previousBalanceDue,
+            ),
           ],
         ),
+
+        if (signatureImage != null) ...[
+          pw.SizedBox(height: 16),
+          _buildSignatureWidget(signatureImage, signaturePosition),
+        ],
 
         if (showUpiQr && upiId != null || bankAccount != null)
           pw.SizedBox(height: 12),
@@ -522,13 +636,21 @@ class PDFService {
     String thankYouNote = '',
     bool showFooterBranding = true,
     PdfColor? themeColor,
+    Uint8List? signatureBytes,
+    String signaturePosition = 'left',
+    double previousBalanceDue = 0.0,
+    PdfPageFormat pageFormat = PdfPageFormat.a4,
+    pw.ThemeData? pdfTheme,
   }) {
     final accentColor = themeColor ?? PdfColors.grey700;
     final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
+    final signatureImage =
+        signatureBytes != null ? pw.MemoryImage(signatureBytes) : null;
     final thankyouNote = thankYouNote;
 
     return pw.MultiPage(
-      pageFormat: PdfPageFormat.a4,
+      pageFormat: pageFormat,
+      theme: pdfTheme,
       margin:
           const pw.EdgeInsets.all(45), // Increased margin for more whitespace
       footer: (context) => pw.Container(
@@ -676,10 +798,21 @@ class PDFService {
           children: [
             pw.Expanded(child: _buildAdditionalNotes(invoice)),
             pw.SizedBox(width: 20),
-            _buildEnhancedTotals(invoice, PdfColors.grey200, PdfColors.black,
-                accentColor, currencySymbol),
+            _buildEnhancedTotals(
+              invoice,
+              PdfColors.grey200,
+              PdfColors.black,
+              accentColor,
+              currencySymbol,
+              previousBalanceDue: previousBalanceDue,
+            ),
           ],
         ),
+
+        if (signatureImage != null) ...[
+          pw.SizedBox(height: 16),
+          _buildSignatureWidget(signatureImage, signaturePosition),
+        ],
 
         if (showUpiQr && upiId != null || bankAccount != null)
           pw.SizedBox(height: 12),
@@ -743,13 +876,21 @@ class PDFService {
     String thankYouNote = '',
     bool showFooterBranding = true,
     PdfColor? themeColor,
+    Uint8List? signatureBytes,
+    String signaturePosition = 'left',
+    double previousBalanceDue = 0.0,
+    PdfPageFormat pageFormat = PdfPageFormat.a4,
+    pw.ThemeData? pdfTheme,
   }) {
     final accentColor = themeColor ?? PdfColors.blue600;
     final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
+    final signatureImage =
+        signatureBytes != null ? pw.MemoryImage(signatureBytes) : null;
     final thankyouNote = thankYouNote;
 
     return pw.MultiPage(
-      pageFormat: PdfPageFormat.a4,
+      pageFormat: pageFormat,
+      theme: pdfTheme,
       margin: const pw.EdgeInsets.all(0),
       footer: (context) => pw.Container(
         padding: const pw.EdgeInsets.symmetric(horizontal: 30, vertical: 8),
@@ -915,11 +1056,22 @@ class PDFService {
             children: [
               pw.Expanded(child: _buildAdditionalNotes(invoice)),
               pw.SizedBox(width: 20),
-              _buildEnhancedTotals(invoice, PdfColors.blue200, PdfColors.black,
-                  accentColor, currencySymbol),
+              _buildEnhancedTotals(
+                invoice,
+                PdfColors.blue200,
+                PdfColors.black,
+                accentColor,
+                currencySymbol,
+                previousBalanceDue: previousBalanceDue,
+              ),
             ],
           ),
         ),
+
+        if (signatureImage != null) ...[
+          pw.SizedBox(height: 16),
+          _buildSignatureWidget(signatureImage, signaturePosition),
+        ],
 
         if (showUpiQr && upiId != null || bankAccount != null)
           pw.SizedBox(height: 12),
@@ -990,9 +1142,16 @@ class PDFService {
     String thankYouNote = '',
     bool showFooterBranding = true,
     PdfColor? themeColor,
+    Uint8List? signatureBytes,
+    String signaturePosition = 'left',
+    double previousBalanceDue = 0.0,
+    PdfPageFormat pageFormat = PdfPageFormat.a4,
+    pw.ThemeData? pdfTheme,
   }) {
     final accentColor = themeColor ?? PdfColors.blueGrey800;
     final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
+    final signatureImage =
+        signatureBytes != null ? pw.MemoryImage(signatureBytes) : null;
 
     pw.Widget partyBlock(String title, List<String> lines,
         {pw.CrossAxisAlignment alignment = pw.CrossAxisAlignment.start}) {
@@ -1040,7 +1199,8 @@ class PDFService {
     ];
 
     return pw.MultiPage(
-      pageFormat: PdfPageFormat.a4,
+      pageFormat: pageFormat,
+      theme: pdfTheme,
       margin: const pw.EdgeInsets.all(34),
       footer: (context) => pw.Container(
         alignment: pw.Alignment.centerRight,
@@ -1141,10 +1301,20 @@ class PDFService {
           children: [
             pw.Expanded(child: _buildAdditionalNotes(invoice)),
             pw.SizedBox(width: 20),
-            _buildEnhancedTotals(invoice, PdfColors.grey200, PdfColors.black,
-                accentColor, currencySymbol),
+            _buildEnhancedTotals(
+              invoice,
+              PdfColors.grey200,
+              PdfColors.black,
+              accentColor,
+              currencySymbol,
+              previousBalanceDue: previousBalanceDue,
+            ),
           ],
         ),
+        if (signatureImage != null) ...[
+          pw.SizedBox(height: 16),
+          _buildSignatureWidget(signatureImage, signaturePosition),
+        ],
         if (showUpiQr && upiId != null || bankAccount != null)
           pw.SizedBox(height: 12),
         if (showUpiQr && upiId != null || bankAccount != null)
@@ -1184,6 +1354,349 @@ class PDFService {
           ),
         ),
       ],
+    );
+  }
+
+  static PdfPageFormat _pageSizeToFormat(PageSize size) {
+    switch (size) {
+      case PageSize.a6:
+        return PdfPageFormat.a6;
+      case PageSize.a4:
+        return PdfPageFormat.a4;
+    }
+  }
+
+  static pw.MultiPage _buildCompactTemplate(
+    Invoice invoice,
+    CompanyInfo? company,
+    String currencySymbol,
+    String invoicePrefix, {
+    String? upiId,
+    bool showUpiQr = false,
+    bool showGst = true,
+    bool showQuantity = true,
+    bool showDiscount = true,
+    bool showTypeTag = true,
+    BusinessType businessType = BusinessType.both,
+    BankAccount? bankAccount,
+    String datePattern = 'dd/MM/yyyy',
+    LogoPosition logoPosition = LogoPosition.left,
+    double logoSizePx = 60,
+    Uint8List? logoBytes,
+    String thankYouNote = '',
+    bool showFooterBranding = false,
+    PdfColor? themeColor,
+    Uint8List? signatureBytes,
+    String signaturePosition = 'left',
+    double previousBalanceDue = 0.0,
+    bool showTotalQuantity = false,
+    PdfPageFormat pageFormat = PdfPageFormat.a6,
+    pw.ThemeData? pdfTheme,
+  }) {
+    final accentColor = themeColor ?? PdfColors.black;
+    final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
+    final signatureImage =
+        signatureBytes != null ? pw.MemoryImage(signatureBytes) : null;
+
+    final double fontScale = pageFormat == PdfPageFormat.a6 ? 0.78 : 1.0;
+    final double tableFontSize = pageFormat == PdfPageFormat.a6
+        ? compactPdfLayoutStyle.tableFontSize
+        : 10 * fontScale;
+    final double cellPaddingH = pageFormat == PdfPageFormat.a6
+        ? compactPdfLayoutStyle.tableHorizontalPadding
+        : 6.0;
+    final double cellPaddingV = pageFormat == PdfPageFormat.a6
+        ? compactPdfLayoutStyle.tableVerticalPadding
+        : (8 * fontScale).clamp(4.0, 8.0);
+    final double totalsFontSize = 10 * fontScale;
+    final double headerFont = 13 * fontScale;
+    final double labelFont = 14 * fontScale;
+    final double addressFont = 8 * fontScale;
+    final double sectionHeaderFont = 8 * fontScale;
+    final double bodyFont = 9 * fontScale;
+    final double pageMargin = pageFormat == PdfPageFormat.a6 ? 16.0 : 20.0;
+
+    final totalQty = showTotalQuantity
+        ? invoice.items.fold<double>(0, (s, i) => s + i.quantity)
+        : 0.0;
+    final qtyLabel = (invoice.quantityLabel?.isNotEmpty == true)
+        ? invoice.quantityLabel!
+        : 'Qty';
+    final compactLogoSize = pageFormat == PdfPageFormat.a6
+        ? logoSizePx * compactPdfLayoutStyle.logoScale
+        : logoSizePx;
+
+    return pw.MultiPage(
+      pageFormat: pageFormat,
+      theme: pdfTheme,
+      margin: pw.EdgeInsets.all(pageMargin),
+      footer: (context) => pw.Container(
+        alignment: pw.Alignment.centerRight,
+        margin: pw.EdgeInsets.only(top: compactPdfLayoutStyle.footerTopMargin),
+        child: pw.Text(
+          showFooterBranding
+              ? "Page ${context.pageNumber} of ${context.pagesCount}  -  Generated by Invoiso"
+              : "Page ${context.pageNumber} of ${context.pagesCount}",
+          style: pw.TextStyle(
+            fontSize: compactPdfLayoutStyle.footerBrandingFontSize,
+            color: PdfColors.grey600,
+          ),
+        ),
+      ),
+      build: (context) => [
+        // ── Header + invoice details ──
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            if (logoImage != null && logoPosition == LogoPosition.left) ...[
+              _buildCompanyLogo(logoImage, size: compactLogoSize),
+              pw.SizedBox(width: compactPdfLayoutStyle.headerGap),
+            ],
+            pw.Expanded(
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Row(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Expanded(
+                        child: pw.Column(
+                          crossAxisAlignment: pw.CrossAxisAlignment.start,
+                          children: [
+                            pw.Text(
+                              company?.name ?? '',
+                              style: pw.TextStyle(
+                                  fontSize: headerFont,
+                                  fontWeight: pw.FontWeight.bold),
+                            ),
+                            if ((company?.address ?? '').isNotEmpty)
+                              pw.Text(company!.address,
+                                  style: pw.TextStyle(
+                                      fontSize: addressFont,
+                                      color: PdfColors.grey700)),
+                            if ((company?.phone ?? '').isNotEmpty)
+                              pw.Text('Phone: ${company!.phone}',
+                                  style: pw.TextStyle(
+                                      fontSize: addressFont,
+                                      color: PdfColors.grey700)),
+                            if (showGst && (company?.gstin ?? '').isNotEmpty)
+                              pw.Text(
+                                  '${taxLabel(company?.country)}: ${company!.gstin}',
+                                  style: pw.TextStyle(
+                                      fontSize: addressFont,
+                                      color: PdfColors.grey700)),
+                          ],
+                        ),
+                      ),
+                      pw.Text(
+                        invoice.type,
+                        style: pw.TextStyle(
+                          fontSize: labelFont,
+                          fontWeight: pw.FontWeight.bold,
+                          color: accentColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  pw.SizedBox(height: 4),
+                  pw.Container(
+                    decoration: pw.BoxDecoration(
+                      border:
+                          pw.Border.all(color: PdfColors.grey400, width: 0.5),
+                    ),
+                    child: pw.Row(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Expanded(
+                          child: pw.Container(
+                            padding: pw.EdgeInsets.all(
+                                compactPdfLayoutStyle.headerPadding),
+                            decoration: const pw.BoxDecoration(
+                              border: pw.Border(
+                                right: pw.BorderSide(
+                                    color: PdfColors.grey400, width: 0.5),
+                              ),
+                            ),
+                            child: pw.Column(
+                              crossAxisAlignment: pw.CrossAxisAlignment.start,
+                              children: [
+                                pw.Text('Bill To:',
+                                    style: pw.TextStyle(
+                                        fontSize: sectionHeaderFont,
+                                        fontWeight: pw.FontWeight.bold)),
+                                pw.SizedBox(height: 1),
+                                pw.Text(invoice.customer.name,
+                                    style: pw.TextStyle(fontSize: bodyFont)),
+                                if (invoice.customer.businessName.isNotEmpty)
+                                  pw.Text(invoice.customer.businessName,
+                                      style: pw.TextStyle(
+                                          fontSize: addressFont,
+                                          color: PdfColors.grey700)),
+                                if (invoice.customer.address.isNotEmpty)
+                                  pw.Text(invoice.customer.address,
+                                      style: pw.TextStyle(
+                                          fontSize: addressFont,
+                                          color: PdfColors.grey700)),
+                                if (showGst &&
+                                    invoice.customer.gstin.isNotEmpty)
+                                  pw.Text(
+                                      '${taxLabel(company?.country)}: ${invoice.customer.gstin}',
+                                      style: pw.TextStyle(
+                                          fontSize: addressFont,
+                                          color: PdfColors.grey700)),
+                              ],
+                            ),
+                          ),
+                        ),
+                        pw.Expanded(
+                          child: pw.Padding(
+                            padding: pw.EdgeInsets.all(
+                                compactPdfLayoutStyle.headerPadding),
+                            child: pw.Column(
+                              crossAxisAlignment: pw.CrossAxisAlignment.start,
+                              children: [
+                                pw.Text('Invoice Details:',
+                                    style: pw.TextStyle(
+                                        fontSize: sectionHeaderFont,
+                                        fontWeight: pw.FontWeight.bold)),
+                                pw.SizedBox(height: 1),
+                                pw.Text('No: $invoicePrefix${invoice.id}',
+                                    style: pw.TextStyle(fontSize: addressFont)),
+                                pw.Text(
+                                    'Date: ${_formatDate(invoice.date, datePattern)}',
+                                    style: pw.TextStyle(fontSize: addressFont)),
+                                if (invoice.dueDate != null)
+                                  pw.Text(
+                                      'Due: ${_formatDate(invoice.dueDate!, datePattern)}',
+                                      style:
+                                          pw.TextStyle(fontSize: addressFont)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (logoImage != null && logoPosition == LogoPosition.right) ...[
+              pw.SizedBox(width: compactPdfLayoutStyle.headerGap),
+              _buildCompanyLogo(logoImage, size: compactLogoSize),
+            ],
+          ],
+        ),
+        pw.SizedBox(height: 6),
+
+        // ── Items Table ──
+        _buildInvoiceTable(
+          invoice,
+          headerColor: PdfColors.grey200,
+          textColor: PdfColors.black,
+          showGst: showGst,
+          showQuantity: showQuantity,
+          showDiscount: showDiscount,
+          showTypeTag: showTypeTag,
+          businessType: businessType,
+          tableFontSize: tableFontSize,
+          cellPaddingH: cellPaddingH,
+          cellPaddingV: cellPaddingV,
+          totalQuantityText: showTotalQuantity && showQuantity
+              ? '${totalQty == totalQty.roundToDouble() ? totalQty.toInt() : totalQty} $qtyLabel'
+              : null,
+        ),
+
+        pw.SizedBox(height: 6),
+
+        // ── Totals ──
+        pw.Align(
+          alignment: pw.Alignment.centerRight,
+          child: _buildEnhancedTotals(
+            invoice,
+            PdfColors.grey100,
+            PdfColors.black,
+            accentColor,
+            currencySymbol,
+            previousBalanceDue: previousBalanceDue,
+            fontSize: totalsFontSize,
+            compact: true,
+          ),
+        ),
+
+        // ── Signature ──
+        if (signatureImage != null) ...[
+          pw.SizedBox(height: compactPdfLayoutStyle.signatureTopGap),
+          _buildSignatureWidget(
+            signatureImage,
+            signaturePosition,
+            imageHeight: compactPdfLayoutStyle.signatureImageHeight,
+            labelGap: compactPdfLayoutStyle.signatureLabelGap,
+            labelFontSize: compactPdfLayoutStyle.signatureLabelFontSize,
+          ),
+        ],
+
+        // ── UPI + Bank (optional) ──
+        if ((showUpiQr && upiId != null) || bankAccount != null)
+          pw.SizedBox(height: 10),
+        if ((showUpiQr && upiId != null) || bankAccount != null)
+          pw.Align(
+            alignment: pw.Alignment.centerRight,
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.end,
+              children: [
+                if (showUpiQr && upiId != null)
+                  _buildUpiQrSection(
+                    upiId: upiId,
+                    companyName: company?.name ?? '',
+                    amount: invoice.total,
+                    currencyCode: invoice.currencyCode,
+                    invoiceId: invoice.id,
+                    accentColor: accentColor,
+                  ),
+                if (bankAccount != null) ...[
+                  if (showUpiQr && upiId != null) pw.SizedBox(height: 8),
+                  _buildBankDetailsSection(
+                      bankAccount: bankAccount, accentColor: accentColor),
+                ],
+              ],
+            ),
+          ),
+
+        if (thankYouNote.isNotEmpty) ...[
+          pw.SizedBox(height: 8),
+          pw.Center(
+            child: pw.Text(thankYouNote,
+                style: pw.TextStyle(
+                    color: accentColor,
+                    fontSize: 10,
+                    fontWeight: pw.FontWeight.bold)),
+          ),
+        ],
+      ],
+    );
+  }
+
+  static pw.Widget _buildSignatureWidget(
+    pw.ImageProvider signatureImage,
+    String position, {
+    double imageHeight = 50,
+    double labelGap = 4,
+    double labelFontSize = 9,
+  }) {
+    final isLeft = position != 'right';
+    return pw.Align(
+      alignment: isLeft ? pw.Alignment.centerLeft : pw.Alignment.centerRight,
+      child: pw.Column(
+        crossAxisAlignment:
+            isLeft ? pw.CrossAxisAlignment.start : pw.CrossAxisAlignment.end,
+        children: [
+          pw.Image(signatureImage, height: imageHeight),
+          pw.SizedBox(height: labelGap),
+          pw.Text('Authorised Signature',
+              style: pw.TextStyle(
+                  fontSize: labelFontSize, color: PdfColors.grey600)),
+        ],
+      ),
     );
   }
 
@@ -1407,40 +1920,73 @@ class PDFService {
       PdfColor accentRowColor,
       PdfColor primaryColor,
       PdfColor totalHighlightColor,
-      String currencySymbol) {
+      String currencySymbol,
+      {double previousBalanceDue = 0.0,
+      double fontSize = 10,
+      bool compact = false}) {
     final hasPaid = invoice.amountPaid > 0;
     final isPaidInFull = invoice.outstandingBalance <= 0;
+    final hasPreviousBalance = previousBalanceDue > 0;
+    final totalDue = invoice.total + previousBalanceDue;
+
+    final compactStyle = compact ? compactPdfTotalsStyle : null;
+    final totalWidth = compactStyle?.width ?? 200.0;
+    final rowFontSize = compactStyle?.rowFontSize ?? fontSize;
+    final highlightFontSize = compactStyle?.highlightFontSize ?? fontSize * 1.2;
+    final highlightHorizontalPadding =
+        compactStyle?.highlightHorizontalPadding ??
+            (fontSize * 0.8).clamp(5.0, 8.0);
+    final highlightVerticalPadding = compactStyle?.highlightVerticalPadding ??
+        (fontSize * 0.8).clamp(5.0, 8.0);
+    final rowHorizontalPadding = compactStyle?.rowHorizontalPadding;
+    final rowVerticalPadding = compactStyle?.rowVerticalPadding;
+    final borderRadius = compactStyle?.borderRadius ?? 6.0;
 
     return pw.Container(
-      width: 200,
+      width: totalWidth,
       decoration: pw.BoxDecoration(
         border: pw.Border.all(color: PdfColors.grey300),
-        borderRadius: pw.BorderRadius.circular(6),
+        borderRadius: pw.BorderRadius.circular(borderRadius),
       ),
       child: pw.Column(
         children: [
           _totalRow(
             "Subtotal",
             "$currencySymbol ${(invoice.totalDiscount > 0 ? invoice.grossSubtotal : invoice.subtotal).toStringAsFixed(2)}",
+            fontSize: rowFontSize,
+            horizontalPadding: rowHorizontalPadding,
+            verticalPadding: rowVerticalPadding,
           ),
           if (invoice.totalDiscount > 0)
             _totalRow(
               "Discount",
               "-$currencySymbol ${invoice.totalDiscount.toStringAsFixed(2)}",
               color: PdfColors.orange800,
+              fontSize: rowFontSize,
+              horizontalPadding: rowHorizontalPadding,
+              verticalPadding: rowVerticalPadding,
             ),
           if (invoice.taxMode != TaxMode.none)
             _totalRow(_taxLabel(invoice),
-                "$currencySymbol ${invoice.tax.toStringAsFixed(2)}"),
+                "$currencySymbol ${invoice.tax.toStringAsFixed(2)}",
+                fontSize: rowFontSize,
+                horizontalPadding: rowHorizontalPadding,
+                verticalPadding: rowVerticalPadding),
           ...invoice.additionalCosts.map((c) => _totalRow(
                 c.label.isEmpty ? 'Extra Cost' : c.label,
                 "$currencySymbol ${c.amount.toStringAsFixed(2)}",
+                fontSize: rowFontSize,
+                horizontalPadding: rowHorizontalPadding,
+                verticalPadding: rowVerticalPadding,
               )),
           pw.Container(
-            padding: const pw.EdgeInsets.all(8),
+            padding: pw.EdgeInsets.symmetric(
+              horizontal: highlightHorizontalPadding,
+              vertical: highlightVerticalPadding,
+            ),
             decoration: pw.BoxDecoration(
               color: totalHighlightColor,
-              borderRadius: hasPaid
+              borderRadius: hasPaid || hasPreviousBalance
                   ? pw.BorderRadius.zero
                   : const pw.BorderRadius.vertical(
                       bottom: pw.Radius.circular(5)),
@@ -1450,24 +1996,68 @@ class PDFService {
               children: [
                 pw.Text("Total",
                     style: pw.TextStyle(
-                        fontSize: 12,
+                        fontSize: highlightFontSize,
                         fontWeight: pw.FontWeight.bold,
                         color: PdfColors.white)),
                 pw.Text("$currencySymbol ${invoice.total.toStringAsFixed(2)}",
                     style: pw.TextStyle(
-                        fontSize: 12,
+                        fontSize: highlightFontSize,
                         fontWeight: pw.FontWeight.bold,
                         color: PdfColors.white)),
               ],
             ),
           ),
+          if (hasPreviousBalance) ...[
+            _totalRow(
+              "Previous Balance Due",
+              "$currencySymbol ${previousBalanceDue.toStringAsFixed(2)}",
+              color: PdfColors.orange800,
+              fontSize: rowFontSize,
+              horizontalPadding: rowHorizontalPadding,
+              verticalPadding: rowVerticalPadding,
+            ),
+            pw.Container(
+              padding: pw.EdgeInsets.symmetric(
+                horizontal: highlightHorizontalPadding,
+                vertical: highlightVerticalPadding,
+              ),
+              decoration: pw.BoxDecoration(
+                color: PdfColors.orange800,
+                borderRadius: hasPaid
+                    ? pw.BorderRadius.zero
+                    : const pw.BorderRadius.vertical(
+                        bottom: pw.Radius.circular(5)),
+              ),
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text("Total Due",
+                      style: pw.TextStyle(
+                          fontSize: highlightFontSize,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.white)),
+                  pw.Text("$currencySymbol ${totalDue.toStringAsFixed(2)}",
+                      style: pw.TextStyle(
+                          fontSize: highlightFontSize,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.white)),
+                ],
+              ),
+            ),
+          ],
           if (hasPaid) ...[
             _totalRow(
               "Amount Paid",
               "$currencySymbol ${invoice.amountPaid.toStringAsFixed(2)}",
+              fontSize: rowFontSize,
+              horizontalPadding: rowHorizontalPadding,
+              verticalPadding: rowVerticalPadding,
             ),
             pw.Container(
-              padding: const pw.EdgeInsets.all(8),
+              padding: pw.EdgeInsets.symmetric(
+                horizontal: highlightHorizontalPadding,
+                vertical: highlightVerticalPadding,
+              ),
               decoration: pw.BoxDecoration(
                 color: isPaidInFull ? PdfColors.green700 : PdfColors.orange,
                 borderRadius: const pw.BorderRadius.vertical(
@@ -1479,7 +2069,7 @@ class PDFService {
                   pw.Text(
                     isPaidInFull ? "PAID IN FULL" : "Amount Due",
                     style: pw.TextStyle(
-                        fontSize: 12,
+                        fontSize: highlightFontSize,
                         fontWeight: pw.FontWeight.bold,
                         color: PdfColors.white),
                   ),
@@ -1487,7 +2077,7 @@ class PDFService {
                     pw.Text(
                       "$currencySymbol ${invoice.outstandingBalance.toStringAsFixed(2)}",
                       style: pw.TextStyle(
-                          fontSize: 12,
+                          fontSize: highlightFontSize,
                           fontWeight: pw.FontWeight.bold,
                           color: PdfColors.white),
                     ),
@@ -1511,11 +2101,18 @@ class PDFService {
     }
   }
 
-// Total Row helper - UNCHANGED
-  static pw.Widget _totalRow(String label, String value, {PdfColor? color}) {
-    final style = pw.TextStyle(fontSize: 10, color: color);
+  static pw.Widget _totalRow(String label, String value,
+      {PdfColor? color,
+      double fontSize = 10,
+      double? horizontalPadding,
+      double? verticalPadding}) {
+    final style = pw.TextStyle(fontSize: fontSize, color: color);
+    final p = (fontSize * 0.8).clamp(5.0, 8.0);
     return pw.Padding(
-      padding: const pw.EdgeInsets.all(8),
+      padding: pw.EdgeInsets.symmetric(
+        horizontal: horizontalPadding ?? p,
+        vertical: verticalPadding ?? p * 0.75,
+      ),
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
@@ -1534,7 +2131,11 @@ class PDFService {
       bool showQuantity = true,
       bool showDiscount = true,
       bool showTypeTag = true,
-      BusinessType businessType = BusinessType.both}) {
+      BusinessType businessType = BusinessType.both,
+      double tableFontSize = 10,
+      double cellPaddingH = 6,
+      double cellPaddingV = 8,
+      String? totalQuantityText}) {
     final bool showItemTax = invoice.taxMode == TaxMode.perItem;
     final String priceHeader = showQuantity ? 'Price' : 'Rate';
 
@@ -1553,6 +2154,16 @@ class PDFService {
       colWidths[col++] = const pw.FlexColumnWidth(1.5); // Discount
     }
     colWidths[col++] = const pw.FlexColumnWidth(1.5); // Total
+    final columnCount = col;
+
+    pw.TableRow dividerRow() {
+      return pw.TableRow(
+        children: List.generate(
+          columnCount,
+          (_) => pw.Container(height: 1, color: PdfColors.grey400),
+        ),
+      );
+    }
 
     return pw.Table(
       columnWidths: colWidths,
@@ -1560,23 +2171,61 @@ class PDFService {
         pw.TableRow(
           decoration: pw.BoxDecoration(color: headerColor),
           children: [
-            _buildTableCell('Sl No', isHeader: true, textColor: textColor),
-            _buildTableCell('Item Name', isHeader: true, textColor: textColor),
+            _buildTableCell('Sl No',
+                isHeader: true,
+                textColor: textColor,
+                fontSize: tableFontSize,
+                cellPaddingH: cellPaddingH,
+                cellPaddingV: cellPaddingV),
+            _buildTableCell('Item Name',
+                isHeader: true,
+                textColor: textColor,
+                fontSize: tableFontSize,
+                cellPaddingH: cellPaddingH,
+                cellPaddingV: cellPaddingV),
             if (showGst)
-              _buildTableCell('HSN Code', isHeader: true, textColor: textColor),
+              _buildTableCell('HSN Code',
+                  isHeader: true,
+                  textColor: textColor,
+                  fontSize: tableFontSize,
+                  cellPaddingH: cellPaddingH,
+                  cellPaddingV: cellPaddingV),
             if (showQuantity)
               _buildTableCell(
                   invoice.quantityLabel?.isNotEmpty == true
                       ? invoice.quantityLabel!
                       : 'Qty',
                   isHeader: true,
-                  textColor: textColor),
-            _buildTableCell(priceHeader, isHeader: true, textColor: textColor),
+                  textColor: textColor,
+                  fontSize: tableFontSize,
+                  cellPaddingH: cellPaddingH,
+                  cellPaddingV: cellPaddingV),
+            _buildTableCell(priceHeader,
+                isHeader: true,
+                textColor: textColor,
+                fontSize: tableFontSize,
+                cellPaddingH: cellPaddingH,
+                cellPaddingV: cellPaddingV),
             if (showItemTax)
-              _buildTableCell('Tax %', isHeader: true, textColor: textColor),
+              _buildTableCell('Tax %',
+                  isHeader: true,
+                  textColor: textColor,
+                  fontSize: tableFontSize,
+                  cellPaddingH: cellPaddingH,
+                  cellPaddingV: cellPaddingV),
             if (showDiscount)
-              _buildTableCell('Discount', isHeader: true, textColor: textColor),
-            _buildTableCell('Total', isHeader: true, textColor: textColor),
+              _buildTableCell('Discount',
+                  isHeader: true,
+                  textColor: textColor,
+                  fontSize: tableFontSize,
+                  cellPaddingH: cellPaddingH,
+                  cellPaddingV: cellPaddingV),
+            _buildTableCell('Total',
+                isHeader: true,
+                textColor: textColor,
+                fontSize: tableFontSize,
+                cellPaddingH: cellPaddingH,
+                cellPaddingV: cellPaddingV),
           ],
         ),
         ...invoice.items.asMap().entries.map((entry) {
@@ -1587,19 +2236,25 @@ class PDFService {
                 ? const pw.BoxDecoration(color: PdfColors.white)
                 : const pw.BoxDecoration(color: PdfColors.grey100),
             children: [
-              _buildTableCell('${index + 1}'),
+              _buildTableCell('${index + 1}',
+                  fontSize: tableFontSize,
+                  cellPaddingH: cellPaddingH,
+                  cellPaddingV: cellPaddingV),
               pw.Padding(
-                padding: const pw.EdgeInsets.all(4),
+                padding: pw.EdgeInsets.symmetric(
+                  horizontal: cellPaddingH,
+                  vertical: cellPaddingV * 0.5,
+                ),
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
                     pw.Text(item.product.name,
-                        style: const pw.TextStyle(fontSize: 9)),
+                        style: pw.TextStyle(fontSize: tableFontSize * 0.9)),
                     if (showTypeTag && businessType == BusinessType.both)
                       pw.Text(
                         item.product.type == 'service' ? 'Service' : 'Product',
                         style: pw.TextStyle(
-                          fontSize: 7,
+                          fontSize: tableFontSize * 0.7,
                           color: item.product.type == 'service'
                               ? PdfColors.purple700
                               : PdfColors.indigo700,
@@ -1610,57 +2265,115 @@ class PDFService {
                         item.discount > 0)
                       pw.Text(
                         '(${item.effectivePrice.toStringAsFixed(2)} - ${item.discount.toStringAsFixed(2)} = ${(item.effectivePrice - item.discount).toStringAsFixed(2)}/item)',
-                        style:
-                            pw.TextStyle(fontSize: 7, color: PdfColors.teal700),
+                        style: pw.TextStyle(
+                            fontSize: tableFontSize * 0.7,
+                            color: PdfColors.teal700),
                       ),
                   ],
                 ),
               ),
-              if (showGst) _buildTableCell(item.product.hsncode),
+              if (showGst)
+                _buildTableCell(item.product.hsncode,
+                    fontSize: tableFontSize,
+                    cellPaddingH: cellPaddingH,
+                    cellPaddingV: cellPaddingV),
               if (showQuantity)
-                _buildTableCell(item.quantity == item.quantity.roundToDouble()
-                    ? item.quantity.toInt().toString()
-                    : item.quantity.toString()),
-              _buildTableCell(showDiscount
-                  ? item.effectivePrice.toStringAsFixed(2)
-                  : (item.total / item.quantity).toStringAsFixed(2)),
-              if (showItemTax) _buildTableCell('${item.product.tax_rate}%'),
+                _buildTableCell(
+                    item.quantity == item.quantity.roundToDouble()
+                        ? item.quantity.toInt().toString()
+                        : item.quantity.toString(),
+                    fontSize: tableFontSize,
+                    cellPaddingH: cellPaddingH,
+                    cellPaddingV: cellPaddingV),
+              _buildTableCell(
+                  showDiscount
+                      ? item.effectivePrice.toStringAsFixed(2)
+                      : (item.total / item.quantity).toStringAsFixed(2),
+                  fontSize: tableFontSize,
+                  cellPaddingH: cellPaddingH,
+                  cellPaddingV: cellPaddingV),
+              if (showItemTax)
+                _buildTableCell('${item.product.tax_rate}%',
+                    fontSize: tableFontSize,
+                    cellPaddingH: cellPaddingH,
+                    cellPaddingV: cellPaddingV),
               if (showDiscount)
-                _buildTableCell(item.totalDiscount.toStringAsFixed(2)),
-              _buildTableCell(item.total.toStringAsFixed(2)),
+                _buildTableCell(item.totalDiscount.toStringAsFixed(2),
+                    fontSize: tableFontSize,
+                    cellPaddingH: cellPaddingH,
+                    cellPaddingV: cellPaddingV),
+              _buildTableCell(item.total.toStringAsFixed(2),
+                  fontSize: tableFontSize,
+                  cellPaddingH: cellPaddingH,
+                  cellPaddingV: cellPaddingV),
             ],
           );
         }),
-        pw.TableRow(
-          children: [
-            pw.Container(height: 1, color: PdfColors.grey400),
-            pw.Container(height: 1, color: PdfColors.grey400),
-            if (showGst) pw.Container(height: 1, color: PdfColors.grey400),
-            if (showQuantity) pw.Container(height: 1, color: PdfColors.grey400),
-            pw.Container(height: 1, color: PdfColors.grey400),
-            if (showItemTax) pw.Container(height: 1, color: PdfColors.grey400),
-            if (showDiscount) pw.Container(height: 1, color: PdfColors.grey400),
-            pw.Container(height: 1, color: PdfColors.grey400),
-          ],
-        ),
+        dividerRow(),
+        if (totalQuantityText != null)
+          pw.TableRow(
+            children: [
+              _buildTableCell('',
+                  fontSize: tableFontSize,
+                  cellPaddingH: cellPaddingH,
+                  cellPaddingV: cellPaddingV),
+              _buildTableCell('Total',
+                  isHeader: true,
+                  fontSize: tableFontSize,
+                  cellPaddingH: cellPaddingH,
+                  cellPaddingV: cellPaddingV),
+              if (showGst)
+                _buildTableCell('',
+                    fontSize: tableFontSize,
+                    cellPaddingH: cellPaddingH,
+                    cellPaddingV: cellPaddingV),
+              if (showQuantity)
+                _buildTableCell(totalQuantityText,
+                    isHeader: true,
+                    fontSize: tableFontSize,
+                    cellPaddingH: cellPaddingH,
+                    cellPaddingV: cellPaddingV),
+              _buildTableCell('',
+                  fontSize: tableFontSize,
+                  cellPaddingH: cellPaddingH,
+                  cellPaddingV: cellPaddingV),
+              if (showItemTax)
+                _buildTableCell('',
+                    fontSize: tableFontSize,
+                    cellPaddingH: cellPaddingH,
+                    cellPaddingV: cellPaddingV),
+              if (showDiscount)
+                _buildTableCell('',
+                    fontSize: tableFontSize,
+                    cellPaddingH: cellPaddingH,
+                    cellPaddingV: cellPaddingV),
+              _buildTableCell('',
+                  fontSize: tableFontSize,
+                  cellPaddingH: cellPaddingH,
+                  cellPaddingV: cellPaddingV),
+            ],
+          ),
+        if (totalQuantityText != null) dividerRow(),
       ],
     );
   }
 
 // Build Table Cell - MODIFIED
   static pw.Widget _buildTableCell(String text,
-      {bool isHeader = false, PdfColor textColor = PdfColors.black}) {
+      {bool isHeader = false,
+      PdfColor textColor = PdfColors.black,
+      double fontSize = 10,
+      double cellPaddingH = 6,
+      double cellPaddingV = 8}) {
     return pw.Padding(
-      padding: const pw.EdgeInsets.symmetric(
-          horizontal: 6, vertical: 8), // Increased vertical padding
+      padding: pw.EdgeInsets.symmetric(
+          horizontal: cellPaddingH, vertical: cellPaddingV),
       child: pw.Text(
         text,
-        textAlign: isHeader ? pw.TextAlign.left : pw.TextAlign.left,
         style: pw.TextStyle(
             fontWeight: isHeader ? pw.FontWeight.bold : pw.FontWeight.normal,
-            fontSize: 10,
-            color: textColor // Use the provided color for header text
-            ),
+            fontSize: fontSize,
+            color: textColor),
       ),
     );
   }

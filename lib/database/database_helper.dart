@@ -14,7 +14,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 20;
+  final dbVersion = 21;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -82,7 +82,8 @@ class DatabaseHelper {
         bank_account_id TEXT,
         due_date TEXT,
         quantity_label TEXT,
-        additional_costs TEXT
+        additional_costs TEXT,
+        previous_balance REAL DEFAULT 0.0
       )
     ''');
 
@@ -434,6 +435,14 @@ class DatabaseHelper {
       await _runMigrationStep(db, 20, 'add_bank_account_id_to_invoices', () async {
         await db.execute(
           'ALTER TABLE invoices ADD COLUMN bank_account_id TEXT',
+        );
+      });
+    }
+
+    if (oldVersion < 21) {
+      await _runMigrationStep(db, 21, 'add_previous_balance_to_invoices', () async {
+        await db.execute(
+          'ALTER TABLE invoices ADD COLUMN previous_balance REAL DEFAULT 0.0',
         );
       });
     }

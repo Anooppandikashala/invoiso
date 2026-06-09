@@ -3,6 +3,7 @@ enum InvoiceTemplate {
   modern,
   minimal,
   executive,
+  compact, // A6-optimized compact/receipt template
 }
 
 enum BackupType { database, json }
@@ -34,6 +35,12 @@ enum SettingKey {
   pdfThemeColor, // custom PDF accent/theme color as #RRGGBB
   dashboardLayout, // which dashboard layout to use: 'default' | 'classic' | 'simple'
   layoutBannerDismissed, // '1' once user dismisses the new-layouts discovery banner
+  signatureImage, // base64-encoded signature image
+  signaturePosition, // 'left' | 'right'
+  showPreviousBalance, // whether to show calculated Previous Balance Due on PDFs
+  pageSize, // 'a4' | 'a6'
+  showTotalQuantity, // show total quantity row in compact template footer
+  supportBannerDismissed, // milestone at which support banner was last dismissed: '50' | '100'
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -91,9 +98,132 @@ extension SettingKeyExtension on SettingKey {
         return 'dashboard_layout';
       case SettingKey.layoutBannerDismissed:
         return 'layout_banner_dismissed';
+      case SettingKey.signatureImage:
+        return 'signature_image';
+      case SettingKey.signaturePosition:
+        return 'signature_position';
+      case SettingKey.showPreviousBalance:
+        return 'show_previous_balance';
+      case SettingKey.pageSize:
+        return 'page_size';
+      case SettingKey.showTotalQuantity:
+        return 'show_total_quantity';
+      case SettingKey.supportBannerDismissed:
+        return 'support_banner_dismissed';
     }
   }
 }
+
+enum PageSize { a4, a6 }
+
+extension InvoiceTemplatePageSizeExtension on InvoiceTemplate {
+  bool supportsPageSize(PageSize pageSize) {
+    if (pageSize == PageSize.a6) {
+      return this == InvoiceTemplate.compact;
+    }
+    return this != InvoiceTemplate.compact;
+  }
+}
+
+InvoiceTemplate defaultInvoiceTemplateForPageSize(PageSize pageSize) {
+  return pageSize == PageSize.a6
+      ? InvoiceTemplate.compact
+      : InvoiceTemplate.classic;
+}
+
+InvoiceTemplate effectiveInvoiceTemplateForPageSize(
+  InvoiceTemplate template,
+  PageSize pageSize,
+) {
+  return template.supportsPageSize(pageSize)
+      ? template
+      : defaultInvoiceTemplateForPageSize(pageSize);
+}
+
+extension PageSizeExtension on PageSize {
+  String get key {
+    switch (this) {
+      case PageSize.a4:
+        return 'a4';
+      case PageSize.a6:
+        return 'a6';
+    }
+  }
+
+  String get label {
+    switch (this) {
+      case PageSize.a4:
+        return 'A4';
+      case PageSize.a6:
+        return 'A6';
+    }
+  }
+
+  static PageSize fromKey(String? key) {
+    switch (key) {
+      case 'a6':
+        return PageSize.a6;
+      default:
+        return PageSize.a4;
+    }
+  }
+}
+
+class CompactPdfTotalsStyle {
+  const CompactPdfTotalsStyle({
+    this.width = 128,
+    this.rowFontSize = 5.5,
+    this.highlightFontSize = 6.0,
+    this.rowHorizontalPadding = 4,
+    this.rowVerticalPadding = 2,
+    this.highlightHorizontalPadding = 4,
+    this.highlightVerticalPadding = 3,
+    this.borderRadius = 4,
+  });
+
+  final double width;
+  final double rowFontSize;
+  final double highlightFontSize;
+  final double rowHorizontalPadding;
+  final double rowVerticalPadding;
+  final double highlightHorizontalPadding;
+  final double highlightVerticalPadding;
+  final double borderRadius;
+}
+
+const compactPdfTotalsStyle = CompactPdfTotalsStyle();
+
+class CompactPdfLayoutStyle {
+  const CompactPdfLayoutStyle({
+    this.logoScale = 0.6,
+    this.tableFontSize = 6.4,
+    this.tableHorizontalPadding = 4,
+    this.tableVerticalPadding = 2.2,
+    this.headerGap = 5,
+    this.headerPadding = 4,
+    this.signatureTopGap = 5,
+    this.signatureImageHeight = 24,
+    this.signatureLabelGap = 1.5,
+    this.signatureLabelFontSize = 5.8,
+    this.footerBrandingFontSize = 5.6,
+    this.footerTopMargin = 4,
+  });
+
+  final double logoScale;
+  final double tableFontSize;
+  final double tableHorizontalPadding;
+  final double tableVerticalPadding;
+  final double headerGap;
+  final double headerPadding;
+  final double signatureTopGap;
+  final double signatureImageHeight;
+  final double signatureLabelGap;
+  final double signatureLabelFontSize;
+  final double footerBrandingFontSize;
+  final double footerTopMargin;
+}
+
+const compactPdfLayoutStyle = CompactPdfLayoutStyle();
 
 enum DateFormatOption {
   ddmmyyyy, // dd/MM/yyyy  — default
@@ -267,7 +397,7 @@ class SupportedCurrencies {
     CurrencyOption(code: 'JMD', symbol: 'J\$', name: 'Jamaican Dollar'),
     CurrencyOption(code: 'JPY', symbol: '¥', name: 'Japanese Yen'),
     CurrencyOption(code: 'KES', symbol: 'KSh.', name: 'Kenyan Shilling'),
-    CurrencyOption(code: 'LKR', symbol: 'Rs.', name: 'Sri Lankan Rupee'),
+    CurrencyOption(code: 'LKR', symbol: 'රු', name: 'Sri Lankan Rupee'),
     CurrencyOption(code: 'MYR', symbol: 'RM.', name: 'Malaysian Ringgit'),
     CurrencyOption(code: 'NGN', symbol: 'NGN.', name: 'Nigerian Naira'),
     CurrencyOption(code: 'NPR', symbol: 'Rs.', name: 'Nepalese Rupee'),

@@ -25,6 +25,7 @@ class Invoice {
       quantityLabel; // custom label for the Qty column (e.g. "Words", "Hours")
   List<AdditionalCost>
       additionalCosts; // e.g. Shipping, Packaging (zero tax, added after tax)
+  double previousBalance;
 
   Invoice({
     required this.id,
@@ -43,6 +44,7 @@ class Invoice {
     this.dueDate,
     this.quantityLabel,
     this.additionalCosts = const [],
+    this.previousBalance = 0.0,
   });
 
   InvoiceTotals get _totals => InvoiceTotalsCalculator.totals(

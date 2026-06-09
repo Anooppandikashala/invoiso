@@ -163,6 +163,107 @@ class InvoiceService {
     }
   }
 
+  static Future<double> getPreviousBalanceDueForInvoice(Invoice invoice) async {
+    if (invoice.type != 'Invoice' || invoice.customer.id.trim().isEmpty) {
+      return 0.0;
+    }
+
+    return getPreviousBalanceDueForCustomer(
+      customerId: invoice.customer.id,
+      currencyCode: invoice.currencyCode,
+      asOfDate: invoice.date,
+      currentInvoiceId: invoice.id,
+    );
+  }
+
+  static Future<double> getPreviousBalanceDueForCustomer({
+    required String customerId,
+    required String currencyCode,
+    required DateTime asOfDate,
+    String? currentInvoiceId,
+  }) async {
+    final normalizedCustomerId = customerId.trim();
+    if (normalizedCustomerId.isEmpty) return 0.0;
+
+    final db = await dbHelper.database;
+    final invoiceDateKey = AppDate.dateKey(asOfDate);
+    final sameDayId = currentInvoiceId?.trim();
+    final dateFilter = sameDayId == null || sameDayId.isEmpty
+        ? 'substr(date, 1, 10) < ?'
+        : '(substr(date, 1, 10) < ? '
+            'OR (substr(date, 1, 10) = ? AND id < ?))';
+    final dateArgs = sameDayId == null || sameDayId.isEmpty
+        ? <Object>[invoiceDateKey]
+        : <Object>[invoiceDateKey, invoiceDateKey, sameDayId];
+
+    final invoiceRows = await db.query(
+      'invoices',
+      columns: ['id', 'tax_rate', 'tax_mode', 'additional_costs'],
+      where: 'customer_id = ? '
+          'AND type = ? '
+          'AND deleted_at IS NULL '
+          'AND currency_code = ? '
+          'AND $dateFilter',
+      whereArgs: [
+        normalizedCustomerId,
+        'Invoice',
+        currencyCode,
+        ...dateArgs,
+      ],
+    );
+
+    if (invoiceRows.isEmpty) return 0.0;
+
+    final ids = invoiceRows.map((row) => row['id'] as String).toList();
+    final placeholders = List.filled(ids.length, '?').join(',');
+    final itemRows = await db.rawQuery(
+      'SELECT invoice_id, unit_price, product_price, quantity, discount, '
+      'discount_per_unit, extra_cost, product_tax_rate '
+      'FROM invoice_items WHERE invoice_id IN ($placeholders) ORDER BY rowid ASC',
+      ids,
+    );
+    final paymentRows = await db.rawQuery(
+      'SELECT invoice_id, COALESCE(SUM(amount_paid), 0.0) as paid '
+      'FROM invoice_payments WHERE invoice_id IN ($placeholders) '
+      'GROUP BY invoice_id',
+      ids,
+    );
+
+    final itemsByInvoice = <String, List<Map<String, dynamic>>>{};
+    for (final row in itemRows) {
+      final invoiceId = row['invoice_id'] as String;
+      itemsByInvoice.putIfAbsent(invoiceId, () => []).add(row);
+    }
+
+    final paidByInvoice = <String, double>{};
+    for (final row in paymentRows) {
+      paidByInvoice[row['invoice_id'] as String] =
+          (row['paid'] as num).toDouble();
+    }
+
+    double previousBalanceDue = 0.0;
+    for (final row in invoiceRows) {
+      final invoiceId = row['id'] as String;
+      final additionalCostsTotal =
+          AdditionalCost.listFromJson(row['additional_costs'] as String?)
+              .fold(0.0, (sum, cost) => sum + cost.amount);
+      final totals = InvoiceTotalsCalculator.totals(
+        lines: (itemsByInvoice[invoiceId] ?? [])
+            .map(InvoiceTotalsCalculator.lineFromDbRow),
+        taxMode: TaxModeExtension.fromKey(row['tax_mode'] as String?),
+        globalTaxRate: (row['tax_rate'] as num?)?.toDouble() ?? 0.0,
+        globalTaxRateFormat: TaxRateFormat.fraction,
+        additionalCostsTotal: additionalCostsTotal,
+      );
+      previousBalanceDue += InvoiceCalculator.outstanding(
+        total: totals.total,
+        paid: paidByInvoice[invoiceId] ?? 0.0,
+      );
+    }
+
+    return previousBalanceDue;
+  }
+
   // ─────────────────────────────────────────────
   // Fetch Invoice with Items
   static Future<Invoice?> getInvoiceById(String id) async {
@@ -246,6 +347,7 @@ class InvoiceService {
       quantityLabel: i['quantity_label'] as String?,
       additionalCosts:
           AdditionalCost.listFromJson(i['additional_costs'] as String?),
+      previousBalance: (i['previous_balance'] as num?)?.toDouble() ?? 0.0,
       payments: payments,
     );
   }
@@ -509,6 +611,7 @@ class InvoiceService {
           quantityLabel: map['quantity_label'] as String?,
           additionalCosts:
               AdditionalCost.listFromJson(map['additional_costs'] as String?),
+          previousBalance: (map['previous_balance'] as num?)?.toDouble() ?? 0.0,
         ),
       );
     }
@@ -693,10 +796,12 @@ class InvoiceService {
 
   /// Revenue grouped by month for the last [months] calendar months.
   /// Returns rows with keys 'month' (YYYY-MM string) and 'revenue' (double).
-  static Future<List<Map<String, dynamic>>> getMonthlyRevenue({int months = 6}) async {
+  static Future<List<Map<String, dynamic>>> getMonthlyRevenue(
+      {int months = 6}) async {
     final db = await dbHelper.database;
     final cutoff = DateTime.now().subtract(Duration(days: months * 31));
-    final cutoffStr = '${cutoff.year.toString().padLeft(4, '0')}-${cutoff.month.toString().padLeft(2, '0')}-01';
+    final cutoffStr =
+        '${cutoff.year.toString().padLeft(4, '0')}-${cutoff.month.toString().padLeft(2, '0')}-01';
     final rows = await db.rawQuery(
       "SELECT substr(ip.date_paid, 1, 7) as month, "
       "COALESCE(SUM(ip.amount_paid), 0.0) as revenue "
@@ -708,11 +813,17 @@ class InvoiceService {
       "ORDER BY month ASC",
       [cutoffStr],
     );
-    return rows.map((r) => {'month': r['month'] as String, 'revenue': (r['revenue'] as num).toDouble()}).toList();
+    return rows
+        .map((r) => {
+              'month': r['month'] as String,
+              'revenue': (r['revenue'] as num).toDouble()
+            })
+        .toList();
   }
 
   /// Top [limit] customers by total payments received.
-  static Future<List<Map<String, dynamic>>> getTopCustomers({int limit = 5}) async {
+  static Future<List<Map<String, dynamic>>> getTopCustomers(
+      {int limit = 5}) async {
     final db = await dbHelper.database;
     final rows = await db.rawQuery(
       'SELECT i.customer_name, '
@@ -726,15 +837,18 @@ class InvoiceService {
       'LIMIT ?',
       [limit],
     );
-    return rows.map((r) => {
-      'customer_name': r['customer_name'] as String? ?? '',
-      'total_paid': (r['total_paid'] as num).toDouble(),
-      'invoice_count': (r['invoice_count'] as int?) ?? 0,
-    }).toList();
+    return rows
+        .map((r) => {
+              'customer_name': r['customer_name'] as String? ?? '',
+              'total_paid': (r['total_paid'] as num).toDouble(),
+              'invoice_count': (r['invoice_count'] as int?) ?? 0,
+            })
+        .toList();
   }
 
   /// Top [limit] products by total units sold across all invoices.
-  static Future<List<Map<String, dynamic>>> getTopProducts({int limit = 5}) async {
+  static Future<List<Map<String, dynamic>>> getTopProducts(
+      {int limit = 5}) async {
     final db = await dbHelper.database;
     final rows = await db.rawQuery(
       'SELECT ii.product_name, COALESCE(SUM(ii.quantity), 0) as total_qty '
@@ -747,9 +861,11 @@ class InvoiceService {
       'LIMIT ?',
       [limit],
     );
-    return rows.map((r) => {
-      'product_name': r['product_name'] as String? ?? '',
-      'total_qty': (r['total_qty'] as num).toDouble(),
-    }).toList();
+    return rows
+        .map((r) => {
+              'product_name': r['product_name'] as String? ?? '',
+              'total_qty': (r['total_qty'] as num).toDouble(),
+            })
+        .toList();
   }
 }

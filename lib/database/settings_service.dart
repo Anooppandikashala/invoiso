@@ -225,6 +225,27 @@ class SettingsService {
     await setSetting(SettingKey.showTypeTag, show.toString());
   }
 
+  static Future<void> setSignatureImage(String base64Image) async {
+    await setSetting(SettingKey.signatureImage, base64Image);
+  }
+
+  static Future<String?> getSignatureImage() async {
+    return getSetting(SettingKey.signatureImage);
+  }
+
+  static Future<String> getSignaturePosition() async {
+    return await getSetting(SettingKey.signaturePosition) ?? 'left';
+  }
+
+  static Future<bool> getShowPreviousBalance() async {
+    final val = await getSetting(SettingKey.showPreviousBalance);
+    return val == 'true';
+  }
+
+  static Future<void> setShowPreviousBalance(bool show) async {
+    await setSetting(SettingKey.showPreviousBalance, show.toString());
+  }
+
   static Future<DateFormatOption> getDateFormat() async {
     final val = await getSetting(SettingKey.dateFormat);
     return DateFormatOptionExtension.fromKey(val);
@@ -232,5 +253,23 @@ class SettingsService {
 
   static Future<void> setDateFormat(DateFormatOption option) async {
     await setSetting(SettingKey.dateFormat, option.key);
+  }
+
+  static Future<PageSize> getPageSize() async {
+    final val = await getSetting(SettingKey.pageSize);
+    return PageSizeExtension.fromKey(val);
+  }
+
+  static Future<void> setPageSize(PageSize size) async {
+    await setSetting(SettingKey.pageSize, size.key);
+  }
+
+  static Future<bool> getShowTotalQuantity() async {
+    final val = await getSetting(SettingKey.showTotalQuantity);
+    return val == 'true';
+  }
+
+  static Future<void> setShowTotalQuantity(bool show) async {
+    await setSetting(SettingKey.showTotalQuantity, show.toString());
   }
 }

@@ -103,6 +103,10 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   bool _fractionalQuantity = false;
   String _quantityLabel = '';
   bool _showQuantity = true;
+  bool _showPreviousBalance = false;
+  double _previousBalanceDue = 0.0;
+  bool _isPreviousBalanceLoading = false;
+  int _previousBalanceRequestSerial = 0;
   BusinessType _businessType = BusinessType.both;
   String _datePattern = 'dd/MM/yyyy';
   String _adHocItemType = 'product'; // type for custom items added inline
@@ -389,6 +393,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       final showQuantity = await SettingsService.getShowQuantity();
       final businessType = await SettingsService.getBusinessType();
       final dateFormatOpt = await SettingsService.getDateFormat();
+      final showPrevBalance = await SettingsService.getShowPreviousBalance();
 
       // Determine which UPI to pre-select.
       String? existingUpiId;
@@ -449,6 +454,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         if (!showGst) _isTaxEnabled = false;
         _fractionalQuantity = fractionalQty;
         _showQuantity = showQuantity;
+        _showPreviousBalance = showPrevBalance;
         _businessType = businessType;
         _adHocItemType =
             businessType == BusinessType.service ? 'service' : 'product';
@@ -465,6 +471,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         }
         isLoading = false;
       });
+      if (showPrevBalance && selectedCustomer != null) {
+        await _loadPreviousBalanceDue(selectedCustomer);
+      }
       _completeInitialLoad();
     } catch (e) {
       setState(() => isLoading = false);
@@ -1425,7 +1434,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     });
   }
 
-  void _selectCustomer(Customer? customer) {
+  Future<void> _selectCustomer(Customer? customer) async {
     setState(() {
       selectedCustomer = customer;
       nameController.text = customer?.name ?? '';
@@ -1435,6 +1444,45 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       gstinController.text = customer?.gstin ?? '';
       businessNameController.text = customer?.businessName ?? '';
     });
+    await _loadPreviousBalanceDue(customer);
+  }
+
+  Future<void> _loadPreviousBalanceDue(Customer? customer) async {
+    final requestId = ++_previousBalanceRequestSerial;
+    if (!_showPreviousBalance ||
+        customer == null ||
+        customer.id.trim().isEmpty ||
+        invoiceType != 'Invoice') {
+      if (!mounted) return;
+      setState(() {
+        _previousBalanceDue = 0.0;
+        _isPreviousBalanceLoading = false;
+      });
+      return;
+    }
+
+    setState(() => _isPreviousBalanceLoading = true);
+    try {
+      final balance = await InvoiceService.getPreviousBalanceDueForCustomer(
+        customerId: customer.id,
+        currencyCode: _currencyCode,
+        asOfDate: _selectedOrderDate,
+        currentInvoiceId: currentInvoiceNumber.isNotEmpty
+            ? currentInvoiceNumber
+            : _invoice?.id,
+      );
+      if (!mounted || requestId != _previousBalanceRequestSerial) return;
+      setState(() {
+        _previousBalanceDue = balance;
+        _isPreviousBalanceLoading = false;
+      });
+    } catch (_) {
+      if (!mounted || requestId != _previousBalanceRequestSerial) return;
+      setState(() {
+        _previousBalanceDue = 0.0;
+        _isPreviousBalanceLoading = false;
+      });
+    }
   }
 
   Widget _customerSearchView() {
@@ -1843,6 +1891,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                           dateController.text =
                               DateFormat(_datePattern).format(picked);
                         });
+                        await _loadPreviousBalanceDue(selectedCustomer);
                       }
                     },
                   ),
@@ -1960,6 +2009,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     setState(() {
       invoiceType = invoiceType_;
     });
+    await _loadPreviousBalanceDue(selectedCustomer);
   }
 
   Future<void> resetValues(String invoiceType_) async {
@@ -1990,6 +2040,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       dateController.text = DateFormat(_datePattern).format(_selectedOrderDate);
       _selectedDueDate = null;
       dueDateController.clear();
+      _previousBalanceDue = 0.0;
+      _isPreviousBalanceLoading = false;
     });
     await _setAdditionalNote(forceDefault: true);
     _markFormClean();
@@ -2067,6 +2119,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         customers = reloaded;
         filteredCustomers = reloaded;
       });
+      await _loadPreviousBalanceDue(updated);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -2092,6 +2145,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         customers = reloaded;
         filteredCustomers = reloaded;
       });
+      await _loadPreviousBalanceDue(newCustomer);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -2514,6 +2568,120 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildPreviousBalanceDueRow() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 190;
+        final value = _isPreviousBalanceLoading
+            ? SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.orange[800],
+                ),
+              )
+            : Text(
+                '$_currencySymbol${_previousBalanceDue.toStringAsFixed(2)}',
+                textAlign: TextAlign.end,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                style: TextStyle(
+                  fontSize: compact ? 13 : 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orange[900],
+                ),
+              );
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.orange[50],
+            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+            border: Border.all(color: Colors.orange[200]!, width: 0.8),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.account_balance_wallet_outlined,
+                size: 16,
+                color: Colors.orange[800],
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  compact ? 'Prev. Balance' : 'Previous Balance Due',
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontSize: compact ? 12 : 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.orange[900],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                flex: compact ? 2 : 1,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: value,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTotalDueRow(double totalDue) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 170;
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.orange[700],
+            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  compact ? 'Due' : 'Total Due',
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontSize: compact ? 11 : 13,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                flex: compact ? 2 : 1,
+                child: Text(
+                  '$_currencySymbol${totalDue.toStringAsFixed(2)}',
+                  textAlign: TextAlign.end,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontSize: compact ? 12 : 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -2946,7 +3114,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                 decoration: InputDecoration(
                                   labelText: 'Payment UPI Account',
                                   prefixIcon: const Icon(Icons.qr_code_rounded,
-                                      size: 20),
+                                      size: 15),
                                   border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(
                                           AppBorderRadius.xsmall)),
@@ -2959,7 +3127,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                   const DropdownMenuItem<UpiEntry?>(
                                     value: null,
                                     child: Text('None',
-                                        style: TextStyle(color: Colors.grey)),
+                                        style: TextStyle(color: Colors.grey,
+                                            fontSize: 12),),
                                   ),
                                   ..._upiEntries
                                       .map((e) => DropdownMenuItem<UpiEntry?>(
@@ -2969,11 +3138,12 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                               children: [
                                                 if (e.isDefault) ...[
                                                   Icon(Icons.star_rounded,
-                                                      size: 14,
+                                                      size: 12,
                                                       color: Colors.amber[700]),
                                                   const SizedBox(width: 4),
                                                 ],
-                                                Text(e.displayLabel),
+                                                Text(e.displayLabel,
+                                                    style: TextStyle(fontSize: 12)),
                                               ],
                                             ),
                                           )),
@@ -2992,7 +3162,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                   labelText: 'Bank Account',
                                   prefixIcon: const Icon(
                                       Icons.account_balance_outlined,
-                                      size: 20),
+                                      size: 15),
                                   border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(
                                           AppBorderRadius.xsmall)),
@@ -3005,7 +3175,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                   const DropdownMenuItem<BankAccount?>(
                                     value: null,
                                     child: Text('None',
-                                        style: TextStyle(color: Colors.grey)),
+                                        style: TextStyle(color: Colors.grey,fontSize: 12)),
                                   ),
                                   ..._bankAccounts.map(
                                       (e) => DropdownMenuItem<BankAccount?>(
@@ -3015,11 +3185,13 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                               children: [
                                                 if (e.isDefault) ...[
                                                   Icon(Icons.star_rounded,
-                                                      size: 14,
+                                                      size: 12,
                                                       color: Colors.amber[700]),
                                                   const SizedBox(width: 4),
                                                 ],
-                                                Text(e.displayLabel),
+                                                Text(e.displayLabel,
+                                                style: TextStyle(fontSize: 12)
+                                                ),
                                               ],
                                             ),
                                           )),
@@ -3034,14 +3206,14 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     Expanded(
                       flex: (_upiEntries.isNotEmpty || _bankAccounts.isNotEmpty)
                           ? 2
-                          : 1,
+                          : 3,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // Enable Tax toggle (only when GST fields are enabled)
                           if (_showGstFields) ...[
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              //mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 const Flexible(
                                   child: Text(
@@ -3051,13 +3223,16 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                Switch(
-                                  value: _isTaxEnabled,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _isTaxEnabled = value;
-                                    });
-                                  },
+                                Transform.scale(
+                                  scale: 0.7,
+                                  child: Switch(
+                                    value: _isTaxEnabled,
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _isTaxEnabled = value;
+                                      });
+                                    },
+                                  ),
                                 ),
                               ],
                             ),
@@ -3090,7 +3265,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                             if (!_isPerItem)
                               TextField(
                                 controller: taxRateController,
-                                style: TextStyle(fontSize: AppFontSize.medium),
+                                style: TextStyle(fontSize: AppFontSize.small),
                                 decoration: InputDecoration(
                                   labelText: 'Tax Rate',
                                   labelStyle:
@@ -3145,7 +3320,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     ),
                     AppSpacing.wSmall,
                     Expanded(
-                      flex: 2,
+                      flex: 3,
                       child: Container(
                         padding: const EdgeInsets.all(AppPadding.medium),
                         decoration: BoxDecoration(
@@ -3190,8 +3365,20 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                     false,
                                   ),
                                 )),
+                            if (_showPreviousBalance &&
+                                selectedCustomer != null) ...[
+                              const SizedBox(height: 8),
+                              _buildPreviousBalanceDueRow(),
+                            ],
                             const SizedBox(height: 20),
                             _buildTotalRow('Total', total, true),
+                            if (_showPreviousBalance &&
+                                selectedCustomer != null &&
+                                !_isPreviousBalanceLoading &&
+                                _previousBalanceDue > 0) ...[
+                              const SizedBox(height: 8),
+                              _buildTotalDueRow(total + _previousBalanceDue),
+                            ],
                             if (isEditing &&
                                 _invoice != null &&
                                 _invoice!.type == 'Invoice' &&

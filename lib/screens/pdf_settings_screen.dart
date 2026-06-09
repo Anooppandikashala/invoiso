@@ -22,6 +22,10 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
   String? _previewedThemeColorHex;
   final _themeColorController = TextEditingController();
   bool _themeColorInputValid = true;
+  PageSize _savedPageSize = PageSize.a4;
+  PageSize _previewedPageSize = PageSize.a4;
+  bool _savedShowTotalQuantity = false;
+  bool _previewedShowTotalQuantity = false;
 
   static const _presetThemeColors = [
     Color(0xFF002E78),
@@ -54,6 +58,11 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
       "name": "Executive",
       "description": "Premium business layout with structured billing blocks",
     },
+    {
+      "template": InvoiceTemplate.compact,
+      "name": "Compact",
+      "description": "Space-efficient receipt layout, ideal for A6 printing",
+    },
   ];
 
   @override
@@ -63,27 +72,46 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
   }
 
   Future<void> _loadTemplate() async {
-    final saved = await SettingsService.getInvoiceTemplate();
-    final savedThemeColor = await SettingsService.getPdfThemeColor();
+    final results = await Future.wait([
+      SettingsService.getInvoiceTemplate(),
+      SettingsService.getPdfThemeColor(),
+      SettingsService.getPageSize(),
+      SettingsService.getShowTotalQuantity(),
+    ]);
+    final saved = results[0] as InvoiceTemplate;
+    final savedThemeColor = results[1] as String?;
+    final savedPageSize = results[2] as PageSize;
+    final savedShowTotalQty = results[3] as bool;
+    final previewedTemplate =
+        effectiveInvoiceTemplateForPageSize(saved, savedPageSize);
     setState(() {
       _savedTemplate = saved;
-      _previewedTemplate = saved;
+      _previewedTemplate = previewedTemplate;
       _savedThemeColorHex = savedThemeColor;
       _previewedThemeColorHex = savedThemeColor;
       _themeColorController.text = savedThemeColor ?? '';
+      _savedPageSize = savedPageSize;
+      _previewedPageSize = savedPageSize;
+      _savedShowTotalQuantity = savedShowTotalQty;
+      _previewedShowTotalQuantity = savedShowTotalQty;
     });
   }
 
   Future<void> _saveTemplate() async {
-    await SettingsService.setInvoiceTemplate(_previewedTemplate);
-    if (_previewedThemeColorHex == null) {
-      await SettingsService.clearPdfThemeColor();
-    } else {
-      await SettingsService.setPdfThemeColor(_previewedThemeColorHex!);
-    }
+    await Future.wait([
+      SettingsService.setInvoiceTemplate(_previewedTemplate),
+      if (_previewedThemeColorHex == null)
+        SettingsService.clearPdfThemeColor()
+      else
+        SettingsService.setPdfThemeColor(_previewedThemeColorHex!),
+      SettingsService.setPageSize(_previewedPageSize),
+      SettingsService.setShowTotalQuantity(_previewedShowTotalQuantity),
+    ]);
     setState(() {
       _savedTemplate = _previewedTemplate;
       _savedThemeColorHex = _previewedThemeColorHex;
+      _savedPageSize = _previewedPageSize;
+      _savedShowTotalQuantity = _previewedShowTotalQuantity;
     });
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -105,6 +133,21 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
       _previewedThemeColorHex = hexColor;
       _themeColorController.text = hexColor ?? '';
       _themeColorInputValid = true;
+    });
+  }
+
+  void _setPreviewedTemplate(InvoiceTemplate template) {
+    if (!template.supportsPageSize(_previewedPageSize)) return;
+    setState(() => _previewedTemplate = template);
+  }
+
+  void _setPreviewedPageSize(PageSize pageSize) {
+    setState(() {
+      _previewedPageSize = pageSize;
+      _previewedTemplate = effectiveInvoiceTemplateForPageSize(
+        _previewedTemplate,
+        pageSize,
+      );
     });
   }
 
@@ -177,7 +220,9 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
   Widget build(BuildContext context) {
     final hasUnsavedChange = _themeColorInputValid &&
         (_previewedTemplate != _savedTemplate ||
-            _previewedThemeColorHex != _savedThemeColorHex);
+            _previewedThemeColorHex != _savedThemeColorHex ||
+            _previewedPageSize != _savedPageSize ||
+            _previewedShowTotalQuantity != _savedShowTotalQuantity);
 
     return Scaffold(
       appBar: AppBar(
@@ -233,74 +278,81 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
-          child: Text(
-            "Templates",
-            style: TextStyle(
-              fontSize: AppFontSize.large,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[700],
-              letterSpacing: 0.4,
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _sectionLabel("Settings"),
+                const SizedBox(height: 8),
+                _buildPageSizeSection(),
+                if (_previewedTemplate == InvoiceTemplate.compact) ...[
+                  const SizedBox(height: 6),
+                  _buildTotalQuantityToggle(),
+                ],
+                const SizedBox(height: 14),
+                _sectionLabel("Templates"),
+                const SizedBox(height: 8),
+                ..._templates.asMap().entries.map((e) {
+                  final index = e.key;
+                  final entry = e.value;
+                  final template = entry["template"] as InvoiceTemplate;
+                  final name = entry["name"] as String;
+                  final description = entry["description"] as String;
+                  final isDisabled =
+                      !template.supportsPageSize(_previewedPageSize);
+                  return Padding(
+                    padding: EdgeInsets.only(
+                        bottom: index < _templates.length - 1 ? 6 : 0),
+                    child: _TemplateListTile(
+                      template: template,
+                      name: name,
+                      description: description,
+                      themeColor: _activePreviewColor,
+                      isPreviewed: _previewedTemplate == template,
+                      isSaved: _savedTemplate == template,
+                      isDefault: index == 0,
+                      isDisabled: isDisabled,
+                      disabledLabel: template == InvoiceTemplate.compact
+                          ? "A6 only"
+                          : "Not for A6",
+                      onTap: () => _setPreviewedTemplate(template),
+                    ),
+                  );
+                }),
+                const SizedBox(height: 6),
+                _ThemeColorCard(
+                  controller: _themeColorController,
+                  presetColors: _presetThemeColors,
+                  selectedHex: _previewedThemeColorHex,
+                  isValid: _themeColorInputValid,
+                  onPresetSelected: (color) =>
+                      _setPreviewedThemeColor(_colorToHex(color)),
+                  onCustomChanged: _handleCustomThemeColor,
+                  onUseTemplateDefault: () => _setPreviewedThemeColor(null),
+                  onPickColor: _openColorPicker,
+                ),
+                const SizedBox(height: 6),
+                _buildCustomTemplatePromo(),
+              ],
             ),
           ),
         ),
-        Expanded(
-          child: ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            itemCount: _templates.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
-            itemBuilder: (context, index) {
-              final entry = _templates[index];
-              final template = entry["template"] as InvoiceTemplate;
-              final name = entry["name"] as String;
-              final description = entry["description"] as String;
-
-              return _TemplateListTile(
-                template: template,
-                name: name,
-                description: description,
-                themeColor: _activePreviewColor,
-                isPreviewed: _previewedTemplate == template,
-                isSaved: _savedTemplate == template,
-                isDefault: index == 0,
-                onTap: () => setState(() => _previewedTemplate = template),
-              );
-            },
-          ),
-        ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-          child: _ThemeColorCard(
-            controller: _themeColorController,
-            presetColors: _presetThemeColors,
-            selectedHex: _previewedThemeColorHex,
-            isValid: _themeColorInputValid,
-            onPresetSelected: (color) =>
-                _setPreviewedThemeColor(_colorToHex(color)),
-            onCustomChanged: _handleCustomThemeColor,
-            onUseTemplateDefault: () => _setPreviewedThemeColor(null),
-            onPickColor: _openColorPicker,
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-          child: _buildCustomTemplatePromo(),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
           child: SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: hasUnsavedChange ? _saveTemplate : null,
-              icon: const Icon(Icons.save_rounded),
+              icon: const Icon(Icons.save_rounded, size: 16),
               label: const Text("Save"),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).primaryColor,
                 foregroundColor: Colors.white,
                 disabledBackgroundColor: Colors.grey[300],
                 disabledForegroundColor: Colors.grey[500],
-                padding: const EdgeInsets.symmetric(vertical: 14),
+                padding: const EdgeInsets.symmetric(vertical: 10),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppBorderRadius.small),
                 ),
@@ -309,6 +361,94 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _sectionLabel(String text) {
+    return Text(
+      text.toUpperCase(),
+      style: TextStyle(
+        fontSize: AppFontSize.xsmall,
+        fontWeight: FontWeight.w700,
+        color: Colors.grey[500],
+        letterSpacing: 0.9,
+      ),
+    );
+  }
+
+  Widget _buildPageSizeSection() {
+    final primaryColor = Theme.of(context).primaryColor;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppBorderRadius.small),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Page size',
+            style: TextStyle(
+              fontSize: AppFontSize.small,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[700],
+            ),
+          ),
+          const SizedBox(height: 8),
+          SegmentedButton<PageSize>(
+            segments: PageSize.values
+                .map((s) => ButtonSegment<PageSize>(
+                      value: s,
+                      label: Text(s.label,
+                          style: const TextStyle(fontSize: AppFontSize.small)),
+                    ))
+                .toList(),
+            selected: {_previewedPageSize},
+            onSelectionChanged: (val) => _setPreviewedPageSize(val.first),
+            style: ButtonStyle(
+              visualDensity: VisualDensity.compact,
+              side:
+                  WidgetStatePropertyAll(BorderSide(color: Colors.grey[300]!)),
+              foregroundColor: WidgetStateProperty.resolveWith(
+                (states) => states.contains(WidgetState.selected)
+                    ? primaryColor
+                    : Colors.grey[700],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTotalQuantityToggle() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppBorderRadius.small),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Show total quantity row',
+            style: TextStyle(
+              fontSize: AppFontSize.small,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[700],
+            ),
+          ),
+          Switch(
+            value: _previewedShowTotalQuantity,
+            onChanged: (v) => setState(() => _previewedShowTotalQuantity = v),
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+        ],
+      ),
     );
   }
 
@@ -401,6 +541,7 @@ Color _defaultThemeColor(InvoiceTemplate template) {
     InvoiceTemplate.modern => const Color(0xFF1E88E5),
     InvoiceTemplate.minimal => const Color(0xFF616161),
     InvoiceTemplate.executive => const Color(0xFF37474F),
+    InvoiceTemplate.compact => const Color(0xFF000000),
   };
 }
 
@@ -414,6 +555,8 @@ class _TemplateListTile extends StatelessWidget {
   final bool isPreviewed;
   final bool isSaved;
   final bool isDefault;
+  final bool isDisabled;
+  final String? disabledLabel;
   final VoidCallback onTap;
 
   const _TemplateListTile({
@@ -425,6 +568,8 @@ class _TemplateListTile extends StatelessWidget {
     required this.isSaved,
     required this.isDefault,
     required this.onTap,
+    this.isDisabled = false,
+    this.disabledLabel,
   });
 
   @override
@@ -432,87 +577,113 @@ class _TemplateListTile extends StatelessWidget {
     final primaryColor = Theme.of(context).primaryColor;
 
     return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        decoration: BoxDecoration(
-          color:
-              isPreviewed ? primaryColor.withValues(alpha: 0.08) : Colors.white,
-          border: Border.all(
-            color: isPreviewed ? primaryColor : Colors.grey[300]!,
-            width: isPreviewed ? 2 : 1,
-          ),
-          borderRadius: BorderRadius.circular(AppBorderRadius.small),
-        ),
-        padding: const EdgeInsets.all(10),
-        child: Row(
-          children: [
-            // Thumbnail
-            ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: _TemplatePreviewSketch(
-                template: template,
-                themeColor: themeColor,
-                width: 68,
-                height: 78,
-              ),
+      onTap: isDisabled ? null : onTap,
+      child: Opacity(
+        opacity: isDisabled ? 0.5 : 1.0,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          decoration: BoxDecoration(
+            color: isPreviewed
+                ? primaryColor.withValues(alpha: 0.08)
+                : Colors.white,
+            border: Border.all(
+              color: isPreviewed ? primaryColor : Colors.grey[300]!,
+              width: isPreviewed ? 2 : 1,
             ),
-            const SizedBox(width: 12),
-            // Info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
+            borderRadius: BorderRadius.circular(AppBorderRadius.small),
+          ),
+          padding: const EdgeInsets.all(8),
+          child: Row(
+            children: [
+              // Thumbnail
+              ClipRRect(
+                borderRadius: BorderRadius.circular(5),
+                child: _TemplatePreviewSketch(
+                  template: template,
+                  themeColor: themeColor,
+                  width: 64,
+                  height: 74,
+                ),
+              ),
+              const SizedBox(width: 10),
+              // Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            name,
+                            style: TextStyle(
+                              fontSize: AppFontSize.medium,
+                              fontWeight: FontWeight.w600,
+                              color:
+                                  isPreviewed ? primaryColor : Colors.black87,
+                            ),
+                          ),
+                        ),
+                        if (isSaved)
+                          Icon(Icons.check_circle_rounded,
+                              color: primaryColor, size: 16),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      description,
+                      style: TextStyle(
+                        fontSize: AppFontSize.xsmall,
+                        color: Colors.grey[600],
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (isDefault) ...[
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 5, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(3),
+                        ),
                         child: Text(
-                          name,
+                          "Default",
                           style: TextStyle(
-                            fontSize: AppFontSize.large,
-                            fontWeight: FontWeight.w600,
-                            color: isPreviewed ? primaryColor : Colors.black87,
+                            fontSize: AppFontSize.xsmall,
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
-                      if (isSaved)
-                        Icon(Icons.check_circle_rounded,
-                            color: primaryColor, size: 18),
                     ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    description,
-                    style: TextStyle(
-                      fontSize: AppFontSize.small,
-                      color: Colors.grey[600],
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (isDefault) ...[
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[200],
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        "Default",
-                        style: TextStyle(
-                          fontSize: AppFontSize.small,
-                          color: Colors.grey[600],
-                          fontWeight: FontWeight.w500,
+                    if (isDisabled) ...[
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 5, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: Colors.amber[50],
+                          border:
+                              Border.all(color: Colors.amber[300]!, width: 0.5),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                        child: Text(
+                          disabledLabel ?? "Unavailable",
+                          style: TextStyle(
+                            fontSize: AppFontSize.xsmall,
+                            color: Colors.amber[800],
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -827,6 +998,7 @@ class _TemplatePreviewSketch extends StatelessWidget {
         InvoiceTemplate.modern => _modern(),
         InvoiceTemplate.minimal => _minimal(),
         InvoiceTemplate.executive => _executive(),
+        InvoiceTemplate.compact => _compact(),
       },
     );
   }
@@ -941,11 +1113,11 @@ class _TemplatePreviewSketch extends StatelessWidget {
             ],
           ),
         ),
-        SizedBox(height: showDetails ? 24 : 5),
+        Flexible(child: SizedBox(height: showDetails ? 24 : 3)),
         _table(),
         const Spacer(),
         _totals(),
-        SizedBox(height: showDetails ? 18 : 4),
+        Flexible(child: SizedBox(height: showDetails ? 18 : 2)),
         Container(height: showDetails ? 34 : 7, color: themeColor),
       ],
     );
@@ -1013,7 +1185,7 @@ class _TemplatePreviewSketch extends StatelessWidget {
                 height: showDetails ? 18 : 5, color: themeColor),
           ],
         ),
-        SizedBox(height: showDetails ? 24 : 4),
+        Flexible(child: SizedBox(height: showDetails ? 24 : 2)),
         Row(
           children: [
             Expanded(
@@ -1027,12 +1199,59 @@ class _TemplatePreviewSketch extends StatelessWidget {
                     color: const Color(0xFFF8FAFC))),
           ],
         ),
-        SizedBox(height: showDetails ? 24 : 4),
+        Flexible(child: SizedBox(height: showDetails ? 24 : 2)),
         _table(),
         const Spacer(),
         _totals(),
-        SizedBox(height: showDetails ? 18 : 3),
+        Flexible(child: SizedBox(height: showDetails ? 18 : 1)),
         Container(height: showDetails ? 3 : 1.5, color: themeColor),
+      ],
+    );
+  }
+
+  Widget _compact() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+                width: showDetails ? 40 : 10,
+                height: showDetails ? 32 : 9,
+                color: const Color(0xFFE5E7EB)),
+            SizedBox(width: showDetails ? 8 : 2),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _line(.8, height: showDetails ? 9 : 3),
+                  SizedBox(height: showDetails ? 4 : 2),
+                  _line(.6, height: showDetails ? 6 : 2),
+                ],
+              ),
+            ),
+            SizedBox(width: showDetails ? 8 : 2),
+            _fixedLine(showDetails ? 52 : 14,
+                height: showDetails ? 11 : 3, color: themeColor),
+          ],
+        ),
+        SizedBox(height: showDetails ? 8 : 2),
+        Container(
+          height: showDetails ? 36 : 8,
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0xFFCBD5E1), width: 0.5),
+          ),
+        ),
+        SizedBox(height: showDetails ? 6 : 2),
+        _table(),
+        SizedBox(height: showDetails ? 4 : 1),
+        Container(
+          height: showDetails ? 14 : 3,
+          color: const Color(0xFFF1F5F9),
+        ),
+        const Spacer(),
+        _totals(),
       ],
     );
   }

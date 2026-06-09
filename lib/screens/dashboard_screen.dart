@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 import 'package:invoiso/constants.dart';
 import 'package:invoiso/services/update_service.dart';
@@ -722,6 +723,8 @@ class _DashboardHomeState extends State<DashboardHome> {
   bool isLoading = true;
   String _dashboardLayout = 'default';
   bool _showLayoutBanner = false;
+  bool _showSupportBanner = false;
+  String _supportMilestone = '';
   List<Map<String, dynamic>> _monthlyRevenue = [];
   List<Map<String, dynamic>> _topCustomers = [];
   List<Map<String, dynamic>> _topProducts = [];
@@ -748,6 +751,7 @@ class _DashboardHomeState extends State<DashboardHome> {
       InvoiceService.getTopCustomers(), // 9
       InvoiceService.getTopProducts(), // 10
       SettingsService.getSetting(SettingKey.layoutBannerDismissed), // 11
+      SettingsService.getSetting(SettingKey.supportBannerDismissed), // 12
     ]);
 
     final customers = results[0] as List<Customer>;
@@ -763,6 +767,12 @@ class _DashboardHomeState extends State<DashboardHome> {
     final topCust = results[9] as List<Map<String, dynamic>>;
     final topProd = results[10] as List<Map<String, dynamic>>;
     final bannerDismissed = results[11] as String?;
+    final supportDismissed = results[12] as String?;
+    final String milestone = financials.count >= 100
+        ? '100'
+        : financials.count >= 50
+            ? '50'
+            : '';
 
     setState(() {
       totalCustomers = customers.length;
@@ -780,8 +790,16 @@ class _DashboardHomeState extends State<DashboardHome> {
       _topCustomers = topCust;
       _topProducts = topProd;
       _showLayoutBanner = bannerDismissed != '1';
+      _supportMilestone = milestone;
+      _showSupportBanner = milestone.isNotEmpty && supportDismissed != milestone;
       isLoading = false;
     });
+  }
+
+  Future<void> _dismissSupportBanner() async {
+    await SettingsService.setSetting(
+        SettingKey.supportBannerDismissed, _supportMilestone);
+    if (mounted) setState(() => _showSupportBanner = false);
   }
 
   Future<void> _dismissLayoutBanner() async {
@@ -857,6 +875,81 @@ class _DashboardHomeState extends State<DashboardHome> {
     );
   }
 
+  Widget _buildSupportBanner() {
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+      child: _showSupportBanner
+          ? Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFFBEB),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFFDE68A)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.celebration_outlined,
+                      color: Color(0xFFD97706), size: 22),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'You\'ve created $_supportMilestone invoices!',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: Color(0xFF92400E),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        const Text(
+                          'Looks like Invoiso is part of your workflow. If it\'s been helpful, consider supporting the project — whenever it feels right.',
+                          style: TextStyle(
+                              fontSize: 12, color: Color(0xFFB45309)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () async {
+                      final uri =
+                          Uri.parse('https://buymeacoffee.com/anoopp');
+                      if (await canLaunchUrl(uri)) await launchUrl(uri);
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFF92400E),
+                      backgroundColor: const Color(0xFFFDE68A),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text('Support',
+                        style: TextStyle(fontWeight: FontWeight.w600)),
+                  ),
+                  const SizedBox(width: 4),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 16),
+                    color: const Color(0xFFD97706),
+                    onPressed: _dismissSupportBanner,
+                    tooltip: 'Dismiss',
+                    padding: EdgeInsets.zero,
+                    constraints:
+                        const BoxConstraints(minWidth: 28, minHeight: 28),
+                  ),
+                ],
+              ),
+            )
+          : const SizedBox.shrink(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -906,6 +999,7 @@ class _DashboardHomeState extends State<DashboardHome> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildLayoutDiscoveryBanner(),
+              _buildSupportBanner(),
               // ── Greeting Banner ──────────────────────────────
               _buildGreetingBanner(),
 
@@ -2279,6 +2373,7 @@ class _DashboardHomeState extends State<DashboardHome> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildLayoutDiscoveryBanner(),
+              _buildSupportBanner(),
               _buildGreetingBanner(),
               const SizedBox(height: 20),
               // KPI row
@@ -2374,6 +2469,7 @@ class _DashboardHomeState extends State<DashboardHome> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildLayoutDiscoveryBanner(),
+              _buildSupportBanner(),
               _buildGreetingBanner(),
               const SizedBox(height: 20),
               // Mini KPI strip
@@ -3339,6 +3435,7 @@ class _DashboardHomeState extends State<DashboardHome> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildLayoutDiscoveryBanner(),
+              _buildSupportBanner(),
               _buildGreetingBanner(),
               const SizedBox(height: 20),
               // ── Top row: Hero chart + 2×2 KPI grid ──────────────────────────

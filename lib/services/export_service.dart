@@ -5,6 +5,7 @@ import 'package:archive/archive.dart';
 import 'package:archive/archive_io.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
+import '../database/invoice_service.dart';
 import '../database/settings_service.dart';
 import '../models/invoice.dart';
 import '../services/pdf_service.dart';
@@ -98,7 +99,14 @@ class ExportService {
     final s = settings ?? await PDFService.fetchPdfSettings();
     for (int i = 0; i < invoices.length; i++) {
       final invoice = invoices[i];
-      final pdf = PDFService.generateInvoicePDFWithSettings(invoice, s);
+      final previousBalanceDue = s.showPreviousBalance
+          ? await InvoiceService.getPreviousBalanceDueForInvoice(invoice)
+          : 0.0;
+      final pdf = PDFService.generateInvoicePDFWithSettings(
+        invoice,
+        s,
+        previousBalanceDue: previousBalanceDue,
+      );
       final bytes = await pdf.save();
       final filename = PDFService.buildPdfFilename(invoice);
       await File('${exportDir.path}/$filename').writeAsBytes(bytes);
@@ -123,10 +131,18 @@ class ExportService {
 
     for (int i = 0; i < invoices.length; i++) {
       final invoice = invoices[i];
-      final pdf = PDFService.generateInvoicePDFWithSettings(invoice, s);
+      final previousBalanceDue = s.showPreviousBalance
+          ? await InvoiceService.getPreviousBalanceDueForInvoice(invoice)
+          : 0.0;
+      final pdf = PDFService.generateInvoicePDFWithSettings(
+        invoice,
+        s,
+        previousBalanceDue: previousBalanceDue,
+      );
       final bytes = await pdf.save();
       final filename = PDFService.buildPdfFilename(invoice);
-      encoder.add(ArchiveFile(filename, bytes.length, Uint8List.fromList(bytes)));
+      encoder
+          .add(ArchiveFile(filename, bytes.length, Uint8List.fromList(bytes)));
       onProgress?.call(i + 1, invoices.length);
     }
 
