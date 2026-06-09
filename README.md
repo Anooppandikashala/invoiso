@@ -31,6 +31,16 @@
     <a href="https://github.com/Anooppandikashala/invoiso/issues">🐛 Report a Bug</a>
   </p>
 
+  <p>
+    <a href="https://github.com/sponsors/anooppandikashala">
+      <img src="https://img.shields.io/badge/Sponsor-%E2%9D%A4-ea4aaa?logo=github-sponsors&logoColor=white" alt="Sponsor on GitHub" />
+    </a>
+    &nbsp;
+    <a href="https://buymeacoffee.com/anoopp">
+      <img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-support-FFDD00?logo=buy-me-a-coffee&logoColor=black" alt="Buy Me a Coffee" />
+    </a>
+  </p>
+
   <br/>
 
   <img src="landing/assets/images/invoiso_banner.webp" alt="Invoiso — Free Offline Invoice &amp; Billing Software for Windows and Linux" width="100%" />
