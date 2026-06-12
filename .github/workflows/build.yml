@@ -5,16 +5,6 @@ on:
     tags:
       - "v*"
 
-env:
-  # ─── BUILD TOGGLES ─────────────────────────────────────────
-  BUILD_WINDOWS: 'true'
-  BUILD_LINUX_DEB22: 'false'
-  BUILD_LINUX_DEB24: 'false'
-  BUILD_APPIMAGE22: 'false'
-  BUILD_APPIMAGE24: 'false'
-  BUILD_MACOS: 'false'
-  # ───────────────────────────────────────────────────────────
-
 # Required so GITHUB_TOKEN can create releases and upload assets
 permissions:
   contents: write
@@ -24,7 +14,7 @@ jobs:
   # Windows — build .exe installer
   # ─────────────────────────────────────────────────────────────
   build-windows:
-    if: ${{ env.BUILD_WINDOWS == 'true' }}
+    if: ${{ var.BUILD_WINDOWS == 'true' }}
     runs-on: windows-latest
 
     steps:
@@ -90,7 +80,7 @@ jobs:
   # Linux — build .deb package
   # ─────────────────────────────────────────────────────────────
   build-linux:
-    if: ${{ env.BUILD_LINUX_DEB22 == 'true' }}
+    if: ${{ var.BUILD_LINUX_DEB22 == 'true' }}
     runs-on: ubuntu-22.04
 
     steps:
@@ -145,7 +135,7 @@ jobs:
   # Ryzen 7000 series) running Ubuntu 24.04 (Noble).
   # ─────────────────────────────────────────────────────────────
   build-linux-ubuntu24:
-    if: ${{ env.BUILD_LINUX_DEB24 == 'true' }}
+    if: ${{ var.BUILD_LINUX_DEB24 == 'true' }}
     runs-on: ubuntu-24.04
 
     steps:
@@ -231,7 +221,7 @@ jobs:
   # Linux — build AppImage
   # ─────────────────────────────────────────────────────────────
   build-appimage:
-    if: ${{ env.BUILD_APPIMAGE22 == 'true' }}
+    if: ${{ var.BUILD_APPIMAGE22 == 'true' }}
     runs-on: ubuntu-22.04
 
     steps:
@@ -305,7 +295,7 @@ jobs:
   # which are standard on Ubuntu 24.04.
   # ─────────────────────────────────────────────────────────────
   build-appimage-ubuntu24:
-    if: ${{ env.BUILD_APPIMAGE24 == 'true' }}
+    if: ${{ var.BUILD_APPIMAGE24 == 'true' }}
     runs-on: ubuntu-24.04
 
     steps:
@@ -411,7 +401,7 @@ jobs:
   # macOS — build .dmg installer
   # ─────────────────────────────────────────────────────────────
   build-macos:
-    if: ${{ env.BUILD_MACOS == 'true' }}
+    if: ${{ var.BUILD_MACOS == 'true' }}
     runs-on: macos-latest
 
     steps:
@@ -498,6 +488,7 @@ jobs:
         with:
           name: Invoiso-Windows-Installer
           path: release-assets/
+        continue-on-error: true
 
 
       - name: Download Ubuntu22 .deb
@@ -505,30 +496,35 @@ jobs:
         with:
           name: Invoiso-Ubuntu22.deb
           path: release-assets/
+        continue-on-error: true
 
       - name: Download AppImage
         uses: actions/download-artifact@v4
         with:
           name: Invoiso-AppImage
           path: release-assets/
+        continue-on-error: true
 
       - name: Download Ubuntu24 .deb
         uses: actions/download-artifact@v4
         with:
           name: Invoiso-Ubuntu24.deb
           path: release-assets/
+        continue-on-error: true
 
       - name: Download Ubuntu24 AppImage
         uses: actions/download-artifact@v4
         with:
           name: Invoiso-AppImage-Ubuntu24
           path: release-assets/
+        continue-on-error: true
 
       - name: Download macOS DMG
         uses: actions/download-artifact@v4
         with:
           name: Invoiso-macOS
           path: release-assets/
+        continue-on-error: true
 
       - name: List release assets
         run: find release-assets -type f
