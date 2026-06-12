@@ -14,7 +14,7 @@ jobs:
   # Windows — build .exe installer
   # ─────────────────────────────────────────────────────────────
   build-windows:
-    if: ${{ var.BUILD_WINDOWS == 'true' }}
+    if: ${{ vars.BUILD_WINDOWS == 'true' }}
     runs-on: windows-latest
 
     steps:
@@ -80,7 +80,7 @@ jobs:
   # Linux — build .deb package
   # ─────────────────────────────────────────────────────────────
   build-linux:
-    if: ${{ var.BUILD_LINUX_DEB22 == 'true' }}
+    if: ${{ vars.BUILD_LINUX_DEB22 == 'true' }}
     runs-on: ubuntu-22.04
 
     steps:
@@ -135,7 +135,7 @@ jobs:
   # Ryzen 7000 series) running Ubuntu 24.04 (Noble).
   # ─────────────────────────────────────────────────────────────
   build-linux-ubuntu24:
-    if: ${{ var.BUILD_LINUX_DEB24 == 'true' }}
+    if: ${{ vars.BUILD_LINUX_DEB24 == 'true' }}
     runs-on: ubuntu-24.04
 
     steps:
@@ -221,7 +221,7 @@ jobs:
   # Linux — build AppImage
   # ─────────────────────────────────────────────────────────────
   build-appimage:
-    if: ${{ var.BUILD_APPIMAGE22 == 'true' }}
+    if: ${{ vars.BUILD_APPIMAGE22 == 'true' }}
     runs-on: ubuntu-22.04
 
     steps:
@@ -295,7 +295,7 @@ jobs:
   # which are standard on Ubuntu 24.04.
   # ─────────────────────────────────────────────────────────────
   build-appimage-ubuntu24:
-    if: ${{ var.BUILD_APPIMAGE24 == 'true' }}
+    if: ${{ vars.BUILD_APPIMAGE24 == 'true' }}
     runs-on: ubuntu-24.04
 
     steps:
@@ -401,7 +401,7 @@ jobs:
   # macOS — build .dmg installer
   # ─────────────────────────────────────────────────────────────
   build-macos:
-    if: ${{ var.BUILD_MACOS == 'true' }}
+    if: ${{ vars.BUILD_MACOS == 'true' }}
     runs-on: macos-latest
 
     steps:
