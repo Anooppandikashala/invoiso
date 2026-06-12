@@ -26,6 +26,9 @@ jobs:
           flutter-version: '3.32.8'
           cache: true
 
+      - name: Setup Visual Studio Build Tools
+        uses: microsoft/setup-msbuild@v1
+
       - name: Set version from tag
         shell: bash
         run: |
@@ -40,8 +43,10 @@ jobs:
       - name: Flutter Pub Get
         run: flutter pub get
 
-      - name: Build Flutter Windows Release
-        run: flutter build windows --release
+#      - name: Build Flutter Windows Release
+#        run: flutter build windows --release
+#        env:
+#          CMAKE_GENERATOR: "Visual Studio 17 2022"
 
       - name: Build Windows Installer with FastForge
         run: fastforge package --platform windows --targets exe
