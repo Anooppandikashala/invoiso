@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:intl/intl.dart';
 import 'package:open_file/open_file.dart';
 import 'package:printing/printing.dart';
@@ -13,6 +12,7 @@ import 'package:invoiso/database/company_info_service.dart';
 import 'package:invoiso/database/invoice_service.dart';
 import 'package:invoiso/database/settings_service.dart';
 import 'package:invoiso/models/company_info.dart';
+import 'package:invoiso/services/pdf_font_service.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:flutter/foundation.dart';
@@ -49,7 +49,7 @@ class PdfGenerationSettings {
   final bool showPreviousBalance;
   final PdfPageFormat pageFormat;
   final bool showTotalQuantity;
-  final List<pw.Font> fontFallback;
+  final pw.ThemeData pdfTheme;
 
   const PdfGenerationSettings({
     required this.company,
@@ -74,7 +74,7 @@ class PdfGenerationSettings {
     required this.showPreviousBalance,
     required this.pageFormat,
     required this.showTotalQuantity,
-    required this.fontFallback,
+    required this.pdfTheme,
     this.signatureBytes,
     this.signaturePosition = 'left',
   });
@@ -149,8 +149,7 @@ class PDFService {
     final sigBytes = (base64Sig != null && base64Sig.isNotEmpty)
         ? base64Decode(base64Sig)
         : null;
-    final lkrFontData = await rootBundle.load('assets/fonts/lklug.ttf');
-    final lkrFont = pw.Font.ttf(lkrFontData);
+    final pdfTheme = await PdfFontService.loadTheme();
 
     return PdfGenerationSettings(
       company: results[0] as CompanyInfo?,
@@ -178,7 +177,7 @@ class PDFService {
       showPreviousBalance: results[20] as bool,
       pageFormat: _pageSizeToFormat(pageSize),
       showTotalQuantity: results[22] as bool,
-      fontFallback: [lkrFont],
+      pdfTheme: pdfTheme,
     );
   }
 
@@ -187,13 +186,11 @@ class PDFService {
   static pw.Document generateInvoicePDFWithSettings(
       Invoice invoice, PdfGenerationSettings s,
       {double previousBalanceDue = 0.0}) {
-    final pdf = pw.Document();
+    final pdf = pw.Document(theme: s.pdfTheme);
     final currencySymbol = invoice.currencySymbol;
     final effectivePreviousBalance =
         s.showPreviousBalance ? previousBalanceDue : 0.0;
-    final pdfTheme = s.fontFallback.isEmpty
-        ? null
-        : pw.ThemeData.withFont(fontFallback: s.fontFallback);
+    final pdfTheme = s.pdfTheme;
 
     String? effectiveUpiId = invoice.upiId;
     if (effectiveUpiId == null || effectiveUpiId.trim().isEmpty) {
@@ -407,7 +404,7 @@ class PDFService {
     return pw.MultiPage(
       pageFormat: pageFormat,
       theme: pdfTheme,
-      margin: const pw.EdgeInsets.all(36),
+      margin: pw.EdgeInsets.all(PdfLayout.defaultMargin),
       footer: (context) => pw.Container(
         alignment: pw.Alignment.centerRight,
         margin: const pw.EdgeInsets.only(top: 20),
@@ -651,8 +648,7 @@ class PDFService {
     return pw.MultiPage(
       pageFormat: pageFormat,
       theme: pdfTheme,
-      margin:
-          const pw.EdgeInsets.all(45), // Increased margin for more whitespace
+      margin: pw.EdgeInsets.all(PdfLayout.defaultMargin), // Increased margin for more whitespace
       footer: (context) => pw.Container(
         alignment: pw.Alignment.centerRight,
         margin: const pw.EdgeInsets.only(top: 20),
@@ -958,8 +954,8 @@ class PDFService {
 
         // 2. Invoice Title and Number/Date
         pw.Padding(
-          padding: const pw.EdgeInsets.fromLTRB(
-              30, 10, 30, 10), // Padding for this section
+          padding: pw.EdgeInsets.fromLTRB(
+              PdfLayout.defaultMargin, 10, PdfLayout.defaultMargin, 10), // Padding for this section
           child: pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.end,
             crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -992,7 +988,7 @@ class PDFService {
 
         // 3. Bill To section
         pw.Padding(
-          padding: const pw.EdgeInsets.symmetric(horizontal: 30),
+          padding: pw.EdgeInsets.symmetric(horizontal: PdfLayout.defaultMargin),
           child: pw.Container(
             decoration: pw.BoxDecoration(
               color: PdfColors.grey100,
@@ -1034,7 +1030,7 @@ class PDFService {
 
         // 4. Table Section
         pw.Padding(
-          padding: const pw.EdgeInsets.symmetric(horizontal: 30),
+          padding: pw.EdgeInsets.symmetric(horizontal: PdfLayout.defaultMargin),
           child: _buildInvoiceTable(invoice,
               headerColor: accentColor,
               textColor: PdfColors.white,
@@ -1049,7 +1045,7 @@ class PDFService {
 
         // 5. Notes + Totals (side by side)
         pw.Padding(
-          padding: const pw.EdgeInsets.symmetric(horizontal: 30),
+          padding: pw.EdgeInsets.symmetric(horizontal: PdfLayout.defaultMargin),
           child: pw.Row(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -1070,7 +1066,9 @@ class PDFService {
 
         if (signatureImage != null) ...[
           pw.SizedBox(height: 16),
-          _buildSignatureWidget(signatureImage, signaturePosition),
+          pw.Padding(
+            padding: pw.EdgeInsets.symmetric(horizontal: PdfLayout.defaultMargin),
+          child:_buildSignatureWidget(signatureImage, signaturePosition)),
         ],
 
         if (showUpiQr && upiId != null || bankAccount != null)
@@ -1079,7 +1077,7 @@ class PDFService {
         // 5c. QR + Bank Details
         if (showUpiQr && upiId != null || bankAccount != null)
           pw.Padding(
-            padding: const pw.EdgeInsets.symmetric(horizontal: 30),
+            padding: pw.EdgeInsets.symmetric(horizontal: PdfLayout.defaultMargin),
             child: pw.Align(
               alignment: pw.Alignment.centerRight,
               child: pw.Column(
@@ -1109,7 +1107,7 @@ class PDFService {
         // 6. Footer thank-you
         pw.Container(
           color: accentColor,
-          padding: const pw.EdgeInsets.all(18),
+          padding: pw.EdgeInsets.all((PdfLayout.defaultMargin-12)),
           child: pw.Center(
             child: pw.Text(thankyouNote,
                 style: pw.TextStyle(
@@ -1201,7 +1199,7 @@ class PDFService {
     return pw.MultiPage(
       pageFormat: pageFormat,
       theme: pdfTheme,
-      margin: const pw.EdgeInsets.all(34),
+      margin: pw.EdgeInsets.all(PdfLayout.defaultMargin),
       footer: (context) => pw.Container(
         alignment: pw.Alignment.centerRight,
         margin: const pw.EdgeInsets.only(top: 16),
@@ -1244,6 +1242,10 @@ class PDFService {
                   if ((company?.website ?? '').isNotEmpty)
                     pw.Text(company!.website,
                         style: const pw.TextStyle(fontSize: 9)),
+                  if (showGst)
+                    pw.Text(
+                        '${taxLabel(company?.country)}: ${company?.gstin ?? ''}',
+                        style: const pw.TextStyle(fontSize: 9))
                 ],
               ),
             ),
@@ -1278,9 +1280,14 @@ class PDFService {
         pw.Row(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            pw.Expanded(child: partyBlock('FROM', companyLines)),
-            pw.SizedBox(width: 16),
-            pw.Expanded(child: partyBlock('BILL TO', customerLines)),
+            // pw.Expanded(child: partyBlock('FROM', companyLines)),
+            // pw.SizedBox(width: 16),
+            // Empty left half
+            pw.Expanded(
+              child: partyBlock('BILL TO', customerLines),
+              flex: 1,
+            ),
+            pw.Expanded(flex: 1, child: pw.Container()),
           ],
         ),
         pw.SizedBox(height: 24),
@@ -2243,10 +2250,13 @@ class PDFService {
               pw.Padding(
                 padding: pw.EdgeInsets.symmetric(
                   horizontal: cellPaddingH,
-                  vertical: cellPaddingV * 0.5,
+                  vertical: (showTypeTag && businessType == BusinessType.both || showDiscount &&
+                      item.discountPerUnit &&
+                      item.discount > 0) ? cellPaddingV * 0.5 : cellPaddingV,
                 ),
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  mainAxisAlignment: pw.MainAxisAlignment.center,
                   children: [
                     pw.Text(item.product.name,
                         style: pw.TextStyle(fontSize: tableFontSize * 0.9)),

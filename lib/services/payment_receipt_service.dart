@@ -7,6 +7,7 @@ import 'package:invoiso/database/company_info_service.dart';
 import 'package:invoiso/database/settings_service.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/invoice_payment.dart';
+import 'package:invoiso/services/pdf_font_service.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -41,7 +42,8 @@ class PaymentReceiptService {
     Invoice invoice,
     InvoicePayment payment,
   ) async {
-    final pdf = pw.Document();
+    final pdfTheme = await PdfFontService.loadTheme();
+    final pdf = pw.Document(theme: pdfTheme);
     final company = await CompanyInfoService.getCompanyInfo();
     final base64Logo = await SettingsService.getCompanyLogo();
     final logoImage =
@@ -52,6 +54,7 @@ class PaymentReceiptService {
     pdf.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.a4,
+        theme: pdfTheme,
         margin: const pw.EdgeInsets.all(40),
         build: (ctx) => _buildReceiptBody(
           company: company,
@@ -190,24 +193,19 @@ class PaymentReceiptService {
                 letterSpacing: 1)),
         pw.SizedBox(height: 4),
         pw.Text(invoice.customer.name,
-            style: pw.TextStyle(
-                fontSize: 11, fontWeight: pw.FontWeight.bold)),
+            style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
         if (invoice.customer.businessName.isNotEmpty)
           pw.Text(invoice.customer.businessName,
-              style:
-                  const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+              style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
         if (invoice.customer.address.isNotEmpty)
           pw.Text(invoice.customer.address,
-              style:
-                  const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+              style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
         if (invoice.customer.phone.isNotEmpty)
           pw.Text(invoice.customer.phone,
-              style:
-                  const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+              style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
         if (invoice.customer.gstin.isNotEmpty)
           pw.Text('${taxLabel(company?.country)}: ${invoice.customer.gstin}',
-              style:
-                  const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+              style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
 
         pw.SizedBox(height: 16),
         pw.Divider(color: PdfColors.grey300),
@@ -229,23 +227,17 @@ class PaymentReceiptService {
           ),
           child: pw.Column(
             children: [
-              _summaryRow(
-                  'Invoice Total', '$sym ${_fmt(invoice.total)}'),
+              _summaryRow('Invoice Total', '$sym ${_fmt(invoice.total)}'),
               _summaryRow(
                   'Previously Paid', '$sym ${_fmt(payment.previouslyPaid)}'),
-              _summaryRow(
-                  'This Payment',
-                  '$sym ${_fmt(payment.amountPaid)}',
-                  bold: true,
-                  highlight: PdfColors.indigo50),
+              _summaryRow('This Payment', '$sym ${_fmt(payment.amountPaid)}',
+                  bold: true, highlight: PdfColors.indigo50),
               // Final row: balance due or paid in full
               pw.Container(
-                padding: const pw.EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 8),
+                padding:
+                    const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: pw.BoxDecoration(
-                  color: isPaidInFull
-                      ? PdfColors.green700
-                      : PdfColors.orange,
+                  color: isPaidInFull ? PdfColors.green700 : PdfColors.orange,
                   borderRadius: const pw.BorderRadius.vertical(
                       bottom: pw.Radius.circular(4)),
                 ),
@@ -279,8 +271,7 @@ class PaymentReceiptService {
           pw.SizedBox(height: 10),
           pw.Text(
             'Tax covered by this payment: $sym ${_fmt(payment.taxAmountPaid)}',
-            style: const pw.TextStyle(
-                fontSize: 9, color: PdfColors.grey600),
+            style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
           ),
         ],
 
@@ -296,8 +287,7 @@ class PaymentReceiptService {
                   color: PdfColors.grey600)),
           pw.SizedBox(height: 3),
           pw.Text(payment.notes!,
-              style: const pw.TextStyle(
-                  fontSize: 9, color: PdfColors.grey800)),
+              style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey800)),
         ],
 
         pw.Spacer(),
@@ -324,11 +314,9 @@ class PaymentReceiptService {
       mainAxisSize: pw.MainAxisSize.min,
       children: [
         pw.Text('$label: ',
-            style: const pw.TextStyle(
-                fontSize: 9, color: PdfColors.grey600)),
+            style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
         pw.Text(value,
-            style: pw.TextStyle(
-                fontSize: 9, fontWeight: pw.FontWeight.bold)),
+            style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
       ],
     );
   }
@@ -336,8 +324,7 @@ class PaymentReceiptService {
   static pw.Widget _summaryRow(String label, String value,
       {bool bold = false, PdfColor? highlight}) {
     return pw.Container(
-      padding:
-          const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       color: highlight,
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,

@@ -64,7 +64,7 @@ class AppBorderRadius
 class AppConfig
 {
   static const name = "invoiso";
-  static const version = "v4.2.2";
+  static const version = "v4.2.3";
   static const developer = "ANOOP P";
   static const supportEmail = "anooppkrishnan96@gmail.com";
   static const website = "https://invoiso.co.in/";
@@ -90,4 +90,9 @@ class DefaultValues
   static const String thankYouNote = "Thank you for your business! | Visit us at [Your Website]";
   static const LogoPosition logoPosition = LogoPosition.left;
   static const int additionalNotesLength = 1000;
+}
+
+class PdfLayout
+{
+  static double defaultMargin = 30;
 }
