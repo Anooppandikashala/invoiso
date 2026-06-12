@@ -5,6 +5,16 @@ on:
     tags:
       - "v*"
 
+env:
+  # ─── BUILD TOGGLES ─────────────────────────────────────────
+  BUILD_WINDOWS: 'true'
+  BUILD_LINUX_DEB22: 'false'
+  BUILD_LINUX_DEB24: 'false'
+  BUILD_APPIMAGE22: 'false'
+  BUILD_APPIMAGE24: 'false'
+  BUILD_MACOS: 'false'
+  # ───────────────────────────────────────────────────────────
+
 # Required so GITHUB_TOKEN can create releases and upload assets
 permissions:
   contents: write
@@ -14,6 +24,7 @@ jobs:
   # Windows — build .exe installer
   # ─────────────────────────────────────────────────────────────
   build-windows:
+    if: ${{ env.BUILD_WINDOWS == 'true' }}
     runs-on: windows-latest
 
     steps:
@@ -26,8 +37,11 @@ jobs:
           flutter-version: '3.32.8'
           cache: true
 
-      - name: Setup Visual Studio Build Tools
-        uses: microsoft/setup-msbuild@v1
+#      - name: Setup Visual Studio Build Tools
+#        uses: microsoft/setup-msbuild@v1
+
+      - name: Setup MSVC Development Environment
+        uses: ilammy/msvc-dev-cmd@v1
 
       - name: Set version from tag
         shell: bash
@@ -49,10 +63,10 @@ jobs:
 #          CMAKE_GENERATOR: "Visual Studio 17 2022"
 
       - name: Build Windows Installer with FastForge
-#        run: fastforge package --platform windows --targets exe
-        run: fastforge package --platform windows --targets exe --cmake-generator "Visual Studio 17 2022"
+        run: fastforge package --platform windows --targets exe
         env:
-          CMAKE_GENERATOR: "Visual Studio 17 2022"
+#          CMAKE_GENERATOR: "Visual Studio 17 2022"
+          CMAKE_GENERATOR: "Ninja Multi-Config"
 
       - name: Verify installer exists
         shell: bash
@@ -76,6 +90,7 @@ jobs:
   # Linux — build .deb package
   # ─────────────────────────────────────────────────────────────
   build-linux:
+    if: ${{ env.BUILD_LINUX_DEB22 == 'true' }}
     runs-on: ubuntu-22.04
 
     steps:
@@ -130,6 +145,7 @@ jobs:
   # Ryzen 7000 series) running Ubuntu 24.04 (Noble).
   # ─────────────────────────────────────────────────────────────
   build-linux-ubuntu24:
+    if: ${{ env.BUILD_LINUX_DEB24 == 'true' }}
     runs-on: ubuntu-24.04
 
     steps:
@@ -215,6 +231,7 @@ jobs:
   # Linux — build AppImage
   # ─────────────────────────────────────────────────────────────
   build-appimage:
+    if: ${{ env.BUILD_APPIMAGE22 == 'true' }}
     runs-on: ubuntu-22.04
 
     steps:
@@ -288,6 +305,7 @@ jobs:
   # which are standard on Ubuntu 24.04.
   # ─────────────────────────────────────────────────────────────
   build-appimage-ubuntu24:
+    if: ${{ env.BUILD_APPIMAGE24 == 'true' }}
     runs-on: ubuntu-24.04
 
     steps:
@@ -393,6 +411,7 @@ jobs:
   # macOS — build .dmg installer
   # ─────────────────────────────────────────────────────────────
   build-macos:
+    if: ${{ env.BUILD_MACOS == 'true' }}
     runs-on: macos-latest
 
     steps:
@@ -470,6 +489,7 @@ jobs:
   # ─────────────────────────────────────────────────────────────
   create-release:
     needs: [build-windows, build-linux, build-linux-ubuntu24, build-appimage, build-appimage-ubuntu24, build-macos]
+    if: always() # Run even if some builds are skipped
     runs-on: ubuntu-latest
 
     steps:
