@@ -50,6 +50,8 @@ jobs:
 
       - name: Build Windows Installer with FastForge
         run: fastforge package --platform windows --targets exe
+        env:
+          CMAKE_GENERATOR: "Visual Studio 17 2022"
 
       - name: Verify installer exists
         shell: bash
