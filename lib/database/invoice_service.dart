@@ -532,8 +532,8 @@ class InvoiceService {
   static Future<void> permanentDeleteInvoice(String id) async {
     final db = await dbHelper.database;
     await db.transaction((txn) async {
-      await txn
-          .delete('invoice_items', where: 'invoice_id = ?', whereArgs: [id]);
+      await txn.delete('invoice_items', where: 'invoice_id = ?', whereArgs: [id]);
+      await txn.delete('invoice_payments', where: 'invoice_id = ?', whereArgs: [id]);
       await txn.delete('invoices', where: 'id = ?', whereArgs: [id]);
     });
   }

@@ -103,8 +103,7 @@ class DatabaseHelper {
         discount_per_unit INTEGER DEFAULT 0,
         is_product_saved INTEGER DEFAULT 0,
         product_type TEXT DEFAULT 'product',
-        PRIMARY KEY (invoice_id, product_id),
-        FOREIGN KEY (invoice_id) REFERENCES invoices(id)
+        PRIMARY KEY (invoice_id, product_id)
       )
     ''');
 
@@ -162,8 +161,7 @@ class DatabaseHelper {
         balance_after    REAL NOT NULL,
         date_paid        TEXT NOT NULL,
         payment_method   TEXT,
-        notes            TEXT,
-        FOREIGN KEY (invoice_id) REFERENCES invoices(id)
+        notes            TEXT
       )
     ''');
 
@@ -318,8 +316,7 @@ class DatabaseHelper {
             balance_after    REAL NOT NULL,
             date_paid        TEXT NOT NULL,
             payment_method   TEXT,
-            notes            TEXT,
-            FOREIGN KEY (invoice_id) REFERENCES invoices(id)
+            notes            TEXT
           )
         ''');
         await db.execute(
