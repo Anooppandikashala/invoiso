@@ -381,13 +381,11 @@ class InvoiceService {
     }
     if (fromDate != null) {
       whereParts.add('date >= ?');
-      whereArgs
-          .add('${fromDate.toIso8601String().substring(0, 10)}T00:00:00.000');
+      whereArgs.add(AppDate.dateKeyStart(fromDate));
     }
     if (toDate != null) {
       whereParts.add('date <= ?');
-      whereArgs
-          .add('${toDate.toIso8601String().substring(0, 10)}T23:59:59.999');
+      whereArgs.add(AppDate.dateKeyEnd(toDate));
     }
     if (fromId != null) {
       whereParts.add('CAST(id AS INTEGER) >= ?');
@@ -426,13 +424,11 @@ class InvoiceService {
     }
     if (fromDate != null) {
       whereParts.add('date >= ?');
-      whereArgs
-          .add('${fromDate.toIso8601String().substring(0, 10)}T00:00:00.000');
+      whereArgs.add(AppDate.dateKeyStart(fromDate));
     }
     if (toDate != null) {
       whereParts.add('date <= ?');
-      whereArgs
-          .add('${toDate.toIso8601String().substring(0, 10)}T23:59:59.999');
+      whereArgs.add(AppDate.dateKeyEnd(toDate));
     }
     if (fromId != null) {
       whereParts.add('CAST(id AS INTEGER) >= ?');
@@ -754,15 +750,13 @@ class InvoiceService {
   static Future<List<Invoice>> getDueSoonInvoices() async {
     final db = await dbHelper.database;
     final now = DateTime.now();
-    final todayStart = '${AppDate.dateKey(now)}T00:00:00.000';
-    final tomorrowEnd = AppDate.dateKey(
-      DateTime(now.year, now.month, now.day + 2),
-    );
+    final todayStart = AppDate.dateKeyStart(now);
+    final tomorrowEnd = AppDate.dateKeyStart(DateTime(now.year, now.month, now.day + 2));
     final rows = await db.query(
       'invoices',
       where: 'deleted_at IS NULL AND type = ? AND due_date IS NOT NULL '
           'AND due_date >= ? AND due_date < ?',
-      whereArgs: ['Invoice', todayStart, '${tomorrowEnd}T00:00:00.000'],
+      whereArgs: ['Invoice', todayStart, tomorrowEnd],
       orderBy: 'due_date ASC',
     );
     final invoices = await _buildInvoiceList(rows);
@@ -774,7 +768,7 @@ class InvoiceService {
   /// Invoices past their due_date that are not fully paid, up to [limit] rows.
   static Future<List<Invoice>> getOverdueInvoices({int limit = 10}) async {
     final db = await dbHelper.database;
-    final todayStart = '${AppDate.dateKey(DateTime.now())}T00:00:00.000';
+    final todayStart = AppDate.dateKeyStart(DateTime.now());
     // Fetch more than limit to account for some already being paid
     final rows = await db.query(
       'invoices',

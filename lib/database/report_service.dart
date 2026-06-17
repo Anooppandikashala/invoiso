@@ -296,11 +296,11 @@ class ReportService {
     final args = <dynamic>[type];
     if (from != null) {
       sb.write(' AND date >= ?');
-      args.add(AppDate.dateKey(from));
+      args.add(AppDate.dateKeyStart(from));
     }
     if (to != null) {
       sb.write(' AND date <= ?');
-      args.add(AppDate.dateKey(to));
+      args.add(AppDate.dateKeyEnd(to));
     }
     if (currencyCode != null) {
       sb.write(' AND (currency_code = ? OR currency_code IS NULL)');
@@ -430,8 +430,8 @@ class ReportService {
         await _loadRows(from: from, to: to, currencyCode: currencyCode);
     final db = await _db.database;
 
-    final f = AppDate.dateKey(from);
-    final t = AppDate.dateKey(to);
+    final f = AppDate.dateKeyStart(from);
+    final t = AppDate.dateKeyEnd(to);
     final currencyFilter = currencyCode != null
         ? 'AND (i.currency_code = ? OR i.currency_code IS NULL) '
         : '';
@@ -536,8 +536,8 @@ class ReportService {
   static Future<List<TaxBucket>> getTaxByRate(DateTime from, DateTime to,
       {String? currencyCode}) async {
     final db = await _db.database;
-    final f = AppDate.dateKey(from);
-    final t = AppDate.dateKey(to);
+    final f = AppDate.dateKeyStart(from);
+    final t = AppDate.dateKeyEnd(to);
     final ccFilter = currencyCode != null
         ? 'AND (i.currency_code = ? OR i.currency_code IS NULL) '
         : '';
@@ -701,8 +701,8 @@ class ReportService {
     if (rows.isEmpty) return [];
 
     final db = await _db.database;
-    final f = AppDate.dateKey(from);
-    final t = AppDate.dateKey(to);
+    final f = AppDate.dateKeyStart(from);
+    final t = AppDate.dateKeyEnd(to);
     final byCurrency = <String, List<_InvRow>>{};
     for (final row in rows) {
       (byCurrency[row.currencyCode] ??= []).add(row);
@@ -823,8 +823,8 @@ class ReportService {
     String? currencyCode,
   }) async {
     final db = await _db.database;
-    final f = AppDate.dateKey(from);
-    final t = AppDate.dateKey(to);
+    final f = AppDate.dateKeyStart(from);
+    final t = AppDate.dateKeyEnd(to);
     final ccFilter = currencyCode != null
         ? 'AND (i.currency_code = ? OR i.currency_code IS NULL) '
         : '';
@@ -865,8 +865,8 @@ class ReportService {
     String? currencyCode,
   }) async {
     final db = await _db.database;
-    final f = AppDate.dateKey(from);
-    final t = AppDate.dateKey(to);
+    final f = AppDate.dateKeyStart(from);
+    final t = AppDate.dateKeyEnd(to);
     final currencyFilter = currencyCode != null
         ? 'AND (currency_code = ? OR currency_code IS NULL) '
         : '';

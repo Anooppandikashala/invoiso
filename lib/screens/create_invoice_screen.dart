@@ -1448,10 +1448,12 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
   Future<void> _loadPreviousBalanceDue(Customer? customer) async {
     final requestId = ++_previousBalanceRequestSerial;
+
     if (!_showPreviousBalance ||
         customer == null ||
         customer.id.trim().isEmpty ||
-        invoiceType != 'Invoice') {
+        invoiceType != 'Invoice')
+    {
       if (!mounted) return;
       setState(() {
         _previousBalanceDue = 0.0;

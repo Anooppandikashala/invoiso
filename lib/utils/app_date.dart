@@ -10,6 +10,9 @@ class AppDate {
     return '$y-$m-$d';
   }
 
+  static String dateKeyStart(DateTime date) => '${dateKey(date)}T00:00:00.000';
+  static String dateKeyEnd(DateTime date) => '${dateKey(date)}T23:59:59.999';
+
   static DateTime? parse(String? value) {
     if (value == null || value.isEmpty) return null;
     return DateTime.tryParse(value);

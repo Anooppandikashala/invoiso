@@ -1420,26 +1420,29 @@ class _ReportsScreenState extends State<ReportsScreen> {
               // Total tax KPI
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _kpiCard(
-                          'Total Tax Collected',
-                          _money(totalTax),
-                          const Color(0xFF7C3AED),
-                          Icons.account_balance_outlined),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _kpiCard(
-                          'Tax Rate Buckets',
-                          _taxBuckets.length.toString(),
-                          const Color(0xFF0284C7),
-                          Icons.pie_chart_outline),
-                    ),
-                    const SizedBox(width: 12),
-                    const Spacer(flex: 2),
-                  ],
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: _kpiCard(
+                            'Total Tax Collected',
+                            _money(totalTax),
+                            const Color(0xFF7C3AED),
+                            Icons.account_balance_outlined),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _kpiCard(
+                            'Tax Rate Buckets',
+                            _taxBuckets.length.toString(),
+                            const Color(0xFF0284C7),
+                            Icons.pie_chart_outline),
+                      ),
+                      const SizedBox(width: 12),
+                      const Spacer(flex: 2),
+                    ],
+                  ),
                 ),
               ),
 
@@ -2280,30 +2283,35 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   children: [
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                      child: GridView.count(
-                        crossAxisCount: 3,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: 3.5,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        children: [
-                          _kpiCard(
-                              'Quotations Issued',
-                              _fmtInt.format(q.quotationsIssued),
-                              const Color(0xFF0284C7),
-                              Icons.request_quote_outlined),
-                          _kpiCard(
-                              'Invoices in Period',
-                              _fmtInt.format(q.invoicesInPeriod),
-                              const Color(0xFF16A34A),
-                              Icons.receipt_outlined),
-                          _kpiCard(
-                              'Conversion Rate',
-                              '${q.conversionRate.toStringAsFixed(1)}%',
-                              const Color(0xFF7C3AED),
-                              Icons.trending_up),
-                        ],
+                      child: IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              child: _kpiCard(
+                                  'Quotations Issued',
+                                  _fmtInt.format(q.quotationsIssued),
+                                  const Color(0xFF0284C7),
+                                  Icons.request_quote_outlined),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _kpiCard(
+                                  'Invoices in Period',
+                                  _fmtInt.format(q.invoicesInPeriod),
+                                  const Color(0xFF16A34A),
+                                  Icons.receipt_outlined),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _kpiCard(
+                                  'Conversion Rate',
+                                  '${q.conversionRate.toStringAsFixed(1)}%',
+                                  const Color(0xFF7C3AED),
+                                  Icons.trending_up),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     _sectionCard(

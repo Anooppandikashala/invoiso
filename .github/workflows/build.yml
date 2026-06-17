@@ -110,8 +110,8 @@ jobs:
       - name: Flutter Pub Get
         run: flutter pub get
 
-      - name: Build Flutter Linux Release
-        run: flutter build linux --release
+#      - name: Build Flutter Linux Release
+#        run: flutter build linux --release
 
       - name: Build .deb Package
         run: |
@@ -165,8 +165,8 @@ jobs:
       - name: Flutter Pub Get
         run: flutter pub get
 
-      - name: Build Flutter Linux Release
-        run: flutter build linux --release
+#      - name: Build Flutter Linux Release
+#        run: flutter build linux --release
 
       - name: Build .deb Package
         run: |
@@ -426,8 +426,8 @@ jobs:
       - name: Flutter Pub Get
         run: flutter pub get
 
-      - name: Build Flutter macOS Release
-        run: flutter build macos --release
+#      - name: Build Flutter macOS Release
+#        run: flutter build macos --release
 
       - name: Install appdmg
         run: npm install -g appdmg
