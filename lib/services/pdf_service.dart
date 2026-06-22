@@ -458,6 +458,13 @@ class PDFService {
                             fontStyle: pw.FontStyle.italic,
                             fontSize: 10,
                             color: PdfColors.grey700)),
+                  if ((company?.panNumber ?? '').isNotEmpty)
+                    pw.Text(
+                        '${panLabel(company?.country)}: ${company!.panNumber}',
+                        style: pw.TextStyle(
+                            fontStyle: pw.FontStyle.italic,
+                            fontSize: 10,
+                            color: PdfColors.grey700)),
                 ],
               ),
             ),
@@ -738,6 +745,11 @@ class PDFService {
                       "${taxLabel(company?.country)}: ${company?.gstin ?? ''}",
                       style: pw.TextStyle(
                           fontStyle: pw.FontStyle.italic, fontSize: 9)),
+                if ((company?.panNumber ?? '').isNotEmpty)
+                  pw.Text(
+                      '${panLabel(company?.country)}: ${company!.panNumber}',
+                      style: pw.TextStyle(
+                          fontStyle: pw.FontStyle.italic, fontSize: 9)),
               ],
             ),
 
@@ -938,6 +950,13 @@ class PDFService {
                     if (showGst)
                       pw.Text(
                           '${taxLabel(company?.country)}: ${company?.gstin ?? ''}',
+                          style: pw.TextStyle(
+                              color: PdfColors.white,
+                              fontStyle: pw.FontStyle.italic,
+                              fontSize: 10)),
+                    if ((company?.panNumber ?? '').isNotEmpty)
+                      pw.Text(
+                          '${panLabel(company?.country)}: ${company!.panNumber}',
                           style: pw.TextStyle(
                               color: PdfColors.white,
                               fontStyle: pw.FontStyle.italic,
@@ -1185,6 +1204,7 @@ class PDFService {
       'Email: ${company?.email ?? ''}',
       if ((company?.website ?? '').isNotEmpty) 'Web: ${company!.website}',
       if (showGst) '${taxLabel(company?.country)}: ${company?.gstin ?? ''}',
+      if ((company?.panNumber ?? '').isNotEmpty) '${panLabel(company?.country)}: ${company!.panNumber}',
     ];
     final customerLines = [
       invoice.customer.name,
@@ -1245,7 +1265,11 @@ class PDFService {
                   if (showGst)
                     pw.Text(
                         '${taxLabel(company?.country)}: ${company?.gstin ?? ''}',
-                        style: const pw.TextStyle(fontSize: 9))
+                        style: const pw.TextStyle(fontSize: 9)),
+                  if ((company?.panNumber ?? '').isNotEmpty)
+                    pw.Text(
+                        '${panLabel(company?.country)}: ${company!.panNumber}',
+                        style: const pw.TextStyle(fontSize: 9)),
                 ],
               ),
             ),
@@ -1489,6 +1513,12 @@ class PDFService {
                             if (showGst && (company?.gstin ?? '').isNotEmpty)
                               pw.Text(
                                   '${taxLabel(company?.country)}: ${company!.gstin}',
+                                  style: pw.TextStyle(
+                                      fontSize: addressFont,
+                                      color: PdfColors.grey700)),
+                            if ((company?.panNumber ?? '').isNotEmpty)
+                              pw.Text(
+                                  '${panLabel(company?.country)}: ${company!.panNumber}',
                                   style: pw.TextStyle(
                                       fontSize: addressFont,
                                       color: PdfColors.grey700)),

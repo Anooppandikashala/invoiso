@@ -1,0 +1,47 @@
+import 'package:invoiso/common.dart';
+
+abstract class SettingsRepository {
+  Future<void> setSetting(SettingKey key, String value);
+  Future<String?> getSetting(SettingKey key);
+  Future<void> deleteSetting(SettingKey key);
+  Future<void> setInvoiceTemplate(InvoiceTemplate template);
+  Future<InvoiceTemplate> getInvoiceTemplate();
+  Future<void> setPdfThemeColor(String hexColor);
+  Future<void> clearPdfThemeColor();
+  Future<String?> getPdfThemeColor();
+  Future<void> setCompanyLogo(String base64Logo);
+  Future<String?> getCompanyLogo();
+  Future<LogoPosition> getLogoPosition();
+  Future<String> getLogoSize();
+  Future<void> setCurrency(String currencyCode);
+  Future<CurrencyOption> getCurrency();
+  Future<List<UpiEntry>> getUpiIds();
+  Future<void> setUpiIds(List<UpiEntry> entries);
+  Future<List<BankAccount>> getBankAccounts();
+  Future<void> setBankAccounts(List<BankAccount> accounts);
+  Future<bool> getShowBankDetails();
+  Future<void> setShowBankDetails(bool show);
+  Future<bool> getShowGstFields();
+  Future<bool> getShowInvoiceFooterBranding();
+  Future<bool> getFractionalQuantity();
+  Future<String> getQuantityLabel();
+  Future<bool> getShowQuantity();
+  Future<void> setShowQuantity(bool show);
+  Future<bool> getShowDiscount();
+  Future<void> setShowDiscount(bool show);
+  Future<bool> getShowTypeTag();
+  Future<void> setShowTypeTag(bool show);
+  Future<bool> getShowTotalQuantity();
+  Future<void> setShowTotalQuantity(bool show);
+  Future<bool> getShowPreviousBalance();
+  Future<void> setShowPreviousBalance(bool show);
+  Future<void> setSignatureImage(String base64Image);
+  Future<String?> getSignatureImage();
+  Future<String> getSignaturePosition();
+  Future<BusinessType> getBusinessType();
+  Future<void> setBusinessType(BusinessType type);
+  Future<DateFormatOption> getDateFormat();
+  Future<void> setDateFormat(DateFormatOption option);
+  Future<PageSize> getPageSize();
+  Future<void> setPageSize(PageSize size);
+}

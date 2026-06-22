@@ -1,0 +1,23 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:invoiso/repositories/company_info_repository.dart';
+import 'package:invoiso/repositories/customer_repository.dart';
+import 'package:invoiso/repositories/invoice_repository.dart';
+import 'package:invoiso/repositories/payment_repository.dart';
+import 'package:invoiso/repositories/product_repository.dart';
+import 'package:invoiso/repositories/report_repository.dart';
+import 'package:invoiso/repositories/settings_repository.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_company_info_repository.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_customer_repository.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_invoice_repository.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_payment_repository.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_product_repository.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_report_repository.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_settings_repository.dart';
+
+final customerRepositoryProvider = Provider<CustomerRepository>((ref) => SqliteCustomerRepository());
+final invoiceRepositoryProvider = Provider<InvoiceRepository>((ref) => SqliteInvoiceRepository());
+final productRepositoryProvider = Provider<ProductRepository>((ref) => SqliteProductRepository());
+final paymentRepositoryProvider = Provider<PaymentRepository>((ref) => SqlitePaymentRepository());
+final companyInfoRepositoryProvider = Provider<CompanyInfoRepository>((ref) => SqliteCompanyInfoRepository());
+final settingsRepositoryProvider = Provider<SettingsRepository>((ref) => SqliteSettingsRepository());
+final reportRepositoryProvider = Provider<ReportRepository>((ref) => SqliteReportRepository());

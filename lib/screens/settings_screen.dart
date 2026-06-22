@@ -35,6 +35,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final emailController = TextEditingController();
   final websiteController = TextEditingController();
   final gstinController = TextEditingController();
+  final panController = TextEditingController();
   String _selectedCountry = 'India';
   int _companyInfoLoadCount = 0; // incremented once when DB data arrives; forces Autocomplete reinit
   final List<({TextEditingController label, TextEditingController id})>
@@ -116,6 +117,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         emailController.text = info.email;
         websiteController.text = info.website;
         gstinController.text = info.gstin;
+        panController.text = info.panNumber;
         _selectedCountry = info.country.isEmpty ? 'India' : info.country;
         _companyInfoLoadCount++;
         _showUpiQr = showQrStr == 'true';
@@ -170,6 +172,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         email: emailController.text,
         website: websiteController.text,
         gstin: gstinController.text,
+        panNumber: panController.text,
         country: _selectedCountry);
 
     if (_companyInfo == null) {
@@ -231,6 +234,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     emailController.dispose();
     websiteController.dispose();
     gstinController.dispose();
+    panController.dispose();
     for (final row in _upiControllers) {
       row.label.dispose();
       row.id.dispose();
@@ -472,6 +476,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           maxLength: 50,
                         ),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildField(
+                          controller: panController,
+                          label: (_selectedCountry == 'India' || _selectedCountry.isEmpty)
+                              ? 'PAN'
+                              : 'TIN',
+                          icon: Icons.credit_card_rounded,
+                          maxLength: 20,
+                          hint: (_selectedCountry == 'India' || _selectedCountry.isEmpty)
+                              ? 'ABCDE1234F'
+                              : null,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      const Expanded(child: SizedBox()),
                     ],
                   ),
                   const SizedBox(height: 16),
