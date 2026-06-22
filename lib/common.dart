@@ -458,6 +458,13 @@ String taxLabel(String? country) {
   return 'Tax/VAT No';
 }
 
+/// Returns the label for a personal tax ID field.
+/// India → 'PAN', everyone else → 'TIN'.
+String panLabel(String? country) {
+  if (country == null || country.isEmpty || country == 'India') return 'PAN';
+  return 'TIN';
+}
+
 /// Full list of world countries (alphabetical).
 class AppCountries {
   static const List<String> all = [

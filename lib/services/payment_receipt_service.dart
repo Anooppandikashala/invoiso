@@ -118,6 +118,10 @@ class PaymentReceiptService {
                     pw.Text('${taxLabel(company?.country)}: ${company!.gstin}',
                         style: const pw.TextStyle(
                             fontSize: 9, color: PdfColors.grey700)),
+                  if ((company?.panNumber ?? '').isNotEmpty)
+                    pw.Text('${panLabel(company?.country)}: ${company!.panNumber}',
+                        style: const pw.TextStyle(
+                            fontSize: 9, color: PdfColors.grey700)),
                 ],
               ),
             ),

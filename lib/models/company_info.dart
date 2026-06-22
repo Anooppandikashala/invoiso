@@ -6,6 +6,7 @@ class CompanyInfo {
   final String email;
   final String website;
   final String gstin;
+  final String panNumber;
   final String country;
 
   CompanyInfo({
@@ -16,6 +17,7 @@ class CompanyInfo {
     required this.email,
     required this.website,
     required this.gstin,
+    this.panNumber = '',
     this.country = 'India',
   });
 
@@ -28,6 +30,7 @@ class CompanyInfo {
       email: map['email'],
       website: map['website'],
       gstin: map['gstin'],
+      panNumber: map['pan_number'] ?? '',
       country: map['country'] ?? 'India',
     );
   }
@@ -41,6 +44,7 @@ class CompanyInfo {
       'email': email,
       'website': website,
       'gstin': gstin,
+      'pan_number': panNumber,
       'country': country,
     };
   }

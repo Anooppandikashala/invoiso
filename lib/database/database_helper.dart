@@ -14,7 +14,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 21;
+  final dbVersion = 24;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -127,6 +127,7 @@ class DatabaseHelper {
         email TEXT,
         website TEXT,
         gstin TEXT,
+        pan_number TEXT DEFAULT '',
         country TEXT DEFAULT 'India'
       )
     ''');
@@ -440,6 +441,15 @@ class DatabaseHelper {
       await _runMigrationStep(db, 21, 'add_previous_balance_to_invoices', () async {
         await db.execute(
           'ALTER TABLE invoices ADD COLUMN previous_balance REAL DEFAULT 0.0',
+        );
+      });
+    }
+
+    if (oldVersion < 24) {
+      await _runMigrationStep(
+          db, 22, 'add_pan_number_to_company_info', () async {
+        await db.execute(
+          "ALTER TABLE company_info ADD COLUMN pan_number TEXT DEFAULT ''",
         );
       });
     }
