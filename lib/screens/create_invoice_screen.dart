@@ -106,6 +106,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   bool _showPreviousBalance = false;
   double _previousBalanceDue = 0.0;
   bool _isPreviousBalanceLoading = false;
+  bool _isSavingCustomer = false;
   int _previousBalanceRequestSerial = 0;
   BusinessType _businessType = BusinessType.both;
   String _datePattern = 'dd/MM/yyyy';
@@ -2049,6 +2050,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   }
 
   Future<void> _saveCustomer() async {
+    if (_isSavingCustomer) return;
+    setState(() => _isSavingCustomer = true);
+    try {
     final name = nameController.text.trim();
     if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2156,6 +2160,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         );
       }
     }
+    } finally {
+      if (mounted) setState(() => _isSavingCustomer = false);
+    }
   }
 
   Widget _customerDetailsForm() {
@@ -2183,8 +2190,10 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                       ? 'Customer already saved — deselect to save a new one'
                       : 'Save customer to customer list',
                   child: OutlinedButton.icon(
-                    onPressed: selectedCustomer != null ? null : _saveCustomer,
-                    icon: Icon(
+                    onPressed: (selectedCustomer != null || _isSavingCustomer) ? null : _saveCustomer,
+                    icon: _isSavingCustomer
+                        ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                        : Icon(
                       Icons.person_add_outlined,
                       size: 16,
                       color: selectedCustomer != null
@@ -2192,7 +2201,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                           : Theme.of(context).primaryColor,
                     ),
                     label: Text(
-                      selectedCustomer != null ? 'Saved' : 'Save Customer',
+                      _isSavingCustomer ? 'Saving...' : (selectedCustomer != null ? 'Saved' : 'Save Customer'),
                       style: TextStyle(
                         fontSize: AppFontSize.small,
                         color: selectedCustomer != null

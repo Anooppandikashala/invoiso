@@ -95,5 +95,8 @@ class DefaultValues
 
 class PdfLayout
 {
-  static double defaultMargin = 30;
+  static double defaultHMargin = 20;
+  static double defaultVMargin = 12;
+  static double thankYouNoteFontSize = 10;
+  static double footerBrandingFontSize = 8;
 }

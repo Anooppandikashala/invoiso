@@ -37,6 +37,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
   String? _signatureBase64;
   String _signaturePosition = 'left';
   bool _isLoading = true;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -84,6 +85,9 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
   }
 
   Future<void> _saveSettings() async {
+    if (_isSaving) return;
+    setState(() => _isSaving = true);
+    try {
     await SettingsService.setSetting(SettingKey.logoSize, _selectedLogoSize);
     await SettingsService.setSetting(
         SettingKey.logoPosition, _selectedLogoPosition);
@@ -115,6 +119,9 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
         behavior: SnackBarBehavior.floating,
       ),
     );
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   Future<void> _pickSignature() async {
@@ -943,7 +950,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: _saveSettings,
+                        onPressed: _isSaving ? null : _saveSettings,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Theme.of(context).primaryColor,
                           foregroundColor: Colors.white,
@@ -956,7 +963,9 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                 BorderRadius.circular(AppBorderRadius.xsmall),
                           ),
                         ),
-                        child: const Row(
+                        child: _isSaving
+                            ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            : const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(Icons.save, size: 20),

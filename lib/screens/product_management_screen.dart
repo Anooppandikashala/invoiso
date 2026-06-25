@@ -220,8 +220,11 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
+      builder: (context) {
+        bool isSaving = false;
+        return StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Row(
@@ -322,33 +325,41 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
             ),
             if (isEdit)
               FilledButton.icon(
-                onPressed: () async {
+                onPressed: isSaving ? null : () async {
                   if (!dialogFormKey.currentState!.validate()) return;
+                  setDialogState(() => isSaving = true);
+                  try {
+                    final updatedProduct = Product(
+                      id: product.id,
+                      name: nameCtrl.text.trim(),
+                      description: descriptionCtrl.text.trim(),
+                      price: double.parse(priceCtrl.text.trim()),
+                      stock: int.parse(stockCtrl.text.trim()),
+                      hsncode: hsnCodeCtrl.text.trim(),
+                      tax_rate: int.parse(taxRateCtrl.text.trim()),
+                      type: dialogItemType,
+                      defaultDiscount:
+                          double.tryParse(defaultDiscountCtrl.text.trim()) ?? 0.0,
+                    );
 
-                  final updatedProduct = Product(
-                    id: product.id,
-                    name: nameCtrl.text.trim(),
-                    description: descriptionCtrl.text.trim(),
-                    price: double.parse(priceCtrl.text.trim()),
-                    stock: int.parse(stockCtrl.text.trim()),
-                    hsncode: hsnCodeCtrl.text.trim(),
-                    tax_rate: int.parse(taxRateCtrl.text.trim()),
-                    type: dialogItemType,
-                    defaultDiscount:
-                        double.tryParse(defaultDiscountCtrl.text.trim()) ?? 0.0,
-                  );
-
-                  await ProductService.updateProduct(updatedProduct);
-                  await _loadProducts();
-                  if (context.mounted) Navigator.pop(context);
-                  _showSnackBar('Product/Service updated successfully!');
+                    await ProductService.updateProduct(updatedProduct);
+                    await _loadProducts();
+                    if (context.mounted) Navigator.pop(context);
+                    _showSnackBar('Product/Service updated successfully!');
+                  } finally {
+                    setDialogState(() => isSaving = false);
+                  }
                 },
-                icon: const Icon(Icons.save),
-                label: const Text('Update'),
+                icon: isSaving
+                    ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.save),
+                label: Text(isSaving ? 'Saving...' : 'Update'),
               ),
           ],
-        ),
-      ),
+        );
+        },
+        );
+      },
     );
   }
 

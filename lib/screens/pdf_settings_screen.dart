@@ -26,6 +26,7 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
   PageSize _previewedPageSize = PageSize.a4;
   bool _savedShowTotalQuantity = false;
   bool _previewedShowTotalQuantity = false;
+  bool _isSaving = false;
 
   static const _presetThemeColors = [
     Color(0xFF002E78),
@@ -98,6 +99,9 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
   }
 
   Future<void> _saveTemplate() async {
+    if (_isSaving) return;
+    setState(() => _isSaving = true);
+    try {
     await Future.wait([
       SettingsService.setInvoiceTemplate(_previewedTemplate),
       if (_previewedThemeColorHex == null)
@@ -120,6 +124,9 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
         behavior: SnackBarBehavior.floating,
       ),
     );
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   @override
@@ -345,9 +352,11 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
           child: SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: hasUnsavedChange ? _saveTemplate : null,
-              icon: const Icon(Icons.save_rounded, size: 16),
-              label: const Text("Save"),
+              onPressed: (hasUnsavedChange && !_isSaving) ? _saveTemplate : null,
+              icon: _isSaving
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.save_rounded, size: 16),
+              label: Text(_isSaving ? 'Saving...' : 'Save'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).primaryColor,
                 foregroundColor: Colors.white,

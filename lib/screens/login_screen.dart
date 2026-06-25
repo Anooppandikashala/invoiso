@@ -72,7 +72,59 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       backgroundColor: Colors.blue[50],
       body: Center(
-        child: Card(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: () => launchUrl(
+                  Uri.parse('https://invoiso.co.in/customization.html'),
+                  mode: LaunchMode.externalApplication,
+                ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.cloud_outlined, color: Colors.white, size: 24),
+                      const SizedBox(width: 8),
+                      Row(
+                        children: [
+                          const Text(
+                            'Need multi-device access? ',
+                            style: TextStyle(color: Colors.white, fontSize: 13),
+                          ),
+                          const Text(
+                            '"Invoiso Cloud Edition"',
+                            style: TextStyle(color: Colors.yellow, fontSize: 13),
+                          ),
+                          const Text(
+                            ' is available.',
+                            style: TextStyle(color: Colors.white, fontSize: 13),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Learn more →',
+                        style: TextStyle(
+                          color: Colors.blue[100],
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Card(
           elevation: 8,
           color: Colors.white,
           child: Container(
@@ -155,6 +207,8 @@ class _LoginScreenState extends State<LoginScreen> {
               ],
             ),
           ),
+        ),
+          ],
         ),
       ),
     );

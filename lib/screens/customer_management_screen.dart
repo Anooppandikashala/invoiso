@@ -196,7 +196,10 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) {
+        bool isSaving = false;
+        return StatefulBuilder(builder: (context, setDialogState) {
+        return AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
@@ -247,29 +250,37 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
           ),
           if (isEdit)
             FilledButton.icon(
-              onPressed: () async {
+              onPressed: isSaving ? null : () async {
                 if (!dialogFormKey.currentState!.validate()) return;
+                setDialogState(() => isSaving = true);
+                try {
+                  final updatedCustomer = Customer(
+                    id: customer.id,
+                    name: nameCtrl.text.trim(),
+                    email: emailCtrl.text.trim(),
+                    phone: phoneCtrl.text.trim(),
+                    address: addressCtrl.text.trim(),
+                    gstin: gstinCtrl.text.trim(),
+                    businessName: businessNameCtrl.text.trim(),
+                  );
 
-                final updatedCustomer = Customer(
-                  id: customer.id,
-                  name: nameCtrl.text.trim(),
-                  email: emailCtrl.text.trim(),
-                  phone: phoneCtrl.text.trim(),
-                  address: addressCtrl.text.trim(),
-                  gstin: gstinCtrl.text.trim(),
-                  businessName: businessNameCtrl.text.trim(),
-                );
-
-                await CustomerService.updateCustomer(updatedCustomer);
-                await _loadCustomers();
-                if (context.mounted) Navigator.pop(context);
-                _showSnackBar('Customer updated successfully!');
+                  await CustomerService.updateCustomer(updatedCustomer);
+                  await _loadCustomers();
+                  if (context.mounted) Navigator.pop(context);
+                  _showSnackBar('Customer updated successfully!');
+                } finally {
+                  setDialogState(() => isSaving = false);
+                }
               },
-              icon: const Icon(Icons.save),
-              label: const Text('Update'),
+              icon: isSaving
+                  ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.save),
+              label: Text(isSaving ? 'Saving...' : 'Update'),
             ),
         ],
-      ),
+        );
+        });
+      },
     );
   }
 

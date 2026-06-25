@@ -36,6 +36,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final websiteController = TextEditingController();
   final gstinController = TextEditingController();
   final panController = TextEditingController();
+  bool _isSaving = false;
   String _selectedCountry = 'India';
   int _companyInfoLoadCount = 0; // incremented once when DB data arrives; forces Autocomplete reinit
   final List<({TextEditingController label, TextEditingController id})>
@@ -164,6 +165,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _saveCompanyInfo() async {
+    if (_isSaving) return;
+    setState(() => _isSaving = true);
+    try {
     final newInfo = CompanyInfo(
         id: _companyInfo?.id,
         name: nameController.text,
@@ -224,6 +228,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() {
       _companyInfo = newInfo;
     });
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   @override
@@ -419,9 +426,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: _saveCompanyInfo,
-                        icon: const Icon(Icons.save_rounded),
-                        label: const Text('Save'),
+                        onPressed: _isSaving ? null : _saveCompanyInfo,
+                        icon: _isSaving
+                            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            : const Icon(Icons.save_rounded),
+                        label: Text(_isSaving ? 'Saving...' : 'Save'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: primaryColor,
                           foregroundColor: Colors.white,
