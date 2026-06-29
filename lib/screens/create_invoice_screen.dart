@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:invoiso/common.dart';
 import 'package:invoiso/database/customer_service.dart';
@@ -590,6 +591,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     keyboardType: _fractionalQuantity
                         ? const TextInputType.numberWithOptions(decimal: true)
                         : TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                    ],
                   ),
                   const SizedBox(height: 16),
                 ],
@@ -605,6 +609,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     fillColor: Colors.grey[50],
                   ),
                   keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 _buildDiscountPerUnitToggle(discountPerUnit,
@@ -624,6 +631,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   ),
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                  ],
                 ),
                 const SizedBox(height: 16),
                 TextField(
@@ -641,6 +651,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   ),
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                  ],
                 ),
                 if (invoiceItems.isNotEmpty) ...[
                   const SizedBox(height: 16),
@@ -952,7 +965,11 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   void _editInvoiceItem(int index) {
     final item = invoiceItems[index];
     final quantityController = TextEditingController(
-        text: item.quantity == 1.0 ? '' : item.quantity.toString());
+        text: item.quantity == 1.0
+            ? ''
+            : item.quantity == item.quantity.roundToDouble()
+                ? item.quantity.toInt().toString()
+                : item.quantity.toString());
     final discountController =
         TextEditingController(text: item.discount.toString());
     final unitPriceController =
@@ -1048,6 +1065,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     keyboardType: _fractionalQuantity
                         ? const TextInputType.numberWithOptions(decimal: true)
                         : TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                    ],
                   ),
                 ],
                 const SizedBox(height: 16),
@@ -1063,6 +1083,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     fillColor: Colors.grey[50],
                   ),
                   keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 _buildDiscountPerUnitToggle(discountPerUnit,
@@ -1083,6 +1106,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   ),
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                  ],
                 ),
                 const SizedBox(height: 16),
                 TextField(
@@ -1100,6 +1126,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   ),
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                  ],
                 ),
               ],
             ),
@@ -1132,6 +1161,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                           ? (double.tryParse(quantityController.text) ??
                               item.quantity)
                           : (int.tryParse(quantityController.text) ??
+                                  double.tryParse(quantityController.text)
+                                      ?.toInt() ??
                                   item.quantity.toInt())
                               .toDouble(),
                   discount:
@@ -1230,6 +1261,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   ),
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                  ],
                 ),
                 if (_showQuantity) ...[
                   const SizedBox(height: 16),
@@ -1250,6 +1284,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     keyboardType: _fractionalQuantity
                         ? const TextInputType.numberWithOptions(decimal: true)
                         : TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                    ],
                   ),
                 ],
                 const SizedBox(height: 16),
@@ -1265,6 +1302,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     fillColor: Colors.grey[50],
                   ),
                   keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 _buildDiscountPerUnitToggle(discountPerUnit,
@@ -1285,6 +1325,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   ),
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                  ],
                 ),
                 if (_taxMode == TaxMode.perItem) ...[
                   const SizedBox(height: 16),
@@ -1300,6 +1343,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                       fillColor: Colors.grey[50],
                     ),
                     keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                    ],
                   ),
                 ],
                 if (invoiceItems.isNotEmpty) ...[

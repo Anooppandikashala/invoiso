@@ -396,7 +396,6 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
   }
 
   Widget _buildPageSizeSection() {
-    final primaryColor = Theme.of(context).primaryColor;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -416,26 +415,32 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          SegmentedButton<PageSize>(
-            segments: PageSize.values
-                .map((s) => ButtonSegment<PageSize>(
-                      value: s,
-                      label: Text(s.label,
-                          style: const TextStyle(fontSize: AppFontSize.small)),
-                    ))
-                .toList(),
-            selected: {_previewedPageSize},
-            onSelectionChanged: (val) => _setPreviewedPageSize(val.first),
-            style: ButtonStyle(
-              visualDensity: VisualDensity.compact,
-              side:
-                  WidgetStatePropertyAll(BorderSide(color: Colors.grey[300]!)),
-              foregroundColor: WidgetStateProperty.resolveWith(
-                (states) => states.contains(WidgetState.selected)
-                    ? primaryColor
-                    : Colors.grey[700],
+          DropdownButtonFormField<PageSize>(
+            value: _previewedPageSize,
+            decoration: InputDecoration(
+              isDense: true,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                borderSide: BorderSide(color: Colors.grey[300]!),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                borderSide: BorderSide(color: Colors.grey[300]!),
               ),
             ),
+            items: PageSize.values
+                .map((s) => DropdownMenuItem<PageSize>(
+                      value: s,
+                      child: Text(s.label,
+                          style:
+                              const TextStyle(fontSize: AppFontSize.small)),
+                    ))
+                .toList(),
+            onChanged: (val) {
+              if (val != null) _setPreviewedPageSize(val);
+            },
           ),
         ],
       ),
