@@ -64,6 +64,11 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
       "name": "Compact",
       "description": "Space-efficient receipt layout, ideal for A6 printing",
     },
+    {
+      "template": InvoiceTemplate.thermal,
+      "name": "Thermal",
+      "description": "Narrow receipt layout for 80mm and 58mm thermal printers",
+    },
   ];
 
   @override
@@ -295,9 +300,11 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
                 _sectionLabel("Settings"),
                 const SizedBox(height: 8),
                 _buildPageSizeSection(),
-                if (_previewedTemplate == InvoiceTemplate.compact) ...[
+                if (_previewedTemplate == InvoiceTemplate.compact ||
+                    _previewedTemplate == InvoiceTemplate.thermal) ...[
                   const SizedBox(height: 6),
-                  _buildTotalQuantityToggle(),
+                  if (_previewedTemplate == InvoiceTemplate.compact)
+                    _buildTotalQuantityToggle(),
                 ],
                 const SizedBox(height: 14),
                 _sectionLabel("Templates"),
@@ -324,7 +331,9 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
                       isDisabled: isDisabled,
                       disabledLabel: template == InvoiceTemplate.compact
                           ? "A6 only"
-                          : "Not for A6",
+                          : template == InvoiceTemplate.thermal
+                              ? "Thermal only"
+                              : "Not for thermal/A6",
                       onTap: () => _setPreviewedTemplate(template),
                     ),
                   );
@@ -552,6 +561,7 @@ Color _defaultThemeColor(InvoiceTemplate template) {
     InvoiceTemplate.minimal => const Color(0xFF616161),
     InvoiceTemplate.executive => const Color(0xFF37474F),
     InvoiceTemplate.compact => const Color(0xFF000000),
+    InvoiceTemplate.thermal => const Color(0xFF000000),
   };
 }
 
@@ -1009,6 +1019,7 @@ class _TemplatePreviewSketch extends StatelessWidget {
         InvoiceTemplate.minimal => _minimal(),
         InvoiceTemplate.executive => _executive(),
         InvoiceTemplate.compact => _compact(),
+        InvoiceTemplate.thermal => _compact(),
       },
     );
   }

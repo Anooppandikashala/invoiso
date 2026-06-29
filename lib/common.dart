@@ -4,6 +4,7 @@ enum InvoiceTemplate {
   minimal,
   executive,
   compact, // A6-optimized compact/receipt template
+  thermal, // 80mm/58mm thermal receipt template
 }
 
 enum BackupType { database, json }
@@ -114,21 +115,30 @@ extension SettingKeyExtension on SettingKey {
   }
 }
 
-enum PageSize { a4, a6 }
+enum PageSize { a4, a6, thermal80, thermal58 }
 
 extension InvoiceTemplatePageSizeExtension on InvoiceTemplate {
   bool supportsPageSize(PageSize pageSize) {
     if (pageSize == PageSize.a6) {
       return this == InvoiceTemplate.compact;
     }
-    return this != InvoiceTemplate.compact;
+    if (pageSize == PageSize.thermal80 || pageSize == PageSize.thermal58) {
+      return this == InvoiceTemplate.thermal;
+    }
+    return this != InvoiceTemplate.compact && this != InvoiceTemplate.thermal;
   }
 }
 
 InvoiceTemplate defaultInvoiceTemplateForPageSize(PageSize pageSize) {
-  return pageSize == PageSize.a6
-      ? InvoiceTemplate.compact
-      : InvoiceTemplate.classic;
+  switch (pageSize) {
+    case PageSize.a6:
+      return InvoiceTemplate.compact;
+    case PageSize.thermal80:
+    case PageSize.thermal58:
+      return InvoiceTemplate.thermal;
+    default:
+      return InvoiceTemplate.classic;
+  }
 }
 
 InvoiceTemplate effectiveInvoiceTemplateForPageSize(
@@ -147,6 +157,10 @@ extension PageSizeExtension on PageSize {
         return 'a4';
       case PageSize.a6:
         return 'a6';
+      case PageSize.thermal80:
+        return 'thermal80';
+      case PageSize.thermal58:
+        return 'thermal58';
     }
   }
 
@@ -156,6 +170,10 @@ extension PageSizeExtension on PageSize {
         return 'A4';
       case PageSize.a6:
         return 'A6';
+      case PageSize.thermal80:
+        return '80mm';
+      case PageSize.thermal58:
+        return '58mm';
     }
   }
 
@@ -163,6 +181,10 @@ extension PageSizeExtension on PageSize {
     switch (key) {
       case 'a6':
         return PageSize.a6;
+      case 'thermal80':
+        return PageSize.thermal80;
+      case 'thermal58':
+        return PageSize.thermal58;
       default:
         return PageSize.a4;
     }
