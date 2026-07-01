@@ -64,6 +64,11 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
       "name": "Compact",
       "description": "Space-efficient receipt layout, ideal for A6 printing",
     },
+    {
+      "template": InvoiceTemplate.thermal,
+      "name": "Thermal",
+      "description": "Narrow receipt layout for 80mm and 58mm thermal printers",
+    },
   ];
 
   @override
@@ -295,9 +300,11 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
                 _sectionLabel("Settings"),
                 const SizedBox(height: 8),
                 _buildPageSizeSection(),
-                if (_previewedTemplate == InvoiceTemplate.compact) ...[
+                if (_previewedTemplate == InvoiceTemplate.compact ||
+                    _previewedTemplate == InvoiceTemplate.thermal) ...[
                   const SizedBox(height: 6),
-                  _buildTotalQuantityToggle(),
+                  if (_previewedTemplate == InvoiceTemplate.compact)
+                    _buildTotalQuantityToggle(),
                 ],
                 const SizedBox(height: 14),
                 _sectionLabel("Templates"),
@@ -324,7 +331,9 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
                       isDisabled: isDisabled,
                       disabledLabel: template == InvoiceTemplate.compact
                           ? "A6 only"
-                          : "Not for A6",
+                          : template == InvoiceTemplate.thermal
+                              ? "Thermal only"
+                              : "Not for thermal/A6",
                       onTap: () => _setPreviewedTemplate(template),
                     ),
                   );
@@ -387,7 +396,6 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
   }
 
   Widget _buildPageSizeSection() {
-    final primaryColor = Theme.of(context).primaryColor;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -407,26 +415,32 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          SegmentedButton<PageSize>(
-            segments: PageSize.values
-                .map((s) => ButtonSegment<PageSize>(
-                      value: s,
-                      label: Text(s.label,
-                          style: const TextStyle(fontSize: AppFontSize.small)),
-                    ))
-                .toList(),
-            selected: {_previewedPageSize},
-            onSelectionChanged: (val) => _setPreviewedPageSize(val.first),
-            style: ButtonStyle(
-              visualDensity: VisualDensity.compact,
-              side:
-                  WidgetStatePropertyAll(BorderSide(color: Colors.grey[300]!)),
-              foregroundColor: WidgetStateProperty.resolveWith(
-                (states) => states.contains(WidgetState.selected)
-                    ? primaryColor
-                    : Colors.grey[700],
+          DropdownButtonFormField<PageSize>(
+            value: _previewedPageSize,
+            decoration: InputDecoration(
+              isDense: true,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                borderSide: BorderSide(color: Colors.grey[300]!),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                borderSide: BorderSide(color: Colors.grey[300]!),
               ),
             ),
+            items: PageSize.values
+                .map((s) => DropdownMenuItem<PageSize>(
+                      value: s,
+                      child: Text(s.label,
+                          style:
+                              const TextStyle(fontSize: AppFontSize.small)),
+                    ))
+                .toList(),
+            onChanged: (val) {
+              if (val != null) _setPreviewedPageSize(val);
+            },
           ),
         ],
       ),
@@ -552,6 +566,7 @@ Color _defaultThemeColor(InvoiceTemplate template) {
     InvoiceTemplate.minimal => const Color(0xFF616161),
     InvoiceTemplate.executive => const Color(0xFF37474F),
     InvoiceTemplate.compact => const Color(0xFF000000),
+    InvoiceTemplate.thermal => const Color(0xFF000000),
   };
 }
 
@@ -1009,6 +1024,7 @@ class _TemplatePreviewSketch extends StatelessWidget {
         InvoiceTemplate.minimal => _minimal(),
         InvoiceTemplate.executive => _executive(),
         InvoiceTemplate.compact => _compact(),
+        InvoiceTemplate.thermal => _compact(),
       },
     );
   }

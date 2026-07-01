@@ -255,6 +255,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.dispose();
   }
 
+  Future<void> _clearLogo() async {
+    await SettingsService.setCompanyLogo('');
+    setState(() {
+      _selectedLogoFile = null;
+      _base64Logo = null;
+    });
+  }
+
   Future<void> _pickLogo() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -387,6 +395,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               ),
                             ),
                           ),
+                          if (_selectedLogoFile != null || _base64Logo != null) ...[
+                            const SizedBox(height: 8),
+                            TextButton.icon(
+                              onPressed: _clearLogo,
+                              icon: const Icon(Icons.delete_outline, size: 16, color: Colors.red),
+                              label: const Text('Remove Logo',
+                                  style: TextStyle(color: Colors.red, fontSize: 13)),
+                            ),
+                          ],
                           const SizedBox(height: 16),
                           // Live company name preview
                           ValueListenableBuilder(
