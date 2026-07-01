@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:invoiso/common.dart';
 
 import '../constants.dart';
+import '../database/invoice_service.dart';
 import '../database/settings_service.dart';
 
 class InvoiceSettingsScreen extends StatefulWidget {
@@ -19,6 +20,7 @@ class InvoiceSettingsScreen extends StatefulWidget {
 
 class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
   final TextEditingController invoicePrefixController = TextEditingController();
+  final TextEditingController invoiceStartingNumberController = TextEditingController();
   final TextEditingController additionalInfoController =
       TextEditingController();
   final TextEditingController thankYouController = TextEditingController();
@@ -36,6 +38,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
   bool _showPreviousBalance = false;
   String? _signatureBase64;
   String _signaturePosition = 'left';
+  int _invoiceCount = 0;
   bool _isLoading = true;
   bool _isSaving = false;
 
@@ -62,6 +65,8 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     final showPrevBalance = await SettingsService.getShowPreviousBalance();
     final sigImage = await SettingsService.getSignatureImage();
     final sigPosition = await SettingsService.getSignaturePosition();
+    final invoiceCount = await InvoiceService.getTotalInvoiceCountIncludingTrashed();
+    final startingNumber = await SettingsService.getSetting(SettingKey.invoiceStartingNumber);
 
     setState(() {
       _selectedLogoPosition = position ?? 'left';
@@ -69,6 +74,8 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
       _selectedLogoSize = logoSize;
       _selectedDateFormat = dateFormat;
       invoicePrefixController.text = prefix ?? 'INV';
+      invoiceStartingNumberController.text = startingNumber ?? '1';
+      _invoiceCount = invoiceCount;
       additionalInfoController.text = info ?? '';
       thankYouController.text = thanks ?? '';
       _showGstFields = showGst;
@@ -93,6 +100,11 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
         SettingKey.logoPosition, _selectedLogoPosition);
     await SettingsService.setSetting(
         SettingKey.invoicePrefix, invoicePrefixController.text);
+    if (_invoiceCount == 0) {
+      final startVal = int.tryParse(invoiceStartingNumberController.text.trim()) ?? 1;
+      await SettingsService.setSetting(
+          SettingKey.invoiceStartingNumber, startVal.clamp(1, 99999999).toString());
+    }
     await SettingsService.setSetting(
         SettingKey.additionalInfo, additionalInfoController.text);
     await SettingsService.setSetting(
@@ -257,38 +269,69 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                               ),
                             ),
 
-                            // Invoice numbering info
+                            // Invoice Starting Number
                             SizedBox(
                               width: fieldWidth,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 10),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue[50],
-                                  borderRadius: BorderRadius.circular(
-                                      AppBorderRadius.xsmall),
-                                  border: Border.all(color: Colors.blue[200]!),
-                                ),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Icon(Icons.info_outline,
-                                        size: 16, color: Colors.blue[700]),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        'Invoice numbers are auto-generated and cannot be edited manually. '
-                                        'Each new invoice number is derived from the last invoice number stored in the database — including soft-deleted invoices. '
-                                        'If you created test invoices and deleted them, the counter will continue from where it left off.',
-                                        style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.blue[800],
-                                            height: 1.4),
+                              child: _invoiceCount == 0
+                                  ? TextField(
+                                      controller: invoiceStartingNumberController,
+                                      keyboardType: TextInputType.number,
+                                      maxLength: 8,
+                                      decoration: InputDecoration(
+                                        labelText: 'Invoice Starting Number',
+                                        prefixIcon: const Icon(Icons.looks_one_outlined),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                              AppBorderRadius.xsmall),
+                                        ),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                              AppBorderRadius.xsmall),
+                                          borderSide:
+                                              BorderSide(color: Colors.grey[300]!),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                              AppBorderRadius.xsmall),
+                                          borderSide: BorderSide(
+                                            color: Theme.of(context).primaryColor,
+                                            width: 2,
+                                          ),
+                                        ),
+                                        filled: true,
+                                        fillColor: Colors.grey[50],
+                                        counterText: '',
+                                        helperText: 'First invoice will start from this number',
+                                      ),
+                                    )
+                                  : Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 10),
+                                      decoration: BoxDecoration(
+                                        color: Colors.orange[50],
+                                        borderRadius: BorderRadius.circular(
+                                            AppBorderRadius.xsmall),
+                                        border: Border.all(color: Colors.orange[200]!),
+                                      ),
+                                      child: Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Icon(Icons.lock_outline,
+                                              size: 16, color: Colors.orange[700]),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              'Invoice starting number cannot be changed while invoices exist. '
+                                              'Please permanently delete all invoices/quotations (including trash) and try again.',
+                                              style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.orange[800],
+                                                  height: 1.4),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                  ],
-                                ),
-                              ),
                             ),
                             // Company Logo Position
                             SizedBox(

@@ -507,6 +507,12 @@ class InvoiceService {
     return (result.first.values.first as int?) ?? 0;
   }
 
+  static Future<int> getTotalInvoiceCountIncludingTrashed() async {
+    final db = await dbHelper.database;
+    final result = await db.rawQuery('SELECT COUNT(*) FROM invoices');
+    return (result.first.values.first as int?) ?? 0;
+  }
+
   // ─────────────────────────────────────────────
   // Soft Delete
   static Future<void> softDeleteInvoice(String id) async {

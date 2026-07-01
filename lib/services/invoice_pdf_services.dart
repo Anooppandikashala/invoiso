@@ -150,15 +150,17 @@ class InvoicePdfServices {
     final result =
         await db.rawQuery("SELECT id FROM invoices ORDER BY id DESC LIMIT 1");
 
-    int nextNumber = 1;
+    int nextNumber;
 
     if (result.isNotEmpty) {
       final lastNumberStr = result.first['id'] as String;
       final numericPart =
           int.tryParse(lastNumberStr.replaceAll(RegExp(r'\D'), ''));
-      if (numericPart != null) {
-        nextNumber = numericPart + 1;
-      }
+      nextNumber = (numericPart != null) ? numericPart + 1 : 1;
+    } else {
+      final startStr = await SettingsService.getSetting(SettingKey.invoiceStartingNumber);
+      nextNumber = int.tryParse(startStr ?? '') ?? 1;
+      if (nextNumber < 1) nextNumber = 1;
     }
 
     return nextNumber.toString().padLeft(8, '0');

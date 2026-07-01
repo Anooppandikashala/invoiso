@@ -309,6 +309,7 @@ class PDFService {
           showDiscount: s.showDiscount,
           datePattern: s.datePattern,
           thankYouNote: s.thankYouNote,
+          showFooterBranding: s.showFooterBranding,
           themeColor: s.themeColor,
           previousBalanceDue: effectivePreviousBalance,
           pageFormat: s.pageFormat,

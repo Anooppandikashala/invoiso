@@ -42,6 +42,7 @@ enum SettingKey {
   pageSize, // 'a4' | 'a6'
   showTotalQuantity, // show total quantity row in compact template footer
   supportBannerDismissed, // milestone at which support banner was last dismissed: '50' | '100'
+  invoiceStartingNumber, // starting invoice number (only editable when invoice count is zero)
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -111,6 +112,8 @@ extension SettingKeyExtension on SettingKey {
         return 'show_total_quantity';
       case SettingKey.supportBannerDismissed:
         return 'support_banner_dismissed';
+      case SettingKey.invoiceStartingNumber:
+        return 'invoice_starting_number';
     }
   }
 }
@@ -167,13 +170,13 @@ extension PageSizeExtension on PageSize {
   String get label {
     switch (this) {
       case PageSize.a4:
-        return 'A4';
+        return 'Standard A4';
       case PageSize.a6:
-        return 'A6';
+        return 'Standard A6';
       case PageSize.thermal80:
-        return '80mm';
+        return 'Thermal Paper 80mm';
       case PageSize.thermal58:
-        return '58mm';
+        return 'Thermal Paper 58mm';
     }
   }
 
