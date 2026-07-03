@@ -100,3 +100,8 @@ class PdfLayout
   static double thankYouNoteFontSize = 10;
   static double footerBrandingFontSize = 8;
 }
+
+class UpdateConfig
+{
+  static const enableUpdateCheck = true;
+}

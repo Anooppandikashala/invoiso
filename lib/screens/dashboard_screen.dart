@@ -59,7 +59,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     _currentUser = widget.loggedInUser;
     SessionManager.initialize(_onSessionTimeout);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _checkForUpdates());
+    if (UpdateConfig.enableUpdateCheck)
+    {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _checkForUpdates());
+    }
   }
 
   Future<void> _checkForUpdates() async {

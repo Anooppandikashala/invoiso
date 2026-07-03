@@ -70,7 +70,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _loadCompanyInfo();
-    _loadCachedUpdateInfo();
+    if (UpdateConfig.enableUpdateCheck)
+    {
+      _loadCachedUpdateInfo();
+    }
   }
 
   Future<void> _loadCachedUpdateInfo() async {
@@ -1252,7 +1255,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 20),
 
                 // ── Update card ──────────────────────────────────────────
-                _buildUpdateCard(),
+                if (UpdateConfig.enableUpdateCheck)
+                  _buildUpdateCard(),
 
                 const SizedBox(height: 32),
 
@@ -1735,7 +1739,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   clipBehavior: Clip.none,
                   children: [
                     const Icon(Icons.info_outline),
-                    if (_updateInfo?.hasUpdate == true)
+                    if (UpdateConfig.enableUpdateCheck && _updateInfo?.hasUpdate == true)
                       Positioned(
                         right: -4,
                         top: -4,
