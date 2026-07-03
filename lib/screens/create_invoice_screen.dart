@@ -211,6 +211,12 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       addNote = await SettingsService.getSetting(SettingKey.additionalInfo) ??
           DefaultValues.additionalNote;
     }
+    final taxRateSetting = await SettingsService.getSetting(SettingKey.defaultTaxRate);
+    final parsedRate = double.tryParse(taxRateSetting ?? '') ?? 18.0;
+    if (widget.invoiceToEdit == null && widget.cloneFrom == null) {
+      taxRate = parsedRate / 100.0;
+      taxRateController.text = parsedRate.toStringAsFixed(1);
+    }
     setState(() {
       notesController.text = addNote;
     });
@@ -2083,7 +2089,6 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       gstinController.clear();
       businessNameController.clear();
       taxRate = Tax.defaultTaxRate;
-      taxRateController.text = (taxRate * 100).toStringAsFixed(1);
       _selectedOrderDate = DateTime.now();
       dateController.text = DateFormat(_datePattern).format(_selectedOrderDate);
       _selectedDueDate = null;

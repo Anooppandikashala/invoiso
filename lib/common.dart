@@ -43,6 +43,7 @@ enum SettingKey {
   showTotalQuantity, // show total quantity row in compact template footer
   supportBannerDismissed, // milestone at which support banner was last dismissed: '50' | '100'
   invoiceStartingNumber, // starting invoice number (only editable when invoice count is zero)
+  defaultTaxRate, // default invoice tax rate percentage (e.g. '18')
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -114,6 +115,8 @@ extension SettingKeyExtension on SettingKey {
         return 'support_banner_dismissed';
       case SettingKey.invoiceStartingNumber:
         return 'invoice_starting_number';
+      case SettingKey.defaultTaxRate:
+        return 'default_tax_rate';
     }
   }
 }

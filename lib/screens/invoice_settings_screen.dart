@@ -25,6 +25,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
       TextEditingController();
   final TextEditingController thankYouController = TextEditingController();
   final TextEditingController quantityLabelController = TextEditingController();
+  final TextEditingController defaultTaxRateController = TextEditingController();
 
   String _selectedLogoPosition = 'left';
   String _selectedCurrencyCode = 'INR';
@@ -67,6 +68,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
     final sigPosition = await SettingsService.getSignaturePosition();
     final invoiceCount = await InvoiceService.getTotalInvoiceCountIncludingTrashed();
     final startingNumber = await SettingsService.getSetting(SettingKey.invoiceStartingNumber);
+    final defaultTaxRateSetting = await SettingsService.getSetting(SettingKey.defaultTaxRate);
 
     setState(() {
       _selectedLogoPosition = position ?? 'left';
@@ -75,6 +77,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
       _selectedDateFormat = dateFormat;
       invoicePrefixController.text = prefix ?? 'INV';
       invoiceStartingNumberController.text = startingNumber ?? '1';
+      defaultTaxRateController.text = defaultTaxRateSetting ?? '18';
       _invoiceCount = invoiceCount;
       additionalInfoController.text = info ?? '';
       thankYouController.text = thanks ?? '';
@@ -117,6 +120,9 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
         SettingKey.fractionalQuantity, _fractionalQuantity.toString());
     await SettingsService.setSetting(
         SettingKey.quantityLabel, quantityLabelController.text.trim());
+    final taxRateVal = double.tryParse(defaultTaxRateController.text.trim()) ?? 18.0;
+    await SettingsService.setSetting(
+        SettingKey.defaultTaxRate, taxRateVal.clamp(0, 100).toStringAsFixed(1));
     await SettingsService.setShowQuantity(_showQuantity);
     await SettingsService.setShowDiscount(_showDiscount);
     await SettingsService.setShowTypeTag(_showTypeTag);
@@ -536,6 +542,36 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                 onChanged: (value) {
                                   setState(() => _selectedDateFormat = value!);
                                 },
+                              ),
+                            ),
+
+                            // Default Tax Rate
+                            SizedBox(
+                              width: fieldWidth,
+                              child: TextField(
+                                controller: defaultTaxRateController,
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                maxLength: 5,
+                                decoration: InputDecoration(
+                                  labelText: 'Default Tax Rate (%)',
+                                  hintText: 'e.g. 18',
+                                  helperText: 'Applied to new invoices',
+                                  prefixIcon: const Icon(Icons.percent),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderSide: BorderSide(color: Colors.grey[300]!),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                                    borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 2),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.grey[50],
+                                  counterText: '',
+                                ),
                               ),
                             ),
 
