@@ -1282,13 +1282,12 @@ class _DashboardHomeState extends State<DashboardHome> {
                                               WrapCrossAlignment.center,
                                           children: [
                                             Row(
-                                              mainAxisSize: MainAxisSize.min,
                                               children: [
                                                 Icon(Icons.person_outline,
                                                     size: 16,
                                                     color: Colors.grey[600]),
                                                 const SizedBox(width: 6),
-                                                Text(
+                                                Flexible(child: Text(
                                                   invoice.customer.name
                                                       .limit(15),
                                                   overflow:
@@ -1296,17 +1295,16 @@ class _DashboardHomeState extends State<DashboardHome> {
                                                   style: TextStyle(
                                                       fontSize: 15,
                                                       color: Colors.grey[700]),
-                                                ),
+                                                )),
                                               ],
                                             ),
                                             Row(
-                                              mainAxisSize: MainAxisSize.min,
                                               children: [
                                                 Icon(Icons.calendar_today,
                                                     size: 16,
                                                     color: Colors.grey[600]),
                                                 const SizedBox(width: 6),
-                                                Text(
+                                                Flexible(child: Text(
                                                   invoice.date
                                                       .toString()
                                                       .split(' ')[0],
@@ -1315,7 +1313,7 @@ class _DashboardHomeState extends State<DashboardHome> {
                                                   style: TextStyle(
                                                       fontSize: 15,
                                                       color: Colors.grey[700]),
-                                                ),
+                                                )),
                                               ],
                                             ),
                                             if (invoice.dueDate != null)
@@ -1367,92 +1365,60 @@ class _DashboardHomeState extends State<DashboardHome> {
                                       ],
                                     ),
                                   ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color:
-                                          Colors.purple.withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      '${invoice.currencySymbol} ${invoice.total.toStringAsFixed(2)}',
-                                      style: const TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.purple,
-                                      ),
-                                    ),
-                                  ),
                                   const SizedBox(width: 16),
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
+                                  Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
-                                      _buildActionButton(
-                                          Icons.visibility_outlined,
-                                          Colors.green,
-                                          'View',
-                                          () => InvoicePdfServices
-                                              .showInvoiceDetails(
-                                                  context, invoice)),
-                                      const SizedBox(width: 8),
-                                      _buildActionButton(
-                                          Icons.edit_outlined,
-                                          Colors.blue,
-                                          'Edit',
-                                          () => widget.onEditInvoice(invoice)),
-                                      const SizedBox(width: 8),
-                                      _buildActionButton(
-                                          Icons.copy_all_outlined,
-                                          Colors.teal,
-                                          'Duplicate',
-                                          () => _showCloneDialog(invoice)),
-                                      const SizedBox(width: 8),
-                                      _buildActionButton(
-                                          Icons.picture_as_pdf_outlined,
-                                          Colors.orange,
-                                          'PDF Preview',
-                                          () => InvoicePdfServices.previewPDF(
-                                              context, invoice)),
-                                      const SizedBox(width: 8),
-                                      _buildActionButton(
-                                          Icons.download_outlined,
-                                          Colors.deepPurple,
-                                          'Download PDF',
-                                          () => PDFService.downloadPDF(
-                                              context, invoice)),
-                                      const SizedBox(width: 8),
-                                      _buildActionButton(
-                                          Icons.print_outlined,
-                                          Colors.blueGrey,
-                                          'Print',
-                                          () => InvoicePdfServices.generatePDF(
-                                              context, invoice)),
-                                      const SizedBox(width: 8),
-                                      _buildActionButton(
-                                          Icons.payments_outlined,
-                                          Colors.purple,
-                                          'Payment',
-                                          invoice.type == 'Invoice'
-                                              ? () => showDialog(
-                                                    context: context,
-                                                    barrierDismissible: false,
-                                                    builder: (_) =>
-                                                        ApplyPaymentDialog(
-                                                      invoice: invoice,
-                                                      onPaymentRecorded: () =>
-                                                          setState(() {}),
-                                                    ),
-                                                  )
-                                              : null),
-                                      const SizedBox(width: 8),
-                                      _buildActionButton(
-                                          Icons.delete_outline,
-                                          Colors.red,
-                                          'Delete',
-                                          widget.user.isAdmin()
-                                              ? () => _showDeleteDialog(invoice)
-                                              : null),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 16, vertical: 8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.purple.withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Text(
+                                          '${invoice.currencySymbol} ${invoice.total.toStringAsFixed(2)}',
+                                          style: const TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.purple,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Wrap(
+                                        spacing: 6,
+                                        runSpacing: 6,
+                                        alignment: WrapAlignment.end,
+                                        children: [
+                                          _buildActionButton(Icons.visibility_outlined, Colors.green, 'View',
+                                              () => InvoicePdfServices.showInvoiceDetails(context, invoice)),
+                                          _buildActionButton(Icons.edit_outlined, Colors.blue, 'Edit',
+                                              () => widget.onEditInvoice(invoice)),
+                                          _buildActionButton(Icons.copy_all_outlined, Colors.teal, 'Duplicate',
+                                              () => _showCloneDialog(invoice)),
+                                          _buildActionButton(Icons.picture_as_pdf_outlined, Colors.orange, 'PDF Preview',
+                                              () => InvoicePdfServices.previewPDF(context, invoice)),
+                                          _buildActionButton(Icons.download_outlined, Colors.deepPurple, 'Download PDF',
+                                              () => PDFService.downloadPDF(context, invoice)),
+                                          _buildActionButton(Icons.print_outlined, Colors.blueGrey, 'Print',
+                                              () => InvoicePdfServices.generatePDF(context, invoice)),
+                                          _buildActionButton(Icons.payments_outlined, Colors.purple, 'Payment',
+                                              invoice.type == 'Invoice'
+                                                  ? () => showDialog(
+                                                        context: context,
+                                                        barrierDismissible: false,
+                                                        builder: (_) => ApplyPaymentDialog(
+                                                          invoice: invoice,
+                                                          onPaymentRecorded: () => setState(() {}),
+                                                        ),
+                                                      )
+                                                  : null),
+                                          _buildActionButton(Icons.delete_outline, Colors.red, 'Delete',
+                                              widget.user.isAdmin() ? () => _showDeleteDialog(invoice) : null),
+                                        ],
+                                      ),
                                     ],
                                   ),
                                 ],

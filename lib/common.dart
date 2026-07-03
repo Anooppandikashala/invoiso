@@ -426,6 +426,7 @@ class SupportedCurrencies {
     CurrencyOption(code: 'JPY', symbol: '¥', name: 'Japanese Yen'),
     CurrencyOption(code: 'KES', symbol: 'KSh.', name: 'Kenyan Shilling'),
     CurrencyOption(code: 'LKR', symbol: 'රු', name: 'Sri Lankan Rupee'),
+    CurrencyOption(code: 'MWK', symbol: 'MK', name: 'Malawian Kwacha'),
     CurrencyOption(code: 'MYR', symbol: 'RM.', name: 'Malaysian Ringgit'),
     CurrencyOption(code: 'NGN', symbol: '₦', name: 'Nigerian Naira'),
     CurrencyOption(code: 'NPR', symbol: 'Rs.', name: 'Nepalese Rupee'),
