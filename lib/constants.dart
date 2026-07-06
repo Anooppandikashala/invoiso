@@ -87,8 +87,8 @@ class AppLayout
 
 class DefaultValues
 {
-  static const String additionalNote = "No return after 15 days.";
-  static const String thankYouNote = "Thank you for your business! | Visit us at [Your Website]";
+  static const String additionalNote = "";
+  static const String thankYouNote = "";
   static const LogoPosition logoPosition = LogoPosition.left;
   static const int additionalNotesLength = 1000;
 }
