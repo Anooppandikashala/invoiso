@@ -41,7 +41,7 @@ enum SettingKey {
   showPreviousBalance, // whether to show calculated Previous Balance Due on PDFs
   pageSize, // 'a4' | 'a6'
   showTotalQuantity, // show total quantity row in compact template footer
-  supportBannerDismissed, // milestone at which support banner was last dismissed: '50' | '100'
+  supportBannerDismissed, // milestone at which support banner was last dismissed: '10' | '50' | '100'
   invoiceStartingNumber, // starting invoice number (only editable when invoice count is zero)
   defaultTaxRate, // default invoice tax rate percentage (e.g. '18')
 }

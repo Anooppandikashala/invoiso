@@ -775,7 +775,9 @@ class _DashboardHomeState extends State<DashboardHome> {
         ? '100'
         : financials.count >= 50
             ? '50'
-            : '';
+            : financials.count > 10
+                ? '10'
+                : '';
 
     setState(() {
       totalCustomers = customers.length;
@@ -879,6 +881,7 @@ class _DashboardHomeState extends State<DashboardHome> {
   }
 
   Widget _buildSupportBanner() {
+    final bool isReviewMilestone = _supportMilestone == '10';
     return AnimatedSize(
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeOut,
@@ -895,8 +898,11 @@ class _DashboardHomeState extends State<DashboardHome> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.celebration_outlined,
-                      color: Color(0xFFD97706), size: 22),
+                  Icon(
+                      isReviewMilestone
+                          ? Icons.star_outline
+                          : Icons.celebration_outlined,
+                      color: const Color(0xFFD97706), size: 22),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -911,9 +917,11 @@ class _DashboardHomeState extends State<DashboardHome> {
                           ),
                         ),
                         const SizedBox(height: 2),
-                        const Text(
-                          'Looks like Invoiso is part of your workflow. If it\'s been helpful, consider supporting the project — whenever it feels right.',
-                          style: TextStyle(
+                        Text(
+                          isReviewMilestone
+                              ? 'Enjoying Invoiso? A quick review helps a lot.'
+                              : 'Looks like Invoiso is part of your workflow. If it\'s been helpful, consider supporting the project — whenever it feels right.',
+                          style: const TextStyle(
                               fontSize: 12, color: Color(0xFFB45309)),
                         ),
                       ],
@@ -922,8 +930,9 @@ class _DashboardHomeState extends State<DashboardHome> {
                   const SizedBox(width: 8),
                   TextButton(
                     onPressed: () async {
-                      final uri =
-                          Uri.parse('https://buymeacoffee.com/anoopp');
+                      final uri = Uri.parse(isReviewMilestone
+                          ? 'https://invoiso.co.in/review.html'
+                          : 'https://buymeacoffee.com/anoopp');
                       if (await canLaunchUrl(uri)) await launchUrl(uri);
                     },
                     style: TextButton.styleFrom(
@@ -933,8 +942,8 @@ class _DashboardHomeState extends State<DashboardHome> {
                           horizontal: 12, vertical: 6),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    child: const Text('Support',
-                        style: TextStyle(fontWeight: FontWeight.w600)),
+                    child: Text(isReviewMilestone ? 'Review' : 'Support',
+                        style: const TextStyle(fontWeight: FontWeight.w600)),
                   ),
                   const SizedBox(width: 4),
                   IconButton(
