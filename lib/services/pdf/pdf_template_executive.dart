@@ -147,7 +147,7 @@ pw.MultiPage buildExecutiveTemplate(
                 ),
               ),
               pw.SizedBox(height: 6),
-              pw.Text('# $invoicePrefix${invoice.id}',
+              pw.Text('# $invoicePrefix${invoice.invoiceNumber ?? invoice.id}',
                   style: pw.TextStyle(
                       fontSize: 11, fontWeight: pw.FontWeight.bold)),
               pw.Text('Date: ${formatPdfDate(invoice.date, datePattern)}',

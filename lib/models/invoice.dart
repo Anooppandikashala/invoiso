@@ -8,6 +8,7 @@ import 'invoice_payment.dart';
 
 class Invoice {
   String id;
+  String? invoiceNumber; // per-type sequential display number; null on legacy rows (falls back to id)
   Customer customer;
   List<InvoiceItem> items;
   DateTime date;
@@ -29,6 +30,7 @@ class Invoice {
 
   Invoice({
     required this.id,
+    this.invoiceNumber,
     required this.customer,
     required this.items,
     required this.date,

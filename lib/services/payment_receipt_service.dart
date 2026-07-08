@@ -169,7 +169,7 @@ class PaymentReceiptService {
                 children: [
                   _metaRow('Receipt #', payment.receiptNumber),
                   pw.SizedBox(height: 4),
-                  _metaRow('Invoice #', invoice.id),
+                  _metaRow('Invoice #', invoice.invoiceNumber ?? invoice.id),
                 ],
               ),
               pw.Column(

@@ -26,6 +26,7 @@ class InvoiceService {
     await db.transaction((txn) async {
       await txn.insert('invoices', {
         'id': invoice.id,
+        'invoice_number': invoice.invoiceNumber,
         'customer_id': invoice.customer.id,
         'customer_name': invoice.customer.name,
         'customer_email': invoice.customer.email,
@@ -328,6 +329,7 @@ class InvoiceService {
 
     return Invoice(
       id: id,
+      invoiceNumber: i['invoice_number'] as String?,
       customer: customer,
       items: items,
       date: DateTime.parse(i['date'] as String),
@@ -594,6 +596,7 @@ class InvoiceService {
       invoices.add(
         Invoice(
           id: invoiceId,
+          invoiceNumber: map['invoice_number'] as String?,
           customer: customer,
           items: items,
           date: DateTime.tryParse(dateString) ?? DateTime.now(),

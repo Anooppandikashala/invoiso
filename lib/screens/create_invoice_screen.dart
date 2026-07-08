@@ -145,7 +145,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       _isTaxEnabled = _invoice!.taxMode != TaxMode.none;
       _isPerItem = _invoice!.taxMode == TaxMode.perItem;
       invoiceType = _invoice!.type;
-      currentInvoiceNumber = _invoice!.id;
+      currentInvoiceNumber = _invoice!.invoiceNumber ?? _invoice!.id;
       _selectedOrderDate = _invoice!.date;
       dateController.text = DateFormat(_datePattern).format(_selectedOrderDate);
       if (_invoice!.dueDate != null) {
@@ -372,9 +372,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       final p = await ProductService.getAllProducts();
       final String? invNumber;
       if (!isEditing) {
-        invNumber = await InvoicePdfServices.generateNextInvoiceNumber();
+        invNumber = await InvoicePdfServices.generateNextInvoiceNumber(invoiceType);
       } else {
-        invNumber = widget.invoiceToEdit?.id;
+        invNumber = widget.invoiceToEdit?.invoiceNumber ?? widget.invoiceToEdit?.id;
       }
 
       // Use the existing invoice's currency when editing or cloning,
@@ -905,9 +905,12 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     setState(() => isLoading = true);
 
     try {
-      final invoiceId = await InvoicePdfServices.generateNextInvoiceNumber();
+      final invoiceId = await InvoicePdfServices.generateNextId();
+      final invoiceNumber =
+          await InvoicePdfServices.generateNextInvoiceNumber(invoiceType);
       final invoice = Invoice(
         id: invoiceId,
+        invoiceNumber: invoiceNumber,
         customer: Customer(
           id: selectedCustomer?.id ?? const Uuid().v4(),
           name: nameController.text,
@@ -2005,11 +2008,14 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     value: invoiceType,
                     decoration: InputDecoration(
                       labelText: 'Type',
+                      helperText: isEditing
+                          ? 'Type can\'t be changed after creation'
+                          : null,
                       border: OutlineInputBorder(
                           borderRadius:
                               BorderRadius.circular(AppBorderRadius.xsmall)),
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: isEditing ? Colors.grey[100] : Colors.white,
                     ),
                     items: const [
                       DropdownMenuItem(
@@ -2020,10 +2026,16 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                           value: 'Quotation',
                           child: Text('Quotation',
                               style: TextStyle(fontSize: AppFontSize.medium))),
+                      DropdownMenuItem(
+                          value: 'Receipt',
+                          child: Text('Receipt',
+                              style: TextStyle(fontSize: AppFontSize.medium))),
                     ],
-                    onChanged: (value) {
-                      if (value != null) resetInvoiceType(value);
-                    },
+                    onChanged: isEditing
+                        ? null
+                        : (value) {
+                            if (value != null) resetInvoiceType(value);
+                          },
                   ),
                 ),
                 if (_quantityLabel.trim().isNotEmpty) ...[
@@ -2063,11 +2075,16 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     setState(() {
       invoiceType = invoiceType_;
     });
+    if (!isEditing) {
+      final invNumber =
+          await InvoicePdfServices.generateNextInvoiceNumber(invoiceType_);
+      if (mounted) setState(() => currentInvoiceNumber = invNumber);
+    }
     await _loadPreviousBalanceDue(selectedCustomer);
   }
 
   Future<void> resetValues(String invoiceType_) async {
-    final invType = await InvoicePdfServices.generateNextInvoiceNumber();
+    final invType = await InvoicePdfServices.generateNextInvoiceNumber(invoiceType_);
     setState(() {
       invoiceType = invoiceType_;
       currentInvoiceNumber = invType;
@@ -3625,6 +3642,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     try {
       final updatedInvoice = Invoice(
         id: _invoice!.id,
+        invoiceNumber: _invoice!.invoiceNumber,
         customer: Customer(
           id: selectedCustomer?.id ?? const Uuid().v4(),
           name: nameController.text,
