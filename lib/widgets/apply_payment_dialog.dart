@@ -182,7 +182,7 @@ class _ApplyPaymentDialogState extends State<ApplyPaymentDialog> {
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold)),
                         Text(
-                          '#${widget.invoice.id} — ${widget.invoice.customer.name}',
+                          '#${widget.invoice.invoiceNumber ?? widget.invoice.id} — ${widget.invoice.customer.name}',
                           style: const TextStyle(
                               color: Colors.white70, fontSize: 13),
                         ),

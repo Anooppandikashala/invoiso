@@ -140,12 +140,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
           filterType: 'Quotation',
         );
       case 4:
-        return CustomerManagementScreen(user: _currentUser);
+        return InvoiceManagementScreen(
+          key: const ValueKey('receipt_list'),
+          onEditInvoice: editInvoice,
+          onCloneInvoice: cloneInvoice,
+          user: _currentUser,
+          filterType: 'Receipt',
+        );
       case 5:
-        return ProductManagementScreen(user: _currentUser);
+        return CustomerManagementScreen(user: _currentUser);
       case 6:
-        return const ReportsScreen();
+        return ProductManagementScreen(user: _currentUser);
       case 7:
+        return const ReportsScreen();
+      case 8:
         return SettingsScreen(currentUser: _currentUser);
       default:
         return const Center(child: Text('Unknown tab'));
@@ -312,14 +320,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         Icons.receipt_long, 'Invoices'),
                     _buildNavItem(3, Icons.request_quote_outlined,
                         Icons.request_quote, 'Quotations'),
+                    _buildNavItem(4, Icons.point_of_sale_outlined,
+                        Icons.point_of_sale, 'Receipts'),
                     _buildNavItem(
-                        4, Icons.people_outline, Icons.people, 'Customers'),
-                    _buildNavItem(5, Icons.inventory_2_outlined,
+                        5, Icons.people_outline, Icons.people, 'Customers'),
+                    _buildNavItem(6, Icons.inventory_2_outlined,
                         Icons.inventory_2, 'Products'),
-                    _buildNavItem(6, Icons.bar_chart_outlined, Icons.bar_chart,
+                    _buildNavItem(7, Icons.bar_chart_outlined, Icons.bar_chart,
                         'Reports'),
                     _buildNavItem(
-                        7, Icons.settings_outlined, Icons.settings, 'Settings',
+                        8, Icons.settings_outlined, Icons.settings, 'Settings',
                         showDot: _hasUpdate),
                   ],
                 ),
@@ -1238,7 +1248,7 @@ class _DashboardHomeState extends State<DashboardHome> {
                                               WrapCrossAlignment.center,
                                           children: [
                                             Text(
-                                              '${invoice.type} #${invoice.id}',
+                                              '${invoice.type} #${invoice.invoiceNumber ?? invoice.id}',
                                               style: const TextStyle(
                                                   fontSize: 18,
                                                   fontWeight: FontWeight.bold),
@@ -1607,7 +1617,7 @@ class _DashboardHomeState extends State<DashboardHome> {
                     const SizedBox(width: 16),
                     // Invoice ID
                     Text(
-                      '#${invoice.id}',
+                      '#${invoice.invoiceNumber ?? invoice.id}',
                       style: const TextStyle(
                           fontSize: 15, fontWeight: FontWeight.bold),
                     ),
@@ -1778,7 +1788,7 @@ class _DashboardHomeState extends State<DashboardHome> {
                     const SizedBox(width: 16),
                     // Invoice ID
                     Text(
-                      '#${invoice.id}',
+                      '#${invoice.invoiceNumber ?? invoice.id}',
                       style: const TextStyle(
                           fontSize: 15, fontWeight: FontWeight.bold),
                     ),
@@ -2188,7 +2198,7 @@ class _DashboardHomeState extends State<DashboardHome> {
           ],
         ),
         content: Text(
-          'Create a copy of Invoice #${invoice.id}\n(${invoice.customer.name}) as:',
+          'Create a copy of Invoice #${invoice.invoiceNumber ?? invoice.id}\n(${invoice.customer.name}) as:',
         ),
         actions: [
           TextButton(
@@ -2236,7 +2246,7 @@ class _DashboardHomeState extends State<DashboardHome> {
           ],
         ),
         content: Text(
-          'Are you sure you want to delete Invoice #${invoice.id}? This action cannot be undone.',
+          'Are you sure you want to delete Invoice #${invoice.invoiceNumber ?? invoice.id}? This action cannot be undone.',
           style: const TextStyle(fontSize: 15),
         ),
         actions: [
@@ -3339,7 +3349,7 @@ class _DashboardHomeState extends State<DashboardHome> {
                 ?.setState(() {
               context
                   .findAncestorStateOfType<_DashboardScreenState>()
-                  ?._selectedIndex = 4;
+                  ?._selectedIndex = 5;
             });
           }),
           const SizedBox(height: 4),
@@ -3350,7 +3360,7 @@ class _DashboardHomeState extends State<DashboardHome> {
                 ?.setState(() {
               context
                   .findAncestorStateOfType<_DashboardScreenState>()
-                  ?._selectedIndex = 6;
+                  ?._selectedIndex = 7;
             });
           }),
         ],

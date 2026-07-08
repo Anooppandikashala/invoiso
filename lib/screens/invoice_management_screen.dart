@@ -97,7 +97,7 @@ class _InvoiceManagementScreenState
   };
 
   Map<int, TableColumnWidth> get _columnWidths =>
-      widget.filterType == 'Quotation'
+      widget.filterType != 'Invoice'
           ? _quotationColumnWidths
           : _invoiceColumnWidths;
 
@@ -241,7 +241,7 @@ class _InvoiceManagementScreenState
           ],
         ),
         content: Text(
-          'Create a copy of Invoice #${invoice.id}\n(${invoice.customer.name}) as:',
+          'Create a copy of Invoice #${invoice.invoiceNumber ?? invoice.id}\n(${invoice.customer.name}) as:',
         ),
         actions: [
           TextButton(
@@ -274,7 +274,7 @@ class _InvoiceManagementScreenState
     final confirmed = await AppError.confirm(
       context,
       title: 'Move to Trash',
-      message: 'Move Invoice #${invoice.id} to trash?',
+      message: 'Move Invoice #${invoice.invoiceNumber ?? invoice.id} to trash?',
       confirmLabel: 'Move to Trash',
       confirmColor: Colors.orange,
     );
@@ -1648,7 +1648,7 @@ class _InvoiceManagementScreenState
                 ),
               ),
               _buildTableCell(
-                Text('#${invoice.id}',
+                Text('#${invoice.invoiceNumber ?? invoice.id}',
                     style: const TextStyle(
                         overflow: TextOverflow.ellipsis,
                         fontSize: 15,
@@ -2006,7 +2006,7 @@ class _TrashDialogState extends State<_TrashDialog> {
       context,
       title: 'Permanently Delete',
       message:
-          'Permanently delete Invoice #${invoice.id}? This cannot be undone.',
+          'Permanently delete Invoice #${invoice.invoiceNumber ?? invoice.id}? This cannot be undone.',
     );
     if (!confirmed) return;
     await InvoiceService.permanentDeleteInvoice(invoice.id);

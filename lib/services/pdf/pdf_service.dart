@@ -386,7 +386,8 @@ class PDFService {
   }
 
   static String buildPdfFilename(Invoice invoice) {
-    final rawNumber = invoice.id.replaceAll(RegExp(r'^0+'), '');
+    final rawNumber =
+        (invoice.invoiceNumber ?? invoice.id).replaceAll(RegExp(r'^0+'), '');
     final invoiceNumber = rawNumber.isEmpty ? '0' : rawNumber;
     final fullName = invoice.customer.name
         .trim()
@@ -412,7 +413,7 @@ class PDFService {
             children: [
               AppBar(
                 automaticallyImplyLeading: false,
-                title: Text('${invoice.type} #${invoice.id}'),
+                title: Text('${invoice.type} #${invoice.invoiceNumber ?? invoice.id}'),
                 actions: [
                   IconButton(
                     icon: const Icon(Icons.print_outlined),

@@ -68,7 +68,7 @@ pw.MultiPage buildMinimalTemplate(
                       fontWeight: pw.FontWeight.bold,
                       fontSize: 10,
                       color: accentColor)),
-              pw.Text("$invoicePrefix${invoice.id}",
+              pw.Text("$invoicePrefix${invoice.invoiceNumber ?? invoice.id}",
                   style: const pw.TextStyle(fontSize: 12)),
               pw.SizedBox(height: 5),
               pw.Text("DATE",

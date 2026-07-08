@@ -60,7 +60,7 @@ class PaymentService {
       saved = InvoicePayment(
         id: _uuid.v4(),
         invoiceId: invoice.id,
-        invoiceNumber: invoice.id,
+        invoiceNumber: invoice.invoiceNumber ?? invoice.id,
         receiptNumber: receiptNumber,
         amountPaid: amountPaid,
         taxAmountPaid: taxAmountPaid,
@@ -111,7 +111,7 @@ class PaymentService {
         final payment = InvoicePayment(
           id: _uuid.v4(),
           invoiceId: invoice.id,
-          invoiceNumber: invoice.id,
+          invoiceNumber: invoice.invoiceNumber ?? invoice.id,
           receiptNumber: receiptNumber,
           amountPaid: amountPaid,
           taxAmountPaid: taxAmountPaid,
