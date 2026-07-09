@@ -100,11 +100,17 @@ class ThermalPrinterService {
 
     final is58 = settings.pageSize == PageSize.thermal58;
 
-    //final width = is58 ? PaperSize.mm58.width : PaperSize.mm80.width;
-    final width = is58 ? 32 : 48;
-    //final width = is58 ? 42 : 64;
+    // Trim a few chars off the textbook 32/48 — real hardware often
+    // physically clips the last column(s) on full-width lines. Adjustable
+    // per-install via SettingKey.thermalWidthMargin since printer models vary
+    // (e.g. WOOSIM WSP-R241 needed 1).
+    final marginStr = await SettingsService.getSetting(SettingKey.thermalWidthMargin);
+    final margin = int.tryParse(marginStr ?? '') ?? 1;
+    print(margin);
+    final width = (is58 ? 32 : 48) - margin;
+    print(width);
     final profile = await CapabilityProfile.load();
-    final generator = Generator(is58 ? PaperSize.mm58 : PaperSize.mm80, profile);
+    final generator = Generator(is58 ? PaperSize.mm58 : PaperSize.mm80, profile,spaceBetweenRows: 1);
     final currency = invoice.currencySymbol;
     final company = settings.company;
 
@@ -143,6 +149,8 @@ class ThermalPrinterService {
     }
 
     void hr() {bytes+=generator.hr();}
+
+    void hr2() => line('-' * width);
 
     String padRight(String s, int w) =>
         s.length >= w ? s.substring(0, w) : s + ' ' * (w - s.length);
@@ -270,20 +278,17 @@ class ThermalPrinterService {
       bold: true,
     );
 
-    if(invoice.tax > 0)
-    {
+    if (invoice.taxMode != TaxMode.none && invoice.tax > 0) {
+      final isIndia = (company?.country ?? '').isEmpty ||
+          company!.country.toLowerCase() == 'india';
       hr();
-      line("==== TAX SUMMARY ====",align: PosAlign.center,bold: true);
-      if(company?.country.toLowerCase() == "india")
-      {
-        twoCol('Taxable Amnt', '$currency ${invoice.grossSubtotal}');
-        twoCol('Total Tax', '$currency ${invoice.tax}');
+      line('=== TAX SUMMARY ===', align: PosAlign.center, bold: true);
+      twoCol('Taxable Amt:', '$currency ${invoice.subtotal.toStringAsFixed(2)}');
+      if (isIndia) {
+        twoCol('SGST:', '$currency ${(invoice.tax / 2).toStringAsFixed(2)}');
+        twoCol('CGST:', '$currency ${(invoice.tax / 2).toStringAsFixed(2)}');
       }
-      else
-      {
-        twoCol('Taxable Amnt', '$currency ${invoice.grossSubtotal}');
-        twoCol('Total Tax', '$currency ${invoice.tax}');
-      }
+      twoCol('Total Tax:', '$currency ${invoice.tax.toStringAsFixed(2)}');
     }
 
     if (invoice.amountPaid > 0) {
@@ -314,7 +319,26 @@ class ThermalPrinterService {
 
     bytes += generator.feed(2);
     bytes += generator.cut();
-    return bytes;
+    return _stripKanjiCancel(bytes);
+  }
+
+  /// The ESC/POS library emits `FS .` (bytes 0x1C 0x2E — "Cancel Kanji
+  /// Character Mode") before every single text call, unconditionally, even
+  /// though we never use Kanji mode. Some printers (e.g. WOOSIM WSP-R241)
+  /// don't recognize 0x1C as a command byte, drop it, and print the
+  /// following 0x2E as a literal '.' — showing up as a stray dot at the
+  /// start of every line. Safe to strip: 0x1C never appears in our own
+  /// text content (it's a non-printable control byte).
+  static List<int> _stripKanjiCancel(List<int> bytes) {
+    final result = <int>[];
+    for (var i = 0; i < bytes.length; i++) {
+      if (bytes[i] == 0x1C && i + 1 < bytes.length && bytes[i + 1] == 0x2E) {
+        i++;
+        continue;
+      }
+      result.add(bytes[i]);
+    }
+    return result;
   }
 }
 
