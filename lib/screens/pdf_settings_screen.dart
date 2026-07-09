@@ -29,6 +29,8 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
   final _thermalWidthMarginController = TextEditingController();
   String _savedThermalWidthMargin = '1';
   String _previewedThermalWidthMargin = '1';
+  String _savedThermalItemLayout = 'table';
+  String _previewedThermalItemLayout = 'table';
   bool _isSaving = false;
 
   static const _presetThemeColors = [
@@ -87,12 +89,14 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
       SettingsService.getPageSize(),
       SettingsService.getShowTotalQuantity(),
       SettingsService.getSetting(SettingKey.thermalWidthMargin),
+      SettingsService.getSetting(SettingKey.thermalItemLayout),
     ]);
     final saved = results[0] as InvoiceTemplate;
     final savedThemeColor = results[1] as String?;
     final savedPageSize = results[2] as PageSize;
     final savedShowTotalQty = results[3] as bool;
     final savedThermalWidthMargin = results[4] as String?;
+    final savedThermalItemLayout = results[5] as String?;
     final previewedTemplate =
         effectiveInvoiceTemplateForPageSize(saved, savedPageSize);
     setState(() {
@@ -108,6 +112,8 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
       _savedThermalWidthMargin = savedThermalWidthMargin ?? '1';
       _previewedThermalWidthMargin = _savedThermalWidthMargin;
       _thermalWidthMarginController.text = _savedThermalWidthMargin;
+      _savedThermalItemLayout = savedThermalItemLayout ?? 'table';
+      _previewedThermalItemLayout = _savedThermalItemLayout;
     });
   }
 
@@ -127,6 +133,8 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
           (int.tryParse(_previewedThermalWidthMargin.trim()) ?? 1)
               .clamp(-10, 10)
               .toString()),
+      SettingsService.setSetting(
+          SettingKey.thermalItemLayout, _previewedThermalItemLayout),
     ]);
     setState(() {
       _savedTemplate = _previewedTemplate;
@@ -134,6 +142,7 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
       _savedPageSize = _previewedPageSize;
       _savedShowTotalQuantity = _previewedShowTotalQuantity;
       _savedThermalWidthMargin = _previewedThermalWidthMargin;
+      _savedThermalItemLayout = _previewedThermalItemLayout;
     });
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -249,7 +258,8 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
             _previewedThemeColorHex != _savedThemeColorHex ||
             _previewedPageSize != _savedPageSize ||
             _previewedShowTotalQuantity != _savedShowTotalQuantity ||
-            _previewedThermalWidthMargin != _savedThermalWidthMargin);
+            _previewedThermalWidthMargin != _savedThermalWidthMargin ||
+            _previewedThermalItemLayout != _savedThermalItemLayout);
 
     return Scaffold(
       appBar: AppBar(
@@ -320,8 +330,11 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
                   const SizedBox(height: 6),
                   if (_previewedTemplate == InvoiceTemplate.compact)
                     _buildTotalQuantityToggle(),
-                  if (_previewedTemplate == InvoiceTemplate.thermal)
+                  if (_previewedTemplate == InvoiceTemplate.thermal) ...[
+                    _buildThermalItemLayoutField(),
+                    const SizedBox(height: 6),
                     _buildThermalWidthMarginField(),
+                  ],
                 ],
                 const SizedBox(height: 14),
                 _sectionLabel("Templates"),
@@ -487,6 +500,54 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
             value: _previewedShowTotalQuantity,
             onChanged: (v) => setState(() => _previewedShowTotalQuantity = v),
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildThermalItemLayoutField() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppBorderRadius.small),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Item layout',
+            style: TextStyle(
+              fontSize: AppFontSize.small,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[700],
+            ),
+          ),
+          const SizedBox(height: 8),
+          SegmentedButton<String>(
+            segments: const [
+              ButtonSegment(
+                value: 'table',
+                label: Text('Table'),
+                icon: Icon(Icons.table_rows_outlined, size: 16),
+              ),
+              ButtonSegment(
+                value: 'detailed',
+                label: Text('Detailed'),
+                icon: Icon(Icons.view_agenda_outlined, size: 16),
+              ),
+            ],
+            selected: {_previewedThermalItemLayout},
+            onSelectionChanged: (selection) =>
+                setState(() => _previewedThermalItemLayout = selection.first),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Table: one line per item (Sl/Name/Qty/Rate/Total). '
+            'Detailed: name on its own line, then Qty/Rate/Total below it.',
+            style: TextStyle(fontSize: 11, color: Colors.grey[500]),
           ),
         ],
       ),
