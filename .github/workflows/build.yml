@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "v*"
+      - "test-v*"
 
 # Required so GITHUB_TOKEN can create releases and upload assets
 permissions:
@@ -37,6 +38,7 @@ jobs:
         shell: bash
         run: |
           VERSION="${GITHUB_REF#refs/tags/}"
+          VERSION="${VERSION#test-v}"
           VERSION="${VERSION#v}"
           sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
           echo "Building version: $VERSION"
@@ -100,6 +102,7 @@ jobs:
       - name: Set version from tag
         run: |
           VERSION="${GITHUB_REF#refs/tags/}"
+          VERSION="${VERSION#test-v}"
           VERSION="${VERSION#v}"
           sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
           echo "Building version: $VERSION"
@@ -117,6 +120,7 @@ jobs:
         run: |
           fastforge package --platform linux --targets deb
           VERSION="${GITHUB_REF#refs/tags/}"
+          VERSION="${VERSION#test-v}"
           VERSION="${VERSION#v}"
           DEB_FILE=$(find dist/$VERSION -name "*.deb" | head -1)
           echo "Found deb: $DEB_FILE"
@@ -155,6 +159,7 @@ jobs:
       - name: Set version from tag
         run: |
           VERSION="${GITHUB_REF#refs/tags/}"
+          VERSION="${VERSION#test-v}"
           VERSION="${VERSION#v}"
           sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
           echo "Building version: $VERSION"
@@ -172,6 +177,7 @@ jobs:
         run: |
           fastforge package --platform linux --targets deb
           VERSION="${GITHUB_REF#refs/tags/}"
+          VERSION="${VERSION#test-v}"
           VERSION="${VERSION#v}"
           DEB_FILE=$(find dist/$VERSION -name "*.deb" | head -1)
           echo "Found deb: $DEB_FILE"
@@ -241,6 +247,7 @@ jobs:
       - name: Set version from tag
         run: |
           VERSION="${GITHUB_REF#refs/tags/}"
+          VERSION="${VERSION#test-v}"
           VERSION="${VERSION#v}"
           sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
           echo "Building version: $VERSION"
@@ -275,6 +282,7 @@ jobs:
       - name: Build AppImage
         run: |
           VERSION="${GITHUB_REF#refs/tags/}"
+          VERSION="${VERSION#test-v}"
           VERSION="${VERSION#v}"
           sed -i "/app_info:/,/^[^ ]/ s/^\(\s*version:\s*\)[0-9.]*$/\1$VERSION/" AppImageBuilder.yml
           appimage-builder --recipe AppImageBuilder.yml --skip-test
@@ -316,6 +324,7 @@ jobs:
       - name: Set version from tag
         run: |
           VERSION="${GITHUB_REF#refs/tags/}"
+          VERSION="${VERSION#test-v}"
           VERSION="${VERSION#v}"
           sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
           echo "Building version: $VERSION"
@@ -379,6 +388,7 @@ jobs:
       - name: Build AppImage with appimagetool
         run: |
           VERSION="${GITHUB_REF#refs/tags/}"
+          VERSION="${VERSION#test-v}"
           VERSION="${VERSION#v}"
 
           wget -q -O /tmp/appimagetool.AppImage \
@@ -416,6 +426,7 @@ jobs:
       - name: Set version from tag
         run: |
           VERSION="${GITHUB_REF#refs/tags/}"
+          VERSION="${VERSION#test-v}"
           VERSION="${VERSION#v}"
           sed -i '' "s/^version: .*/version: $VERSION/" pubspec.yaml
           echo "Building version: $VERSION"
@@ -461,6 +472,7 @@ jobs:
             exit 1
           fi
           VERSION="${GITHUB_REF#refs/tags/}"
+          VERSION="${VERSION#test-v}"
           VERSION="${VERSION#v}"
           FINAL_DMG="dist/invoiso-${VERSION}-macos.dmg"
           mv "$DMG" "$FINAL_DMG"
@@ -478,7 +490,7 @@ jobs:
   # ─────────────────────────────────────────────────────────────
   create-release:
     needs: [build-windows, build-linux, build-linux-ubuntu24, build-appimage, build-appimage-ubuntu24, build-macos]
-    if: always() # Run even if some builds are skipped
+    if: always() && vars.INVOISO_RELEASE == 'true' # Run even if some builds are skipped; skip entirely if INVOISO_RELEASE is not 'true'
     runs-on: ubuntu-latest
 
     steps:
