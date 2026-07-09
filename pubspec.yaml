@@ -39,6 +39,8 @@ dependencies:
   image: ^4.2.0
   qr: ^3.0.1
   flex_color_picker: ^3.6.0
+  thermal_printer: ^1.0.5
+  flutter_esc_pos_utils: ^1.0.1
 
 dev_dependencies:
   flutter_test:
