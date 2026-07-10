@@ -24,6 +24,7 @@ pw.Page buildThermalTemplate(
   PdfPageFormat pageFormat = PdfPageFormat.roll80,
   PageSize pageSize = PageSize.a4,
   pw.ThemeData? pdfTheme,
+  String itemLayout = 'table',
 }) {
   const double bodyFs = 6;
   const double smallFs = 5.5;
@@ -31,6 +32,7 @@ pw.Page buildThermalTemplate(
   const double titleFs = 8.5;
 
   final is58 = pageSize == PageSize.thermal58;
+  final useDetailedLayout = itemLayout == 'detailed';
   final totalColumnWidth = is58 ? 28.0 : 40.0;
 
   var totalQuantity = 0.0;
@@ -88,8 +90,8 @@ pw.Page buildThermalTemplate(
       final rate = item.effectivePrice.toStringAsFixed(2);
       final total = item.total.toStringAsFixed(2);
 
-      if (is58) {
-        // 58mm: line1 = sl+name, line2 = qty/rate/gst%/total
+      if (useDetailedLayout) {
+        // Detailed: line1 = sl+name, line2 = qty/rate/gst%/total
         rows.add(pw.Padding(
           padding: const pw.EdgeInsets.symmetric(vertical: 1.5),
           child: pw.Column(
@@ -147,7 +149,7 @@ pw.Page buildThermalTemplate(
           ),
         ));
       } else {
-        // 80mm: single-line row
+        // Table: single-line row
         rows.add(pw.Padding(
           padding: const pw.EdgeInsets.symmetric(vertical: 1.5),
           child: pw.Column(
@@ -289,7 +291,7 @@ pw.Page buildThermalTemplate(
 
       // ── Items header ──
       sp(),
-      if (is58)
+      if (useDetailedLayout)
         pw.Row(
           children: [
             pw.SizedBox(

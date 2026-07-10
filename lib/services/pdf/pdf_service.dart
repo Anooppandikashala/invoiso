@@ -18,6 +18,7 @@ import 'package:invoiso/database/settings_service.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/services/pdf_font_service.dart';
+import 'package:invoiso/services/thermal_printer_service.dart';
 
 import 'pdf_settings.dart';
 import 'pdf_widgets.dart';
@@ -80,6 +81,7 @@ class PDFService {
       SettingsService.getShowPreviousBalance(), // 20
       SettingsService.getPageSize(), // 21
       SettingsService.getShowTotalQuantity(), // 22
+      SettingsService.getSetting(SettingKey.thermalItemLayout), // 23
     ]);
 
     final rawPrefix = (results[2] as String?) ?? 'INV';
@@ -124,6 +126,7 @@ class PDFService {
       pageSize: pageSize,
       showTotalQuantity: results[22] as bool,
       pdfTheme: pdfTheme,
+      thermalItemLayout: (results[23] as String?) ?? 'table',
     );
   }
 
@@ -315,6 +318,7 @@ class PDFService {
           pageFormat: s.pageFormat,
           pageSize:s.pageSize,
           pdfTheme: pdfTheme,
+          itemLayout: s.thermalItemLayout,
         ));
     }
     return pdf;
@@ -419,7 +423,15 @@ class PDFService {
                     icon: const Icon(Icons.print_outlined),
                     tooltip: 'Print',
                     onPressed: () async {
-                      await Printing.layoutPdf(onLayout: (_) async => pdfBytes);
+                      final template = await SettingsService.getInvoiceTemplate();
+                      if (template == InvoiceTemplate.thermal) {
+                        if (!dialogContext.mounted) return;
+                        await ThermalPrinterService.printInvoice(
+                            dialogContext, invoice);
+                      } else {
+                        await Printing.layoutPdf(
+                            onLayout: (_) async => pdfBytes);
+                      }
                     },
                   ),
                   IconButton(

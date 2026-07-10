@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:invoiso/services/thermal_printer_service.dart';
 import 'package:invoiso/database/invoice_service.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/services/pdf_service.dart';
@@ -13,11 +14,17 @@ import '../utils/formatters.dart';
 class InvoicePdfServices {
   static Future<void> generatePDF(BuildContext context, Invoice invoice) async {
     try {
-      final dateFmt = await SettingsService.getDateFormat();
-      final pdf = await PDFService.generateInvoicePDF(invoice,
-          datePattern: dateFmt.key);
-      await Printing.layoutPdf(
-          onLayout: (PdfPageFormat format) async => pdf.save());
+      final template = await SettingsService.getInvoiceTemplate();
+      if (template == InvoiceTemplate.thermal) {
+        if (!context.mounted) return;
+        await ThermalPrinterService.printInvoice(context, invoice);
+      } else {
+        final dateFmt = await SettingsService.getDateFormat();
+        final pdf = await PDFService.generateInvoicePDF(invoice,
+            datePattern: dateFmt.key);
+        await Printing.layoutPdf(
+            onLayout: (PdfPageFormat format) async => pdf.save());
+      }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context)

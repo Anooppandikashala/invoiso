@@ -26,6 +26,11 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
   PageSize _previewedPageSize = PageSize.a4;
   bool _savedShowTotalQuantity = false;
   bool _previewedShowTotalQuantity = false;
+  final _thermalWidthMarginController = TextEditingController();
+  String _savedThermalWidthMargin = '1';
+  String _previewedThermalWidthMargin = '1';
+  String _savedThermalItemLayout = 'table';
+  String _previewedThermalItemLayout = 'table';
   bool _isSaving = false;
 
   static const _presetThemeColors = [
@@ -83,11 +88,15 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
       SettingsService.getPdfThemeColor(),
       SettingsService.getPageSize(),
       SettingsService.getShowTotalQuantity(),
+      SettingsService.getSetting(SettingKey.thermalWidthMargin),
+      SettingsService.getSetting(SettingKey.thermalItemLayout),
     ]);
     final saved = results[0] as InvoiceTemplate;
     final savedThemeColor = results[1] as String?;
     final savedPageSize = results[2] as PageSize;
     final savedShowTotalQty = results[3] as bool;
+    final savedThermalWidthMargin = results[4] as String?;
+    final savedThermalItemLayout = results[5] as String?;
     final previewedTemplate =
         effectiveInvoiceTemplateForPageSize(saved, savedPageSize);
     setState(() {
@@ -100,6 +109,11 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
       _previewedPageSize = savedPageSize;
       _savedShowTotalQuantity = savedShowTotalQty;
       _previewedShowTotalQuantity = savedShowTotalQty;
+      _savedThermalWidthMargin = savedThermalWidthMargin ?? '1';
+      _previewedThermalWidthMargin = _savedThermalWidthMargin;
+      _thermalWidthMarginController.text = _savedThermalWidthMargin;
+      _savedThermalItemLayout = savedThermalItemLayout ?? 'table';
+      _previewedThermalItemLayout = _savedThermalItemLayout;
     });
   }
 
@@ -115,12 +129,20 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
         SettingsService.setPdfThemeColor(_previewedThemeColorHex!),
       SettingsService.setPageSize(_previewedPageSize),
       SettingsService.setShowTotalQuantity(_previewedShowTotalQuantity),
+      SettingsService.setSetting(SettingKey.thermalWidthMargin,
+          (int.tryParse(_previewedThermalWidthMargin.trim()) ?? 1)
+              .clamp(-10, 10)
+              .toString()),
+      SettingsService.setSetting(
+          SettingKey.thermalItemLayout, _previewedThermalItemLayout),
     ]);
     setState(() {
       _savedTemplate = _previewedTemplate;
       _savedThemeColorHex = _previewedThemeColorHex;
       _savedPageSize = _previewedPageSize;
       _savedShowTotalQuantity = _previewedShowTotalQuantity;
+      _savedThermalWidthMargin = _previewedThermalWidthMargin;
+      _savedThermalItemLayout = _previewedThermalItemLayout;
     });
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -137,6 +159,7 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
   @override
   void dispose() {
     _themeColorController.dispose();
+    _thermalWidthMarginController.dispose();
     super.dispose();
   }
 
@@ -234,7 +257,9 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
         (_previewedTemplate != _savedTemplate ||
             _previewedThemeColorHex != _savedThemeColorHex ||
             _previewedPageSize != _savedPageSize ||
-            _previewedShowTotalQuantity != _savedShowTotalQuantity);
+            _previewedShowTotalQuantity != _savedShowTotalQuantity ||
+            _previewedThermalWidthMargin != _savedThermalWidthMargin ||
+            _previewedThermalItemLayout != _savedThermalItemLayout);
 
     return Scaffold(
       appBar: AppBar(
@@ -305,6 +330,11 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
                   const SizedBox(height: 6),
                   if (_previewedTemplate == InvoiceTemplate.compact)
                     _buildTotalQuantityToggle(),
+                  if (_previewedTemplate == InvoiceTemplate.thermal) ...[
+                    _buildThermalItemLayoutField(),
+                    const SizedBox(height: 6),
+                    _buildThermalWidthMarginField(),
+                  ],
                 ],
                 const SizedBox(height: 14),
                 _sectionLabel("Templates"),
@@ -470,6 +500,117 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
             value: _previewedShowTotalQuantity,
             onChanged: (v) => setState(() => _previewedShowTotalQuantity = v),
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildThermalItemLayoutField() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppBorderRadius.small),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Item layout',
+            style: TextStyle(
+              fontSize: AppFontSize.small,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[700],
+            ),
+          ),
+          const SizedBox(height: 8),
+          SegmentedButton<String>(
+            segments: const [
+              ButtonSegment(
+                value: 'table',
+                label: Text('Table'),
+                icon: Icon(Icons.table_rows_outlined, size: 16),
+              ),
+              ButtonSegment(
+                value: 'detailed',
+                label: Text('Detailed'),
+                icon: Icon(Icons.view_agenda_outlined, size: 16),
+              ),
+            ],
+            selected: {_previewedThermalItemLayout},
+            onSelectionChanged: (selection) =>
+                setState(() => _previewedThermalItemLayout = selection.first),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Table: one line per item (Sl/Name/Qty/Rate/Total). '
+            'Detailed: name on its own line, then Qty/Rate/Total below it.',
+            style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildThermalWidthMarginField() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppBorderRadius.small),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Thermal print width margin',
+                  style: TextStyle(
+                    fontSize: AppFontSize.small,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[700],
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Characters trimmed from each line to avoid edge clipping. '
+                  'Increase if text runs off the paper edge on your printer.',
+                  style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 56,
+            child: TextField(
+              controller: _thermalWidthMarginController,
+              keyboardType: const TextInputType.numberWithOptions(signed: true),
+              inputFormatters: [
+                TextInputFormatter.withFunction((oldValue, newValue) {
+                  return RegExp(r'^-?\d*$').hasMatch(newValue.text)
+                      ? newValue
+                      : oldValue;
+                }),
+              ],
+              textAlign: TextAlign.center,
+              decoration: InputDecoration(
+                isDense: true,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+              ),
+              onChanged: (val) =>
+                  setState(() => _previewedThermalWidthMargin = val),
+            ),
           ),
         ],
       ),
