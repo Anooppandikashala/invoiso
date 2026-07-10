@@ -9,6 +9,7 @@ class Product {
   int tax_rate;
   String type; // 'product' or 'service'
   double defaultDiscount;
+  double purchasePrice;
 
   Product({
     required this.id,
@@ -21,6 +22,7 @@ class Product {
     required this.tax_rate,
     this.type = 'product',
     this.defaultDiscount = 0.0,
+    this.purchasePrice = 0.0,
   });
 
   // Convert a Map into a Product object
@@ -37,6 +39,7 @@ class Product {
       tax_rate: map['tax_rate'] ?? 0,
       type: map['type'] as String? ?? 'product',
       defaultDiscount: (map['default_discount'] as num?)?.toDouble() ?? 0.0,
+      purchasePrice: (map['purchase_price'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
@@ -53,6 +56,7 @@ class Product {
       tax_rate: map['product_tax_rate'] ?? 0,
       type: map['product_type'] as String? ?? 'product',
       defaultDiscount: (map['product_default_discount'] as num?)?.toDouble() ?? 0.0,
+      purchasePrice: (map['product_purchase_price'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
@@ -68,6 +72,7 @@ class Product {
       'tax_rate': tax_rate,
       'type': type,
       'default_discount': defaultDiscount,
+      'purchase_price': purchasePrice,
     };
   }
 }

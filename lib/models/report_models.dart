@@ -4,6 +4,7 @@ class RevenueKpi {
   final double collected;
   final double outstanding;
   final double avgInvoiceValue;
+  final double profit;
 
   const RevenueKpi({
     required this.invoiceCount,
@@ -11,6 +12,7 @@ class RevenueKpi {
     required this.collected,
     required this.outstanding,
     required this.avgInvoiceValue,
+    this.profit = 0.0,
   });
 
   static const RevenueKpi empty = RevenueKpi(
@@ -26,11 +28,13 @@ class MonthlyPoint {
   final String month;
   final double billed;
   final double collected;
+  final double profit;
 
   const MonthlyPoint({
     required this.month,
     required this.billed,
     required this.collected,
+    this.profit = 0.0,
   });
 }
 
@@ -153,13 +157,19 @@ class TopProduct {
   final double unitsSold;
   final double revenue;
   final double discountGiven;
+  final double cogs;
 
   const TopProduct({
     required this.name,
     required this.unitsSold,
     required this.revenue,
     required this.discountGiven,
+    this.cogs = 0.0,
   });
+
+  double get profit => revenue - cogs;
+
+  double get marginPercent => revenue == 0 ? 0.0 : (profit / revenue) * 100;
 }
 
 class QuotationStats {

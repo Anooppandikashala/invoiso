@@ -1043,9 +1043,8 @@ class _InvoiceManagementScreenState
           const SizedBox(width: 8),
         ],
       ),
-      body: _isLoadingPage
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
+      body:
+      Column(
               children: [
                 // ── Search + stats ────────────────────────────────────────
                 Container(
@@ -1236,6 +1235,9 @@ class _InvoiceManagementScreenState
                 const SizedBox(height: 16),
 
                 // ── Table ─────────────────────────────────────────────────
+                _isLoadingPage
+                ? const Center(child: CircularProgressIndicator())
+                :
                 Expanded(
                   child: _pageInvoices.isEmpty
                       ? Center(

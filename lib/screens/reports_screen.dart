@@ -56,6 +56,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   RevenueKpi _kpi = RevenueKpi.empty;
   List<MonthlyPoint> _trend = [];
+  int _missingCostItemCount = 0;
   StatusBreakdown _status = StatusBreakdown.empty;
   List<AgedReceivable> _aged = [];
   List<TaxBucket> _taxBuckets = [];
@@ -74,6 +75,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   int _customersPageSize = 10;
   int _productsPage = 0;
   int _productsPageSize = 10;
+  bool _rankProductsByProfit = false;
   QuotationStats _quotStats = QuotationStats.empty;
   List<InvoiceStatusRow> _invoiceList = [];
   _InvoiceFilter _invoiceFilter = _InvoiceFilter.all;
@@ -232,11 +234,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 currencyCode: _reportCurrencyCode),
             ReportService.getMonthlyRevenueTrend(from, to,
                 currencyCode: _reportCurrencyCode),
+            ReportService.getMissingCostItemCount(from, to,
+                currencyCode: _reportCurrencyCode),
           ]);
           if (!mounted) return;
           setState(() {
             _kpi = r[0] as RevenueKpi;
             _trend = (r[1] as List).cast<MonthlyPoint>();
+            _missingCostItemCount = r[2] as int;
           });
         case 1:
           final r = await Future.wait([
@@ -290,11 +295,17 @@ class _ReportsScreenState extends State<ReportsScreen> {
             _customersPage = 0;
           });
         case 4:
-          final products = await ReportService.getTopProducts(from, to,
-              currencyCode: _reportCurrencyCode);
+          final r = await Future.wait([
+            ReportService.getTopProducts(from, to,
+                currencyCode: _reportCurrencyCode,
+                rankByProfit: _rankProductsByProfit),
+            ReportService.getMissingCostItemCount(from, to,
+                currencyCode: _reportCurrencyCode),
+          ]);
           if (!mounted) return;
           setState(() {
-            _topProducts = products;
+            _topProducts = r[0] as List<TopProduct>;
+            _missingCostItemCount = r[1] as int;
             _productsPage = 0;
           });
         case 5:
@@ -908,6 +919,35 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
+  Widget _missingCostBanner() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFBEB),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFFDE68A)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.warning_amber_rounded,
+              color: Color(0xFFD97706), size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '$_missingCostItemCount item${_missingCostItemCount == 1 ? '' : 's'} '
+              'sold in this period have no purchase price set — profit/margin '
+              'is understated for those items until a purchase price is added '
+              'to the product.',
+              style:
+                  const TextStyle(fontSize: 12, color: Color(0xFF92400E)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _emptyState(String msg) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 40),
@@ -970,10 +1010,24 @@ class _ReportsScreenState extends State<ReportsScreen> {
                               _money(_kpi.avgInvoiceValue),
                               const Color(0xFF7C3AED),
                               Icons.trending_up)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                          child: _kpiCard(
+                              'Total Profit',
+                              _money(_kpi.profit),
+                              _kpi.profit < 0
+                                  ? const Color(0xFFDC2626)
+                                  : const Color(0xFF16A34A),
+                              Icons.savings_outlined)),
                     ],
                   ),
                 ),
               ),
+              if (_missingCostItemCount > 0)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: _missingCostBanner(),
+                ),
 
               // Monthly bar chart
               _sectionCard(
@@ -1009,6 +1063,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           _legend(const Color(0xFF3B82F6), 'Billed'),
                           const SizedBox(width: 24),
                           _legend(const Color(0xFF22C55E), 'Collected'),
+                          const SizedBox(width: 24),
+                          _legend(const Color(0xFF7C3AED), 'Profit'),
                         ],
                       ),
                     ],
@@ -1047,9 +1103,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   Widget _buildBarChart() {
     final maxY = _trend
-            .map((p) => p.billed > p.collected ? p.billed : p.collected)
+            .map((p) =>
+                [p.billed, p.collected, p.profit].reduce((a, b) => a > b ? a : b))
             .fold(0.0, (a, b) => a > b ? a : b) *
         1.2;
+    final minY = _trend
+        .map((p) => p.profit)
+        .fold(0.0, (a, b) => a < b ? a : b) *
+        (_trend.any((p) => p.profit < 0) ? 1.2 : 1.0);
 
     final groups = _trend.asMap().entries.map((e) {
       return BarChartGroupData(
@@ -1059,13 +1120,19 @@ class _ReportsScreenState extends State<ReportsScreen> {
           BarChartRodData(
             toY: e.value.billed,
             color: const Color(0xFF3B82F6),
-            width: 10,
+            width: 8,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
           ),
           BarChartRodData(
             toY: e.value.collected,
             color: const Color(0xFF22C55E),
-            width: 10,
+            width: 8,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+          ),
+          BarChartRodData(
+            toY: e.value.profit,
+            color: const Color(0xFF7C3AED),
+            width: 8,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
           ),
         ],
@@ -1075,6 +1142,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     return BarChart(
       BarChartData(
         maxY: maxY == 0 ? 100 : maxY,
+        minY: minY,
         alignment: BarChartAlignment.spaceAround,
         barGroups: groups,
         gridData: FlGridData(
@@ -2094,14 +2162,50 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           Padding(
                             padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
                             child: _cardTitle(
-                              'Top ${_topProducts.length} Products / Services by Revenue',
-                              trailing: _exportBtn('Export CSV', () async {
-                                final csv = ReportService.exportTopProductsCsv(
-                                    _topProducts);
-                                await _saveCsv(csv, 'top_products_$ts.csv');
-                              }),
+                              'Top ${_topProducts.length} Products / Services by ${_rankProductsByProfit ? 'Profit' : 'Revenue'}',
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  TextButton.icon(
+                                    onPressed: () {
+                                      setState(() => _rankProductsByProfit =
+                                          !_rankProductsByProfit);
+                                      _loadTab(4);
+                                    },
+                                    icon: Icon(
+                                        _rankProductsByProfit
+                                            ? Icons.trending_up
+                                            : Icons.payments_outlined,
+                                        size: 16),
+                                    label: Text(
+                                        _rankProductsByProfit
+                                            ? 'Rank: Profit'
+                                            : 'Rank: Revenue',
+                                        style: const TextStyle(fontSize: 12)),
+                                    style: TextButton.styleFrom(
+                                      foregroundColor:
+                                          const Color(0xFF64748B),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 6),
+                                    ),
+                                  ),
+                                  _exportBtn('Export CSV', () async {
+                                    final csv =
+                                        ReportService.exportTopProductsCsv(
+                                            _topProducts);
+                                    await _saveCsv(
+                                        csv, 'top_products_$ts.csv');
+                                  }),
+                                ],
+                              ),
                             ),
                           ),
+                          if (_missingCostItemCount > 0)
+                            Padding(
+                              padding:
+                                  const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                              child: _missingCostBanner(),
+                            ),
                           if (_topProducts.isEmpty)
                             Padding(
                               padding: const EdgeInsets.only(bottom: 20),
@@ -2219,6 +2323,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
           Expanded(flex: 2, child: _TableHead('Units Sold', right: true)),
           Expanded(flex: 2, child: _TableHead('Revenue', right: true)),
           Expanded(flex: 2, child: _TableHead('Discount Given', right: true)),
+          Expanded(flex: 2, child: _TableHead('Profit', right: true)),
+          Expanded(flex: 1, child: _TableHead('Margin', right: true)),
         ],
       ),
     );
@@ -2259,6 +2365,22 @@ class _ReportsScreenState extends State<ReportsScreen> {
           Expanded(
               flex: 2,
               child: Text(p.discountGiven > 0 ? _money(p.discountGiven) : '—',
+                  textAlign: TextAlign.right,
+                  style:
+                      const TextStyle(fontSize: 13, color: Color(0xFF64748B)))),
+          Expanded(
+              flex: 2,
+              child: Text(_money(p.profit),
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: p.profit < 0
+                          ? const Color(0xFFDC2626)
+                          : const Color(0xFF16A34A)))),
+          Expanded(
+              flex: 1,
+              child: Text('${p.marginPercent.toStringAsFixed(0)}%',
                   textAlign: TextAlign.right,
                   style:
                       const TextStyle(fontSize: 13, color: Color(0xFF64748B)))),

@@ -87,6 +87,8 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
       return c.name.toLowerCase().contains(query) ||
           c.email.toLowerCase().contains(query) ||
           c.phone.toLowerCase().contains(query) ||
+          c.businessName.toLowerCase().contains(query) ||
+          c.address.toLowerCase().contains(query) ||
           c.gstin.toLowerCase().contains(query);
     }).toList();
 
@@ -910,22 +912,20 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    width: 320,
-                    child: SingleChildScrollView(child: _buildAddCustomerCard()),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(child: _buildCustomerTable(currentPageCustomers, totalPages)),
-                ],
-              ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 320,
+              child: SingleChildScrollView(child: _buildAddCustomerCard()),
             ),
+            const SizedBox(width: 16),
+            Expanded(child: _buildCustomerTable(currentPageCustomers, totalPages)),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1062,7 +1062,9 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
           _buildTableHeader(),
           _buildSearchAndSort(),
           Expanded(
-            child: customers.isEmpty
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : customers.isEmpty
                 ? _buildEmptyState()
                 : Scrollbar(
                     controller: _horizontalScrollController,

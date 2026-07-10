@@ -14,7 +14,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 25;
+  final dbVersion = 26;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -56,7 +56,8 @@ class DatabaseHelper {
         hsncode TEXT,
         tax_rate INTEGER,
         type TEXT DEFAULT 'product',
-        default_discount REAL DEFAULT 0
+        default_discount REAL DEFAULT 0,
+        purchase_price REAL DEFAULT 0.0
       )
     ''');
 
@@ -104,6 +105,7 @@ class DatabaseHelper {
         discount_per_unit INTEGER DEFAULT 0,
         is_product_saved INTEGER DEFAULT 0,
         product_type TEXT DEFAULT 'product',
+        product_purchase_price REAL DEFAULT 0.0,
         PRIMARY KEY (invoice_id, product_id)
       )
     ''');
@@ -459,6 +461,20 @@ class DatabaseHelper {
       await _runMigrationStep(db, 23, 'add_invoice_number_to_invoices', () async {
         await db.execute(
           'ALTER TABLE invoices ADD COLUMN invoice_number TEXT',
+        );
+      });
+    }
+
+    if (oldVersion < 26) {
+      await _runMigrationStep(db, 24, 'add_purchase_price_to_products', () async {
+        await db.execute(
+          'ALTER TABLE products ADD COLUMN purchase_price REAL DEFAULT 0.0',
+        );
+      });
+      await _runMigrationStep(
+          db, 25, 'add_product_purchase_price_to_invoice_items', () async {
+        await db.execute(
+          'ALTER TABLE invoice_items ADD COLUMN product_purchase_price REAL DEFAULT 0.0',
         );
       });
     }
