@@ -50,6 +50,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
   final _defaultDiscountController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _priceController = TextEditingController();
+  final _purchasePriceController = TextEditingController();
   final _stockController = TextEditingController();
   final _hsnCodeController = TextEditingController();
   final _taxRateController = TextEditingController();
@@ -102,6 +103,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
     _nameController.dispose();
     _descriptionController.dispose();
     _priceController.dispose();
+    _purchasePriceController.dispose();
     _defaultDiscountController.dispose();
     _stockController.dispose();
     _taxRateController.dispose();
@@ -141,19 +143,25 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
   Future<void> _addProduct() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final price = double.parse(_priceController.text.trim());
+    final purchasePrice =
+        double.tryParse(_purchasePriceController.text.trim()) ?? 0.0;
+    if (!await _confirmIfSellingAtLoss(price, purchasePrice)) return;
+
     setState(() => _isLoading = true);
     try {
       final newProduct = Product(
         id: const Uuid().v4(),
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
-        price: double.parse(_priceController.text.trim()),
+        price: price,
         stock: int.parse(_stockController.text.trim()),
         hsncode: _hsnCodeController.text.trim(),
         tax_rate: int.parse(_taxRateController.text.trim()),
         type: _newItemType,
         defaultDiscount:
             double.tryParse(_defaultDiscountController.text.trim()) ?? 0.0,
+        purchasePrice: purchasePrice,
       );
 
       await ProductService.insertProduct(newProduct);
@@ -172,6 +180,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
     _nameController.clear();
     _descriptionController.clear();
     _priceController.clear();
+    _purchasePriceController.clear();
     _defaultDiscountController.clear();
     _stockController.clear();
     _hsnCodeController.clear();
@@ -202,11 +211,44 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
     );
   }
 
+  /// Returns true if it's fine to proceed with saving. Warns (with a
+  /// cancel option) when purchase price exceeds sale price, since that
+  /// means selling at a loss.
+  Future<bool> _confirmIfSellingAtLoss(double price, double purchasePrice) async {
+    if (purchasePrice <= 0 || purchasePrice <= price) return true;
+    final proceed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Selling at a loss'),
+        content: Text(
+          'Purchase price ($_currencySymbol${purchasePrice.toStringAsFixed(2)}) '
+          'is higher than sale price ($_currencySymbol${price.toStringAsFixed(2)}). '
+          'Save anyway?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Save Anyway'),
+          ),
+        ],
+      ),
+    );
+    return proceed ?? false;
+  }
+
   void _showProductDialog(Product product, bool isEdit) {
     //final isEdit = product != null;
     final nameCtrl = TextEditingController(text: product.name);
     final descriptionCtrl = TextEditingController(text: product.description);
     final priceCtrl = TextEditingController(text: product.price.toString());
+    final purchasePriceCtrl = TextEditingController(
+        text: product.purchasePrice > 0
+            ? product.purchasePrice.toString()
+            : '');
     final stockCtrl = TextEditingController(text: product.stock.toString());
     final hsnCodeCtrl = TextEditingController(text: product.hsncode);
     final taxRateCtrl =
@@ -296,6 +338,14 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                         prefixText: '$_currencySymbol '),
                     const SizedBox(height: 16),
                     _buildDialogTextField(
+                        purchasePriceCtrl, 'Purchase Price', Icons.shopping_cart_outlined,
+                        readOnly: !isEdit,
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        isPrice: true,
+                        prefixText: '$_currencySymbol '),
+                    const SizedBox(height: 16),
+                    _buildDialogTextField(
                         defaultDiscountCtrl, 'Default Discount', Icons.discount,
                         readOnly: !isEdit,
                         keyboardType: const TextInputType.numberWithOptions(
@@ -327,19 +377,27 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
               FilledButton.icon(
                 onPressed: isSaving ? null : () async {
                   if (!dialogFormKey.currentState!.validate()) return;
+                  final dialogPrice = double.parse(priceCtrl.text.trim());
+                  final dialogPurchasePrice =
+                      double.tryParse(purchasePriceCtrl.text.trim()) ?? 0.0;
+                  if (!await _confirmIfSellingAtLoss(
+                      dialogPrice, dialogPurchasePrice)) {
+                    return;
+                  }
                   setDialogState(() => isSaving = true);
                   try {
                     final updatedProduct = Product(
                       id: product.id,
                       name: nameCtrl.text.trim(),
                       description: descriptionCtrl.text.trim(),
-                      price: double.parse(priceCtrl.text.trim()),
+                      price: dialogPrice,
                       stock: int.parse(stockCtrl.text.trim()),
                       hsncode: hsnCodeCtrl.text.trim(),
                       tax_rate: int.parse(taxRateCtrl.text.trim()),
                       type: dialogItemType,
                       defaultDiscount:
                           double.tryParse(defaultDiscountCtrl.text.trim()) ?? 0.0,
+                      purchasePrice: dialogPurchasePrice,
                     );
 
                     await ProductService.updateProduct(updatedProduct);
@@ -1220,6 +1278,13 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                       isPrice: true,
                       prefixText: '$_currencySymbol '),
                   const SizedBox(height: 16),
+                  _buildFormField(_purchasePriceController,
+                      'Purchase Price', Icons.shopping_cart_outlined,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      isPrice: true,
+                      prefixText: '$_currencySymbol '),
+                  const SizedBox(height: 16),
                   _buildFormField(_defaultDiscountController,
                       'Default Discount', Icons.discount,
                       keyboardType:
@@ -1583,6 +1648,9 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
             label:
                 Text('Price', style: TextStyle(fontWeight: FontWeight.bold))),
         const DataColumn(
+            label: Text('Purchase Price',
+                style: TextStyle(fontWeight: FontWeight.bold))),
+        const DataColumn(
             label:
             Text('Discount', style: TextStyle(fontWeight: FontWeight.bold))),
         const DataColumn(
@@ -1651,6 +1719,29 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                   ),
                 ),
               ),
+            ),
+            DataCell(
+              p.purchasePrice > 0
+                  ? Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: p.purchasePrice > p.price
+                            ? Colors.red.shade50
+                            : Colors.blueGrey.shade50,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '$_currencySymbol${p.purchasePrice.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: p.purchasePrice > p.price
+                              ? Colors.red.shade700
+                              : Colors.blueGrey.shade700,
+                        ),
+                      ),
+                    )
+                  : Text('—', style: TextStyle(color: Colors.grey.shade400)),
             ),
             DataCell(
               Container(

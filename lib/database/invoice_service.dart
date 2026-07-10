@@ -64,6 +64,7 @@ class InvoiceService {
           'extra_cost': item.extraCost,
           'is_product_saved': item.isProductSaved ? 1 : 0,
           'product_type': item.product.type,
+          'product_purchase_price': item.product.purchasePrice,
         });
       }
     });
@@ -138,6 +139,7 @@ class InvoiceService {
           'extra_cost': item.extraCost,
           'is_product_saved': item.isProductSaved ? 1 : 0,
           'product_type': item.product.type,
+          'product_purchase_price': item.product.purchasePrice,
         });
       }
     });

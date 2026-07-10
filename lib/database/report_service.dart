@@ -200,13 +200,77 @@ class ReportService {
       collected += r.paid;
       outstanding += r.outstanding;
     }
+    final profit = await _getTotalProfit(from, to, currencyCode: currencyCode);
     return RevenueKpi(
       invoiceCount: rows.length,
       billed: billed,
       collected: collected,
       outstanding: outstanding,
       avgInvoiceValue: billed / rows.length,
+      profit: profit,
     );
+  }
+
+  /// Net product revenue minus cost of goods sold, for [from]..[to]. Uses the
+  /// same net-revenue basis as [getTopProducts] (tax-exclusive line total),
+  /// not the tax-inclusive invoice `billed` total used elsewhere in this KPI.
+  static Future<double> _getTotalProfit(DateTime from, DateTime to,
+      {String? currencyCode}) async {
+    final db = await _db.database;
+    final f = AppDate.dateKeyStart(from);
+    final t = AppDate.dateKeyEnd(to);
+    final ccFilter = currencyCode != null
+        ? 'AND (i.currency_code = ? OR i.currency_code IS NULL) '
+        : '';
+    final args = <Object?>[
+      if (currencyCode != null) currencyCode,
+      f,
+      t,
+    ];
+    final rows = await db.rawQuery(
+      "SELECT SUM($_invoiceItemNetSql) AS revenue, "
+      "SUM(ii.quantity * ii.product_purchase_price) AS cogs "
+      "FROM invoice_items ii "
+      "JOIN invoices i ON i.id = ii.invoice_id "
+      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "$ccFilter"
+      "AND i.date >= ? AND i.date <= ?",
+      args,
+    );
+    if (rows.isEmpty) return 0.0;
+    final revenue = (rows.first['revenue'] as num?)?.toDouble() ?? 0.0;
+    final cogs = (rows.first['cogs'] as num?)?.toDouble() ?? 0.0;
+    return revenue - cogs;
+  }
+
+  /// Count of sold line items in [from]..[to] with no purchase-price
+  /// snapshot (0 or null) — i.e. sales made before purchase price was set on
+  /// the product, or before this feature existed. Profit/margin figures are
+  /// understated by this many items' worth of unknown cost.
+  static Future<int> getMissingCostItemCount(DateTime from, DateTime to,
+      {String? currencyCode}) async {
+    final db = await _db.database;
+    final f = AppDate.dateKeyStart(from);
+    final t = AppDate.dateKeyEnd(to);
+    final ccFilter = currencyCode != null
+        ? 'AND (i.currency_code = ? OR i.currency_code IS NULL) '
+        : '';
+    final args = <Object?>[
+      if (currencyCode != null) currencyCode,
+      f,
+      t,
+    ];
+    final rows = await db.rawQuery(
+      "SELECT COUNT(*) AS cnt "
+      "FROM invoice_items ii "
+      "JOIN invoices i ON i.id = ii.invoice_id "
+      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "AND (ii.product_purchase_price IS NULL OR ii.product_purchase_price = 0) "
+      "$ccFilter"
+      "AND i.date >= ? AND i.date <= ?",
+      args,
+    );
+    return (rows.first['cnt'] as num?)?.toInt() ?? 0;
   }
 
   // ── 2. Monthly revenue trend ───────────────────────────────────────────────
@@ -256,6 +320,26 @@ class ReportService {
       }
     }
 
+    // Profit grouped by invoice date (net revenue minus COGS)
+    final profitRows = await db.rawQuery(
+      "SELECT strftime('%Y-%m', i.date) AS month, "
+      "SUM($_invoiceItemNetSql) AS revenue, "
+      "SUM(ii.quantity * ii.product_purchase_price) AS cogs "
+      "FROM invoice_items ii "
+      "JOIN invoices i ON i.id = ii.invoice_id "
+      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "$currencyFilter"
+      "AND i.date >= ? AND i.date <= ? "
+      "GROUP BY month",
+      args,
+    );
+    final profitByMonth = <String, double>{
+      for (final r in profitRows)
+        r['month'] as String:
+            ((r['revenue'] as num?)?.toDouble() ?? 0.0) -
+                ((r['cogs'] as num?)?.toDouble() ?? 0.0)
+    };
+
     final allMonths = {...billedByMonth.keys, ...collectedByMonth.keys}.toList()
       ..sort();
 
@@ -264,6 +348,7 @@ class ReportService {
               month: m,
               billed: billedByMonth[m] ?? 0,
               collected: collectedByMonth[m] ?? 0,
+              profit: profitByMonth[m] ?? 0,
             ))
         .toList();
   }
@@ -609,6 +694,7 @@ class ReportService {
     DateTime to, {
     int limit = 500,
     String? currencyCode,
+    bool rankByProfit = false,
   }) async {
     final db = await _db.database;
     final f = AppDate.dateKeyStart(from);
@@ -622,17 +708,21 @@ class ReportService {
       t,
       limit,
     ];
+    final orderBy = rankByProfit
+        ? '(SUM($_invoiceItemNetSql) - SUM(ii.quantity * ii.product_purchase_price))'
+        : 'revenue';
     final rows = await db.rawQuery(
       "SELECT ii.product_name, "
       "SUM(ii.quantity) AS units_sold, "
       "SUM($_invoiceItemNetSql) AS revenue, "
-      "SUM($_invoiceItemDiscountSql) AS discount_given "
+      "SUM($_invoiceItemDiscountSql) AS discount_given, "
+      "SUM(ii.quantity * ii.product_purchase_price) AS cogs "
       "FROM invoice_items ii "
       "JOIN invoices i ON i.id = ii.invoice_id "
       "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
       "$ccFilter"
       "AND i.date >= ? AND i.date <= ? "
-      "GROUP BY ii.product_name ORDER BY revenue DESC LIMIT ?",
+      "GROUP BY ii.product_name ORDER BY $orderBy DESC LIMIT ?",
       args,
     );
     return rows
@@ -641,6 +731,7 @@ class ReportService {
               unitsSold: (r['units_sold'] as num).toDouble(),
               revenue: (r['revenue'] as num).toDouble(),
               discountGiven: (r['discount_given'] as num).toDouble(),
+              cogs: (r['cogs'] as num?)?.toDouble() ?? 0.0,
             ))
         .toList();
   }
@@ -697,9 +788,14 @@ class ReportService {
 
   static String exportTrendCsv(List<MonthlyPoint> trend) {
     return buildQuotedCsv([
-      ['Month', 'Billed', 'Collected'],
+      ['Month', 'Billed', 'Collected', 'Profit'],
       for (final p in trend)
-        [p.month, p.billed.toStringAsFixed(2), p.collected.toStringAsFixed(2)],
+        [
+          p.month,
+          p.billed.toStringAsFixed(2),
+          p.collected.toStringAsFixed(2),
+          p.profit.toStringAsFixed(2),
+        ],
     ]);
   }
 
@@ -759,7 +855,7 @@ class ReportService {
 
   static String exportTopProductsCsv(List<TopProduct> list) {
     return buildQuotedCsv([
-      ['SL', 'Product', 'Units Sold', 'Revenue', 'Discount Given'],
+      ['SL', 'Product', 'Units Sold', 'Revenue', 'Discount Given', 'Profit', 'Margin %'],
       for (var i = 0; i < list.length; i++)
         [
           i + 1,
@@ -767,6 +863,8 @@ class ReportService {
           list[i].unitsSold.toStringAsFixed(2),
           list[i].revenue.toStringAsFixed(2),
           list[i].discountGiven.toStringAsFixed(2),
+          list[i].profit.toStringAsFixed(2),
+          list[i].marginPercent.toStringAsFixed(1),
         ],
     ]);
   }
