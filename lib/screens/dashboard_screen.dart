@@ -11,7 +11,6 @@ import 'package:invoiso/domain/invoice_calculator.dart';
 import 'package:invoiso/database/product_service.dart';
 import 'package:invoiso/database/settings_service.dart';
 import 'package:invoiso/invoiso_colors.dart';
-import 'package:invoiso/models/customer.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/product.dart';
 import 'package:invoiso/screens/settings_screen.dart';
@@ -752,8 +751,8 @@ class _DashboardHomeState extends State<DashboardHome> {
     setState(() => isLoading = true);
 
     final results = await Future.wait([
-      CustomerService.getAllCustomers(), // 0
-      ProductService.getAllProducts(), // 1
+      CustomerService.getTotalCustomerCount(), // 0
+      ProductService.getTotalProductCount(), // 1
       InvoiceService.getDashboardFinancials(), // 2
       InvoiceService.getRecentInvoices(limit: 5), // 3
       InvoiceService.getDueSoonInvoices(), // 4
@@ -765,10 +764,11 @@ class _DashboardHomeState extends State<DashboardHome> {
       InvoiceService.getTopProducts(), // 10
       SettingsService.getSetting(SettingKey.layoutBannerDismissed), // 11
       SettingsService.getSetting(SettingKey.supportBannerDismissed), // 12
+      ProductService.getOutOfStockProducts(), // 13
     ]);
 
-    final customers = results[0] as List<Customer>;
-    final products = results[1] as List<Product>;
+    final customerCount = results[0] as int;
+    final productCount = results[1] as int;
     final financials =
         results[2] as ({int count, double revenue, double outstanding});
     final recent = results[3] as List<Invoice>;
@@ -781,6 +781,7 @@ class _DashboardHomeState extends State<DashboardHome> {
     final topProd = results[10] as List<Map<String, dynamic>>;
     final bannerDismissed = results[11] as String?;
     final supportDismissed = results[12] as String?;
+    final outOfStock = results[13] as List<Product>;
     final String milestone = financials.count >= 100
         ? '100'
         : financials.count >= 50
@@ -790,9 +791,9 @@ class _DashboardHomeState extends State<DashboardHome> {
                 : '';
 
     setState(() {
-      totalCustomers = customers.length;
-      totalProducts = products.length;
-      outOfStockProducts = products.where((p) => p.stock <= 0).toList();
+      totalCustomers = customerCount;
+      totalProducts = productCount;
+      outOfStockProducts = outOfStock;
       totalInvoices = financials.count;
       totalRevenue = financials.revenue;
       totalOutstanding = financials.outstanding;

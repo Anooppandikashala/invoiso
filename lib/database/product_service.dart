@@ -30,6 +30,18 @@ class ProductService {
     return count;
   }
 
+  static Future<List<Product>> getOutOfStockProducts() async {
+    final db = await dbHelper.database;
+    final maps = await db.query(
+      'products',
+      where: 'stock <= ?',
+      whereArgs: [0],
+      orderBy: 'name ASC',
+    );
+
+    return maps.map((p) => Product.fromMap(p)).toList();
+  }
+
   static Future<Product?> getProductById(String id) async {
     final db = await dbHelper.database;
     final maps = await db.query(

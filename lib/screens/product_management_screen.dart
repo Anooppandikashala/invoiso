@@ -44,6 +44,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
   final FocusNode _searchFocusNode = FocusNode();
   final ScrollController _horizontalScrollController = ScrollController();
   Timer? _searchDebounce;
+  int _loadRequestId = 0;
 
   // Form controllers
   final _nameController = TextEditingController();
@@ -71,6 +72,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
     'stock',
     'type',
     'default_discount',
+    'purchase_price',
   ];
 
   @override
@@ -115,6 +117,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
   }
 
   Future<void> _loadProducts() async {
+    final requestId = ++_loadRequestId;
     setState(() => _isLoading = true);
     try {
       final result = await ProductService.getProductsPaginated(
@@ -128,15 +131,17 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
           await ProductService.getProductCount(_searchQuery, _typeFilter);
       final allCount = await ProductService.getTotalProductCount();
 
+      if (requestId != _loadRequestId) return;
       setState(() {
         _products = result;
         _totalProducts = count;
         _allProductsCount = allCount;
       });
     } catch (e) {
+      if (requestId != _loadRequestId) return;
       _showSnackBar('Error loading products: $e', isError: true);
     } finally {
-      setState(() => _isLoading = false);
+      if (requestId == _loadRequestId) setState(() => _isLoading = false);
     }
   }
 
@@ -517,10 +522,10 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
 
   Future<void> _downloadSampleCSV() async {
     const sample =
-        '"name","hsn_code","description","price","tax_rate","stock","type","default_discount"\n'
-        '"Wireless Mouse","84716010","Ergonomic wireless mouse","599.00","18","50","product","5.00"\n'
-        '"USB Hub","84734000","4-port USB 3.0 hub","299.00","18","100","product","0"\n'
-        '"Annual Support","998314","Annual technical support plan","4999.00","18","0","service","10.00"\n';
+        '"name","hsn_code","description","price","tax_rate","stock","type","default_discount","purchase_price"\n'
+        '"Wireless Mouse","84716010","Ergonomic wireless mouse","599.00","18","50","product","5.00","400.00"\n'
+        '"USB Hub","84734000","4-port USB 3.0 hub","299.00","18","100","product","0","180.00"\n'
+        '"Annual Support","998314","Annual technical support plan","4999.00","18","0","service","10.00","0"\n';
 
     final savePath = await FilePicker.platform.saveFile(
       dialogTitle: 'Save Sample CSV',
@@ -588,6 +593,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                     _csvRuleRow('stock', 'No', 'Stock quantity, default 0'),
                     _csvRuleRow('type', 'No', '"product" or "service", default product'),
                     _csvRuleRow('default_discount', 'No', 'Flat discount amount (currency), default 0'),
+                    _csvRuleRow('purchase_price', 'No', 'Cost price (numeric), default 0'),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -762,9 +768,11 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
         final stockStr = getField(row, 'stock');
         final typeStr = getField(row, 'type');
         final discountStr = getField(row, 'default_discount');
+        final purchasePriceStr = getField(row, 'purchase_price');
         final taxRate = taxStr.isEmpty ? 0 : (int.tryParse(taxStr) ?? 0);
         final stock = stockStr.isEmpty ? 0 : (int.tryParse(stockStr) ?? 0);
         final discount = discountStr.isEmpty ? 0.0 : (double.tryParse(discountStr) ?? 0.0);
+        final purchasePrice = purchasePriceStr.isEmpty ? 0.0 : (double.tryParse(purchasePriceStr) ?? 0.0);
         final type = (typeStr == 'service') ? 'service' : 'product';
 
         final existing = await ProductService.findDuplicateByName(name);
@@ -778,6 +786,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
           stock: stock < 0 ? 0 : stock,
           type: type,
           defaultDiscount: discount < 0 ? 0.0 : discount,
+          purchasePrice: purchasePrice < 0 ? 0.0 : purchasePrice,
         );
 
         if (existing != null) {
@@ -1013,7 +1022,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
     try {
       final allProducts = await ProductService.getAllProducts();
       final List<List<dynamic>> rows = [
-        ['name', 'hsn_code', 'description', 'price', 'tax_rate', 'stock', 'type', 'default_discount'],
+        ['name', 'hsn_code', 'description', 'price', 'tax_rate', 'stock', 'type', 'default_discount', 'purchase_price'],
         ...allProducts.map((p) => [
               p.name,
               p.hsncode,
@@ -1023,6 +1032,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
               p.stock,
               p.type,
               p.defaultDiscount,
+              p.purchasePrice,
             ]),
       ];
       final csvData = buildQuotedCsv(rows);
@@ -1184,22 +1194,20 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    width: 320,
-                    child: SingleChildScrollView(child: _buildAddProductCard()),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(child: _buildProductTable(totalPages)),
-                ],
-              ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 320,
+              child: SingleChildScrollView(child: _buildAddProductCard()),
             ),
+            const SizedBox(width: 16),
+            Expanded(child: _buildProductTable(totalPages)),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1426,7 +1434,9 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
             ),
           _buildSearchAndSort(),
           Expanded(
-            child: _products.isEmpty
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _products.isEmpty
                 ? _buildEmptyState()
                 : Scrollbar(
                     controller: _horizontalScrollController,
