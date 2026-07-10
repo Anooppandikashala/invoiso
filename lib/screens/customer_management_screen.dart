@@ -87,6 +87,8 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
       return c.name.toLowerCase().contains(query) ||
           c.email.toLowerCase().contains(query) ||
           c.phone.toLowerCase().contains(query) ||
+          c.businessName.toLowerCase().contains(query) ||
+          c.address.toLowerCase().contains(query) ||
           c.gstin.toLowerCase().contains(query);
     }).toList();
 

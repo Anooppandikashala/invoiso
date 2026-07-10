@@ -127,14 +127,13 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
           orderBy: _sortBy,
           orderASC: _isAscending,
           type: _typeFilter);
-      final count =
-          await ProductService.getProductCount(_searchQuery, _typeFilter);
+
       final allCount = await ProductService.getTotalProductCount();
 
       if (requestId != _loadRequestId) return;
       setState(() {
         _products = result;
-        _totalProducts = count;
+        _totalProducts = result.length;
         _allProductsCount = allCount;
       });
     } catch (e) {
@@ -1461,10 +1460,10 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
 
   Widget _buildTableHeader() {
     String headText = (_typeFilter == "both"
-        ? 'Products/Services'
+        ? 'Products/Services($_allProductsCount)'
         : (_typeFilter == "product")
-            ? 'Products($_allProductsCount)'
-            : 'Services($_allProductsCount)');
+            ? 'Products($_totalProducts)'
+            : 'Services($_totalProducts)');
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
