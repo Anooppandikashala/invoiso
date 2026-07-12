@@ -2,15 +2,13 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:invoiso/common.dart';
-import 'package:invoiso/database/customer_service.dart';
-import 'package:invoiso/database/product_service.dart';
-import 'package:invoiso/database/settings_service.dart';
 import 'package:invoiso/domain/invoice_totals_calculator.dart';
+import 'package:invoiso/providers/app_config_provider.dart';
+import 'package:invoiso/providers/repositories.dart';
 import 'package:uuid/uuid.dart';
-import '../database/invoice_item_service.dart';
-import '../database/invoice_service.dart';
 import '../models/customer.dart';
 import '../models/invoice.dart';
 import '../models/invoice_item.dart';
@@ -24,7 +22,7 @@ class InvoiceFormGuard {
   Future<bool> Function()? canLeave;
 }
 
-class CreateInvoiceScreen extends StatefulWidget {
+class CreateInvoiceScreen extends ConsumerStatefulWidget {
   final Invoice? invoiceToEdit;
 
   /// When set, the form is pre-populated from this invoice and saved as a NEW
@@ -50,10 +48,10 @@ class CreateInvoiceScreen extends StatefulWidget {
   });
 
   @override
-  State<CreateInvoiceScreen> createState() => _CreateInvoiceScreenState();
+  ConsumerState<CreateInvoiceScreen> createState() => _CreateInvoiceScreenState();
 }
 
-class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
+class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   Customer? selectedCustomer;
   List<Customer> customers = [];
   List<Customer> filteredCustomers = [];
@@ -208,15 +206,16 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     } else if (!forceDefault && widget.cloneFrom != null) {
       addNote = widget.cloneFrom!.notes ?? '';
     } else {
-      addNote = await SettingsService.getSetting(SettingKey.additionalInfo) ??
-          DefaultValues.additionalNote;
+      addNote = await ref.read(settingsRepositoryProvider).getSetting(SettingKey.additionalInfo) ??
+          ref.read(appEditionConfigProvider).additionalNote;
     }
-    final taxRateSetting = await SettingsService.getSetting(SettingKey.defaultTaxRate);
+    final taxRateSetting = await ref.read(settingsRepositoryProvider).getSetting(SettingKey.defaultTaxRate);
     final parsedRate = double.tryParse(taxRateSetting ?? '') ?? 18.0;
     if (widget.invoiceToEdit == null && widget.cloneFrom == null) {
       taxRate = parsedRate / 100.0;
       taxRateController.text = parsedRate.toStringAsFixed(1);
     }
+    if(!mounted) return;
     setState(() {
       notesController.text = addNote;
     });
@@ -365,14 +364,15 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   }
 
   Future<void> _loadCustomersAndProducts(bool isEditing) async {
+    if(!mounted) return;
     setState(() => isLoading = true);
 
     try {
-      final c = await CustomerService.getAllCustomers();
-      final p = await ProductService.getAllProducts();
+      final c = await ref.read(customerRepositoryProvider).getAllCustomers();
+      final p = await ref.read(productRepositoryProvider).getAllProducts();
       final String? invNumber;
       if (!isEditing) {
-        invNumber = await InvoicePdfServices.generateNextInvoiceNumber(invoiceType);
+        invNumber = await ref.read(invoiceRepositoryProvider).generateNextInvoiceNumber(invoiceType);
       } else {
         invNumber = widget.invoiceToEdit?.invoiceNumber ?? widget.invoiceToEdit?.id;
       }
@@ -388,20 +388,20 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         loadedCurrencyCode = widget.cloneFrom!.currencyCode;
         loadedCurrencySymbol = widget.cloneFrom!.currencySymbol;
       } else {
-        final currency = await SettingsService.getCurrency();
+        final currency = await ref.read(settingsRepositoryProvider).getCurrency();
         loadedCurrencyCode = currency.code;
         loadedCurrencySymbol = currency.symbol;
       }
 
-      final upiEntries = await SettingsService.getUpiIds();
-      final bankAccounts = await SettingsService.getBankAccounts();
-      final showGst = await SettingsService.getShowGstFields();
-      final fractionalQty = await SettingsService.getFractionalQuantity();
-      final quantityLabelSetting = await SettingsService.getQuantityLabel();
-      final showQuantity = await SettingsService.getShowQuantity();
-      final businessType = await SettingsService.getBusinessType();
-      final dateFormatOpt = await SettingsService.getDateFormat();
-      final showPrevBalance = await SettingsService.getShowPreviousBalance();
+      final upiEntries = await ref.read(settingsRepositoryProvider).getUpiIds();
+      final bankAccounts = await ref.read(settingsRepositoryProvider).getBankAccounts();
+      final showGst = await ref.read(settingsRepositoryProvider).getShowGstFields();
+      final fractionalQty = await ref.read(settingsRepositoryProvider).getFractionalQuantity();
+      final quantityLabelSetting = await ref.read(settingsRepositoryProvider).getQuantityLabel();
+      final showQuantity = await ref.read(settingsRepositoryProvider).getShowQuantity();
+      final businessType = await ref.read(settingsRepositoryProvider).getBusinessType();
+      final dateFormatOpt = await ref.read(settingsRepositoryProvider).getDateFormat();
+      final showPrevBalance = await ref.read(settingsRepositoryProvider).getShowPreviousBalance();
 
       // Determine which UPI to pre-select.
       String? existingUpiId;
@@ -443,7 +443,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 item.product.id.startsWith('custom-') && item.isProductSaved)
             .map((item) => item.product.id),
       );
-
+      if(!mounted) return;
       setState(() {
         customers = c;
         filteredCustomers = List.from(c);
@@ -483,9 +483,11 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       }
       _completeInitialLoad();
     } catch (e) {
+      if(!mounted) return;
       setState(() => isLoading = false);
       _completeInitialLoad();
       if (mounted) {
+        print(e);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error loading data: $e')),
         );
@@ -844,6 +846,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       );
     } else {
       final isAppend = insertAt == null || insertAt >= invoiceItems.length + 1;
+      if(!mounted) return;
       setState(() {
         if (!isAppend) {
           invoiceItems.insert(insertAt - 1, invoiceItem);
@@ -902,6 +905,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       return false;
     }
 
+    if(!mounted) return false;
     setState(() => isLoading = true);
 
     try {
@@ -936,7 +940,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         additionalCosts: _buildAdditionalCosts(),
       );
 
-      await InvoiceService.insertInvoice(invoice);
+      await ref.read(invoiceRepositoryProvider).insertInvoice(invoice);
 
       if (!mounted) return true;
       setState(() {
@@ -1180,7 +1184,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   extraCost: extraCost,
                   discountPerUnit: discountPerUnit,
                 );
-
+                if(!mounted) return;
                 setState(() {
                   invoiceItems[index] = updatedItem;
                 });
@@ -1466,14 +1470,16 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   // }
 
   void _filterProducts(String query) async {
+    if(!mounted) return;
     final results =
-        await ProductService.searchProducts(query, type: _businessType.key);
+        await ref.read(productRepositoryProvider).searchProducts(query, type: _businessType.key);
     setState(() {
       filteredProducts = results;
     });
   }
 
   void _filterCustomers(String query) {
+    if(!mounted) return;
     setState(() {
       if (query.isEmpty) {
         filteredCustomers = List.from(customers);
@@ -1490,6 +1496,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   }
 
   Future<void> _selectCustomer(Customer? customer) async {
+    if(!mounted) return;
     setState(() {
       selectedCustomer = customer;
       nameController.text = customer?.name ?? '';
@@ -1517,10 +1524,10 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       });
       return;
     }
-
+    if(!mounted) return;
     setState(() => _isPreviousBalanceLoading = true);
     try {
-      final balance = await InvoiceService.getPreviousBalanceDueForCustomer(
+      final balance = await ref.read(invoiceRepositoryProvider).getPreviousBalanceDueForCustomer(
         customerId: customer.id,
         currencyCode: _currencyCode,
         asOfDate: _selectedOrderDate,
@@ -1943,6 +1950,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                         lastDate: DateTime(2100),
                       );
                       if (picked != null) {
+                        if(!mounted) return;
                         setState(() {
                           _selectedOrderDate = picked;
                           dateController.text =
@@ -1971,6 +1979,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                           ? IconButton(
                               icon: const Icon(Icons.clear, size: 18),
                               onPressed: () {
+                                if(!mounted) return;
                                 setState(() {
                                   _selectedDueDate = null;
                                   dueDateController.clear();
@@ -1987,6 +1996,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                         lastDate: DateTime(2100),
                       );
                       if (picked != null) {
+                        if(!mounted) return;
                         setState(() {
                           _selectedDueDate = picked;
                           dueDateController.text =
@@ -2072,6 +2082,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   }
 
   Future<void> resetInvoiceType(String invoiceType_) async {
+    if(!mounted) return;
     setState(() {
       invoiceType = invoiceType_;
     });
@@ -2084,6 +2095,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   }
 
   Future<void> resetValues(String invoiceType_) async {
+    if(!mounted) return;
     final invType = await InvoicePdfServices.generateNextInvoiceNumber(invoiceType_);
     setState(() {
       invoiceType = invoiceType_;
@@ -2119,6 +2131,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
   Future<void> _saveCustomer() async {
     if (_isSavingCustomer) return;
+    if(!mounted) return;
     setState(() => _isSavingCustomer = true);
     try {
     final name = nameController.text.trim();
@@ -2141,7 +2154,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     }
 
     final phone = phoneController.text.trim();
-    final existing = await CustomerService.findByPhone(phone);
+    final existing = await ref.read(customerRepositoryProvider).findByPhone(phone);
 
     if (existing != null) {
       if (!mounted) return;
@@ -2185,8 +2198,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         gstin: gstinController.text.trim(),
         businessName: businessNameController.text.trim(),
       );
-      await CustomerService.updateCustomer(updated);
-      final reloaded = await CustomerService.getAllCustomers();
+      await ref.read(customerRepositoryProvider).updateCustomer(updated);
+      final reloaded = await ref.read(customerRepositoryProvider).getAllCustomers();
+      if(!mounted) return;
       setState(() {
         selectedCustomer = updated;
         customers = reloaded;
@@ -2211,8 +2225,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         gstin: gstinController.text.trim(),
         businessName: businessNameController.text.trim(),
       );
-      await CustomerService.insertCustomer(newCustomer);
-      final reloaded = await CustomerService.getAllCustomers();
+      await ref.read(customerRepositoryProvider).insertCustomer(newCustomer);
+      final reloaded = await ref.read(customerRepositoryProvider).getAllCustomers();
+      if(!mounted) return;
       setState(() {
         selectedCustomer = newCustomer;
         customers = reloaded;
@@ -2432,8 +2447,10 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
           InkWell(
             borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(AppBorderRadius.xsmall)),
-            onTap: () =>
-                setState(() => _showAdditionalCosts = !_showAdditionalCosts),
+            onTap: () {
+              if(!mounted) return;
+              setState(() => _showAdditionalCosts = !_showAdditionalCosts);
+            },
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               child: Row(
@@ -2498,7 +2515,10 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                             flex: 3,
                             child: TextField(
                               controller: row.label,
-                              onChanged: (_) => setState(() {}),
+                              onChanged: (_) {
+                                if(!mounted) return;
+                                setState(() {});
+                                },
                               decoration: InputDecoration(
                                 labelText: 'Label',
                                 hintText: 'e.g. Shipping',
@@ -2517,7 +2537,10 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                             flex: 2,
                             child: TextField(
                               controller: row.amount,
-                              onChanged: (_) => setState(() {}),
+                              onChanged: (_) {
+                                if(!mounted) return;
+                                setState(() {});
+                              },
                               keyboardType:
                                   const TextInputType.numberWithOptions(
                                       decimal: true),
@@ -2540,6 +2563,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                 color: Colors.red, size: 20),
                             tooltip: 'Remove',
                             onPressed: () {
+                              if(!mounted) return;
                               setState(() {
                                 _additionalCostControllers[i].label.dispose();
                                 _additionalCostControllers[i].amount.dispose();
@@ -2555,6 +2579,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     alignment: Alignment.centerLeft,
                     child: TextButton.icon(
                       onPressed: () {
+                        if(!mounted) return;
                         setState(() {
                           _additionalCostControllers.add((
                             label: TextEditingController(),
@@ -3068,7 +3093,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                             ScaffoldMessenger.of(context);
                                         // Guard against duplicates: if a product with
                                         // the same name already exists, skip insert.
-                                        final existing = await ProductService
+                                        final existing = await ref
+                                            .read(productRepositoryProvider)
                                             .findDuplicateByName(
                                                 item.product.name);
                                         if (!mounted) return;
@@ -3095,17 +3121,18 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                           tax_rate: item.product.tax_rate,
                                           type: item.product.type,
                                         );
-                                        await ProductService.insertProduct(
+                                        await ref.read(productRepositoryProvider).insertProduct(
                                             newProduct);
                                         item.isProductSaved = true;
                                         // Persist immediately so the flag survives
                                         // even if the user closes without saving the invoice.
                                         if (isEditing && _invoice != null) {
-                                          await InvoiceItemService
+                                          await ref.read(invoiceItemRepositoryProvider)
                                               .markProductSaved(_invoice!.id,
                                                   item.product.id);
                                         }
-                                        final reloaded = await ProductService
+                                        final reloaded = await ref
+                                            .read(productRepositoryProvider)
                                             .getAllProducts();
                                         if (!mounted) return;
                                         setState(() {
@@ -3135,6 +3162,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                   icon: const Icon(Icons.delete, size: 20),
                                   color: Colors.red,
                                   onPressed: () {
+                                    if(!mounted) return;
                                     setState(() {
                                       invoiceItems.removeAt(index);
                                     });
@@ -3226,8 +3254,10 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                             ),
                                           )),
                                 ],
-                                onChanged: (val) =>
-                                    setState(() => _selectedUpi = val),
+                                onChanged: (val) {
+                                  if(!mounted) return;
+                                  setState(() => _selectedUpi = val);
+                                },
                               ),
                             ],
                             AppSpacing.hMedium,
@@ -3274,8 +3304,10 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                             ),
                                           )),
                                 ],
-                                onChanged: (val) =>
-                                    setState(() => _selectedBankAccount = val),
+                                onChanged: (val) {
+                                  if(!mounted) return;
+                                  setState(() => _selectedBankAccount = val);
+                                },
                               ),
                             ],
                           ],
@@ -3304,6 +3336,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                   child: Switch(
                                     value: _isTaxEnabled,
                                     onChanged: (value) {
+                                      if(!mounted) return;
                                       setState(() {
                                         _isTaxEnabled = value;
                                       });
@@ -3330,6 +3363,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                               ],
                               selected: {_isPerItem},
                               onSelectionChanged: (selection) {
+                                if(!mounted) return;
                                 setState(() {
                                   _isPerItem = selection.first;
                                 });
@@ -3354,6 +3388,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                 ),
                                 keyboardType: TextInputType.number,
                                 onChanged: (value) {
+                                  if(!mounted) return;
                                   setState(() {
                                     taxRate = (double.tryParse(value) ??
                                             (taxRate * 100)) /
@@ -3636,7 +3671,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       );
       return false;
     }
-
+    if(!mounted) return false;
     setState(() => isLoading = true);
 
     try {
@@ -3668,10 +3703,10 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         additionalCosts: _buildAdditionalCosts(),
       );
 
-      await InvoiceService.updateInvoice(updatedInvoice);
+      await ref.read(invoiceRepositoryProvider).updateInvoice(updatedInvoice);
 
       final refreshedInvoice =
-          await InvoiceService.getInvoiceById(updatedInvoice.id);
+          await ref.read(invoiceRepositoryProvider).getInvoiceById(updatedInvoice.id);
 
       if (!mounted) return true;
       setState(() {
@@ -3873,7 +3908,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                           onPressed: () async {
                             final phone = phoneController.text.trim();
                             final existing = phone.isNotEmpty
-                                ? await CustomerService.findByPhone(phone)
+                                ? await ref.read(customerRepositoryProvider).findByPhone(phone)
                                 : null;
                             final newCustomer = existing ??
                                 Customer(
@@ -3887,10 +3922,10 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                       businessNameController.text.trim(),
                                 );
                             if (existing == null) {
-                              await CustomerService.insertCustomer(newCustomer);
+                              await ref.read(customerRepositoryProvider).insertCustomer(newCustomer);
                             }
                             final reloaded =
-                                await CustomerService.getAllCustomers();
+                                await ref.read(customerRepositoryProvider).getAllCustomers();
                             if (mounted) {
                               setState(() {
                                 selectedCustomer = newCustomer;
@@ -3915,16 +3950,19 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 8),
                           ),
-                          onPressed: () =>
-                              setState(() => selectedCustomer = Customer(
-                                    id: '',
-                                    name: nameController.text.trim(),
-                                    email: '',
-                                    phone: '',
-                                    address: '',
-                                    gstin: '',
-                                    businessName: '',
-                                  )),
+                          onPressed: () {
+                            if(!mounted) return;
+                            setState(() =>
+                            selectedCustomer = Customer(
+                              id: '',
+                              name: nameController.text.trim(),
+                              email: '',
+                              phone: '',
+                              address: '',
+                              gstin: '',
+                              businessName: '',
+                            ));
+                          },
                           child: const Text('Dismiss'),
                         ),
                       ],

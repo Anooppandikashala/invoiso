@@ -29,12 +29,15 @@ class SqliteReportRepository implements ReportRepository {
           String customerKey, DateTime from, DateTime to, {String? currencyCode}) =>
       ReportService.getCustomerStatements(customerKey, from, to, currencyCode: currencyCode);
   @override
-  Future<List<TopProduct>> getTopProducts(DateTime from, DateTime to, {int limit = 500, String? currencyCode}) =>
-      ReportService.getTopProducts(from, to, limit: limit, currencyCode: currencyCode);
+  Future<List<TopProduct>> getTopProducts(DateTime from, DateTime to, {int limit = 500, String? currencyCode, bool rankByProfit = false}) =>
+      ReportService.getTopProducts(from, to, limit: limit, currencyCode: currencyCode, rankByProfit: rankByProfit);
   @override
   Future<QuotationStats> getQuotationStats(DateTime from, DateTime to, {String? currencyCode}) =>
       ReportService.getQuotationStats(from, to, currencyCode: currencyCode);
   @override
   Future<List<InvoiceStatusRow>> getInvoiceStatusList(DateTime from, DateTime to, {String? currencyCode}) =>
       ReportService.getInvoiceStatusList(from, to, currencyCode: currencyCode);
+  @override
+  Future<int> getMissingCostItemCount(DateTime from, DateTime to, {String? currencyCode}) =>
+      ReportService.getMissingCostItemCount(from, to, currencyCode: currencyCode);
 }

@@ -1,10 +1,9 @@
 import 'dart:convert';
+import 'package:invoiso/services/backend_services.dart';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:invoiso/common.dart';
-import 'package:invoiso/database/company_info_service.dart';
-import 'package:invoiso/database/settings_service.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/invoice_payment.dart';
 import 'package:invoiso/services/pdf_font_service.dart';
@@ -44,12 +43,12 @@ class PaymentReceiptService {
   ) async {
     final pdfTheme = await PdfFontService.loadTheme();
     final pdf = pw.Document(theme: pdfTheme);
-    final company = await CompanyInfoService.getCompanyInfo();
-    final base64Logo = await SettingsService.getCompanyLogo();
+    final company = await BackendServices.companyInfo.getCompanyInfo();
+    final base64Logo = await BackendServices.settings.getCompanyLogo();
     final logoImage =
         base64Logo != null ? pw.MemoryImage(base64Decode(base64Logo)) : null;
     final sym = invoice.currencySymbol;
-    final dateFmt = (await SettingsService.getDateFormat()).key;
+    final dateFmt = (await BackendServices.settings.getDateFormat()).key;
 
     pdf.addPage(
       pw.Page(

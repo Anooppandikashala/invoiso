@@ -6,8 +6,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:invoiso/common.dart';
 import 'package:invoiso/constants.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/database/report_service.dart';
-import 'package:invoiso/database/settings_service.dart';
+import 'package:invoiso/providers/repositories.dart';
 
 // ─── Date preset enum ─────────────────────────────────────────────────────────
 
@@ -33,14 +34,14 @@ enum _CustomerReportMode { overview, statements }
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
-class ReportsScreen extends StatefulWidget {
+class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key});
 
   @override
-  State<ReportsScreen> createState() => _ReportsScreenState();
+  ConsumerState<ReportsScreen> createState() => _ReportsScreenState();
 }
 
-class _ReportsScreenState extends State<ReportsScreen> {
+class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   int _selectedIndex = 0;
   final Set<int> _loadedTabs = {};
   final Map<int, bool> _tabLoading = {};
@@ -178,10 +179,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   Future<void> _loadReportSettings() async {
     final code =
-        (await SettingsService.getSetting(SettingKey.currency)) ?? 'INR';
+        (await ref.read(settingsRepositoryProvider).getSetting(SettingKey.currency)) ?? 'INR';
     final currency = SupportedCurrencies.all.firstWhere((c) => c.code == code,
         orElse: () => SupportedCurrencies.all.first);
-    final dateFormat = await SettingsService.getDateFormat();
+    if(!mounted) return;
+    final dateFormat = await ref.read(settingsRepositoryProvider).getDateFormat();
     if (mounted) {
       setState(() {
         _sym = currency.symbol;
@@ -193,6 +195,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   Future<void> _invalidateAndReload() async {
+    if(!mounted) return;
     setState(() {
       _loadedTabs.clear();
       _tabLoading.clear();
@@ -202,7 +205,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   void _onCurrencyScopeChange(_CurrencyScope scope) {
-    if (_currencyScope == scope) return;
+    if (_currencyScope == scope || !mounted) return;
     setState(() {
       _currencyScope = scope;
       _statementCurrencyCode = null;
@@ -213,7 +216,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   void _onPeriodChange(_DatePreset p) {
-    if (_preset == p) return;
+    if (_preset == p || !mounted) return;
     setState(() {
       _preset = p;
       _loadedTabs.clear();
@@ -223,18 +226,18 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   Future<void> _loadTab(int index) async {
-    if (_tabLoading[index] == true) return;
+    if (_tabLoading[index] == true || !mounted) return;
     setState(() => _tabLoading[index] = true);
     final (from, to) = _range;
     try {
       switch (index) {
         case 0:
           final r = await Future.wait([
-            ReportService.getRevenueSummary(from, to,
+            ref.read(reportRepositoryProvider).getRevenueSummary(from, to,
                 currencyCode: _reportCurrencyCode),
-            ReportService.getMonthlyRevenueTrend(from, to,
+            ref.read(reportRepositoryProvider).getMonthlyRevenueTrend(from, to,
                 currencyCode: _reportCurrencyCode),
-            ReportService.getMissingCostItemCount(from, to,
+            ref.read(reportRepositoryProvider).getMissingCostItemCount(from, to,
                 currencyCode: _reportCurrencyCode),
           ]);
           if (!mounted) return;
@@ -245,9 +248,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
           });
         case 1:
           final r = await Future.wait([
-            ReportService.getPaymentStatusBreakdown(from, to,
+            ref.read(reportRepositoryProvider).getPaymentStatusBreakdown(from, to,
                 currencyCode: _reportCurrencyCode),
-            ReportService.getAgedReceivables(currencyCode: _reportCurrencyCode),
+            ref.read(reportRepositoryProvider).getAgedReceivables(currencyCode: _reportCurrencyCode),
           ]);
           if (!mounted) return;
           setState(() {
@@ -256,15 +259,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
             _agedPage = 0;
           });
         case 2:
-          final buckets = await ReportService.getTaxByRate(from, to,
+          final buckets = await ref.read(reportRepositoryProvider).getTaxByRate(from, to,
               currencyCode: _reportCurrencyCode);
           if (!mounted) return;
           setState(() => _taxBuckets = buckets);
         case 3:
           final r = await Future.wait([
-            ReportService.getTopCustomers(from, to,
+            ref.read(reportRepositoryProvider).getTopCustomers(from, to,
                 currencyCode: _reportCurrencyCode),
-            ReportService.getStatementCustomers(
+            ref.read(reportRepositoryProvider).getStatementCustomers(
                 currencyCode: _reportCurrencyCode),
           ]);
           final customers = (r[0] as List).cast<TopCustomer>();
@@ -279,7 +282,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           }
           final statements = selectedCustomer == null
               ? <CustomerStatement>[]
-              : await ReportService.getCustomerStatements(
+              : await ref.read(reportRepositoryProvider).getCustomerStatements(
                   selectedCustomer,
                   from,
                   to,
@@ -296,10 +299,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
           });
         case 4:
           final r = await Future.wait([
-            ReportService.getTopProducts(from, to,
+            ref.read(reportRepositoryProvider).getTopProducts(from, to,
                 currencyCode: _reportCurrencyCode,
                 rankByProfit: _rankProductsByProfit),
-            ReportService.getMissingCostItemCount(from, to,
+            ref.read(reportRepositoryProvider).getMissingCostItemCount(from, to,
                 currencyCode: _reportCurrencyCode),
           ]);
           if (!mounted) return;
@@ -309,7 +312,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             _productsPage = 0;
           });
         case 5:
-          final stats = await ReportService.getQuotationStats(
+          final stats = await ref.read(reportRepositoryProvider).getQuotationStats(
             from,
             to,
             currencyCode: _reportCurrencyCode,
@@ -317,7 +320,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           if (!mounted) return;
           setState(() => _quotStats = stats);
         case 6:
-          final list = await ReportService.getInvoiceStatusList(
+          final list = await ref.read(reportRepositoryProvider).getInvoiceStatusList(
             from,
             to,
             currencyCode: _reportCurrencyCode,
@@ -339,14 +342,16 @@ class _ReportsScreenState extends State<ReportsScreen> {
     }
   }
 
-  Future<void> _loadCustomerStatement(String customerKey) async {
+  Future<void> _loadCustomerStatement(String customerKey) async
+  {
+    if(!mounted) return;
     setState(() {
       _statementCustomerKey = customerKey;
       _tabLoading[3] = true;
     });
     final (from, to) = _range;
     try {
-      final statements = await ReportService.getCustomerStatements(
+      final statements = await ref.read(reportRepositoryProvider).getCustomerStatements(
         customerKey,
         from,
         to,
@@ -490,6 +495,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
       _customFrom = picked.start;
       _customTo = picked.end;
     }
+    if(!mounted) return;
     setState(() {
       _preset = _DatePreset.custom;
       _loadedTabs.clear();
@@ -695,7 +701,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final sel = _selectedIndex == index;
     return InkWell(
       onTap: () {
-        if (_selectedIndex == index) return;
+        if (_selectedIndex == index || !mounted) return;
         setState(() => _selectedIndex = index);
         if (!_loadedTabs.contains(index) && _tabLoading[index] != true) {
           _loadTab(index);
@@ -1301,11 +1307,17 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         currentPage: _agedPage,
                         pageSize: _agedPageSize,
                         total: _aged.length,
-                        onPageChange: (p) => setState(() => _agedPage = p),
-                        onSizeChange: (s) => setState(() {
-                          _agedPageSize = s;
-                          _agedPage = 0;
-                        }),
+                        onPageChange: (p) {
+                          if(!mounted) return;
+                          setState(() => _agedPage = p);
+                        },
+                        onSizeChange: (s) {
+                          if(!mounted) return;
+                          setState(() {
+                            _agedPageSize = s;
+                            _agedPage = 0;
+                          });
+                        },
                       ),
                     ],
                   ],
@@ -1686,7 +1698,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
       ),
       side: BorderSide(
           color: selected ? const Color(0xFF002E78) : const Color(0xFFE2E8F0)),
-      onSelected: (_) => setState(() => _customerMode = mode),
+      onSelected: (_) {
+        if(!mounted) return;
+        setState(() => _customerMode = mode);
+      },
     );
   }
 
@@ -1783,11 +1798,17 @@ class _ReportsScreenState extends State<ReportsScreen> {
               currentPage: _customersPage,
               pageSize: _customersPageSize,
               total: _topCustomers.length,
-              onPageChange: (p) => setState(() => _customersPage = p),
-              onSizeChange: (s) => setState(() {
-                _customersPageSize = s;
-                _customersPage = 0;
-              }),
+              onPageChange: (p) {
+                if(!mounted) return;
+                setState(() => _customersPage = p);
+              },
+              onSizeChange: (s) {
+                if(!mounted) return;
+                setState(() {
+                  _customersPageSize = s;
+                  _customersPage = 0;
+                });
+              },
             ),
           ],
         ],
@@ -1860,7 +1881,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                               ))
                           .toList(),
                       onChanged: (value) {
-                        if (value != null) {
+                        if (value != null && mounted) {
                           setState(() => _statementCurrencyCode = value);
                         }
                       },
@@ -2168,6 +2189,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                 children: [
                                   TextButton.icon(
                                     onPressed: () {
+                                      if(!mounted) return;
                                       setState(() => _rankProductsByProfit =
                                           !_rankProductsByProfit);
                                       _loadTab(4);
@@ -2297,12 +2319,17 @@ class _ReportsScreenState extends State<ReportsScreen> {
                               currentPage: _productsPage,
                               pageSize: _productsPageSize,
                               total: _topProducts.length,
-                              onPageChange: (p) =>
-                                  setState(() => _productsPage = p),
-                              onSizeChange: (s) => setState(() {
-                                _productsPageSize = s;
-                                _productsPage = 0;
-                              }),
+                              onPageChange: (p) {
+                                if(!mounted) return;
+                                setState(() => _productsPage = p);
+                              },
+                              onSizeChange: (s) {
+                                if(!mounted) return;
+                                setState(() {
+                                  _productsPageSize = s;
+                                  _productsPage = 0;
+                                });
+                              },
                             ),
                           ],
                         ],
@@ -2606,11 +2633,17 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         currentPage: _invoicePage,
                         pageSize: _invoicePageSize,
                         total: filtered.length,
-                        onPageChange: (p) => setState(() => _invoicePage = p),
-                        onSizeChange: (s) => setState(() {
-                          _invoicePageSize = s;
-                          _invoicePage = 0;
-                        }),
+                        onPageChange: (p) {
+                          if(!mounted) return;
+                          setState(() => _invoicePage = p);
+                        },
+                        onSizeChange: (s) {
+                          setState(() {
+                            if(!mounted) return;
+                            _invoicePageSize = s;
+                            _invoicePage = 0;
+                          });
+                        },
                       ),
                     ],
                   ],
@@ -2649,10 +2682,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
         color: sel ? color : const Color(0xFF64748B),
       ),
       side: BorderSide(color: sel ? color : const Color(0xFFE2E8F0)),
-      onSelected: (_) => setState(() {
-        _invoiceFilter = f;
-        _invoicePage = 0;
-      }),
+      onSelected: (_) {
+        if(!mounted) return;
+        setState(() {
+          _invoiceFilter = f;
+          _invoicePage = 0;
+        });
+      },
     );
   }
 

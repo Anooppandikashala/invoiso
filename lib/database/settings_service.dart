@@ -104,6 +104,11 @@ class SettingsService {
     return result.isNotEmpty ? result.first['value'] as String : null;
   }
 
+  static Future<void> deleteSetting(SettingKey key) async {
+    final db = await dbHelper.database;
+    await db.delete('settings', where: 'key = ?', whereArgs: [key.key]);
+  }
+
   static Future<void> setCurrency(String currencyCode) async {
     await setSetting(SettingKey.currency, currencyCode);
   }

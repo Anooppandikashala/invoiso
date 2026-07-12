@@ -1,12 +1,11 @@
 import 'dart:convert';
+import 'package:invoiso/services/backend_services.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:archive/archive_io.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
-import '../database/invoice_service.dart';
-import '../database/settings_service.dart';
 import '../models/invoice.dart';
 import '../services/pdf_service.dart';
 import '../utils/formatters.dart';
@@ -14,7 +13,7 @@ import '../utils/formatters.dart';
 class ExportService {
   static Future<String> exportInvoicesToCsv(List<Invoice> invoices,
       {String type = 'Invoice'}) async {
-    final showGst = await SettingsService.getShowGstFields();
+    final showGst = await BackendServices.settings.getShowGstFields();
 
     // Build header row
     final header = <String>[
@@ -100,7 +99,7 @@ class ExportService {
     for (int i = 0; i < invoices.length; i++) {
       final invoice = invoices[i];
       final previousBalanceDue = s.showPreviousBalance
-          ? await InvoiceService.getPreviousBalanceDueForInvoice(invoice)
+          ? await BackendServices.invoices.getPreviousBalanceDueForInvoice(invoice)
           : 0.0;
       final pdf = PDFService.generateInvoicePDFWithSettings(
         invoice,
@@ -132,7 +131,7 @@ class ExportService {
     for (int i = 0; i < invoices.length; i++) {
       final invoice = invoices[i];
       final previousBalanceDue = s.showPreviousBalance
-          ? await InvoiceService.getPreviousBalanceDueForInvoice(invoice)
+          ? await BackendServices.invoices.getPreviousBalanceDueForInvoice(invoice)
           : 0.0;
       final pdf = PDFService.generateInvoicePDFWithSettings(
         invoice,

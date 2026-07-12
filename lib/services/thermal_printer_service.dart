@@ -1,13 +1,12 @@
 import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:invoiso/services/backend_services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_esc_pos_utils/flutter_esc_pos_utils.dart';
 import 'package:intl/intl.dart';
 import 'package:invoiso/common.dart';
-import 'package:invoiso/database/invoice_service.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/services/pdf/pdf_service.dart';
 import 'package:invoiso/services/pdf/pdf_widgets.dart' show invoiceTaxLabel;
-import 'package:invoiso/database/settings_service.dart';
 import 'package:thermal_printer/thermal_printer.dart';
 
 /// Prints receipts as raw ESC/POS commands sent directly to the printer,
@@ -90,10 +89,10 @@ class ThermalPrinterService {
   /// broken layout on real/virtual printers; plain text lines with manual
   /// space padding render correctly everywhere.
   static Future<List<int>> _buildReceiptBytes(Invoice invoice) async {
-    final dateFmt = await SettingsService.getDateFormat();
+    final dateFmt = await BackendServices.settings.getDateFormat();
     final settings = await PDFService.fetchPdfSettings(datePattern: dateFmt.key);
     final previousBalanceDue = settings.showPreviousBalance
-        ? await InvoiceService.getPreviousBalanceDueForInvoice(invoice)
+        ? await BackendServices.invoices.getPreviousBalanceDueForInvoice(invoice)
         : 0.0;
     final effectivePreviousBalance =
         settings.showPreviousBalance ? previousBalanceDue : 0.0;
@@ -104,10 +103,10 @@ class ThermalPrinterService {
     // physically clips the last column(s) on full-width lines. Adjustable
     // per-install via SettingKey.thermalWidthMargin since printer models vary
     // (e.g. WOOSIM WSP-R241 needed 1).
-    final marginStr = await SettingsService.getSetting(SettingKey.thermalWidthMargin);
+    final marginStr = await BackendServices.settings.getSetting(SettingKey.thermalWidthMargin);
     final margin = int.tryParse(marginStr ?? '') ?? 1;
     final itemLayout =
-        await SettingsService.getSetting(SettingKey.thermalItemLayout) ?? 'table';
+        await BackendServices.settings.getSetting(SettingKey.thermalItemLayout) ?? 'table';
     print(margin);
     final width = (is58 ? 32 : 48) - margin;
     print(width);

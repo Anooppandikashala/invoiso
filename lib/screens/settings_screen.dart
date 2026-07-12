@@ -1,12 +1,13 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/constants.dart';
+import 'package:invoiso/providers/app_config_provider.dart';
+import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/services/update_service.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:invoiso/database/company_info_service.dart';
 import 'package:invoiso/common.dart';
-import 'package:invoiso/database/settings_service.dart';
 import 'package:invoiso/screens/backup_management_screen.dart';
 import 'package:invoiso/screens/invoice_settings_screen.dart';
 import 'package:invoiso/screens/pdf_settings_screen.dart';
@@ -18,15 +19,15 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:image/image.dart' as img;
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   final User currentUser;
   const SettingsScreen({super.key, required this.currentUser});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   int _selectedIndex = 0;
 
   final nameController = TextEditingController();
@@ -70,17 +71,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _loadCompanyInfo();
-    if (UpdateConfig.enableUpdateCheck)
+    if (ref.read(appEditionConfigProvider).enableUpdateCheck)
     {
       _loadCachedUpdateInfo();
     }
   }
 
   Future<void> _loadCachedUpdateInfo() async {
-    final cached = await SettingsService.getSetting(SettingKey.lastKnownLatestVersion);
+    final cached = await ref.read(settingsRepositoryProvider).getSetting(SettingKey.lastKnownLatestVersion);
     if (cached != null && cached.isNotEmpty && mounted) {
       setState(() {
-        _updateInfo = UpdateInfo(latestVersion: cached, currentVersion: AppConfig.version);
+        _updateInfo = UpdateInfo(latestVersion: cached, currentVersion: ref.read(appEditionConfigProvider).version);
       });
     }
   }
@@ -105,66 +106,101 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _loadCompanyInfo() async {
-    final info = await CompanyInfoService.getCompanyInfo();
-    final base64Logo = await SettingsService.getCompanyLogo();
-    final upiEntries = await SettingsService.getUpiIds();
-    final bankEntries = await SettingsService.getBankAccounts();
-    final showQrStr = await SettingsService.getSetting(SettingKey.showUpiQr);
-    final showBankDetails = await SettingsService.getShowBankDetails();
-    final businessType = await SettingsService.getBusinessType();
-    if (info != null) {
-      setState(() {
-        _companyInfo = info;
-        nameController.text = info.name;
-        addressController.text = info.address;
-        phoneController.text = info.phone;
-        emailController.text = info.email;
-        websiteController.text = info.website;
-        gstinController.text = info.gstin;
-        panController.text = info.panNumber;
-        _selectedCountry = info.country.isEmpty ? 'India' : info.country;
-        _companyInfoLoadCount++;
-        _showUpiQr = showQrStr == 'true';
-        _showBankDetails = showBankDetails;
-        _businessType = businessType;
-        if (base64Logo != null && base64Logo.isNotEmpty) {
-          _base64Logo = base64Logo;
-        }
-        for (final row in _upiControllers) {
-          row.label.dispose();
-          row.id.dispose();
-        }
-        _upiControllers.clear();
-        _defaultUpiIndex = null;
-        for (int i = 0; i < upiEntries.length; i++) {
-          final entry = upiEntries[i];
-          _upiControllers.add((
-            label: TextEditingController(text: entry.label),
-            id: TextEditingController(text: entry.id),
-          ));
-          if (entry.isDefault) _defaultUpiIndex = i;
-        }
+    final companyRepo = ref.read(companyInfoRepositoryProvider);
+    final settingsRepo = ref.read(settingsRepositoryProvider);
 
-        for (final row in _bankControllers) {
-          row.label.dispose();
-          row.bankName.dispose();
-          row.accountNumber.dispose();
-          row.ifscCode.dispose();
+    final results = await Future.wait([
+      companyRepo.getCompanyInfo(),
+      settingsRepo.getCompanyLogo(),
+      settingsRepo.getUpiIds(),
+      settingsRepo.getBankAccounts(),
+      settingsRepo.getSetting(SettingKey.showUpiQr),
+      settingsRepo.getShowBankDetails(),
+      settingsRepo.getBusinessType(),
+    ]);
+
+    if (!mounted) return;
+
+    final info = results[0] as CompanyInfo?;
+    final base64Logo = results[1] as String?;
+    final upiEntries = results[2] as List<UpiEntry>;
+    final bankEntries = results[3] as List<BankAccount>;
+    final showQrStr = results[4] as String?;
+    final showBankDetails = results[5] as bool;
+    final businessType = results[6] as BusinessType;
+
+    if (info == null) return;
+
+    setState(() {
+      _companyInfo = info;
+
+      nameController.text = info.name;
+      addressController.text = info.address;
+      phoneController.text = info.phone;
+      emailController.text = info.email;
+      websiteController.text = info.website;
+      gstinController.text = info.gstin;
+      panController.text = info.panNumber;
+
+      _selectedCountry = info.country.isEmpty ? 'India' : info.country;
+      _companyInfoLoadCount++;
+
+      _showUpiQr = showQrStr == 'true';
+      _showBankDetails = showBankDetails;
+      _businessType = businessType;
+
+      if (base64Logo != null && base64Logo.isNotEmpty) {
+        _base64Logo = base64Logo;
+      }
+
+      // Dispose existing UPI controllers
+      for (final row in _upiControllers) {
+        row.label.dispose();
+        row.id.dispose();
+      }
+
+      _upiControllers.clear();
+      _defaultUpiIndex = null;
+
+      for (int i = 0; i < upiEntries.length; i++) {
+        final entry = upiEntries[i];
+
+        _upiControllers.add((
+        label: TextEditingController(text: entry.label),
+        id: TextEditingController(text: entry.id),
+        ));
+
+        if (entry.isDefault) {
+          _defaultUpiIndex = i;
         }
-        _bankControllers.clear();
-        _defaultBankIndex = null;
-        for (int i = 0; i < bankEntries.length; i++) {
-          final e = bankEntries[i];
-          _bankControllers.add((
-            label: TextEditingController(text: e.label),
-            bankName: TextEditingController(text: e.bankName),
-            accountNumber: TextEditingController(text: e.accountNumber),
-            ifscCode: TextEditingController(text: e.ifscCode),
-          ));
-          if (e.isDefault) _defaultBankIndex = i;
+      }
+
+      // Dispose existing Bank controllers
+      for (final row in _bankControllers) {
+        row.label.dispose();
+        row.bankName.dispose();
+        row.accountNumber.dispose();
+        row.ifscCode.dispose();
+      }
+
+      _bankControllers.clear();
+      _defaultBankIndex = null;
+
+      for (int i = 0; i < bankEntries.length; i++) {
+        final entry = bankEntries[i];
+
+        _bankControllers.add((
+        label: TextEditingController(text: entry.label),
+        bankName: TextEditingController(text: entry.bankName),
+        accountNumber: TextEditingController(text: entry.accountNumber),
+        ifscCode: TextEditingController(text: entry.ifscCode),
+        ));
+
+        if (entry.isDefault) {
+          _defaultBankIndex = i;
         }
-      });
-    }
+      }
+    });
   }
 
   Future<void> _saveCompanyInfo() async {
@@ -183,13 +219,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         country: _selectedCountry);
 
     if (_companyInfo == null) {
-      await CompanyInfoService.insertCompanyInfo(newInfo);
+      await ref.read(companyInfoRepositoryProvider).insertCompanyInfo(newInfo);
     } else {
-      await CompanyInfoService.updateCompanyInfo(newInfo);
+      await ref.read(companyInfoRepositoryProvider).updateCompanyInfo(newInfo);
     }
 
     if (_base64Logo != null) {
-      await SettingsService.setCompanyLogo(_base64Logo!);
+      await ref.read(settingsRepositoryProvider).setCompanyLogo(_base64Logo!);
     }
 
     final upiEntries = <UpiEntry>[];
@@ -202,8 +238,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         isDefault: i == _defaultUpiIndex,
       ));
     }
-    await SettingsService.setUpiIds(upiEntries);
-    await SettingsService.setSetting(
+    await ref.read(settingsRepositoryProvider).setUpiIds(upiEntries);
+    await ref.read(settingsRepositoryProvider).setSetting(
         SettingKey.showUpiQr, _showUpiQr.toString());
 
     final bankAccounts = <BankAccount>[];
@@ -218,10 +254,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         isDefault: i == _defaultBankIndex,
       ));
     }
-    await SettingsService.setBankAccounts(bankAccounts);
-    await SettingsService.setShowBankDetails(_showBankDetails);
+    await ref.read(settingsRepositoryProvider).setBankAccounts(bankAccounts);
+    await ref.read(settingsRepositoryProvider).setShowBankDetails(_showBankDetails);
 
-    await SettingsService.setBusinessType(_businessType);
+    await ref.read(settingsRepositoryProvider).setBusinessType(_businessType);
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -259,7 +295,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _clearLogo() async {
-    await SettingsService.setCompanyLogo('');
+    await ref.read(settingsRepositoryProvider).setCompanyLogo('');
     setState(() {
       _selectedLogoFile = null;
       _base64Logo = null;
@@ -1133,6 +1169,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildAppInfoScreen() {
     final primaryColor = Theme.of(context).primaryColor;
+    final cfg = ref.watch(appEditionConfigProvider);
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -1177,7 +1214,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                AppConfig.name.toUpperCase(),
+                                cfg.name.toUpperCase(),
                                 style: const TextStyle(
                                   fontSize: AppFontSize.xxlarge,
                                   fontWeight: FontWeight.bold,
@@ -1186,7 +1223,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                AppConfig.description,
+                                cfg.description,
                                 style: TextStyle(
                                   fontSize: AppFontSize.small,
                                   color: Colors.grey[600],
@@ -1207,7 +1244,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 color: primaryColor.withValues(alpha: 0.3)),
                           ),
                           child: Text(
-                            AppConfig.version,
+                            cfg.version,
                             style: TextStyle(
                               fontSize: AppFontSize.medium,
                               fontWeight: FontWeight.bold,
@@ -1230,11 +1267,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       flex: 2,
                       child: _infoCard('APP DETAILS', [
                         _infoRow(Icons.apps_rounded, 'App Name',
-                            AppConfig.name.toUpperCase()),
+                            cfg.name.toUpperCase()),
                         _infoRow(Icons.tag_rounded, 'Version',
-                            AppConfig.version),
+                            cfg.version),
                         _infoRow(Icons.gavel_rounded, 'License',
-                            AppConfig.license.toUpperCase()),
+                            cfg.license.toUpperCase()),
                       ]),
                     ),
                     const SizedBox(width: 20),
@@ -1242,11 +1279,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       flex: 3,
                       child: _infoCard('DEVELOPER', [
                         _infoRow(Icons.person_rounded, 'Developer',
-                            AppConfig.developer.toUpperCase()),
+                            cfg.developer.toUpperCase()),
                         _infoRow(Icons.email_rounded, 'Support Email',
-                            AppConfig.supportEmail),
+                            cfg.supportEmail),
                         _infoRow(Icons.language_rounded, 'Website',
-                            AppConfig.website),
+                            cfg.website),
                       ]),
                     ),
                   ],
@@ -1255,14 +1292,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 20),
 
                 // ── Update card ──────────────────────────────────────────
-                if (UpdateConfig.enableUpdateCheck)
+                if (cfg.enableUpdateCheck)
                   _buildUpdateCard(),
 
                 const SizedBox(height: 32),
 
                 // ── Footer ───────────────────────────────────────────────
                 Text(
-                  '© ${DateTime.now().year} ${AppConfig.developer}  |  Released under the ${AppConfig.license} License',
+                  '© ${DateTime.now().year} ${cfg.developer}  |  Released under the ${cfg.license} License',
                   style: TextStyle(
                     fontSize: AppFontSize.small,
                     color: Colors.grey[400],
@@ -1279,6 +1316,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildUpdateCard() {
     final primaryColor = Theme.of(context).primaryColor;
+    final cfg = ref.watch(appEditionConfigProvider);
     final info = _updateInfo;
     final hasUpdate = info != null && info.hasUpdate;
     final isUpToDate = info != null && !info.hasUpdate;
@@ -1383,7 +1421,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           Text('Current Version',
                               style: TextStyle(fontSize: AppFontSize.xsmall, color: Colors.grey[500], fontWeight: FontWeight.w500)),
                           const SizedBox(height: 3),
-                          Text(AppConfig.version,
+                          Text(cfg.version,
                               style: const TextStyle(fontSize: AppFontSize.medium, fontWeight: FontWeight.w500)),
                         ],
                       ),
@@ -1659,8 +1697,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildContent() {
-    switch (_selectedIndex) {
+  Widget _buildContent(AppEditionConfig cfg) {
+    final int customizeIndex = cfg.isCloud ? 4 : 6;
+    // When kIsCloud, Backup (1) and Users (2) tabs are hidden — indices 1+ are
+    // shifted down by 2. Offset back to match the canonical case numbers.
+    final int idx = cfg.isCloud && _selectedIndex >= 1
+        ? _selectedIndex + 2
+        : _selectedIndex;
+    switch (idx) {
       case 0:
         return _buildCompanyInfoForm();
       case 1:
@@ -1673,7 +1717,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return PdfSettingsScreen(
           onNavigateToCustomization: () {
             setState(() {
-              _selectedIndex = 6;
+              _selectedIndex = customizeIndex;
               _highlightCustomIndex = 0;
             });
           },
@@ -1682,7 +1726,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return InvoiceSettingsScreen(
           onNavigateToCustomization: () {
             setState(() {
-              _selectedIndex = 6;
+              _selectedIndex = customizeIndex;
               _highlightCustomIndex = 1;
             });
           },
@@ -1698,6 +1742,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cfg = ref.watch(appEditionConfigProvider);
     if (!widget.currentUser.isAdmin()) {
       return _buildAppInfoScreen();
     }
@@ -1718,14 +1763,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 icon: Icon(Icons.business),
                 label: Text('Company Info'),
               ),
-              const NavigationRailDestination(
-                icon: Icon(Icons.backup),
-                label: Text('Backup'),
-              ),
-              const NavigationRailDestination(
-                icon: Icon(Icons.people),
-                label: Text('Users'),
-              ),
+              if (!cfg.isCloud)
+                const NavigationRailDestination(
+                  icon: Icon(Icons.backup),
+                  label: Text('Backup'),
+                ),
+              if (!cfg.isCloud)
+                const NavigationRailDestination(
+                  icon: Icon(Icons.people),
+                  label: Text('Users'),
+                ),
               const NavigationRailDestination(
                 icon: Icon(Icons.settings),
                 label: Text('PDF Settings'),
@@ -1739,7 +1786,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   clipBehavior: Clip.none,
                   children: [
                     const Icon(Icons.info_outline),
-                    if (UpdateConfig.enableUpdateCheck && _updateInfo?.hasUpdate == true)
+                    if (cfg.enableUpdateCheck && _updateInfo?.hasUpdate == true)
                       Positioned(
                         right: -4,
                         top: -4,
@@ -1763,7 +1810,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ],
           ),
           const VerticalDivider(thickness: 1, width: 1),
-          Expanded(child: _buildContent()),
+          Expanded(child: _buildContent(cfg)),
         ],
       ),
     );

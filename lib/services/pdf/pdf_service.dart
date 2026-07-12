@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:invoiso/services/backend_services.dart';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
@@ -12,9 +13,6 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:invoiso/common.dart';
 import 'package:invoiso/constants.dart';
-import 'package:invoiso/database/company_info_service.dart';
-import 'package:invoiso/database/invoice_service.dart';
-import 'package:invoiso/database/settings_service.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/services/pdf_font_service.dart';
@@ -58,30 +56,30 @@ class PDFService {
     String datePattern = 'dd/MM/yyyy',
   }) async {
     final results = await Future.wait<dynamic>([
-      CompanyInfoService.getCompanyInfo(), // 0
-      SettingsService.getInvoiceTemplate(), // 1
-      SettingsService.getSetting(SettingKey.invoicePrefix), // 2
-      SettingsService.getShowGstFields(), // 3
-      SettingsService.getShowQuantity(), // 4
-      SettingsService.getShowDiscount(), // 5
-      SettingsService.getShowTypeTag(), // 6
-      SettingsService.getBusinessType(), // 7
-      SettingsService.getUpiIds(), // 8
-      SettingsService.getSetting(SettingKey.showUpiQr), // 9
-      SettingsService.getShowBankDetails(), // 10
-      SettingsService.getBankAccounts(), // 11
-      SettingsService.getLogoPosition(), // 12
-      SettingsService.getLogoSize(), // 13
-      SettingsService.getCompanyLogo(), // 14
-      SettingsService.getSetting(SettingKey.thankYouNote), // 15
-      SettingsService.getShowInvoiceFooterBranding(), // 16
-      SettingsService.getPdfThemeColor(), // 17
-      SettingsService.getSignatureImage(), // 18
-      SettingsService.getSignaturePosition(), // 19
-      SettingsService.getShowPreviousBalance(), // 20
-      SettingsService.getPageSize(), // 21
-      SettingsService.getShowTotalQuantity(), // 22
-      SettingsService.getSetting(SettingKey.thermalItemLayout), // 23
+      BackendServices.companyInfo.getCompanyInfo(), // 0
+      BackendServices.settings.getInvoiceTemplate(), // 1
+      BackendServices.settings.getSetting(SettingKey.invoicePrefix), // 2
+      BackendServices.settings.getShowGstFields(), // 3
+      BackendServices.settings.getShowQuantity(), // 4
+      BackendServices.settings.getShowDiscount(), // 5
+      BackendServices.settings.getShowTypeTag(), // 6
+      BackendServices.settings.getBusinessType(), // 7
+      BackendServices.settings.getUpiIds(), // 8
+      BackendServices.settings.getSetting(SettingKey.showUpiQr), // 9
+      BackendServices.settings.getShowBankDetails(), // 10
+      BackendServices.settings.getBankAccounts(), // 11
+      BackendServices.settings.getLogoPosition(), // 12
+      BackendServices.settings.getLogoSize(), // 13
+      BackendServices.settings.getCompanyLogo(), // 14
+      BackendServices.settings.getSetting(SettingKey.thankYouNote), // 15
+      BackendServices.settings.getShowInvoiceFooterBranding(), // 16
+      BackendServices.settings.getPdfThemeColor(), // 17
+      BackendServices.settings.getSignatureImage(), // 18
+      BackendServices.settings.getSignaturePosition(), // 19
+      BackendServices.settings.getShowPreviousBalance(), // 20
+      BackendServices.settings.getPageSize(), // 21
+      BackendServices.settings.getShowTotalQuantity(), // 22
+      BackendServices.settings.getSetting(SettingKey.thermalItemLayout), // 23
     ]);
 
     final rawPrefix = (results[2] as String?) ?? 'INV';
@@ -328,7 +326,7 @@ class PDFService {
       {String datePattern = 'dd/MM/yyyy'}) async {
     final settings = await fetchPdfSettings(datePattern: datePattern);
     final previousBalanceDue = settings.showPreviousBalance
-        ? await InvoiceService.getPreviousBalanceDueForInvoice(invoice)
+        ? await BackendServices.invoices.getPreviousBalanceDueForInvoice(invoice)
         : 0.0;
     return generateInvoicePDFWithSettings(
       invoice,
@@ -423,7 +421,7 @@ class PDFService {
                     icon: const Icon(Icons.print_outlined),
                     tooltip: 'Print',
                     onPressed: () async {
-                      final template = await SettingsService.getInvoiceTemplate();
+                      final template = await BackendServices.settings.getInvoiceTemplate();
                       if (template == InvoiceTemplate.thermal) {
                         if (!dialogContext.mounted) return;
                         await ThermalPrinterService.printInvoice(

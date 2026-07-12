@@ -46,6 +46,8 @@ enum SettingKey {
   defaultTaxRate, // default invoice tax rate percentage (e.g. '18')
   thermalWidthMargin, // chars trimmed off the thermal printer's textbook width to avoid edge clipping on real hardware; default '1'
   thermalItemLayout, // 'table' | 'detailed' — how items print on thermal receipts; default 'table'
+  invoiceTemplate, // used by cloud edition's generic setSetting/getSetting path
+  companyLogo, // used by cloud edition's generic setSetting/getSetting path
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -123,6 +125,10 @@ extension SettingKeyExtension on SettingKey {
         return 'thermal_width_margin';
       case SettingKey.thermalItemLayout:
         return 'thermal_item_layout';
+      case SettingKey.invoiceTemplate:
+        return 'invoice_template';
+      case SettingKey.companyLogo:
+        return 'company_logo';
     }
   }
 }

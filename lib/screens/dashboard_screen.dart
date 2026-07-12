@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/constants.dart';
+import 'package:invoiso/providers/app_config_provider.dart';
+import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/services/update_service.dart';
 import 'package:invoiso/widgets/update_dialog.dart';
-import 'package:invoiso/database/customer_service.dart';
-import 'package:invoiso/database/invoice_service.dart';
 import 'package:invoiso/domain/invoice_calculator.dart';
-import 'package:invoiso/database/product_service.dart';
-import 'package:invoiso/database/settings_service.dart';
 import 'package:invoiso/invoiso_colors.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/product.dart';
@@ -33,16 +32,16 @@ import 'login_screen.dart';
 import 'reports_screen.dart';
 
 // Dashboard Screen
-class DashboardScreen extends StatefulWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   final User loggedInUser;
 
   const DashboardScreen(this.loggedInUser, {super.key});
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   int _selectedIndex = 0;
   bool _sidebarExpanded = true;
   late User _currentUser;
@@ -58,7 +57,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     _currentUser = widget.loggedInUser;
     SessionManager.initialize(_onSessionTimeout);
-    if (UpdateConfig.enableUpdateCheck)
+    if (ref.read(appEditionConfigProvider).enableUpdateCheck)
     {
       WidgetsBinding.instance.addPostFrameCallback((_) => _checkForUpdates());
     }
@@ -94,6 +93,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _refreshUser() async {
+    final cfg = ref.watch(appEditionConfigProvider);
+    if(cfg.isCloud) return;
     final fresh = await UserService.getUserById(_currentUser.id);
     if (fresh != null && mounted) {
       setState(() => _currentUser = fresh);
@@ -116,6 +117,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           cloneType: _invoiceToClone != null ? _cloneType : null,
           guard: _invoiceFormGuard,
           onCreateNewInvoice: () {
+            if(!mounted) return;
             setState(() {
               invoiceToEdit = null;
               _invoiceToClone = null;
@@ -165,6 +167,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _openEditInvoice(Invoice invoice) async {
     if (!await _canLeaveInvoiceForm()) return;
+    if(!mounted) return;
     setState(() {
       _selectedIndex = 1;
       invoiceToEdit = invoice;
@@ -178,6 +181,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _openCloneInvoice(Invoice invoice, String type) async {
     if (!await _canLeaveInvoiceForm()) return;
+    if(!mounted) return;
     setState(() {
       _selectedIndex = 1;
       invoiceToEdit = null;
@@ -224,6 +228,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildSidebar() {
     final expanded = _sidebarExpanded;
     final primary = Theme.of(context).primaryColor;
+    final cfg = ref.watch(appEditionConfigProvider);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 220),
@@ -258,7 +263,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       child: Tooltip(
                         message: 'Collapse sidebar',
                         child: InkWell(
-                          onTap: () => setState(() => _sidebarExpanded = false),
+                          onTap: () {
+                            if(!mounted) return;
+                            setState(() => _sidebarExpanded = false);
+                          },
                           borderRadius: BorderRadius.circular(6),
                           child: Padding(
                             padding: const EdgeInsets.all(6),
@@ -290,7 +298,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Tooltip(
                       message: 'Expand sidebar',
                       child: InkWell(
-                        onTap: () => setState(() => _sidebarExpanded = true),
+                        onTap: () {
+                          if(!mounted) return;
+                          setState(() => _sidebarExpanded = true);
+                        },
                         borderRadius: BorderRadius.circular(6),
                         child: Padding(
                           padding: const EdgeInsets.all(4),
@@ -407,7 +418,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         const SizedBox(height: 8),
                         Center(
                           child: Text(
-                            AppConfig.version,
+                            cfg.version,
                             style: const TextStyle(
                               fontSize: 12,
                               color: Color(0xFFCBD5E1),
@@ -466,7 +477,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       const SizedBox(height: 6),
                       Center(
                         child: Text(
-                          AppConfig.version,
+                          cfg.version,
                           style: const TextStyle(
                             fontSize: 9,
                             color: Color(0xFFCBD5E1),
@@ -705,7 +716,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-class DashboardHome extends StatefulWidget {
+class DashboardHome extends ConsumerStatefulWidget {
   final Function(Invoice) onEditInvoice;
   final Function(Invoice, String) onCloneInvoice;
   final User user;
@@ -717,10 +728,10 @@ class DashboardHome extends StatefulWidget {
   });
 
   @override
-  State<DashboardHome> createState() => _DashboardHomeState();
+  ConsumerState<DashboardHome> createState() => _DashboardHomeState();
 }
 
-class _DashboardHomeState extends State<DashboardHome> {
+class _DashboardHomeState extends ConsumerState<DashboardHome> {
   final dbHelper = DatabaseHelper();
   int totalCustomers = 0;
   int totalProducts = 0;
@@ -747,24 +758,26 @@ class _DashboardHomeState extends State<DashboardHome> {
     _loadDashboardData();
   }
 
-  Future<void> _loadDashboardData() async {
+  Future<void> _loadDashboardData() async
+  {
+    if(!mounted) return;
     setState(() => isLoading = true);
 
     final results = await Future.wait([
-      CustomerService.getTotalCustomerCount(), // 0
-      ProductService.getTotalProductCount(), // 1
-      InvoiceService.getDashboardFinancials(), // 2
-      InvoiceService.getRecentInvoices(limit: 5), // 3
-      InvoiceService.getDueSoonInvoices(), // 4
-      InvoiceService.getOverdueInvoices(limit: 10), // 5
-      SettingsService.getCurrency(), // 6
-      InvoiceService.getMonthlyRevenue(), // 7
-      SettingsService.getSetting(SettingKey.dashboardLayout), // 8
-      InvoiceService.getTopCustomers(), // 9
-      InvoiceService.getTopProducts(), // 10
-      SettingsService.getSetting(SettingKey.layoutBannerDismissed), // 11
-      SettingsService.getSetting(SettingKey.supportBannerDismissed), // 12
-      ProductService.getOutOfStockProducts(), // 13
+      ref.read(customerRepositoryProvider).getTotalCustomerCount(), // 0
+      ref.read(productRepositoryProvider).getTotalProductCount(), // 1
+      ref.read(invoiceRepositoryProvider).getDashboardFinancials(), // 2
+      ref.read(invoiceRepositoryProvider).getRecentInvoices(limit: 5), // 3
+      ref.read(invoiceRepositoryProvider).getDueSoonInvoices(), // 4
+      ref.read(invoiceRepositoryProvider).getOverdueInvoices(limit: 10), // 5
+      ref.read(settingsRepositoryProvider).getCurrency(), // 6
+      ref.read(invoiceRepositoryProvider).getMonthlyRevenue(), // 7
+      ref.read(settingsRepositoryProvider).getSetting(SettingKey.dashboardLayout), // 8
+      ref.read(invoiceRepositoryProvider).getTopCustomers(), // 9
+      ref.read(invoiceRepositoryProvider).getTopProducts(), // 10
+      ref.read(settingsRepositoryProvider).getSetting(SettingKey.layoutBannerDismissed), // 11
+      ref.read(settingsRepositoryProvider).getSetting(SettingKey.supportBannerDismissed), // 12
+      ref.read(productRepositoryProvider).getOutOfStockProducts(), // 13
     ]);
 
     final customerCount = results[0] as int;
@@ -789,7 +802,7 @@ class _DashboardHomeState extends State<DashboardHome> {
             : financials.count > 10
                 ? '10'
                 : '';
-
+    if(!mounted) return;
     setState(() {
       totalCustomers = customerCount;
       totalProducts = productCount;
@@ -813,13 +826,13 @@ class _DashboardHomeState extends State<DashboardHome> {
   }
 
   Future<void> _dismissSupportBanner() async {
-    await SettingsService.setSetting(
+    await ref.read(settingsRepositoryProvider).setSetting(
         SettingKey.supportBannerDismissed, _supportMilestone);
     if (mounted) setState(() => _showSupportBanner = false);
   }
 
   Future<void> _dismissLayoutBanner() async {
-    await SettingsService.setSetting(SettingKey.layoutBannerDismissed, '1');
+    await ref.read(settingsRepositoryProvider).setSetting(SettingKey.layoutBannerDismissed, '1');
     if (mounted) setState(() => _showLayoutBanner = false);
   }
 
@@ -1434,7 +1447,10 @@ class _DashboardHomeState extends State<DashboardHome> {
                                                         barrierDismissible: false,
                                                         builder: (_) => ApplyPaymentDialog(
                                                           invoice: invoice,
-                                                          onPaymentRecorded: () => setState(() {}),
+                                                          onPaymentRecorded: () {
+                                                            if(!mounted) return;
+                                                            setState(() {});
+                                                          },
                                                         ),
                                                       )
                                                   : null),
@@ -1903,7 +1919,7 @@ class _DashboardHomeState extends State<DashboardHome> {
             onPressed: () async {
               final qty = int.tryParse(controller.text.trim());
               if (qty == null || qty < 0) return;
-              await ProductService.updateProductStock(product.id, qty);
+              await ref.read(productRepositoryProvider).updateProductStock(product.id, qty);
               if (ctx.mounted) Navigator.pop(ctx);
               _loadDashboardData();
             },
@@ -2300,7 +2316,8 @@ class _DashboardHomeState extends State<DashboardHome> {
       tooltip: 'Dashboard Layout',
       offset: const Offset(0, 40),
       onSelected: (value) async {
-        await SettingsService.setSetting(SettingKey.dashboardLayout, value);
+        if(!mounted) return;
+        await ref.read(settingsRepositoryProvider).setSetting(SettingKey.dashboardLayout, value);
         setState(() => _dashboardLayout = value);
         if (_showLayoutBanner) _dismissLayoutBanner();
       },
@@ -3333,6 +3350,7 @@ class _DashboardHomeState extends State<DashboardHome> {
           const SizedBox(height: 12),
           _buildQuickActionRow(Icons.add_circle_outline_rounded, 'New Invoice',
               Theme.of(context).primaryColor, () {
+                if(!mounted) return;
             context
                 .findAncestorStateOfType<_DashboardScreenState>()
                 ?.setState(() {
@@ -3345,6 +3363,7 @@ class _DashboardHomeState extends State<DashboardHome> {
           _buildQuickActionRow(
               Icons.person_add_outlined, 'Customers', const Color(0xFF1565C0),
               () {
+                if(!mounted) return;
             context
                 .findAncestorStateOfType<_DashboardScreenState>()
                 ?.setState(() {
@@ -3355,15 +3374,17 @@ class _DashboardHomeState extends State<DashboardHome> {
           }),
           const SizedBox(height: 4),
           _buildQuickActionRow(
-              Icons.bar_chart_outlined, 'Reports', const Color(0xFF2E7D32), () {
-            context
-                .findAncestorStateOfType<_DashboardScreenState>()
-                ?.setState(() {
+            Icons.bar_chart_outlined, 'Reports', const Color(0xFF2E7D32), ()
+            {
+              if(!mounted) return;
               context
                   .findAncestorStateOfType<_DashboardScreenState>()
-                  ?._selectedIndex = 7;
-            });
-          }),
+                  ?.setState(() {
+                context
+                    .findAncestorStateOfType<_DashboardScreenState>()
+                    ?._selectedIndex = 7;
+              });
+            }),
         ],
       ),
     );

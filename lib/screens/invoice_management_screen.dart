@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/common.dart';
 import 'package:invoiso/constants.dart';
-import 'package:invoiso/database/invoice_service.dart';
 import 'package:invoiso/domain/invoice_calculator.dart';
 import 'package:invoiso/invoiso_colors.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/providers/invoice_provider.dart';
+import 'package:invoiso/providers/repositories.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:invoiso/services/export_service.dart';
 import 'package:invoiso/services/invoice_pdf_services.dart';
@@ -20,8 +20,8 @@ import 'package:open_file/open_file.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/widgets/customer_info_button.dart';
 import 'package:invoiso/utils/formatters.dart';
-import 'package:invoiso/database/settings_service.dart';
-import 'package:invoiso/database/payment_service.dart';
+// import 'package:invoiso/database/settings_service.dart';
+// import 'package:invoiso/database/payment_service.dart';
 
 class InvoiceManagementScreen extends ConsumerStatefulWidget {
   final Function(Invoice) onEditInvoice;
@@ -111,7 +111,7 @@ class _InvoiceManagementScreenState
   }
 
   Future<void> _loadDateFormat() async {
-    final opt = await SettingsService.getDateFormat();
+    final opt = await ref.read(settingsRepositoryProvider).getDateFormat();
     if (mounted) setState(() => _datePattern = opt.key);
   }
 
@@ -132,13 +132,13 @@ class _InvoiceManagementScreenState
     });
     try {
       final results = await Future.wait([
-        InvoiceService.getInvoicesPaginated(
+        ref.read(invoiceRepositoryProvider).getInvoicesPaginated(
           page: _currentPage,
           pageSize: _pageSize,
           searchQuery: _searchQuery,
           filterType: widget.filterType,
         ),
-        InvoiceService.getInvoiceCount(
+        ref.read(invoiceRepositoryProvider).getInvoiceCount(
           searchQuery: _searchQuery,
           filterType: widget.filterType,
         ),
@@ -280,7 +280,7 @@ class _InvoiceManagementScreenState
     );
     if (!confirmed) return;
 
-    await InvoiceService.softDeleteInvoice(invoice.id);
+    await ref.read(invoiceRepositoryProvider).softDeleteInvoice(invoice.id);
     ref.read(invoicesProvider.notifier).refresh();
     await _loadPage();
     if (mounted) AppError.showSuccess(context, 'Invoice moved to trash.');
@@ -420,7 +420,7 @@ class _InvoiceManagementScreenState
     if (confirmed != true || !mounted) return;
 
     try {
-      final invoices = await InvoiceService.getInvoicesForExport(
+      final invoices = await ref.read(invoiceRepositoryProvider).getInvoicesForExport(
         fromDate: exportAll ? null : fromDate,
         toDate: exportAll ? null : toDate,
         filterType: widget.filterType,
@@ -438,7 +438,7 @@ class _InvoiceManagementScreenState
   }
 
   void _showTrashDialog() async {
-    final deleted = await InvoiceService.getDeletedInvoices();
+    final deleted = await ref.read(invoiceRepositoryProvider).getDeletedInvoices();
     if (!mounted) return;
     showDialog(
       context: context,
@@ -469,7 +469,7 @@ class _InvoiceManagementScreenState
     setState(() => _isBulkLoading = true);
     try {
       for (final id in List<String>.from(_selectedIds)) {
-        await InvoiceService.softDeleteInvoice(id);
+        await ref.read(invoiceRepositoryProvider).softDeleteInvoice(id);
       }
       ref.read(invoicesProvider.notifier).refresh();
       await _loadPage(); // also clears _selectedIds
@@ -653,7 +653,7 @@ class _InvoiceManagementScreenState
     Future<int> fetchCount(StateSetter setS) async {
       setS(() => counting = true);
       try {
-        return await InvoiceService.countInvoicesForExport(
+        return await ref.read(invoiceRepositoryProvider).countInvoicesForExport(
           fromDate: filterMode == 0 ? fromDate : null,
           toDate: filterMode == 0 ? toDate : null,
           fromId: filterMode == 1 ? int.tryParse(fromIdCtrl.text) : null,
@@ -828,7 +828,7 @@ class _InvoiceManagementScreenState
     ).then((saveMode) async {
       if (saveMode == null || !mounted) return;
 
-      final invoices = await InvoiceService.getInvoicesForExport(
+      final invoices = await ref.read(invoiceRepositoryProvider).getInvoicesForExport(
         fromDate: filterMode == 0 ? fromDate : null,
         toDate: filterMode == 0 ? toDate : null,
         fromId: filterMode == 1 ? int.tryParse(fromIdCtrl.text) : null,
@@ -970,7 +970,7 @@ class _InvoiceManagementScreenState
 
     setState(() => _isBulkLoading = true);
     try {
-      final count = await PaymentService.addPaymentBatch(
+      final count = await ref.read(paymentRepositoryProvider).addPaymentBatch(
         invoices: unpaid,
         datePaid: DateTime.now(),
       );
@@ -1968,7 +1968,7 @@ void unawaited(Future<void> future) {}
 
 // ─────────────────────────────────────────────
 // Trash Dialog
-class _TrashDialog extends StatefulWidget {
+class _TrashDialog extends ConsumerStatefulWidget {
   final List<Invoice> deletedInvoices;
   final VoidCallback onRestored;
   final String datePattern;
@@ -1979,10 +1979,10 @@ class _TrashDialog extends StatefulWidget {
       required this.datePattern});
 
   @override
-  State<_TrashDialog> createState() => _TrashDialogState();
+  ConsumerState<_TrashDialog> createState() => _TrashDialogState();
 }
 
-class _TrashDialogState extends State<_TrashDialog> {
+class _TrashDialogState extends ConsumerState<_TrashDialog> {
   late List<Invoice> _invoices;
 
   @override
@@ -1992,7 +1992,7 @@ class _TrashDialogState extends State<_TrashDialog> {
   }
 
   Future<void> _restore(Invoice invoice) async {
-    await InvoiceService.restoreInvoice(invoice.id);
+    await ref.read(invoiceRepositoryProvider).restoreInvoice(invoice.id);
     setState(() => _invoices.removeWhere((i) => i.id == invoice.id));
     widget.onRestored();
     if (mounted) {
@@ -2011,7 +2011,7 @@ class _TrashDialogState extends State<_TrashDialog> {
           'Permanently delete Invoice #${invoice.invoiceNumber ?? invoice.id}? This cannot be undone.',
     );
     if (!confirmed) return;
-    await InvoiceService.permanentDeleteInvoice(invoice.id);
+    await ref.read(invoiceRepositoryProvider).permanentDeleteInvoice(invoice.id);
     setState(() => _invoices.removeWhere((i) => i.id == invoice.id));
     widget.onRestored();
   }

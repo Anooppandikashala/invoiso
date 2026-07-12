@@ -84,6 +84,9 @@ class SqliteInvoiceRepository implements InvoiceRepository {
   @override
   Future<void> deleteInvoice(String id) => InvoiceService.deleteInvoice(id);
   @override
+  Future<int> getTotalInvoiceCountIncludingTrashed() =>
+      InvoiceService.getTotalInvoiceCountIncludingTrashed();
+  @override
   Future<({int count, double revenue, double outstanding})> getDashboardFinancials() =>
       InvoiceService.getDashboardFinancials();
   @override
@@ -98,4 +101,14 @@ class SqliteInvoiceRepository implements InvoiceRepository {
   Future<List<Map<String, dynamic>>> getTopCustomers() => InvoiceService.getTopCustomers();
   @override
   Future<List<Map<String, dynamic>>> getTopProducts() => InvoiceService.getTopProducts();
+
+  @override
+  Future<String> generateNextId() {
+    return InvoiceService.generateNextId();
+  }
+
+  @override
+  Future<String> generateNextInvoiceNumber(String type) {
+    return InvoiceService.generateNextInvoiceNumber(type);
+  }
 }

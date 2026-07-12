@@ -1,8 +1,8 @@
 import 'dart:convert';
+import 'package:invoiso/services/backend_services.dart';
 import 'package:http/http.dart' as http;
 import '../common.dart';
 import '../constants.dart';
-import '../database/settings_service.dart';
 
 class UpdateInfo {
   final String latestVersion;
@@ -40,13 +40,13 @@ class UpdateService {
   static Future<UpdateInfo?> checkForUpdate({bool force = false}) async {
     try {
       if (!force) {
-        final lastCheck = await SettingsService.getSetting(SettingKey.lastUpdateCheck);
+        final lastCheck = await BackendServices.settings.getSetting(SettingKey.lastUpdateCheck);
         if (lastCheck != null) {
           final last = DateTime.tryParse(lastCheck);
           final withinWindow = last != null &&
               DateTime.now().difference(last).inHours < _checkIntervalHours;
           if (withinWindow) {
-            final cached = await SettingsService.getSetting(SettingKey.lastKnownLatestVersion);
+            final cached = await BackendServices.settings.getSetting(SettingKey.lastKnownLatestVersion);
             if (cached != null && cached.isNotEmpty) {
               return UpdateInfo(latestVersion: cached, currentVersion: AppConfig.version);
             }
@@ -63,10 +63,10 @@ class UpdateService {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         final latestTag = (data['tag_name'] as String? ?? '').trim();
 
-        await SettingsService.setSetting(
+        await BackendServices.settings.setSetting(
             SettingKey.lastUpdateCheck, DateTime.now().toIso8601String());
         if (latestTag.isNotEmpty) {
-          await SettingsService.setSetting(
+          await BackendServices.settings.setSetting(
               SettingKey.lastKnownLatestVersion, latestTag);
         }
 
@@ -81,12 +81,12 @@ class UpdateService {
   /// Returns true if the update dialog should be shown for [info].
   static Future<bool> shouldNotify(UpdateInfo info) async {
     if (!info.hasUpdate) return false;
-    final last = await SettingsService.getSetting(SettingKey.lastNotifiedVersion);
+    final last = await BackendServices.settings.getSetting(SettingKey.lastNotifiedVersion);
     return last != info.latestVersion;
   }
 
   /// Call when the user dismisses the dialog so it won't show again for this version.
   static Future<void> markNotified(String version) async {
-    await SettingsService.setSetting(SettingKey.lastNotifiedVersion, version);
+    await BackendServices.settings.setSetting(SettingKey.lastNotifiedVersion, version);
   }
 }

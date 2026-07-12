@@ -3,22 +3,22 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/common.dart';
+import 'package:invoiso/providers/repositories.dart';
 
 import '../constants.dart';
-import '../database/invoice_service.dart';
-import '../database/settings_service.dart';
 
-class InvoiceSettingsScreen extends StatefulWidget {
+class InvoiceSettingsScreen extends ConsumerStatefulWidget {
   final VoidCallback? onNavigateToCustomization;
 
   const InvoiceSettingsScreen({super.key, this.onNavigateToCustomization});
 
   @override
-  State<InvoiceSettingsScreen> createState() => _InvoiceSettingsScreenState();
+  ConsumerState<InvoiceSettingsScreen> createState() => _InvoiceSettingsScreenState();
 }
 
-class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
+class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
   final TextEditingController invoicePrefixController = TextEditingController();
   final TextEditingController invoiceStartingNumberController = TextEditingController();
   final TextEditingController additionalInfoController =
@@ -50,84 +50,97 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
   }
 
   Future<void> _loadSettings() async {
-    final position = await SettingsService.getSetting(SettingKey.logoPosition);
-    final prefix = await SettingsService.getSetting(SettingKey.invoicePrefix);
-    final info = await SettingsService.getSetting(SettingKey.additionalInfo);
-    final thanks = await SettingsService.getSetting(SettingKey.thankYouNote);
-    final currency = await SettingsService.getCurrency();
-    final dateFormat = await SettingsService.getDateFormat();
-    final showGst = await SettingsService.getShowGstFields();
-    final fractionalQty = await SettingsService.getFractionalQuantity();
-    final qtyLabel = await SettingsService.getQuantityLabel();
-    final logoSize = await SettingsService.getLogoSize();
-    final showQuantity = await SettingsService.getShowQuantity();
-    final showDiscount = await SettingsService.getShowDiscount();
-    final showTypeTag = await SettingsService.getShowTypeTag();
-    final showPrevBalance = await SettingsService.getShowPreviousBalance();
-    final sigImage = await SettingsService.getSignatureImage();
-    final sigPosition = await SettingsService.getSignaturePosition();
-    final invoiceCount = await InvoiceService.getTotalInvoiceCountIncludingTrashed();
-    final startingNumber = await SettingsService.getSetting(SettingKey.invoiceStartingNumber);
-    final defaultTaxRateSetting = await SettingsService.getSetting(SettingKey.defaultTaxRate);
+    final settingsRepo = ref.read(settingsRepositoryProvider);
+    final invoiceRepo = ref.read(invoiceRepositoryProvider);
+
+    final results = await Future.wait([
+      settingsRepo.getSetting(SettingKey.logoPosition),
+      settingsRepo.getSetting(SettingKey.invoicePrefix),
+      settingsRepo.getSetting(SettingKey.additionalInfo),
+      settingsRepo.getSetting(SettingKey.thankYouNote),
+      settingsRepo.getCurrency(),
+      settingsRepo.getDateFormat(),
+      settingsRepo.getShowGstFields(),
+      settingsRepo.getFractionalQuantity(),
+      settingsRepo.getQuantityLabel(),
+      settingsRepo.getLogoSize(),
+      settingsRepo.getShowQuantity(),
+      settingsRepo.getShowDiscount(),
+      settingsRepo.getShowTypeTag(),
+      settingsRepo.getShowPreviousBalance(),
+      settingsRepo.getSignatureImage(),
+      settingsRepo.getSignaturePosition(),
+      invoiceRepo.getTotalInvoiceCountIncludingTrashed(),
+      settingsRepo.getSetting(SettingKey.invoiceStartingNumber),
+      settingsRepo.getSetting(SettingKey.defaultTaxRate),
+    ]);
+
+    if (!mounted) return;
 
     setState(() {
-      _selectedLogoPosition = position ?? 'left';
-      _selectedCurrencyCode = currency.code;
-      _selectedLogoSize = logoSize;
-      _selectedDateFormat = dateFormat;
-      invoicePrefixController.text = prefix ?? 'INV';
-      invoiceStartingNumberController.text = startingNumber ?? '1';
-      defaultTaxRateController.text = defaultTaxRateSetting ?? '18';
-      _invoiceCount = invoiceCount;
-      additionalInfoController.text = info ?? '';
-      thankYouController.text = thanks ?? '';
-      _showGstFields = showGst;
-      _fractionalQuantity = fractionalQty;
-      quantityLabelController.text = qtyLabel;
-      _showQuantity = showQuantity;
-      _showDiscount = showDiscount;
-      _showTypeTag = showTypeTag;
-      _showPreviousBalance = showPrevBalance;
-      _signatureBase64 = sigImage;
-      _signaturePosition = sigPosition;
+      _selectedLogoPosition = (results[0] as String?) ?? 'left';
+      invoicePrefixController.text = (results[1] as String?) ?? 'INV';
+      additionalInfoController.text = (results[2] as String?) ?? '';
+      thankYouController.text = (results[3] as String?) ?? '';
+
+      _selectedCurrencyCode = (results[4] as CurrencyOption).code;
+      _selectedDateFormat = results[5] as DateFormatOption;
+      _showGstFields = results[6] as bool;
+      _fractionalQuantity = results[7] as bool;
+      quantityLabelController.text = results[8] as String;
+      _selectedLogoSize = results[9] as String;
+      _showQuantity = results[10] as bool;
+      _showDiscount = results[11] as bool;
+      _showTypeTag = results[12] as bool;
+      _showPreviousBalance = results[13] as bool;
+      _signatureBase64 = results[14] as String?;
+      _signaturePosition = results[15] as String;
+      _invoiceCount = results[16] as int;
+      invoiceStartingNumberController.text =
+          (results[17] as String?) ?? '1';
+      defaultTaxRateController.text =
+          (results[18] as String?) ?? '18';
+
       _isLoading = false;
     });
   }
 
   Future<void> _saveSettings() async {
     if (_isSaving) return;
-    setState(() => _isSaving = true);
+    if(mounted) {
+      setState(() => _isSaving = true);
+    }
     try {
-    await SettingsService.setSetting(SettingKey.logoSize, _selectedLogoSize);
-    await SettingsService.setSetting(
+    await ref.read(settingsRepositoryProvider).setSetting(SettingKey.logoSize, _selectedLogoSize);
+    await ref.read(settingsRepositoryProvider).setSetting(
         SettingKey.logoPosition, _selectedLogoPosition);
-    await SettingsService.setSetting(
+    await ref.read(settingsRepositoryProvider).setSetting(
         SettingKey.invoicePrefix, invoicePrefixController.text);
     if (_invoiceCount == 0) {
       final startVal = int.tryParse(invoiceStartingNumberController.text.trim()) ?? 1;
-      await SettingsService.setSetting(
+      await ref.read(settingsRepositoryProvider).setSetting(
           SettingKey.invoiceStartingNumber, startVal.clamp(1, 99999999).toString());
     }
-    await SettingsService.setSetting(
+    await ref.read(settingsRepositoryProvider).setSetting(
         SettingKey.additionalInfo, additionalInfoController.text);
-    await SettingsService.setSetting(
+    await ref.read(settingsRepositoryProvider).setSetting(
         SettingKey.thankYouNote, thankYouController.text);
-    await SettingsService.setCurrency(_selectedCurrencyCode);
-    await SettingsService.setDateFormat(_selectedDateFormat);
-    await SettingsService.setSetting(
+    await ref.read(settingsRepositoryProvider).setCurrency(_selectedCurrencyCode);
+    await ref.read(settingsRepositoryProvider).setDateFormat(_selectedDateFormat);
+    await ref.read(settingsRepositoryProvider).setSetting(
         SettingKey.showGstFields, _showGstFields.toString());
-    await SettingsService.setSetting(
+    await ref.read(settingsRepositoryProvider).setSetting(
         SettingKey.fractionalQuantity, _fractionalQuantity.toString());
-    await SettingsService.setSetting(
+    await ref.read(settingsRepositoryProvider).setSetting(
         SettingKey.quantityLabel, quantityLabelController.text.trim());
     final taxRateVal = double.tryParse(defaultTaxRateController.text.trim()) ?? 18.0;
-    await SettingsService.setSetting(
+    await ref.read(settingsRepositoryProvider).setSetting(
         SettingKey.defaultTaxRate, taxRateVal.clamp(0, 100).toStringAsFixed(1));
-    await SettingsService.setShowQuantity(_showQuantity);
-    await SettingsService.setShowDiscount(_showDiscount);
-    await SettingsService.setShowTypeTag(_showTypeTag);
-    await SettingsService.setShowPreviousBalance(_showPreviousBalance);
-    await SettingsService.setSetting(
+    await ref.read(settingsRepositoryProvider).setShowQuantity(_showQuantity);
+    await ref.read(settingsRepositoryProvider).setShowDiscount(_showDiscount);
+    await ref.read(settingsRepositoryProvider).setShowTypeTag(_showTypeTag);
+    await ref.read(settingsRepositoryProvider).setShowPreviousBalance(_showPreviousBalance);
+    await ref.read(settingsRepositoryProvider).setSetting(
         SettingKey.signaturePosition, _signaturePosition);
 
     if (!mounted) return;
@@ -159,12 +172,15 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
       return;
     }
     final base64Sig = base64Encode(bytes);
-    await SettingsService.setSignatureImage(base64Sig);
-    setState(() => _signatureBase64 = base64Sig);
+    await ref.read(settingsRepositoryProvider).setSignatureImage(base64Sig);
+    if(mounted) {
+      setState(() => _signatureBase64 = base64Sig);
+    }
   }
 
   Future<void> _clearSignature() async {
-    await SettingsService.setSignatureImage('');
+    await ref.read(settingsRepositoryProvider).setSignatureImage('');
+    if(!mounted) return;
     setState(() => _signatureBase64 = null);
   }
 
@@ -374,6 +390,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                       value: 'right', child: Text('Right')),
                                 ],
                                 onChanged: (value) {
+                                  if(!mounted) return;
                                   setState(() {
                                     _selectedLogoPosition = value!;
                                   });
@@ -418,6 +435,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                       value: 'large', child: Text('Large')),
                                 ],
                                 onChanged: (value) {
+                                  if(!mounted) return;
                                   setState(() => _selectedLogoSize = value!);
                                 },
                               ),
@@ -497,6 +515,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                   );
                                 }).toList(),
                                 onChanged: (value) {
+                                  if(!mounted) return;
                                   setState(() {
                                     _selectedCurrencyCode = value!;
                                   });
@@ -540,6 +559,7 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                   );
                                 }).toList(),
                                 onChanged: (value) {
+                                  if(!mounted) return;
                                   setState(() => _selectedDateFormat = value!);
                                 },
                               ),
@@ -597,8 +617,10 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                         : Colors.grey,
                                   ),
                                   value: _showGstFields,
-                                  onChanged: (val) =>
-                                      setState(() => _showGstFields = val),
+                                  onChanged: (val) {
+                                    if(!mounted) return;
+                                    setState(() => _showGstFields = val);
+                                  },
                                   activeColor: Theme.of(context).primaryColor,
                                 ),
                               ),
@@ -629,8 +651,10 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                         : Colors.grey,
                                   ),
                                   value: _fractionalQuantity,
-                                  onChanged: (val) =>
-                                      setState(() => _fractionalQuantity = val),
+                                  onChanged: (val) {
+                                      if(!mounted) return;
+                                      setState(() => _fractionalQuantity = val);
+                                  },
                                   activeColor: Theme.of(context).primaryColor,
                                 ),
                               ),
@@ -660,8 +684,12 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                         : Colors.grey,
                                   ),
                                   value: _showQuantity,
-                                  onChanged: (val) =>
-                                      setState(() => _showQuantity = val),
+                                  onChanged: (val) {
+                                    if(!mounted) return;
+                                    setState(() {
+                                      _showQuantity = val;
+                                    });
+                                  },
                                   activeColor: Theme.of(context).primaryColor,
                                 ),
                               ),
@@ -691,8 +719,10 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                         : Colors.grey,
                                   ),
                                   value: _showDiscount,
-                                  onChanged: (val) =>
-                                      setState(() => _showDiscount = val),
+                                  onChanged: (val) {
+                                    if(!mounted) return;
+                                    setState(() => _showDiscount = val);
+                                  },
                                   activeColor: Theme.of(context).primaryColor,
                                 ),
                               ),
@@ -721,8 +751,10 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                         : Colors.grey,
                                   ),
                                   value: _showTypeTag,
-                                  onChanged: (val) =>
-                                      setState(() => _showTypeTag = val),
+                                  onChanged: (val) {
+                                    if(!mounted) return;
+                                    setState(() => _showTypeTag = val);
+                                  },
                                   activeColor: Theme.of(context).primaryColor,
                                 ),
                               ),
@@ -752,8 +784,10 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                         : Colors.grey,
                                   ),
                                   value: _showPreviousBalance,
-                                  onChanged: (val) => setState(
-                                      () => _showPreviousBalance = val),
+                                  onChanged: (val) {
+                                    if(!mounted) return;
+                                    setState(() => _showPreviousBalance = val);
+                                  },
                                   activeColor: Theme.of(context).primaryColor,
                                 ),
                               ),
@@ -852,8 +886,11 @@ class _InvoiceSettingsScreenState extends State<InvoiceSettingsScreen> {
                                             value: 'right',
                                             child: Text('Right')),
                                       ],
-                                      onChanged: (val) => setState(
-                                          () => _signaturePosition = val!),
+                                      onChanged: (val) {
+                                        if(!mounted) return;
+                                        setState(
+                                                () => _signaturePosition = val!);
+                                      },
                                     ),
                                   ],
                                 ),

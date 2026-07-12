@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:invoiso/database/payment_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/domain/invoice_calculator.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/invoice_payment.dart';
+import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/services/payment_receipt_service.dart';
 import 'package:invoiso/utils/app_date.dart';
 
-class ApplyPaymentDialog extends StatefulWidget {
+class ApplyPaymentDialog extends ConsumerStatefulWidget {
   final Invoice invoice;
   final VoidCallback onPaymentRecorded;
 
@@ -17,10 +18,10 @@ class ApplyPaymentDialog extends StatefulWidget {
   });
 
   @override
-  State<ApplyPaymentDialog> createState() => _ApplyPaymentDialogState();
+  ConsumerState<ApplyPaymentDialog> createState() => _ApplyPaymentDialogState();
 }
 
-class _ApplyPaymentDialogState extends State<ApplyPaymentDialog> {
+class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
   final _amountController = TextEditingController();
   final _notesController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -48,7 +49,7 @@ class _ApplyPaymentDialogState extends State<ApplyPaymentDialog> {
 
   Future<void> _loadPayments() async {
     final payments =
-        await PaymentService.getPaymentsForInvoice(widget.invoice.id);
+        await ref.read(paymentRepositoryProvider).getPaymentsForInvoice(widget.invoice.id);
     if (mounted) {
       setState(() {
         _payments = payments;
@@ -82,7 +83,7 @@ class _ApplyPaymentDialogState extends State<ApplyPaymentDialog> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSaving = true);
     try {
-      await PaymentService.addPayment(
+      await ref.read(paymentRepositoryProvider).addPayment(
         invoice: widget.invoice,
         amountPaid: _enteredAmount,
         datePaid: _selectedDate,
@@ -140,7 +141,7 @@ class _ApplyPaymentDialogState extends State<ApplyPaymentDialog> {
     );
     if (confirmed != true) return;
 
-    await PaymentService.deletePayment(payment.id);
+    await ref.read(paymentRepositoryProvider).deletePayment(payment.id);
     widget.onPaymentRecorded();
     await _loadPayments();
   }
