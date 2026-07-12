@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -57,6 +58,12 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   List<Customer> filteredCustomers = [];
   List<Product> products = [];
   List<Product> filteredProducts = [];
+  Timer? _productSearchDebounce;
+  int _productSearchRequestId = 0;
+  static const int _productFetchLimit = 10;
+  Timer? _customerSearchDebounce;
+  int _customerSearchRequestId = 0;
+  static const int _customerFetchLimit = 5;
   List<InvoiceItem> invoiceItems = [];
   final Set<String> _savedAdHocIds =
       {}; // tracks custom item IDs already saved to products
@@ -224,6 +231,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
 
   @override
   void dispose() {
+    _productSearchDebounce?.cancel();
+    _customerSearchDebounce?.cancel();
     if (widget.guard?.canLeave == _confirmLeaveIfDirty) {
       widget.guard?.canLeave = null;
     }
@@ -368,14 +377,30 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     setState(() => isLoading = true);
 
     try {
-      final c = await ref.read(customerRepositoryProvider).getAllCustomers();
-      final p = await ref.read(productRepositoryProvider).getAllProducts();
-      final String? invNumber;
-      if (!isEditing) {
-        invNumber = await ref.read(invoiceRepositoryProvider).generateNextInvoiceNumber(invoiceType);
-      } else {
-        invNumber = widget.invoiceToEdit?.invoiceNumber ?? widget.invoiceToEdit?.id;
-      }
+      final settingsRepo = ref.read(settingsRepositoryProvider);
+      final results = await Future.wait([
+        ref.read(customerRepositoryProvider).getCustomersPaginated(
+            offset: 0, limit: _customerFetchLimit), // 0
+        ref.read(productRepositoryProvider).getProductsPaginated(
+            offset: 0, limit: _productFetchLimit, type: _businessType.key), // 1
+        isEditing
+            ? Future.value(widget.invoiceToEdit?.invoiceNumber ?? widget.invoiceToEdit?.id)
+            : ref.read(invoiceRepositoryProvider).peekNextInvoiceNumber(invoiceType), // 2
+        settingsRepo.getCurrency(), // 3 — discarded below when editing/cloning
+        settingsRepo.getUpiIds(), // 4
+        settingsRepo.getBankAccounts(), // 5
+        settingsRepo.getShowGstFields(), // 6
+        settingsRepo.getFractionalQuantity(), // 7
+        settingsRepo.getQuantityLabel(), // 8
+        settingsRepo.getShowQuantity(), // 9
+        settingsRepo.getBusinessType(), // 10
+        settingsRepo.getDateFormat(), // 11
+        settingsRepo.getShowPreviousBalance(), // 12
+      ]);
+
+      final c = results[0] as List<Customer>;
+      final p = results[1] as List<Product>;
+      final invNumber = results[2] as String?;
 
       // Use the existing invoice's currency when editing or cloning,
       // otherwise fall back to the current app-wide currency setting.
@@ -388,20 +413,20 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         loadedCurrencyCode = widget.cloneFrom!.currencyCode;
         loadedCurrencySymbol = widget.cloneFrom!.currencySymbol;
       } else {
-        final currency = await ref.read(settingsRepositoryProvider).getCurrency();
+        final currency = results[3] as CurrencyOption;
         loadedCurrencyCode = currency.code;
         loadedCurrencySymbol = currency.symbol;
       }
 
-      final upiEntries = await ref.read(settingsRepositoryProvider).getUpiIds();
-      final bankAccounts = await ref.read(settingsRepositoryProvider).getBankAccounts();
-      final showGst = await ref.read(settingsRepositoryProvider).getShowGstFields();
-      final fractionalQty = await ref.read(settingsRepositoryProvider).getFractionalQuantity();
-      final quantityLabelSetting = await ref.read(settingsRepositoryProvider).getQuantityLabel();
-      final showQuantity = await ref.read(settingsRepositoryProvider).getShowQuantity();
-      final businessType = await ref.read(settingsRepositoryProvider).getBusinessType();
-      final dateFormatOpt = await ref.read(settingsRepositoryProvider).getDateFormat();
-      final showPrevBalance = await ref.read(settingsRepositoryProvider).getShowPreviousBalance();
+      final upiEntries = results[4] as List<UpiEntry>;
+      final bankAccounts = results[5] as List<BankAccount>;
+      final showGst = results[6] as bool;
+      final fractionalQty = results[7] as bool;
+      final quantityLabelSetting = results[8] as String;
+      final showQuantity = results[9] as bool;
+      final businessType = results[10] as BusinessType;
+      final dateFormatOpt = results[11] as DateFormatOption;
+      final showPrevBalance = results[12] as bool;
 
       // Determine which UPI to pre-select.
       String? existingUpiId;
@@ -945,6 +970,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       if (!mounted) return true;
       setState(() {
         _invoice = invoice;
+        currentInvoiceNumber = invoice.invoiceNumber ?? invoice.id;
         isLoading = false;
       });
       _markFormClean();
@@ -1469,29 +1495,31 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   //   });
   // }
 
-  void _filterProducts(String query) async {
-    if(!mounted) return;
-    final results =
-        await ref.read(productRepositoryProvider).searchProducts(query, type: _businessType.key);
-    setState(() {
-      filteredProducts = results;
+  void _filterProducts(String query) {
+    if (!mounted) return;
+    _productSearchDebounce?.cancel();
+    _productSearchDebounce = Timer(const Duration(milliseconds: 400), () async {
+      final requestId = ++_productSearchRequestId;
+      final results = await ref.read(productRepositoryProvider).getProductsPaginated(
+          offset: 0, limit: _productFetchLimit, query: query, type: _businessType.key);
+      if (requestId != _productSearchRequestId || !mounted) return;
+      setState(() {
+        filteredProducts = results;
+      });
     });
   }
 
   void _filterCustomers(String query) {
-    if(!mounted) return;
-    setState(() {
-      if (query.isEmpty) {
-        filteredCustomers = List.from(customers);
-      } else {
-        filteredCustomers = customers.where((customer) {
-          final nameMatch =
-              customer.name.toLowerCase().contains(query.toLowerCase());
-          final mobileMatch =
-              customer.phone.toLowerCase().contains(query.toLowerCase());
-          return nameMatch || mobileMatch;
-        }).toList();
-      }
+    if (!mounted) return;
+    _customerSearchDebounce?.cancel();
+    _customerSearchDebounce = Timer(const Duration(milliseconds: 400), () async {
+      final requestId = ++_customerSearchRequestId;
+      final results = await ref.read(customerRepositoryProvider).getCustomersPaginated(
+          offset: 0, limit: _customerFetchLimit, query: query);
+      if (requestId != _customerSearchRequestId || !mounted) return;
+      setState(() {
+        filteredCustomers = results;
+      });
     });
   }
 
@@ -1617,8 +1645,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     controller: _customerScrollController,
                     thumbVisibility: true,
                     child: ListView.builder(
-                      itemCount: filteredCustomers.length > 2
-                          ? 2
+                      itemCount: filteredCustomers.length > 5
+                          ? 5
                           : filteredCustomers.length,
                       controller: _customerScrollController,
                       itemBuilder: (context, index) {
@@ -2088,7 +2116,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     });
     if (!isEditing) {
       final invNumber =
-          await InvoicePdfServices.generateNextInvoiceNumber(invoiceType_);
+          await InvoicePdfServices.peekNextInvoiceNumber(invoiceType_);
       if (mounted) setState(() => currentInvoiceNumber = invNumber);
     }
     await _loadPreviousBalanceDue(selectedCustomer);
@@ -2096,7 +2124,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
 
   Future<void> resetValues(String invoiceType_) async {
     if(!mounted) return;
-    final invType = await InvoicePdfServices.generateNextInvoiceNumber(invoiceType_);
+    final invType = await InvoicePdfServices.peekNextInvoiceNumber(invoiceType_);
     setState(() {
       invoiceType = invoiceType_;
       currentInvoiceNumber = invType;
@@ -3827,7 +3855,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    '$invoiceType ID: ${_invoice?.id}',
+                    '$invoiceType ID: ${_invoice?.invoiceNumber}',
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.blue.shade700,

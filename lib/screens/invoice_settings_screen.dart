@@ -111,37 +111,32 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
       setState(() => _isSaving = true);
     }
     try {
-    await ref.read(settingsRepositoryProvider).setSetting(SettingKey.logoSize, _selectedLogoSize);
-    await ref.read(settingsRepositoryProvider).setSetting(
-        SettingKey.logoPosition, _selectedLogoPosition);
-    await ref.read(settingsRepositoryProvider).setSetting(
-        SettingKey.invoicePrefix, invoicePrefixController.text);
-    if (_invoiceCount == 0) {
-      final startVal = int.tryParse(invoiceStartingNumberController.text.trim()) ?? 1;
-      await ref.read(settingsRepositoryProvider).setSetting(
-          SettingKey.invoiceStartingNumber, startVal.clamp(1, 99999999).toString());
-    }
-    await ref.read(settingsRepositoryProvider).setSetting(
-        SettingKey.additionalInfo, additionalInfoController.text);
-    await ref.read(settingsRepositoryProvider).setSetting(
-        SettingKey.thankYouNote, thankYouController.text);
-    await ref.read(settingsRepositoryProvider).setCurrency(_selectedCurrencyCode);
-    await ref.read(settingsRepositoryProvider).setDateFormat(_selectedDateFormat);
-    await ref.read(settingsRepositoryProvider).setSetting(
-        SettingKey.showGstFields, _showGstFields.toString());
-    await ref.read(settingsRepositoryProvider).setSetting(
-        SettingKey.fractionalQuantity, _fractionalQuantity.toString());
-    await ref.read(settingsRepositoryProvider).setSetting(
-        SettingKey.quantityLabel, quantityLabelController.text.trim());
+    final settingsRepo = ref.read(settingsRepositoryProvider);
     final taxRateVal = double.tryParse(defaultTaxRateController.text.trim()) ?? 18.0;
-    await ref.read(settingsRepositoryProvider).setSetting(
-        SettingKey.defaultTaxRate, taxRateVal.clamp(0, 100).toStringAsFixed(1));
-    await ref.read(settingsRepositoryProvider).setShowQuantity(_showQuantity);
-    await ref.read(settingsRepositoryProvider).setShowDiscount(_showDiscount);
-    await ref.read(settingsRepositoryProvider).setShowTypeTag(_showTypeTag);
-    await ref.read(settingsRepositoryProvider).setShowPreviousBalance(_showPreviousBalance);
-    await ref.read(settingsRepositoryProvider).setSetting(
-        SettingKey.signaturePosition, _signaturePosition);
+    await Future.wait([
+      settingsRepo.setSetting(SettingKey.logoSize, _selectedLogoSize),
+      settingsRepo.setSetting(SettingKey.logoPosition, _selectedLogoPosition),
+      settingsRepo.setSetting(SettingKey.invoicePrefix, invoicePrefixController.text),
+      if (_invoiceCount == 0)
+        settingsRepo.setSetting(SettingKey.invoiceStartingNumber,
+            (int.tryParse(invoiceStartingNumberController.text.trim()) ?? 1)
+                .clamp(1, 99999999)
+                .toString()),
+      settingsRepo.setSetting(SettingKey.additionalInfo, additionalInfoController.text),
+      settingsRepo.setSetting(SettingKey.thankYouNote, thankYouController.text),
+      settingsRepo.setCurrency(_selectedCurrencyCode),
+      settingsRepo.setDateFormat(_selectedDateFormat),
+      settingsRepo.setSetting(SettingKey.showGstFields, _showGstFields.toString()),
+      settingsRepo.setSetting(SettingKey.fractionalQuantity, _fractionalQuantity.toString()),
+      settingsRepo.setSetting(SettingKey.quantityLabel, quantityLabelController.text.trim()),
+      settingsRepo.setSetting(
+          SettingKey.defaultTaxRate, taxRateVal.clamp(0, 100).toStringAsFixed(1)),
+      settingsRepo.setShowQuantity(_showQuantity),
+      settingsRepo.setShowDiscount(_showDiscount),
+      settingsRepo.setShowTypeTag(_showTypeTag),
+      settingsRepo.setShowPreviousBalance(_showPreviousBalance),
+      settingsRepo.setSetting(SettingKey.signaturePosition, _signaturePosition),
+    ]);
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(

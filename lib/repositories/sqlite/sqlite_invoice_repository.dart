@@ -111,4 +111,14 @@ class SqliteInvoiceRepository implements InvoiceRepository {
   Future<String> generateNextInvoiceNumber(String type) {
     return InvoiceService.generateNextInvoiceNumber(type);
   }
+
+  @override
+  Future<String> peekNextId() {
+    return InvoiceService.generateNextId();
+  }
+
+  @override
+  Future<String> peekNextInvoiceNumber(String type) {
+    return InvoiceService.generateNextInvoiceNumber(type);
+  }
 }

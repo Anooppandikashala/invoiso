@@ -25,4 +25,19 @@ class SqliteCustomerRepository implements CustomerRepository {
   Future<void> deleteAllCustomers() => CustomerService.deleteAllCustomers();
   @override
   Future<void> insertBatch(List<Customer> customers) => CustomerService.insertBatch(customers);
+  @override
+  Future<List<Customer>> getCustomersPaginated({
+    required int offset,
+    required int limit,
+    String query = '',
+    String orderBy = 'name',
+    bool orderASC = true,
+  }) =>
+      CustomerService.getCustomersPaginated(
+        offset: offset,
+        limit: limit,
+        query: query,
+        orderBy: orderBy,
+        orderASC: orderASC,
+      );
 }

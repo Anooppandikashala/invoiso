@@ -2069,9 +2069,51 @@ class _TrashDialogState extends ConsumerState<_TrashDialog> {
                     return ListTile(
                       leading:
                           const Icon(Icons.receipt_long, color: Colors.grey),
-                      title: Text('#${inv.id} — ${inv.customer.name}'),
-                      subtitle: Text(AppFormatters.formatShortDate(inv.date,
-                          pattern: widget.datePattern)),
+                      title: Text('#${inv.invoiceNumber ?? inv.id} — ${inv.customer.name}'),
+                      subtitle: Row(
+                        children: [
+                          Text(AppFormatters.formatShortDate(inv.date,
+                              pattern: widget.datePattern)),
+                          SizedBox(width: 10,),
+                          Container(
+                            padding:
+                            const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4),
+                            decoration: BoxDecoration(
+                              color: inv.type == 'Invoice'
+                                  ? Colors.indigo
+                                  .withValues(alpha: 0.1)
+                                  : Colors.orange
+                                  .withValues(alpha: 0.1),
+                              borderRadius:
+                              BorderRadius.circular(6),
+                              border: Border.all(
+                                color:
+                                inv.type == 'Invoice'
+                                    ? Colors.indigo
+                                    .withValues(
+                                    alpha: 0.35)
+                                    : Colors.orange
+                                    .withValues(
+                                    alpha: 0.35),
+                              ),
+                            ),
+                            child: Text(
+                              inv.type,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color:
+                                inv.type == 'Invoice'
+                                    ? Colors.indigo[700]
+                                    : Colors.orange[800],
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          )
+                        ],
+                      ),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [

@@ -178,12 +178,15 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   Future<void> _loadReportSettings() async {
-    final code =
-        (await ref.read(settingsRepositoryProvider).getSetting(SettingKey.currency)) ?? 'INR';
+    final settingsRepo = ref.read(settingsRepositoryProvider);
+    final results = await Future.wait([
+      settingsRepo.getSetting(SettingKey.currency),
+      settingsRepo.getDateFormat(),
+    ]);
+    final code = (results[0] as String?) ?? 'INR';
     final currency = SupportedCurrencies.all.firstWhere((c) => c.code == code,
         orElse: () => SupportedCurrencies.all.first);
-    if(!mounted) return;
-    final dateFormat = await ref.read(settingsRepositoryProvider).getDateFormat();
+    final dateFormat = results[1] as DateFormatOption;
     if (mounted) {
       setState(() {
         _sym = currency.symbol;

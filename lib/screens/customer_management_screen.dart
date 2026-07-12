@@ -70,8 +70,13 @@ class _CustomerManagementScreenState extends ConsumerState<CustomerManagementScr
     setState(() => _isLoading = true);
     try {
       if(!mounted) return;
-      final data = await ref.read(customerRepositoryProvider).getAllCustomers();
-      final count = await ref.read(customerRepositoryProvider).getTotalCustomerCount();
+      final customerRepo = ref.read(customerRepositoryProvider);
+      final results = await Future.wait([
+        customerRepo.getAllCustomers(),
+        customerRepo.getTotalCustomerCount(),
+      ]);
+      final data = results[0] as List<Customer>;
+      final count = results[1] as int;
       if(!mounted) return;
       setState(() {
         _customers = data;

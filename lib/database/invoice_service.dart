@@ -931,17 +931,20 @@ class InvoiceService {
     }
 
     int nextNumber;
-    if (fromId == 0 && fromNum == 0) {
-      if (type == 'Invoice') {
-        final startStr =
-            await SettingsService.getSetting(SettingKey.invoiceStartingNumber);
-        nextNumber = int.tryParse(startStr ?? '') ?? 1;
-        if (nextNumber < 1) nextNumber = 1;
-      } else {
-        nextNumber = 1;
-      }
+    if (fromNum > 0) {
+      // Authoritative: this type already has real invoice_number rows.
+      nextNumber = fromNum + 1;
+    } else if (fromId > 0) {
+      // Legacy fallback: pre-migration rows of this type exist with an id
+      // but no invoice_number yet.
+      nextNumber = fromId + 1;
+    } else if (type.toLowerCase() == 'invoice') {
+      final startStr =
+          await SettingsService.getSetting(SettingKey.invoiceStartingNumber);
+      nextNumber = int.tryParse(startStr ?? '') ?? 1;
+      if (nextNumber < 1) nextNumber = 1;
     } else {
-      nextNumber = (fromId > fromNum ? fromId : fromNum) + 1;
+      nextNumber = 1;
     }
 
     return nextNumber.toString().padLeft(8, '0');

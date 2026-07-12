@@ -218,16 +218,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         panNumber: panController.text,
         country: _selectedCountry);
 
-    if (_companyInfo == null) {
-      await ref.read(companyInfoRepositoryProvider).insertCompanyInfo(newInfo);
-    } else {
-      await ref.read(companyInfoRepositoryProvider).updateCompanyInfo(newInfo);
-    }
-
-    if (_base64Logo != null) {
-      await ref.read(settingsRepositoryProvider).setCompanyLogo(_base64Logo!);
-    }
-
     final upiEntries = <UpiEntry>[];
     for (int i = 0; i < _upiControllers.length; i++) {
       final id = _upiControllers[i].id.text.trim();
@@ -238,9 +228,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         isDefault: i == _defaultUpiIndex,
       ));
     }
-    await ref.read(settingsRepositoryProvider).setUpiIds(upiEntries);
-    await ref.read(settingsRepositoryProvider).setSetting(
-        SettingKey.showUpiQr, _showUpiQr.toString());
 
     final bankAccounts = <BankAccount>[];
     for (int i = 0; i < _bankControllers.length; i++) {
@@ -254,10 +241,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         isDefault: i == _defaultBankIndex,
       ));
     }
-    await ref.read(settingsRepositoryProvider).setBankAccounts(bankAccounts);
-    await ref.read(settingsRepositoryProvider).setShowBankDetails(_showBankDetails);
 
-    await ref.read(settingsRepositoryProvider).setBusinessType(_businessType);
+    final companyInfoRepo = ref.read(companyInfoRepositoryProvider);
+    final settingsRepo = ref.read(settingsRepositoryProvider);
+    await Future.wait([
+      _companyInfo == null
+          ? companyInfoRepo.insertCompanyInfo(newInfo)
+          : companyInfoRepo.updateCompanyInfo(newInfo),
+      if (_base64Logo != null) settingsRepo.setCompanyLogo(_base64Logo!),
+      settingsRepo.setUpiIds(upiEntries),
+      settingsRepo.setSetting(SettingKey.showUpiQr, _showUpiQr.toString()),
+      settingsRepo.setBankAccounts(bankAccounts),
+      settingsRepo.setShowBankDetails(_showBankDetails),
+      settingsRepo.setBusinessType(_businessType),
+    ]);
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(

@@ -107,6 +107,37 @@ class CustomerService
     await db.delete('customers');
   }
 
+  static Future<List<Customer>> getCustomersPaginated({
+    required int offset,
+    required int limit,
+    String query = '',
+    String orderBy = 'name',
+    bool orderASC = true,
+  }) async {
+    final db = await dbHelper.database;
+    final order = orderASC ? "ASC" : "DESC";
+
+    String? where;
+    List<dynamic>? whereArgs;
+    if (query.isNotEmpty) {
+      final queryLower = query.toLowerCase();
+      where =
+          'LOWER(name) LIKE ? OR LOWER(email) LIKE ? OR LOWER(phone) LIKE ? OR LOWER(gstin) LIKE ?';
+      whereArgs = ['%$queryLower%', '%$queryLower%', '%$queryLower%', '%$queryLower%'];
+    }
+
+    final maps = await db.query(
+      'customers',
+      where: where,
+      whereArgs: whereArgs,
+      orderBy: '$orderBy $order',
+      limit: limit,
+      offset: offset,
+    );
+
+    return maps.map((map) => Customer.fromMap(map)).toList();
+  }
+
   /// Insert a batch of customers in a single transaction.
   static Future<void> insertBatch(List<Customer> customers) async {
     final db = await dbHelper.database;

@@ -12,4 +12,11 @@ abstract class CustomerRepository {
   Future<Customer?> findDuplicate(String email, String phone);
   Future<void> deleteAllCustomers();
   Future<void> insertBatch(List<Customer> customers);
+  Future<List<Customer>> getCustomersPaginated({
+    required int offset,
+    required int limit,
+    String query = '',
+    String orderBy = 'name',
+    bool orderASC = true,
+  });
 }

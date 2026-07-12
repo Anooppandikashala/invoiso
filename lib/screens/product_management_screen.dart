@@ -123,15 +123,19 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     if(!mounted) return;
     setState(() => _isLoading = true);
     try {
-      final result = await ref.read(productRepositoryProvider).getProductsPaginated(
-          offset: _currentPage * _pageSize,
-          limit: _pageSize,
-          query: _searchQuery,
-          orderBy: _sortBy,
-          orderASC: _isAscending,
-          type: _typeFilter);
-
-      final allCount = await ref.read(productRepositoryProvider).getTotalProductCount();
+      final productRepo = ref.read(productRepositoryProvider);
+      final results = await Future.wait([
+        productRepo.getProductsPaginated(
+            offset: _currentPage * _pageSize,
+            limit: _pageSize,
+            query: _searchQuery,
+            orderBy: _sortBy,
+            orderASC: _isAscending,
+            type: _typeFilter),
+        productRepo.getTotalProductCount(),
+      ]);
+      final result = results[0] as List<Product>;
+      final allCount = results[1] as int;
 
       if (requestId != _loadRequestId || !mounted) return;
       setState(() {

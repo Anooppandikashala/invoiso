@@ -166,4 +166,11 @@ class InvoicePdfServices {
   /// customers without any data migration.
   static Future<String> generateNextInvoiceNumber(String type) =>
       BackendServices.invoices.generateNextInvoiceNumber(type);
+
+  /// Non-consuming preview of [generateNextId] — for UI display only.
+  static Future<String> peekNextId() => BackendServices.invoices.peekNextId();
+
+  /// Non-consuming preview of [generateNextInvoiceNumber] — for UI display only.
+  static Future<String> peekNextInvoiceNumber(String type) =>
+      BackendServices.invoices.peekNextInvoiceNumber(type);
 }
