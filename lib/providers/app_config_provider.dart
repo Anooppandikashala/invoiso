@@ -40,8 +40,8 @@ final appEditionConfigProvider = Provider<AppEditionConfig>((ref) => const AppEd
       website: AppConfig.website,
       license: AppConfig.license,
       description: AppConfig.description,
-      additionalNote: "",
-      thankYouNote: "",
-      enableUpdateCheck: true,
+      additionalNote: DefaultValues.additionalNote,
+      thankYouNote: DefaultValues.thankYouNote,
+      enableUpdateCheck: UpdateConfig.enableUpdateCheck,
       isCloud: AppConfig.kIsCloud
     ));
