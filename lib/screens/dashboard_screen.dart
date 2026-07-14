@@ -22,7 +22,6 @@ import 'package:invoiso/widgets/customer_info_button.dart';
 import 'package:invoiso/utils/session_manager.dart';
 
 import '../models/user.dart';
-import '../database/user_service.dart';
 import 'customer_management_screen.dart';
 import '../database/database_helper.dart';
 import 'create_invoice_screen.dart';
@@ -78,6 +77,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     super.dispose();
   }
 
+  void _logoutAndResetSession() async
+  {
+    await ref.read(authRepositoryProvider).logoutAndSessionReset();
+    if(!mounted) return;
+    Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+            builder: (_) => const LoginScreen()));
+  }
+
   void _onSessionTimeout() {
     if (!mounted) return;
     Navigator.pushReplacement(
@@ -94,8 +103,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Future<void> _refreshUser() async {
     final cfg = ref.watch(appEditionConfigProvider);
-    if(cfg.isCloud) return;
-    final fresh = await UserService.getUserById(_currentUser.id);
+    if(cfg.isCloud || !mounted) return;
+    final fresh = await ref.read(authRepositoryProvider).getUserById(_currentUser.id);
     if (fresh != null && mounted) {
       setState(() => _currentUser = fresh);
     }
@@ -398,13 +407,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             Tooltip(
                               message: 'Logout',
                               child: InkWell(
-                                onTap: () {
-                                  SessionManager.dispose();
-                                  Navigator.pushReplacement(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (_) => const LoginScreen()));
-                                },
+                                onTap: () =>  _logoutAndResetSession(),
                                 borderRadius: BorderRadius.circular(6),
                                 child: const Padding(
                                   padding: EdgeInsets.all(6),
@@ -458,13 +461,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         child: Tooltip(
                           message: 'Logout',
                           child: InkWell(
-                            onTap: () {
-                              SessionManager.dispose();
-                              Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) => const LoginScreen()));
-                            },
+                            onTap: () => _logoutAndResetSession(),
                             borderRadius: BorderRadius.circular(6),
                             child: const Padding(
                               padding: EdgeInsets.all(6),

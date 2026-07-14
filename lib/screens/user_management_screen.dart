@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/database/user_service.dart';
+import 'package:invoiso/providers/repositories.dart';
 import '../constants.dart';
 import '../models/user.dart';
 import '../utils/password_utils.dart';
 
-class UserManagementScreen extends StatefulWidget {
+class UserManagementScreen extends ConsumerStatefulWidget {
   final User currentUser;
   const UserManagementScreen({super.key, required this.currentUser});
 
   @override
-  State<UserManagementScreen> createState() => _UserManagementScreenState();
+  ConsumerState<UserManagementScreen> createState() => _UserManagementScreenState();
 }
 
-class _UserManagementScreenState extends State<UserManagementScreen>
+class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
     with SingleTickerProviderStateMixin {
   List<User> _users = [];
   List<User> _filteredUsers = [];
@@ -49,14 +51,14 @@ class _UserManagementScreenState extends State<UserManagementScreen>
 
     try {
       if (widget.currentUser.isAdmin()) {
-        final users = await UserService.getAllUsers();
+        final users = await ref.read(authRepositoryProvider).getAllUsers();
         setState(() {
           _users = users;
           _filteredUsers = users;
           _isLoading = false;
         });
       } else {
-        final fresh = await UserService.getUserById(widget.currentUser.id);
+        final fresh = await ref.read(authRepositoryProvider).getUserById(widget.currentUser.id);
         final user = fresh ?? widget.currentUser;
         setState(() {
           _users = [user];
@@ -100,11 +102,11 @@ class _UserManagementScreenState extends State<UserManagementScreen>
         );
 
         if (_editingUserId == null) {
-          await UserService.insertUser(user);
+          await ref.read(authRepositoryProvider).insertUser(user);
           if (!mounted) return;
           _showSnackBar('User added successfully', Colors.green);
         } else {
-          await UserService.updateUser(user);
+          await ref.read(authRepositoryProvider).updateUser(user);
           if (!mounted) return;
           _showSnackBar(
               'User updated successfully', Theme.of(context).primaryColor);
@@ -349,7 +351,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                     if (formKey.currentState!.validate()) {
                       final user = _users.firstWhere((u) => u.id == userId);
                       if (user.password == PasswordUtils.hash(oldPasswordController.text)) {
-                        await UserService.updatePassword(
+                        await ref.read(authRepositoryProvider).updatePassword(
                             userId, newPasswordController.text);
                         if (!context.mounted) return;
                         Navigator.of(context).pop();
@@ -357,6 +359,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                             'Password changed successfully', Colors.green);
                         _loadUsers();
                       } else {
+                        if (!context.mounted) return;
                         _showSnackBar(
                             'Current password is incorrect', Colors.red);
                       }
@@ -466,7 +469,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
               icon: const Icon(Icons.delete_forever),
               label: const Text('Delete', style: TextStyle(fontSize: 15)),
               onPressed: () async {
-                await UserService.deleteUserSafely(user.id);
+                await ref.read(authRepositoryProvider).deleteUserSafely(user.id);
                 if (!context.mounted) return;
                 Navigator.of(context).pop();
                 _showSnackBar('User deleted successfully', Colors.orange);

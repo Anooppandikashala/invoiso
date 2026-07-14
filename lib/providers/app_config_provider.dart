@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart' show WidgetBuilder, IconData;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../constants.dart';
 
@@ -16,6 +17,12 @@ class AppEditionConfig {
   final String thankYouNote;
   final bool enableUpdateCheck;
   final bool isCloud;
+  /// Optional edition-specific extra tab in Settings (e.g. cloud's Team
+  /// Management). Set via provider override in that edition's main.dart —
+  /// keeps edition-only screens out of this shared package.
+  final WidgetBuilder? extraSettingsTab;
+  final IconData? extraSettingsTabIcon;
+  final String? extraSettingsTabLabel;
 
   const AppEditionConfig({
     required this.name,
@@ -28,7 +35,10 @@ class AppEditionConfig {
     required this.additionalNote,
     required this.thankYouNote,
     required this.enableUpdateCheck,
-    required this.isCloud
+    required this.isCloud,
+    this.extraSettingsTab,
+    this.extraSettingsTabIcon,
+    this.extraSettingsTabLabel,
   });
 }
 

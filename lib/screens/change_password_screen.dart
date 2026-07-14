@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/constants.dart';
+import 'package:invoiso/providers/repositories.dart';
 import '../database/user_service.dart';
 import '../models/user.dart';
 import '../utils/password_utils.dart';
 import 'dashboard_screen.dart';
 
-class ChangePasswordScreen extends StatefulWidget {
+class ChangePasswordScreen extends ConsumerStatefulWidget {
   final User user;
   final bool forced;
 
@@ -16,10 +18,10 @@ class ChangePasswordScreen extends StatefulWidget {
   });
 
   @override
-  State<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
+  ConsumerState<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
 }
 
-class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
+class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
   final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -78,13 +80,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await UserService.updatePassword(widget.user.id, newPassword);
-      await UserService.markPasswordChanged(widget.user.id);
-
       if (!mounted) return;
-
+      await ref.read(authRepositoryProvider).updatePassword(widget.user.id, newPassword);
+      await ref.read(authRepositoryProvider).markPasswordChanged(widget.user.id);
+      final updatedUser = await ref.read(authRepositoryProvider).getUserById(widget.user.id);
       // Get fresh user object
-      final updatedUser = await UserService.getUserById(widget.user.id);
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(

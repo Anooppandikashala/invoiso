@@ -1695,12 +1695,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildContent(AppEditionConfig cfg) {
-    final int customizeIndex = cfg.isCloud ? 4 : 6;
-    // When kIsCloud, Backup (1) and Users (2) tabs are hidden — indices 1+ are
-    // shifted down by 2. Offset back to match the canonical case numbers.
-    final int idx = cfg.isCloud && _selectedIndex >= 1
-        ? _selectedIndex + 2
-        : _selectedIndex;
+    final bool hasExtraTab = cfg.extraSettingsTab != null;
+    final int customizeIndex =
+        cfg.isCloud ? (hasExtraTab ? 5 : 4) : 6;
+    // When kIsCloud, Backup (1) and Users (2) tabs are hidden. If the edition
+    // also supplies an extraSettingsTab (e.g. cloud's Team Management), it
+    // takes rail slot 1 and maps to canonical case 7; everything after it
+    // shifts down by 1 instead of 2. Offset back to match canonical case
+    // numbers used below.
+    final int idx;
+    if (!cfg.isCloud) {
+      idx = _selectedIndex;
+    } else if (hasExtraTab && _selectedIndex == 1) {
+      idx = 7;
+    } else if (_selectedIndex == 0) {
+      idx = 0;
+    } else {
+      idx = _selectedIndex + (hasExtraTab ? 1 : 2);
+    }
     switch (idx) {
       case 0:
         return _buildCompanyInfoForm();
@@ -1710,6 +1722,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         return UserManagementScreen(
           currentUser: widget.currentUser,
         );
+      case 7:
+        return cfg.extraSettingsTab!(context);
       case 3:
         return PdfSettingsScreen(
           onNavigateToCustomization: () {
@@ -1760,6 +1774,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 icon: Icon(Icons.business),
                 label: Text('Company Info'),
               ),
+              if (cfg.extraSettingsTab != null)
+                NavigationRailDestination(
+                  icon: Icon(cfg.extraSettingsTabIcon ?? Icons.group),
+                  label: Text(cfg.extraSettingsTabLabel ?? 'Team'),
+                ),
               if (!cfg.isCloud)
                 const NavigationRailDestination(
                   icon: Icon(Icons.backup),

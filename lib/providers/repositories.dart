@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:invoiso/repositories/auth_repository.dart';
 import 'package:invoiso/repositories/company_info_repository.dart';
 import 'package:invoiso/repositories/customer_repository.dart';
 import 'package:invoiso/repositories/invoice_item_repository.dart';
@@ -51,6 +52,12 @@ final reportRepositoryProvider = Provider<ReportRepository>((ref) {
 });
 
 final invoiceItemRepositoryProvider = Provider<InvoiceItemRepository>((ref) {
+  throw UnimplementedError(
+    'invoiceItemRepositoryProvider must be overridden.',
+  );
+});
+
+final authRepositoryProvider = Provider<AuthRepository>((ref) {
   throw UnimplementedError(
     'invoiceItemRepositoryProvider must be overridden.',
   );
