@@ -54,47 +54,89 @@ pw.MultiPage buildMinimalTemplate(
       ),
     ),
     build: (context) => [
-      pw.Row(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-        children: [
-          if (logoImage != null && logoPosition == LogoPosition.left)
-            buildCompanyLogo(logoImage, size: logoSizePx),
-          pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Text("${invoice.type} #: ",
-                  style: pw.TextStyle(
-                      fontWeight: pw.FontWeight.bold,
-                      fontSize: 10,
-                      color: accentColor)),
-              pw.Text("$invoicePrefix${invoice.invoiceNumber ?? invoice.id}",
-                  style: const pw.TextStyle(fontSize: 12)),
-              pw.SizedBox(height: 5),
-              pw.Text("DATE",
-                  style: pw.TextStyle(
-                      fontWeight: pw.FontWeight.bold,
-                      fontSize: 10,
-                      color: accentColor)),
-              pw.Text(formatPdfDate(invoice.date, datePattern),
-                  style: const pw.TextStyle(fontSize: 12)),
-              if (invoice.dueDate != null) ...[
-                pw.SizedBox(height: 5),
-                pw.Text("DUE DATE",
+      if(logoImage == null)
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text("${invoice.type} #: ",
                     style: pw.TextStyle(
                         fontWeight: pw.FontWeight.bold,
                         fontSize: 10,
                         color: accentColor)),
-                pw.Text(formatPdfDate(invoice.dueDate!, datePattern),
+                pw.Text("$invoicePrefix${invoice.invoiceNumber ?? invoice.id}",
                     style: const pw.TextStyle(fontSize: 12)),
+                pw.SizedBox(height: 5)
               ],
-            ],
-          ),
-          if (logoImage != null && logoPosition == LogoPosition.right)
-            buildCompanyLogo(logoImage, size: logoSizePx),
-        ],
+            ),
+            pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.end,
+              children: [
+                pw.Text("DATE",
+                    style: pw.TextStyle(
+                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 10,
+                        color: accentColor)),
+                pw.Text(formatPdfDate(invoice.date, datePattern),
+                    style: const pw.TextStyle(fontSize: 12)),
+                if (invoice.dueDate != null) ...[
+                  pw.SizedBox(height: 5),
+                  pw.Text("DUE DATE",
+                      style: pw.TextStyle(
+                          fontWeight: pw.FontWeight.bold,
+                          fontSize: 10,
+                          color: accentColor)),
+                  pw.Text(formatPdfDate(invoice.dueDate!, datePattern),
+                      style: const pw.TextStyle(fontSize: 12)),
+                ],
+              ],
+            ),
+          ],
       ),
-
+      if(logoImage != null)
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            if (logoPosition == LogoPosition.left)
+              buildCompanyLogo(logoImage, size: logoSizePx),
+            pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text("${invoice.type} #: ",
+                    style: pw.TextStyle(
+                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 10,
+                        color: accentColor)),
+                pw.Text("$invoicePrefix${invoice.invoiceNumber ?? invoice.id}",
+                    style: const pw.TextStyle(fontSize: 12)),
+                pw.SizedBox(height: 5),
+                pw.Text("DATE",
+                    style: pw.TextStyle(
+                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 10,
+                        color: accentColor)),
+                pw.Text(formatPdfDate(invoice.date, datePattern),
+                    style: const pw.TextStyle(fontSize: 12)),
+                if (invoice.dueDate != null) ...[
+                  pw.SizedBox(height: 5),
+                  pw.Text("DUE DATE",
+                      style: pw.TextStyle(
+                          fontWeight: pw.FontWeight.bold,
+                          fontSize: 10,
+                          color: accentColor)),
+                  pw.Text(formatPdfDate(invoice.dueDate!, datePattern),
+                      style: const pw.TextStyle(fontSize: 12)),
+                ],
+              ],
+            ),
+            if (logoPosition == LogoPosition.right)
+              buildCompanyLogo(logoImage, size: logoSizePx),
+          ],
+        ),
       pw.SizedBox(height: 5),
       pw.Divider(thickness: 0.5, color: PdfColors.grey400),
       pw.SizedBox(height: 5),
