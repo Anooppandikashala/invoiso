@@ -22,4 +22,5 @@ abstract class ProductRepository {
   Future<Product?> findDuplicateByName(String name);
   Future<void> deleteAllProducts();
   Future<void> insertBatch(List<Product> products, {int batchSize = 50});
+  Future<List<Product>> getOutOfStockProducts();
 }

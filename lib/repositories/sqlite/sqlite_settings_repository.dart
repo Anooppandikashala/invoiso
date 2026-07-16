@@ -1,5 +1,4 @@
 import 'package:invoiso/common.dart';
-import 'package:invoiso/database/database_helper.dart';
 import 'package:invoiso/database/settings_service.dart';
 import 'package:invoiso/repositories/settings_repository.dart';
 
@@ -9,10 +8,7 @@ class SqliteSettingsRepository implements SettingsRepository {
   @override
   Future<String?> getSetting(SettingKey key) => SettingsService.getSetting(key);
   @override
-  Future<void> deleteSetting(SettingKey key) async {
-    final db = await DatabaseHelper().database;
-    await db.delete('settings', where: 'key = ?', whereArgs: [key.name]);
-  }
+  Future<void> deleteSetting(SettingKey key) => SettingsService.deleteSetting(key);
   @override
   Future<void> setInvoiceTemplate(InvoiceTemplate template) => SettingsService.setInvoiceTemplate(template);
   @override

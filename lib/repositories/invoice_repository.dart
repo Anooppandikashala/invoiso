@@ -41,6 +41,16 @@ abstract class InvoiceRepository {
   Future<void> permanentDeleteInvoice(String id);
   Future<List<Invoice>> getDeletedInvoices();
   Future<void> deleteInvoice(String id);
+  Future<int> getTotalInvoiceCountIncludingTrashed();
+  Future<String> generateNextId();
+  Future<String> generateNextInvoiceNumber(String type);
+  /// Non-consuming preview of [generateNextId] — for UI display only, must
+  /// not advance any counter. Call [generateNextId] again at actual save time.
+  Future<String> peekNextId();
+  /// Non-consuming preview of [generateNextInvoiceNumber] — for UI display
+  /// only, must not advance any counter. Call [generateNextInvoiceNumber]
+  /// again at actual save time.
+  Future<String> peekNextInvoiceNumber(String type);
   Future<({int count, double revenue, double outstanding})> getDashboardFinancials();
   Future<List<Invoice>> getRecentInvoices({int limit = 5});
   Future<List<Invoice>> getDueSoonInvoices();

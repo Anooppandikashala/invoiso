@@ -315,7 +315,7 @@ pw.MultiPage buildCompactTemplate(
           child: pw.Text(thankYouNote,
               style: pw.TextStyle(
                   color: accentColor,
-                  fontSize: PdfLayout.thankYouNoteFontSize,
+                  fontSize: (PdfLayout.thankYouNoteFontSize - 2) * fontScale,
                   fontWeight: pw.FontWeight.bold)),
         ),
       ],

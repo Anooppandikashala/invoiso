@@ -1,5 +1,6 @@
 import 'package:invoiso/common.dart';
 import 'package:invoiso/database/invoice_item_service.dart';
+import 'package:invoiso/database/settings_service.dart';
 import 'package:invoiso/domain/invoice_calculator.dart';
 import 'package:invoiso/domain/invoice_totals_calculator.dart';
 import 'package:invoiso/database/product_service.dart';
@@ -872,5 +873,80 @@ class InvoiceService {
               'total_qty': (r['total_qty'] as num).toDouble(),
             })
         .toList();
+  }
+
+  /// Generates the next `id` (primary key) — global sequence across all
+  /// types, unchanged from before. Other queries (e.g. "recent invoices")
+  /// rely on `id` sorting as a single monotonic sequence, so this must never
+  /// be scoped by type.
+  static Future<String> generateNextId() async {
+    final db = await dbHelper.database;
+    final result =
+        await db.rawQuery("SELECT id FROM invoices ORDER BY id DESC LIMIT 1");
+
+    int nextNumber;
+    if (result.isNotEmpty) {
+      final lastNumberStr = result.first['id'] as String;
+      final numericPart =
+          int.tryParse(lastNumberStr.replaceAll(RegExp(r'\D'), ''));
+      nextNumber = (numericPart != null) ? numericPart + 1 : 1;
+    } else {
+      final startStr = await SettingsService.getSetting(SettingKey.invoiceStartingNumber);
+      nextNumber = int.tryParse(startStr ?? '') ?? 1;
+      if (nextNumber < 1) nextNumber = 1;
+    }
+
+    return nextNumber.toString().padLeft(8, '0');
+  }
+
+  /// Generates the next **display** number for [type] ('Invoice' |
+  /// 'Quotation' | 'Receipt') — each type has its own independent sequence.
+  /// This is separate from `id` (the PK, always global) and is stored in the
+  /// `invoice_number` column purely for display.
+  ///
+  /// Derived from existing rows rather than a persisted counter: takes the
+  /// max of the legacy `id` sequence (pre-migration rows, shared across all
+  /// types) and the new `invoice_number` column (post-migration, per-type)
+  /// for this type, so upgrading preserves numbering continuity for existing
+  /// customers without any data migration.
+  static Future<String> generateNextInvoiceNumber(String type) async {
+    final db = await dbHelper.database;
+
+    final idResult = await db.rawQuery(
+        "SELECT id FROM invoices WHERE type = ? ORDER BY id DESC LIMIT 1",
+        [type]);
+    final numResult = await db.rawQuery(
+        "SELECT invoice_number FROM invoices WHERE type = ? AND invoice_number IS NOT NULL ORDER BY invoice_number DESC LIMIT 1",
+        [type]);
+
+    int fromId = 0;
+    if (idResult.isNotEmpty) {
+      final idStr = idResult.first['id'] as String;
+      fromId = int.tryParse(idStr.replaceAll(RegExp(r'\D'), '')) ?? 0;
+    }
+    int fromNum = 0;
+    if (numResult.isNotEmpty) {
+      final numStr = numResult.first['invoice_number'] as String;
+      fromNum = int.tryParse(numStr.replaceAll(RegExp(r'\D'), '')) ?? 0;
+    }
+
+    int nextNumber;
+    if (fromNum > 0) {
+      // Authoritative: this type already has real invoice_number rows.
+      nextNumber = fromNum + 1;
+    } else if (fromId > 0) {
+      // Legacy fallback: pre-migration rows of this type exist with an id
+      // but no invoice_number yet.
+      nextNumber = fromId + 1;
+    } else if (type.toLowerCase() == 'invoice') {
+      final startStr =
+          await SettingsService.getSetting(SettingKey.invoiceStartingNumber);
+      nextNumber = int.tryParse(startStr ?? '') ?? 1;
+      if (nextNumber < 1) nextNumber = 1;
+    } else {
+      nextNumber = 1;
+    }
+
+    return nextNumber.toString().padLeft(8, '0');
   }
 }

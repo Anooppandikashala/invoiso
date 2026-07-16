@@ -3,10 +3,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/constants.dart';
-import 'package:invoiso/database/product_service.dart';
-import 'package:invoiso/database/settings_service.dart';
 import 'package:invoiso/invoiso_colors.dart';
+import 'package:invoiso/providers/repositories.dart';
 import 'package:uuid/uuid.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -18,16 +18,16 @@ import '../models/product.dart';
 import '../models/user.dart';
 import '../utils/formatters.dart';
 
-class ProductManagementScreen extends StatefulWidget {
+class ProductManagementScreen extends ConsumerStatefulWidget {
   final User user;
   const ProductManagementScreen({super.key, required this.user});
 
   @override
-  State<ProductManagementScreen> createState() =>
+  ConsumerState<ProductManagementScreen> createState() =>
       _ProductManagementScreenState();
 }
 
-class _ProductManagementScreenState extends State<ProductManagementScreen> {
+class _ProductManagementScreenState extends ConsumerState<ProductManagementScreen> {
   List<Product> _products = [];
 
   // Pagination
@@ -85,7 +85,8 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
   }
 
   Future<void> _loadBusinessType() async {
-    final bt = await SettingsService.getBusinessType();
+    if(!mounted) return;
+    final bt = await ref.read(settingsRepositoryProvider).getBusinessType();
     setState(() {
       _businessType = bt;
       _typeFilter = bt == BusinessType.both ? 'both' : bt.key;
@@ -94,7 +95,8 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
   }
 
   Future<void> _loadCurrency() async {
-    final currency = await SettingsService.getCurrency();
+    if(!mounted) return;
+    final currency = await ref.read(settingsRepositoryProvider).getCurrency();
     setState(() {
       _currencySymbol = currency.symbol;
     });
@@ -118,19 +120,24 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
 
   Future<void> _loadProducts() async {
     final requestId = ++_loadRequestId;
+    if(!mounted) return;
     setState(() => _isLoading = true);
     try {
-      final result = await ProductService.getProductsPaginated(
-          offset: _currentPage * _pageSize,
-          limit: _pageSize,
-          query: _searchQuery,
-          orderBy: _sortBy,
-          orderASC: _isAscending,
-          type: _typeFilter);
+      final productRepo = ref.read(productRepositoryProvider);
+      final results = await Future.wait([
+        productRepo.getProductsPaginated(
+            offset: _currentPage * _pageSize,
+            limit: _pageSize,
+            query: _searchQuery,
+            orderBy: _sortBy,
+            orderASC: _isAscending,
+            type: _typeFilter),
+        productRepo.getTotalProductCount(),
+      ]);
+      final result = results[0] as List<Product>;
+      final allCount = results[1] as int;
 
-      final allCount = await ProductService.getTotalProductCount();
-
-      if (requestId != _loadRequestId) return;
+      if (requestId != _loadRequestId || !mounted) return;
       setState(() {
         _products = result;
         _totalProducts = result.length;
@@ -140,7 +147,8 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
       if (requestId != _loadRequestId) return;
       _showSnackBar('Error loading products: $e', isError: true);
     } finally {
-      if (requestId == _loadRequestId) setState(() => _isLoading = false);
+      
+      if (requestId == _loadRequestId && mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -151,7 +159,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
     final purchasePrice =
         double.tryParse(_purchasePriceController.text.trim()) ?? 0.0;
     if (!await _confirmIfSellingAtLoss(price, purchasePrice)) return;
-
+    if(!mounted) return;
     setState(() => _isLoading = true);
     try {
       final newProduct = Product(
@@ -168,14 +176,14 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
         purchasePrice: purchasePrice,
       );
 
-      await ProductService.insertProduct(newProduct);
+      await ref.read(productRepositoryProvider).insertProduct(newProduct);
       _clearForm();
       await _loadProducts();
       _showSnackBar('Product added successfully!');
     } catch (e) {
       _showSnackBar('Error adding product: $e', isError: true);
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -404,7 +412,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                       purchasePrice: dialogPurchasePrice,
                     );
 
-                    await ProductService.updateProduct(updatedProduct);
+                    await ref.read(productRepositoryProvider).updateProduct(updatedProduct);
                     await _loadProducts();
                     if (context.mounted) Navigator.pop(context);
                     _showSnackBar('Product/Service updated successfully!');
@@ -511,7 +519,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
     );
 
     if (result == true) {
-      await ProductService.deleteProduct(product.id);
+      await ref.read(productRepositoryProvider).deleteProduct(product.id);
       await _loadProducts();
       _showSnackBar('Product deleted successfully!');
     }
@@ -682,8 +690,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
       allowedExtensions: ['csv'],
       dialogTitle: 'Select Product CSV',
     );
-    if (result == null || result.files.single.path == null) return;
-
+    if (result == null || result.files.single.path == null || !mounted) return;
     setState(() => _isLoading = true);
 
     try {
@@ -701,6 +708,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
       final rows = const CsvToListConverter(eol: '\n').convert(content);
       if (rows.isEmpty) {
         _showSnackBar('CSV file is empty.', isError: true);
+        if(!mounted) return;
         setState(() => _isLoading = false);
         return;
       }
@@ -711,11 +719,13 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
 
       if (!headers.contains('name')) {
         _showSnackBar('CSV missing required column: "name"', isError: true);
+        if(!mounted) return;
         setState(() => _isLoading = false);
         return;
       }
       if (!headers.contains('price')) {
         _showSnackBar('CSV missing required column: "price"', isError: true);
+        if(!mounted) return;
         setState(() => _isLoading = false);
         return;
       }
@@ -724,6 +734,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
           _showSnackBar(
               'Unknown column "$col". Expected: ${_csvHeaders.join(', ')}',
               isError: true);
+          if(!mounted) return;
           setState(() => _isLoading = false);
           return;
         }
@@ -735,6 +746,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
         _showSnackBar(
             'CSV has ${dataRows.length} rows. Maximum is $_csvMaxRows. Please split the file.',
             isError: true);
+        if(!mounted) return;
         setState(() => _isLoading = false);
         return;
       }
@@ -774,7 +786,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
         final purchasePrice = purchasePriceStr.isEmpty ? 0.0 : (double.tryParse(purchasePriceStr) ?? 0.0);
         final type = (typeStr == 'service') ? 'service' : 'product';
 
-        final existing = await ProductService.findDuplicateByName(name);
+        final existing = await ref.read(productRepositoryProvider).findDuplicateByName(name);
         final product = Product(
           id: existing?.id ?? const Uuid().v4(),
           name: name,
@@ -794,9 +806,8 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
           valid.add(product);
         }
       }
-
+      if(!mounted) return;
       setState(() => _isLoading = false);
-
       if (!mounted) return;
       await _showImportPreviewDialog(valid, duplicates, errors);
     } catch (e) {
@@ -955,14 +966,15 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
     List<Product> duplicates,
     List<bool> overwriteFlags,
   ) async {
+    if(!mounted) return;
     setState(() => _isLoading = true);
     try {
       if (newProducts.isNotEmpty) {
-        await ProductService.insertBatch(newProducts);
+        await ref.read(productRepositoryProvider).insertBatch(newProducts);
       }
       for (int i = 0; i < duplicates.length; i++) {
         if (overwriteFlags[i]) {
-          await ProductService.updateProduct(duplicates[i]);
+          await ref.read(productRepositoryProvider).updateProduct(duplicates[i]);
         }
       }
       await _loadProducts();
@@ -971,6 +983,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
       _showSnackBar(
           'Imported $imported product${imported == 1 ? '' : 's'} successfully!');
     } catch (e) {
+      if(!mounted) return;
       setState(() => _isLoading = false);
       _showSnackBar('Import error: $e', isError: true);
     }
@@ -1005,13 +1018,14 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
         ],
       ),
     );
-    if (confirm != true) return;
+    if (confirm != true || !mounted) return;
     setState(() => _isLoading = true);
     try {
-      await ProductService.deleteAllProducts();
+      await ref.read(productRepositoryProvider).deleteAllProducts();
       await _loadProducts();
       _showSnackBar('All products deleted.');
     } catch (e) {
+      if(!mounted) return;
       setState(() => _isLoading = false);
       _showSnackBar('Error deleting products: $e', isError: true);
     }
@@ -1019,7 +1033,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
 
   Future<void> _exportToCSV() async {
     try {
-      final allProducts = await ProductService.getAllProducts();
+      final allProducts = await ref.read(productRepositoryProvider).getAllProducts();
       final List<List<dynamic>> rows = [
         ['name', 'hsn_code', 'description', 'price', 'tax_rate', 'stock', 'type', 'default_discount', 'purchase_price'],
         ...allProducts.map((p) => [
@@ -1078,7 +1092,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
 
     try {
       final productsToExport =
-          choice == 'all' ? await ProductService.getAllProducts() : _products;
+          choice == 'all' ? await ref.read(productRepositoryProvider).getAllProducts() : _products;
 
       final pdf = pw.Document();
       final totalCount = productsToExport.length;
@@ -1146,6 +1160,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
   }
 
   void _onSearchChanged(String query) {
+    if(!mounted) return;
     setState(() {
       _currentPage = 0;
       _searchQuery = query;
@@ -1156,6 +1171,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
 
   void _onSortChanged(String? value) {
     if (value != null) {
+      if(!mounted) return;
       setState(() {
         _sortBy = value;
         _currentPage = 0;
@@ -1165,11 +1181,13 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
   }
 
   void _toggleSortOrder() {
+    if(!mounted) return;
     setState(() => _isAscending = !_isAscending);
     _loadProducts();
   }
 
   void _changePage(int page) {
+    if(!mounted) return;
     setState(() => _currentPage = page);
     _loadProducts();
   }
@@ -1264,8 +1282,10 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                                 Icon(Icons.design_services_outlined, size: 16)),
                       ],
                       selected: {_newItemType},
-                      onSelectionChanged: (val) =>
-                          setState(() => _newItemType = val.first),
+                      onSelectionChanged: (val) {
+                        if(!mounted) return;
+                        setState(() => _newItemType = val.first);
+                      },
                     ),
                     const SizedBox(height: 16),
                   ],
@@ -1423,6 +1443,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                 ],
                 selected: {_typeFilter},
                 onSelectionChanged: (val) {
+                  if(!mounted) return;
                   setState(() {
                     _typeFilter = val.first;
                     _currentPage = 0;
@@ -1862,7 +1883,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                 underline: const SizedBox(),
                 items: [10, 25, 50, 100].map((n) => DropdownMenuItem(value: n, child: Text('$n'))).toList(),
                 onChanged: (n) {
-                  if (n == null) return;
+                  if (n == null || !mounted) return;
                   setState(() {
                     _pageSize = n;
                     _currentPage = 0;

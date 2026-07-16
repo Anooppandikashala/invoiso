@@ -3,7 +3,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/constants.dart';
+import 'package:invoiso/providers/sqlite_repository_overrides.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_auth_repository.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_company_info_repository.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_invoice_repository.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_payment_repository.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_settings_repository.dart';
 import 'package:invoiso/screens/splash_screen.dart';
+import 'package:invoiso/services/backend_services.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -50,6 +57,12 @@ Future<void> main() async {
   sqfliteFfiInit();
   databaseFactory = databaseFactoryFfi;
   WidgetsFlutterBinding.ensureInitialized();
+  BackendServices.configure(
+    settings: SqliteSettingsRepository(),
+    companyInfo: SqliteCompanyInfoRepository(),
+    invoices: SqliteInvoiceRepository(),
+    payments: SqlitePaymentRepository(),
+  );
   await windowManager.ensureInitialized();
 
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
@@ -67,7 +80,10 @@ Future<void> main() async {
     });
   }
 
-  runApp(const ProviderScope(child: MyApp()));
+  runApp(ProviderScope(
+    overrides: sqliteRepositoryOverrides,
+    child: const MyApp()
+  ));
 }
 
 class MyApp extends StatelessWidget {

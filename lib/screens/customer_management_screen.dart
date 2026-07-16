@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/invoiso_colors.dart';
+import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/utils/formatters.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:invoiso/constants.dart';
-import 'package:invoiso/database/customer_service.dart';
 import 'package:invoiso/models/customer.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:uuid/uuid.dart';
@@ -14,16 +15,16 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'dart:io';
 
-class CustomerManagementScreen extends StatefulWidget {
+class CustomerManagementScreen extends ConsumerStatefulWidget {
   final User user;
   const CustomerManagementScreen({super.key, required this.user});
 
   @override
-  State<CustomerManagementScreen> createState() =>
+  ConsumerState<CustomerManagementScreen> createState() =>
       _CustomerManagementScreenState();
 }
 
-class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
+class _CustomerManagementScreenState extends ConsumerState<CustomerManagementScreen> {
   List<Customer> _customers = [];
   List<Customer> _filteredCustomers = [];
   String _searchQuery = '';
@@ -65,10 +66,18 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
   }
 
   Future<void> _loadCustomers() async {
+    if(!mounted) return;
     setState(() => _isLoading = true);
     try {
-      final data = await CustomerService.getAllCustomers();
-      final count = await CustomerService.getTotalCustomerCount();
+      if(!mounted) return;
+      final customerRepo = ref.read(customerRepositoryProvider);
+      final results = await Future.wait([
+        customerRepo.getAllCustomers(),
+        customerRepo.getTotalCustomerCount(),
+      ]);
+      final data = results[0] as List<Customer>;
+      final count = results[1] as int;
+      if(!mounted) return;
       setState(() {
         _customers = data;
         _totalCustomerCount = count;
@@ -77,7 +86,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
     } catch (e) {
       _showSnackBar('Error loading customers: $e', isError: true);
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -112,6 +121,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
   }
 
   void _toggleSortOrder() {
+    if(!mounted) return;
     setState(() {
       _isAscending = !_isAscending;
       _filterAndSort();
@@ -119,11 +129,12 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
   }
 
   void _changePage(int page) {
+    if(!mounted) return;
     setState(() => _currentPage = page);
   }
 
   Future<void> _handleAddOrUpdateCustomer([Customer? customer]) async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate() || !mounted) return;
 
     setState(() => _isLoading = true);
     try {
@@ -138,10 +149,10 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
       );
 
       if (customer == null) {
-        await CustomerService.insertCustomer(newCustomer);
+        await ref.read(customerRepositoryProvider).insertCustomer(newCustomer);
         _showSnackBar('Customer added successfully!');
       } else {
-        await CustomerService.updateCustomer(newCustomer);
+        await ref.read(customerRepositoryProvider).updateCustomer(newCustomer);
         _showSnackBar('Customer updated successfully!');
       }
 
@@ -150,7 +161,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
     } catch (e) {
       _showSnackBar('Error saving customer: $e', isError: true);
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -266,7 +277,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
                     businessName: businessNameCtrl.text.trim(),
                   );
 
-                  await CustomerService.updateCustomer(updatedCustomer);
+                  await ref.read(customerRepositoryProvider).updateCustomer(updatedCustomer);
                   await _loadCustomers();
                   if (context.mounted) Navigator.pop(context);
                   _showSnackBar('Customer updated successfully!');
@@ -345,7 +356,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
     );
 
     if (result == true) {
-      await CustomerService.deleteCustomer(customer.id);
+      await ref.read(customerRepositoryProvider).deleteCustomer(customer.id);
       await _loadCustomers();
       _showSnackBar('Customer deleted successfully!');
     }
@@ -505,7 +516,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
       allowedExtensions: ['csv'],
       dialogTitle: 'Select Customer CSV',
     );
-    if (result == null || result.files.single.path == null) return;
+    if (result == null || result.files.single.path == null || !mounted) return;
 
     setState(() => _isLoading = true);
 
@@ -521,6 +532,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
       final rows = const CsvToListConverter(eol: '\n').convert(content);
       if (rows.isEmpty) {
         _showSnackBar('CSV file is empty.', isError: true);
+        if(!mounted) return;
         setState(() => _isLoading = false);
         return;
       }
@@ -529,12 +541,14 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
       final headers = rows.first.map((h) => h.toString().trim().toLowerCase()).toList();
       if (!headers.contains('name')) {
         _showSnackBar('CSV missing required column: "name"', isError: true);
+        if(!mounted) return;
         setState(() => _isLoading = false);
         return;
       }
       for (final col in headers) {
         if (!_csvHeaders.contains(col)) {
           _showSnackBar('Unknown column "$col". Expected: ${_csvHeaders.join(', ')}', isError: true);
+          if(!mounted) return;
           setState(() => _isLoading = false);
           return;
         }
@@ -545,6 +559,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
       // Hard limit
       if (dataRows.length > _csvMaxRows) {
         _showSnackBar('CSV has ${dataRows.length} rows. Maximum is $_csvMaxRows. Please split the file.', isError: true);
+        if(!mounted) return;
         setState(() => _isLoading = false);
         return;
       }
@@ -568,7 +583,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
         }
         final email = getField(row, 'email');
         final phone = getField(row, 'phone');
-        final existing = await CustomerService.findDuplicate(email, phone);
+        final existing = await ref.read(customerRepositoryProvider).findDuplicate(email, phone);
         final customer = Customer(
           id: existing?.id ?? const Uuid().v4(),
           name: name,
@@ -584,12 +599,13 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
           valid.add(customer);
         }
       }
-
+      if(!mounted) return;
       setState(() => _isLoading = false);
 
       if (!mounted) return;
       await _showImportPreviewDialog(valid, duplicates, errors);
     } catch (e) {
+      if(!mounted) return;
       setState(() => _isLoading = false);
       _showSnackBar('Error reading CSV: $e', isError: true);
     }
@@ -737,20 +753,22 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
     List<Customer> duplicates,
     List<bool> overwriteFlags,
   ) async {
+    if(!mounted) return;
     setState(() => _isLoading = true);
     try {
       if (newCustomers.isNotEmpty) {
-        await CustomerService.insertBatch(newCustomers);
+        await ref.read(customerRepositoryProvider).insertBatch(newCustomers);
       }
       for (int i = 0; i < duplicates.length; i++) {
         if (overwriteFlags[i]) {
-          await CustomerService.updateCustomer(duplicates[i]);
+          await ref.read(customerRepositoryProvider).updateCustomer(duplicates[i]);
         }
       }
       await _loadCustomers();
       final imported = newCustomers.length + overwriteFlags.where((f) => f).length;
       _showSnackBar('Imported $imported customer${imported == 1 ? '' : 's'} successfully!');
     } catch (e) {
+      if(!mounted) return;
       setState(() => _isLoading = false);
       _showSnackBar('Import error: $e', isError: true);
     }
@@ -784,13 +802,14 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
         ],
       ),
     );
-    if (confirm != true) return;
+    if (confirm != true || !mounted) return;
     setState(() => _isLoading = true);
     try {
-      await CustomerService.deleteAllCustomers();
+      await ref.read(customerRepositoryProvider).deleteAllCustomers();
       await _loadCustomers();
       _showSnackBar('All customers deleted.');
     } catch (e) {
+      if(!mounted) return;
       setState(() => _isLoading = false);
       _showSnackBar('Error deleting customers: $e', isError: true);
     }
@@ -1195,6 +1214,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
                 fillColor: Colors.grey.shade50,
               ),
               onChanged: (value) {
+                if(!mounted) return;
                 setState(() {
                   _searchQuery = value;
                   _filterAndSort();
@@ -1220,6 +1240,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
                 ],
                 onChanged: (value) {
                   if (value != null) {
+                    if(!mounted) return;
                     setState(() {
                       _sortBy = value;
                       _filterAndSort();
@@ -1359,7 +1380,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
                 underline: const SizedBox(),
                 items: [10, 25, 50, 100].map((n) => DropdownMenuItem(value: n, child: Text('$n'))).toList(),
                 onChanged: (n) {
-                  if (n == null) return;
+                  if (n == null || !mounted) return;
                   setState(() {
                     _pageSize = n;
                     _currentPage = 0;

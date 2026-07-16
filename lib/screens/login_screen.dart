@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/constants.dart';
-import 'package:invoiso/database/user_service.dart';
+import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/screens/change_password_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../providers/app_config_provider.dart';
 import 'dashboard_screen.dart';
 
 // Login Screen
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
@@ -27,54 +29,77 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _login() async {
+  void _login(AppEditionConfig cfg) async {
+
+    // for cloud the username will be email
     final username = _usernameController.text.trim();
     final password = _passwordController.text;
 
+    final usernameText = cfg.isCloud ? "Email" : "Username";
+
     if (username.isEmpty || password.isEmpty) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter username and password')),
+        SnackBar(content: Text('Please enter $usernameText and password')),
       );
       return;
     }
 
+    if (!mounted) return;
     setState(() => _isLoading = true);
 
-    final user = await UserService.getUser(username, password);
+    final user = await ref.read(authRepositoryProvider).getUser(username, password);
 
     if (!mounted) return;
     setState(() => _isLoading = false);
 
-    if (user != null) {
-      if (!user.passwordChanged) {
-        // Force password change
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ChangePasswordScreen(user: user, forced: true),
-          ),
-        );
-      } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => DashboardScreen(user)),
-        );
-      }
-    } else {
+    if(user == null)
+    {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Invalid credentials')),
       );
+      return;
     }
+
+    if(cfg.isCloud)
+    {
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => DashboardScreen(user)),
+      );
+    }
+    else if (!user.passwordChanged && !cfg.isCloud) {
+      // Force password change
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ChangePasswordScreen(user: user, forced: true),
+        ),
+      );
+    }
+    else{
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => DashboardScreen(user)),
+      );
+    }
+
   }
 
   @override
   Widget build(BuildContext context) {
+    final cfg = ref.watch(appEditionConfigProvider);
     return Scaffold(
       backgroundColor: Colors.blue[50],
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if(!cfg.isCloud)
             MouseRegion(
               cursor: SystemMouseCursors.click,
               child: GestureDetector(
@@ -142,17 +167,18 @@ class _LoginScreenState extends State<LoginScreen> {
                 AppSpacing.hXlarge,
                 TextField(
                   controller: _usernameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Username',
-                    prefixIcon: Icon(Icons.person),
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText:  cfg.isCloud ? 'Email' : 'Username',
+                    prefixIcon: const Icon(Icons.person),
+                    border: const OutlineInputBorder(),
                   ),
+                  keyboardType: cfg.isCloud ? TextInputType.emailAddress : TextInputType.text,
                 ),
                 AppSpacing.hMedium,
                 TextField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
-                  onSubmitted: (_) => _login(),
+                  onSubmitted: (_) => _login(cfg),
                   decoration: InputDecoration(
                     labelText: 'Password',
                     prefixIcon: const Icon(Icons.lock),
@@ -170,7 +196,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _isLoading ? null : _login,
+                    onPressed: _isLoading ? null : () => _login(cfg),
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 50),
                       backgroundColor: Theme.of(context).primaryColor,

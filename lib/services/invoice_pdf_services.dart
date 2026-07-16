@@ -1,25 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:invoiso/services/backend_services.dart';
 import 'package:invoiso/services/thermal_printer_service.dart';
-import 'package:invoiso/database/invoice_service.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/services/pdf_service.dart';
 import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
 
 import '../common.dart';
-import '../database/database_helper.dart';
-import '../database/settings_service.dart';
 import '../utils/formatters.dart';
 
 class InvoicePdfServices {
   static Future<void> generatePDF(BuildContext context, Invoice invoice) async {
     try {
-      final template = await SettingsService.getInvoiceTemplate();
+      final template = await BackendServices.settings.getInvoiceTemplate();
       if (template == InvoiceTemplate.thermal) {
         if (!context.mounted) return;
         await ThermalPrinterService.printInvoice(context, invoice);
       } else {
-        final dateFmt = await SettingsService.getDateFormat();
+        final dateFmt = await BackendServices.settings.getDateFormat();
         final pdf = await PDFService.generateInvoicePDF(invoice,
             datePattern: dateFmt.key);
         await Printing.layoutPdf(
@@ -35,7 +33,7 @@ class InvoicePdfServices {
 
   static Future<void> previewPDF(BuildContext context, Invoice invoice) async {
     try {
-      final dateFmt = await SettingsService.getDateFormat();
+      final dateFmt = await BackendServices.settings.getDateFormat();
       final pdf = await PDFService.generateInvoicePDF(invoice,
           datePattern: dateFmt.key);
       final bytes = await pdf.save();
@@ -54,7 +52,7 @@ class InvoicePdfServices {
   static Future<void> deleteInvoice(
       BuildContext context, Invoice invoice) async {
     try {
-      await InvoiceService.deleteInvoice(invoice.id);
+      await BackendServices.invoices.deleteInvoice(invoice.id);
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context)
@@ -154,27 +152,7 @@ class InvoicePdfServices {
   /// types, unchanged from before. Other queries (e.g. "recent invoices")
   /// rely on `id` sorting as a single monotonic sequence, so this must never
   /// be scoped by type.
-  static Future<String> generateNextId() async {
-    final dbHelper = DatabaseHelper();
-    final db = await dbHelper.database;
-
-    final result =
-        await db.rawQuery("SELECT id FROM invoices ORDER BY id DESC LIMIT 1");
-
-    int nextNumber;
-    if (result.isNotEmpty) {
-      final lastNumberStr = result.first['id'] as String;
-      final numericPart =
-          int.tryParse(lastNumberStr.replaceAll(RegExp(r'\D'), ''));
-      nextNumber = (numericPart != null) ? numericPart + 1 : 1;
-    } else {
-      final startStr = await SettingsService.getSetting(SettingKey.invoiceStartingNumber);
-      nextNumber = int.tryParse(startStr ?? '') ?? 1;
-      if (nextNumber < 1) nextNumber = 1;
-    }
-
-    return nextNumber.toString().padLeft(8, '0');
-  }
+  static Future<String> generateNextId() => BackendServices.invoices.generateNextId();
 
   /// Generates the next **display** number for [type] ('Invoice' |
   /// 'Quotation' | 'Receipt') — each type has its own independent sequence.
@@ -186,42 +164,13 @@ class InvoicePdfServices {
   /// types) and the new `invoice_number` column (post-migration, per-type)
   /// for this type, so upgrading preserves numbering continuity for existing
   /// customers without any data migration.
-  static Future<String> generateNextInvoiceNumber(String type) async {
-    final dbHelper = DatabaseHelper();
-    final db = await dbHelper.database;
+  static Future<String> generateNextInvoiceNumber(String type) =>
+      BackendServices.invoices.generateNextInvoiceNumber(type);
 
-    final idResult = await db.rawQuery(
-        "SELECT id FROM invoices WHERE type = ? ORDER BY id DESC LIMIT 1",
-        [type]);
-    final numResult = await db.rawQuery(
-        "SELECT invoice_number FROM invoices WHERE type = ? AND invoice_number IS NOT NULL ORDER BY invoice_number DESC LIMIT 1",
-        [type]);
+  /// Non-consuming preview of [generateNextId] — for UI display only.
+  static Future<String> peekNextId() => BackendServices.invoices.peekNextId();
 
-    int fromId = 0;
-    if (idResult.isNotEmpty) {
-      final idStr = idResult.first['id'] as String;
-      fromId = int.tryParse(idStr.replaceAll(RegExp(r'\D'), '')) ?? 0;
-    }
-    int fromNum = 0;
-    if (numResult.isNotEmpty) {
-      final numStr = numResult.first['invoice_number'] as String;
-      fromNum = int.tryParse(numStr.replaceAll(RegExp(r'\D'), '')) ?? 0;
-    }
-
-    int nextNumber;
-    if (fromId == 0 && fromNum == 0) {
-      if (type == 'Invoice') {
-        final startStr =
-            await SettingsService.getSetting(SettingKey.invoiceStartingNumber);
-        nextNumber = int.tryParse(startStr ?? '') ?? 1;
-        if (nextNumber < 1) nextNumber = 1;
-      } else {
-        nextNumber = 1;
-      }
-    } else {
-      nextNumber = (fromId > fromNum ? fromId : fromNum) + 1;
-    }
-
-    return nextNumber.toString().padLeft(8, '0');
-  }
+  /// Non-consuming preview of [generateNextInvoiceNumber] — for UI display only.
+  static Future<String> peekNextInvoiceNumber(String type) =>
+      BackendServices.invoices.peekNextInvoiceNumber(type);
 }

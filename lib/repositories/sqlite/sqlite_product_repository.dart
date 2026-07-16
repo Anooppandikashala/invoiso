@@ -51,4 +51,6 @@ class SqliteProductRepository implements ProductRepository {
   @override
   Future<void> insertBatch(List<Product> products, {int batchSize = 50}) =>
       ProductService.insertBatch(products, batchSize: batchSize);
+  @override
+  Future<List<Product>> getOutOfStockProducts() => ProductService.getOutOfStockProducts();
 }

@@ -1,4 +1,5 @@
 import 'package:invoiso/models/user.dart';
+import '../utils/session_manager.dart';
 import 'database_helper.dart';
 import '../utils/app_logger.dart';
 import '../utils/password_utils.dart';
@@ -156,5 +157,9 @@ class UserService {
       AppLogger.e(_tag, 'Error in safe delete', e);
       return false;
     }
+  }
+
+  static Future<void> logoutAndSessionReset() async {
+    SessionManager.dispose();
   }
 }

@@ -1,21 +1,23 @@
 import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/database/settings_service.dart';
+import 'package:invoiso/providers/repositories.dart';
 
 import '../common.dart';
 import '../constants.dart';
 
-class PdfSettingsScreen extends StatefulWidget {
+class PdfSettingsScreen extends ConsumerStatefulWidget {
   final VoidCallback? onNavigateToCustomization;
 
   const PdfSettingsScreen({super.key, this.onNavigateToCustomization});
 
   @override
-  State<PdfSettingsScreen> createState() => _PdfSettingsScreenState();
+  ConsumerState<PdfSettingsScreen> createState() => _PdfSettingsScreenState();
 }
 
-class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
+class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
   InvoiceTemplate _savedTemplate = InvoiceTemplate.classic;
   InvoiceTemplate _previewedTemplate = InvoiceTemplate.classic;
   String? _savedThemeColorHex;
@@ -84,12 +86,12 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
 
   Future<void> _loadTemplate() async {
     final results = await Future.wait([
-      SettingsService.getInvoiceTemplate(),
-      SettingsService.getPdfThemeColor(),
-      SettingsService.getPageSize(),
-      SettingsService.getShowTotalQuantity(),
-      SettingsService.getSetting(SettingKey.thermalWidthMargin),
-      SettingsService.getSetting(SettingKey.thermalItemLayout),
+      ref.read(settingsRepositoryProvider).getInvoiceTemplate(),
+      ref.read(settingsRepositoryProvider).getPdfThemeColor(),
+      ref.read(settingsRepositoryProvider).getPageSize(),
+      ref.read(settingsRepositoryProvider).getShowTotalQuantity(),
+      ref.read(settingsRepositoryProvider).getSetting(SettingKey.thermalWidthMargin),
+      ref.read(settingsRepositoryProvider).getSetting(SettingKey.thermalItemLayout),
     ]);
     final saved = results[0] as InvoiceTemplate;
     final savedThemeColor = results[1] as String?;
@@ -122,18 +124,18 @@ class _PdfSettingsScreenState extends State<PdfSettingsScreen> {
     setState(() => _isSaving = true);
     try {
     await Future.wait([
-      SettingsService.setInvoiceTemplate(_previewedTemplate),
+      ref.read(settingsRepositoryProvider).setInvoiceTemplate(_previewedTemplate),
       if (_previewedThemeColorHex == null)
-        SettingsService.clearPdfThemeColor()
+        ref.read(settingsRepositoryProvider).clearPdfThemeColor()
       else
-        SettingsService.setPdfThemeColor(_previewedThemeColorHex!),
-      SettingsService.setPageSize(_previewedPageSize),
-      SettingsService.setShowTotalQuantity(_previewedShowTotalQuantity),
-      SettingsService.setSetting(SettingKey.thermalWidthMargin,
+        ref.read(settingsRepositoryProvider).setPdfThemeColor(_previewedThemeColorHex!),
+      ref.read(settingsRepositoryProvider).setPageSize(_previewedPageSize),
+      ref.read(settingsRepositoryProvider).setShowTotalQuantity(_previewedShowTotalQuantity),
+      ref.read(settingsRepositoryProvider).setSetting(SettingKey.thermalWidthMargin,
           (int.tryParse(_previewedThermalWidthMargin.trim()) ?? 1)
               .clamp(-10, 10)
               .toString()),
-      SettingsService.setSetting(
+      ref.read(settingsRepositoryProvider).setSetting(
           SettingKey.thermalItemLayout, _previewedThermalItemLayout),
     ]);
     setState(() {
