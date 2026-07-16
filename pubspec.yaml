@@ -63,6 +63,16 @@ flutter:
    - assets/fonts/DejaVuSans-Oblique.ttf
    - assets/fonts/DejaVuSans-BoldOblique.ttf
    - assets/fonts/lklug.ttf
+   - assets/fonts/NotoSansDevanagari-Bold.ttf
+   - assets/fonts/NotoSansDevanagari-Regular.ttf
+   - assets/fonts/NotoSansMalayalam-Bold.ttf
+   - assets/fonts/NotoSansMalayalam-Regular.ttf
+   - assets/fonts/NotoSansTamil-Regular.ttf
+   - assets/fonts/NotoSansTamil-Bold.ttf
+   - assets/fonts/NotoSansKannada-Regular.ttf
+   - assets/fonts/NotoSansKannada-Bold.ttf
+   - assets/fonts/NotoSansTelugu-Regular.ttf
+   - assets/fonts/NotoSansTelugu-Bold.ttf
 
 flutter_launcher_icons:
   macos:
