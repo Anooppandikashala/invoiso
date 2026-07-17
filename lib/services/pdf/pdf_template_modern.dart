@@ -18,6 +18,7 @@ pw.MultiPage buildModernTemplate(
   bool showQuantity = true,
   bool showDiscount = true,
   bool showTypeTag = true,
+  bool showAliasName = false,
   BusinessType businessType = BusinessType.both,
   BankAccount? bankAccount,
   String datePattern = 'dd/MM/yyyy',
@@ -186,6 +187,7 @@ pw.MultiPage buildModernTemplate(
             showQuantity: showQuantity,
             showDiscount: showDiscount,
             showTypeTag: showTypeTag,
+            showAliasName: showAliasName,
             businessType: businessType),
       ),
 

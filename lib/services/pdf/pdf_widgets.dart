@@ -407,6 +407,7 @@ pw.Widget buildInvoiceTable(Invoice invoice,
     bool showQuantity = true,
     bool showDiscount = true,
     bool showTypeTag = true,
+    bool showAliasName = false,
     BusinessType businessType = BusinessType.both,
     double tableFontSize = 10,
     double cellPaddingH = 6,
@@ -526,7 +527,7 @@ pw.Widget buildInvoiceTable(Invoice invoice,
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 mainAxisAlignment: pw.MainAxisAlignment.center,
                 children: [
-                  pw.Text(item.product.name,
+                  pw.Text(item.product.displayName(showAliasName),
                       style: pw.TextStyle(fontSize: tableFontSize * 0.9)),
                   if (showTypeTag && businessType == BusinessType.both)
                     pw.Text(

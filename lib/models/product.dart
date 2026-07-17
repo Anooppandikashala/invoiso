@@ -10,6 +10,7 @@ class Product {
   String type; // 'product' or 'service'
   double defaultDiscount;
   double purchasePrice;
+  String? aliasName; // local-language display name for PDFs
 
   Product({
     required this.id,
@@ -23,6 +24,7 @@ class Product {
     this.type = 'product',
     this.defaultDiscount = 0.0,
     this.purchasePrice = 0.0,
+    this.aliasName,
   });
 
   // Convert a Map into a Product object
@@ -40,6 +42,7 @@ class Product {
       type: map['type'] as String? ?? 'product',
       defaultDiscount: (map['default_discount'] as num?)?.toDouble() ?? 0.0,
       purchasePrice: (map['purchase_price'] as num?)?.toDouble() ?? 0.0,
+      aliasName: map['alias_name'] as String?,
     );
   }
 
@@ -57,6 +60,7 @@ class Product {
       type: map['product_type'] as String? ?? 'product',
       defaultDiscount: (map['product_default_discount'] as num?)?.toDouble() ?? 0.0,
       purchasePrice: (map['product_purchase_price'] as num?)?.toDouble() ?? 0.0,
+      aliasName: map['product_alias_name'] as String?,
     );
   }
 
@@ -73,6 +77,11 @@ class Product {
       'type': type,
       'default_discount': defaultDiscount,
       'purchase_price': purchasePrice,
+      'alias_name': aliasName,
     };
   }
+
+  /// Name to print on PDFs — [aliasName] when [useAlias] is on and set, else [name].
+  String displayName(bool useAlias) =>
+      (useAlias && (aliasName?.trim().isNotEmpty ?? false)) ? aliasName! : name;
 }

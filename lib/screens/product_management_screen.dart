@@ -48,6 +48,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
 
   // Form controllers
   final _nameController = TextEditingController();
+  final _aliasNameController = TextEditingController();
   final _defaultDiscountController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _priceController = TextEditingController();
@@ -73,6 +74,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     'type',
     'default_discount',
     'purchase_price',
+    'alias_name',
   ];
 
   @override
@@ -105,6 +107,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
   @override
   void dispose() {
     _nameController.dispose();
+    _aliasNameController.dispose();
     _descriptionController.dispose();
     _priceController.dispose();
     _purchasePriceController.dispose();
@@ -174,6 +177,9 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
         defaultDiscount:
             double.tryParse(_defaultDiscountController.text.trim()) ?? 0.0,
         purchasePrice: purchasePrice,
+        aliasName: _aliasNameController.text.trim().isEmpty
+            ? null
+            : _aliasNameController.text.trim(),
       );
 
       await ref.read(productRepositoryProvider).insertProduct(newProduct);
@@ -190,6 +196,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
   void _clearForm() {
     _formKey.currentState?.reset();
     _nameController.clear();
+    _aliasNameController.clear();
     _descriptionController.clear();
     _priceController.clear();
     _purchasePriceController.clear();
@@ -255,6 +262,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
   void _showProductDialog(Product product, bool isEdit) {
     //final isEdit = product != null;
     final nameCtrl = TextEditingController(text: product.name);
+    final aliasNameCtrl = TextEditingController(text: product.aliasName ?? '');
     final descriptionCtrl = TextEditingController(text: product.description);
     final priceCtrl = TextEditingController(text: product.price.toString());
     final purchasePriceCtrl = TextEditingController(
@@ -331,6 +339,10 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                       const SizedBox(height: 16),
                     ],
                     _buildDialogTextField(nameCtrl, 'Name', Icons.inventory_2,
+                        readOnly: !isEdit, maxLength: 100),
+                    const SizedBox(height: 16),
+                    _buildDialogTextField(aliasNameCtrl,
+                        'Alias (for PDF)', Icons.translate,
                         readOnly: !isEdit, maxLength: 100),
                     const SizedBox(height: 16),
                     _buildDialogTextField(
@@ -410,6 +422,9 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                       defaultDiscount:
                           double.tryParse(defaultDiscountCtrl.text.trim()) ?? 0.0,
                       purchasePrice: dialogPurchasePrice,
+                      aliasName: aliasNameCtrl.text.trim().isEmpty
+                          ? null
+                          : aliasNameCtrl.text.trim(),
                     );
 
                     await ref.read(productRepositoryProvider).updateProduct(updatedProduct);
@@ -529,10 +544,10 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
 
   Future<void> _downloadSampleCSV() async {
     const sample =
-        '"name","hsn_code","description","price","tax_rate","stock","type","default_discount","purchase_price"\n'
-        '"Wireless Mouse","84716010","Ergonomic wireless mouse","599.00","18","50","product","5.00","400.00"\n'
-        '"USB Hub","84734000","4-port USB 3.0 hub","299.00","18","100","product","0","180.00"\n'
-        '"Annual Support","998314","Annual technical support plan","4999.00","18","0","service","10.00","0"\n';
+        '"name","hsn_code","description","price","tax_rate","stock","type","default_discount","purchase_price","alias_name"\n'
+        '"Wireless Mouse","84716010","Ergonomic wireless mouse","599.00","18","50","product","5.00","400.00",""\n'
+        '"USB Hub","84734000","4-port USB 3.0 hub","299.00","18","100","product","0","180.00",""\n'
+        '"Annual Support","998314","Annual technical support plan","4999.00","18","0","service","10.00","0",""\n';
 
     final savePath = await FilePicker.platform.saveFile(
       dialogTitle: 'Save Sample CSV',
@@ -601,6 +616,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                     _csvRuleRow('type', 'No', '"product" or "service", default product'),
                     _csvRuleRow('default_discount', 'No', 'Flat discount amount (currency), default 0'),
                     _csvRuleRow('purchase_price', 'No', 'Cost price (numeric), default 0'),
+                    _csvRuleRow('alias_name', 'No', 'Local-language display name for PDFs'),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -780,6 +796,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
         final typeStr = getField(row, 'type');
         final discountStr = getField(row, 'default_discount');
         final purchasePriceStr = getField(row, 'purchase_price');
+        final aliasNameStr = getField(row, 'alias_name');
         final taxRate = taxStr.isEmpty ? 0 : (int.tryParse(taxStr) ?? 0);
         final stock = stockStr.isEmpty ? 0 : (int.tryParse(stockStr) ?? 0);
         final discount = discountStr.isEmpty ? 0.0 : (double.tryParse(discountStr) ?? 0.0);
@@ -798,6 +815,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
           type: type,
           defaultDiscount: discount < 0 ? 0.0 : discount,
           purchasePrice: purchasePrice < 0 ? 0.0 : purchasePrice,
+          aliasName: aliasNameStr.isEmpty ? null : aliasNameStr,
         );
 
         if (existing != null) {
@@ -1035,7 +1053,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     try {
       final allProducts = await ref.read(productRepositoryProvider).getAllProducts();
       final List<List<dynamic>> rows = [
-        ['name', 'hsn_code', 'description', 'price', 'tax_rate', 'stock', 'type', 'default_discount', 'purchase_price'],
+        ['name', 'hsn_code', 'description', 'price', 'tax_rate', 'stock', 'type', 'default_discount', 'purchase_price', 'alias_name'],
         ...allProducts.map((p) => [
               p.name,
               p.hsncode,
@@ -1046,6 +1064,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
               p.type,
               p.defaultDiscount,
               p.purchasePrice,
+              p.aliasName ?? '',
             ]),
       ];
       final csvData = buildQuotedCsv(rows);
@@ -1291,6 +1310,10 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                   ],
                   _buildFormField(_nameController, 'Name', Icons.inventory_2,
                       maxLength: 100),
+                  const SizedBox(height: 16),
+                  _buildFormField(_aliasNameController,
+                      'Alias (for PDF)', Icons.translate,
+                      maxLength: 100, required: false),
                   const SizedBox(height: 16),
                   _buildFormField(_hsnCodeController, 'HSN Code', Icons.qr_code,
                       maxLength: 100, required: false),

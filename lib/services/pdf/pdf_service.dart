@@ -80,6 +80,7 @@ class PDFService {
       BackendServices.settings.getPageSize(), // 21
       BackendServices.settings.getShowTotalQuantity(), // 22
       BackendServices.settings.getSetting(SettingKey.thermalItemLayout), // 23
+      BackendServices.settings.getSetting(SettingKey.showAliasNameInPdf), // 24
     ]);
 
     final rawPrefix = (results[2] as String?) ?? 'INV';
@@ -125,6 +126,7 @@ class PDFService {
       showTotalQuantity: results[22] as bool,
       pdfTheme: pdfTheme,
       thermalItemLayout: (results[23] as String?) ?? 'table',
+      showAliasName: (results[24] as String?) == 'true',
     );
   }
 
@@ -175,6 +177,7 @@ class PDFService {
           showQuantity: s.showQuantity,
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
+          showAliasName: s.showAliasName,
           businessType: s.businessType,
           bankAccount: effectiveBank,
           datePattern: s.datePattern,
@@ -202,6 +205,7 @@ class PDFService {
           showQuantity: s.showQuantity,
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
+          showAliasName: s.showAliasName,
           businessType: s.businessType,
           bankAccount: effectiveBank,
           datePattern: s.datePattern,
@@ -229,6 +233,7 @@ class PDFService {
           showQuantity: s.showQuantity,
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
+          showAliasName: s.showAliasName,
           businessType: s.businessType,
           bankAccount: effectiveBank,
           datePattern: s.datePattern,
@@ -256,6 +261,7 @@ class PDFService {
           showQuantity: s.showQuantity,
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
+          showAliasName: s.showAliasName,
           businessType: s.businessType,
           bankAccount: effectiveBank,
           datePattern: s.datePattern,
@@ -283,6 +289,7 @@ class PDFService {
           showQuantity: s.showQuantity,
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
+          showAliasName: s.showAliasName,
           businessType: s.businessType,
           bankAccount: effectiveBank,
           datePattern: s.datePattern,
@@ -308,6 +315,7 @@ class PDFService {
           showGst: s.showGst,
           showQuantity: s.showQuantity,
           showDiscount: s.showDiscount,
+          showAliasName: s.showAliasName,
           datePattern: s.datePattern,
           thankYouNote: s.thankYouNote,
           showFooterBranding: s.showFooterBranding,

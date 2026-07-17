@@ -48,6 +48,7 @@ enum SettingKey {
   thermalItemLayout, // 'table' | 'detailed' — how items print on thermal receipts; default 'table'
   invoiceTemplate, // used by cloud edition's generic setSetting/getSetting path
   companyLogo, // used by cloud edition's generic setSetting/getSetting path
+  showAliasNameInPdf, // whether to print a product's local-language alias name instead of its actual name on PDFs (default false)
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -129,6 +130,8 @@ extension SettingKeyExtension on SettingKey {
         return 'invoice_template';
       case SettingKey.companyLogo:
         return 'company_logo';
+      case SettingKey.showAliasNameInPdf:
+        return 'show_alias_name_in_pdf';
     }
   }
 }
