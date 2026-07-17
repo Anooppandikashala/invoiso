@@ -65,7 +65,7 @@ class AppConfig
 {
   static const kIsCloud = false;
   static const name = "invoiso";
-  static const version = "v4.2.9";
+  static const version = "v4.3.0";
   static const developer = "ANOOP P";
   static const supportEmail = "anooppkrishnan96@gmail.com";
   static const website = "https://invoiso.co.in/";
