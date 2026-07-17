@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:invoiso/database/database_helper.dart';
 import 'package:invoiso/common.dart';
 import 'package:invoiso/domain/customer_identity.dart';
@@ -7,6 +8,9 @@ import 'package:invoiso/models/additional_cost.dart';
 import 'package:invoiso/utils/app_date.dart';
 import 'package:invoiso/utils/formatters.dart';
 import 'package:invoiso/models/report_models.dart';
+import 'package:invoiso/services/pdf_font_service.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
 export 'package:invoiso/models/report_models.dart';
 
 // ─── Internal row ─────────────────────────────────────────────────────────────
@@ -349,6 +353,47 @@ class ReportService {
               billed: billedByMonth[m] ?? 0,
               collected: collectedByMonth[m] ?? 0,
               profit: profitByMonth[m] ?? 0,
+            ))
+        .toList();
+  }
+
+  // ── 2b. Daily sales/profit trend ────────────────────────────────────────────
+
+  static Future<List<DailyPoint>> getDailyRevenueTrend(
+      DateTime from, DateTime to,
+      {String? currencyCode}) async {
+    final db = await _db.database;
+    final f = AppDate.dateKeyStart(from);
+    final t = AppDate.dateKeyEnd(to);
+    final currencyFilter = currencyCode != null
+        ? 'AND (i.currency_code = ? OR i.currency_code IS NULL) '
+        : '';
+    final args = <Object?>[
+      if (currencyCode != null) currencyCode,
+      f,
+      t,
+    ];
+
+    final rows = await db.rawQuery(
+      "SELECT strftime('%Y-%m-%d', i.date) AS day, "
+      "COUNT(DISTINCT i.id) AS invoice_count, "
+      "SUM($_invoiceItemNetSql) AS revenue, "
+      "SUM(ii.quantity * ii.product_purchase_price) AS cogs "
+      "FROM invoice_items ii "
+      "JOIN invoices i ON i.id = ii.invoice_id "
+      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "$currencyFilter"
+      "AND i.date >= ? AND i.date <= ? "
+      "GROUP BY day ORDER BY day",
+      args,
+    );
+
+    return rows
+        .map((r) => DailyPoint(
+              date: r['day'] as String,
+              invoiceCount: (r['invoice_count'] as num?)?.toInt() ?? 0,
+              billed: (r['revenue'] as num?)?.toDouble() ?? 0.0,
+              cogs: (r['cogs'] as num?)?.toDouble() ?? 0.0,
             ))
         .toList();
   }
@@ -786,6 +831,21 @@ class ReportService {
 
   // ── CSV export helpers ─────────────────────────────────────────────────────
 
+  static String exportDailyReportCsv(List<DailyPoint> rows) {
+    return buildQuotedCsv([
+      ['Date', 'Invoices', 'Sales', 'COGS', 'Profit', 'Margin %'],
+      for (final d in rows)
+        [
+          d.date,
+          d.invoiceCount,
+          d.billed.toStringAsFixed(2),
+          d.cogs.toStringAsFixed(2),
+          d.profit.toStringAsFixed(2),
+          d.marginPercent.toStringAsFixed(1),
+        ],
+    ]);
+  }
+
   static String exportTrendCsv(List<MonthlyPoint> trend) {
     return buildQuotedCsv([
       ['Month', 'Billed', 'Collected', 'Profit'],
@@ -964,5 +1024,79 @@ class ReportService {
           r.hasNoDueDate ? '' : r.daysOverdue,
         ],
     ]);
+  }
+
+  // ── PDF export ──────────────────────────────────────────────────────────────
+
+  static Future<Uint8List> exportDailyReportPdf(
+    List<DailyPoint> rows, {
+    required String currencySymbol,
+    required String dateRangeLabel,
+  }) async {
+    final theme = await PdfFontService.loadTheme();
+    final doc = pw.Document(theme: theme);
+
+    String money(double v) => '$currencySymbol ${v.toStringAsFixed(2)}';
+    final totalInvoices = rows.fold<int>(0, (a, d) => a + d.invoiceCount);
+    final totalSales = rows.fold<double>(0, (a, d) => a + d.billed);
+    final totalCogs = rows.fold<double>(0, (a, d) => a + d.cogs);
+    final totalProfit = totalSales - totalCogs;
+    final totalMargin = totalSales == 0 ? 0.0 : (totalProfit / totalSales) * 100;
+
+    doc.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4.landscape,
+        margin: const pw.EdgeInsets.all(24),
+        header: (context) => pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Text('Daily Sales & Profit Report',
+                style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+            pw.SizedBox(height: 4),
+            pw.Text(dateRangeLabel, style: const pw.TextStyle(fontSize: 10)),
+            pw.SizedBox(height: 12),
+          ],
+        ),
+        build: (context) => [
+          pw.TableHelper.fromTextArray(
+            headers: ['Date', 'Invoices', 'Sales', 'COGS', 'Profit', 'Margin %'],
+            data: [
+              for (final d in rows)
+                [
+                  d.date,
+                  '${d.invoiceCount}',
+                  money(d.billed),
+                  money(d.cogs),
+                  money(d.profit),
+                  '${d.marginPercent.toStringAsFixed(1)}%',
+                ],
+            ],
+            headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
+            cellStyle: const pw.TextStyle(fontSize: 9),
+            headerDecoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF1F5F9)),
+            cellAlignments: {
+              0: pw.Alignment.centerLeft,
+              1: pw.Alignment.centerRight,
+              2: pw.Alignment.centerRight,
+              3: pw.Alignment.centerRight,
+              4: pw.Alignment.centerRight,
+              5: pw.Alignment.centerRight,
+            },
+            cellHeight: 22,
+          ),
+          pw.SizedBox(height: 12),
+          pw.Container(
+            alignment: pw.Alignment.centerRight,
+            child: pw.Text(
+              'Total — Invoices: $totalInvoices   Sales: ${money(totalSales)}   '
+              'COGS: ${money(totalCogs)}   Profit: ${money(totalProfit)}   '
+              'Margin: ${totalMargin.toStringAsFixed(1)}%',
+              style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+    return doc.save();
   }
 }
