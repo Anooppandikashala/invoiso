@@ -26,6 +26,7 @@ import 'pdf_template_modern.dart';
 import 'pdf_template_executive.dart';
 import 'pdf_template_compact.dart';
 import 'pdf_template_thermal.dart';
+import 'pdf_template_gridclassic.dart';
 
 class PDFService {
   static Uint8List? _logoBytesCache;
@@ -318,6 +319,34 @@ class PDFService {
           pdfTheme: pdfTheme,
           itemLayout: s.thermalItemLayout,
         ));
+      case InvoiceTemplate.gridClassic:
+        pdf.addPage(buildGridClassicTemplate(
+          invoice,
+          s.company,
+          currencySymbol,
+          s.invoicePrefix,
+          upiId: effectiveUpiId,
+          showUpiQr: showUpiQr,
+          showGst: s.showGst,
+          showQuantity: s.showQuantity,
+          showDiscount: s.showDiscount,
+          showTypeTag: s.showTypeTag,
+          showTotalQuantity: s.showTotalQuantity,
+          businessType: s.businessType,
+          bankAccount: effectiveBank,
+          datePattern: s.datePattern,
+          logoBytes: s.logoBytes,
+          logoSizePx: s.logoSizePx,
+          thankYouNote: s.thankYouNote,
+          showFooterBranding: s.showFooterBranding,
+          themeColor: s.themeColor,
+          signatureBytes: s.signatureBytes,
+          signaturePosition: s.signaturePosition,
+          previousBalanceDue: effectivePreviousBalance,
+          pageFormat: s.pageFormat,
+          pdfTheme: pdfTheme,
+          logoPosition: s.logoPosition
+        ));
     }
     return pdf;
   }
@@ -337,6 +366,8 @@ class PDFService {
 
   static PdfPageFormat pageSizeToFormat(PageSize size) {
     switch (size) {
+      case PageSize.a5:
+        return PdfPageFormat.a5;
       case PageSize.a6:
         return PdfPageFormat.a6;
       case PageSize.thermal80:

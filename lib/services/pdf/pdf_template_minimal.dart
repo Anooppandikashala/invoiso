@@ -212,6 +212,7 @@ pw.MultiPage buildMinimalTemplate(
       pw.SizedBox(height: 15),
 
       buildInvoiceTable(invoice,
+          InvoiceTemplate.minimal,
           headerColor: PdfColors.grey100,
           textColor: PdfColors.black,
           showGst: showGst,
