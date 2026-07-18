@@ -83,9 +83,8 @@ pw.Page buildThermalTemplate(
     final rows = <pw.Widget>[];
     for (var i = 0; i < invoice.items.length; i++) {
       final item = invoice.items[i];
-      final qty = item.quantity == item.quantity.roundToDouble()
-          ? item.quantity.toInt().toString()
-          : item.quantity.toStringAsFixed(2);
+      final qty = '${item.quantity == item.quantity.roundToDouble() ? item.quantity.toInt().toString() : item.quantity.toStringAsFixed(2)}'
+          '${item.effectiveUnit.trim().isEmpty ? '' : ' ${item.effectiveUnit}'}';
       totalQuantity += item.quantity;
       final rate = item.effectivePrice.toStringAsFixed(2);
       final total = item.total.toStringAsFixed(2);
@@ -168,7 +167,7 @@ pw.Page buildThermalTemplate(
                         style: pw.TextStyle(fontSize: smallFs)),
                   ),
                   pw.SizedBox(
-                    width: 30,
+                    width: 36,
                     child: pw.Text(qty,
                         textAlign: pw.TextAlign.center,
                         style: const pw.TextStyle(fontSize: smallFs)),
@@ -321,7 +320,7 @@ pw.Page buildThermalTemplate(
                     style: pw.TextStyle(
                         fontSize: smallFs, fontWeight: pw.FontWeight.bold))),
             pw.SizedBox(
-                width: 30,
+                width: 36,
                 child: pw.Text('Qty',
                     textAlign: pw.TextAlign.center,
                     style: pw.TextStyle(

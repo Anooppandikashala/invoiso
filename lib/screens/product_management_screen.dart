@@ -55,6 +55,8 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
   final _stockController = TextEditingController();
   final _hsnCodeController = TextEditingController();
   final _taxRateController = TextEditingController();
+  final _customUnitController = TextEditingController();
+  String _selectedUnit = '';
   final _formKey = GlobalKey<FormState>();
 
   String _currencySymbol = '₹';
@@ -73,6 +75,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     'type',
     'default_discount',
     'purchase_price',
+    'unit',
   ];
 
   @override
@@ -112,6 +115,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     _stockController.dispose();
     _taxRateController.dispose();
     _hsnCodeController.dispose();
+    _customUnitController.dispose();
     _searchFocusNode.dispose();
     _horizontalScrollController.dispose();
     _searchDebounce?.cancel();
@@ -174,6 +178,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
         defaultDiscount:
             double.tryParse(_defaultDiscountController.text.trim()) ?? 0.0,
         purchasePrice: purchasePrice,
+        unit: _selectedUnit.trim(),
       );
 
       await ref.read(productRepositoryProvider).insertProduct(newProduct);
@@ -198,6 +203,8 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     _hsnCodeController.clear();
     _taxRateController.clear();
     _taxRateController.text = "18";
+    _customUnitController.clear();
+    if (mounted) setState(() => _selectedUnit = '');
   }
 
   void _showSnackBar(String message, {bool isError = false}) {
@@ -269,8 +276,11 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
         text: product.defaultDiscount > 0
             ? product.defaultDiscount.toString()
             : '');
+    final customUnitCtrl = TextEditingController(
+        text: ProductUnits.presets.contains(product.unit) ? '' : product.unit);
     final dialogFormKey = GlobalKey<FormState>();
     String dialogItemType = product.type;
+    String dialogUnit = product.unit;
 
     showDialog(
       context: context,
@@ -375,6 +385,14 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                         readOnly: !isEdit,
                         keyboardType: TextInputType.number,
                         isStock: true),
+                    const SizedBox(height: 16),
+                    _buildUnitField(
+                      selectedUnit: dialogUnit,
+                      customController: customUnitCtrl,
+                      onUnitChanged: (v) =>
+                          setDialogState(() => dialogUnit = v),
+                      readOnly: !isEdit,
+                    ),
                   ],
                 ),
               ),
@@ -410,6 +428,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                       defaultDiscount:
                           double.tryParse(defaultDiscountCtrl.text.trim()) ?? 0.0,
                       purchasePrice: dialogPurchasePrice,
+                      unit: dialogUnit.trim(),
                     );
 
                     await ref.read(productRepositoryProvider).updateProduct(updatedProduct);
@@ -529,10 +548,10 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
 
   Future<void> _downloadSampleCSV() async {
     const sample =
-        '"name","hsn_code","description","price","tax_rate","stock","type","default_discount","purchase_price"\n'
-        '"Wireless Mouse","84716010","Ergonomic wireless mouse","599.00","18","50","product","5.00","400.00"\n'
-        '"USB Hub","84734000","4-port USB 3.0 hub","299.00","18","100","product","0","180.00"\n'
-        '"Annual Support","998314","Annual technical support plan","4999.00","18","0","service","10.00","0"\n';
+        '"name","hsn_code","description","price","tax_rate","stock","type","default_discount","purchase_price","unit"\n'
+        '"Wireless Mouse","84716010","Ergonomic wireless mouse","599.00","18","50","product","5.00","400.00","pcs"\n'
+        '"USB Hub","84734000","4-port USB 3.0 hub","299.00","18","100","product","0","180.00","pcs"\n'
+        '"Annual Support","998314","Annual technical support plan","4999.00","18","0","service","10.00","0","unit"\n';
 
     final savePath = await FilePicker.platform.saveFile(
       dialogTitle: 'Save Sample CSV',
@@ -601,6 +620,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                     _csvRuleRow('type', 'No', '"product" or "service", default product'),
                     _csvRuleRow('default_discount', 'No', 'Flat discount amount (currency), default 0'),
                     _csvRuleRow('purchase_price', 'No', 'Cost price (numeric), default 0'),
+                    _csvRuleRow('unit', 'No', 'Unit of measure (e.g. kg, bag, pcs), default pcs'),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -780,6 +800,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
         final typeStr = getField(row, 'type');
         final discountStr = getField(row, 'default_discount');
         final purchasePriceStr = getField(row, 'purchase_price');
+        final unitStr = getField(row, 'unit');
         final taxRate = taxStr.isEmpty ? 0 : (int.tryParse(taxStr) ?? 0);
         final stock = stockStr.isEmpty ? 0 : (int.tryParse(stockStr) ?? 0);
         final discount = discountStr.isEmpty ? 0.0 : (double.tryParse(discountStr) ?? 0.0);
@@ -798,6 +819,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
           type: type,
           defaultDiscount: discount < 0 ? 0.0 : discount,
           purchasePrice: purchasePrice < 0 ? 0.0 : purchasePrice,
+          unit: unitStr,
         );
 
         if (existing != null) {
@@ -1035,7 +1057,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     try {
       final allProducts = await ref.read(productRepositoryProvider).getAllProducts();
       final List<List<dynamic>> rows = [
-        ['name', 'hsn_code', 'description', 'price', 'tax_rate', 'stock', 'type', 'default_discount', 'purchase_price'],
+        ['name', 'hsn_code', 'description', 'price', 'tax_rate', 'stock', 'type', 'default_discount', 'purchase_price', 'unit'],
         ...allProducts.map((p) => [
               p.name,
               p.hsncode,
@@ -1046,6 +1068,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
               p.type,
               p.defaultDiscount,
               p.purchasePrice,
+              p.unit,
             ]),
       ];
       final csvData = buildQuotedCsv(rows);
@@ -1127,7 +1150,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
             pw.TableHelper.fromTextArray(
               context: context,
               data: [
-                ['#', 'Name', 'HSN Code', 'Description', 'Price', 'Tax Rate', 'Stock', 'Type', 'Discount'],
+                ['#', 'Name', 'HSN Code', 'Description', 'Price', 'Tax Rate', 'Stock', 'Type', 'Discount', 'Unit'],
                 ...productsToExport.indexed.map(((int, dynamic) e) => [
                       e.$1 + 1,
                       e.$2.name,
@@ -1138,6 +1161,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                       e.$2.stock,
                       e.$2.type,
                       e.$2.defaultDiscount > 0 ? e.$2.defaultDiscount.toStringAsFixed(2) : '-',
+                      e.$2.unit,
                     ]),
               ],
             ),
@@ -1326,6 +1350,15 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                   const SizedBox(height: 16),
                   _buildFormField(_stockController, 'Stock', Icons.inventory,
                       keyboardType: TextInputType.number, isStock: true),
+                  const SizedBox(height: 16),
+                  _buildUnitField(
+                    selectedUnit: _selectedUnit,
+                    customController: _customUnitController,
+                    onUnitChanged: (v) {
+                      if (!mounted) return;
+                      setState(() => _selectedUnit = v);
+                    },
+                  ),
                   const SizedBox(height: 24),
                   Row(
                     children: [
@@ -1361,6 +1394,60 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildUnitField({
+    required String selectedUnit,
+    required TextEditingController customController,
+    required ValueChanged<String> onUnitChanged,
+    bool readOnly = false,
+  }) {
+    final isCustom =
+        selectedUnit.isNotEmpty && !ProductUnits.presets.contains(selectedUnit);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DropdownButtonFormField<String>(
+          value: isCustom ? 'custom' : selectedUnit,
+          decoration: InputDecoration(
+            labelText: 'Unit',
+            prefixIcon: const Icon(Icons.straighten),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+            filled: readOnly,
+            fillColor: readOnly ? Colors.grey.shade100 : null,
+          ),
+          items: [
+            const DropdownMenuItem(value: '', child: Text('None')),
+            for (final u in ProductUnits.presets)
+              DropdownMenuItem(value: u, child: Text(u.toUpperCase())),
+            const DropdownMenuItem(value: 'custom', child: Text('Custom…')),
+          ],
+          onChanged: readOnly
+              ? null
+              : (val) {
+                  if (val == null) return;
+                  onUnitChanged(
+                      val == 'custom' ? customController.text.trim() : val);
+                },
+        ),
+        if (isCustom) ...[
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: customController,
+            readOnly: readOnly,
+            decoration: InputDecoration(
+              labelText: 'Custom unit',
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+              filled: readOnly,
+              fillColor: readOnly ? Colors.grey.shade100 : null,
+            ),
+            onChanged: onUnitChanged,
+          ),
+        ],
+      ],
     );
   }
 
@@ -1691,6 +1778,9 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                 Text('Stock', style: TextStyle(fontWeight: FontWeight.bold))),
         const DataColumn(
             label:
+                Text('Unit', style: TextStyle(fontWeight: FontWeight.bold))),
+        const DataColumn(
+            label:
                 Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
       ],
       rows: List.generate(_products.length, (index) {
@@ -1829,6 +1919,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                 ),
               ),
             ),
+            DataCell(Text(p.unit.isEmpty ? '—' : p.unit.toUpperCase())),
             DataCell(
               Row(
                 mainAxisSize: MainAxisSize.min,

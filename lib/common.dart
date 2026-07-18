@@ -7,6 +7,13 @@ enum InvoiceTemplate {
   thermal, // 80mm/58mm thermal receipt template
 }
 
+class ProductUnits {
+  static const List<String> presets = [
+    'pcs', 'kg', 'gm', 'ltr', 'ml', 'mtr', 'cm', 'box', 'bag',
+    'dozen', 'set', 'pair', 'roll', 'sqft', 'unit',
+  ];
+}
+
 enum BackupType { database, json }
 
 enum SettingKey {
