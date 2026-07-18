@@ -38,6 +38,24 @@ class MonthlyPoint {
   });
 }
 
+class DailyPoint {
+  final String date;
+  final int invoiceCount;
+  final double billed;
+  final double cogs;
+
+  const DailyPoint({
+    required this.date,
+    required this.invoiceCount,
+    required this.billed,
+    this.cogs = 0.0,
+  });
+
+  double get profit => billed - cogs;
+
+  double get marginPercent => billed == 0 ? 0.0 : (profit / billed) * 100;
+}
+
 class StatusBreakdown {
   final int paid;
   final int partial;

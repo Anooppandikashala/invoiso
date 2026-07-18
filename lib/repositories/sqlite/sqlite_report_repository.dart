@@ -10,6 +10,9 @@ class SqliteReportRepository implements ReportRepository {
   Future<List<MonthlyPoint>> getMonthlyRevenueTrend(DateTime from, DateTime to, {String? currencyCode}) =>
       ReportService.getMonthlyRevenueTrend(from, to, currencyCode: currencyCode);
   @override
+  Future<List<DailyPoint>> getDailyRevenueTrend(DateTime from, DateTime to, {String? currencyCode}) =>
+      ReportService.getDailyRevenueTrend(from, to, currencyCode: currencyCode);
+  @override
   Future<StatusBreakdown> getPaymentStatusBreakdown(DateTime from, DateTime to, {String? currencyCode}) =>
       ReportService.getPaymentStatusBreakdown(from, to, currencyCode: currencyCode);
   @override

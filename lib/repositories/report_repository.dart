@@ -3,6 +3,7 @@ import 'package:invoiso/models/report_models.dart';
 abstract class ReportRepository {
   Future<RevenueKpi> getRevenueSummary(DateTime from, DateTime to, {String? currencyCode});
   Future<List<MonthlyPoint>> getMonthlyRevenueTrend(DateTime from, DateTime to, {String? currencyCode});
+  Future<List<DailyPoint>> getDailyRevenueTrend(DateTime from, DateTime to, {String? currencyCode});
   Future<StatusBreakdown> getPaymentStatusBreakdown(DateTime from, DateTime to, {String? currencyCode});
   Future<List<AgedReceivable>> getAgedReceivables({String? currencyCode});
   Future<List<TaxBucket>> getTaxByRate(DateTime from, DateTime to, {String? currencyCode});
