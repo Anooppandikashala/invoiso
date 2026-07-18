@@ -8,6 +8,7 @@ class InvoiceItem {
   double discount;
   double? unitPrice; // overrides product.price when set
   double? extraCost; // optional flat fee added on top of the line total
+  String? unit; // overrides product.unit when set
   bool
       discountPerUnit; // true  → (price − discount) × qty  (discount multiplied by qty)
   // false → (price × qty) − discount   (flat discount off line total)
@@ -20,11 +21,14 @@ class InvoiceItem {
     this.discount = 0.0,
     this.unitPrice,
     this.extraCost,
+    this.unit,
     this.discountPerUnit = false,
     this.isProductSaved = false,
   });
 
   double get effectivePrice => unitPrice ?? product.price;
+
+  String get effectiveUnit => unit ?? product.unit;
 
   InvoiceLineAmount get _amounts => InvoiceTotalsCalculator.line(
         price: effectivePrice,

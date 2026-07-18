@@ -529,8 +529,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     final unitPriceController =
         TextEditingController(text: product.price.toString());
     final extraCostController = TextEditingController();
+    final unitController = TextEditingController();
 
     bool discountPerUnit = true;
+    String dialogUnit = '';
     int insertAt = invoiceItems.length + 1;
 
     showDialog(
@@ -627,6 +629,12 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     inputFormatters: [
                       FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                     ],
+                  ),
+                  const SizedBox(height: 16),
+                  _buildUnitPicker(
+                    selectedUnit: dialogUnit,
+                    customController: unitController,
+                    onUnitChanged: (v) => setDialogState(() => dialogUnit = v),
                   ),
                   const SizedBox(height: 16),
                 ],
@@ -791,6 +799,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                             discount: discount,
                             unitPrice: unitPrice,
                             extraCost: extraCost,
+                            unit: dialogUnit.trim(),
                             discountPerUnit: discountPerUnit),
                         insertAt: insertAt);
                   }
@@ -824,6 +833,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                             discount: discount,
                             unitPrice: unitPrice,
                             extraCost: extraCost,
+                            unit: dialogUnit.trim(),
                             discountPerUnit: discountPerUnit),
                         insertAt: insertAt);
                   }
@@ -836,6 +846,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                           discount: discount,
                           unitPrice: unitPrice,
                           extraCost: extraCost,
+                          unit: dialogUnit.trim(),
                           discountPerUnit: discountPerUnit),
                       insertAt: insertAt);
                 }
@@ -1016,7 +1027,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     final extraCostController = TextEditingController(
         text: item.extraCost != null ? item.extraCost.toString() : '');
     bool discountPerUnit = item.discountPerUnit;
-
+    final unitController = TextEditingController(text: item.effectiveUnit.toString());
+    String dialogUnit = item.effectiveUnit.toString();
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -1107,6 +1119,12 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     inputFormatters: [
                       FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                     ],
+                  ),
+                  const SizedBox(height: 16),
+                  _buildUnitPicker(
+                    selectedUnit: dialogUnit,
+                    customController: unitController,
+                    onUnitChanged: (v) => setDialogState(() => dialogUnit = v),
                   ),
                 ],
                 const SizedBox(height: 16),
@@ -1208,6 +1226,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       double.tryParse(discountController.text) ?? item.discount,
                   unitPrice: unitPrice,
                   extraCost: extraCost,
+                  unit: dialogUnit.trim(),
                   discountPerUnit: discountPerUnit,
                 );
                 if(!mounted) return;
@@ -1233,10 +1252,12 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     final discountController = TextEditingController(text: '0');
     final taxRateController = TextEditingController(text: '0');
     final extraCostController = TextEditingController();
+    final unitController = TextEditingController();
 
     bool discountPerUnit = true;
     String dialogItemType = _adHocItemType;
     int insertAt = invoiceItems.length + 1;
+    String selectedUnit = '';
 
     showDialog(
       context: context,
@@ -1340,6 +1361,12 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     inputFormatters: [
                       FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                     ],
+                  ),
+                  const SizedBox(height: 16),
+                  _buildUnitPicker(
+                    selectedUnit: selectedUnit,
+                    customController: unitController,
+                    onUnitChanged: (v) => setDialogState(() => selectedUnit = v),
                   ),
                 ],
                 const SizedBox(height: 16),
@@ -1471,6 +1498,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   stock: 0,
                   hsncode: '',
                   tax_rate: taxRate,
+                  unit: selectedUnit.trim(),
                   type: dialogItemType,
                   aliasName: aliasNameController.text.trim().isEmpty
                       ? null
@@ -1487,6 +1515,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                               .toDouble(),
                   discount: double.tryParse(discountController.text) ?? 0.0,
                   extraCost: extraCost,
+                  unit: selectedUnit.trim(),
                   discountPerUnit: discountPerUnit,
                 );
                 Navigator.pop(context);
@@ -2667,6 +2696,55 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     );
   }
 
+  Widget _buildUnitPicker({
+    required String selectedUnit,
+    required TextEditingController customController,
+    required ValueChanged<String> onUnitChanged,
+  }) {
+    final isCustom =
+        selectedUnit.isNotEmpty && !ProductUnits.presets.contains(selectedUnit);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DropdownButtonFormField<String>(
+          value: isCustom ? 'custom' : selectedUnit,
+          decoration: InputDecoration(
+            labelText: 'Unit (override)',
+            prefixIcon: const Icon(Icons.straighten),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+            filled: true,
+            fillColor: Colors.grey[50],
+          ),
+          items: [
+            const DropdownMenuItem(value: '', child: Text('None')),
+            for (final u in ProductUnits.presets)
+              DropdownMenuItem(value: u, child: Text(u.toUpperCase())),
+            const DropdownMenuItem(value: 'custom', child: Text('Custom…')),
+          ],
+          onChanged: (val) {
+            if (val == null) return;
+            onUnitChanged(val == 'custom' ? customController.text.trim() : val);
+          },
+        ),
+        if (isCustom) ...[
+          const SizedBox(height: 12),
+          TextField(
+            controller: customController,
+            decoration: InputDecoration(
+              labelText: 'Custom unit',
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+              filled: true,
+              fillColor: Colors.grey[50],
+            ),
+            onChanged: onUnitChanged,
+          ),
+        ],
+      ],
+    );
+  }
+
   Widget _buildItemDetail(String label, String value, {Color? color}) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -3071,10 +3149,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                         _quantityLabel.trim().isNotEmpty
                                             ? _quantityLabel.trim()
                                             : 'Qty',
-                                        item.quantity ==
-                                                item.quantity.roundToDouble()
-                                            ? item.quantity.toInt().toString()
-                                            : item.quantity.toString()),
+                                        '${item.quantity == item.quantity.roundToDouble() ? item.quantity.toInt().toString() : item.quantity.toString()}'
+                                        '${item.effectiveUnit.trim().isEmpty ? '' : ' ${item.effectiveUnit}'}'),
                                   _buildItemDetail('Discount',
                                       '$_currencySymbol${item.discount.toStringAsFixed(2)}${item.discountPerUnit ? ' ×qty' : ''}'),
                                   if (item.discountPerUnit && item.discount > 0)
@@ -3164,6 +3240,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                           stock: 0,
                                           hsncode: item.product.hsncode,
                                           tax_rate: item.product.tax_rate,
+                                          unit: item.product.unit,
                                           type: item.product.type,
                                           aliasName: item.product.aliasName,
                                         );

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
@@ -19,7 +20,7 @@ enum _DatePreset {
   thisYear('This year'),
   thisFY('This FY'),
   lastFY('Last FY'),
-  allTime('All time'),
+  //allTime('All time'),
   custom('Custom');
 
   final String label;
@@ -31,6 +32,8 @@ enum _InvoiceFilter { all, paid, partial, unpaid, overdue }
 enum _CurrencyScope { selected, all }
 
 enum _CustomerReportMode { overview, statements }
+
+enum _DailyMode { last30, monthYear }
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
@@ -57,6 +60,16 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   RevenueKpi _kpi = RevenueKpi.empty;
   List<MonthlyPoint> _trend = [];
+  List<DailyPoint> _dailyReport = [];
+  int _dailyPage = 0;
+  int _dailyPageSize = 25;
+  _DailyMode _dailyMode = _DailyMode.last30;
+  int _dailyYear = DateTime.now().year;
+  int _dailyMonth = DateTime.now().month;
+  _DailyMode _invoiceDateMode = _DailyMode.last30;
+  int _invoiceYear = DateTime.now().year;
+  int _invoiceMonth = DateTime.now().month;
+  DateTime? _invoiceExactDay;
   int _missingCostItemCount = 0;
   StatusBreakdown _status = StatusBreakdown.empty;
   List<AgedReceivable> _aged = [];
@@ -153,12 +166,36 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           DateTime(fyStartYear - 1, 4, 1),
           DateTime(fyStartYear, 4, 1).subtract(const Duration(milliseconds: 1)),
         ),
-      _DatePreset.allTime => (DateTime(2000, 1, 1), now),
+      //_DatePreset.allTime => (DateTime(2000, 1, 1), now),
       _DatePreset.custom => (
           _customFrom ?? now.subtract(const Duration(days: 30)),
           _customTo ?? now,
         ),
     };
+  }
+
+  (DateTime, DateTime) get _dailyRange {
+    final now = DateTime.now();
+    if (_dailyMode == _DailyMode.last30) {
+      return (now.subtract(const Duration(days: 30)), now);
+    }
+    final start = DateTime(_dailyYear, _dailyMonth, 1);
+    final end = DateTime(_dailyYear, _dailyMonth + 1, 1)
+        .subtract(const Duration(days: 1));
+    return (start, end.isAfter(now) ? now : end);
+  }
+
+  (DateTime, DateTime) get _invoiceStatusRange {
+    final exact = _invoiceExactDay;
+    if (exact != null) return (exact, exact);
+    final now = DateTime.now();
+    if (_invoiceDateMode == _DailyMode.last30) {
+      return (now.subtract(const Duration(days: 30)), now);
+    }
+    final start = DateTime(_invoiceYear, _invoiceMonth, 1);
+    final end = DateTime(_invoiceYear, _invoiceMonth + 1, 1)
+        .subtract(const Duration(days: 1));
+    return (start, end.isAfter(now) ? now : end);
   }
 
   @override
@@ -198,10 +235,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   Future<void> _invalidateAndReload() async {
-    if(!mounted) return;
+    if (!mounted) return;
     setState(() {
       _loadedTabs.clear();
       _tabLoading.clear();
+      _invoiceExactDay = null;
     });
     await _loadReportSettings();
     _loadTab(_selectedIndex);
@@ -236,8 +274,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       switch (index) {
         case 0:
           final r = await Future.wait([
-            ref.read(reportRepositoryProvider).getRevenueSummary(from, to,
-                currencyCode: _reportCurrencyCode),
+            ref
+                .read(reportRepositoryProvider)
+                .getRevenueSummary(from, to, currencyCode: _reportCurrencyCode),
             ref.read(reportRepositoryProvider).getMonthlyRevenueTrend(from, to,
                 currencyCode: _reportCurrencyCode),
             ref.read(reportRepositoryProvider).getMissingCostItemCount(from, to,
@@ -251,9 +290,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           });
         case 1:
           final r = await Future.wait([
-            ref.read(reportRepositoryProvider).getPaymentStatusBreakdown(from, to,
+            ref.read(reportRepositoryProvider).getPaymentStatusBreakdown(
+                from, to,
                 currencyCode: _reportCurrencyCode),
-            ref.read(reportRepositoryProvider).getAgedReceivables(currencyCode: _reportCurrencyCode),
+            ref
+                .read(reportRepositoryProvider)
+                .getAgedReceivables(currencyCode: _reportCurrencyCode),
           ]);
           if (!mounted) return;
           setState(() {
@@ -262,16 +304,19 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             _agedPage = 0;
           });
         case 2:
-          final buckets = await ref.read(reportRepositoryProvider).getTaxByRate(from, to,
-              currencyCode: _reportCurrencyCode);
+          final buckets = await ref
+              .read(reportRepositoryProvider)
+              .getTaxByRate(from, to, currencyCode: _reportCurrencyCode);
           if (!mounted) return;
           setState(() => _taxBuckets = buckets);
         case 3:
           final r = await Future.wait([
-            ref.read(reportRepositoryProvider).getTopCustomers(from, to,
-                currencyCode: _reportCurrencyCode),
-            ref.read(reportRepositoryProvider).getStatementCustomers(
-                currencyCode: _reportCurrencyCode),
+            ref
+                .read(reportRepositoryProvider)
+                .getTopCustomers(from, to, currencyCode: _reportCurrencyCode),
+            ref
+                .read(reportRepositoryProvider)
+                .getStatementCustomers(currencyCode: _reportCurrencyCode),
           ]);
           final customers = (r[0] as List).cast<TopCustomer>();
           final statementCustomers =
@@ -286,11 +331,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           final statements = selectedCustomer == null
               ? <CustomerStatement>[]
               : await ref.read(reportRepositoryProvider).getCustomerStatements(
-                  selectedCustomer,
-                  from,
-                  to,
-                  currencyCode: _reportCurrencyCode,
-                );
+                    selectedCustomer,
+                    from,
+                    to,
+                    currencyCode: _reportCurrencyCode,
+                  );
           if (!mounted) return;
           setState(() {
             _topCustomers = customers;
@@ -315,23 +360,41 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             _productsPage = 0;
           });
         case 5:
-          final stats = await ref.read(reportRepositoryProvider).getQuotationStats(
-            from,
-            to,
-            currencyCode: _reportCurrencyCode,
-          );
+          final stats =
+              await ref.read(reportRepositoryProvider).getQuotationStats(
+                    from,
+                    to,
+                    currencyCode: _reportCurrencyCode,
+                  );
           if (!mounted) return;
           setState(() => _quotStats = stats);
         case 6:
-          final list = await ref.read(reportRepositoryProvider).getInvoiceStatusList(
-            from,
-            to,
-            currencyCode: _reportCurrencyCode,
-          );
+          final (ifrom, ito) = _invoiceStatusRange;
+          final list =
+              await ref.read(reportRepositoryProvider).getInvoiceStatusList(
+                    ifrom,
+                    ito,
+                    currencyCode: _reportCurrencyCode,
+                  );
           if (!mounted) return;
           setState(() {
             _invoiceList = list;
             _invoicePage = 0;
+          });
+        case 7:
+          final (dFrom, dTo) = _dailyRange;
+          final r = await Future.wait([
+            ref.read(reportRepositoryProvider).getDailyRevenueTrend(dFrom, dTo,
+                currencyCode: _reportCurrencyCode),
+            ref.read(reportRepositoryProvider).getMissingCostItemCount(
+                dFrom, dTo,
+                currencyCode: _reportCurrencyCode),
+          ]);
+          if (!mounted) return;
+          setState(() {
+            _dailyReport = r[0] as List<DailyPoint>;
+            _missingCostItemCount = r[1] as int;
+            _dailyPage = 0;
           });
       }
       if (mounted) {
@@ -345,21 +408,21 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     }
   }
 
-  Future<void> _loadCustomerStatement(String customerKey) async
-  {
-    if(!mounted) return;
+  Future<void> _loadCustomerStatement(String customerKey) async {
+    if (!mounted) return;
     setState(() {
       _statementCustomerKey = customerKey;
       _tabLoading[3] = true;
     });
     final (from, to) = _range;
     try {
-      final statements = await ref.read(reportRepositoryProvider).getCustomerStatements(
-        customerKey,
-        from,
-        to,
-        currencyCode: _reportCurrencyCode,
-      );
+      final statements =
+          await ref.read(reportRepositoryProvider).getCustomerStatements(
+                customerKey,
+                from,
+                to,
+                currencyCode: _reportCurrencyCode,
+              );
       if (!mounted) return;
       setState(() {
         _customerStatements = statements;
@@ -498,7 +561,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       _customFrom = picked.start;
       _customTo = picked.end;
     }
-    if(!mounted) return;
+    if (!mounted) return;
     setState(() {
       _preset = _DatePreset.custom;
       _loadedTabs.clear();
@@ -533,6 +596,31 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     );
   }
 
+  Future<void> _savePdf(Uint8List bytes, String filename) async {
+    String? savePath;
+    try {
+      savePath = await FilePicker.platform.saveFile(
+        dialogTitle: 'Save PDF Report',
+        fileName: filename,
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+      );
+    } catch (_) {
+      final dir = await getApplicationDocumentsDirectory();
+      savePath = '${dir.path}/$filename';
+    }
+    if (savePath == null) return; // user cancelled
+    await File(savePath).writeAsBytes(bytes);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Saved: $savePath'),
+        action: SnackBarAction(label: 'OK', onPressed: () {}),
+        duration: const Duration(seconds: 4),
+      ),
+    );
+  }
+
   // ─── Build ──────────────────────────────────────────────────────────────────
 
   static const _navItems = [
@@ -547,6 +635,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     (Icons.inventory_2_outlined, Icons.inventory_2, 'Products'),
     (Icons.request_quote_outlined, Icons.request_quote, 'Quotations'),
     (Icons.list_alt_outlined, Icons.list_alt, 'Invoice Status'),
+    (Icons.calendar_today_outlined, Icons.calendar_today, 'Daily Report'),
   ];
 
   @override
@@ -624,43 +713,45 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           ),
           _currencyScopeItem(_CurrencyScope.selected, primary),
           _currencyScopeItem(_CurrencyScope.all, primary),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Divider(height: 1, color: Color(0xFFE2E8F0)),
-          ),
-          // ── Period filter ──
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Text('PERIOD',
-                style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF94A3B8),
-                    letterSpacing: 0.8)),
-          ),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  for (final p in _DatePreset.values) _periodItem(p, primary),
-                  if (_preset == _DatePreset.custom &&
-                      _customFrom != null &&
-                      _customTo != null)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(40, 2, 16, 8),
-                      child: Text(
-                        '${_formatDate(_customFrom!)} –\n${_formatDate(_customTo!)}',
-                        style: const TextStyle(
-                            fontSize: 11,
-                            color: Color(0xFF64748B),
-                            height: 1.5),
+          if (_selectedIndex != 6 && _selectedIndex != 7) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Divider(height: 1, color: Color(0xFFE2E8F0)),
+            ),
+            // ── Period filter ──
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Text('PERIOD',
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF94A3B8),
+                      letterSpacing: 0.8)),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    for (final p in _DatePreset.values) _periodItem(p, primary),
+                    if (_preset == _DatePreset.custom &&
+                        _customFrom != null &&
+                        _customTo != null)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(40, 2, 16, 8),
+                        child: Text(
+                          '${_formatDate(_customFrom!)} –\n${_formatDate(_customTo!)}',
+                          style: const TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF64748B),
+                              height: 1.5),
+                        ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -769,6 +860,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       4 => _buildTopProducts(),
       5 => _buildQuotations(),
       6 => _buildInvoiceStatus(),
+      7 => _buildDailyReport(),
       _ => const SizedBox.shrink(),
     };
   }
@@ -948,8 +1040,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               'sold in this period have no purchase price set — profit/margin '
               'is understated for those items until a purchase price is added '
               'to the product.',
-              style:
-                  const TextStyle(fontSize: 12, color: Color(0xFF92400E)),
+              style: const TextStyle(fontSize: 12, color: Color(0xFF92400E)),
             ),
           ),
         ],
@@ -1112,14 +1203,13 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   Widget _buildBarChart() {
     final maxY = _trend
-            .map((p) =>
-                [p.billed, p.collected, p.profit].reduce((a, b) => a > b ? a : b))
+            .map((p) => [p.billed, p.collected, p.profit]
+                .reduce((a, b) => a > b ? a : b))
             .fold(0.0, (a, b) => a > b ? a : b) *
         1.2;
-    final minY = _trend
-        .map((p) => p.profit)
-        .fold(0.0, (a, b) => a < b ? a : b) *
-        (_trend.any((p) => p.profit < 0) ? 1.2 : 1.0);
+    final minY =
+        _trend.map((p) => p.profit).fold(0.0, (a, b) => a < b ? a : b) *
+            (_trend.any((p) => p.profit < 0) ? 1.2 : 1.0);
 
     final groups = _trend.asMap().entries.map((e) {
       return BarChartGroupData(
@@ -1311,11 +1401,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                         pageSize: _agedPageSize,
                         total: _aged.length,
                         onPageChange: (p) {
-                          if(!mounted) return;
+                          if (!mounted) return;
                           setState(() => _agedPage = p);
                         },
                         onSizeChange: (s) {
-                          if(!mounted) return;
+                          if (!mounted) return;
                           setState(() {
                             _agedPageSize = s;
                             _agedPage = 0;
@@ -1702,7 +1792,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       side: BorderSide(
           color: selected ? const Color(0xFF002E78) : const Color(0xFFE2E8F0)),
       onSelected: (_) {
-        if(!mounted) return;
+        if (!mounted) return;
         setState(() => _customerMode = mode);
       },
     );
@@ -1802,11 +1892,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               pageSize: _customersPageSize,
               total: _topCustomers.length,
               onPageChange: (p) {
-                if(!mounted) return;
+                if (!mounted) return;
                 setState(() => _customersPage = p);
               },
               onSizeChange: (s) {
-                if(!mounted) return;
+                if (!mounted) return;
                 setState(() {
                   _customersPageSize = s;
                   _customersPage = 0;
@@ -2192,7 +2282,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                                 children: [
                                   TextButton.icon(
                                     onPressed: () {
-                                      if(!mounted) return;
+                                      if (!mounted) return;
                                       setState(() => _rankProductsByProfit =
                                           !_rankProductsByProfit);
                                       _loadTab(4);
@@ -2208,8 +2298,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                                             : 'Rank: Revenue',
                                         style: const TextStyle(fontSize: 12)),
                                     style: TextButton.styleFrom(
-                                      foregroundColor:
-                                          const Color(0xFF64748B),
+                                      foregroundColor: const Color(0xFF64748B),
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 10, vertical: 6),
                                     ),
@@ -2218,8 +2307,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                                     final csv =
                                         ReportService.exportTopProductsCsv(
                                             _topProducts);
-                                    await _saveCsv(
-                                        csv, 'top_products_$ts.csv');
+                                    await _saveCsv(csv, 'top_products_$ts.csv');
                                   }),
                                 ],
                               ),
@@ -2227,8 +2315,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           ),
                           if (_missingCostItemCount > 0)
                             Padding(
-                              padding:
-                                  const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
                               child: _missingCostBanner(),
                             ),
                           if (_topProducts.isEmpty)
@@ -2323,11 +2410,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                               pageSize: _productsPageSize,
                               total: _topProducts.length,
                               onPageChange: (p) {
-                                if(!mounted) return;
+                                if (!mounted) return;
                                 setState(() => _productsPage = p);
                               },
                               onSizeChange: (s) {
-                                if(!mounted) return;
+                                if (!mounted) return;
                                 setState(() {
                                   _productsPageSize = s;
                                   _productsPage = 0;
@@ -2415,6 +2502,287 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   style:
                       const TextStyle(fontSize: 13, color: Color(0xFF64748B)))),
         ],
+      ),
+    );
+  }
+
+  // ─── Section: Daily Sales & Profit Report ──────────────────────────────────
+
+  Widget _buildDailyReport() {
+    final ts = DateTime.now().millisecondsSinceEpoch;
+    return SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 24),
+        child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+                constraints:
+                    const BoxConstraints(maxWidth: AppLayout.maxWidthNormal),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _sectionCard(
+                      padding: EdgeInsets.zero,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+                            child: _cardTitle(
+                              'Daily Sales & Profit',
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  _exportBtn('Export CSV', () async {
+                                    final csv =
+                                        ReportService.exportDailyReportCsv(
+                                            _dailyReport);
+                                    await _saveCsv(csv, 'daily_report_$ts.csv');
+                                  }),
+                                  const SizedBox(width: 4),
+                                  _exportBtn('Export PDF', () async {
+                                    final (from, to) = _dailyRange;
+                                    final bytes = await ReportService
+                                        .exportDailyReportPdf(
+                                      _dailyReport,
+                                      currencySymbol: _sym,
+                                      dateRangeLabel:
+                                          '${_formatDate(from)} – ${_formatDate(to)}  •  $_currencyScopeLabel',
+                                    );
+                                    await _savePdf(
+                                        bytes, 'daily_report_$ts.pdf');
+                                  }),
+                                ],
+                              ),
+                            ),
+                          ),
+                          _rangeModeSelector(
+                            mode: _dailyMode,
+                            year: _dailyYear,
+                            month: _dailyMonth,
+                            onModeChanged: (m) {
+                              if (!mounted) return;
+                              setState(() => _dailyMode = m);
+                              _loadTab(7);
+                            },
+                            onMonthChanged: (m) {
+                              if (!mounted) return;
+                              setState(() => _dailyMonth = m);
+                              _loadTab(7);
+                            },
+                            onYearChanged: (y) {
+                              if (!mounted) return;
+                              setState(() => _dailyYear = y);
+                              _loadTab(7);
+                            },
+                          ),
+                          if (_missingCostItemCount > 0)
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                              child: _missingCostBanner(),
+                            ),
+                          if (_dailyReport.isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 20),
+                              child: _emptyState('No sales in this period'),
+                            )
+                          else ...[
+                            _dailyTableHeader(),
+                            ..._dailyReport
+                                .skip(_dailyPage * _dailyPageSize)
+                                .take(_dailyPageSize)
+                                .map(_dailyRow),
+                            _buildReportPagination(
+                              currentPage: _dailyPage,
+                              pageSize: _dailyPageSize,
+                              total: _dailyReport.length,
+                              onPageChange: (p) {
+                                if (!mounted) return;
+                                setState(() => _dailyPage = p);
+                              },
+                              onSizeChange: (s) {
+                                if (!mounted) return;
+                                setState(() {
+                                  _dailyPageSize = s;
+                                  _dailyPage = 0;
+                                });
+                              },
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ))));
+  }
+
+  static const _monthNames = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+
+  Widget _rangeModeSelector({
+    required _DailyMode mode,
+    required int year,
+    required int month,
+    required ValueChanged<_DailyMode> onModeChanged,
+    required ValueChanged<int> onMonthChanged,
+    required ValueChanged<int> onYearChanged,
+  }) {
+    final now = DateTime.now();
+    final years = [for (int y = now.year; y >= now.year - 5; y--) y];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          _rangeModeChip('Last 30 days', mode == _DailyMode.last30,
+              () => onModeChanged(_DailyMode.last30)),
+          _rangeModeChip('Month & Year', mode == _DailyMode.monthYear,
+              () => onModeChanged(_DailyMode.monthYear)),
+          if (mode == _DailyMode.monthYear) ...[
+            DropdownButton<int>(
+              value: month,
+              underline: const SizedBox(),
+              items: [
+                for (int m = 1; m <= 12; m++)
+                  DropdownMenuItem(value: m, child: Text(_monthNames[m - 1])),
+              ],
+              onChanged: (m) {
+                if (m != null) onMonthChanged(m);
+              },
+            ),
+            DropdownButton<int>(
+              value: year,
+              underline: const SizedBox(),
+              items: [
+                for (final y in years)
+                  DropdownMenuItem(value: y, child: Text('$y')),
+              ],
+              onChanged: (y) {
+                if (y != null) onYearChanged(y);
+              },
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _rangeModeChip(String label, bool sel, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: sel ? const Color(0xFFEFF6FF) : Colors.transparent,
+          border: Border.all(
+              color: sel ? const Color(0xFF1D4ED8) : const Color(0xFFCBD5E1)),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(label,
+            style: TextStyle(
+                fontSize: 12,
+                fontWeight: sel ? FontWeight.w600 : FontWeight.normal,
+                color:
+                    sel ? const Color(0xFF1D4ED8) : const Color(0xFF64748B))),
+      ),
+    );
+  }
+
+  Widget _dailyTableHeader() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      color: const Color(0xFFF8FAFC),
+      child: const Row(
+        children: [
+          Expanded(flex: 2, child: _TableHead('Date')),
+          Expanded(flex: 1, child: _TableHead('Invoices', right: true)),
+          Expanded(flex: 2, child: _TableHead('Sales', right: true)),
+          Expanded(flex: 2, child: _TableHead('COGS', right: true)),
+          Expanded(flex: 2, child: _TableHead('Profit', right: true)),
+          Expanded(flex: 1, child: _TableHead('Margin', right: true)),
+        ],
+      ),
+    );
+  }
+
+  void _openDayInInvoiceStatus(String dateKey) {
+    final day = DateTime.tryParse(dateKey);
+    if (day == null || !mounted) return;
+    setState(() {
+      _selectedIndex = 6;
+      _invoiceExactDay = DateTime(day.year, day.month, day.day);
+      _invoiceFilter = _InvoiceFilter.all;
+      _invoicePage = 0;
+    });
+    _loadTab(6);
+  }
+
+  Widget _dailyRow(DailyPoint d) {
+    return InkWell(
+      onTap: () => _openDayInInvoiceStatus(d.date),
+      child: Container(
+        decoration: const BoxDecoration(
+            border: Border(top: BorderSide(color: Color(0xFFE2E8F0)))),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        child: Row(
+          children: [
+            Expanded(
+                flex: 2,
+                child: Text(_formatStoredDate(d.date),
+                    style: const TextStyle(
+                        fontSize: 13, color: Color(0xFF1E293B)))),
+            Expanded(
+                flex: 1,
+                child: Text(_fmtInt.format(d.invoiceCount),
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                        fontSize: 13, color: Color(0xFF64748B)))),
+            Expanded(
+                flex: 2,
+                child: Text(_money(d.billed),
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1D4ED8)))),
+            Expanded(
+                flex: 2,
+                child: Text(_money(d.cogs),
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                        fontSize: 13, color: Color(0xFF64748B)))),
+            Expanded(
+                flex: 2,
+                child: Text(_money(d.profit),
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: d.profit < 0
+                            ? const Color(0xFFDC2626)
+                            : const Color(0xFF16A34A)))),
+            Expanded(
+                flex: 1,
+                child: Text('${d.marginPercent.toStringAsFixed(0)}%',
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                        fontSize: 13, color: Color(0xFF64748B)))),
+          ],
+        ),
       ),
     );
   }
@@ -2509,7 +2877,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   int get _overdueCount => _invoiceList.where((r) => r.isOverdue).length;
 
   String get _invoiceStatusRangeLabel {
-    final (from, to) = _range;
+    final (from, to) = _invoiceStatusRange;
     return '${_formatDate(from)} - ${_formatDate(to)}';
   }
 
@@ -2548,6 +2916,50 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   ],
                 ),
               ),
+              if (_invoiceExactDay != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.event, size: 16, color: Color(0xFF1D4ED8)),
+                      const SizedBox(width: 6),
+                      Text('Filtered to ${_formatDate(_invoiceExactDay!)}',
+                          style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF1D4ED8))),
+                      TextButton(
+                        onPressed: () {
+                          if (!mounted) return;
+                          setState(() => _invoiceExactDay = null);
+                          _loadTab(6);
+                        },
+                        child: const Text('Clear', style: TextStyle(fontSize: 12)),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                _rangeModeSelector(
+                  mode: _invoiceDateMode,
+                  year: _invoiceYear,
+                  month: _invoiceMonth,
+                  onModeChanged: (m) {
+                    if (!mounted) return;
+                    setState(() => _invoiceDateMode = m);
+                    _loadTab(6);
+                  },
+                  onMonthChanged: (m) {
+                    if (!mounted) return;
+                    setState(() => _invoiceMonth = m);
+                    _loadTab(6);
+                  },
+                  onYearChanged: (y) {
+                    if (!mounted) return;
+                    setState(() => _invoiceYear = y);
+                    _loadTab(6);
+                  },
+                ),
               // KPI summary row
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
@@ -2637,12 +3049,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                         pageSize: _invoicePageSize,
                         total: filtered.length,
                         onPageChange: (p) {
-                          if(!mounted) return;
+                          if (!mounted) return;
                           setState(() => _invoicePage = p);
                         },
                         onSizeChange: (s) {
                           setState(() {
-                            if(!mounted) return;
+                            if (!mounted) return;
                             _invoicePageSize = s;
                             _invoicePage = 0;
                           });
@@ -2686,7 +3098,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       ),
       side: BorderSide(color: sel ? color : const Color(0xFFE2E8F0)),
       onSelected: (_) {
-        if(!mounted) return;
+        if (!mounted) return;
         setState(() {
           _invoiceFilter = f;
           _invoicePage = 0;

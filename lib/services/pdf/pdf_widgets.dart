@@ -558,9 +558,8 @@ pw.Widget buildInvoiceTable(Invoice invoice,
                   cellPaddingV: cellPaddingV),
             if (showQuantity)
               buildTableCell(
-                  item.quantity == item.quantity.roundToDouble()
-                      ? item.quantity.toInt().toString()
-                      : item.quantity.toString(),
+                  '${item.quantity == item.quantity.roundToDouble() ? item.quantity.toInt().toString() : item.quantity.toString()}'
+                  '${item.effectiveUnit.trim().isEmpty ? '' : ' ${item.effectiveUnit}'}',
                   fontSize: tableFontSize,
                   cellPaddingH: cellPaddingH,
                   cellPaddingV: cellPaddingV),

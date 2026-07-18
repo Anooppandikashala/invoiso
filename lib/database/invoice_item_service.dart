@@ -25,6 +25,8 @@ class InvoiceItemService {
       'discount_per_unit': item.discountPerUnit ? 1 : 0,
       'is_product_saved': item.isProductSaved ? 1 : 0,
       'product_type': item.product.type,
+      'product_unit': item.product.unit,
+      'unit': item.unit,
     });
   }
 
@@ -55,6 +57,7 @@ class InvoiceItemService {
                 : (map['discount'] ?? 0.0) as double,
             unitPrice: unitPrice,
             extraCost: extraCost,
+            unit: map['unit'] as String?,
             discountPerUnit: (map['discount_per_unit'] as int? ?? 0) == 1,
             isProductSaved: (map['is_product_saved'] as int? ?? 0) == 1,
           ),

@@ -67,6 +67,8 @@ class InvoiceService {
           'product_type': item.product.type,
           'product_purchase_price': item.product.purchasePrice,
           'product_alias_name': item.product.aliasName,
+          'product_unit': item.product.unit,
+          'unit': item.unit,
         });
       }
     });
@@ -143,6 +145,8 @@ class InvoiceService {
           'product_type': item.product.type,
           'product_purchase_price': item.product.purchasePrice,
           'product_alias_name': item.product.aliasName,
+          'product_unit': item.product.unit,
+          'unit': item.unit,
         });
       }
     });
@@ -323,6 +327,7 @@ class InvoiceService {
           discountPerUnit: (row['discount_per_unit'] as int? ?? 0) == 1,
           unitPrice: unitPrice,
           extraCost: extraCost,
+          unit: row['unit'] as String?,
         ));
       } catch (e, stackTrace) {
         AppLogger.e(_tag, 'Error parsing invoice item row', e, stackTrace);

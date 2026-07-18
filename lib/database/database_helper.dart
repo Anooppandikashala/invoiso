@@ -14,7 +14,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 27;
+  final dbVersion = 30;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -58,7 +58,8 @@ class DatabaseHelper {
         type TEXT DEFAULT 'product',
         default_discount REAL DEFAULT 0,
         purchase_price REAL DEFAULT 0.0,
-        alias_name TEXT
+        alias_name TEXT,
+        unit TEXT DEFAULT ''
       )
     ''');
 
@@ -108,6 +109,8 @@ class DatabaseHelper {
         product_type TEXT DEFAULT 'product',
         product_purchase_price REAL DEFAULT 0.0,
         product_alias_name TEXT,
+        product_unit TEXT DEFAULT '',
+        unit TEXT,
         PRIMARY KEY (invoice_id, product_id)
       )
     ''');
@@ -481,16 +484,34 @@ class DatabaseHelper {
       });
     }
 
-    if (oldVersion < 27) {
-      await _runMigrationStep(db, 26, 'add_alias_name_to_products', () async {
+    if (oldVersion < 30)
+    {
+      await _runMigrationStep(db, 30, 'add_alias_name_to_products', () async {
         await db.execute(
           'ALTER TABLE products ADD COLUMN alias_name TEXT',
         );
       });
       await _runMigrationStep(
-          db, 27, 'add_product_alias_name_to_invoice_items', () async {
+          db, 30, 'add_product_alias_name_to_invoice_items', () async {
         await db.execute(
           'ALTER TABLE invoice_items ADD COLUMN product_alias_name TEXT',
+        );
+      });
+      await _runMigrationStep(db, 30, 'add_unit_to_products', () async {
+        await db.execute(
+          "ALTER TABLE products ADD COLUMN unit TEXT DEFAULT ''",
+        );
+      });
+      await _runMigrationStep(
+          db, 30, 'add_product_unit_to_invoice_items', () async {
+        await db.execute(
+          "ALTER TABLE invoice_items ADD COLUMN product_unit TEXT DEFAULT ''",
+        );
+      });
+      await _runMigrationStep(db, 30, 'add_unit_override_to_invoice_items',
+          () async {
+        await db.execute(
+          'ALTER TABLE invoice_items ADD COLUMN unit TEXT',
         );
       });
     }
