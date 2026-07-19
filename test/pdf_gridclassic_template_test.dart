@@ -50,7 +50,7 @@ Invoice _sampleInvoice({
       gstin: '',
     ),
     items:List.generate(
-        20,
+        22,
         (index) => InvoiceItem(
       product: product,
       quantity: index + 1, // Example: 1, 2, 3, ..., 10
@@ -87,11 +87,14 @@ void main() {
           '',
           showQuantity: showQuantity,
           pageFormat: pageFormat,
+          showFooterBranding: true,
+          showTypeTag: false,
+          showTotalQuantity: true,
         ));
         final bytes = await doc.save();
         expect(bytes, isNotEmpty);
         final name = pageFormat == PdfPageFormat.a4 ? 'a4' : pageFormat == PdfPageFormat.a5 ? "a5" : "a6";
-        final outputPath = 'output/invoiso_grid_pdf_' + name + '.pdf';
+        final outputPath = 'output/invoiso_grid_pdf_' + name + showQuantity.toString() + '.pdf';
         final outputFile = File(outputPath);
         await outputFile.parent.create(recursive: true);
         await outputFile.writeAsBytes(await doc.save());
@@ -106,7 +109,7 @@ void main() {
       _sampleInvoice(
         discount: 10,
         discountPerUnit: true,
-        taxRate: 18,
+        taxRate: 0.18,
         taxMode: TaxMode.global,
         additionalCosts: const [AdditionalCost(label: 'Shipping', amount: 50)],
       ),
@@ -115,6 +118,8 @@ void main() {
       '',
       showDiscount: true,
       previousBalanceDue: 200,
+      showFooterBranding: true,
+      showTotalQuantity: true
     ));
     final bytes = await doc.save();
     expect(bytes, isNotEmpty);
