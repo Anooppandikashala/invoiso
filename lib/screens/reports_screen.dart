@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:invoiso/services/backend_services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:invoiso/common.dart';
@@ -95,6 +96,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   _InvoiceFilter _invoiceFilter = _InvoiceFilter.all;
   int _invoicePage = 0;
   int _invoicePageSize = 25;
+
+  bool _showFooterBranding = true;
 
   // Formatting
   final _fmt = NumberFormat('#,##0.00');
@@ -216,6 +219,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   Future<void> _loadReportSettings() async {
     final settingsRepo = ref.read(settingsRepositoryProvider);
+    final showFooterBranding = await settingsRepo.getShowInvoiceFooterBranding();
     final results = await Future.wait([
       settingsRepo.getSetting(SettingKey.currency),
       settingsRepo.getDateFormat(),
@@ -230,6 +234,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         _currencyCode = currency.code;
         _currencyName = currency.name;
         _datePattern = dateFormat.key;
+        _showFooterBranding  = showFooterBranding;
       });
     }
   }
@@ -2545,6 +2550,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                                         .exportDailyReportPdf(
                                       _dailyReport,
                                       currencySymbol: _sym,
+                                      showFooterBranding: _showFooterBranding,
                                       dateRangeLabel:
                                           '${_formatDate(from)} – ${_formatDate(to)}  •  $_currencyScopeLabel',
                                     );
