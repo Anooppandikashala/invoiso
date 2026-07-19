@@ -529,10 +529,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     final unitPriceController =
         TextEditingController(text: product.price.toString());
     final extraCostController = TextEditingController();
-    final unitController = TextEditingController();
+    final unitController = TextEditingController(text: product.unit);
 
     bool discountPerUnit = true;
-    String dialogUnit = '';
+    String dialogUnit = product.unit;
     int insertAt = invoiceItems.length + 1;
 
     showDialog(
@@ -2305,6 +2305,37 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     }
   }
 
+  /// Re-reads the selected customer's current record and overwrites the
+  /// form fields with it. The invoice keeps whatever was last saved on it
+  /// (a snapshot) until this is explicitly triggered — editing an invoice
+  /// does NOT silently pull in customer changes made elsewhere since.
+  Future<void> _refreshCustomerFromRecord() async {
+    final current = selectedCustomer;
+    if (current == null || current.id.trim().isEmpty) return;
+    final latest = await ref.read(customerRepositoryProvider).getCustomerById(current.id);
+    if (!mounted) return;
+    if (latest == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Customer record no longer exists')),
+      );
+      return;
+    }
+    if(!mounted) return;
+    setState(() {
+      selectedCustomer = latest;
+      nameController.text = latest.name;
+      emailController.text = latest.email;
+      phoneController.text = latest.phone;
+      addressController.text = latest.address;
+      gstinController.text = latest.gstin;
+      businessNameController.text = latest.businessName;
+    });
+    if(!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Customer details refreshed')),
+    );
+  }
+
   Widget _customerDetailsForm() {
     return Card(
       elevation: 3,
@@ -2360,6 +2391,24 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     ),
                   ),
                 ),
+                if (selectedCustomer != null && selectedCustomer!.id.trim().isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  Tooltip(
+                    message: 'Reload this customer\'s latest saved details '
+                        '(name, address, phone, etc.) — this invoice keeps its '
+                        'own snapshot until you refresh',
+                    child: OutlinedButton.icon(
+                      onPressed: _refreshCustomerFromRecord,
+                      icon: const Icon(Icons.refresh, size: 16),
+                      label: const Text('Refresh from Customer Record',
+                          style: TextStyle(fontSize: AppFontSize.small)),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: 16),
@@ -2684,47 +2733,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     required TextEditingController customController,
     required ValueChanged<String> onUnitChanged,
   }) {
-    final isCustom =
-        selectedUnit.isNotEmpty && !ProductUnits.presets.contains(selectedUnit);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        DropdownButtonFormField<String>(
-          value: isCustom ? 'custom' : selectedUnit,
-          decoration: InputDecoration(
-            labelText: 'Unit (override)',
-            prefixIcon: const Icon(Icons.straighten),
-            border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
-            filled: true,
-            fillColor: Colors.grey[50],
-          ),
-          items: [
-            const DropdownMenuItem(value: '', child: Text('None')),
-            for (final u in ProductUnits.presets)
-              DropdownMenuItem(value: u, child: Text(u.toUpperCase())),
-            const DropdownMenuItem(value: 'custom', child: Text('Custom…')),
-          ],
-          onChanged: (val) {
-            if (val == null) return;
-            onUnitChanged(val == 'custom' ? customController.text.trim() : val);
-          },
-        ),
-        if (isCustom) ...[
-          const SizedBox(height: 12),
-          TextField(
-            controller: customController,
-            decoration: InputDecoration(
-              labelText: 'Custom unit',
-              border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
-              filled: true,
-              fillColor: Colors.grey[50],
-            ),
-            onChanged: onUnitChanged,
-          ),
-        ],
-      ],
+    return _UnitPicker(
+      initialUnit: selectedUnit,
+      customController: customController,
+      onUnitChanged: onUnitChanged,
     );
   }
 
@@ -4379,6 +4391,88 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         _invoiceItems(tax, subtotal, total, grossSubtotal, totalDiscount),
         const SizedBox(height: 16),
         _actionButtons(),
+      ],
+    );
+  }
+}
+
+/// Unit dropdown + "Custom…" text field. Whether the custom field is shown
+/// is tracked as sticky local state (set the moment "Custom…" is picked) —
+/// NOT re-derived from the current unit string each rebuild, since that
+/// string is still empty right after picking "Custom…" and would otherwise
+/// make the field disappear before the user can type anything into it.
+class _UnitPicker extends StatefulWidget {
+  final String initialUnit;
+  final TextEditingController customController;
+  final ValueChanged<String> onUnitChanged;
+
+  const _UnitPicker({
+    required this.initialUnit,
+    required this.customController,
+    required this.onUnitChanged,
+  });
+
+  @override
+  State<_UnitPicker> createState() => _UnitPickerState();
+}
+
+class _UnitPickerState extends State<_UnitPicker> {
+  late bool _isCustom;
+  late String _presetValue;
+
+  @override
+  void initState() {
+    super.initState();
+    _isCustom = widget.initialUnit.isNotEmpty &&
+        !ProductUnits.presets.contains(widget.initialUnit);
+    _presetValue = _isCustom ? '' : widget.initialUnit;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DropdownButtonFormField<String>(
+          value: _isCustom ? 'custom' : _presetValue,
+          decoration: InputDecoration(
+            labelText: 'Unit (override)',
+            prefixIcon: const Icon(Icons.straighten),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+            filled: true,
+            fillColor: Colors.grey[50],
+          ),
+          items: [
+            const DropdownMenuItem(value: '', child: Text('None')),
+            for (final u in ProductUnits.presets)
+              DropdownMenuItem(value: u, child: Text(u.toUpperCase())),
+            const DropdownMenuItem(value: 'custom', child: Text('Custom…')),
+          ],
+          onChanged: (val) {
+            if (val == null) return;
+            setState(() {
+              _isCustom = val == 'custom';
+              _presetValue = _isCustom ? '' : val;
+            });
+            widget.onUnitChanged(
+                _isCustom ? widget.customController.text.trim() : val);
+          },
+        ),
+        if (_isCustom) ...[
+          const SizedBox(height: 12),
+          TextField(
+            controller: widget.customController,
+            decoration: InputDecoration(
+              labelText: 'Custom unit',
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+              filled: true,
+              fillColor: Colors.grey[50],
+            ),
+            onChanged: widget.onUnitChanged,
+          ),
+        ],
       ],
     );
   }

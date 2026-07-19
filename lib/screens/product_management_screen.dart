@@ -1403,51 +1403,11 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     required ValueChanged<String> onUnitChanged,
     bool readOnly = false,
   }) {
-    final isCustom =
-        selectedUnit.isNotEmpty && !ProductUnits.presets.contains(selectedUnit);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        DropdownButtonFormField<String>(
-          value: isCustom ? 'custom' : selectedUnit,
-          decoration: InputDecoration(
-            labelText: 'Unit',
-            prefixIcon: const Icon(Icons.straighten),
-            border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
-            filled: readOnly,
-            fillColor: readOnly ? Colors.grey.shade100 : null,
-          ),
-          items: [
-            const DropdownMenuItem(value: '', child: Text('None')),
-            for (final u in ProductUnits.presets)
-              DropdownMenuItem(value: u, child: Text(u.toUpperCase())),
-            const DropdownMenuItem(value: 'custom', child: Text('Custom…')),
-          ],
-          onChanged: readOnly
-              ? null
-              : (val) {
-                  if (val == null) return;
-                  onUnitChanged(
-                      val == 'custom' ? customController.text.trim() : val);
-                },
-        ),
-        if (isCustom) ...[
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: customController,
-            readOnly: readOnly,
-            decoration: InputDecoration(
-              labelText: 'Custom unit',
-              border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
-              filled: readOnly,
-              fillColor: readOnly ? Colors.grey.shade100 : null,
-            ),
-            onChanged: onUnitChanged,
-          ),
-        ],
-      ],
+    return _UnitField(
+      initialUnit: selectedUnit,
+      customController: customController,
+      onUnitChanged: onUnitChanged,
+      readOnly: readOnly,
     );
   }
 
@@ -2038,6 +1998,93 @@ class _TableHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
       child: Text(text,
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+    );
+  }
+}
+
+/// Unit dropdown + "Custom…" text field. Whether the custom field is shown
+/// is tracked as sticky local state (set the moment "Custom…" is picked) —
+/// NOT re-derived from the current unit string each rebuild, since that
+/// string is still empty right after picking "Custom…" and would otherwise
+/// make the field disappear before the user can type anything into it.
+class _UnitField extends StatefulWidget {
+  final String initialUnit;
+  final TextEditingController customController;
+  final ValueChanged<String> onUnitChanged;
+  final bool readOnly;
+
+  const _UnitField({
+    required this.initialUnit,
+    required this.customController,
+    required this.onUnitChanged,
+    this.readOnly = false,
+  });
+
+  @override
+  State<_UnitField> createState() => _UnitFieldState();
+}
+
+class _UnitFieldState extends State<_UnitField> {
+  late bool _isCustom;
+  late String _presetValue;
+
+  @override
+  void initState() {
+    super.initState();
+    _isCustom = widget.initialUnit.isNotEmpty &&
+        !ProductUnits.presets.contains(widget.initialUnit);
+    _presetValue = _isCustom ? '' : widget.initialUnit;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DropdownButtonFormField<String>(
+          value: _isCustom ? 'custom' : _presetValue,
+          decoration: InputDecoration(
+            labelText: 'Unit',
+            prefixIcon: const Icon(Icons.straighten),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+            filled: widget.readOnly,
+            fillColor: widget.readOnly ? Colors.grey.shade100 : null,
+          ),
+          items: [
+            const DropdownMenuItem(value: '', child: Text('None')),
+            for (final u in ProductUnits.presets)
+              DropdownMenuItem(value: u, child: Text(u.toUpperCase())),
+            const DropdownMenuItem(value: 'custom', child: Text('Custom…')),
+          ],
+          onChanged: widget.readOnly
+              ? null
+              : (val) {
+                  if (val == null) return;
+                  setState(() {
+                    _isCustom = val == 'custom';
+                    _presetValue = _isCustom ? '' : val;
+                  });
+                  widget.onUnitChanged(
+                      _isCustom ? widget.customController.text.trim() : val);
+                },
+        ),
+        if (_isCustom) ...[
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: widget.customController,
+            readOnly: widget.readOnly,
+            decoration: InputDecoration(
+              labelText: 'Custom unit',
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+              filled: widget.readOnly,
+              fillColor: widget.readOnly ? Colors.grey.shade100 : null,
+            ),
+            onChanged: widget.onUnitChanged,
+          ),
+        ],
+      ],
     );
   }
 }
