@@ -42,6 +42,8 @@ jobs:
           VERSION="${VERSION#v}"
           sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
           echo "Building version: $VERSION"
+          sed -i "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/constants.dart
+          echo "HEARTBEAT_URL changed"
 
       - name: Install FastForge
         run: dart pub global activate fastforge
@@ -106,6 +108,8 @@ jobs:
           VERSION="${VERSION#v}"
           sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
           echo "Building version: $VERSION"
+          sed -i "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/constants.dart
+          echo "HEARTBEAT_URL changed"
 
       - name: Install FastForge
         run: dart pub global activate fastforge
@@ -163,6 +167,8 @@ jobs:
           VERSION="${VERSION#v}"
           sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
           echo "Building version: $VERSION"
+          sed -i "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/constants.dart
+          echo "HEARTBEAT_URL changed"
 
       - name: Install FastForge
         run: dart pub global activate fastforge
@@ -251,6 +257,8 @@ jobs:
           VERSION="${VERSION#v}"
           sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
           echo "Building version: $VERSION"
+          sed -i "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/constants.dart
+          echo "HEARTBEAT_URL changed"
 
       - name: Flutter Pub Get
         run: flutter pub get
@@ -328,6 +336,8 @@ jobs:
           VERSION="${VERSION#v}"
           sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
           echo "Building version: $VERSION"
+          sed -i "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/constants.dart
+          echo "HEARTBEAT_URL changed"
 
       - name: Flutter Pub Get
         run: flutter pub get
@@ -430,6 +440,8 @@ jobs:
           VERSION="${VERSION#v}"
           sed -i '' "s/^version: .*/version: $VERSION/" pubspec.yaml
           echo "Building version: $VERSION"
+          sed -i '' "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/constants.dart
+          echo "HEARTBEAT_URL changed"
 
       - name: Install FastForge
         run: dart pub global activate fastforge

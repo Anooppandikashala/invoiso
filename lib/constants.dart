@@ -105,3 +105,7 @@ class UpdateConfig
 {
   static const enableUpdateCheck = true;
 }
+
+class AnalyticsConfig {
+  static const heartbeatUrl = "__HEARTBEAT_URL__";
+}

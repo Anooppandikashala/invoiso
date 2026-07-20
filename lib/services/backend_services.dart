@@ -1,3 +1,5 @@
+import 'package:invoiso/repositories/installation_repository.dart';
+
 import '../repositories/company_info_repository.dart';
 import '../repositories/invoice_repository.dart';
 import '../repositories/payment_repository.dart';
@@ -13,17 +15,20 @@ class BackendServices {
   static CompanyInfoRepository? _companyInfo;
   static InvoiceRepository? _invoices;
   static PaymentRepository? _payments;
+  static InstallationRepository? _installation;
 
   static void configure({
     required SettingsRepository settings,
     required CompanyInfoRepository companyInfo,
     required InvoiceRepository invoices,
     required PaymentRepository payments,
+    required InstallationRepository installation,
   }) {
     _settings = settings;
     _companyInfo = companyInfo;
     _invoices = invoices;
     _payments = payments;
+    _installation = installation;
   }
 
   static SettingsRepository get settings => _settings ??
@@ -33,5 +38,7 @@ class BackendServices {
   static InvoiceRepository get invoices => _invoices ??
       (throw StateError('BackendServices.configure() was never called.'));
   static PaymentRepository get payments => _payments ??
+      (throw StateError('BackendServices.configure() was never called.'));
+  static InstallationRepository get installation => _installation ??
       (throw StateError('BackendServices.configure() was never called.'));
 }

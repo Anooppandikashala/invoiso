@@ -55,6 +55,7 @@ enum SettingKey {
   thermalItemLayout, // 'table' | 'detailed' — how items print on thermal receipts; default 'table'
   invoiceTemplate, // used by cloud edition's generic setSetting/getSetting path
   companyLogo, // used by cloud edition's generic setSetting/getSetting path
+  installationId, // Unique identifier for this installation. Generated on first launch and persisted locally. Used for anonymous analytics and installation tracking.
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -136,6 +137,8 @@ extension SettingKeyExtension on SettingKey {
         return 'invoice_template';
       case SettingKey.companyLogo:
         return 'company_logo';
+      case SettingKey.installationId:
+        return 'installation_id';
     }
   }
 }
