@@ -29,16 +29,20 @@ Invoice _sampleInvoice({
   TaxMode taxMode = TaxMode.none,
   List<AdditionalCost> additionalCosts = const [],
 }) {
-  final product = Product(
-    id: 'p1',
-    name: 'CEMENT ACC',
-    description: '',
-    price: 370,
-    stock: 10,
-    hsncode: '2523',
-    tax_rate: taxRate.toInt(),
-  );
-  return Invoice(
+  Product getProduct()
+  {
+    final product = Product(
+      id: 'p1',
+      name: 'CEMENT ACC',
+      description: '',
+      price: 370,
+      stock: 10,
+      hsncode: '2523',
+      tax_rate: taxRate.toInt(),
+    );
+    return product;
+  }
+  Invoice inv =  Invoice(
     id: 'inv1',
     invoiceNumber: '212',
     customer: Customer(
@@ -50,9 +54,9 @@ Invoice _sampleInvoice({
       gstin: '',
     ),
     items:List.generate(
-        22,
+        350,
         (index) => InvoiceItem(
-      product: product,
+      product: getProduct(),
       quantity: index + 1, // Example: 1, 2, 3, ..., 10
       discount: discount,
       discountPerUnit: discountPerUnit,
@@ -64,6 +68,8 @@ Invoice _sampleInvoice({
     taxMode: taxMode,
     additionalCosts: additionalCosts,
   );
+
+  return inv;
 }
 
 void main() {
@@ -80,7 +86,8 @@ void main() {
           'gridClassic template renders on ${pageFormat == PdfPageFormat.a4 ? 'A4' : pageFormat == PdfPageFormat.a5 ? 'A5' : 'A6'} '
           '(showQuantity=$showQuantity)', () async {
         final doc = pw.Document();
-        doc.addPage(buildGridClassicTemplate(
+
+        pw.MultiPage w = buildGridClassicTemplate(
           _sampleInvoice(),
           _company,
           'Rs.',
@@ -90,7 +97,9 @@ void main() {
           showFooterBranding: true,
           showTypeTag: false,
           showTotalQuantity: true,
-        ));
+        );
+
+        doc.addPage(w);
         final bytes = await doc.save();
         expect(bytes, isNotEmpty);
         final name = pageFormat == PdfPageFormat.a4 ? 'a4' : pageFormat == PdfPageFormat.a5 ? "a5" : "a6";
@@ -105,22 +114,34 @@ void main() {
   test('gridClassic renders with discount, tax, additional costs and previous balance',
       () async {
     final doc = pw.Document();
-    doc.addPage(buildGridClassicTemplate(
-      _sampleInvoice(
-        discount: 10,
-        discountPerUnit: true,
-        taxRate: 0.18,
-        taxMode: TaxMode.global,
-        additionalCosts: const [AdditionalCost(label: 'Shipping', amount: 50)],
-      ),
-      _company,
-      'Rs.',
-      '',
-      showDiscount: true,
-      previousBalanceDue: 200,
-      showFooterBranding: true,
-      showTotalQuantity: true
-    ));
+    final inv = _sampleInvoice(
+      discount: 10,
+      discountPerUnit: true,
+      taxRate: 0.18,
+      taxMode: TaxMode.global,
+      additionalCosts: const [AdditionalCost(label: 'Shipping', amount: 50)],
+    );
+
+    double total = 0.0;
+    for(final p in inv.items)
+    {
+      total += p.total;
+    }
+
+    print(total);
+
+    pw.MultiPage p = buildGridClassicTemplate(
+        inv,
+        _company,
+        'Rs.',
+        '',
+        showDiscount: true,
+        previousBalanceDue: 200,
+        showFooterBranding: true,
+        showTotalQuantity: true
+    );
+
+    doc.addPage(p);
     final bytes = await doc.save();
     expect(bytes, isNotEmpty);
     final outputPath = 'output/invoiso_grid_pdf.pdf';

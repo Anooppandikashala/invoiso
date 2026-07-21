@@ -112,281 +112,316 @@ pw.MultiPage buildGridClassicTemplate(
         ),
       );
 
-  return pw.MultiPage(
-    pageFormat: pageFormat,
-    theme: pdfTheme,
-    margin: pw.EdgeInsets.symmetric(vertical: pageMarginV, horizontal: pageMarginH),
-    build: (context) => [
-      pw.Container(
-        decoration: pw.BoxDecoration(border: pw.Border.all(width: 0.5, color: borderColor)),
-        padding: pw.EdgeInsets.symmetric(vertical: innerPad),
+  pw.Widget buildInvoiceHeader() {
+    return pw.Container(
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(
+          width: 0.5,
+          color: borderColor,
+        ),
+      ),
+      padding: pw.EdgeInsets.symmetric(vertical: innerPad),
+      child: pw.Padding(
+        padding: pw.EdgeInsets.symmetric(horizontal: innerPad),
         child: pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            // ── Header + customer/invoice meta (inset from the outer border) ──
-            pw.Padding(
-              padding: pw.EdgeInsets.symmetric(horizontal: innerPad),
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  if (logoImage != null)
-                    pw.Row(
-                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                      children: [
-                        if(logoPosition == LogoPosition.left)
-                        buildCompanyLogo(logoImage, size: logoSizePx),
-                        pw.Column(
-                          mainAxisAlignment: pw.MainAxisAlignment.start,
-                          crossAxisAlignment: pw.CrossAxisAlignment.start,
-                          children: [
-                            pw.Text(company?.name ?? '',
-                                textAlign: pw.TextAlign.left,
-                                style: pw.TextStyle(
-                                    fontSize: titleFont,
-                                    fontWeight: pw.FontWeight.bold,
-                                    color: accentColor)),
-                            if ((company?.address ?? '').isNotEmpty)
-                              pw.Text(company!.address,
-                                  textAlign: pw.TextAlign.left,
-                                  style: pw.TextStyle(fontSize: subFont)),
-                            if ((company?.phone ?? '').isNotEmpty)
-                              pw.Text('Ph: ${company!.phone}',
-                                  textAlign: pw.TextAlign.left,
-                                  style: pw.TextStyle(fontSize: subFont)),
-                            if (showGst && gstin.isNotEmpty)
-                              pw.Text('$gstLabel: $gstin',
-                                  textAlign: pw.TextAlign.left,
-                                  style: pw.TextStyle(
-                                      fontSize: subFont, fontWeight: pw.FontWeight.normal)),
-                          ],
-                        ),
-                        if(logoPosition == LogoPosition.right)
-                          buildCompanyLogo(logoImage, size: logoSizePx),
-                      ]
-                    ),
-                  if (logoImage == null)
-                  pw.Center(
-                    child: pw.Column(
+            // Entire logo section
+            if (logoImage != null)
+              pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    if(logoPosition == LogoPosition.left)
+                      buildCompanyLogo(logoImage, size: logoSizePx),
+                    pw.Column(
+                      mainAxisAlignment: pw.MainAxisAlignment.start,
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
                       children: [
                         pw.Text(company?.name ?? '',
-                            textAlign: pw.TextAlign.center,
+                            textAlign: pw.TextAlign.left,
                             style: pw.TextStyle(
                                 fontSize: titleFont,
                                 fontWeight: pw.FontWeight.bold,
                                 color: accentColor)),
                         if ((company?.address ?? '').isNotEmpty)
                           pw.Text(company!.address,
-                              textAlign: pw.TextAlign.center,
+                              textAlign: pw.TextAlign.left,
                               style: pw.TextStyle(fontSize: subFont)),
                         if ((company?.phone ?? '').isNotEmpty)
                           pw.Text('Ph: ${company!.phone}',
-                              textAlign: pw.TextAlign.center,
+                              textAlign: pw.TextAlign.left,
                               style: pw.TextStyle(fontSize: subFont)),
                         if (showGst && gstin.isNotEmpty)
                           pw.Text('$gstLabel: $gstin',
-                              textAlign: pw.TextAlign.center,
+                              textAlign: pw.TextAlign.left,
                               style: pw.TextStyle(
                                   fontSize: subFont, fontWeight: pw.FontWeight.normal)),
                       ],
                     ),
-                  ),
-                  pw.SizedBox(height: 0.5 * fontScale),
-                  pw.Divider(thickness: 0.5, color: borderColor,height: 8),
-                  // pw.SizedBox(height: 0.5 * fontScale),
-                  pw.Center(
-                    child: pw.Text(invoice.type.toUpperCase() ?? '',
-                        textAlign: pw.TextAlign.left,
-                        style: pw.TextStyle(
-                            fontSize: titleFont-2,
-                            fontWeight: pw.FontWeight.bold,
-                            color: accentColor))
-                  ),
-                  pw.Row(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Expanded(
-                        flex: 4,
-                        child: pw.Column(
-                          crossAxisAlignment: pw.CrossAxisAlignment.start,
-                          children: [
-                            infoRow('Customer', invoice.customer.name),
-                            if (invoice.customer.address.isNotEmpty)
-                              pw.Padding(
-                                padding: pw.EdgeInsets.only(left: 60 * fontScale),
-                                child: pw.Text(invoice.customer.address,
-                                    style: pw.TextStyle(fontSize: labelFont)),
-                              ),
-                            if (showGst && invoice.customer.gstin.isNotEmpty)
-                              infoRow(gstLabel, invoice.customer.gstin),
-                          ],
-                        ),
-                      ),
-                      pw.Expanded(
-                        flex: 2,
-                        child: pw.Column(
-                          crossAxisAlignment: pw.CrossAxisAlignment.start,
-                          children: [
-                            infoRow('${invoice.type} No',
-                                '$invoicePrefix${invoice.invoiceNumber ?? invoice.id}'),
-                            infoRow('Date', formatPdfDate(invoice.date, datePattern)),
-                            infoRow('Time', DateFormat('HH:mm:ss').format(invoice.date)),
-                            if (invoice.dueDate != null)
-                              infoRow('Due Date', formatPdfDate(invoice.dueDate!, datePattern)),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                    if(logoPosition == LogoPosition.right)
+                      buildCompanyLogo(logoImage, size: logoSizePx),
+                  ]
               ),
+            if (logoImage == null)
+              pw.Center(
+                child: pw.Column(
+                  children: [
+                    pw.Text(company?.name ?? '',
+                        textAlign: pw.TextAlign.center,
+                        style: pw.TextStyle(
+                            fontSize: titleFont,
+                            fontWeight: pw.FontWeight.bold,
+                            color: accentColor)),
+                    if ((company?.address ?? '').isNotEmpty)
+                      pw.Text(company!.address,
+                          textAlign: pw.TextAlign.center,
+                          style: pw.TextStyle(fontSize: subFont)),
+                    if ((company?.phone ?? '').isNotEmpty)
+                      pw.Text('Ph: ${company!.phone}',
+                          textAlign: pw.TextAlign.center,
+                          style: pw.TextStyle(fontSize: subFont)),
+                    if (showGst && gstin.isNotEmpty)
+                      pw.Text('$gstLabel: $gstin',
+                          textAlign: pw.TextAlign.center,
+                          style: pw.TextStyle(
+                              fontSize: subFont, fontWeight: pw.FontWeight.normal)),
+                  ],
+                ),
+              ),
+            pw.SizedBox(height: 0.5 * fontScale),
+            pw.Divider(thickness: 0.5, color: borderColor,height: 8),
+            // pw.SizedBox(height: 0.5 * fontScale),
+            pw.Center(
+                child: pw.Text(invoice.type.toUpperCase() ?? '',
+                    textAlign: pw.TextAlign.left,
+                    style: pw.TextStyle(
+                        fontSize: titleFont-2,
+                        fontWeight: pw.FontWeight.bold,
+                        color: accentColor))
             ),
-            pw.SizedBox(height: 8 * fontScale),
-
-            // ── Item grid — flush with the outer border, same settings-driven
-            // columns as the other templates ──
-            buildInvoiceTable(
-              invoice,
-              InvoiceTemplate.gridClassic,
-              headerColor: PdfColors.grey200,
-              textColor: PdfColors.black,
-              showGst: showGst,
-              showQuantity: showQuantity,
-              showDiscount: showDiscount,
-              showTypeTag: showTypeTag,
-              showAliasName: showAliasName,
-              businessType: businessType,
-              tableFontSize: tableFontSize,
-              cellPaddingH: cellPadH,
-              cellPaddingV: cellPadV,
-              border: pw.TableBorder.all(width: 0.5, color: borderColor),
-              totalQuantityText: showTotalQuantity && showQuantity
-                  ? '${totalQty == totalQty.roundToDouble() ? totalQty.toInt() : totalQty}'
-                  : null,
-            ),
-            pw.SizedBox(height: 10 * fontScale),
-
-            // ── Notes, totals, signature, footer (inset again) ──
-            pw.Padding(
-              padding: pw.EdgeInsets.symmetric(horizontal: innerPad),
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Row(
+            pw.Row(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Expanded(
+                  flex: 4,
+                  child: pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                     children: [
-                      pw.Expanded(child: buildAdditionalNotes(invoice,fontSize: 9*fontScale)),
-                      pw.SizedBox(width: 5 * fontScale),
-                      pw.SizedBox(
-                        width: 200 * fontScale,
-                        child: pw.Column(
-                          crossAxisAlignment: pw.CrossAxisAlignment.end,
-                          children: [
-                            totalsRow(
-                                'Subtotal',
-                                '$currencySymbol ${(invoice.totalDiscount > 0 ? invoice.grossSubtotal : invoice.subtotal).toStringAsFixed(2)}'),
-                            if (invoice.totalDiscount > 0)
-                              totalsRow('Discount',
-                                  '-$currencySymbol ${invoice.totalDiscount.toStringAsFixed(2)}'),
-                            if (invoice.taxMode != TaxMode.none)
-                              totalsRow(invoiceTaxLabel(invoice),
-                                  '$currencySymbol ${invoice.tax.toStringAsFixed(2)}'),
-                            ...invoice.additionalCosts.map((c) => totalsRow(
-                                c.label.isEmpty ? 'Extra Cost' : c.label,
-                                '$currencySymbol ${c.amount.toStringAsFixed(2)}')),
-                            pw.Divider(thickness: 0.5, color: borderColor,height: 5),
-                            totalsRow('Total',
-                                '$currencySymbol ${invoice.total.toStringAsFixed(2)}',
-                                bold: true),
-                            if (hasPreviousBalance) ...[
-                              totalsRow('Previous Balance Due',
-                                  '$currencySymbol ${previousBalanceDue.toStringAsFixed(2)}'),
-                              totalsRow('Total Due',
-                                  '$currencySymbol ${(invoice.total + previousBalanceDue).toStringAsFixed(2)}',
-                                  bold: true),
-                            ],
-                            totalsRow('Round off',
-                                '$currencySymbol ${roundOff.toStringAsFixed(2)}'),
-                            pw.Divider(thickness: 0.5, color: borderColor,height: 5),
-                            totalsRow('Net Amount',
-                                '$currencySymbol ${roundedNet.toStringAsFixed(2)}',
-                                bold: true, size: netAmountFont),
-                            if (hasPaid) ...[
-                              pw.SizedBox(height: 4 * fontScale),
-                              totalsRow('Amount Paid',
-                                  '$currencySymbol ${invoice.amountPaid.toStringAsFixed(2)}'),
-                              totalsRow('Balance',
-                                  '$currencySymbol ${invoice.outstandingBalance.toStringAsFixed(2)}'),
-                            ],
-                          ],
+                      infoRow('Customer', invoice.customer.name),
+                      if (invoice.customer.address.isNotEmpty)
+                        pw.Padding(
+                          padding: pw.EdgeInsets.only(left: 60 * fontScale),
+                          child: pw.Text(invoice.customer.address,
+                              style: pw.TextStyle(fontSize: labelFont)),
                         ),
-                      ),
+                      if (showGst && invoice.customer.gstin.isNotEmpty)
+                        infoRow(gstLabel, invoice.customer.gstin),
                     ],
                   ),
-                  pw.SizedBox(height: 10 * fontScale),
+                ),
+                pw.Expanded(
+                  flex: 2,
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      infoRow('${invoice.type} No',
+                          '$invoicePrefix${invoice.invoiceNumber ?? invoice.id}'),
+                      infoRow('Date', formatPdfDate(invoice.date, datePattern)),
+                      infoRow('Time', DateFormat('HH:mm:ss').format(invoice.date)),
+                      if (invoice.dueDate != null)
+                        infoRow('Due Date', formatPdfDate(invoice.dueDate!, datePattern)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-                  // ── Amount in words ──
-                  pw.Text(AmountInWords.amount(roundedNet),
-                      style: pw.TextStyle(
-                          fontSize: labelFont - 1 , fontWeight: pw.FontWeight.normal, fontStyle: pw.FontStyle.italic)),
-
-                  if (signatureImage != null) ...[
-                    pw.SizedBox(height: 16 * fontScale),
-                    buildSignatureWidget(signatureImage, signaturePosition,
-                        imageHeight: 40 * fontScale, labelFontSize: labelFont),
+  pw.Widget buildInvoiceFooter() {
+    return pw.Container(
+      decoration: pw.BoxDecoration(
+        border: pw.Border(
+          left: pw.BorderSide(width: 0.5),
+          right: pw.BorderSide(width: 0.5),
+          bottom: pw.BorderSide(width: 0.5),
+        ),
+      ),
+      padding: pw.EdgeInsets.symmetric(horizontal: innerPad),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.SizedBox(height: 10),
+          pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Expanded(child: buildAdditionalNotes(invoice,fontSize: 9*fontScale)),
+              pw.SizedBox(width: 5 * fontScale),
+              pw.SizedBox(
+                width: 200 * fontScale,
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
+                  children: [
+                    totalsRow(
+                        'Subtotal',
+                        '$currencySymbol ${(invoice.totalDiscount > 0 ? invoice.grossSubtotal : invoice.subtotal).toStringAsFixed(2)}'),
+                    if (invoice.totalDiscount > 0)
+                      totalsRow('Discount',
+                          '-$currencySymbol ${invoice.totalDiscount.toStringAsFixed(2)}'),
+                    if (invoice.taxMode != TaxMode.none)
+                      totalsRow(invoiceTaxLabel(invoice),
+                          '$currencySymbol ${invoice.tax.toStringAsFixed(2)}'),
+                    ...invoice.additionalCosts.map((c) => totalsRow(
+                        c.label.isEmpty ? 'Extra Cost' : c.label,
+                        '$currencySymbol ${c.amount.toStringAsFixed(2)}')),
+                    pw.Divider(thickness: 0.5, color: borderColor,height: 5),
+                    totalsRow('Total',
+                        '$currencySymbol ${invoice.total.toStringAsFixed(2)}',
+                        bold: true),
+                    if (hasPreviousBalance) ...[
+                      totalsRow('Previous Balance Due',
+                          '$currencySymbol ${previousBalanceDue.toStringAsFixed(2)}'),
+                      totalsRow('Total Due',
+                          '$currencySymbol ${(invoice.total + previousBalanceDue).toStringAsFixed(2)}',
+                          bold: true),
+                    ],
+                    totalsRow('Round off',
+                        '$currencySymbol ${roundOff.toStringAsFixed(2)}'),
+                    pw.Divider(thickness: 0.5, color: borderColor,height: 5),
+                    totalsRow('Net Amount',
+                        '$currencySymbol ${roundedNet.toStringAsFixed(2)}',
+                        bold: true, size: netAmountFont),
+                    if (hasPaid) ...[
+                      pw.SizedBox(height: 4 * fontScale),
+                      totalsRow('Amount Paid',
+                          '$currencySymbol ${invoice.amountPaid.toStringAsFixed(2)}'),
+                      totalsRow('Balance',
+                          '$currencySymbol ${invoice.outstandingBalance.toStringAsFixed(2)}'),
+                    ],
                   ],
+                ),
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 10 * fontScale),
 
-                  if ((showUpiQr && upiId != null) || bankAccount != null) ...[
-                    pw.SizedBox(height: 12 * fontScale),
-                    pw.Align(
-                      alignment: pw.Alignment.centerRight,
-                      child: pw.Column(
-                        crossAxisAlignment: pw.CrossAxisAlignment.end,
-                        children: [
-                          if (showUpiQr && upiId != null)
-                            buildUpiQrSection(
-                              upiId: upiId,
-                              companyName: company?.name ?? '',
-                              amount: invoice.total,
-                              currencyCode: invoice.currencyCode,
-                              invoiceId: invoice.id,
-                              accentColor: accentColor,
-                            ),
-                          if (bankAccount != null) ...[
-                            if (showUpiQr && upiId != null) pw.SizedBox(height: 12 * fontScale),
-                            buildBankDetailsSection(
-                                bankAccount: bankAccount, accentColor: accentColor),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
+          // ── Amount in words ──
+          pw.Text(AmountInWords.amount(roundedNet),
+              style: pw.TextStyle(
+                  fontSize: labelFont - 1 , fontWeight: pw.FontWeight.normal, fontStyle: pw.FontStyle.italic)),
 
-                  if (thankYouNote.isNotEmpty) ...[
-                    pw.SizedBox(height: 12 * fontScale),
-                    pw.Center(
-                      child: pw.Text(thankYouNote,
-                          style: pw.TextStyle(
-                              fontSize: subFont,
-                              fontStyle: pw.FontStyle.italic,
-                              color: PdfColors.grey700)),
+          if (signatureImage != null) ...[
+            pw.SizedBox(height: 16 * fontScale),
+            buildSignatureWidget(signatureImage, signaturePosition,
+                imageHeight: 40 * fontScale, labelFontSize: labelFont),
+          ],
+
+          if ((showUpiQr && upiId != null) || bankAccount != null) ...[
+            pw.SizedBox(height: 12 * fontScale),
+            pw.Align(
+              alignment: pw.Alignment.centerRight,
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.end,
+                children: [
+                  if (showUpiQr && upiId != null)
+                    buildUpiQrSection(
+                      upiId: upiId,
+                      companyName: company?.name ?? '',
+                      amount: invoice.total,
+                      currencyCode: invoice.currencyCode,
+                      invoiceId: invoice.id,
+                      accentColor: accentColor,
                     ),
-                  ],
-                  if (showFooterBranding) ...[
-                    pw.SizedBox(height: 8 * fontScale),
-                    pw.Align(
-                      alignment: pw.Alignment.bottomRight,
-                      child: pw.Text('Generated by Invoiso',
-                          style: pw.TextStyle(
-                              fontSize: 7 * fontScale, color: PdfColors.grey600)),
-                    ),
+                  if (bankAccount != null) ...[
+                    if (showUpiQr && upiId != null) pw.SizedBox(height: 12 * fontScale),
+                    buildBankDetailsSection(
+                        bankAccount: bankAccount, accentColor: accentColor),
                   ],
                 ],
               ),
             ),
           ],
-        ),
+
+          if (thankYouNote.isNotEmpty) ...[
+            pw.SizedBox(height: 12 * fontScale),
+            pw.Center(
+              child: pw.Text(thankYouNote,
+                  style: pw.TextStyle(
+                      fontSize: subFont,
+                      fontStyle: pw.FontStyle.italic,
+                      color: PdfColors.grey700)),
+            ),
+          ],
+          if (showFooterBranding) ...[
+            pw.SizedBox(height: 8 * fontScale),
+            pw.Align(
+              alignment: pw.Alignment.bottomRight,
+              child: pw.Text('Generated by Invoiso',
+                  style: pw.TextStyle(
+                      fontSize: 7 * fontScale, color: PdfColors.grey600)),
+            ),
+          ],
+        ],
       ),
+    );
+  }
+
+  return pw.MultiPage(
+    pageFormat: pageFormat,
+    theme: pdfTheme,
+    margin: pw.EdgeInsets.symmetric(vertical: pageMarginV, horizontal: pageMarginH),
+    header: (context) {
+      if (context.pageNumber != 1) {
+        return pw.SizedBox(); // Remove this if you want header on every page
+      }
+      return buildInvoiceHeader();
+    },
+    footer: (context)
+    {
+      // only one page we don't need total page counters
+      if(context.pagesCount == 1)
+      {
+        return pw.SizedBox();
+      }
+      return pw.Container(
+        alignment: pw.Alignment.centerRight,
+        margin: const pw.EdgeInsets.only(top:5,bottom: 0,left: 0,right: 0),
+        child: pw.Text(
+          showFooterBranding
+              ? "Page ${context.pageNumber} of ${context.pagesCount}  -  Generated by Invoiso"
+              : "Page ${context.pageNumber} of ${context.pagesCount}",
+          style: pw.TextStyle(fontSize: (PdfLayout.footerBrandingFontSize-1) * fontScale, color: PdfColors.grey600),
+        ),
+      );
+    },
+    build: (context) => [
+      // ── Item grid — flush with the outer border, same settings-driven
+      // columns as the other templates ──
+      buildInvoiceTable(
+        invoice,
+        InvoiceTemplate.gridClassic,
+        headerColor: PdfColors.grey200,
+        textColor: PdfColors.black,
+        showGst: showGst,
+        showQuantity: showQuantity,
+        showDiscount: showDiscount,
+        showTypeTag: showTypeTag,
+        showAliasName: showAliasName,
+        businessType: businessType,
+        tableFontSize: tableFontSize,
+        cellPaddingH: cellPadH,
+        cellPaddingV: cellPadV,
+        border: pw.TableBorder.all(width: 0.5, color: borderColor),
+        totalQuantityText: showTotalQuantity && showQuantity
+            ? '${totalQty == totalQty.roundToDouble() ? totalQty.toInt() : totalQty}'
+            : null,
+      ),
+      // ── Notes, totals, signature, footer (inset again) ──
+      buildInvoiceFooter()
     ],
   );
 }
