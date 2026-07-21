@@ -16,6 +16,7 @@ pw.Page buildThermalTemplate(
   bool showGst = true,
   bool showQuantity = true,
   bool showDiscount = true,
+  bool showAliasName = false,
   String datePattern = 'dd/MM/yyyy',
   String thankYouNote = '',
   bool showFooterBranding = false,
@@ -105,7 +106,7 @@ pw.Page buildThermalTemplate(
                         style: const pw.TextStyle(fontSize: smallFs)),
                   ),
                   pw.Expanded(
-                    child: pw.Text(item.product.name,
+                    child: pw.Text(item.product.displayName(showAliasName),
                         style: pw.TextStyle(
                             fontSize: smallFs,
                             fontWeight: pw.FontWeight.bold)),
@@ -163,7 +164,7 @@ pw.Page buildThermalTemplate(
                         style: const pw.TextStyle(fontSize: smallFs)),
                   ),
                   pw.Expanded(
-                    child: pw.Text(item.product.name,
+                    child: pw.Text(item.product.displayName(showAliasName),
                         style: pw.TextStyle(fontSize: smallFs)),
                   ),
                   pw.SizedBox(

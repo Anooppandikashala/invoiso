@@ -66,6 +66,7 @@ class InvoiceService {
           'is_product_saved': item.isProductSaved ? 1 : 0,
           'product_type': item.product.type,
           'product_purchase_price': item.product.purchasePrice,
+          'product_alias_name': item.product.aliasName,
           'product_unit': item.product.unit,
           'unit': item.unit,
         });
@@ -143,6 +144,7 @@ class InvoiceService {
           'is_product_saved': item.isProductSaved ? 1 : 0,
           'product_type': item.product.type,
           'product_purchase_price': item.product.purchasePrice,
+          'product_alias_name': item.product.aliasName,
           'product_unit': item.product.unit,
           'unit': item.unit,
         });

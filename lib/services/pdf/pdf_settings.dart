@@ -14,6 +14,7 @@ class PdfGenerationSettings {
   final bool showQuantity;
   final bool showDiscount;
   final bool showTypeTag;
+  final bool showAliasName;
   final BusinessType businessType;
   final List<UpiEntry> upiEntries;
   final String? showQrStr;
@@ -63,5 +64,6 @@ class PdfGenerationSettings {
     this.thermalItemLayout = 'table',
     this.signatureBytes,
     this.signaturePosition = 'left',
+    this.showAliasName = false,
   });
 }

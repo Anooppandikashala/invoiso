@@ -1247,6 +1247,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
 
   void _addAdHocItemDialog() {
     final nameController = TextEditingController();
+    final aliasNameController = TextEditingController();
     final priceController = TextEditingController();
     final quantityController = TextEditingController();
     final discountController = TextEditingController(text: '0');
@@ -1304,6 +1305,19 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                         borderRadius:
                             BorderRadius.circular(AppBorderRadius.xsmall)),
                     prefixIcon: const Icon(Icons.label),
+                    filled: true,
+                    fillColor: Colors.grey[50],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: aliasNameController,
+                  decoration: InputDecoration(
+                    labelText: 'Alias (for PDF)',
+                    border: OutlineInputBorder(
+                        borderRadius:
+                            BorderRadius.circular(AppBorderRadius.xsmall)),
+                    prefixIcon: const Icon(Icons.translate),
                     filled: true,
                     fillColor: Colors.grey[50],
                   ),
@@ -1487,6 +1501,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   tax_rate: taxRate,
                   unit: selectedUnit.trim(),
                   type: dialogItemType,
+                  aliasName: aliasNameController.text.trim().isEmpty
+                      ? null
+                      : aliasNameController.text.trim(),
                 );
                 final extraCost = double.tryParse(extraCostController.text);
                 final item = InvoiceItem(
@@ -3238,6 +3255,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                           tax_rate: item.product.tax_rate,
                                           unit: item.product.unit,
                                           type: item.product.type,
+                                          aliasName: item.product.aliasName,
                                         );
                                         await ref.read(productRepositoryProvider).insertProduct(
                                             newProduct);

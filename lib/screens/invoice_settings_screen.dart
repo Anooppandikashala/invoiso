@@ -36,6 +36,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
   bool _showDiscount = true;
   bool _showTypeTag = true;
   bool _showPreviousBalance = false;
+  bool _showAliasNameInPdf = false;
   String? _signatureBase64;
   String _signaturePosition = 'left';
   int _invoiceCount = 0;
@@ -72,6 +73,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
       invoiceRepo.getTotalInvoiceCountIncludingTrashed(),
       settingsRepo.getSetting(SettingKey.invoiceStartingNumber),
       settingsRepo.getSetting(SettingKey.defaultTaxRate),
+      settingsRepo.getSetting(SettingKey.showAliasNameInPdf),
     ]);
 
     if (!mounted) return;
@@ -99,6 +101,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
           (results[17] as String?) ?? '1';
       defaultTaxRateController.text =
           (results[18] as String?) ?? '18';
+      _showAliasNameInPdf = (results[19] as String?) == 'true';
 
       _isLoading = false;
     });
@@ -135,6 +138,8 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
       settingsRepo.setShowTypeTag(_showTypeTag),
       settingsRepo.setShowPreviousBalance(_showPreviousBalance),
       settingsRepo.setSetting(SettingKey.signaturePosition, _signaturePosition),
+      settingsRepo.setSetting(
+          SettingKey.showAliasNameInPdf, _showAliasNameInPdf.toString()),
     ]);
 
     if (!mounted) return;
@@ -781,6 +786,39 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                   onChanged: (val) {
                                     if(!mounted) return;
                                     setState(() => _showPreviousBalance = val);
+                                  },
+                                  activeColor: Theme.of(context).primaryColor,
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 12),
+
+                            // Alias Name Toggle
+                            SizedBox(
+                              width: constraints.maxWidth,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[50],
+                                  borderRadius: BorderRadius.circular(
+                                      AppBorderRadius.xsmall),
+                                  border: Border.all(color: Colors.grey[300]!),
+                                ),
+                                child: SwitchListTile(
+                                  title: const Text('Show Alias Name in PDF'),
+                                  subtitle: const Text(
+                                    "Print a product's local-language alias (if set) instead of its actual name on PDFs",
+                                  ),
+                                  secondary: Icon(
+                                    Icons.translate_outlined,
+                                    color: _showAliasNameInPdf
+                                        ? Theme.of(context).primaryColor
+                                        : Colors.grey,
+                                  ),
+                                  value: _showAliasNameInPdf,
+                                  onChanged: (val) {
+                                    if(!mounted) return;
+                                    setState(() => _showAliasNameInPdf = val);
                                   },
                                   activeColor: Theme.of(context).primaryColor,
                                 ),

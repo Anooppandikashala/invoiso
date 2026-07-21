@@ -58,6 +58,7 @@ class DatabaseHelper {
         type TEXT DEFAULT 'product',
         default_discount REAL DEFAULT 0,
         purchase_price REAL DEFAULT 0.0,
+        alias_name TEXT,
         unit TEXT DEFAULT ''
       )
     ''');
@@ -107,6 +108,7 @@ class DatabaseHelper {
         is_product_saved INTEGER DEFAULT 0,
         product_type TEXT DEFAULT 'product',
         product_purchase_price REAL DEFAULT 0.0,
+        product_alias_name TEXT,
         product_unit TEXT DEFAULT '',
         unit TEXT,
         PRIMARY KEY (invoice_id, product_id)
@@ -481,8 +483,20 @@ class DatabaseHelper {
         );
       });
     }
+
     if (oldVersion < 30)
     {
+      await _runMigrationStep(db, 30, 'add_alias_name_to_products', () async {
+        await db.execute(
+          'ALTER TABLE products ADD COLUMN alias_name TEXT',
+        );
+      });
+      await _runMigrationStep(
+          db, 30, 'add_product_alias_name_to_invoice_items', () async {
+        await db.execute(
+          'ALTER TABLE invoice_items ADD COLUMN product_alias_name TEXT',
+        );
+      });
       await _runMigrationStep(db, 30, 'add_unit_to_products', () async {
         await db.execute(
           "ALTER TABLE products ADD COLUMN unit TEXT DEFAULT ''",
