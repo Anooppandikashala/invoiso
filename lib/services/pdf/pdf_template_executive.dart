@@ -173,6 +173,7 @@ pw.MultiPage buildExecutiveTemplate(
       pw.SizedBox(height: 15),
       buildInvoiceTable(
         invoice,
+        InvoiceTemplate.executive,
         headerColor: accentColor,
         textColor: PdfColors.white,
         showGst: showGst,

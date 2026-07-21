@@ -238,6 +238,7 @@ pw.MultiPage buildCompactTemplate(
       // ── Items Table ──
       buildInvoiceTable(
         invoice,
+        InvoiceTemplate.compact,
         headerColor: PdfColors.grey200,
         textColor: PdfColors.black,
         showGst: showGst,
@@ -249,7 +250,7 @@ pw.MultiPage buildCompactTemplate(
         cellPaddingH: cellPaddingH,
         cellPaddingV: cellPaddingV,
         totalQuantityText: showTotalQuantity && showQuantity
-            ? '${totalQty == totalQty.roundToDouble() ? totalQty.toInt() : totalQty} $qtyLabel'
+            ? '${totalQty == totalQty.roundToDouble() ? totalQty.toInt() : totalQty}'
             : null,
       ),
 

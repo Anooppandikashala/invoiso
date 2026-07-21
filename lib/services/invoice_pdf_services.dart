@@ -42,6 +42,7 @@ class InvoicePdfServices {
       }
     } catch (e) {
       if (context.mounted) {
+        print(e);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error previewing PDF: $e')),
         );

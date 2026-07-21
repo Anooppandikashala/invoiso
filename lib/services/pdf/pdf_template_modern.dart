@@ -180,6 +180,7 @@ pw.MultiPage buildModernTemplate(
       pw.Padding(
         padding: pw.EdgeInsets.symmetric(horizontal: PdfLayout.defaultHMargin),
         child: buildInvoiceTable(invoice,
+            InvoiceTemplate.modern,
             headerColor: accentColor,
             textColor: PdfColors.white,
             showGst: showGst,

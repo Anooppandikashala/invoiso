@@ -76,6 +76,11 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
       "name": "Thermal",
       "description": "Narrow receipt layout for 80mm and 58mm thermal printers",
     },
+    {
+      "template": InvoiceTemplate.gridClassic,
+      "name": "Grid Classic",
+      "description": "Old-style bordered tabular bill, for A4, A5 and A6",
+    },
   ];
 
   @override
@@ -282,6 +287,7 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
             previewedTemplate: _previewedTemplate,
             savedTemplate: _savedTemplate,
             themeColor: _activePreviewColor,
+            thermalDetailedTemplate: _previewedThermalItemLayout != "table",
           );
 
           if (isNarrow) {
@@ -328,9 +334,10 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
                 const SizedBox(height: 8),
                 _buildPageSizeSection(),
                 if (_previewedTemplate == InvoiceTemplate.compact ||
-                    _previewedTemplate == InvoiceTemplate.thermal) ...[
+                    _previewedTemplate == InvoiceTemplate.thermal ||
+                    _previewedTemplate == InvoiceTemplate.gridClassic) ...[
                   const SizedBox(height: 6),
-                  if (_previewedTemplate == InvoiceTemplate.compact)
+                  if (_previewedTemplate == InvoiceTemplate.compact || _previewedTemplate == InvoiceTemplate.gridClassic)
                     _buildTotalQuantityToggle(),
                   if (_previewedTemplate == InvoiceTemplate.thermal) ...[
                     _buildThermalItemLayoutField(),
@@ -359,13 +366,16 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
                       themeColor: _activePreviewColor,
                       isPreviewed: _previewedTemplate == template,
                       isSaved: _savedTemplate == template,
+                      thermalDetailedTemplate: _previewedThermalItemLayout != "table",
                       isDefault: index == 0,
                       isDisabled: isDisabled,
                       disabledLabel: template == InvoiceTemplate.compact
                           ? "A6 only"
                           : template == InvoiceTemplate.thermal
                               ? "Thermal only"
-                              : "Not for thermal/A6",
+                              : template == InvoiceTemplate.gridClassic
+                                  ? "A4, A5 or A6 only"
+                                  : "Not for thermal/A6",
                       onTap: () => _setPreviewedTemplate(template),
                     ),
                   );
@@ -710,6 +720,7 @@ Color _defaultThemeColor(InvoiceTemplate template) {
     InvoiceTemplate.executive => const Color(0xFF37474F),
     InvoiceTemplate.compact => const Color(0xFF000000),
     InvoiceTemplate.thermal => const Color(0xFF000000),
+    InvoiceTemplate.gridClassic => const Color(0xFF000000),
   };
 }
 
@@ -726,6 +737,7 @@ class _TemplateListTile extends StatelessWidget {
   final bool isDisabled;
   final String? disabledLabel;
   final VoidCallback onTap;
+  final bool thermalDetailedTemplate;
 
   const _TemplateListTile({
     required this.template,
@@ -738,6 +750,7 @@ class _TemplateListTile extends StatelessWidget {
     required this.onTap,
     this.isDisabled = false,
     this.disabledLabel,
+    required this.thermalDetailedTemplate
   });
 
   @override
@@ -771,6 +784,7 @@ class _TemplateListTile extends StatelessWidget {
                   themeColor: themeColor,
                   width: 64,
                   height: 74,
+                  thermalDetailedTemplate: thermalDetailedTemplate,
                 ),
               ),
               const SizedBox(width: 10),
@@ -865,12 +879,14 @@ class _PreviewPanel extends StatelessWidget {
   final InvoiceTemplate previewedTemplate;
   final InvoiceTemplate savedTemplate;
   final Color themeColor;
+  final bool thermalDetailedTemplate;
 
   const _PreviewPanel({
     required this.templates,
     required this.previewedTemplate,
     required this.savedTemplate,
     required this.themeColor,
+    required this.thermalDetailedTemplate
   });
 
   @override
@@ -973,6 +989,7 @@ class _PreviewPanel extends StatelessWidget {
                         width: 390,
                         height: 520,
                         showDetails: true,
+                        thermalDetailedTemplate: thermalDetailedTemplate,
                       ),
                     ),
                   ),
@@ -1145,6 +1162,7 @@ class _TemplatePreviewSketch extends StatelessWidget {
   final double width;
   final double height;
   final bool showDetails;
+  final bool thermalDetailedTemplate;
 
   const _TemplatePreviewSketch({
     required this.template,
@@ -1152,6 +1170,7 @@ class _TemplatePreviewSketch extends StatelessWidget {
     required this.width,
     required this.height,
     this.showDetails = false,
+    required this.thermalDetailedTemplate,
   });
 
   @override
@@ -1167,7 +1186,8 @@ class _TemplatePreviewSketch extends StatelessWidget {
         InvoiceTemplate.minimal => _minimal(),
         InvoiceTemplate.executive => _executive(),
         InvoiceTemplate.compact => _compact(),
-        InvoiceTemplate.thermal => _compact(),
+        InvoiceTemplate.thermal => _thermal(detailed: thermalDetailedTemplate),
+        InvoiceTemplate.gridClassic => _gridClassic(),
       },
     );
   }
@@ -1422,6 +1442,191 @@ class _TemplatePreviewSketch extends StatelessWidget {
         const Spacer(),
         _totals(),
       ],
+    );
+  }
+
+  Widget _gridClassic() {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: const Color(0xFF334155), width: showDetails ? 1.2 : 1),
+      ),
+      padding: EdgeInsets.all(showDetails ? 10 : 3),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Centered header block
+          _fixedLine(showDetails ? 110 : 26, height: showDetails ? 8 : 3, color: themeColor),
+          SizedBox(height: showDetails ? 5 : 2),
+          _fixedLine(showDetails ? 80 : 20, height: showDetails ? 5 : 2),
+          SizedBox(height: showDetails ? 10 : 3),
+          Container(height: 1, color: const Color(0xFF334155)),
+          SizedBox(height: showDetails ? 10 : 3),
+          // Customer (left) / invoice meta (right)
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 3,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _line(.8, height: showDetails ? 6 : 2),
+                    SizedBox(height: showDetails ? 4 : 1),
+                    _line(.55, height: showDetails ? 6 : 2),
+                  ],
+                ),
+              ),
+              SizedBox(width: showDetails ? 10 : 3),
+              Expanded(
+                flex: 2,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    _line(.9, height: showDetails ? 6 : 2),
+                    SizedBox(height: showDetails ? 4 : 1),
+                    _line(.7, height: showDetails ? 6 : 2),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: showDetails ? 10 : 3),
+          // Full-bordered item grid, with column dividers
+          Container(
+            height: showDetails ? 74 : 20,
+            decoration: BoxDecoration(
+              border: Border.all(color: const Color(0xFFCBD5E1), width: 0.6),
+            ),
+            child: Column(
+              children: [
+                Container(height: showDetails ? 16 : 4, color: const Color(0xFFE2E8F0)),
+                Expanded(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (var i = 0; i < 4; i++)
+                        Expanded(
+                          flex: i == 1 ? 3 : 1,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              border: Border(
+                                right: i < 3
+                                    ? const BorderSide(
+                                        color: Color(0xFFCBD5E1), width: 0.6)
+                                    : BorderSide.none,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: showDetails ? 10 : 3),
+          // Plain totals rows + bold net amount line
+          Align(
+            alignment: Alignment.centerRight,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                _fixedLine(showDetails ? 88 : 22, height: showDetails ? 5 : 2),
+                SizedBox(height: showDetails ? 3 : 1),
+                _fixedLine(showDetails ? 88 : 22, height: showDetails ? 5 : 2),
+                SizedBox(height: showDetails ? 5 : 1),
+                _fixedLine(showDetails ? 70 : 18,
+                    height: showDetails ? 7 : 3, color: themeColor),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _dashedLine() {
+    return Row(
+      children: List.generate(showDetails ? 24 : 12, (i) {
+        return Expanded(
+          child: Container(
+            height: 1,
+            margin: EdgeInsets.symmetric(horizontal: showDetails ? 1 : 0.5),
+            color: i.isEven ? const Color(0xFF94A3B8) : Colors.transparent,
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _thermal({bool detailed = false}) {
+    final rows = showDetails ? 20  : 5;
+    return Center(
+      child: FractionallySizedBox(
+        widthFactor: 0.62,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Centered header — narrow roll-paper look
+            _dashedLine(),
+            SizedBox(height: showDetails ? 8 : 2),
+            _fixedLine(showDetails ? 90 : 22, height: showDetails ? 7 : 3, color: themeColor),
+            SizedBox(height: showDetails ? 4 : 1),
+            _fixedLine(showDetails ? 70 : 16, height: showDetails ? 4 : 2),
+            SizedBox(height: showDetails ? 2 : 1),
+            _fixedLine(showDetails ? 60 : 14, height: showDetails ? 4 : 2),
+            SizedBox(height: showDetails ? 8 : 2),
+            _dashedLine(),
+            SizedBox(height: showDetails ? 6 : 2),
+            // Item lines — name left, price right, no grid borders
+            ...List.generate(rows, (i) => Column(
+              children: [
+                Padding(
+                  padding: EdgeInsets.only(bottom: showDetails ? 4 : 1),
+                  child: Row(
+                    children: [
+                      Expanded(child: _line(.6, height: showDetails ? 5 : 2)),
+                      SizedBox(width: showDetails ? 6 : 2),
+                      if(!detailed)
+                      _fixedLine(showDetails ? 20 : 6, height: showDetails ? 5 : 2),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.only(bottom: showDetails ? 4 : 1),
+                  child: Row(
+                    children: [
+                      if(detailed)
+                      Expanded(child: _line(0.3, height: showDetails ? 5 : 2)),
+                      SizedBox(width: showDetails ? 6 : 2),
+                      if(detailed)
+                      _fixedLine(showDetails ? 20 : 6, height: showDetails ? 5 : 2),
+                    ],
+                  ),
+                )
+
+              ],
+            )
+            ),
+            SizedBox(height: showDetails ? 2 : 1),
+            _dashedLine(),
+            SizedBox(height: showDetails ? 6 : 2),
+            // Bold total line
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _fixedLine(showDetails ? 40 : 10, height: showDetails ? 7 : 3, color: themeColor),
+                _fixedLine(showDetails ? 40 : 10, height: showDetails ? 7 : 3, color: themeColor),
+              ],
+            ),
+            SizedBox(height: showDetails ? 8 : 2),
+            _dashedLine(),
+            SizedBox(height: showDetails ? 6 : 2),
+            _fixedLine(showDetails ? 60 : 14, height: showDetails ? 4 : 2),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -5,6 +5,7 @@ enum InvoiceTemplate {
   executive,
   compact, // A6-optimized compact/receipt template
   thermal, // 80mm/58mm thermal receipt template
+  gridClassic, // Bordered grid "old style" bill, adaptive A4/A5/A6
 }
 
 class ProductUnits {
@@ -143,17 +144,23 @@ extension SettingKeyExtension on SettingKey {
   }
 }
 
-enum PageSize { a4, a6, thermal80, thermal58 }
+enum PageSize { a4, a5, a6, thermal80, thermal58 }
 
 extension InvoiceTemplatePageSizeExtension on InvoiceTemplate {
   bool supportsPageSize(PageSize pageSize) {
-    if (pageSize == PageSize.a6) {
-      return this == InvoiceTemplate.compact;
+    switch (pageSize) {
+      case PageSize.a6:
+        return this == InvoiceTemplate.compact ||
+            this == InvoiceTemplate.gridClassic;
+      case PageSize.a5:
+        return this == InvoiceTemplate.gridClassic;
+      case PageSize.thermal80:
+      case PageSize.thermal58:
+        return this == InvoiceTemplate.thermal;
+      case PageSize.a4:
+        return this != InvoiceTemplate.compact &&
+            this != InvoiceTemplate.thermal;
     }
-    if (pageSize == PageSize.thermal80 || pageSize == PageSize.thermal58) {
-      return this == InvoiceTemplate.thermal;
-    }
-    return this != InvoiceTemplate.compact && this != InvoiceTemplate.thermal;
   }
 }
 
@@ -161,6 +168,8 @@ InvoiceTemplate defaultInvoiceTemplateForPageSize(PageSize pageSize) {
   switch (pageSize) {
     case PageSize.a6:
       return InvoiceTemplate.compact;
+    case PageSize.a5:
+      return InvoiceTemplate.gridClassic;
     case PageSize.thermal80:
     case PageSize.thermal58:
       return InvoiceTemplate.thermal;
@@ -183,6 +192,8 @@ extension PageSizeExtension on PageSize {
     switch (this) {
       case PageSize.a4:
         return 'a4';
+      case PageSize.a5:
+        return 'a5';
       case PageSize.a6:
         return 'a6';
       case PageSize.thermal80:
@@ -196,6 +207,8 @@ extension PageSizeExtension on PageSize {
     switch (this) {
       case PageSize.a4:
         return 'Standard A4';
+      case PageSize.a5:
+        return 'Standard A5';
       case PageSize.a6:
         return 'Standard A6';
       case PageSize.thermal80:
@@ -207,6 +220,8 @@ extension PageSizeExtension on PageSize {
 
   static PageSize fromKey(String? key) {
     switch (key) {
+      case 'a5':
+        return PageSize.a5;
       case 'a6':
         return PageSize.a6;
       case 'thermal80':

@@ -401,6 +401,7 @@ pw.Widget pdfTotalRow(String label, String value,
 }
 
 pw.Widget buildInvoiceTable(Invoice invoice,
+    InvoiceTemplate template,
     {PdfColor headerColor = PdfColors.grey200,
     PdfColor textColor = PdfColors.black,
     bool showGst = true,
@@ -411,7 +412,8 @@ pw.Widget buildInvoiceTable(Invoice invoice,
     double tableFontSize = 10,
     double cellPaddingH = 6,
     double cellPaddingV = 8,
-    String? totalQuantityText}) {
+    String? totalQuantityText,
+    pw.TableBorder? border,}) {
   final bool showItemTax = invoice.taxMode == TaxMode.perItem;
   final String priceHeader = showQuantity ? 'Price' : 'Rate';
 
@@ -442,9 +444,10 @@ pw.Widget buildInvoiceTable(Invoice invoice,
 
   return pw.Table(
     columnWidths: colWidths,
+    border: border,
     children: [
       pw.TableRow(
-        decoration: pw.BoxDecoration(color: headerColor),
+        decoration: (template == InvoiceTemplate.gridClassic) ? null : pw.BoxDecoration(color: headerColor),
         children: [
           buildTableCell('Sl No',
               isHeader: true,
@@ -507,7 +510,7 @@ pw.Widget buildInvoiceTable(Invoice invoice,
         final index = entry.key;
         final item = entry.value;
         return pw.TableRow(
-          decoration: index % 2 == 0
+          decoration: (template == InvoiceTemplate.gridClassic) ? null : index % 2 == 0
               ? const pw.BoxDecoration(color: PdfColors.white)
               : const pw.BoxDecoration(color: PdfColors.grey100),
           children: [
@@ -586,7 +589,8 @@ pw.Widget buildInvoiceTable(Invoice invoice,
           ],
         );
       }),
-      dividerRow(),
+      if(template != InvoiceTemplate.gridClassic)
+        dividerRow(),
       if (totalQuantityText != null)
         pw.TableRow(
           children: [
@@ -630,7 +634,7 @@ pw.Widget buildInvoiceTable(Invoice invoice,
                 cellPaddingV: cellPaddingV),
           ],
         ),
-      if (totalQuantityText != null) dividerRow(),
+      if (totalQuantityText != null && template != InvoiceTemplate.gridClassic) dividerRow(),
     ],
   );
 }
@@ -654,7 +658,7 @@ pw.Widget buildTableCell(String text,
   );
 }
 
-pw.Widget buildAdditionalNotes(Invoice invoice) {
+pw.Widget buildAdditionalNotes(Invoice invoice, {double fontSize = 10}) {
   return pw.Align(
     alignment: pw.Alignment.centerLeft,
     child: pw.Text(
@@ -662,7 +666,7 @@ pw.Widget buildAdditionalNotes(Invoice invoice) {
       style: pw.TextStyle(
           fontStyle: pw.FontStyle.italic,
           fontWeight: pw.FontWeight.normal,
-          fontSize: 10,
+          fontSize: fontSize,
           color: PdfColors.grey700),
     ),
   );
