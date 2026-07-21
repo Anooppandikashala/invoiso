@@ -1,9 +1,9 @@
 import 'package:invoiso/repositories/installation_repository.dart';
 
-import '../repositories/company_info_repository.dart';
-import '../repositories/invoice_repository.dart';
-import '../repositories/payment_repository.dart';
-import '../repositories/settings_repository.dart';
+import 'package:invoiso/repositories/company_info_repository.dart';
+import 'package:invoiso/repositories/invoice_repository.dart';
+import 'package:invoiso/repositories/payment_repository.dart';
+import 'package:invoiso/repositories/settings_repository.dart';
 
 /// Non-widget service classes (PDF generation, thermal printing, exports, update
 /// checks) can't use `ref.read(...)` — they're plain static classes, not part of

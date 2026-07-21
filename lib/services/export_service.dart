@@ -6,9 +6,9 @@ import 'package:archive/archive.dart';
 import 'package:archive/archive_io.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
-import '../models/invoice.dart';
-import '../services/pdf_service.dart';
-import '../utils/formatters.dart';
+import 'package:invoiso/models/invoice.dart';
+import 'package:invoiso/services/pdf_service.dart';
+import 'package:invoiso/utils/formatters.dart';
 
 class ExportService {
   static Future<String> exportInvoicesToCsv(List<Invoice> invoices,

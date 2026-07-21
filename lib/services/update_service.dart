@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:invoiso/services/backend_services.dart';
 import 'package:http/http.dart' as http;
-import '../common.dart';
-import '../constants.dart';
+import 'package:invoiso/common.dart';
+import 'package:invoiso/constants.dart';
 
 class UpdateInfo {
   final String latestVersion;

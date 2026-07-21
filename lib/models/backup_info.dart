@@ -1,4 +1,4 @@
-import '../common.dart';
+import 'package:invoiso/common.dart';
 
 class BackupInfo {
   final String fileName;

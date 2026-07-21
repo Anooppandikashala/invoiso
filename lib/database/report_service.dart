@@ -12,7 +12,7 @@ import 'package:invoiso/services/pdf_font_service.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
-import '../constants.dart';
+import 'package:invoiso/constants.dart';
 export 'package:invoiso/models/report_models.dart';
 
 // ─── Internal row ─────────────────────────────────────────────────────────────

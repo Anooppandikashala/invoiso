@@ -13,10 +13,10 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:file_picker/file_picker.dart';
 import 'package:csv/csv.dart';
 
-import '../common.dart';
-import '../models/product.dart';
-import '../models/user.dart';
-import '../utils/formatters.dart';
+import 'package:invoiso/common.dart';
+import 'package:invoiso/models/product.dart';
+import 'package:invoiso/models/user.dart';
+import 'package:invoiso/utils/formatters.dart';
 
 class ProductManagementScreen extends ConsumerStatefulWidget {
   final User user;

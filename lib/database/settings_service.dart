@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:sqflite/sqflite.dart';
 
-import '../common.dart';
+import 'package:invoiso/common.dart';
 import 'database_helper.dart';
 
 class SettingsService {

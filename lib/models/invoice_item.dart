@@ -1,6 +1,6 @@
 import 'package:invoiso/models/product.dart';
 
-import '../domain/invoice_totals_calculator.dart';
+import 'package:invoiso/domain/invoice_totals_calculator.dart';
 
 class InvoiceItem {
   Product product;

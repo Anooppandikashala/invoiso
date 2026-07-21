@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,13 +11,13 @@ import 'package:invoiso/domain/invoice_totals_calculator.dart';
 import 'package:invoiso/providers/app_config_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:uuid/uuid.dart';
-import '../models/customer.dart';
-import '../models/invoice.dart';
-import '../models/invoice_item.dart';
-import '../models/product.dart';
-import '../models/additional_cost.dart';
-import '../services/invoice_pdf_services.dart';
-import '../services/pdf_service.dart';
+import 'package:invoiso/models/customer.dart';
+import 'package:invoiso/models/invoice.dart';
+import 'package:invoiso/models/invoice_item.dart';
+import 'package:invoiso/models/product.dart';
+import 'package:invoiso/models/additional_cost.dart';
+import 'package:invoiso/services/invoice_pdf_services.dart';
+import 'package:invoiso/services/pdf_service.dart';
 import 'package:invoiso/constants.dart';
 
 class InvoiceFormGuard {
@@ -512,7 +513,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       setState(() => isLoading = false);
       _completeInitialLoad();
       if (mounted) {
-        print(e);
+        if(kDebugMode) print(e);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error loading data: $e')),
         );

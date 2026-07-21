@@ -107,9 +107,9 @@ class ThermalPrinterService {
     final margin = int.tryParse(marginStr ?? '') ?? 1;
     final itemLayout =
         await BackendServices.settings.getSetting(SettingKey.thermalItemLayout) ?? 'table';
-    print(margin);
+    if(kDebugMode) print(margin);
     final width = (is58 ? 32 : 48) - margin;
-    print(width);
+    if(kDebugMode)  print(width);
     final profile = await CapabilityProfile.load();
     final generator = Generator(is58 ? PaperSize.mm58 : PaperSize.mm80, profile,spaceBetweenRows: 1);
     final currency = invoice.currencySymbol;
@@ -133,6 +133,7 @@ class ThermalPrinterService {
       line(text, bold: bold);
     }
 
+    /*
     void twoCol2(String left, String right, {bool bold = false}) {
       bytes += generator.row(
           [
@@ -148,10 +149,11 @@ class ThermalPrinterService {
         ),
       ]);
     }
+    */
 
     void hr() {bytes+=generator.hr();}
 
-    void hr2() => line('-' * width);
+    //void hr2() => line('-' * width);
 
     String padRight(String s, int w) =>
         s.length >= w ? s.substring(0, w) : s + ' ' * (w - s.length);

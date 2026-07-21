@@ -20,8 +20,6 @@ import 'package:open_file/open_file.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/widgets/customer_info_button.dart';
 import 'package:invoiso/utils/formatters.dart';
-// import 'package:invoiso/database/settings_service.dart';
-// import 'package:invoiso/database/payment_service.dart';
 
 class InvoiceManagementScreen extends ConsumerStatefulWidget {
   final Function(Invoice) onEditInvoice;

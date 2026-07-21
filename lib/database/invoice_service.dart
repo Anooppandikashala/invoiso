@@ -7,11 +7,11 @@ import 'package:invoiso/database/product_service.dart';
 import 'package:invoiso/models/additional_cost.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/product.dart';
-import '../models/customer.dart';
-import '../models/invoice_item.dart';
-import '../models/invoice_payment.dart';
-import '../utils/app_date.dart';
-import '../utils/app_logger.dart';
+import 'package:invoiso/models/customer.dart';
+import 'package:invoiso/models/invoice_item.dart';
+import 'package:invoiso/models/invoice_payment.dart';
+import 'package:invoiso/utils/app_date.dart';
+import 'package:invoiso/utils/app_logger.dart';
 import 'database_helper.dart';
 import 'payment_service.dart';
 

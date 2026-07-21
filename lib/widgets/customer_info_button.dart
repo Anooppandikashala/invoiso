@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/customer.dart';
+import 'package:invoiso/models/customer.dart';
 
 /// Tapping the ⓘ icon shows a clean dialog with the customer's full contact details.
 class CustomerInfoButton extends StatelessWidget {

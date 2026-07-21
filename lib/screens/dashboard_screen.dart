@@ -21,14 +21,14 @@ import 'package:invoiso/widgets/apply_payment_dialog.dart';
 import 'package:invoiso/widgets/customer_info_button.dart';
 import 'package:invoiso/utils/session_manager.dart';
 
-import '../models/user.dart';
-import 'customer_management_screen.dart';
-import '../database/database_helper.dart';
-import 'create_invoice_screen.dart';
-import 'product_management_screen.dart';
-import 'invoice_management_screen.dart';
-import 'login_screen.dart';
-import 'reports_screen.dart';
+import 'package:invoiso/models/user.dart';
+import 'package:invoiso/screens/customer_management_screen.dart';
+import 'package:invoiso/database/database_helper.dart';
+import 'package:invoiso/screens/create_invoice_screen.dart';
+import 'package:invoiso/screens/product_management_screen.dart';
+import 'package:invoiso/screens/invoice_management_screen.dart';
+import 'package:invoiso/screens/login_screen.dart';
+import 'package:invoiso/screens/reports_screen.dart';
 
 // Dashboard Screen
 class DashboardScreen extends ConsumerStatefulWidget {

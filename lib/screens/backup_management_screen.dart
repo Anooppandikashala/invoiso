@@ -1,12 +1,9 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
 import 'package:invoiso/backup/backup_manager.dart';
-
-import '../common.dart';
-import '../models/backup_info.dart';
+import 'package:invoiso/common.dart';
+import 'package:invoiso/models/backup_info.dart';
 
 class BackupManagementScreen extends StatefulWidget {
   const BackupManagementScreen({super.key});

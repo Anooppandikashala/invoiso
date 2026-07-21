@@ -9,9 +9,9 @@ import 'package:file_picker/file_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../common.dart';
-import '../models/backup_info.dart';
-import '../models/backup_results.dart';
+import 'package:invoiso/common.dart';
+import 'package:invoiso/models/backup_info.dart';
+import 'package:invoiso/models/backup_results.dart';
 
 class BackupManager {
   static const String _backupExtension = '.invoicedb';

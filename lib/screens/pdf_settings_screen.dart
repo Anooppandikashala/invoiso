@@ -5,8 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/database/settings_service.dart';
 import 'package:invoiso/providers/repositories.dart';
 
-import '../common.dart';
-import '../constants.dart';
+import 'package:invoiso/common.dart';
+import 'package:invoiso/constants.dart';
 
 class PdfSettingsScreen extends ConsumerStatefulWidget {
   final VoidCallback? onNavigateToCustomization;

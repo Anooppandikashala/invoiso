@@ -6,8 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/common.dart';
 import 'package:invoiso/providers/repositories.dart';
-
-import '../constants.dart';
+import 'package:invoiso/constants.dart';
 
 class InvoiceSettingsScreen extends ConsumerStatefulWidget {
   final VoidCallback? onNavigateToCustomization;

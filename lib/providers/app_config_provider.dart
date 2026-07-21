@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart' show WidgetBuilder, IconData;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../constants.dart';
+import 'package:invoiso/constants.dart';
 
 /// Edition-varying branding/config shared screens need to read. Each app's own
 /// main.dart overrides this provider with its own values instead of duplicating
