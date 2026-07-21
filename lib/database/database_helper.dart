@@ -14,7 +14,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 30;
+  final dbVersion = 32;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -486,17 +486,6 @@ class DatabaseHelper {
 
     if (oldVersion < 30)
     {
-      await _runMigrationStep(db, 30, 'add_alias_name_to_products', () async {
-        await db.execute(
-          'ALTER TABLE products ADD COLUMN alias_name TEXT',
-        );
-      });
-      await _runMigrationStep(
-          db, 30, 'add_product_alias_name_to_invoice_items', () async {
-        await db.execute(
-          'ALTER TABLE invoice_items ADD COLUMN product_alias_name TEXT',
-        );
-      });
       await _runMigrationStep(db, 30, 'add_unit_to_products', () async {
         await db.execute(
           "ALTER TABLE products ADD COLUMN unit TEXT DEFAULT ''",
@@ -512,6 +501,21 @@ class DatabaseHelper {
           () async {
         await db.execute(
           'ALTER TABLE invoice_items ADD COLUMN unit TEXT',
+        );
+      });
+    }
+
+    if(oldVersion < 32)
+    {
+      await _runMigrationStep(db, 32, 'add_alias_name_to_products', () async {
+        await db.execute(
+          'ALTER TABLE products ADD COLUMN alias_name TEXT',
+        );
+      });
+      await _runMigrationStep(
+          db, 32, 'add_product_alias_name_to_invoice_items', () async {
+        await db.execute(
+          'ALTER TABLE invoice_items ADD COLUMN product_alias_name TEXT',
         );
       });
     }

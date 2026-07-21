@@ -348,12 +348,16 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                       ),
                       const SizedBox(height: 16),
                     ],
-                    _buildDialogTextField(nameCtrl, 'Name', Icons.inventory_2,
+                    _buildDialogTextField(nameCtrl, 'Name (In English)', Icons.inventory_2,
                         readOnly: !isEdit, maxLength: 100),
                     const SizedBox(height: 16),
                     _buildDialogTextField(aliasNameCtrl,
-                        'Alias (for PDF)', Icons.translate,
-                        readOnly: !isEdit, maxLength: 100),
+                        'Alias Name (for invoice PDF)', Icons.translate,
+                        readOnly: !isEdit, maxLength: 100,
+                        helperText : "Alias Name is an optional local-language display name used only on PDF invoices.(You can enable this in InvoiceSettings Page)"
+                            "\n You can enter the alias in any supported language, \n"
+                            "such as Malayalam, Tamil, Kannada, Hindi, Telugu, Marathi, or others, to generate customer-friendly invoices."
+                    ),
                     const SizedBox(height: 16),
                     _buildDialogTextField(
                         hsnCodeCtrl, 'HSN Code', Icons.qr_code,
@@ -479,6 +483,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     bool isStock = false,
     bool isTaxRate = false,
     String? prefixText,
+    String? helperText
   }) {
     return TextFormField(
       controller: controller,
@@ -500,6 +505,23 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
         filled: readOnly,
         fillColor: readOnly ? Colors.grey.shade100 : null,
         counterText: '',
+          helper: helperText != null ? Tooltip(
+            message: helperText,
+            textStyle: TextStyle(fontSize: 15),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade900, // Background color
+              borderRadius: BorderRadius.circular(8),
+            ),
+            padding: const EdgeInsets.all(10),
+            child: InkWell(
+              onTap: null,
+              borderRadius: BorderRadius.circular(4),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                child: Icon(Icons.info_outline, size: 18, color: Colors.indigo[400]),
+              ),
+            ),
+          ) : null
       ),
       validator: (value) {
         if (value == null || value.trim().isEmpty) {
@@ -1288,13 +1310,13 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                 topRight: Radius.circular(16),
               ),
             ),
-            child: const Row(
+            child: Row(
               children: [
                 Icon(Icons.add_box, color: Colors.white, size: 28),
                 SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Add New Product/Service',
+                    'Add new $_newItemType',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -1332,12 +1354,16 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                     ),
                     const SizedBox(height: 16),
                   ],
-                  _buildFormField(_nameController, 'Name', Icons.inventory_2,
+                  _buildFormField(_nameController, 'Name (In English)', Icons.inventory_2,
                       maxLength: 100),
                   const SizedBox(height: 16),
                   _buildFormField(_aliasNameController,
-                      'Alias (for PDF)', Icons.translate,
-                      maxLength: 100, required: false),
+                      'Alias Name (for invoice PDF)', Icons.translate,
+                      maxLength: 100,
+                      required: false,
+                      helperText : "Alias Name is an optional local-language display name used only on PDF invoices.(You can enable this in InvoiceSettings Page)"
+                          "\n You can enter the alias in any supported language, \n"
+                          "such as Malayalam, Tamil, Kannada, Hindi, Telugu, Marathi, or others, to generate customer-friendly invoices."),
                   const SizedBox(height: 16),
                   _buildFormField(_hsnCodeController, 'HSN Code', Icons.qr_code,
                       maxLength: 100, required: false),
@@ -1446,6 +1472,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     bool isStock = false,
     bool isTaxRate = false,
     String? prefixText,
+    String? helperText,
   }) {
     return TextFormField(
       controller: controller,
@@ -1464,6 +1491,23 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
         border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         counterText: '',
+        helper: helperText != null ? Tooltip(
+          message: helperText,
+          textStyle: TextStyle(fontSize: 15),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade900, // Background color
+            borderRadius: BorderRadius.circular(8),
+          ),
+          padding: const EdgeInsets.all(10),
+          child: InkWell(
+            onTap: null,
+            borderRadius: BorderRadius.circular(4),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              child: Icon(Icons.info_outline, size: 18, color: Colors.indigo[400]),
+            ),
+          ),
+        ) : null
       ),
       validator: (value) {
         if (!required) return null;

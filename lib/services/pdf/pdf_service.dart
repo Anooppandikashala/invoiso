@@ -339,6 +339,7 @@ class PDFService {
           showQuantity: s.showQuantity,
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
+          showAliasName: s.showAliasName,
           showTotalQuantity: s.showTotalQuantity,
           businessType: s.businessType,
           bankAccount: effectiveBank,
