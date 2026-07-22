@@ -13,6 +13,7 @@ import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/services/pdf/pdf_service.dart';
 import 'package:invoiso/services/pdf/pdf_widgets.dart' show invoiceTaxLabel;
 import 'package:thermal_printer/thermal_printer.dart';
+import 'package:invoiso/constants.dart';
 
 /// Prints receipts as raw ESC/POS commands sent directly to the printer,
 /// instead of rendering a PDF and letting the OS/GDI driver rasterize it.
@@ -150,7 +151,7 @@ class ThermalPrinterService {
     // (double height) = 48 dots. Render bitmap rows to those exact heights,
     // vertically centering the glyph, so image rows match plain-text rows
     // instead of towering over them.
-    Future<void> imageLine(String text, {PosAlign align = PosAlign.left, bool bold = false, double rowHeightPx = 24}) async {
+    Future<void> imageLine(String text, {PosAlign align = PosAlign.left, bool bold = false, double rowHeightPx = PdfLayout.thermalPrinterItemFontSize}) async {
       final uiAlign = align == PosAlign.center
           ? ui.TextAlign.center
           : align == PosAlign.right
@@ -193,7 +194,7 @@ class ThermalPrinterService {
     // (charWidthPx = widthPx / width) instead of relying on padded spaces.
     Future<void> imageTableRow(
         List<(String text, int startChar, int widthChar, ui.TextAlign align)> cells,
-        {bool bold = false, double rowHeightPx = 24}) async {
+        {bool bold = false, double rowHeightPx = PdfLayout.thermalPrinterItemFontSize}) async {
       final charWidthPx = widthPx / width;
       final recorder = ui.PictureRecorder();
       final canvas = Canvas(recorder);
@@ -230,7 +231,7 @@ class ThermalPrinterService {
 
     Future<void> line(String text, {PosAlign align = PosAlign.left, bool bold = false,bool isHead = false}) {
       return hasNonLatin1(text)
-          ? imageLine(text, align: align, bold: bold, rowHeightPx: isHead ? 48 : 24)
+          ? imageLine(text, align: align, bold: bold, rowHeightPx: isHead ? PdfLayout.thermalPrinterHeadFontSize : PdfLayout.thermalPrinterItemFontSize)
           : textLine(text, align: align, bold: bold, isHead: isHead);
     }
 
@@ -372,7 +373,8 @@ class ThermalPrinterService {
             if (showItemTax)
               ('${item.product.tax_rate}%', gstStart, gstW, ui.TextAlign.right),
             (total, totalStart, totalW, ui.TextAlign.right),
-          ]);
+          ],
+          bold: true);
         } else {
           await line(singleLineRow('${i + 1}', name, qty, rate,
               showItemTax ? '${item.product.tax_rate}%' : null, total));
@@ -384,7 +386,7 @@ class ThermalPrinterService {
         }
         catch(e)
         {
-          print(e);
+          if(kDebugMode)print(e);
           await line('${i + 1} ${item.product.displayName(false)}', bold: true);
         }
         final detailParts = ['Qty:$qty', 'Rate:$rate'];
@@ -525,7 +527,7 @@ class _NetworkPrintRowState extends State<_NetworkPrintRow> {
         const SnackBar(content: Text('Sent to network printer/listener.')),
       );
     } catch (e) {
-      print(e);
+      if(kDebugMode)print(e);
       messenger?.showSnackBar(
         SnackBar(content: Text('Failed: $e')),
       );
