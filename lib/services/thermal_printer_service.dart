@@ -1,7 +1,12 @@
+import 'dart:math';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:invoiso/services/backend_services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_esc_pos_utils/flutter_esc_pos_utils.dart';
+import 'package:image/image.dart' as img;
 import 'package:intl/intl.dart';
 import 'package:invoiso/common.dart';
 import 'package:invoiso/models/invoice.dart';
@@ -98,6 +103,7 @@ class ThermalPrinterService {
         settings.showPreviousBalance ? previousBalanceDue : 0.0;
 
     final is58 = settings.pageSize == PageSize.thermal58;
+    final bool showNameAlias = await BackendServices.settings.getShowAliasNameInPdf();
 
     // Trim a few chars off the textbook 32/48 — real hardware often
     // physically clips the last column(s) on full-width lines. Adjustable
@@ -118,19 +124,120 @@ class ThermalPrinterService {
     final showItemTax = invoice.taxMode == TaxMode.perItem;
     List<int> bytes = [];
 
-    void line(String text, {PosAlign align = PosAlign.left, bool bold = false,bool isHead = false})
+    // Printer's codepage (CP437/1252 etc) can't encode most local-language
+    // scripts (Devanagari, Tamil, Arabic...) — generator.text() throws
+    // "Contains invalid characters" for them. For those lines only, render
+    // the text to a bitmap (any Unicode font Flutter can shape) and send it
+    // as an image instead; plain ASCII/Latin1 lines keep the fast text path.
+    bool hasNonLatin1(String s) => s.codeUnits.any((c) => c > 0xFF);
+
+    // Must be a multiple of 8 — flutter_esc_pos_utils' _toRasterFormat()
+    // rebuilds its byte buffer as a fixed-length list when width % 8 != 0,
+    // then keeps appending to it, throwing "Cannot add to a fixed-length list".
+    final widthPx = ((is58 ? 372 : 558) / 8).ceil() * 8;
+
+    Future<void> textLine(String text, {PosAlign align = PosAlign.left, bool bold = false,bool isHead = false})
     {
       if(isHead) {
         bytes += generator.text(text, styles: PosStyles(align: align, bold: bold,height: PosTextSize.size2,width: PosTextSize.size1,));
       } else {
         bytes += generator.text(text, styles: PosStyles(align: align, bold: bold,));
       }
+      return Future.value();
     }
 
-    void twoCol(String left, String right, {bool bold = false}) {
+    // ESC/POS Font A default row = 24 dots tall; isHead uses PosTextSize.size2
+    // (double height) = 48 dots. Render bitmap rows to those exact heights,
+    // vertically centering the glyph, so image rows match plain-text rows
+    // instead of towering over them.
+    Future<void> imageLine(String text, {PosAlign align = PosAlign.left, bool bold = false, double rowHeightPx = 24}) async {
+      final uiAlign = align == PosAlign.center
+          ? ui.TextAlign.center
+          : align == PosAlign.right
+              ? ui.TextAlign.right
+              : ui.TextAlign.left;
+      final painter = TextPainter(
+        text: TextSpan(
+          text: text,
+          style: TextStyle(
+            fontSize: rowHeightPx * 0.72,
+            height: 1.0,
+            color: Colors.black,
+            fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+        textAlign: uiAlign,
+        textDirection: ui.TextDirection.ltr,
+      )..layout(maxWidth: widthPx.toDouble());
+
+      final h = max(rowHeightPx, painter.height).ceilToDouble();
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+      canvas.drawRect(Rect.fromLTWH(0, 0, widthPx.toDouble(), h), Paint()..color = Colors.white);
+      painter.paint(canvas, Offset(0, (h - painter.height) / 2));
+      final uiImage = await recorder.endRecording().toImage(widthPx, h.ceil());
+      final byteData = await uiImage.toByteData(format: ui.ImageByteFormat.png);
+      final png = byteData!.buffer.asUint8List();
+      final decoded = img.decodePng(Uint8List.fromList(png));
+      if (decoded != null) {
+        bytes += generator.imageRaster(decoded, align: align);
+      }
+    }
+
+    // Multi-column item row (Sl/Name/Qty/Rate/[GST]/Total) rendered as one
+    // bitmap when the name has non-Latin1 chars. singleLineRow()'s space
+    // padding assumes 1 char == 1 fixed-width column, which only holds for
+    // generator.text()'s monospace font — a proportional font (needed to
+    // shape Devanagari etc) breaks that assumption and drifts columns out
+    // of alignment. Fix: give every cell its own pixel-exact column box
+    // (charWidthPx = widthPx / width) instead of relying on padded spaces.
+    Future<void> imageTableRow(
+        List<(String text, int startChar, int widthChar, ui.TextAlign align)> cells,
+        {bool bold = false, double rowHeightPx = 24}) async {
+      final charWidthPx = widthPx / width;
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+      canvas.drawRect(Rect.fromLTWH(0, 0, widthPx.toDouble(), rowHeightPx),
+          Paint()..color = Colors.white);
+      for (final cell in cells) {
+        final colWidthPx = cell.$3 * charWidthPx;
+        final painter = TextPainter(
+          text: TextSpan(
+            text: cell.$1,
+            style: TextStyle(
+              fontSize: rowHeightPx * 0.72,
+              height: 1.0,
+              color: Colors.black,
+              fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+          textAlign: cell.$4,
+          textDirection: ui.TextDirection.ltr,
+          maxLines: 1,
+          ellipsis: '…',
+        )..layout(minWidth: colWidthPx, maxWidth: colWidthPx);
+        painter.paint(
+            canvas, Offset(cell.$2 * charWidthPx, (rowHeightPx - painter.height) / 2));
+      }
+      final uiImage = await recorder.endRecording().toImage(widthPx, rowHeightPx.ceil());
+      final byteData = await uiImage.toByteData(format: ui.ImageByteFormat.png);
+      final png = byteData!.buffer.asUint8List();
+      final decoded = img.decodePng(Uint8List.fromList(png));
+      if (decoded != null) {
+        bytes += generator.imageRaster(decoded, align: PosAlign.left);
+      }
+    }
+
+    Future<void> line(String text, {PosAlign align = PosAlign.left, bool bold = false,bool isHead = false}) {
+      return hasNonLatin1(text)
+          ? imageLine(text, align: align, bold: bold, rowHeightPx: isHead ? 48 : 24)
+          : textLine(text, align: align, bold: bold, isHead: isHead);
+    }
+
+    Future<void> twoCol(String left, String right, {bool bold = false}) {
       final pad = width - left.length - right.length;
       final text = pad > 0 ? '$left${' ' * pad}$right' : '$left $right';
-      line(text, bold: bold);
+      return line(text, bold: bold);
     }
 
     /*
@@ -168,42 +275,42 @@ class ThermalPrinterService {
 
     // ── Business header ──
     if ((company?.name ?? '').isNotEmpty) {
-      line(company!.name, align: PosAlign.center, bold: true,isHead: true);
+      await line(company!.name, align: PosAlign.center, bold: true,isHead: true);
     }
     if ((company?.address ?? '').isNotEmpty) {
-      line(company!.address, align: PosAlign.center);
+      await line(company!.address, align: PosAlign.center);
     }
     if ((company?.phone ?? '').isNotEmpty) {
-      line('Ph: ${company!.phone}', align: PosAlign.center);
+      await line('Ph: ${company!.phone}', align: PosAlign.center);
     }
     if (settings.showGst && (company?.gstin ?? '').isNotEmpty) {
-      line('${taxLabel(company?.country)}: ${company!.gstin}',
+      await line('${taxLabel(company?.country)}: ${company!.gstin}',
           align: PosAlign.center);
     }
     hr();
-    line(invoice.type.toUpperCase(), align: PosAlign.center, bold: true);
+    await line(invoice.type.toUpperCase(), align: PosAlign.center, bold: true);
     hr();
 
     // ── Invoice meta ──
     final dateFormatter = DateFormat(dateFmt.key);
     final dateStr = dateFormatter.format(invoice.date);
-    twoCol('Inv No: ${settings.invoicePrefix}${invoice.invoiceNumber ?? invoice.id}',
+    await twoCol('Inv No: ${settings.invoicePrefix}${invoice.invoiceNumber ?? invoice.id}',
         'Date: $dateStr');
     if (invoice.dueDate != null) {
-      twoCol('Due:', dateFormatter.format(invoice.dueDate!));
+      await twoCol('Due:', dateFormatter.format(invoice.dueDate!));
     }
     hr();
 
     // ── Customer ──
-    line('Name: ${invoice.customer.name}', bold: true);
+    await line('Name: ${invoice.customer.name}', bold: true);
     if (invoice.customer.businessName.isNotEmpty) {
-      line(invoice.customer.businessName);
+      await line(invoice.customer.businessName);
     }
     if (invoice.customer.phone.isNotEmpty) {
-      line('Ph: ${invoice.customer.phone}');
+      await line('Ph: ${invoice.customer.phone}');
     }
     if (settings.showGst && invoice.customer.gstin.isNotEmpty) {
-      line('${taxLabel(company?.country)}: ${invoice.customer.gstin}');
+      await line('${taxLabel(company?.country)}: ${invoice.customer.gstin}');
     }
     hr();
 
@@ -230,12 +337,12 @@ class ThermalPrinterService {
     }
 
     if (useTable) {
-      line(
+      await line(
           singleLineRow('Sl', 'Description', 'Qty', 'Rate',
               showItemTax ? 'GST%' : null, 'Total'),
           bold: true);
     } else {
-      twoCol('# Item', 'Total', bold: true);
+      await twoCol('# Item', 'Total', bold: true);
     }
     hr();
     for (var i = 0; i < invoice.items.length; i++) {
@@ -247,38 +354,67 @@ class ThermalPrinterService {
       final total = item.total.toStringAsFixed(2);
 
       if (useTable) {
-        line(singleLineRow('${i + 1}', item.product.name, qty, rate,
-            showItemTax ? '${item.product.tax_rate}%' : null, total));
+        final name = item.product.displayName(showNameAlias);
+        if (hasNonLatin1(name)) {
+          int col = 0;
+          final slStart = col; col += slW + 1;
+          final nameStart = col; col += nameW + 1;
+          final qtyStart = col; col += qtyW + 1;
+          final rateStart = col; col += rateW + 1;
+          int gstStart = col;
+          if (showItemTax) col += gstW + 1;
+          final totalStart = col;
+          await imageTableRow([
+            ('${i + 1}', slStart, slW, ui.TextAlign.left),
+            (name, nameStart, nameW, ui.TextAlign.left),
+            (qty, qtyStart, qtyW, ui.TextAlign.center),
+            (rate, rateStart, rateW, ui.TextAlign.right),
+            if (showItemTax)
+              ('${item.product.tax_rate}%', gstStart, gstW, ui.TextAlign.right),
+            (total, totalStart, totalW, ui.TextAlign.right),
+          ]);
+        } else {
+          await line(singleLineRow('${i + 1}', name, qty, rate,
+              showItemTax ? '${item.product.tax_rate}%' : null, total));
+        }
       } else {
-        line('${i + 1} ${item.product.name}', bold: true);
+        try
+        {
+          await line('${i + 1} ${item.product.displayName(showNameAlias)}', bold: true);
+        }
+        catch(e)
+        {
+          print(e);
+          await line('${i + 1} ${item.product.displayName(false)}', bold: true);
+        }
         final detailParts = ['Qty:$qty', 'Rate:$rate'];
         if (showItemTax) detailParts.add('${item.product.tax_rate}%');
         detailParts.add(total);
-        line('  ${detailParts.join('  ')}');
+        await line('  ${detailParts.join('  ')}');
       }
       if (settings.showDiscount && item.totalDiscount > 0) {
-        line('  Disc: -${item.totalDiscount.toStringAsFixed(2)}');
+        await line('  Disc: -${item.totalDiscount.toStringAsFixed(2)}');
       }
     }
     hr();
 
     // ── Totals ──
     if (invoice.totalDiscount > 0) {
-      twoCol('Subtotal:', '$currency ${invoice.grossSubtotal.toStringAsFixed(2)}');
-      twoCol('Discount:', '-$currency ${invoice.totalDiscount.toStringAsFixed(2)}');
+      await twoCol('Subtotal:', '$currency ${invoice.grossSubtotal.toStringAsFixed(2)}');
+      await twoCol('Discount:', '-$currency ${invoice.totalDiscount.toStringAsFixed(2)}');
     }
     if (invoice.taxMode != TaxMode.none) {
-      twoCol(invoiceTaxLabel(invoice), '$currency ${invoice.tax.toStringAsFixed(2)}');
+      await twoCol(invoiceTaxLabel(invoice), '$currency ${invoice.tax.toStringAsFixed(2)}');
     }
     for (final c in invoice.additionalCosts) {
-      twoCol(c.label.isEmpty ? 'Extra Cost' : c.label,
+      await twoCol(c.label.isEmpty ? 'Extra Cost' : c.label,
           '$currency ${c.amount.toStringAsFixed(2)}');
     }
     if (effectivePreviousBalance > 0) {
-      twoCol('Prev Balance:',
+      await twoCol('Prev Balance:',
           '$currency ${effectivePreviousBalance.toStringAsFixed(2)}');
     }
-    twoCol(
+    await twoCol(
       'TOTAL',
       '$currency ${(invoice.total + effectivePreviousBalance).toStringAsFixed(2)}',
       bold: true,
@@ -288,22 +424,22 @@ class ThermalPrinterService {
       final isIndia = (company?.country ?? '').isEmpty ||
           company!.country.toLowerCase() == 'india';
       hr();
-      line('=== TAX SUMMARY ===', align: PosAlign.center, bold: true);
-      twoCol('Taxable Amt:', '$currency ${invoice.subtotal.toStringAsFixed(2)}');
+      await line('=== TAX SUMMARY ===', align: PosAlign.center, bold: true);
+      await twoCol('Taxable Amt:', '$currency ${invoice.subtotal.toStringAsFixed(2)}');
       if (isIndia) {
-        twoCol('SGST:', '$currency ${(invoice.tax / 2).toStringAsFixed(2)}');
-        twoCol('CGST:', '$currency ${(invoice.tax / 2).toStringAsFixed(2)}');
+        await twoCol('SGST:', '$currency ${(invoice.tax / 2).toStringAsFixed(2)}');
+        await twoCol('CGST:', '$currency ${(invoice.tax / 2).toStringAsFixed(2)}');
       }
-      twoCol('Total Tax:', '$currency ${invoice.tax.toStringAsFixed(2)}');
+      await twoCol('Total Tax:', '$currency ${invoice.tax.toStringAsFixed(2)}');
     }
 
     if (invoice.amountPaid > 0) {
       hr();
-      twoCol('Paid:', '$currency ${invoice.amountPaid.toStringAsFixed(2)}');
+      await twoCol('Paid:', '$currency ${invoice.amountPaid.toStringAsFixed(2)}');
       if (invoice.outstandingBalance <= 0) {
-        twoCol('PAID IN FULL', '', bold: true);
+        await twoCol('PAID IN FULL', '', bold: true);
       } else {
-        twoCol('Balance Due', '$currency ${invoice.outstandingBalance.toStringAsFixed(2)}',
+        await twoCol('Balance Due', '$currency ${invoice.outstandingBalance.toStringAsFixed(2)}',
             bold: true);
       }
     }
@@ -311,16 +447,16 @@ class ThermalPrinterService {
     // ── Notes ──
     if ((invoice.notes ?? '').isNotEmpty) {
       hr();
-      line(invoice.notes!);
+      await line(invoice.notes!);
     }
 
     // ── Footer ──
     hr();
     if (settings.thankYouNote.isNotEmpty) {
-      line(settings.thankYouNote, align: PosAlign.center, bold: true);
+      await line(settings.thankYouNote, align: PosAlign.center, bold: true);
     }
     if (settings.showFooterBranding) {
-      line('Generated by Invoiso', align: PosAlign.center);
+      await line('Generated by Invoiso', align: PosAlign.center);
     }
 
     // generator.cut() forces 5 blank lines internally before cutting, with
@@ -389,6 +525,7 @@ class _NetworkPrintRowState extends State<_NetworkPrintRow> {
         const SnackBar(content: Text('Sent to network printer/listener.')),
       );
     } catch (e) {
+      print(e);
       messenger?.showSnackBar(
         SnackBar(content: Text('Failed: $e')),
       );
