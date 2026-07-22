@@ -277,4 +277,10 @@ class SettingsService {
   static Future<void> setShowTotalQuantity(bool show) async {
     await setSetting(SettingKey.showTotalQuantity, show.toString());
   }
+
+  static Future<bool> getShowAliasNameInPdf() async
+  {
+    final val = await getSetting(SettingKey.showAliasNameInPdf);
+    return val == 'true';
+  }
 }

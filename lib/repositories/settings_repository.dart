@@ -44,4 +44,5 @@ abstract class SettingsRepository {
   Future<void> setDateFormat(DateFormatOption option);
   Future<PageSize> getPageSize();
   Future<void> setPageSize(PageSize size);
+  Future<bool> getShowAliasNameInPdf();
 }
