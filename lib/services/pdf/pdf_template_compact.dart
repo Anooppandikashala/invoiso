@@ -61,9 +61,9 @@ pw.MultiPage buildCompactTemplate(
   final totalQty = showTotalQuantity
       ? invoice.items.fold<double>(0, (s, i) => s + i.quantity)
       : 0.0;
-  final qtyLabel = (invoice.quantityLabel?.isNotEmpty == true)
-      ? invoice.quantityLabel!
-      : 'Qty';
+  // final qtyLabel = (invoice.quantityLabel?.isNotEmpty == true)
+  //     ? invoice.quantityLabel!
+  //     : 'Qty';
   final compactLogoSize = pageFormat == PdfPageFormat.a6
       ? logoSizePx * compactPdfLayoutStyle.logoScale
       : logoSizePx;
