@@ -187,6 +187,26 @@ Win32Window::MessageHandler(HWND hwnd,
       }
       return 0;
 
+    case WM_GETMINMAXINFO: {
+      // Without this, maximize uses the primary monitor's dimensions even
+      // when the window lives on a different monitor, so the maximized
+      // window bleeds onto adjacent monitors and over the taskbar.
+      auto* info = reinterpret_cast<MINMAXINFO*>(lparam);
+      HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+      MONITORINFO monitor_info = {sizeof(monitor_info)};
+      if (GetMonitorInfo(monitor, &monitor_info)) {
+        const RECT& work_area = monitor_info.rcWork;
+        const RECT& monitor_rect = monitor_info.rcMonitor;
+        info->ptMaxPosition.x = work_area.left - monitor_rect.left;
+        info->ptMaxPosition.y = work_area.top - monitor_rect.top;
+        info->ptMaxSize.x = work_area.right - work_area.left;
+        info->ptMaxSize.y = work_area.bottom - work_area.top;
+        info->ptMaxTrackSize.x = info->ptMaxSize.x;
+        info->ptMaxTrackSize.y = info->ptMaxSize.y;
+      }
+      return 0;
+    }
+
     case WM_DPICHANGED: {
       auto newRectSize = reinterpret_cast<RECT*>(lparam);
       LONG newWidth = newRectSize->right - newRectSize->left;
