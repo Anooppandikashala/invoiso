@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:invoiso/constants.dart';
 import 'package:invoiso/services/backend_services.dart';
 import 'package:invoiso/services/thermal_printer_service.dart';
 import 'package:invoiso/models/invoice.dart';
@@ -17,9 +18,19 @@ class InvoicePdfServices {
         if (!context.mounted) return;
         await ThermalPrinterService.printInvoice(context, invoice);
       } else {
+        if (!context.mounted) return;
+        final copies = await PDFService.askPrintCopies(context);
+        if (copies == null) return;
+        if(copies > DefaultValues.maxNumberOfPDFCopies)
+        {
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text('Error generating PDF:')));
+        }
+        if (!context.mounted) return;
         final dateFmt = await BackendServices.settings.getDateFormat();
         final pdf = await PDFService.generateInvoicePDF(invoice,
-            datePattern: dateFmt.key);
+            datePattern: dateFmt.key, copies: copies);
         await Printing.layoutPdf(
             onLayout: (PdfPageFormat format) async => pdf.save());
       }

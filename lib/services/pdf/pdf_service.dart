@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/services.dart';
 import 'package:invoiso/services/backend_services.dart';
 import 'dart:io';
 
@@ -135,8 +136,9 @@ class PDFService {
   /// Use this in batch exports to avoid redundant settings fetches per invoice.
   static pw.Document generateInvoicePDFWithSettings(
       Invoice invoice, PdfGenerationSettings s,
-      {double previousBalanceDue = 0.0}) {
+      {double previousBalanceDue = 0.0, int copies = 1}) {
     final pdf = pw.Document(theme: s.pdfTheme);
+    late final pw.Page page;
     final currencySymbol = invoice.currencySymbol;
     final effectivePreviousBalance =
         s.showPreviousBalance ? previousBalanceDue : 0.0;
@@ -167,7 +169,7 @@ class PDFService {
 
     switch (s.template) {
       case InvoiceTemplate.classic:
-        pdf.addPage(buildClassicTemplate(
+        page = buildClassicTemplate(
           invoice,
           s.company,
           currencySymbol,
@@ -193,9 +195,10 @@ class PDFService {
           previousBalanceDue: effectivePreviousBalance,
           pageFormat: s.pageFormat,
           pdfTheme: pdfTheme,
-        ));
+          copies: copies,
+        );
       case InvoiceTemplate.modern:
-        pdf.addPage(buildModernTemplate(
+        page = buildModernTemplate(
           invoice,
           s.company,
           currencySymbol,
@@ -221,9 +224,10 @@ class PDFService {
           previousBalanceDue: effectivePreviousBalance,
           pageFormat: s.pageFormat,
           pdfTheme: pdfTheme,
-        ));
+          copies: copies,
+        );
       case InvoiceTemplate.minimal:
-        pdf.addPage(buildMinimalTemplate(
+        page = buildMinimalTemplate(
           invoice,
           s.company,
           currencySymbol,
@@ -249,9 +253,10 @@ class PDFService {
           previousBalanceDue: effectivePreviousBalance,
           pageFormat: s.pageFormat,
           pdfTheme: pdfTheme,
-        ));
+          copies: copies,
+        );
       case InvoiceTemplate.executive:
-        pdf.addPage(buildExecutiveTemplate(
+        page = buildExecutiveTemplate(
           invoice,
           s.company,
           currencySymbol,
@@ -277,9 +282,10 @@ class PDFService {
           previousBalanceDue: effectivePreviousBalance,
           pageFormat: s.pageFormat,
           pdfTheme: pdfTheme,
-        ));
+          copies: copies,
+        );
       case InvoiceTemplate.compact:
-        pdf.addPage(buildCompactTemplate(
+        page = buildCompactTemplate(
           invoice,
           s.company,
           currencySymbol,
@@ -306,9 +312,10 @@ class PDFService {
           showTotalQuantity: s.showTotalQuantity,
           pageFormat: s.pageFormat,
           pdfTheme: pdfTheme,
-        ));
+          copies: copies,
+        );
       case InvoiceTemplate.thermal:
-        pdf.addPage(buildThermalTemplate(
+        page = buildThermalTemplate(
           invoice,
           s.company,
           currencySymbol,
@@ -326,9 +333,9 @@ class PDFService {
           pageSize:s.pageSize,
           pdfTheme: pdfTheme,
           itemLayout: s.thermalItemLayout,
-        ));
+        );
       case InvoiceTemplate.gridClassic:
-        pdf.addPage(buildGridClassicTemplate(
+        page = buildGridClassicTemplate(
           invoice,
           s.company,
           currencySymbol,
@@ -354,14 +361,18 @@ class PDFService {
           previousBalanceDue: effectivePreviousBalance,
           pageFormat: s.pageFormat,
           pdfTheme: pdfTheme,
+          copies: copies,
           logoPosition: s.logoPosition
-        ));
+        );
+    }
+    for (var i = 0; i < copies; i++) {
+      pdf.addPage(page);
     }
     return pdf;
   }
 
   static Future<pw.Document> generateInvoicePDF(Invoice invoice,
-      {String datePattern = 'dd/MM/yyyy'}) async {
+      {String datePattern = 'dd/MM/yyyy', int copies = 1}) async {
     final settings = await fetchPdfSettings(datePattern: datePattern);
     final previousBalanceDue = settings.showPreviousBalance
         ? await BackendServices.invoices.getPreviousBalanceDueForInvoice(invoice)
@@ -370,6 +381,7 @@ class PDFService {
       invoice,
       settings,
       previousBalanceDue: previousBalanceDue,
+      copies: copies,
     );
   }
 
@@ -440,6 +452,50 @@ class PDFService {
     return 'inv-$invoiceNumber-$fullName-$date.pdf';
   }
 
+  /// Prompts for number of copies (workaround for the Windows print dialog
+  /// burying the copies field under Printer Properties > Advanced).
+  /// Returns null if the user cancels.
+  static Future<int?> askPrintCopies(BuildContext context) {
+    int selectedCopies = 1;
+    return showDialog<int>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setState) => AlertDialog(
+          title: const Text('Number of copies'),
+          content: DropdownButtonFormField<int>(
+            value: selectedCopies,
+            decoration: const InputDecoration(
+              labelText: 'Copies',
+              border: OutlineInputBorder(),
+            ),
+            items: List.generate(
+              DefaultValues.maxNumberOfPDFCopies,
+              (index) => DropdownMenuItem(
+                value: index + 1,
+                child: Text('${index + 1}'),
+              ),
+            ),
+            onChanged: (value) {
+              if (value != null) {
+                setState(() => selectedCopies = value);
+              }
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, selectedCopies),
+              child: const Text('Print'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   static Future<void> showCenteredPDFViewer(
       BuildContext context, Uint8List pdfBytes, Invoice invoice) async {
     return showDialog(
@@ -462,13 +518,28 @@ class PDFService {
                     tooltip: 'Print',
                     onPressed: () async {
                       final template = await BackendServices.settings.getInvoiceTemplate();
-                      if (template == InvoiceTemplate.thermal) {
+                      int copies = 1;
+                      if (template != InvoiceTemplate.thermal) {
                         if (!dialogContext.mounted) return;
+                        final picked = await askPrintCopies(dialogContext);
+                        if (picked == null) return;
+                        copies = picked;
+                      }
+                      // Close the preview before printing: on Windows, the
+                      // native print dialog opening while SfPdfViewer's
+                      // texture is still live crashes the app on later close.
+                      if (!dialogContext.mounted) return;
+                      Navigator.pop(dialogContext);
+                      if (template == InvoiceTemplate.thermal) {
+                        if (!context.mounted) return;
                         await ThermalPrinterService.printInvoice(
-                            dialogContext, invoice);
+                            context, invoice);
                       } else {
+                        final dateFmt = await BackendServices.settings.getDateFormat();
+                        final pdf = await generateInvoicePDF(invoice,
+                            datePattern: dateFmt.key, copies: copies);
                         await Printing.layoutPdf(
-                            onLayout: (_) async => pdfBytes);
+                            onLayout: (_) async => pdf.save());
                       }
                     },
                   ),
