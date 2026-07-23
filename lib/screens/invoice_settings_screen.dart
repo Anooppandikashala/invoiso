@@ -343,7 +343,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
               padding: const EdgeInsets.symmetric(vertical: 28),
               child: Center(
                 child: Container(
-                  constraints: const BoxConstraints(maxWidth: 1200),
+                  constraints: const BoxConstraints(maxWidth: 900),
                   child: Card(
                     elevation: 4,
                     color: Colors.white,
@@ -491,6 +491,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                     width: fieldWidth,
                                     child: DropdownButtonFormField<String>(
                                       value: _selectedLogoPosition,
+                                      isExpanded:true,
                                       decoration: InputDecoration(
                                         labelText: 'Company Logo Position',
                                         border: OutlineInputBorder(
@@ -534,6 +535,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                     width: fieldWidth,
                                     child: DropdownButtonFormField<String>(
                                       value: _selectedLogoSize,
+                                      isExpanded:true,
                                       decoration: InputDecoration(
                                         labelText: 'Company Logo Size',
                                         border: OutlineInputBorder(
@@ -611,6 +613,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                   SizedBox(
                                     width: fieldWidth,
                                     child: DropdownButtonFormField<String>(
+                                      isExpanded: true,
                                       value: _selectedCurrencyCode,
                                       decoration: InputDecoration(
                                         labelText: 'Currency',
@@ -639,10 +642,10 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                       items: SupportedCurrencies.all.map((c) {
                                         return DropdownMenuItem<String>(
                                           value: c.code,
-                                          child: Flexible(
-                                            child: Text(
-                                              overflow: TextOverflow.ellipsis,
-                                                '${c.symbol}  ${c.name} (${c.code})'),
+                                          child: Text(
+                                            '${c.symbol}  ${c.name} (${c.code})',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
                                         );
                                       }).toList(),
@@ -659,6 +662,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                   SizedBox(
                                     width: fieldWidth,
                                     child: DropdownButtonFormField<DateFormatOption>(
+                                      isExpanded: true,
                                       value: _selectedDateFormat,
                                       decoration: InputDecoration(
                                         labelText: 'Date Format',
@@ -687,9 +691,22 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                       items: DateFormatOption.values.map((opt) {
                                         return DropdownMenuItem<DateFormatOption>(
                                           value: opt,
-                                          child: Text(opt.label),
+                                          child: Text(
+                                            opt.label,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
                                         );
                                       }).toList(),
+                                      selectedItemBuilder: (context) {
+                                        return DateFormatOption.values.map((opt) {
+                                          return Text(
+                                            opt.key,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          );
+                                        }).toList();
+                                      },
                                       onChanged: (value) {
                                         if(!mounted) return;
                                         setState(() => _selectedDateFormat = value!);
@@ -1070,6 +1087,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                               Expanded(
                                                 child: DropdownButtonFormField<String>(
                                                   value: _selectedSignatureSize,
+                                                  isExpanded:true,
                                                   decoration: InputDecoration(
                                                     labelText: 'Signature Size',
                                                     prefixIcon: const Icon(
@@ -1104,6 +1122,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                               Expanded(
                                                 child: DropdownButtonFormField<String>(
                                                   value: _signaturePosition,
+                                                  isExpanded:true,
                                                   decoration: InputDecoration(
                                                     labelText: 'Signature Position',
                                                     prefixIcon: const Icon(

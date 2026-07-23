@@ -1094,11 +1094,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           children: [
                             Icon(Icons.schedule_rounded, size: 13, color: Colors.grey[600]),
                             const SizedBox(width: 4),
-                            Text(
-                              'Delivery: ${opt.delivery}',
-                              style: TextStyle(fontSize: AppFontSize.xsmall, color: Colors.grey[600]),
+                            Expanded(
+                              child: Text(
+                                'Delivery: ${opt.delivery}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: AppFontSize.xsmall, color: Colors.grey[600]),
+                              ),
                             ),
-                            const Spacer(),
+                            const SizedBox(width: 8),
                             FilledButton(
                               style: FilledButton.styleFrom(
                                 backgroundColor: primaryColor,
