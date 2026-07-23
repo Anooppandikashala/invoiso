@@ -82,6 +82,7 @@ class PDFService {
       BackendServices.settings.getShowTotalQuantity(), // 22
       BackendServices.settings.getSetting(SettingKey.thermalItemLayout), // 23
       BackendServices.settings.getSetting(SettingKey.showAliasNameInPdf), // 24
+      BackendServices.settings.getSignatureSize(), // 25
     ]);
 
     final rawPrefix = (results[2] as String?) ?? 'INV';
@@ -121,6 +122,7 @@ class PDFService {
           themeColorHex == null ? null : PdfColor.fromHex(themeColorHex),
       signatureBytes: sigBytes,
       signaturePosition: results[19] as String,
+      signatureSizePx: signatureSizePx(results[25] as String),
       showPreviousBalance: results[20] as bool,
       pageFormat: pageSizeToFormat(pageSize),
       pageSize: pageSize,
@@ -190,6 +192,7 @@ class PDFService {
           themeColor: s.themeColor,
           signatureBytes: s.signatureBytes,
           signaturePosition: s.signaturePosition,
+          signatureSizePx: s.signatureSizePx,
           previousBalanceDue: effectivePreviousBalance,
           pageFormat: s.pageFormat,
           pdfTheme: pdfTheme,
@@ -218,6 +221,7 @@ class PDFService {
           themeColor: s.themeColor,
           signatureBytes: s.signatureBytes,
           signaturePosition: s.signaturePosition,
+          signatureSizePx: s.signatureSizePx,
           previousBalanceDue: effectivePreviousBalance,
           pageFormat: s.pageFormat,
           pdfTheme: pdfTheme,
@@ -246,6 +250,7 @@ class PDFService {
           themeColor: s.themeColor,
           signatureBytes: s.signatureBytes,
           signaturePosition: s.signaturePosition,
+          signatureSizePx: s.signatureSizePx,
           previousBalanceDue: effectivePreviousBalance,
           pageFormat: s.pageFormat,
           pdfTheme: pdfTheme,
@@ -274,6 +279,7 @@ class PDFService {
           themeColor: s.themeColor,
           signatureBytes: s.signatureBytes,
           signaturePosition: s.signaturePosition,
+          signatureSizePx: s.signatureSizePx,
           previousBalanceDue: effectivePreviousBalance,
           pageFormat: s.pageFormat,
           pdfTheme: pdfTheme,
@@ -302,6 +308,7 @@ class PDFService {
           themeColor: s.themeColor,
           signatureBytes: s.signatureBytes,
           signaturePosition: s.signaturePosition,
+          signatureSizePx: s.signatureSizePx,
           previousBalanceDue: effectivePreviousBalance,
           showTotalQuantity: s.showTotalQuantity,
           pageFormat: s.pageFormat,
@@ -351,6 +358,7 @@ class PDFService {
           themeColor: s.themeColor,
           signatureBytes: s.signatureBytes,
           signaturePosition: s.signaturePosition,
+          signatureSizePx: s.signatureSizePx,
           previousBalanceDue: effectivePreviousBalance,
           pageFormat: s.pageFormat,
           pdfTheme: pdfTheme,

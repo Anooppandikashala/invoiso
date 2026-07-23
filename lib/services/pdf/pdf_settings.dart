@@ -29,6 +29,7 @@ class PdfGenerationSettings {
   final PdfColor? themeColor;
   final Uint8List? signatureBytes;
   final String signaturePosition;
+  final double signatureSizePx;
   final bool showPreviousBalance;
   final PdfPageFormat pageFormat;
   final bool showTotalQuantity;
@@ -64,6 +65,7 @@ class PdfGenerationSettings {
     this.thermalItemLayout = 'table',
     this.signatureBytes,
     this.signaturePosition = 'left',
+    this.signatureSizePx = 50,
     this.showAliasName = false,
   });
 }

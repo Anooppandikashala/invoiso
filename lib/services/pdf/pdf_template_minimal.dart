@@ -30,6 +30,7 @@ pw.MultiPage buildMinimalTemplate(
   PdfColor? themeColor,
   Uint8List? signatureBytes,
   String signaturePosition = 'left',
+  double signatureSizePx = 50,
   double previousBalanceDue = 0.0,
   PdfPageFormat pageFormat = PdfPageFormat.a4,
   pw.ThemeData? pdfTheme,
@@ -244,7 +245,8 @@ pw.MultiPage buildMinimalTemplate(
 
       if (signatureImage != null) ...[
         pw.SizedBox(height: 16),
-        buildSignatureWidget(signatureImage, signaturePosition),
+        buildSignatureWidget(signatureImage, signaturePosition,
+            imageHeight: signatureSizePx),
       ],
 
       if (showUpiQr && upiId != null || bankAccount != null)

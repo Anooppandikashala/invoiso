@@ -30,6 +30,7 @@ pw.MultiPage buildCompactTemplate(
   PdfColor? themeColor,
   Uint8List? signatureBytes,
   String signaturePosition = 'left',
+  double signatureSizePx = 50,
   double previousBalanceDue = 0.0,
   bool showTotalQuantity = false,
   PdfPageFormat pageFormat = PdfPageFormat.a6,
@@ -279,7 +280,8 @@ pw.MultiPage buildCompactTemplate(
         buildSignatureWidget(
           signatureImage,
           signaturePosition,
-          imageHeight: compactPdfLayoutStyle.signatureImageHeight,
+          imageHeight:
+              compactPdfLayoutStyle.signatureImageHeight * (signatureSizePx / 50),
           labelGap: compactPdfLayoutStyle.signatureLabelGap,
           labelFontSize: compactPdfLayoutStyle.signatureLabelFontSize,
         ),

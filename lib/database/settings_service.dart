@@ -242,6 +242,11 @@ class SettingsService {
     return await getSetting(SettingKey.signaturePosition) ?? 'left';
   }
 
+  /// Returns the signature size key: 'small' | 'medium' | 'large'. Defaults to 'medium'.
+  static Future<String> getSignatureSize() async {
+    return await getSetting(SettingKey.signatureSize) ?? 'medium';
+  }
+
   static Future<bool> getShowPreviousBalance() async {
     final val = await getSetting(SettingKey.showPreviousBalance);
     return val == 'true';

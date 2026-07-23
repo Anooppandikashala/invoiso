@@ -39,6 +39,7 @@ pw.MultiPage buildGridClassicTemplate(
   PdfColor? themeColor,
   Uint8List? signatureBytes,
   String signaturePosition = 'right',
+  double signatureSizePx = 50,
   double previousBalanceDue = 0.0,
   PdfPageFormat pageFormat = PdfPageFormat.a4,
   pw.ThemeData? pdfTheme,
@@ -317,7 +318,8 @@ pw.MultiPage buildGridClassicTemplate(
           if (signatureImage != null) ...[
             pw.SizedBox(height: 16 * fontScale),
             buildSignatureWidget(signatureImage, signaturePosition,
-                imageHeight: 40 * fontScale, labelFontSize: labelFont),
+                imageHeight: 40 * fontScale * (signatureSizePx / 50),
+                labelFontSize: labelFont),
           ],
 
           if ((showUpiQr && upiId != null) || bankAccount != null) ...[

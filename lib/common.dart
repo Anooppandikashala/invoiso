@@ -29,7 +29,7 @@ enum SettingKey {
   showGstFields, // whether to show GST/GSTIN fields
   fractionalQuantity, // whether to allow decimal quantities (e.g. 1.5 hrs)
   quantityLabel, // default label for the Qty column (e.g. "Words", "Hours")
-  logoSize, // logo size on PDF: 'small' | 'medium' | 'large'
+  logoSize, // logo size on PDF: 'xsmall' | 'small' | 'medium' | 'large'
   businessType, // 'product' | 'service' | 'both'
   showQuantity, // whether to show quantity field (default true)
   bankAccounts, // JSON list of BankAccount objects
@@ -46,6 +46,7 @@ enum SettingKey {
   layoutBannerDismissed, // '1' once user dismisses the new-layouts discovery banner
   signatureImage, // base64-encoded signature image
   signaturePosition, // 'left' | 'right'
+  signatureSize, // signature size on PDF: 'small' | 'medium' | 'large'
   showPreviousBalance, // whether to show calculated Previous Balance Due on PDFs
   pageSize, // 'a4' | 'a6'
   showTotalQuantity, // show total quantity row in compact template footer
@@ -120,6 +121,8 @@ extension SettingKeyExtension on SettingKey {
         return 'signature_image';
       case SettingKey.signaturePosition:
         return 'signature_position';
+      case SettingKey.signatureSize:
+        return 'signature_size';
       case SettingKey.showPreviousBalance:
         return 'show_previous_balance';
       case SettingKey.pageSize:
@@ -754,4 +757,100 @@ extension LogoPositionExtension on LogoPosition {
         return 'right';
     }
   }
+}
+
+enum LogoSize { xsmall, small, medium, large }
+
+extension LogoSizeExtension on LogoSize {
+  String get key {
+    switch (this) {
+      case LogoSize.xsmall:
+        return 'xsmall';
+      case LogoSize.small:
+        return 'small';
+      case LogoSize.medium:
+        return 'medium';
+      case LogoSize.large:
+        return 'large';
+    }
+  }
+
+  String get label {
+    switch (this) {
+      case LogoSize.xsmall:
+        return 'X-Small';
+      case LogoSize.small:
+        return 'Small';
+      case LogoSize.medium:
+        return 'Medium';
+      case LogoSize.large:
+        return 'Large';
+    }
+  }
+
+  /// Logo pixel size used when rendering the company logo on PDFs.
+  double get pixelSize {
+    switch (this) {
+      case LogoSize.xsmall:
+        return 40;
+      case LogoSize.small:
+        return 60;
+      case LogoSize.medium:
+        return 90;
+      case LogoSize.large:
+        return 120;
+    }
+  }
+}
+
+LogoSize logoSizeFromKey(String? key) {
+  return LogoSize.values.firstWhere(
+    (s) => s.key == key,
+    orElse: () => LogoSize.medium,
+  );
+}
+
+enum SignatureSize { small, medium, large }
+
+extension SignatureSizeExtension on SignatureSize {
+  String get key {
+    switch (this) {
+      case SignatureSize.small:
+        return 'small';
+      case SignatureSize.medium:
+        return 'medium';
+      case SignatureSize.large:
+        return 'large';
+    }
+  }
+
+  String get label {
+    switch (this) {
+      case SignatureSize.small:
+        return 'Small';
+      case SignatureSize.medium:
+        return 'Medium';
+      case SignatureSize.large:
+        return 'Large';
+    }
+  }
+
+  /// Signature image height (px) at the current default template scale (50 = medium).
+  double get pixelHeight {
+    switch (this) {
+      case SignatureSize.small:
+        return 35;
+      case SignatureSize.medium:
+        return 50;
+      case SignatureSize.large:
+        return 70;
+    }
+  }
+}
+
+SignatureSize signatureSizeFromKey(String? key) {
+  return SignatureSize.values.firstWhere(
+    (s) => s.key == key,
+    orElse: () => SignatureSize.medium,
+  );
 }

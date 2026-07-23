@@ -38,6 +38,7 @@ abstract class SettingsRepository {
   Future<void> setSignatureImage(String base64Image);
   Future<String?> getSignatureImage();
   Future<String> getSignaturePosition();
+  Future<String> getSignatureSize();
   Future<BusinessType> getBusinessType();
   Future<void> setBusinessType(BusinessType type);
   Future<DateFormatOption> getDateFormat();

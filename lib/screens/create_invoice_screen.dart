@@ -2495,7 +2495,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     ),
                   ),
                 ],
-              ])),]
+                    ],
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             // Row 1: Customer Name | Business Name | Phone

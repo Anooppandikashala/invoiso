@@ -30,6 +30,7 @@ pw.MultiPage buildModernTemplate(
   PdfColor? themeColor,
   Uint8List? signatureBytes,
   String signaturePosition = 'left',
+  double signatureSizePx = 50,
   double previousBalanceDue = 0.0,
   PdfPageFormat pageFormat = PdfPageFormat.a4,
   pw.ThemeData? pdfTheme,
@@ -218,7 +219,8 @@ pw.MultiPage buildModernTemplate(
         pw.SizedBox(height: 16),
         pw.Padding(
           padding: pw.EdgeInsets.symmetric(horizontal: PdfLayout.defaultHMargin),
-          child: buildSignatureWidget(signatureImage, signaturePosition),
+          child: buildSignatureWidget(signatureImage, signaturePosition,
+            imageHeight: signatureSizePx),
         ),
       ],
 

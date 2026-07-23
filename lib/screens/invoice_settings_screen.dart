@@ -40,6 +40,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
   bool _showTaxButtonInInvoicePage = true;
   String? _signatureBase64;
   String _signaturePosition = 'left';
+  String _selectedSignatureSize = 'medium';
   int _invoiceCount = 0;
   bool _isLoading = true;
   bool _isSaving = false;
@@ -76,6 +77,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
       settingsRepo.getSetting(SettingKey.defaultTaxRate),
       settingsRepo.getSetting(SettingKey.showAliasNameInPdf),
       settingsRepo.getShowTaxButtonInInvoicePage(),
+      settingsRepo.getSignatureSize(),
     ]);
 
     if (!mounted) return;
@@ -105,6 +107,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
           (results[18] as String?) ?? '18';
       _showAliasNameInPdf = (results[19] as String?) == 'true';
       _showTaxButtonInInvoicePage = results[20] as bool;
+      _selectedSignatureSize = results[21] as String;
       _isLoading = false;
     });
   }
@@ -140,6 +143,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
       settingsRepo.setShowTypeTag(_showTypeTag),
       settingsRepo.setShowPreviousBalance(_showPreviousBalance),
       settingsRepo.setSetting(SettingKey.signaturePosition, _signaturePosition),
+      settingsRepo.setSetting(SettingKey.signatureSize, _selectedSignatureSize),
       settingsRepo.setSetting(
           SettingKey.showAliasNameInPdf, _showAliasNameInPdf.toString()),
       settingsRepo.setSetting(
@@ -429,13 +433,11 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                   filled: true,
                                   fillColor: Colors.grey[50],
                                 ),
-                                items: const [
-                                  DropdownMenuItem(
-                                      value: 'small', child: Text('Small')),
-                                  DropdownMenuItem(
-                                      value: 'medium', child: Text('Medium')),
-                                  DropdownMenuItem(
-                                      value: 'large', child: Text('Large')),
+                                items: [
+                                  for (final size in LogoSize.values)
+                                    DropdownMenuItem(
+                                        value: size.key,
+                                        child: Text(size.label)),
                                 ],
                                 onChanged: (value) {
                                   if(!mounted) return;
@@ -889,6 +891,11 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                       style: TextStyle(
                                           fontSize: 12, color: Colors.grey),
                                     ),
+                                    const Text(
+                                      'PNG, JPG or JPEG — max 2 MB',
+                                      style: TextStyle(
+                                          fontSize: 12, color: Colors.grey),
+                                    ),
                                     const SizedBox(height: 12),
                                     if (_signatureBase64 != null &&
                                         _signatureBase64!.isNotEmpty) ...[
@@ -931,37 +938,77 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                       ],
                                     ),
                                     const SizedBox(height: 12),
-                                    DropdownButtonFormField<String>(
-                                      value: _signaturePosition,
-                                      decoration: InputDecoration(
-                                        labelText: 'Signature Position',
-                                        prefixIcon: const Icon(
-                                            Icons.format_align_left_outlined),
-                                        border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(
-                                              AppBorderRadius.xsmall),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: DropdownButtonFormField<String>(
+                                            value: _selectedSignatureSize,
+                                            decoration: InputDecoration(
+                                              labelText: 'Signature Size',
+                                              prefixIcon: const Icon(
+                                                  Icons.photo_size_select_small_outlined),
+                                              border: OutlineInputBorder(
+                                                borderRadius: BorderRadius.circular(
+                                                    AppBorderRadius.xsmall),
+                                              ),
+                                              enabledBorder: OutlineInputBorder(
+                                                borderRadius: BorderRadius.circular(
+                                                    AppBorderRadius.xsmall),
+                                                borderSide: BorderSide(
+                                                    color: Colors.grey[300]!),
+                                              ),
+                                              filled: true,
+                                              fillColor: Colors.white,
+                                            ),
+                                            items: [
+                                              for (final size in SignatureSize.values)
+                                                DropdownMenuItem(
+                                                    value: size.key,
+                                                    child: Text(size.label)),
+                                            ],
+                                            onChanged: (val) {
+                                              if(!mounted) return;
+                                              setState(
+                                                      () => _selectedSignatureSize = val!);
+                                            },
+                                          ),
                                         ),
-                                        enabledBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(
-                                              AppBorderRadius.xsmall),
-                                          borderSide: BorderSide(
-                                              color: Colors.grey[300]!),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: DropdownButtonFormField<String>(
+                                            value: _signaturePosition,
+                                            decoration: InputDecoration(
+                                              labelText: 'Signature Position',
+                                              prefixIcon: const Icon(
+                                                  Icons.format_align_left_outlined),
+                                              border: OutlineInputBorder(
+                                                borderRadius: BorderRadius.circular(
+                                                    AppBorderRadius.xsmall),
+                                              ),
+                                              enabledBorder: OutlineInputBorder(
+                                                borderRadius: BorderRadius.circular(
+                                                    AppBorderRadius.xsmall),
+                                                borderSide: BorderSide(
+                                                    color: Colors.grey[300]!),
+                                              ),
+                                              filled: true,
+                                              fillColor: Colors.white,
+                                            ),
+                                            items: const [
+                                              DropdownMenuItem(
+                                                  value: 'left', child: Text('Left')),
+                                              DropdownMenuItem(
+                                                  value: 'right',
+                                                  child: Text('Right')),
+                                            ],
+                                            onChanged: (val) {
+                                              if(!mounted) return;
+                                              setState(
+                                                      () => _signaturePosition = val!);
+                                            },
+                                          ),
                                         ),
-                                        filled: true,
-                                        fillColor: Colors.white,
-                                      ),
-                                      items: const [
-                                        DropdownMenuItem(
-                                            value: 'left', child: Text('Left')),
-                                        DropdownMenuItem(
-                                            value: 'right',
-                                            child: Text('Right')),
                                       ],
-                                      onChanged: (val) {
-                                        if(!mounted) return;
-                                        setState(
-                                                () => _signaturePosition = val!);
-                                      },
                                     ),
                                   ],
                                 ),

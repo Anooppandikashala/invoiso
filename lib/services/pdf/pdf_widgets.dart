@@ -13,16 +13,9 @@ pw.Widget buildCompanyLogo(pw.MemoryImage image, {double size = 90}) {
   );
 }
 
-double logoSizePx(String sizeKey) {
-  switch (sizeKey) {
-    case 'small':
-      return 60;
-    case 'large':
-      return 120;
-    default:
-      return 90;
-  }
-}
+double logoSizePx(String sizeKey) => logoSizeFromKey(sizeKey).pixelSize;
+
+double signatureSizePx(String sizeKey) => signatureSizeFromKey(sizeKey).pixelHeight;
 
 pw.Widget buildSignatureWidget(
   pw.ImageProvider signatureImage,
