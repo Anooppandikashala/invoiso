@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
@@ -32,6 +33,14 @@ class DatabaseHelper {
       onUpgrade: _upgradeDB,
     );
   }
+
+  @visibleForTesting
+  Future<void> createDbForTest(Database db, int version) =>
+      _createDB(db, version);
+
+  @visibleForTesting
+  Future<void> upgradeDbForTest(Database db, int oldVersion, int newVersion) =>
+      _upgradeDB(db, oldVersion, newVersion);
 
   Future<void> _createDB(Database db, int version) async {
     await db.execute('''
