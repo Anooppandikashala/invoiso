@@ -91,6 +91,7 @@ class DefaultValues
   static const String thankYouNote = "";
   static const LogoPosition logoPosition = LogoPosition.left;
   static const int additionalNotesLength = 1000;
+  static const int maxNumberOfPDFCopies = 5;
 }
 
 class PdfLayout
