@@ -91,4 +91,6 @@ class SqliteSettingsRepository implements SettingsRepository {
   Future<void> setPageSize(PageSize size) => SettingsService.setPageSize(size);
   @override
   Future<bool> getShowAliasNameInPdf() => SettingsService.getShowAliasNameInPdf();
+  @override
+  Future<bool> getShowTaxButtonInInvoicePage() => SettingsService.getShowTaxButtonInInvoicePage();
 }

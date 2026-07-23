@@ -37,6 +37,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
   bool _showTypeTag = true;
   bool _showPreviousBalance = false;
   bool _showAliasNameInPdf = false;
+  bool _showTaxButtonInInvoicePage = true;
   String? _signatureBase64;
   String _signaturePosition = 'left';
   int _invoiceCount = 0;
@@ -74,6 +75,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
       settingsRepo.getSetting(SettingKey.invoiceStartingNumber),
       settingsRepo.getSetting(SettingKey.defaultTaxRate),
       settingsRepo.getSetting(SettingKey.showAliasNameInPdf),
+      settingsRepo.getShowTaxButtonInInvoicePage(),
     ]);
 
     if (!mounted) return;
@@ -102,7 +104,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
       defaultTaxRateController.text =
           (results[18] as String?) ?? '18';
       _showAliasNameInPdf = (results[19] as String?) == 'true';
-
+      _showTaxButtonInInvoicePage = results[20] as bool;
       _isLoading = false;
     });
   }
@@ -140,6 +142,8 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
       settingsRepo.setSetting(SettingKey.signaturePosition, _signaturePosition),
       settingsRepo.setSetting(
           SettingKey.showAliasNameInPdf, _showAliasNameInPdf.toString()),
+      settingsRepo.setSetting(
+          SettingKey.showTaxButtonInInvoicePage, _showTaxButtonInInvoicePage.toString()),
     ]);
 
     if (!mounted) return;
@@ -593,6 +597,41 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                 ),
                               ),
                             ),
+
+                            const SizedBox(height: 12),
+
+                            // Tax Enabled by Default Toggle
+                            SizedBox(
+                              width: constraints.maxWidth,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[50],
+                                  borderRadius: BorderRadius.circular(
+                                      AppBorderRadius.xsmall),
+                                  border: Border.all(color: Colors.grey[300]!),
+                                ),
+                                child: SwitchListTile(
+                                  title: const Text('Tax Enabled by Default'),
+                                  subtitle: const Text(
+                                    "Enable the Tax toggle by default when creating new invoices.",
+                                  ),
+                                  secondary: Icon(
+                                    Icons.percent_rounded,
+                                    color: _showTaxButtonInInvoicePage
+                                        ? Theme.of(context).primaryColor
+                                        : Colors.grey,
+                                  ),
+                                  value: _showTaxButtonInInvoicePage,
+                                  onChanged: (val) {
+                                    if(!mounted) return;
+                                    setState(() => _showTaxButtonInInvoicePage = val);
+                                  },
+                                  activeColor: Theme.of(context).primaryColor,
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 12),
 
                             // GST Fields Toggle
                             SizedBox(

@@ -283,4 +283,10 @@ class SettingsService {
     final val = await getSetting(SettingKey.showAliasNameInPdf);
     return val == 'true';
   }
+
+  static Future<bool> getShowTaxButtonInInvoicePage() async
+  {
+    final val = await getSetting(SettingKey.showTaxButtonInInvoicePage);
+    return val != 'false';
+  }
 }

@@ -1779,6 +1779,9 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                 Text('Sl. No', style: TextStyle(fontWeight: FontWeight.bold))),
         const DataColumn(
             label: Text('Name', style: TextStyle(fontWeight: FontWeight.bold))),
+        const DataColumn(
+            label:
+                Text('Alias', style: TextStyle(fontWeight: FontWeight.bold))),
         if (_businessType == BusinessType.both)
           const DataColumn(
               label:Text('Type', style: TextStyle(fontWeight: FontWeight.bold))),
@@ -1823,6 +1826,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                 p.name.length > 30 ? '${p.name.substring(0, 30)}...' : p.name,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontWeight: FontWeight.w500))),
+            DataCell(Text(p.aliasName ?? '—')),
             if (_businessType == BusinessType.both)
               DataCell(Tooltip(
                 message: p.type == 'service' ? 'Service' : 'Product',

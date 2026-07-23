@@ -111,6 +111,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   String _quantityLabel = '';
   bool _showQuantity = true;
   bool _showPreviousBalance = false;
+  bool _showAliasNameInPdf = false;
   double _previousBalanceDue = 0.0;
   bool _isPreviousBalanceLoading = false;
   bool _isSavingCustomer = false;
@@ -397,6 +398,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         settingsRepo.getBusinessType(), // 10
         settingsRepo.getDateFormat(), // 11
         settingsRepo.getShowPreviousBalance(), // 12
+        settingsRepo.getShowAliasNameInPdf(), // 13
+        settingsRepo.getShowTaxButtonInInvoicePage(), // 14
       ]);
 
       final c = results[0] as List<Customer>;
@@ -428,6 +431,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       final businessType = results[10] as BusinessType;
       final dateFormatOpt = results[11] as DateFormatOption;
       final showPrevBalance = results[12] as bool;
+      final showAliasNameInPdf = results[13] as bool;
+      final showTaxButtonInInvoicePage = results[14] as bool;
 
       // Determine which UPI to pre-select.
       String? existingUpiId;
@@ -488,6 +493,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         _fractionalQuantity = fractionalQty;
         _showQuantity = showQuantity;
         _showPreviousBalance = showPrevBalance;
+        _showAliasNameInPdf = showAliasNameInPdf;
+        _isTaxEnabled = showTaxButtonInInvoicePage;
         _businessType = businessType;
         _adHocItemType =
             businessType == BusinessType.service ? 'service' : 'product';
@@ -903,6 +910,40 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     }
   }
 
+  /// Builds the Customer to attach to the invoice. If the form fields no
+  /// longer match `selectedCustomer`'s saved record (edited but not saved
+  /// via _saveCustomer), the invoice must NOT keep pointing at that
+  /// customer's id — doing so would link invoiceId -> customerId while the
+  /// snapshot's name/address/etc silently disagree with that customer's
+  /// actual row. Falls back to a fresh, unlinked id in that case.
+  Customer _resolveInvoiceCustomer() {
+    final name = nameController.text;
+    final email = emailController.text;
+    final phone = phoneController.text;
+    final address = addressController.text;
+    final gstin = gstinController.text;
+    final businessName = businessNameController.text;
+
+    final sel = selectedCustomer;
+    final matchesSelected = sel != null &&
+        sel.name == name &&
+        sel.email == email &&
+        sel.phone == phone &&
+        sel.address == address &&
+        sel.gstin == gstin &&
+        sel.businessName == businessName;
+
+    return Customer(
+      id: matchesSelected ? sel.id : const Uuid().v4(),
+      name: name,
+      email: email,
+      phone: phone,
+      address: address,
+      gstin: gstin,
+      businessName: businessName,
+    );
+  }
+
   Future<bool> _createInvoice() async {
     if (nameController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -952,15 +993,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       final invoice = Invoice(
         id: invoiceId,
         invoiceNumber: invoiceNumber,
-        customer: Customer(
-          id: selectedCustomer?.id ?? const Uuid().v4(),
-          name: nameController.text,
-          email: emailController.text,
-          phone: phoneController.text,
-          address: addressController.text,
-          gstin: gstinController.text,
-          businessName: businessNameController.text,
-        ),
+        customer: _resolveInvoiceCustomer(),
         items: List.from(invoiceItems),
         date: _selectedOrderDate,
         dueDate: _selectedDueDate,
@@ -2354,6 +2387,21 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     );
   }
 
+  void _clearCustomerSelection() {
+    if (!mounted) return;
+    setState(() {
+      selectedCustomer = null;
+      nameController.clear();
+      emailController.clear();
+      phoneController.clear();
+      addressController.clear();
+      gstinController.clear();
+      businessNameController.clear();
+      _previousBalanceDue = 0.0;
+      _isPreviousBalanceLoading = false;
+    });
+  }
+
   Widget _customerDetailsForm() {
     return Card(
       elevation: 3,
@@ -2364,6 +2412,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(Icons.person, color: Theme.of(context).primaryColor),
                 const SizedBox(width: 8),
@@ -2373,7 +2422,14 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       fontSize: AppFontSize.medium,
                       fontWeight: FontWeight.bold),
                 ),
-                const Spacer(),
+                //const Spacer(),
+                Expanded(
+                  child: Wrap(
+                    alignment: WrapAlignment.end,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
                 Tooltip(
                   message: selectedCustomer != null
                       ? 'Customer already saved — deselect to save a new one'
@@ -2410,7 +2466,6 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   ),
                 ),
                 if (selectedCustomer != null && selectedCustomer!.id.trim().isNotEmpty) ...[
-                  const SizedBox(width: 8),
                   Tooltip(
                     message: 'Reload this customer\'s latest saved details '
                         '(name, address, phone, etc.) — this invoice keeps its '
@@ -2418,7 +2473,20 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     child: OutlinedButton.icon(
                       onPressed: _refreshCustomerFromRecord,
                       icon: const Icon(Icons.refresh, size: 16),
-                      label: const Text('Refresh from Customer Record',
+                      label: const Text('Refresh',
+                          style: TextStyle(fontSize: AppFontSize.small)),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                      ),
+                    ),
+                  ),
+                  Tooltip(
+                    message: 'Clear customer selection and enter a new one',
+                    child: OutlinedButton.icon(
+                      onPressed: _clearCustomerSelection,
+                      icon: const Icon(Icons.clear, size: 16),
+                      label: const Text('Clear',
                           style: TextStyle(fontSize: AppFontSize.small)),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
@@ -2427,7 +2495,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     ),
                   ),
                 ],
-              ],
+              ])),]
             ),
             const SizedBox(height: 16),
             // Row 1: Customer Name | Business Name | Phone
@@ -3102,7 +3170,13 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                             title: Row(
                               children: [
                                 Text(
-                                  item.product.name,
+                                  _showAliasNameInPdf &&
+                                          (item.product.aliasName
+                                                  ?.trim()
+                                                  .isNotEmpty ??
+                                              false)
+                                      ? '${item.product.name} (${item.product.aliasName})'
+                                      : item.product.name,
                                   style: const TextStyle(
                                     fontSize: AppFontSize.medium,
                                     fontWeight: FontWeight.bold,
@@ -3814,15 +3888,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       final updatedInvoice = Invoice(
         id: _invoice!.id,
         invoiceNumber: _invoice!.invoiceNumber,
-        customer: Customer(
-          id: selectedCustomer?.id ?? const Uuid().v4(),
-          name: nameController.text,
-          email: emailController.text,
-          phone: phoneController.text,
-          address: addressController.text,
-          gstin: gstinController.text,
-          businessName: businessNameController.text,
-        ),
+        customer: _resolveInvoiceCustomer(),
         items: List.from(invoiceItems),
         date: _selectedOrderDate,
         dueDate: _selectedDueDate,
@@ -3861,6 +3927,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             ],
           ),
           backgroundColor: Colors.green,
+          showCloseIcon: true,
+          duration: const Duration(milliseconds: 2000),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),

@@ -45,4 +45,5 @@ abstract class SettingsRepository {
   Future<PageSize> getPageSize();
   Future<void> setPageSize(PageSize size);
   Future<bool> getShowAliasNameInPdf();
+  Future<bool> getShowTaxButtonInInvoicePage();
 }

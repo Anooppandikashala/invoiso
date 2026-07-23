@@ -56,5 +56,6 @@ appimage-build/
 *screenshots2/
 # Added by code-review-graph
 .code-review-graph/
+graphify-out/
 
 *landing/*
