@@ -274,6 +274,13 @@ class ThermalPrinterService {
       twoCol(c.label.isEmpty ? 'Extra Cost' : c.label,
           '$currency ${c.amount.toStringAsFixed(2)}');
     }
+    if (invoice.invoiceDiscountAmount > 0)
+    {
+      twoCol(invoice.invoiceDiscountType == InvoiceDiscountType.percent
+          ? "Extra Discount (${invoice.invoiceDiscountValue.toStringAsFixed(1)}%)"
+          : "Extra Discount ",
+          "-$currency ${invoice.invoiceDiscountAmount.toStringAsFixed(2)}");
+    }
     if (effectivePreviousBalance > 0) {
       twoCol('Prev Balance:',
           '$currency ${effectivePreviousBalance.toStringAsFixed(2)}');

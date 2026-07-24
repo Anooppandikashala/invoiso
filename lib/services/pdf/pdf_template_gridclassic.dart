@@ -77,8 +77,8 @@ pw.MultiPage buildGridClassicTemplate(
   final totalQty = showTotalQuantity
       ? invoice.items.fold<double>(0, (s, i) => s + i.quantity)
       : 0.0;
-  final qtyLabel =
-      (invoice.quantityLabel?.isNotEmpty == true) ? invoice.quantityLabel! : 'Qty';
+  //final qtyLabel =
+  //    (invoice.quantityLabel?.isNotEmpty == true) ? invoice.quantityLabel! : 'Qty';
 
   pw.Widget infoRow(String k, String v) => pw.Padding(
         padding: pw.EdgeInsets.symmetric(vertical: 1.5 * fontScale),
@@ -193,7 +193,7 @@ pw.MultiPage buildGridClassicTemplate(
             pw.Divider(thickness: 0.5, color: borderColor,height: 8),
             // pw.SizedBox(height: 0.5 * fontScale),
             pw.Center(
-                child: pw.Text(invoice.type.toUpperCase() ?? '',
+                child: pw.Text(invoice.type.toUpperCase(),
                     textAlign: pw.TextAlign.left,
                     style: pw.TextStyle(
                         fontSize: titleFont-2,
@@ -279,6 +279,12 @@ pw.MultiPage buildGridClassicTemplate(
                     ...invoice.additionalCosts.map((c) => totalsRow(
                         c.label.isEmpty ? 'Extra Cost' : c.label,
                         '$currencySymbol ${c.amount.toStringAsFixed(2)}')),
+                    if (invoice.invoiceDiscountAmount > 0)
+                      totalsRow(invoice.invoiceDiscountType == InvoiceDiscountType.percent
+                          ? "Extra Discount (${invoice.invoiceDiscountValue.toStringAsFixed(1)}%)"
+                          : "Extra Discount ",
+                          "-$currencySymbol ${invoice.invoiceDiscountAmount.toStringAsFixed(2)}"
+                      ),
                     pw.Divider(thickness: 0.5, color: borderColor,height: 5),
                     totalsRow('Total',
                         '$currencySymbol ${invoice.total.toStringAsFixed(2)}',
