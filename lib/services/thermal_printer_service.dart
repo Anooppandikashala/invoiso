@@ -348,9 +348,10 @@ class ThermalPrinterService {
     hr();
     for (var i = 0; i < invoice.items.length; i++) {
       final item = invoice.items[i];
+      final unit = item.effectiveUnit.trim().isEmpty ? '' : item.effectiveUnit;
       final qty = item.quantity == item.quantity.roundToDouble()
-          ? item.quantity.toInt().toString()
-          : item.quantity.toStringAsFixed(2);
+          ? item.quantity.toInt().toString() + unit
+          : item.quantity.toStringAsFixed(2) + unit;
       final rate = item.effectivePrice.toStringAsFixed(2);
       final total = item.total.toStringAsFixed(2);
 
@@ -374,7 +375,7 @@ class ThermalPrinterService {
               ('${item.product.tax_rate}%', gstStart, gstW, ui.TextAlign.right),
             (total, totalStart, totalW, ui.TextAlign.right),
           ],
-          bold: true);
+          bold: false);
         } else {
           await line(singleLineRow('${i + 1}', name, qty, rate,
               showItemTax ? '${item.product.tax_rate}%' : null, total));
@@ -382,12 +383,12 @@ class ThermalPrinterService {
       } else {
         try
         {
-          await line('${i + 1} ${item.product.displayName(showNameAlias)}', bold: true);
+          await line('${i + 1} ${item.product.displayName(showNameAlias)}', bold: false);
         }
         catch(e)
         {
           if(kDebugMode)print(e);
-          await line('${i + 1} ${item.product.displayName(false)}', bold: true);
+          await line('${i + 1} ${item.product.displayName(false)}', bold: false);
         }
         final detailParts = ['Qty:$qty', 'Rate:$rate'];
         if (showItemTax) detailParts.add('${item.product.tax_rate}%');
