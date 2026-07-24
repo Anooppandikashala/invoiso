@@ -136,6 +136,8 @@ class ThermalPrinterService {
     // rebuilds its byte buffer as a fixed-length list when width % 8 != 0,
     // then keeps appending to it, throwing "Cannot add to a fixed-length list".
     final widthPx = ((is58 ? 372 : 558) / 8).ceil() * 8;
+    const supersample = 2;
+    const nameFontScale = 1.18;
 
     Future<void> textLine(String text, {PosAlign align = PosAlign.left, bool bold = false,bool isHead = false})
     {
@@ -151,17 +153,22 @@ class ThermalPrinterService {
     // (double height) = 48 dots. Render bitmap rows to those exact heights,
     // vertically centering the glyph, so image rows match plain-text rows
     // instead of towering over them.
-    Future<void> imageLine(String text, {PosAlign align = PosAlign.left, bool bold = false, double rowHeightPx = PdfLayout.thermalPrinterItemFontSize}) async {
+    // Rendered at [supersample]x then downscaled with area-averaging before
+    // the ESC/POS lib's hard 127 b/w threshold — anti-aliased glyph edges
+    // land on a cleaner cutoff instead of the ragged/blurry look a direct
+    // 1x render+threshold produces on thermal hardware.
+    Future<void> imageLine(String text, {PosAlign align = PosAlign.left, bool bold = false, double rowHeightPx = PdfLayout.thermalPrinterItemFontSize, double fontScale = 1.0}) async {
       final uiAlign = align == PosAlign.center
           ? ui.TextAlign.center
           : align == PosAlign.right
               ? ui.TextAlign.right
               : ui.TextAlign.left;
+      final renderWidthPx = widthPx * supersample;
       final painter = TextPainter(
         text: TextSpan(
           text: text,
           style: TextStyle(
-            fontSize: rowHeightPx * 0.72,
+            fontSize: rowHeightPx * 0.72 * supersample * fontScale,
             height: 1.0,
             color: Colors.black,
             fontWeight: bold ? FontWeight.bold : FontWeight.normal,
@@ -169,19 +176,23 @@ class ThermalPrinterService {
         ),
         textAlign: uiAlign,
         textDirection: ui.TextDirection.ltr,
-      )..layout(maxWidth: widthPx.toDouble());
+      )..layout(maxWidth: renderWidthPx.toDouble());
 
-      final h = max(rowHeightPx, painter.height).ceilToDouble();
+      final h = max(rowHeightPx * supersample, painter.height).ceilToDouble();
       final recorder = ui.PictureRecorder();
       final canvas = Canvas(recorder);
-      canvas.drawRect(Rect.fromLTWH(0, 0, widthPx.toDouble(), h), Paint()..color = Colors.white);
+      canvas.drawRect(Rect.fromLTWH(0, 0, renderWidthPx.toDouble(), h), Paint()..color = Colors.white);
       painter.paint(canvas, Offset(0, (h - painter.height) / 2));
-      final uiImage = await recorder.endRecording().toImage(widthPx, h.ceil());
+      final uiImage = await recorder.endRecording().toImage(renderWidthPx, h.ceil());
       final byteData = await uiImage.toByteData(format: ui.ImageByteFormat.png);
       final png = byteData!.buffer.asUint8List();
       final decoded = img.decodePng(Uint8List.fromList(png));
       if (decoded != null) {
-        bytes += generator.imageRaster(decoded, align: align);
+        final resized = img.copyResize(decoded,
+            width: widthPx,
+            height: (h / supersample).ceil(),
+            interpolation: img.Interpolation.average);
+        bytes += generator.imageRaster(resized, align: align);
       }
     }
 
@@ -192,21 +203,28 @@ class ThermalPrinterService {
     // shape Devanagari etc) breaks that assumption and drifts columns out
     // of alignment. Fix: give every cell its own pixel-exact column box
     // (charWidthPx = widthPx / width) instead of relying on padded spaces.
+    // Same supersample-then-average-downscale trick as imageLine(), plus
+    // an optional per-cell font bump (used to make the product name column
+    // read a little larger than Sl/Qty/Rate/Total without resizing the row).
     Future<void> imageTableRow(
         List<(String text, int startChar, int widthChar, ui.TextAlign align)> cells,
-        {bool bold = false, double rowHeightPx = PdfLayout.thermalPrinterItemFontSize}) async {
-      final charWidthPx = widthPx / width;
-      final recorder = ui.PictureRecorder();
-      final canvas = Canvas(recorder);
-      canvas.drawRect(Rect.fromLTWH(0, 0, widthPx.toDouble(), rowHeightPx),
-          Paint()..color = Colors.white);
-      for (final cell in cells) {
+        {bool bold = false, double rowHeightPx = PdfLayout.thermalPrinterItemFontSize,
+        int nameCellIndex = -1, double nameFontScale = 1.0}) async {
+      final renderWidthPx = widthPx * supersample;
+      final charWidthPx = renderWidthPx / width;
+      final baseFontPx = rowHeightPx * 0.72 * supersample;
+      final nameFontPx = baseFontPx * nameFontScale;
+
+      final painters = <TextPainter>[];
+      double maxHeight = rowHeightPx * supersample;
+      for (var idx = 0; idx < cells.length; idx++) {
+        final cell = cells[idx];
         final colWidthPx = cell.$3 * charWidthPx;
         final painter = TextPainter(
           text: TextSpan(
             text: cell.$1,
             style: TextStyle(
-              fontSize: rowHeightPx * 0.72,
+              fontSize: idx == nameCellIndex ? nameFontPx : baseFontPx,
               height: 1.0,
               color: Colors.black,
               fontWeight: bold ? FontWeight.bold : FontWeight.normal,
@@ -214,24 +232,46 @@ class ThermalPrinterService {
           ),
           textAlign: cell.$4,
           textDirection: ui.TextDirection.ltr,
-          maxLines: 1,
-          ellipsis: '…',
+          // No maxLines/ellipsis — a cell too wide for its column (long
+          // name, or a number with more digits than expected) wraps onto a
+          // second line within the column instead of losing characters;
+          // maxHeight below grows to fit it.
         )..layout(minWidth: colWidthPx, maxWidth: colWidthPx);
-        painter.paint(
-            canvas, Offset(cell.$2 * charWidthPx, (rowHeightPx - painter.height) / 2));
+        painters.add(painter);
+        if (painter.height > maxHeight) maxHeight = painter.height;
       }
-      final uiImage = await recorder.endRecording().toImage(widthPx, rowHeightPx.ceil());
+
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+      canvas.drawRect(Rect.fromLTWH(0, 0, renderWidthPx.toDouble(), maxHeight),
+          Paint()..color = Colors.white);
+      for (var idx = 0; idx < cells.length; idx++) {
+        final cell = cells[idx];
+        final painter = painters[idx];
+        painter.paint(canvas,
+            Offset(cell.$2 * charWidthPx, (maxHeight - painter.height) / 2));
+      }
+      final uiImage =
+          await recorder.endRecording().toImage(renderWidthPx.round(), maxHeight.ceil());
       final byteData = await uiImage.toByteData(format: ui.ImageByteFormat.png);
       final png = byteData!.buffer.asUint8List();
       final decoded = img.decodePng(Uint8List.fromList(png));
       if (decoded != null) {
-        bytes += generator.imageRaster(decoded, align: PosAlign.left);
+        final resized = img.copyResize(decoded,
+            width: widthPx,
+            height: (maxHeight / supersample).ceil(),
+            interpolation: img.Interpolation.average);
+        bytes += generator.imageRaster(resized, align: PosAlign.left);
       }
     }
 
-    Future<void> line(String text, {PosAlign align = PosAlign.left, bool bold = false,bool isHead = false}) {
+    Future<void> line(String text, {PosAlign align = PosAlign.left, bool bold = false, bool isHead = false, double fontScale = 1.0}) {
       return hasNonLatin1(text)
-          ? imageLine(text, align: align, bold: bold, rowHeightPx: isHead ? PdfLayout.thermalPrinterHeadFontSize : PdfLayout.thermalPrinterItemFontSize)
+          ? imageLine(text,
+              align: align,
+              bold: bold,
+              rowHeightPx: isHead ? PdfLayout.thermalPrinterHeadFontSize : PdfLayout.thermalPrinterItemFontSize,
+              fontScale: fontScale)
           : textLine(text, align: align, bold: bold, isHead: isHead);
     }
 
@@ -265,10 +305,13 @@ class ThermalPrinterService {
 
     String padRight(String s, int w) =>
         s.length >= w ? s.substring(0, w) : s + ' ' * (w - s.length);
+    // Never cut qty/rate/total — dropping leading digits silently changes
+    // the value shown on the invoice. Pad when it fits; let it run past
+    // the column (shifting later cells on that one row) when it doesn't.
     String padLeft(String s, int w) =>
-        s.length >= w ? s.substring(s.length - w) : ' ' * (w - s.length) + s;
+        s.length >= w ? s : ' ' * (w - s.length) + s;
     String padCenter(String s, int w) {
-      if (s.length >= w) return s.substring(0, w);
+      if (s.length >= w) return s;
       final totalPad = w - s.length;
       final left = totalPad ~/ 2;
       return ' ' * left + s + ' ' * (totalPad - left);
@@ -317,11 +360,21 @@ class ThermalPrinterService {
 
     // ── Items ──
     // Table layout: compact column widths, tight enough to still fit on
-    // 58mm (31 chars) while leaving extra room for the name on 80mm.
-    const slW = 2, qtyW = 4, rateW = 6, gstW = 4, totalW = 7;
+    // 58mm (31 chars). Tune these to rebalance space between the fixed
+    // Sl/Qty/Rate/GST/Total columns and the product name. Name doesn't need
+    // generous room any more — it wraps/overflows onto its own line when it
+    // doesn't fit (see the `name.length > nameW` branch below) — so
+    // `nameWMax` caps it and any leftover width goes to the numeric columns
+    // instead of just padding the name.
+    const slW = 3;
+    const qtyW = 5;
+    const rateW = 10;
+    const gstW = 4;
+    const totalW = 10;
+    const nameWMax = 18;
     final gaps = showItemTax ? 5 : 4;
     final nameW = (width - slW - qtyW - rateW - (showItemTax ? gstW : 0) - totalW - gaps)
-        .clamp(1, 999);
+        .clamp(1, nameWMax);
     final useTable = itemLayout != 'detailed';
 
     String singleLineRow(String sl, String name, String qty, String rate,
@@ -357,7 +410,27 @@ class ThermalPrinterService {
 
       if (useTable) {
         final name = item.product.displayName(showNameAlias);
-        if (hasNonLatin1(name)) {
+        final gstStr = showItemTax ? '${item.product.tax_rate}%' : null;
+        if (name.length > nameW) {
+          // Name doesn't fit its column — show it in full on its own line,
+          // then Qty/Rate/[GST]/Total on the next line, still lined up
+          // under their normal columns.
+          if (hasNonLatin1(name)) {
+            // Same pixel-exact column math as the normal row below (not
+            // imageLine()+padRight — that pads with proportional-font space
+            // characters, which doesn't land on the same pixel column as
+            // the fixed-width cells elsewhere).
+            await imageTableRow([
+              ('${i + 1}', 0, slW, ui.TextAlign.left),
+              (name, slW + 1, width - slW - 1, ui.TextAlign.left),
+            ], bold: false, nameCellIndex: 1, nameFontScale: nameFontScale);
+          } else {
+            // Plain ASCII — generator.text()'s monospace font makes
+            // char-count padding already pixel-exact.
+            await line('${padRight('${i + 1}', slW)} $name');
+          }
+          await line(singleLineRow('', '', qty, rate, gstStr, total));
+        } else if (hasNonLatin1(name)) {
           int col = 0;
           final slStart = col; col += slW + 1;
           final nameStart = col; col += nameW + 1;
@@ -371,24 +444,23 @@ class ThermalPrinterService {
             (name, nameStart, nameW, ui.TextAlign.left),
             (qty, qtyStart, qtyW, ui.TextAlign.center),
             (rate, rateStart, rateW, ui.TextAlign.right),
-            if (showItemTax)
-              ('${item.product.tax_rate}%', gstStart, gstW, ui.TextAlign.right),
+            if (gstStr != null)
+              (gstStr, gstStart, gstW, ui.TextAlign.right),
             (total, totalStart, totalW, ui.TextAlign.right),
           ],
-          bold: false);
+          bold: false, nameCellIndex: 1, nameFontScale: nameFontScale);
         } else {
-          await line(singleLineRow('${i + 1}', name, qty, rate,
-              showItemTax ? '${item.product.tax_rate}%' : null, total));
+          await line(singleLineRow('${i + 1}', name, qty, rate, gstStr, total));
         }
       } else {
         try
         {
-          await line('${i + 1} ${item.product.displayName(showNameAlias)}', bold: false);
+          await line('${i + 1} ${item.product.displayName(showNameAlias)}', bold: false, fontScale: nameFontScale);
         }
         catch(e)
         {
           if(kDebugMode)print(e);
-          await line('${i + 1} ${item.product.displayName(false)}', bold: false);
+          await line('${i + 1} ${item.product.displayName(false)}', bold: false, fontScale: nameFontScale);
         }
         final detailParts = ['Qty:$qty', 'Rate:$rate'];
         if (showItemTax) detailParts.add('${item.product.tax_rate}%');
