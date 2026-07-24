@@ -99,6 +99,8 @@ class PdfLayout
   static double defaultVMargin = 12;
   static double thankYouNoteFontSize = 10;
   static double footerBrandingFontSize = 8;
+  static const double thermalPrinterItemFontSize = 28;
+  static const double thermalPrinterHeadFontSize = 34;
 }
 
 class UpdateConfig
