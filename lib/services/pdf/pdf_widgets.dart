@@ -456,7 +456,7 @@ pw.Widget buildInvoiceTable(Invoice invoice,
               cellPaddingH: cellPaddingH,
               cellPaddingV: cellPaddingV),
           if (showGst)
-            buildTableCell('HSN Code',
+            buildTableCell('HSN/SAC',
                 isHeader: true,
                 textColor: textColor,
                 fontSize: tableFontSize,

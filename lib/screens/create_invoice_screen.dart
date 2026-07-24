@@ -1927,7 +1927,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'HSN: ${product.hsncode.toUpperCase()}',
+                                  'HSN/SAC: ${product.hsncode.toUpperCase()}',
                                   maxLines: 2,
                                   style: const TextStyle(
                                       color: Colors.blue,
@@ -3233,7 +3233,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                     _buildItemDetail('Price',
                                         '$_currencySymbol${item.product.price.toStringAsFixed(2)}'),
                                   _buildItemDetail(
-                                      'HSN', item.product.hsncode.toString()),
+                                      'HSN/SAC', item.product.hsncode.toString()),
                                   if (_showQuantity)
                                     _buildItemDetail(
                                         _quantityLabel.trim().isNotEmpty

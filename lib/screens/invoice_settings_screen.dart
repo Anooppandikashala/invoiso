@@ -792,7 +792,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                       child: SwitchListTile(
                                         title: const Text('Show GST Fields'),
                                         subtitle: const Text(
-                                          'Display GSTIN fields (HSN Code) on invoices, PDFs, and CSV exports',
+                                          'Display GSTIN fields (HSN/SAC) on invoices, PDFs, and CSV exports',
                                         ),
                                         secondary: Icon(
                                           Icons.receipt_long_rounded,

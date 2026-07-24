@@ -1089,6 +1089,9 @@ class _CustomerManagementScreenState extends ConsumerState<CustomerManagementScr
                     controller: _horizontalScrollController,
                     thumbVisibility: true,
                     trackVisibility: true,
+                    thickness: 12,
+                    radius: const Radius.circular(6),
+                    interactive: true,
                     notificationPredicate: (notif) => notif.depth == 1,
                     child: SingleChildScrollView(
                       scrollDirection: Axis.vertical,

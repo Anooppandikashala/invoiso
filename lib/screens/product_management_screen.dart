@@ -84,6 +84,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
   void initState() {
     super.initState();
     _taxRateController.text = "18";
+    _defaultDiscountController.text = "0";
     _loadBusinessType();
     _loadProducts();
     _loadCurrency();
@@ -147,7 +148,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
       if (requestId != _loadRequestId || !mounted) return;
       setState(() {
         _products = result;
-        _totalProducts = result.length;
+        _totalProducts = allCount;
         _allProductsCount = allCount;
       });
     } catch (e) {
@@ -360,7 +361,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                     ),
                     const SizedBox(height: 16),
                     _buildDialogTextField(
-                        hsnCodeCtrl, 'HSN Code', Icons.qr_code,
+                        hsnCodeCtrl, 'HSN/SAC', Icons.qr_code,
                         readOnly: !isEdit, maxLength: 100),
                     const SizedBox(height: 16),
                     _buildDialogTextField(
@@ -959,7 +960,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                             dense: true,
                             title: Text(p.name),
                             subtitle: Text(
-                                '$_currencySymbol${p.price.toStringAsFixed(2)} · HSN: ${p.hsncode.isEmpty ? '—' : p.hsncode}'),
+                                '$_currencySymbol${p.price.toStringAsFixed(2)} · HSN/SAC: ${p.hsncode.isEmpty ? '—' : p.hsncode}'),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -1191,7 +1192,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
             pw.TableHelper.fromTextArray(
               context: context,
               data: [
-                ['#', 'Name', 'HSN Code', 'Description', 'Price', 'Tax Rate', 'Stock', 'Type', 'Discount', 'Unit'],
+                ['#', 'Name', 'HSN/SAC', 'Description', 'Price', 'Tax Rate', 'Stock', 'Type', 'Discount', 'Unit'],
                 ...productsToExport.indexed.map(((int, dynamic) e) => [
                       e.$1 + 1,
                       e.$2.name,
@@ -1365,7 +1366,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                           "\n You can enter the alias in any supported language, \n"
                           "such as Malayalam, Tamil, Kannada, Hindi, Telugu, Marathi, or others, to generate customer-friendly invoices."),
                   const SizedBox(height: 16),
-                  _buildFormField(_hsnCodeController, 'HSN Code', Icons.qr_code,
+                  _buildFormField(_hsnCodeController, 'HSN/SAC', Icons.qr_code,
                       maxLength: 100, required: false),
                   const SizedBox(height: 16),
                   _buildFormField(
@@ -1385,7 +1386,8 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                       isPrice: true,
                       prefixText: '$_currencySymbol '),
                   const SizedBox(height: 16),
-                  _buildFormField(_defaultDiscountController,
+                  _buildFormField(
+                      _defaultDiscountController,
                       'Default Discount', Icons.discount,
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
@@ -1576,6 +1578,9 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                     controller: _horizontalScrollController,
                     thumbVisibility: true,
                     trackVisibility: true,
+                    thickness: 12,
+                    radius: const Radius.circular(6),
+                    interactive: true,
                     notificationPredicate: (notif) => notif.depth == 1,
                     child: SingleChildScrollView(
                       scrollDirection: Axis.vertical,
@@ -1786,7 +1791,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
           const DataColumn(
               label:Text('Type', style: TextStyle(fontWeight: FontWeight.bold))),
         const DataColumn(
-            label: Text('HSN Code',
+            label: Text('HSN/SAC',
                 style: TextStyle(fontWeight: FontWeight.bold))),
         const DataColumn(
             label: Text('Description',
