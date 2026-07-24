@@ -89,7 +89,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
       _showGstFields = results[6] as bool;
       _fractionalQuantity = results[7] as bool;
       quantityLabelController.text = results[8] as String;
-      _selectedLogoSize = results[9] as String;
+      _selectedLogoSize = 'medium';// results[9] as String;
       _showQuantity = results[10] as bool;
       _showDiscount = results[11] as bool;
       _showTypeTag = results[12] as bool;
