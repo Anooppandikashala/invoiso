@@ -1,8 +1,6 @@
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart' show kDebugMode;
-import 'package:image/image.dart' as img;
 import 'package:invoiso/services/backend_services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_thermal_printer/flutter_thermal_printer.dart';
@@ -28,7 +26,16 @@ class ThermalPrinterService {
   static Future<void> printInvoice(
       BuildContext context, Invoice invoice) async {
     final printer = FlutterThermalPrinter.instance;
-    await printer.getPrinters(connectionTypes: [ConnectionType.USB]);
+    try {
+      await printer.getPrinters(connectionTypes: [ConnectionType.USB]);
+    } catch (e) {
+      if (kDebugMode) print(e);
+      if (!context.mounted) return;
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text('Failed to scan for printers: $e')),
+      );
+      return;
+    }
     if (!context.mounted) return;
 
     var useTextMode = false;
@@ -73,16 +80,40 @@ class ThermalPrinterService {
                               title: Text(p.name ?? 'Unknown printer'),
                               onTap: () async {
                                 Navigator.pop(dialogContext);
-                                if (useTextMode) {
-                                  await _printToDeviceText(
-                                      context: context,
-                                      device: p,
-                                      invoice: invoice);
-                                } else {
+                                _ReceiptSettings settings;
+                                try {
+                                  settings = await _fetchReceiptSettings(invoice);
+                                } catch (e) {
+                                  if (kDebugMode) print(e);
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                                    SnackBar(content: Text('Print failed: $e')),
+                                  );
+                                  return;
+                                }
+                                if (!context.mounted) return;
+                                // useTextMode (debug-only) forces plain
+                                // ESC/POS text regardless of content, for
+                                // manually testing that path. Otherwise
+                                // auto-pick: image widget only when the
+                                // receipt actually has non-Latin1 text.
+                                final useImage = useTextMode
+                                    ? false
+                                    : true;
+                                // TODO - We can use this later if any user complaint about the printing speed
+                                //_receiptHasNonLatin1(invoice, settings);
+                                if (useImage) {
                                   await _printToDevice(
                                       context: context,
                                       device: p,
-                                      invoice: invoice);
+                                      invoice: invoice,
+                                      settingsOverride: settings);
+                                } else {
+                                  await _printToDeviceText(
+                                      context: context,
+                                      device: p,
+                                      invoice: invoice,
+                                      settingsOverride: settings);
                                 }
                               },
                             ))
@@ -103,7 +134,9 @@ class ThermalPrinterService {
         actions: [
           TextButton(
             onPressed: () {
-              printer.stopScan();
+              printer.stopScan().catchError((e) {
+                if (kDebugMode) print(e);
+              });
               Navigator.pop(dialogContext);
             },
             child: const Text('Close'),
@@ -118,21 +151,30 @@ class ThermalPrinterService {
     required BuildContext context,
     required Printer device,
     required Invoice invoice,
+    _ReceiptSettings? settingsOverride,
   }) async {
     final printer = FlutterThermalPrinter.instance;
-    final settings = await _fetchReceiptSettings(invoice);
-    if (!context.mounted) return;
-    final widget = await _buildReceiptWidget(invoice, settings);
-    if (!context.mounted) return;
-    await printer.connect(device);
-    if (!context.mounted) return;
-    await printer.printWidget(
-      context,
-      printer: device,
-      widget: widget,
-      paperSize: settings.paperSize,
-    );
-    await printer.disconnect(device);
+    try {
+      final settings = settingsOverride ?? await _fetchReceiptSettings(invoice);
+      if (!context.mounted) return;
+      final widget = await _buildReceiptWidget(invoice, settings);
+      if (!context.mounted) return;
+      await printer.connect(device);
+      if (!context.mounted) return;
+      await printer.printWidget(
+        context,
+        printer: device,
+        widget: widget,
+        paperSize: settings.paperSize,
+      );
+      await printer.disconnect(device);
+    } catch (e) {
+      if (kDebugMode) print(e);
+      if (!context.mounted) return;
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text('Print failed: $e')),
+      );
+    }
   }
 
   /// TEST-ONLY: plain ESC/POS text printing (generator.text()/row()),
@@ -145,59 +187,37 @@ class ThermalPrinterService {
     required BuildContext context,
     required Printer device,
     required Invoice invoice,
+    _ReceiptSettings? settingsOverride,
   }) async {
     final printer = FlutterThermalPrinter.instance;
-    final settings = await _fetchReceiptSettings(invoice);
-    final bytes = await _buildReceiptBytesText(invoice, settings);
-    await printer.connect(device);
-    await printer.printData(device, bytes);
-    await printer.disconnect(device);
+    try {
+      final settings = settingsOverride ?? await _fetchReceiptSettings(invoice);
+      final bytes = await _buildReceiptBytesText(invoice, settings);
+      await printer.connect(device);
+      await printer.printData(device, bytes);
+      await printer.disconnect(device);
+    } catch (e) {
+      if (kDebugMode) print(e);
+      if (!context.mounted) return;
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text('Print failed: $e')),
+      );
+    }
   }
 
   static Future<void> _printToNetworkText({
     required String ip,
     required int port,
     required Invoice invoice,
+    _ReceiptSettings? settingsOverride,
   }) async {
-    final settings = await _fetchReceiptSettings(invoice);
+    final settings = settingsOverride ?? await _fetchReceiptSettings(invoice);
     final bytes = await _buildReceiptBytesText(invoice, settings);
     final result =
         await FlutterThermalPrinterNetwork(ip, port: port).printTicket(bytes);
     if (result != NetworkPrintResult.success) {
       throw Exception('Network print failed: $result');
     }
-  }
-
-  /// generator.text()/row() throws on non-Latin1 content (ESC/POS codepage
-  /// limitation) — text mode can't render local-language product names at
-  /// all, so that one row is rasterized to a bitmap instead (same technique
-  /// the old hand-rolled imageLine()/imageTableRow() used) and spliced into
-  /// the otherwise-plain-text ticket. No BuildContext needed — pure
-  /// dart:ui TextPainter/Canvas, not a widget screenshot.
-  static Future<List<int>> _renderRowAsImage(
-      String text, Generator generator, int widthPx) async {
-    final painter = TextPainter(
-      text: TextSpan(
-        text: text,
-        style: const TextStyle(fontSize: 24, color: Colors.black),
-      ),
-      textAlign: TextAlign.left,
-      textDirection: ui.TextDirection.ltr,
-    )..layout(maxWidth: widthPx.toDouble());
-
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder);
-    canvas.drawRect(Rect.fromLTWH(0, 0, widthPx.toDouble(), painter.height),
-        Paint()..color = Colors.white);
-    painter.paint(canvas, Offset.zero);
-    final uiImage = await recorder
-        .endRecording()
-        .toImage(widthPx, painter.height.ceil());
-    final byteData = await uiImage.toByteData(format: ui.ImageByteFormat.png);
-    final png = byteData!.buffer.asUint8List();
-    final decoded = img.decodePng(Uint8List.fromList(png));
-    if (decoded == null) return const [];
-    return generator.imageRaster(decoded);
   }
 
   static Future<List<int>> _buildReceiptBytesText(
@@ -302,9 +322,11 @@ class ThermalPrinterService {
           PosColumn(text: total, width: 2, styles: const PosStyles(align: PosAlign.right)),
         ]);
       } catch (e) {
-        if (kDebugMode) print('row failed for "$name", rendering as image: $e');
-        bytes +=
-            await _renderRowAsImage('${i + 1} $name', generator, s.widthPx);
+        // generator.text()/row() throws on non-Latin1 content (codepage
+        // limitation) — exactly the case this test function exists to
+        // surface, so log instead of silently rendering blank.
+        if (kDebugMode) print('row failed for "$name": $e');
+        line('${i + 1} $name (encoding failed: $e)');
       }
       if (settings.showDiscount && item.totalDiscount > 0) {
         line('  Disc: -${item.totalDiscount.toStringAsFixed(2)}');
@@ -357,8 +379,9 @@ class ThermalPrinterService {
     required String ip,
     required int port,
     required Invoice invoice,
+    _ReceiptSettings? settingsOverride,
   }) async {
-    final settings = await _fetchReceiptSettings(invoice);
+    final settings = settingsOverride ?? await _fetchReceiptSettings(invoice);
     if (!context.mounted) return;
     final widget = await _buildReceiptWidget(invoice, settings);
     if (!context.mounted) return;
@@ -410,6 +433,33 @@ class ThermalPrinterService {
       widthPx: widthPx,
       paperSize: is58 ? PaperSize.mm58 : PaperSize.mm80,
     );
+  }
+
+  static bool _hasNonLatin1(String s) => s.codeUnits.any((c) => c > 0xFF);
+
+  /// Plain ESC/POS text printing is faster and uses the printer's native
+  /// font, but generator.text()/row() throws on any non-Latin1 script
+  /// (codepage limitation). Scanning every user-editable text field up
+  /// front — not just alias names, since customer names/notes/etc. can
+  /// contain local-language text too — decides which path is actually
+  /// safe for this specific receipt, instead of trusting a settings flag
+  /// that could drift out of sync with what's actually typed.
+  static bool _receiptHasNonLatin1(Invoice invoice, _ReceiptSettings s) {
+    final company = s.pdf.company;
+    final fields = <String?>[
+      company?.name,
+      company?.address,
+      company?.phone,
+      company?.gstin,
+      invoice.customer.name,
+      invoice.customer.businessName,
+      invoice.customer.phone,
+      invoice.customer.gstin,
+      invoice.notes,
+      s.pdf.thankYouNote,
+      for (final item in invoice.items) item.product.displayName(s.showNameAlias),
+    ];
+    return fields.any((f) => f != null && _hasNonLatin1(f));
   }
 
   static Future<Widget> _buildReceiptWidget(
@@ -722,18 +772,26 @@ class _NetworkPrintRowState extends State<_NetworkPrintRow> {
     setState(() => _sending = true);
     final messenger = ScaffoldMessenger.maybeOf(context);
     try {
-      if (widget.useTextMode) {
+      final settings =
+          await ThermalPrinterService._fetchReceiptSettings(widget.invoice);
+      final useImage = widget.useTextMode
+          ? false
+          : ThermalPrinterService._receiptHasNonLatin1(widget.invoice, settings);
+      if (!useImage) {
         await ThermalPrinterService._printToNetworkText(
           ip: _ipController.text.trim(),
           port: int.tryParse(_portController.text.trim()) ?? 9100,
           invoice: widget.invoice,
+          settingsOverride: settings,
         );
       } else {
+        if (!mounted) return;
         await ThermalPrinterService._printToNetwork(
           context: context,
           ip: _ipController.text.trim(),
           port: int.tryParse(_portController.text.trim()) ?? 9100,
           invoice: widget.invoice,
+          settingsOverride: settings,
         );
       }
       messenger?.showSnackBar(
