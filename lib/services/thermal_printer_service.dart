@@ -221,7 +221,8 @@ class ThermalPrinterService {
   }
 
   static Future<List<int>> _buildReceiptBytesText(
-      Invoice invoice, _ReceiptSettings s) async {
+      Invoice invoice, _ReceiptSettings s) async
+{
     final settings = s.pdf;
     final currency = invoice.currencySymbol;
     final company = settings.company;
@@ -347,16 +348,13 @@ class ThermalPrinterService {
     }
     if (s.previousBalance > 0) {
       twoCol('Prev Balance:', '$currency ${s.previousBalance.toStringAsFixed(2)}');
+    }
     if (invoice.invoiceDiscountAmount > 0)
     {
       twoCol(invoice.invoiceDiscountType == InvoiceDiscountType.percent
           ? "Extra Discount (${invoice.invoiceDiscountValue.toStringAsFixed(1)}%)"
           : "Extra Discount ",
           "-$currency ${invoice.invoiceDiscountAmount.toStringAsFixed(2)}");
-    }
-    if (effectivePreviousBalance > 0) {
-      twoCol('Prev Balance:',
-          '$currency ${effectivePreviousBalance.toStringAsFixed(2)}');
     }
     twoCol('TOTAL', '$currency ${(invoice.total + s.previousBalance).toStringAsFixed(2)}',
         bold: true);
@@ -689,6 +687,11 @@ class ThermalPrinterService {
                     '$currency ${c.amount.toStringAsFixed(2)}'),
               if (s.previousBalance > 0)
                 twoCol('Prev Balance:', '$currency ${s.previousBalance.toStringAsFixed(2)}'),
+              if (invoice.invoiceDiscountAmount > 0)
+                twoCol(invoice.invoiceDiscountType == InvoiceDiscountType.percent
+                ? "Extra Discount (${invoice.invoiceDiscountValue.toStringAsFixed(1)}%)"
+                    : "Extra Discount ",
+                "-$currency ${invoice.invoiceDiscountAmount.toStringAsFixed(2)}"),
               twoCol('TOTAL',
                   '$currency ${(invoice.total + s.previousBalance).toStringAsFixed(2)}',
                   bold: true),
