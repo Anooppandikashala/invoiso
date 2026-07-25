@@ -58,3 +58,4 @@ appimage-build/
 .code-review-graph/
 
 *landing/*
+windows/packaging/exe/vc_redist.x64.exe

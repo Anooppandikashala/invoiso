@@ -56,6 +56,11 @@ jobs:
 #        env:
 #          CMAKE_GENERATOR: "Visual Studio 17 2022"
 
+      - name: Download VC++ Redistributable for installer bundling
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vc_redist.x64.exe" -OutFile "windows/packaging/exe/vc_redist.x64.exe"
+
       - name: Build Windows Installer with FastForge
         run: fastforge package --platform windows --targets exe
         env:
