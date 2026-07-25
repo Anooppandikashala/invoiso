@@ -1,27 +1,49 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:invoiso/services/backend_services.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_esc_pos_utils/flutter_esc_pos_utils.dart';
+import 'package:flutter_thermal_printer/flutter_thermal_printer.dart';
+import 'package:flutter_thermal_printer/network/network_print_result.dart';
+import 'package:flutter_thermal_printer/utils/printer.dart';
 import 'package:intl/intl.dart';
 import 'package:invoiso/common.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/services/pdf/pdf_service.dart';
+import 'package:invoiso/services/pdf/pdf_settings.dart';
 import 'package:invoiso/services/pdf/pdf_widgets.dart' show invoiceTaxLabel;
-import 'package:thermal_printer/thermal_printer.dart';
+import 'package:invoiso/constants.dart';
 
-/// Prints receipts as raw ESC/POS commands sent directly to the printer,
-/// instead of rendering a PDF and letting the OS/GDI driver rasterize it.
-/// This is what fixes garbled thermal output — the printer gets its native
-/// command language instead of a rasterized page the driver may mishandle.
+/// Prints receipts by rendering a real Flutter widget tree to a bitmap and
+/// sending it as an ESC/POS raster image, instead of building ESC/POS text
+/// commands by hand. This is what fixes both: 1) tables — Flutter's own
+/// Table/Text layout replaces manual char-grid math and
+/// generator.row()/PosColumn (which produced broken layout on real
+/// printers); 2) character encoding — Flutter renders any Unicode script
+/// the app's fonts support, so there's no ESC/POS codepage limitation to
+/// work around for non-Latin1 text.
 class ThermalPrinterService {
   static Future<void> printInvoice(
       BuildContext context, Invoice invoice) async {
-    final discovered = await UsbPrinterConnector.discoverPrinters();
+    final printer = FlutterThermalPrinter.instance;
+    try {
+      await printer.getPrinters(connectionTypes: [ConnectionType.USB]);
+    } catch (e) {
+      if (kDebugMode) print(e);
+      if (!context.mounted) return;
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text('Failed to scan for printers: $e')),
+      );
+      return;
+    }
     if (!context.mounted) return;
+
+    var useTextMode = false;
 
     await showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setState) => AlertDialog(
         title: const Text('Print Receipt'),
         content: SizedBox(
           width: 360,
@@ -29,146 +51,206 @@ class ThermalPrinterService {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (kDebugMode)
+                SwitchListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Text mode (test)'),
+                  subtitle: const Text('generator.text()/row() instead of image widget'),
+                  value: useTextMode,
+                  onChanged: (v) => setState(() => useTextMode = v),
+                ),
               const Text('USB Printers',
                   style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              if (discovered.isEmpty)
-                const Text('No USB printers found.')
-              else
-                ...discovered.map((p) => ListTile(
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(p.name),
-                      onTap: () async {
-                        Navigator.pop(dialogContext);
-                        final input = UsbPrinterInput(
-                          name: p.detail.name,
-                          vendorId: p.detail.vendorId,
-                          productId: p.detail.productId,
-                        );
-                        await _printToDevice(
-                            type: PrinterType.usb, model: input, invoice: invoice);
-                      },
-                    )),
+              StreamBuilder<List<Printer>>(
+                stream: printer.devicesStream,
+                initialData: const [],
+                builder: (context, snapshot) {
+                  final discovered = snapshot.data ?? const <Printer>[];
+                  if (discovered.isEmpty) {
+                    return const Text('No USB printers found.');
+                  }
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: discovered
+                        .map((p) => ListTile(
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(p.name ?? 'Unknown printer'),
+                              onTap: () async {
+                                Navigator.pop(dialogContext);
+                                _ReceiptSettings settings;
+                                try {
+                                  settings = await _fetchReceiptSettings(invoice);
+                                } catch (e) {
+                                  if (kDebugMode) print(e);
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                                    SnackBar(content: Text('Print failed: $e')),
+                                  );
+                                  return;
+                                }
+                                if (!context.mounted) return;
+                                // useTextMode (debug-only) forces plain
+                                // ESC/POS text regardless of content, for
+                                // manually testing that path. Otherwise
+                                // auto-pick: image widget only when the
+                                // receipt actually has non-Latin1 text.
+                                final useImage = useTextMode
+                                    ? false
+                                    : true;
+                                // TODO - We can use this later if any user complaint about the printing speed
+                                //_receiptHasNonLatin1(invoice, settings);
+                                if (useImage) {
+                                  await _printToDevice(
+                                      context: context,
+                                      device: p,
+                                      invoice: invoice,
+                                      settingsOverride: settings);
+                                } else {
+                                  await _printToDeviceText(
+                                      context: context,
+                                      device: p,
+                                      invoice: invoice,
+                                      settingsOverride: settings);
+                                }
+                              },
+                            ))
+                        .toList(),
+                  );
+                },
+              ),
               if (kDebugMode) ...[
                 const Divider(height: 24),
                 const Text('Test via network (e.g. local ESC/POS listener)',
                     style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
-                _NetworkPrintRow(invoice: invoice),
+                _NetworkPrintRow(invoice: invoice, useTextMode: useTextMode),
               ],
             ],
           ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
+            onPressed: () {
+              printer.stopScan().catchError((e) {
+                if (kDebugMode) print(e);
+              });
+              Navigator.pop(dialogContext);
+            },
             child: const Text('Close'),
           ),
         ],
+        ),
       ),
     );
   }
 
   static Future<void> _printToDevice({
-    required PrinterType type,
-    required BasePrinterInput model,
+    required BuildContext context,
+    required Printer device,
     required Invoice invoice,
+    _ReceiptSettings? settingsOverride,
   }) async {
-    final manager = PrinterManager.instance;
-    final bytes = await _buildReceiptBytes(invoice);
-    await manager.connect(type: type, model: model);
-    await manager.send(type: type, bytes: bytes);
-    await manager.disconnect(type: type);
+    final printer = FlutterThermalPrinter.instance;
+    try {
+      final settings = settingsOverride ?? await _fetchReceiptSettings(invoice);
+      if (!context.mounted) return;
+      final widget = await _buildReceiptWidget(invoice, settings);
+      if (!context.mounted) return;
+      await printer.connect(device);
+      if (!context.mounted) return;
+      await printer.printWidget(
+        context,
+        printer: device,
+        widget: widget,
+        paperSize: settings.paperSize,
+      );
+      await printer.disconnect(device);
+    } catch (e) {
+      if (kDebugMode) print(e);
+      if (!context.mounted) return;
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text('Print failed: $e')),
+      );
+    }
   }
 
-  /// Mirrors [PDFService.generateInvoicePDF]'s content exactly (same
-  /// settings fetch, same fields shown/hidden) so the ESC/POS printout
-  /// matches the PDF preview. Deliberately avoids the ESC/POS library's
-  /// row()/absolute-column-position feature — that's what produced the
-  /// broken layout on real/virtual printers; plain text lines with manual
-  /// space padding render correctly everywhere.
-  static Future<List<int>> _buildReceiptBytes(Invoice invoice) async {
-    final dateFmt = await BackendServices.settings.getDateFormat();
-    final settings = await PDFService.fetchPdfSettings(datePattern: dateFmt.key);
-    final previousBalanceDue = settings.showPreviousBalance
-        ? await BackendServices.invoices.getPreviousBalanceDueForInvoice(invoice)
-        : 0.0;
-    final effectivePreviousBalance =
-        settings.showPreviousBalance ? previousBalanceDue : 0.0;
+  /// TEST-ONLY: plain ESC/POS text printing (generator.text()/row()),
+  /// instead of the image-widget path above. Toggle "Text mode (test)" in
+  /// the print dialog to try this instead — lets you compare on real
+  /// hardware whether generator.row()/PosColumn table layout (broken on
+  /// real printers in the old thermal_printer lib) works now, and whether
+  /// generator.text() throws on non-Latin1 content in this lib too.
+  static Future<void> _printToDeviceText({
+    required BuildContext context,
+    required Printer device,
+    required Invoice invoice,
+    _ReceiptSettings? settingsOverride,
+  }) async {
+    final printer = FlutterThermalPrinter.instance;
+    try {
+      final settings = settingsOverride ?? await _fetchReceiptSettings(invoice);
+      final bytes = await _buildReceiptBytesText(invoice, settings);
+      await printer.connect(device);
+      await printer.printData(device, bytes);
+      await printer.disconnect(device);
+    } catch (e) {
+      if (kDebugMode) print(e);
+      if (!context.mounted) return;
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text('Print failed: $e')),
+      );
+    }
+  }
 
-    final is58 = settings.pageSize == PageSize.thermal58;
+  static Future<void> _printToNetworkText({
+    required String ip,
+    required int port,
+    required Invoice invoice,
+    _ReceiptSettings? settingsOverride,
+  }) async {
+    final settings = settingsOverride ?? await _fetchReceiptSettings(invoice);
+    final bytes = await _buildReceiptBytesText(invoice, settings);
+    final result =
+        await FlutterThermalPrinterNetwork(ip, port: port).printTicket(bytes);
+    if (result != NetworkPrintResult.success) {
+      throw Exception('Network print failed: $result');
+    }
+  }
 
-    // Trim a few chars off the textbook 32/48 — real hardware often
-    // physically clips the last column(s) on full-width lines. Adjustable
-    // per-install via SettingKey.thermalWidthMargin since printer models vary
-    // (e.g. WOOSIM WSP-R241 needed 1).
-    final marginStr = await BackendServices.settings.getSetting(SettingKey.thermalWidthMargin);
-    final margin = int.tryParse(marginStr ?? '') ?? 1;
-    final itemLayout =
-        await BackendServices.settings.getSetting(SettingKey.thermalItemLayout) ?? 'table';
-    if(kDebugMode) print(margin);
-    final width = (is58 ? 32 : 48) - margin;
-    if(kDebugMode)  print(width);
-    final profile = await CapabilityProfile.load();
-    final generator = Generator(is58 ? PaperSize.mm58 : PaperSize.mm80, profile,spaceBetweenRows: 1);
+  static Future<List<int>> _buildReceiptBytesText(
+      Invoice invoice, _ReceiptSettings s) async {
+    final settings = s.pdf;
     final currency = invoice.currencySymbol;
     final company = settings.company;
 
-    final showItemTax = invoice.taxMode == TaxMode.perItem;
+    final profile = await CapabilityProfile.load();
+    final generator = Generator(s.paperSize, profile);
     List<int> bytes = [];
 
-    void line(String text, {PosAlign align = PosAlign.left, bool bold = false,bool isHead = false})
-    {
-      if(isHead) {
-        bytes += generator.text(text, styles: PosStyles(align: align, bold: bold,height: PosTextSize.size2,width: PosTextSize.size1,));
-      } else {
-        bytes += generator.text(text, styles: PosStyles(align: align, bold: bold,));
-      }
+    void line(String text, {PosAlign align = PosAlign.left, bool bold = false}) {
+      bytes += generator.text(text, styles: PosStyles(align: align, bold: bold));
     }
 
     void twoCol(String left, String right, {bool bold = false}) {
-      final pad = width - left.length - right.length;
-      final text = pad > 0 ? '$left${' ' * pad}$right' : '$left $right';
-      line(text, bold: bold);
-    }
-
-    /*
-    void twoCol2(String left, String right, {bool bold = false}) {
-      bytes += generator.row(
-          [
+      bytes += generator.row([
         PosColumn(
-          text: left,
-          width: 7,
-          styles: PosStyles(align: PosAlign.left, underline: false, bold: bold,fontType: PosFontType.fontB),
-        ),
+            text: left,
+            width: 8,
+            styles: PosStyles(align: PosAlign.left, bold: bold)),
         PosColumn(
-          text: right,
-          width: 5,
-          styles: PosStyles(align: PosAlign.right, underline: false, bold: bold,fontType: PosFontType.fontB),
-        ),
+            text: right,
+            width: 4,
+            styles: PosStyles(align: PosAlign.right, bold: bold)),
       ]);
     }
-    */
 
-    void hr() {bytes+=generator.hr();}
+    void hr() => bytes += generator.hr();
 
-    //void hr2() => line('-' * width);
-
-    String padRight(String s, int w) =>
-        s.length >= w ? s.substring(0, w) : s + ' ' * (w - s.length);
-    String padLeft(String s, int w) =>
-        s.length >= w ? s.substring(s.length - w) : ' ' * (w - s.length) + s;
-    String padCenter(String s, int w) {
-      if (s.length >= w) return s.substring(0, w);
-      final totalPad = w - s.length;
-      final left = totalPad ~/ 2;
-      return ' ' * left + s + ' ' * (totalPad - left);
-    }
-
-    // ── Business header ──
     if ((company?.name ?? '').isNotEmpty) {
-      line(company!.name, align: PosAlign.center, bold: true,isHead: true);
+      line(company!.name, align: PosAlign.center, bold: true);
     }
     if ((company?.address ?? '').isNotEmpty) {
       line(company!.address, align: PosAlign.center);
@@ -184,17 +266,13 @@ class ThermalPrinterService {
     line(invoice.type.toUpperCase(), align: PosAlign.center, bold: true);
     hr();
 
-    // ── Invoice meta ──
-    final dateFormatter = DateFormat(dateFmt.key);
-    final dateStr = dateFormatter.format(invoice.date);
     twoCol('Inv No: ${settings.invoicePrefix}${invoice.invoiceNumber ?? invoice.id}',
-        'Date: $dateStr');
+        'Date: ${s.dateFmt.format(invoice.date)}');
     if (invoice.dueDate != null) {
-      twoCol('Due:', dateFormatter.format(invoice.dueDate!));
+      twoCol('Due:', s.dateFmt.format(invoice.dueDate!));
     }
     hr();
 
-    // ── Customer ──
     line('Name: ${invoice.customer.name}', bold: true);
     if (invoice.customer.businessName.isNotEmpty) {
       line(invoice.customer.businessName);
@@ -207,54 +285,48 @@ class ThermalPrinterService {
     }
     hr();
 
-    // ── Items ──
-    // Table layout: compact column widths, tight enough to still fit on
-    // 58mm (31 chars) while leaving extra room for the name on 80mm.
-    const slW = 2, qtyW = 4, rateW = 6, gstW = 4, totalW = 7;
-    final gaps = showItemTax ? 5 : 4;
-    final nameW = (width - slW - qtyW - rateW - (showItemTax ? gstW : 0) - totalW - gaps)
-        .clamp(1, 999);
-    final useTable = itemLayout != 'detailed';
-
-    String singleLineRow(String sl, String name, String qty, String rate,
-        String? gst, String total) {
-      final parts = <String>[
-        padRight(sl, slW),
-        padRight(name, nameW),
-        padCenter(qty, qtyW),
-        padLeft(rate, rateW),
-      ];
-      if (gst != null) parts.add(padLeft(gst, gstW));
-      parts.add(padLeft(total, totalW));
-      return parts.join(' ');
-    }
-
-    if (useTable) {
-      line(
-          singleLineRow('Sl', 'Description', 'Qty', 'Rate',
-              showItemTax ? 'GST%' : null, 'Total'),
-          bold: true);
-    } else {
-      twoCol('# Item', 'Total', bold: true);
-    }
+    // Item table via generator.row()/PosColumn — the feature the old lib
+    // broke on real hardware. Testing whether it works here.
+    bytes += generator.row([
+      PosColumn(text: 'Sl', width: 1, styles: const PosStyles(bold: true)),
+      PosColumn(text: 'Item', width: 5, styles: const PosStyles(bold: true)),
+      PosColumn(
+          text: 'Qty',
+          width: 2,
+          styles: const PosStyles(align: PosAlign.center, bold: true)),
+      PosColumn(
+          text: 'Rate',
+          width: 2,
+          styles: const PosStyles(align: PosAlign.right, bold: true)),
+      PosColumn(
+          text: 'Total',
+          width: 2,
+          styles: const PosStyles(align: PosAlign.right, bold: true)),
+    ]);
     hr();
     for (var i = 0; i < invoice.items.length; i++) {
       final item = invoice.items[i];
+      final unit = item.effectiveUnit.trim().isEmpty ? '' : item.effectiveUnit;
       final qty = item.quantity == item.quantity.roundToDouble()
-          ? item.quantity.toInt().toString()
-          : item.quantity.toStringAsFixed(2);
+          ? item.quantity.toInt().toString() + unit
+          : item.quantity.toStringAsFixed(2) + unit;
       final rate = item.effectivePrice.toStringAsFixed(2);
       final total = item.total.toStringAsFixed(2);
-
-      if (useTable) {
-        line(singleLineRow('${i + 1}', item.product.name, qty, rate,
-            showItemTax ? '${item.product.tax_rate}%' : null, total));
-      } else {
-        line('${i + 1} ${item.product.name}', bold: true);
-        final detailParts = ['Qty:$qty', 'Rate:$rate'];
-        if (showItemTax) detailParts.add('${item.product.tax_rate}%');
-        detailParts.add(total);
-        line('  ${detailParts.join('  ')}');
+      final name = item.product.displayName(s.showNameAlias);
+      try {
+        bytes += generator.row([
+          PosColumn(text: '${i + 1}', width: 1),
+          PosColumn(text: name, width: 5),
+          PosColumn(text: qty, width: 2, styles: const PosStyles(align: PosAlign.center)),
+          PosColumn(text: rate, width: 2, styles: const PosStyles(align: PosAlign.right)),
+          PosColumn(text: total, width: 2, styles: const PosStyles(align: PosAlign.right)),
+        ]);
+      } catch (e) {
+        // generator.text()/row() throws on non-Latin1 content (codepage
+        // limitation) — exactly the case this test function exists to
+        // surface, so log instead of silently rendering blank.
+        if (kDebugMode) print('row failed for "$name": $e');
+        line('${i + 1} $name (encoding failed: $e)');
       }
       if (settings.showDiscount && item.totalDiscount > 0) {
         line('  Disc: -${item.totalDiscount.toStringAsFixed(2)}');
@@ -262,7 +334,6 @@ class ThermalPrinterService {
     }
     hr();
 
-    // ── Totals ──
     if (invoice.totalDiscount > 0) {
       twoCol('Subtotal:', '$currency ${invoice.grossSubtotal.toStringAsFixed(2)}');
       twoCol('Discount:', '-$currency ${invoice.totalDiscount.toStringAsFixed(2)}');
@@ -274,28 +345,11 @@ class ThermalPrinterService {
       twoCol(c.label.isEmpty ? 'Extra Cost' : c.label,
           '$currency ${c.amount.toStringAsFixed(2)}');
     }
-    if (effectivePreviousBalance > 0) {
-      twoCol('Prev Balance:',
-          '$currency ${effectivePreviousBalance.toStringAsFixed(2)}');
+    if (s.previousBalance > 0) {
+      twoCol('Prev Balance:', '$currency ${s.previousBalance.toStringAsFixed(2)}');
     }
-    twoCol(
-      'TOTAL',
-      '$currency ${(invoice.total + effectivePreviousBalance).toStringAsFixed(2)}',
-      bold: true,
-    );
-
-    if (invoice.taxMode != TaxMode.none && invoice.tax > 0) {
-      final isIndia = (company?.country ?? '').isEmpty ||
-          company!.country.toLowerCase() == 'india';
-      hr();
-      line('=== TAX SUMMARY ===', align: PosAlign.center, bold: true);
-      twoCol('Taxable Amt:', '$currency ${invoice.subtotal.toStringAsFixed(2)}');
-      if (isIndia) {
-        twoCol('SGST:', '$currency ${(invoice.tax / 2).toStringAsFixed(2)}');
-        twoCol('CGST:', '$currency ${(invoice.tax / 2).toStringAsFixed(2)}');
-      }
-      twoCol('Total Tax:', '$currency ${invoice.tax.toStringAsFixed(2)}');
-    }
+    twoCol('TOTAL', '$currency ${(invoice.total + s.previousBalance).toStringAsFixed(2)}',
+        bold: true);
 
     if (invoice.amountPaid > 0) {
       hr();
@@ -308,13 +362,6 @@ class ThermalPrinterService {
       }
     }
 
-    // ── Notes ──
-    if ((invoice.notes ?? '').isNotEmpty) {
-      hr();
-      line(invoice.notes!);
-    }
-
-    // ── Footer ──
     hr();
     if (settings.thankYouNote.isNotEmpty) {
       line(settings.thankYouNote, align: PosAlign.center, bold: true);
@@ -323,38 +370,387 @@ class ThermalPrinterService {
       line('Generated by Invoiso', align: PosAlign.center);
     }
 
-    // generator.cut() forces 5 blank lines internally before cutting, with
-    // no way to configure that. Reverse-feed 3 lines first to shrink the
-    // net visible gap to ~2 lines. Requires printer support for ESC/POS
-    // reverse feed (most auto-cutter printers have it, but not guaranteed).
-    bytes += generator.reverseFeed(3);
     bytes += generator.cut();
-    return _stripKanjiCancel(bytes);
+    return bytes;
   }
 
-  /// The ESC/POS library emits `FS .` (bytes 0x1C 0x2E — "Cancel Kanji
-  /// Character Mode") before every single text call, unconditionally, even
-  /// though we never use Kanji mode. Some printers (e.g. WOOSIM WSP-R241)
-  /// don't recognize 0x1C as a command byte, drop it, and print the
-  /// following 0x2E as a literal '.' — showing up as a stray dot at the
-  /// start of every line. Safe to strip: 0x1C never appears in our own
-  /// text content (it's a non-printable control byte).
-  static List<int> _stripKanjiCancel(List<int> bytes) {
-    final result = <int>[];
-    for (var i = 0; i < bytes.length; i++) {
-      if (bytes[i] == 0x1C && i + 1 < bytes.length && bytes[i + 1] == 0x2E) {
-        i++;
-        continue;
-      }
-      result.add(bytes[i]);
+  static Future<void> _printToNetwork({
+    required BuildContext context,
+    required String ip,
+    required int port,
+    required Invoice invoice,
+    _ReceiptSettings? settingsOverride,
+  }) async {
+    final settings = settingsOverride ?? await _fetchReceiptSettings(invoice);
+    if (!context.mounted) return;
+    final widget = await _buildReceiptWidget(invoice, settings);
+    if (!context.mounted) return;
+    final profile = await CapabilityProfile.load();
+    final generator = Generator(settings.paperSize, profile);
+    if (!context.mounted) return;
+    final bytes = await FlutterThermalPrinter.instance.screenShotWidget(
+      context,
+      widget: widget,
+      paperSize: settings.paperSize,
+      customWidth: settings.widthPx,
+      generator: generator,
+    );
+    final result = await FlutterThermalPrinterNetwork(ip, port: port)
+        .printTicket([...bytes, ...generator.cut()]);
+    if (result != NetworkPrintResult.success) {
+      throw Exception('Network print failed: $result');
     }
-    return result;
   }
+
+  /// Mirrors [PDFService.generateInvoicePDF]'s content exactly (same
+  /// settings fetch, same fields shown/hidden) so the printout matches the
+  /// PDF preview.
+  static Future<_ReceiptSettings> _fetchReceiptSettings(
+      Invoice invoice) async {
+    final dateFmt = await BackendServices.settings.getDateFormat();
+    final settings =
+        await PDFService.fetchPdfSettings(datePattern: dateFmt.key);
+    final previousBalanceDue = settings.showPreviousBalance
+        ? await BackendServices.invoices.getPreviousBalanceDueForInvoice(invoice)
+        : 0.0;
+
+    final is58 = settings.pageSize == PageSize.thermal58;
+    final showNameAlias = await BackendServices.settings.getShowAliasNameInPdf();
+    final itemLayout =
+        await BackendServices.settings.getSetting(SettingKey.thermalItemLayout) ?? 'table';
+
+    // 384/576 px = the real dot-width of 58mm/80mm printer heads at 203dpi.
+    // Must be a multiple of 8 (thermal raster requirement).
+    final widthPx = ((is58 ? 384 : 576) / 8).ceil() * 8;
+
+    return _ReceiptSettings(
+      pdf: settings,
+      dateFmt: DateFormat(dateFmt.key),
+      previousBalance: settings.showPreviousBalance ? previousBalanceDue : 0.0,
+      is58: is58,
+      showNameAlias: showNameAlias,
+      useTable: itemLayout != 'detailed',
+      widthPx: widthPx,
+      paperSize: is58 ? PaperSize.mm58 : PaperSize.mm80,
+    );
+  }
+
+  static bool _hasNonLatin1(String s) => s.codeUnits.any((c) => c > 0xFF);
+
+  /// Plain ESC/POS text printing is faster and uses the printer's native
+  /// font, but generator.text()/row() throws on any non-Latin1 script
+  /// (codepage limitation). Scanning every user-editable text field up
+  /// front — not just alias names, since customer names/notes/etc. can
+  /// contain local-language text too — decides which path is actually
+  /// safe for this specific receipt, instead of trusting a settings flag
+  /// that could drift out of sync with what's actually typed.
+  static bool _receiptHasNonLatin1(Invoice invoice, _ReceiptSettings s) {
+    final company = s.pdf.company;
+    final fields = <String?>[
+      company?.name,
+      company?.address,
+      company?.phone,
+      company?.gstin,
+      invoice.customer.name,
+      invoice.customer.businessName,
+      invoice.customer.phone,
+      invoice.customer.gstin,
+      invoice.notes,
+      s.pdf.thankYouNote,
+      for (final item in invoice.items) item.product.displayName(s.showNameAlias),
+    ];
+    return fields.any((f) => f != null && _hasNonLatin1(f));
+  }
+
+  static Future<Widget> _buildReceiptWidget(
+      Invoice invoice, _ReceiptSettings s) async {
+    final settings = s.pdf;
+    final currency = invoice.currencySymbol;
+    final company = settings.company;
+    final showItemTax = invoice.taxMode == TaxMode.perItem;
+
+    const headFontSize = PdfLayout.thermalPrinterHeadFontSize * 0.85;
+    const itemFontSize = PdfLayout.thermalPrinterItemFontSize * 0.85;
+
+    Widget text(String text,
+        {TextAlign align = TextAlign.left,
+        bool bold = false,
+        double fontSize = itemFontSize}) {
+      return Text(
+        text,
+        textAlign: align,
+        style: TextStyle(
+          fontSize: fontSize,
+          fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+          color: Colors.black,
+        ),
+      );
+    }
+
+    Widget twoCol(String left, String right, {bool bold = false}) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: text(left, bold: bold)),
+          const SizedBox(width: 6),
+          text(right, bold: bold, align: TextAlign.right),
+        ],
+      );
+    }
+
+    Widget hr() => Container(
+          height: 1,
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          color: Colors.black,
+        );
+
+    // ── Item table column widths, in fractions of paper width ──
+    const slW = 3.0, qtyW = 5.0, rateW = 10.0, gstW = 4.0, totalW = 10.0;
+    const nameWMax = 18.0;
+    final charWidth = s.is58 ? 32.0 : 48.0;
+    final gaps = showItemTax ? 5.0 : 4.0;
+    final nameW =
+        (charWidth - slW - qtyW - rateW - (showItemTax ? gstW : 0) - totalW - gaps)
+            .clamp(1.0, nameWMax);
+
+    Map<int, TableColumnWidth> tableWidths(bool withGst) {
+      final widths = <int, TableColumnWidth>{
+        0: FractionColumnWidth(slW / charWidth),
+        1: FractionColumnWidth(nameW / charWidth),
+        2: FractionColumnWidth(qtyW / charWidth),
+        3: FractionColumnWidth(rateW / charWidth),
+      };
+      var idx = 4;
+      if (withGst) widths[idx++] = FractionColumnWidth(gstW / charWidth);
+      widths[idx] = FractionColumnWidth(totalW / charWidth);
+      return widths;
+    }
+
+    List<Widget> itemTableRow(
+        String sl, String name, String qty, String rate, String? gst, String total,
+        {bool bold = false}) {
+      Widget cell(String v, TextAlign align, {bool bold_ = false} ) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 1),
+            child: text(v, align: align, bold: bold || bold_),
+          );
+      return [
+        cell(sl, TextAlign.left),
+        cell(name, TextAlign.left,bold_: true),
+        cell(qty, TextAlign.center),
+        cell(rate, TextAlign.right),
+        if (gst != null) cell(gst, TextAlign.right),
+        cell(total, TextAlign.right),
+      ];
+    }
+
+    final headerCells = itemTableRow(
+        'Sl', 'Description', 'Qty', 'Rate', showItemTax ? 'GST%' : null, 'Total',
+        bold: true);
+    final itemRows = <TableRow>[TableRow(children: headerCells)];
+    final detailedRows = <Widget>[];
+
+    for (var i = 0; i < invoice.items.length; i++) {
+      final item = invoice.items[i];
+      final unit = item.effectiveUnit.trim().isEmpty ? '' : item.effectiveUnit;
+      final qty = item.quantity == item.quantity.roundToDouble()
+          ? item.quantity.toInt().toString() + unit
+          : item.quantity.toStringAsFixed(2) + unit;
+      final rate = item.effectivePrice.toStringAsFixed(2);
+      final total = item.total.toStringAsFixed(2);
+      final name = item.product.displayName(s.showNameAlias);
+      final gstStr = showItemTax ? '${item.product.tax_rate}%' : null;
+
+      if (s.useTable) {
+        itemRows.add(TableRow(
+          children: itemTableRow('${i + 1}', name, qty, rate, gstStr, total),
+        ));
+        if (settings.showDiscount && item.totalDiscount > 0) {
+          itemRows.add(TableRow(children: [
+            const SizedBox(),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: text('Disc: -${item.totalDiscount.toStringAsFixed(2)}'),
+            ),
+            const SizedBox(),
+            const SizedBox(),
+            if (showItemTax) const SizedBox(),
+            const SizedBox(),
+          ]));
+        }
+      } else {
+        final detailParts = ['Qty:$qty', 'Rate:$rate'];
+        if (showItemTax) detailParts.add('${item.product.tax_rate}%');
+        detailParts.add(total);
+        detailedRows.add(Padding(
+          padding: const EdgeInsets.only(bottom: 2),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              text('${i + 1} $name',bold: true),
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    for (final part in detailParts) text(part),
+                  ],
+                ),
+              ),
+              if (settings.showDiscount && item.totalDiscount > 0)
+                text('  Disc: -${item.totalDiscount.toStringAsFixed(2)}'),
+            ],
+          ),
+        ));
+      }
+    }
+
+    // ── Tax summary ──
+    final isIndia = (company?.country ?? '').isEmpty ||
+        company!.country.toLowerCase() == 'india';
+    final showTaxSummary = invoice.taxMode != TaxMode.none && invoice.tax > 0;
+
+    return Directionality(
+      textDirection: ui.TextDirection.ltr,
+      child: Material(
+        color: Colors.white,
+        child: Container(
+          width: s.widthPx.toDouble(),
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          color: Colors.white,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // ── Business header ──
+              if ((company?.name ?? '').isNotEmpty)
+                text(company!.name,
+                    align: TextAlign.center, bold: true, fontSize: headFontSize),
+              if ((company?.address ?? '').isNotEmpty)
+                text(company!.address, align: TextAlign.center),
+              if ((company?.phone ?? '').isNotEmpty)
+                text('Ph: ${company!.phone}', align: TextAlign.center),
+              if (settings.showGst && (company?.gstin ?? '').isNotEmpty)
+                text('${taxLabel(company?.country)}: ${company!.gstin}',
+                    align: TextAlign.center),
+              hr(),
+              text(invoice.type.toUpperCase(), align: TextAlign.center, bold: true),
+              hr(),
+
+              // ── Invoice meta ──
+              twoCol(
+                  'Inv No: ${settings.invoicePrefix}${invoice.invoiceNumber ?? invoice.id}',
+                  'Date: ${s.dateFmt.format(invoice.date)}'),
+              if (invoice.dueDate != null)
+                twoCol('Due:', s.dateFmt.format(invoice.dueDate!)),
+              hr(),
+
+              // ── Customer ──
+              text('Name: ${invoice.customer.name}', bold: true),
+              if (invoice.customer.businessName.isNotEmpty)
+                text(invoice.customer.businessName),
+              if (invoice.customer.phone.isNotEmpty)
+                text('Ph: ${invoice.customer.phone}'),
+              if (settings.showGst && invoice.customer.gstin.isNotEmpty)
+                text('${taxLabel(company?.country)}: ${invoice.customer.gstin}'),
+              hr(),
+
+              // ── Items ──
+              if (s.useTable)
+                Table(
+                  columnWidths: tableWidths(showItemTax),
+                  children: itemRows,
+                )
+              else
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  twoCol('# Item', 'Total', bold: true),
+                  hr(),
+                  ...detailedRows,
+                ]),
+              hr(),
+
+              // ── Totals ──
+              if (invoice.totalDiscount > 0) ...[
+                twoCol('Subtotal:', '$currency ${invoice.grossSubtotal.toStringAsFixed(2)}'),
+                twoCol('Discount:', '-$currency ${invoice.totalDiscount.toStringAsFixed(2)}'),
+              ],
+              if (invoice.taxMode != TaxMode.none)
+                twoCol(invoiceTaxLabel(invoice), '$currency ${invoice.tax.toStringAsFixed(2)}'),
+              for (final c in invoice.additionalCosts)
+                twoCol(c.label.isEmpty ? 'Extra Cost' : c.label,
+                    '$currency ${c.amount.toStringAsFixed(2)}'),
+              if (s.previousBalance > 0)
+                twoCol('Prev Balance:', '$currency ${s.previousBalance.toStringAsFixed(2)}'),
+              twoCol('TOTAL',
+                  '$currency ${(invoice.total + s.previousBalance).toStringAsFixed(2)}',
+                  bold: true),
+
+              if (showTaxSummary) ...[
+                hr(),
+                text('=== TAX SUMMARY ===', align: TextAlign.center, bold: true),
+                twoCol('Taxable Amt:', '$currency ${invoice.subtotal.toStringAsFixed(2)}'),
+                if (isIndia) ...[
+                  twoCol('SGST:', '$currency ${(invoice.tax / 2).toStringAsFixed(2)}'),
+                  twoCol('CGST:', '$currency ${(invoice.tax / 2).toStringAsFixed(2)}'),
+                ],
+                twoCol('Total Tax:', '$currency ${invoice.tax.toStringAsFixed(2)}'),
+              ],
+
+              if (invoice.amountPaid > 0) ...[
+                hr(),
+                twoCol('Paid:', '$currency ${invoice.amountPaid.toStringAsFixed(2)}'),
+                if (invoice.outstandingBalance <= 0)
+                  twoCol('PAID IN FULL', '', bold: true)
+                else
+                  twoCol('Balance Due',
+                      '$currency ${invoice.outstandingBalance.toStringAsFixed(2)}', bold: true),
+              ],
+
+              // ── Notes ──
+              if ((invoice.notes ?? '').isNotEmpty) ...[
+                hr(),
+                text(invoice.notes!),
+              ],
+
+              // ── Footer ──
+              hr(),
+              if (settings.thankYouNote.isNotEmpty)
+                text(settings.thankYouNote, align: TextAlign.center, bold: true),
+              if (settings.showFooterBranding)
+                text('Generated by Invoiso', align: TextAlign.center),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ReceiptSettings {
+  final PdfGenerationSettings pdf;
+  final DateFormat dateFmt;
+  final double previousBalance;
+  final bool is58;
+  final bool showNameAlias;
+  final bool useTable;
+  final int widthPx;
+  final PaperSize paperSize;
+
+  _ReceiptSettings({
+    required this.pdf,
+    required this.dateFmt,
+    required this.previousBalance,
+    required this.is58,
+    required this.showNameAlias,
+    required this.useTable,
+    required this.widthPx,
+    required this.paperSize,
+  });
 }
 
 class _NetworkPrintRow extends StatefulWidget {
   final Invoice invoice;
-  const _NetworkPrintRow({required this.invoice});
+  final bool useTextMode;
+  const _NetworkPrintRow({required this.invoice, this.useTextMode = false});
 
   @override
   State<_NetworkPrintRow> createState() => _NetworkPrintRowState();
@@ -376,19 +772,33 @@ class _NetworkPrintRowState extends State<_NetworkPrintRow> {
     setState(() => _sending = true);
     final messenger = ScaffoldMessenger.maybeOf(context);
     try {
-      final input = TcpPrinterInput(
-        ipAddress: _ipController.text.trim(),
-        port: int.tryParse(_portController.text.trim()) ?? 9100,
-      );
-      await ThermalPrinterService._printToDevice(
-        type: PrinterType.network,
-        model: input,
-        invoice: widget.invoice,
-      );
+      final settings =
+          await ThermalPrinterService._fetchReceiptSettings(widget.invoice);
+      final useImage = widget.useTextMode
+          ? false
+          : ThermalPrinterService._receiptHasNonLatin1(widget.invoice, settings);
+      if (!useImage) {
+        await ThermalPrinterService._printToNetworkText(
+          ip: _ipController.text.trim(),
+          port: int.tryParse(_portController.text.trim()) ?? 9100,
+          invoice: widget.invoice,
+          settingsOverride: settings,
+        );
+      } else {
+        if (!mounted) return;
+        await ThermalPrinterService._printToNetwork(
+          context: context,
+          ip: _ipController.text.trim(),
+          port: int.tryParse(_portController.text.trim()) ?? 9100,
+          invoice: widget.invoice,
+          settingsOverride: settings,
+        );
+      }
       messenger?.showSnackBar(
         const SnackBar(content: Text('Sent to network printer/listener.')),
       );
     } catch (e) {
+      if (kDebugMode) print(e);
       messenger?.showSnackBar(
         SnackBar(content: Text('Failed: $e')),
       );

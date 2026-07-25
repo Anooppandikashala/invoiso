@@ -56,6 +56,21 @@ jobs:
 #        env:
 #          CMAKE_GENERATOR: "Visual Studio 17 2022"
 
+      - name: Download VC++ Redistributable for installer bundling
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vc_redist.x64.exe" -OutFile "windows/packaging/exe/vc_redist.x64.exe"
+
+      - name: Point installer script at the downloaded VC++ Redistributable
+        # fastforge copies/renders setup_template.iss into dist/<version>/
+        # before invoking ISCC, so a path relative to the script (as used
+        # for other [Files] entries) resolves against dist/<version>/, not
+        # this repo checkout — must be an absolute path instead.
+        shell: bash
+        run: |
+          WORKSPACE_FWD=$(echo "$GITHUB_WORKSPACE" | tr '\\' '/')
+          sed -i "s|__VC_REDIST_PATH__|$WORKSPACE_FWD/windows/packaging/exe/vc_redist.x64.exe|g" windows/packaging/exe/setup_template.iss
+
       - name: Build Windows Installer with FastForge
         run: fastforge package --platform windows --targets exe
         env:
