@@ -1,6 +1,8 @@
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:image/image.dart' as img;
 import 'package:invoiso/services/backend_services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_thermal_printer/flutter_thermal_printer.dart';
@@ -42,7 +44,7 @@ class ThermalPrinterService {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              //if (kDebugMode)
+              if (kDebugMode)
                 SwitchListTile(
                   dense: true,
                   contentPadding: EdgeInsets.zero,
@@ -166,6 +168,38 @@ class ThermalPrinterService {
     }
   }
 
+  /// generator.text()/row() throws on non-Latin1 content (ESC/POS codepage
+  /// limitation) — text mode can't render local-language product names at
+  /// all, so that one row is rasterized to a bitmap instead (same technique
+  /// the old hand-rolled imageLine()/imageTableRow() used) and spliced into
+  /// the otherwise-plain-text ticket. No BuildContext needed — pure
+  /// dart:ui TextPainter/Canvas, not a widget screenshot.
+  static Future<List<int>> _renderRowAsImage(
+      String text, Generator generator, int widthPx) async {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: const TextStyle(fontSize: 24, color: Colors.black),
+      ),
+      textAlign: TextAlign.left,
+      textDirection: ui.TextDirection.ltr,
+    )..layout(maxWidth: widthPx.toDouble());
+
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    canvas.drawRect(Rect.fromLTWH(0, 0, widthPx.toDouble(), painter.height),
+        Paint()..color = Colors.white);
+    painter.paint(canvas, Offset.zero);
+    final uiImage = await recorder
+        .endRecording()
+        .toImage(widthPx, painter.height.ceil());
+    final byteData = await uiImage.toByteData(format: ui.ImageByteFormat.png);
+    final png = byteData!.buffer.asUint8List();
+    final decoded = img.decodePng(Uint8List.fromList(png));
+    if (decoded == null) return const [];
+    return generator.imageRaster(decoded);
+  }
+
   static Future<List<int>> _buildReceiptBytesText(
       Invoice invoice, _ReceiptSettings s) async {
     final settings = s.pdf;
@@ -268,11 +302,9 @@ class ThermalPrinterService {
           PosColumn(text: total, width: 2, styles: const PosStyles(align: PosAlign.right)),
         ]);
       } catch (e) {
-        // generator.text()/row() throws on non-Latin1 content (codepage
-        // limitation) — exactly the case this test function exists to
-        // surface, so log instead of silently rendering blank.
-        if (kDebugMode) print('row failed for "$name": $e');
-        line('${i + 1} $name (encoding failed: $e)');
+        if (kDebugMode) print('row failed for "$name", rendering as image: $e');
+        bytes +=
+            await _renderRowAsImage('${i + 1} $name', generator, s.widthPx);
       }
       if (settings.showDiscount && item.totalDiscount > 0) {
         line('  Disc: -${item.totalDiscount.toStringAsFixed(2)}');
@@ -387,8 +419,8 @@ class ThermalPrinterService {
     final company = settings.company;
     final showItemTax = invoice.taxMode == TaxMode.perItem;
 
-    const headFontSize = PdfLayout.thermalPrinterHeadFontSize * 0.8;
-    const itemFontSize = PdfLayout.thermalPrinterItemFontSize * 0.8;
+    const headFontSize = PdfLayout.thermalPrinterHeadFontSize * 0.85;
+    const itemFontSize = PdfLayout.thermalPrinterItemFontSize * 0.85;
 
     Widget text(String text,
         {TextAlign align = TextAlign.left,
@@ -447,13 +479,13 @@ class ThermalPrinterService {
     List<Widget> itemTableRow(
         String sl, String name, String qty, String rate, String? gst, String total,
         {bool bold = false}) {
-      Widget cell(String v, TextAlign align) => Padding(
+      Widget cell(String v, TextAlign align, {bool bold_ = false} ) => Padding(
             padding: const EdgeInsets.symmetric(vertical: 1),
-            child: text(v, align: align, bold: bold),
+            child: text(v, align: align, bold: bold || bold_),
           );
       return [
         cell(sl, TextAlign.left),
-        cell(name, TextAlign.left),
+        cell(name, TextAlign.left,bold_: true),
         cell(qty, TextAlign.center),
         cell(rate, TextAlign.right),
         if (gst != null) cell(gst, TextAlign.right),
@@ -504,7 +536,7 @@ class ThermalPrinterService {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              text('${i + 1} $name'),
+              text('${i + 1} $name',bold: true),
               Padding(
                 padding: const EdgeInsets.only(left: 8),
                 child: Row(
