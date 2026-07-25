@@ -53,7 +53,7 @@ Name: "launchAtStartup"; Description: "{cm:AutoStartProgram,{{DISPLAY_NAME}}}"; 
 
 [Files]
 Source: "{{SOURCE_DIR}}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "vc_redist.x64.exe"; DestDir: "{tmp}"; Flags: ignoreversion
+Source: "__VC_REDIST_PATH__"; DestDir: "{tmp}"; Flags: ignoreversion
 
 [Icons]
 Name: "{autoprograms}\{{DISPLAY_NAME}}"; Filename: "{app}\{{EXECUTABLE_NAME}}"
