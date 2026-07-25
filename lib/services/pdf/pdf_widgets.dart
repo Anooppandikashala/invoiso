@@ -247,6 +247,17 @@ pw.Widget buildEnhancedTotals(
               horizontalPadding: rowHorizontalPadding,
               verticalPadding: rowVerticalPadding,
             )),
+        if (invoice.invoiceDiscountAmount > 0)
+          pdfTotalRow(
+            invoice.invoiceDiscountType == InvoiceDiscountType.percent
+                ? "Extra Discount (${invoice.invoiceDiscountValue.toStringAsFixed(1)}%)"
+                : "Extra Discount ",
+            "-$currencySymbol ${invoice.invoiceDiscountAmount.toStringAsFixed(2)}",
+            color: PdfColors.orange800,
+            fontSize: rowFontSize,
+            horizontalPadding: rowHorizontalPadding,
+            verticalPadding: rowVerticalPadding,
+          ),
         pw.Container(
           padding: pw.EdgeInsets.symmetric(
             horizontal: highlightHorizontalPadding,
@@ -386,8 +397,8 @@ pw.Widget pdfTotalRow(String label, String value,
     child: pw.Row(
       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
       children: [
-        pw.Text(label, style: style),
-        pw.Text(value, style: style),
+        pw.Flexible(child: pw.Text(label, style: style)),
+        pw.Flexible(child: pw.Text(value, style: style)),
       ],
     ),
   );

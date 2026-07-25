@@ -116,6 +116,8 @@ class ReportService {
         'tax_rate',
         'tax_mode',
         'additional_costs',
+        'invoice_discount_type',
+        'invoice_discount_value',
         'currency_code',
         'currency_symbol',
       ],
@@ -168,6 +170,10 @@ class ReportService {
         globalTaxRate: taxRate,
         globalTaxRateFormat: TaxRateFormat.percent,
         additionalCostsTotal: addCosts,
+        invoiceDiscountType: InvoiceDiscountTypeExtension.fromKey(
+            inv['invoice_discount_type'] as String?),
+        invoiceDiscountValue:
+            (inv['invoice_discount_value'] as num?)?.toDouble() ?? 0.0,
       );
       final total = totals.total;
       final outstanding =

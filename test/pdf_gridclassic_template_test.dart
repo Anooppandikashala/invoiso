@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -103,7 +104,7 @@ void main() {
         final bytes = await doc.save();
         expect(bytes, isNotEmpty);
         final name = pageFormat == PdfPageFormat.a4 ? 'a4' : pageFormat == PdfPageFormat.a5 ? "a5" : "a6";
-        final outputPath = 'output/invoiso_grid_pdf_' + name + showQuantity.toString() + '.pdf';
+        final outputPath = 'output/invoiso_grid_pdf_$name$showQuantity.pdf';
         final outputFile = File(outputPath);
         await outputFile.parent.create(recursive: true);
         await outputFile.writeAsBytes(await doc.save());
@@ -128,7 +129,7 @@ void main() {
       total += p.total;
     }
 
-    print(total);
+    if(kDebugMode) print(total);
 
     pw.MultiPage p = buildGridClassicTemplate(
         inv,

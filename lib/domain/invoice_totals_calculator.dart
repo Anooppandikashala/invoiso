@@ -27,6 +27,7 @@ class InvoiceTotals {
   final double totalDiscount;
   final double tax;
   final double additionalCostsTotal;
+  final double invoiceDiscountAmount;
 
   const InvoiceTotals({
     required this.subtotal,
@@ -34,9 +35,13 @@ class InvoiceTotals {
     required this.totalDiscount,
     required this.tax,
     required this.additionalCostsTotal,
+    this.invoiceDiscountAmount = 0.0,
   });
 
-  double get total => subtotal + tax + additionalCostsTotal;
+  double get preDiscountTotal => subtotal + tax + additionalCostsTotal;
+
+  double get total =>
+      (preDiscountTotal - invoiceDiscountAmount).clamp(0.0, double.infinity);
 }
 
 class InvoiceTotalsCalculator {
@@ -81,6 +86,8 @@ class InvoiceTotalsCalculator {
     required double globalTaxRate,
     TaxRateFormat globalTaxRateFormat = TaxRateFormat.fraction,
     double additionalCostsTotal = 0,
+    InvoiceDiscountType invoiceDiscountType = InvoiceDiscountType.percent,
+    double invoiceDiscountValue = 0,
   }) {
     double subtotal = 0;
     double grossSubtotal = 0;
@@ -103,12 +110,20 @@ class InvoiceTotalsCalculator {
       TaxMode.none => 0.0,
     };
 
+    final preDiscountTotal = subtotal + tax + additionalCostsTotal;
+    final invoiceDiscountAmount = invoiceDiscountValue <= 0
+        ? 0.0
+        : (invoiceDiscountType == InvoiceDiscountType.percent
+            ? preDiscountTotal * invoiceDiscountValue / 100
+            : invoiceDiscountValue);
+
     return InvoiceTotals(
       subtotal: subtotal,
       grossSubtotal: grossSubtotal,
       totalDiscount: totalDiscount,
       tax: tax,
       additionalCostsTotal: additionalCostsTotal,
+      invoiceDiscountAmount: invoiceDiscountAmount,
     );
   }
 }

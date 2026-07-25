@@ -71,6 +71,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   final List<({TextEditingController label, TextEditingController amount})>
       _additionalCostControllers = [];
   bool _showAdditionalCosts = false;
+  InvoiceDiscountType _invoiceDiscountType = InvoiceDiscountType.percent;
+  final _invoiceDiscountController = TextEditingController();
 
   final notesController = TextEditingController();
   final searchController = TextEditingController();
@@ -168,6 +170,11 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         ));
       }
       if (_additionalCostControllers.isNotEmpty) _showAdditionalCosts = true;
+      _invoiceDiscountType = _invoice!.invoiceDiscountType;
+      if (_invoice!.invoiceDiscountValue > 0) {
+        _invoiceDiscountController.text =
+            _invoice!.invoiceDiscountValue.toStringAsFixed(2);
+      }
     } else if (widget.cloneFrom != null) {
       // Clone: pre-populate fields but treat as a brand-new invoice.
       // isEditing stays false → _createInvoice() will be called on save.
@@ -193,6 +200,11 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         ));
       }
       if (_additionalCostControllers.isNotEmpty) _showAdditionalCosts = true;
+      _invoiceDiscountType = src.invoiceDiscountType;
+      if (src.invoiceDiscountValue > 0) {
+        _invoiceDiscountController.text =
+            src.invoiceDiscountValue.toStringAsFixed(2);
+      }
       // date stays as today; currentInvoiceNumber is generated in _loadCustomersAndProducts
     }
   }
@@ -257,6 +269,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       row.label.dispose();
       row.amount.dispose();
     }
+    _invoiceDiscountController.dispose();
     super.dispose();
   }
 
@@ -1008,6 +1021,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         quantityLabel:
             _quantityLabel.trim().isEmpty ? null : _quantityLabel.trim(),
         additionalCosts: _buildAdditionalCosts(),
+        invoiceDiscountType: _invoiceDiscountType,
+        invoiceDiscountValue: _invoiceDiscountValue,
       );
 
       await ref.read(invoiceRepositoryProvider).insertInvoice(invoice);
@@ -2615,6 +2630,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     );
   }
 
+  double get _invoiceDiscountValue =>
+      double.tryParse(_invoiceDiscountController.text) ?? 0.0;
+
   List<AdditionalCost> _buildAdditionalCosts() {
     final costs = <AdditionalCost>[];
     for (final row in _additionalCostControllers) {
@@ -2792,6 +2810,108 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInvoiceDiscountSection() {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.percent, size: 18, color: Colors.orange[700]),
+          const SizedBox(width: 8),
+          Text(
+            'Invoice Discount',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.orange[800],
+            ),
+          ),
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 100,
+            child: TextField(
+              controller: _invoiceDiscountController,
+              onChanged: (_) {
+                if (!mounted) return;
+                setState(() {});
+              },
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(
+                isDense: true,
+                prefixText:
+                    _invoiceDiscountType == InvoiceDiscountType.amount
+                        ? '$_currencySymbol '
+                        : null,
+                suffixText:
+                    _invoiceDiscountType == InvoiceDiscountType.percent
+                        ? '%'
+                        : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                ),
+                filled: true,
+                fillColor: Colors.white,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            height: 40,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<InvoiceDiscountType>(
+                value: _invoiceDiscountType,
+                //isExpanded: true,
+                selectedItemBuilder: (context) => const [
+                  Center(child: Text('%')),
+                  Center(child: Text('Amount')),
+                ],
+                items: const [
+                  DropdownMenuItem(
+                    value: InvoiceDiscountType.percent,
+                    child: Align(
+                      alignment: Alignment.center,
+                        child: Text('%')),
+                  ),
+                  DropdownMenuItem(
+                    value: InvoiceDiscountType.amount,
+                    child: Center(child: Text('Amount')),
+                  ),
+                ],
+                onChanged: (v) {
+                  if (v == null || !mounted) return;
+                  setState(() => _invoiceDiscountType = v);
+                },
+              ),
+            ),
+          )
+          // DropdownButton<InvoiceDiscountType>(
+          //   value: _invoiceDiscountType,
+          //   underline: const SizedBox(),
+          //   items: const [
+          //     DropdownMenuItem(
+          //         value: InvoiceDiscountType.percent, child: Center(child: Text('%'))),
+          //     DropdownMenuItem(
+          //         value: InvoiceDiscountType.amount, child: Center(child: Text('Amount'))),
+          //   ],
+          //   onChanged: (v) {
+          //     if (v == null || !mounted) return;
+          //     setState(() => _invoiceDiscountType = v);
+          //   },
+          // ),
         ],
       ),
     );
@@ -3067,7 +3187,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   }
 
   Widget _invoiceItems(double tax, double subtotal, double total,
-      double grossSubtotal, double totalDiscount) {
+      double grossSubtotal, double totalDiscount, double invoiceDiscountAmount) {
     return Card(
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -3401,6 +3521,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
               children: [
                 _buildAdditionalCostsSection(),
                 const SizedBox(height: 12),
+                _buildInvoiceDiscountSection(),
+                const SizedBox(height: 12),
                 Row(
                   children: [
                     Expanded(
@@ -3688,6 +3810,33 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                     false,
                                   ),
                                 )),
+                            if (invoiceDiscountAmount > 0) ...[
+                              const SizedBox(height: 4),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                        _invoiceDiscountType ==
+                                                InvoiceDiscountType.percent
+                                            ? 'Invoice Discount (${_invoiceDiscountValue.toStringAsFixed(1)}%):'
+                                            : 'Invoice Discount:',
+                                        style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.orange[700])),
+                                  ),
+                                  Flexible(
+                                    child: Text(
+                                        '-$_currencySymbol${invoiceDiscountAmount.toStringAsFixed(2)}',
+                                        style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.orange[700])),
+                                  ),
+                                ],
+                              ),
+                            ],
                             if (_showPreviousBalance &&
                                 selectedCustomer != null) ...[
                               const SizedBox(height: 8),
@@ -3906,6 +4055,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         quantityLabel:
             _quantityLabel.trim().isEmpty ? null : _quantityLabel.trim(),
         additionalCosts: _buildAdditionalCosts(),
+        invoiceDiscountType: _invoiceDiscountType,
+        invoiceDiscountValue: _invoiceDiscountValue,
       );
 
       await ref.read(invoiceRepositoryProvider).updateInvoice(updatedInvoice);
@@ -4252,11 +4403,14 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       globalTaxRate: taxRate,
       globalTaxRateFormat: TaxRateFormat.fraction,
       additionalCostsTotal: additionalTotal,
+      invoiceDiscountType: _invoiceDiscountType,
+      invoiceDiscountValue: _invoiceDiscountValue,
     );
     final subtotal = totals.subtotal;
     final grossSubtotal = totals.grossSubtotal;
     final totalDiscount = totals.totalDiscount;
     final tax = totals.tax;
+    final invoiceDiscountAmount = totals.invoiceDiscountAmount;
     final total = totals.total;
 
     return _withUnsavedChangesPopScope(Scaffold(
@@ -4351,13 +4505,13 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                           children: [
                             if (isDesktop)
                               _buildDesktopLayout(tax, subtotal, total,
-                                  grossSubtotal, totalDiscount)
+                                  grossSubtotal, totalDiscount, invoiceDiscountAmount)
                             else if (isTablet)
                               _buildTabletLayout(tax, subtotal, total,
-                                  grossSubtotal, totalDiscount)
+                                  grossSubtotal, totalDiscount, invoiceDiscountAmount)
                             else
                               _buildMobileLayout(tax, subtotal, total,
-                                  grossSubtotal, totalDiscount),
+                                  grossSubtotal, totalDiscount, invoiceDiscountAmount),
                           ],
                         ),
                       ),
@@ -4370,7 +4524,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   }
 
   Widget _buildDesktopLayout(double tax, double subtotal, double total,
-      double grossSubtotal, double totalDiscount) {
+      double grossSubtotal, double totalDiscount, double invoiceDiscountAmount) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -4411,7 +4565,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 ],
               ),
               AppSpacing.hSmall,
-              _invoiceItems(tax, subtotal, total, grossSubtotal, totalDiscount),
+              _invoiceItems(tax, subtotal, total, grossSubtotal, totalDiscount,
+                  invoiceDiscountAmount),
               AppSpacing.hSmall,
               _actionButtons(),
             ],
@@ -4422,7 +4577,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   }
 
   Widget _buildTabletLayout(double tax, double subtotal, double total,
-      double grossSubtotal, double totalDiscount) {
+      double grossSubtotal, double totalDiscount, double invoiceDiscountAmount) {
     return Column(
       children: [
         Row(
@@ -4453,8 +4608,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  _invoiceItems(
-                      tax, subtotal, total, grossSubtotal, totalDiscount),
+                  _invoiceItems(tax, subtotal, total, grossSubtotal,
+                      totalDiscount, invoiceDiscountAmount),
                   const SizedBox(height: 16),
                   _actionButtons(),
                 ],
@@ -4467,7 +4622,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   }
 
   Widget _buildMobileLayout(double tax, double subtotal, double total,
-      double grossSubtotal, double totalDiscount) {
+      double grossSubtotal, double totalDiscount, double invoiceDiscountAmount) {
     return Column(
       children: [
         _customerSearchView(),
@@ -4478,7 +4633,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         const SizedBox(height: 16),
         _customerDetailsForm(),
         const SizedBox(height: 16),
-        _invoiceItems(tax, subtotal, total, grossSubtotal, totalDiscount),
+        _invoiceItems(tax, subtotal, total, grossSubtotal, totalDiscount,
+            invoiceDiscountAmount),
         const SizedBox(height: 16),
         _actionButtons(),
       ],

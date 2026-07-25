@@ -524,6 +524,31 @@ extension TaxModeExtension on TaxMode {
   }
 }
 
+enum InvoiceDiscountType {
+  percent,
+  amount,
+}
+
+extension InvoiceDiscountTypeExtension on InvoiceDiscountType {
+  String get key {
+    switch (this) {
+      case InvoiceDiscountType.percent:
+        return 'percent';
+      case InvoiceDiscountType.amount:
+        return 'amount';
+    }
+  }
+
+  static InvoiceDiscountType fromKey(String? key) {
+    switch (key) {
+      case 'amount':
+        return InvoiceDiscountType.amount;
+      default:
+        return InvoiceDiscountType.percent;
+    }
+  }
+}
+
 enum LogoPosition { left, right }
 
 /// Returns the label used for a company's tax registration number on PDFs.

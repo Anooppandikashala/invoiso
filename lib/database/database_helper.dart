@@ -15,7 +15,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 32;
+  final dbVersion = 33;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -96,7 +96,9 @@ class DatabaseHelper {
         quantity_label TEXT,
         additional_costs TEXT,
         previous_balance REAL DEFAULT 0.0,
-        invoice_number TEXT
+        invoice_number TEXT,
+        invoice_discount_type TEXT DEFAULT 'percent',
+        invoice_discount_value REAL DEFAULT 0.0
       )
     ''');
 
@@ -525,6 +527,18 @@ class DatabaseHelper {
           db, 32, 'add_product_alias_name_to_invoice_items', () async {
         await db.execute(
           'ALTER TABLE invoice_items ADD COLUMN product_alias_name TEXT',
+        );
+      });
+    }
+
+    if (oldVersion < 33) {
+      await _runMigrationStep(
+          db, 33, 'add_invoice_discount_to_invoices', () async {
+        await db.execute(
+          "ALTER TABLE invoices ADD COLUMN invoice_discount_type TEXT DEFAULT 'percent'",
+        );
+        await db.execute(
+          'ALTER TABLE invoices ADD COLUMN invoice_discount_value REAL DEFAULT 0.0',
         );
       });
     }

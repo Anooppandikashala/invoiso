@@ -27,6 +27,8 @@ class Invoice {
   List<AdditionalCost>
       additionalCosts; // e.g. Shipping, Packaging (zero tax, added after tax)
   double previousBalance;
+  InvoiceDiscountType invoiceDiscountType; // invoice-level discount, applied after tax
+  double invoiceDiscountValue;
 
   Invoice({
     required this.id,
@@ -47,6 +49,8 @@ class Invoice {
     this.quantityLabel,
     this.additionalCosts = const [],
     this.previousBalance = 0.0,
+    this.invoiceDiscountType = InvoiceDiscountType.percent,
+    this.invoiceDiscountValue = 0.0,
   });
 
   InvoiceTotals get _totals => InvoiceTotalsCalculator.totals(
@@ -55,6 +59,8 @@ class Invoice {
         globalTaxRate: taxRate,
         globalTaxRateFormat: TaxRateFormat.fraction,
         additionalCostsTotal: additionalCostsTotal,
+        invoiceDiscountType: invoiceDiscountType,
+        invoiceDiscountValue: invoiceDiscountValue,
       );
 
   double get subtotal => _totals.subtotal;
@@ -67,6 +73,8 @@ class Invoice {
 
   double get additionalCostsTotal =>
       additionalCosts.fold(0.0, (sum, c) => sum + c.amount);
+
+  double get invoiceDiscountAmount => _totals.invoiceDiscountAmount;
 
   double get total => _totals.total;
 

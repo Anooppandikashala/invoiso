@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:invoiso/services/backend_services.dart';
 import 'package:invoiso/services/thermal_printer_service.dart';
@@ -42,7 +43,7 @@ class InvoicePdfServices {
       }
     } catch (e) {
       if (context.mounted) {
-        print(e);
+        if(kDebugMode) print(e);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error previewing PDF: $e')),
         );
