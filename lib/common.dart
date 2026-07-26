@@ -59,7 +59,8 @@ enum SettingKey {
   companyLogo, // used by cloud edition's generic setSetting/getSetting path
   installationId, // Unique identifier for this installation. Generated on first launch and persisted locally. Used for anonymous analytics and installation tracking.
   showAliasNameInPdf, // whether to print a product's local-language alias name instead of its actual name on PDFs (default false)
-  showTaxButtonInInvoicePage
+  showTaxButtonInInvoicePage,
+  productColumnsConfig // JSON ProductColumnsConfig — which optional product fields (and invoice extra cost) are visible/editable
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -149,6 +150,8 @@ extension SettingKeyExtension on SettingKey {
         return 'show_alias_name_in_pdf';
       case SettingKey.showTaxButtonInInvoicePage:
         return 'show_tax_button_in_invoice_page';
+      case SettingKey.productColumnsConfig:
+        return 'product_columns_config';
     }
   }
 }
@@ -444,6 +447,83 @@ class BankAccount {
 
   String get displayLabel =>
       label.trim().isNotEmpty ? label.trim() : bankName.trim();
+}
+
+/// Which optional Product fields (and the unrelated invoice Extra Cost
+/// field, bundled in here for a single settings screen) are shown/editable.
+/// All default true so existing installs see zero behavior change until
+/// they opt into hiding fields. Name and Price are never toggleable —
+/// intentionally absent from this class.
+class ProductColumnsConfig {
+  final bool aliasName;
+  final bool taxRate;
+  final bool hsncode;
+  final bool description;
+  final bool purchasePrice;
+  final bool defaultDiscount;
+  final bool unit;
+  final bool type;
+  final bool extraCost;
+
+  const ProductColumnsConfig({
+    this.aliasName = true,
+    this.taxRate = true,
+    this.hsncode = true,
+    this.description = true,
+    this.purchasePrice = true,
+    this.defaultDiscount = true,
+    this.unit = true,
+    this.type = true,
+    this.extraCost = true,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'aliasName': aliasName,
+        'taxRate': taxRate,
+        'hsncode': hsncode,
+        'description': description,
+        'purchasePrice': purchasePrice,
+        'defaultDiscount': defaultDiscount,
+        'unit': unit,
+        'type': type,
+        'extraCost': extraCost,
+      };
+
+  factory ProductColumnsConfig.fromJson(Map<String, dynamic> json) =>
+      ProductColumnsConfig(
+        aliasName: json['aliasName'] as bool? ?? true,
+        taxRate: json['taxRate'] as bool? ?? true,
+        hsncode: json['hsncode'] as bool? ?? true,
+        description: json['description'] as bool? ?? true,
+        purchasePrice: json['purchasePrice'] as bool? ?? true,
+        defaultDiscount: json['defaultDiscount'] as bool? ?? true,
+        unit: json['unit'] as bool? ?? true,
+        type: json['type'] as bool? ?? true,
+        extraCost: json['extraCost'] as bool? ?? true,
+      );
+
+  ProductColumnsConfig copyWith({
+    bool? aliasName,
+    bool? taxRate,
+    bool? hsncode,
+    bool? description,
+    bool? purchasePrice,
+    bool? defaultDiscount,
+    bool? unit,
+    bool? type,
+    bool? extraCost,
+  }) =>
+      ProductColumnsConfig(
+        aliasName: aliasName ?? this.aliasName,
+        taxRate: taxRate ?? this.taxRate,
+        hsncode: hsncode ?? this.hsncode,
+        description: description ?? this.description,
+        purchasePrice: purchasePrice ?? this.purchasePrice,
+        defaultDiscount: defaultDiscount ?? this.defaultDiscount,
+        unit: unit ?? this.unit,
+        type: type ?? this.type,
+        extraCost: extraCost ?? this.extraCost,
+      );
 }
 
 class CurrencyOption {

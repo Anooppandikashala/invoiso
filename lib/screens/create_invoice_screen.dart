@@ -54,6 +54,14 @@ class CreateInvoiceScreen extends ConsumerStatefulWidget {
 }
 
 class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
+  ProductColumnsConfig _columnsConfig = const ProductColumnsConfig();
+
+  Future<void> _loadColumnsConfig() async {
+    final config = await ref.read(settingsRepositoryProvider).getProductColumnsConfig();
+    if (!mounted) return;
+    setState(() => _columnsConfig = config);
+  }
+
   Customer? selectedCustomer;
   List<Customer> customers = [];
   List<Customer> filteredCustomers = [];
@@ -135,6 +143,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     widget.guard?.canLeave = _confirmLeaveIfDirty;
     taxRateController.text = (taxRate * 100).toStringAsFixed(1);
     _loadCustomersAndProducts(widget.invoiceToEdit != null);
+    _loadColumnsConfig();
     _selectedOrderDate = DateTime.now();
     dateController.text = DateFormat(_datePattern).format(_selectedOrderDate);
     _setAdditionalNote();
@@ -652,6 +661,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
+                ],
+                if (_showQuantity && _columnsConfig.unit) ...[
                   _buildUnitPicker(
                     selectedUnit: dialogUnit,
                     customController: unitController,
@@ -659,26 +670,28 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   ),
                   const SizedBox(height: 16),
                 ],
-                TextField(
-                  controller: discountController,
-                  decoration: InputDecoration(
-                    labelText: 'Discount',
-                    border: OutlineInputBorder(
-                        borderRadius:
-                            BorderRadius.circular(AppBorderRadius.xsmall)),
-                    prefixIcon: const Icon(Icons.discount),
-                    filled: true,
-                    fillColor: Colors.grey[50],
+                if (product.defaultDiscount > 0) ...[
+                  TextField(
+                    controller: discountController,
+                    decoration: InputDecoration(
+                      labelText: 'Discount',
+                      border: OutlineInputBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppBorderRadius.xsmall)),
+                      prefixIcon: const Icon(Icons.discount),
+                      filled: true,
+                      fillColor: Colors.grey[50],
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                    ],
                   ),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                _buildDiscountPerUnitToggle(discountPerUnit,
-                    (val) => setDialogState(() => discountPerUnit = val)),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 8),
+                  _buildDiscountPerUnitToggle(discountPerUnit,
+                      (val) => setDialogState(() => discountPerUnit = val)),
+                  const SizedBox(height: 16),
+                ],
                 TextField(
                   controller: unitPriceController,
                   decoration: InputDecoration(
@@ -697,26 +710,28 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                   ],
                 ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: extraCostController,
-                  decoration: InputDecoration(
-                    labelText: 'Extra Cost (optional)',
-                    hintText: '0.00',
-                    helperText: 'Flat fee added on top of the line total',
-                    border: OutlineInputBorder(
-                        borderRadius:
-                            BorderRadius.circular(AppBorderRadius.xsmall)),
-                    prefixIcon: const Icon(Icons.add_circle_outline, size: 18),
-                    filled: true,
-                    fillColor: Colors.grey[50],
+                if (_columnsConfig.extraCost) ...[
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: extraCostController,
+                    decoration: InputDecoration(
+                      labelText: 'Extra Cost (optional)',
+                      hintText: '0.00',
+                      helperText: 'Flat fee added on top of the line total',
+                      border: OutlineInputBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppBorderRadius.xsmall)),
+                      prefixIcon: const Icon(Icons.add_circle_outline, size: 18),
+                      filled: true,
+                      fillColor: Colors.grey[50],
+                    ),
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                    ],
                   ),
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                  ],
-                ),
+                ],
                 if (invoiceItems.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   const Divider(height: 1),
@@ -1119,7 +1134,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                               fontSize: AppFontSize.xlarge),
                         ),
                       ),
-                      if (_businessType == BusinessType.both) ...[
+                      if (_businessType == BusinessType.both &&
+                          _columnsConfig.type) ...[
                         const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -1169,6 +1185,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                     ],
                   ),
+                ],
+                if (_showQuantity && _columnsConfig.unit) ...[
                   const SizedBox(height: 16),
                   _buildUnitPicker(
                     selectedUnit: dialogUnit,
@@ -1176,26 +1194,28 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     onUnitChanged: (v) => setDialogState(() => dialogUnit = v),
                   ),
                 ],
-                const SizedBox(height: 16),
-                TextField(
-                  controller: discountController,
-                  decoration: InputDecoration(
-                    labelText: 'Discount',
-                    border: OutlineInputBorder(
-                        borderRadius:
-                            BorderRadius.circular(AppBorderRadius.xsmall)),
-                    prefixIcon: const Icon(Icons.discount),
-                    filled: true,
-                    fillColor: Colors.grey[50],
+                if (item.product.defaultDiscount > 0 || item.discount > 0) ...[
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: discountController,
+                    decoration: InputDecoration(
+                      labelText: 'Discount',
+                      border: OutlineInputBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppBorderRadius.xsmall)),
+                      prefixIcon: const Icon(Icons.discount),
+                      filled: true,
+                      fillColor: Colors.grey[50],
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                    ],
                   ),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                _buildDiscountPerUnitToggle(discountPerUnit,
-                    (val) => setDialogState(() => discountPerUnit = val)),
+                  const SizedBox(height: 8),
+                  _buildDiscountPerUnitToggle(discountPerUnit,
+                      (val) => setDialogState(() => discountPerUnit = val)),
+                ],
                 const SizedBox(height: 16),
                 TextField(
                   controller: unitPriceController,
@@ -1216,26 +1236,28 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                   ],
                 ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: extraCostController,
-                  decoration: InputDecoration(
-                    labelText: 'Extra Cost (optional)',
-                    hintText: '0.00',
-                    helperText: 'Flat fee added on top of the line total',
-                    border: OutlineInputBorder(
-                        borderRadius:
-                            BorderRadius.circular(AppBorderRadius.xsmall)),
-                    prefixIcon: const Icon(Icons.add_circle_outline, size: 18),
-                    filled: true,
-                    fillColor: Colors.grey[50],
+                if (_columnsConfig.extraCost) ...[
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: extraCostController,
+                    decoration: InputDecoration(
+                      labelText: 'Extra Cost (optional)',
+                      hintText: '0.00',
+                      helperText: 'Flat fee added on top of the line total',
+                      border: OutlineInputBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppBorderRadius.xsmall)),
+                      prefixIcon: const Icon(Icons.add_circle_outline, size: 18),
+                      filled: true,
+                      fillColor: Colors.grey[50],
+                    ),
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                    ],
                   ),
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                  ],
-                ),
+                ],
               ],
             ),
           ),
@@ -1327,7 +1349,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (_businessType == BusinessType.both) ...[
+                if (_businessType == BusinessType.both &&
+                    _columnsConfig.type) ...[
                   SegmentedButton<String>(
                     segments: const [
                       ButtonSegment(
@@ -1357,19 +1380,21 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     fillColor: Colors.grey[50],
                   ),
                 ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: aliasNameController,
-                  decoration: InputDecoration(
-                    labelText: 'Alias (for PDF)',
-                    border: OutlineInputBorder(
-                        borderRadius:
-                            BorderRadius.circular(AppBorderRadius.xsmall)),
-                    prefixIcon: const Icon(Icons.translate),
-                    filled: true,
-                    fillColor: Colors.grey[50],
+                if (_columnsConfig.aliasName) ...[
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: aliasNameController,
+                    decoration: InputDecoration(
+                      labelText: 'Alias (for PDF)',
+                      border: OutlineInputBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppBorderRadius.xsmall)),
+                      prefixIcon: const Icon(Icons.translate),
+                      filled: true,
+                      fillColor: Colors.grey[50],
+                    ),
                   ),
-                ),
+                ],
                 const SizedBox(height: 16),
                 TextField(
                   controller: priceController,
@@ -1411,6 +1436,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                     ],
                   ),
+                ],
+                if (_showQuantity && _columnsConfig.unit) ...[
                   const SizedBox(height: 16),
                   _buildUnitPicker(
                     selectedUnit: selectedUnit,
@@ -1438,27 +1465,29 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 const SizedBox(height: 8),
                 _buildDiscountPerUnitToggle(discountPerUnit,
                     (val) => setDialogState(() => discountPerUnit = val)),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: extraCostController,
-                  decoration: InputDecoration(
-                    labelText: 'Extra Cost (optional)',
-                    hintText: '0.00',
-                    helperText: 'Flat fee added on top of the line total',
-                    border: OutlineInputBorder(
-                        borderRadius:
-                            BorderRadius.circular(AppBorderRadius.xsmall)),
-                    prefixIcon: const Icon(Icons.add_circle_outline, size: 18),
-                    filled: true,
-                    fillColor: Colors.grey[50],
+                if (_columnsConfig.extraCost) ...[
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: extraCostController,
+                    decoration: InputDecoration(
+                      labelText: 'Extra Cost (optional)',
+                      hintText: '0.00',
+                      helperText: 'Flat fee added on top of the line total',
+                      border: OutlineInputBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppBorderRadius.xsmall)),
+                      prefixIcon: const Icon(Icons.add_circle_outline, size: 18),
+                      filled: true,
+                      fillColor: Colors.grey[50],
+                    ),
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                    ],
                   ),
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                  ],
-                ),
-                if (_taxMode == TaxMode.perItem) ...[
+                ],
+                if (_taxMode == TaxMode.perItem && _columnsConfig.taxRate) ...[
                   const SizedBox(height: 16),
                   TextField(
                     controller: taxRateController,
@@ -1941,15 +1970,17 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  'HSN/SAC: ${product.hsncode.toUpperCase()}',
-                                  maxLines: 2,
-                                  style: const TextStyle(
-                                      color: Colors.blue,
-                                      fontWeight: FontWeight.w400,
-                                      fontSize: AppFontSize.small),
-                                ),
-                                const SizedBox(height: 2),
+                                if (_columnsConfig.hsncode) ...[
+                                  Text(
+                                    'HSN/SAC: ${product.hsncode.toUpperCase()}',
+                                    maxLines: 2,
+                                    style: const TextStyle(
+                                        color: Colors.blue,
+                                        fontWeight: FontWeight.w400,
+                                        fontSize: AppFontSize.small),
+                                  ),
+                                  const SizedBox(height: 2),
+                                ],
                                 Row(
                                   children: [
                                     Flexible(
@@ -3306,7 +3337,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                   ),
                                 ),
                                 AppSpacing.wMedium,
-                                if (_businessType == BusinessType.both)
+                                if (_columnsConfig.type && _businessType == BusinessType.both)
                                   Container(
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 6, vertical: 2),
@@ -3352,8 +3383,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                   else
                                     _buildItemDetail('Price',
                                         '$_currencySymbol${item.product.price.toStringAsFixed(2)}'),
-                                  _buildItemDetail(
-                                      'HSN/SAC', item.product.hsncode.toString()),
+                                  if (_columnsConfig.hsncode)
+                                    _buildItemDetail(
+                                        'HSN/SAC', item.product.hsncode.toString()),
                                   if (_showQuantity)
                                     _buildItemDetail(
                                         _quantityLabel.trim().isNotEmpty
@@ -3361,8 +3393,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                             : 'Qty',
                                         '${item.quantity == item.quantity.roundToDouble() ? item.quantity.toInt().toString() : item.quantity.toString()}'
                                         '${item.effectiveUnit.trim().isEmpty ? '' : ' ${item.effectiveUnit}'}'),
-                                  _buildItemDetail('Discount',
-                                      '$_currencySymbol${item.discount.toStringAsFixed(2)}${item.discountPerUnit ? ' ×qty' : ''}'),
+                                  if(item.discount > 0)
+                                    _buildItemDetail('Discount',
+                                        '$_currencySymbol${item.discount.toStringAsFixed(2)}${item.discountPerUnit ? ' ×qty' : ''}'),
                                   if (item.discountPerUnit && item.discount > 0)
                                     _buildItemDetail('Net',
                                         '$_currencySymbol${(item.effectivePrice - item.discount).toStringAsFixed(2)}/item',

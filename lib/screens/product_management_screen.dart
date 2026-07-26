@@ -88,6 +88,15 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     _loadBusinessType();
     _loadProducts();
     _loadCurrency();
+    _loadColumnsConfig();
+  }
+
+  ProductColumnsConfig _columnsConfig = const ProductColumnsConfig();
+
+  Future<void> _loadColumnsConfig() async {
+    final config = await ref.read(settingsRepositoryProvider).getProductColumnsConfig();
+    if (!mounted) return;
+    setState(() => _columnsConfig = config);
   }
 
   Future<void> _loadBusinessType() async {
@@ -318,7 +327,9 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (_businessType == BusinessType.both && isEdit) ...[
+                    if (_businessType == BusinessType.both &&
+                        _columnsConfig.type &&
+                        isEdit) ...[
                       SegmentedButton<String>(
                         segments: const [
                           ButtonSegment(
@@ -336,7 +347,8 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                             setDialogState(() => dialogItemType = val.first),
                       ),
                       const SizedBox(height: 16),
-                    ] else if (_businessType == BusinessType.both) ...[
+                    ] else if (_businessType == BusinessType.both &&
+                        _columnsConfig.type) ...[
                       Chip(
                         avatar: Icon(
                             dialogItemType == 'service'
@@ -352,22 +364,28 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                     _buildDialogTextField(nameCtrl, 'Name (In English)', Icons.inventory_2,
                         readOnly: !isEdit, maxLength: 100),
                     const SizedBox(height: 16),
-                    _buildDialogTextField(aliasNameCtrl,
-                        'Alias Name (for invoice PDF)', Icons.translate,
-                        readOnly: !isEdit, maxLength: 100,
-                        helperText : "Alias Name is an optional local-language display name used only on PDF invoices.(You can enable this in InvoiceSettings Page)"
-                            "\n You can enter the alias in any supported language, \n"
-                            "such as Malayalam, Tamil, Kannada, Hindi, Telugu, Marathi, or others, to generate customer-friendly invoices."
-                    ),
-                    const SizedBox(height: 16),
-                    _buildDialogTextField(
-                        hsnCodeCtrl, 'HSN/SAC', Icons.qr_code,
-                        readOnly: !isEdit, maxLength: 100),
-                    const SizedBox(height: 16),
-                    _buildDialogTextField(
-                        descriptionCtrl, 'Description', Icons.description,
-                        readOnly: !isEdit, maxLines: 3, maxLength: 100),
-                    const SizedBox(height: 16),
+                    if (_columnsConfig.aliasName) ...[
+                      _buildDialogTextField(aliasNameCtrl,
+                          'Alias Name (for invoice PDF)', Icons.translate,
+                          readOnly: !isEdit, maxLength: 100,
+                          helperText : "Alias Name is an optional local-language display name used only on PDF invoices.(You can enable this in InvoiceSettings Page)"
+                              "\n You can enter the alias in any supported language, \n"
+                              "such as Malayalam, Tamil, Kannada, Hindi, Telugu, Marathi, or others, to generate customer-friendly invoices."
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_columnsConfig.hsncode) ...[
+                      _buildDialogTextField(
+                          hsnCodeCtrl, 'HSN/SAC', Icons.qr_code,
+                          readOnly: !isEdit, maxLength: 100),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_columnsConfig.description) ...[
+                      _buildDialogTextField(
+                          descriptionCtrl, 'Description', Icons.description,
+                          readOnly: !isEdit, maxLines: 3, maxLength: 100),
+                      const SizedBox(height: 16),
+                    ],
                     _buildDialogTextField(
                         priceCtrl, 'Price', Icons.attach_money,
                         readOnly: !isEdit,
@@ -376,40 +394,47 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                         isPrice: true,
                         prefixText: '$_currencySymbol '),
                     const SizedBox(height: 16),
-                    _buildDialogTextField(
-                        purchasePriceCtrl, 'Purchase Price', Icons.shopping_cart_outlined,
-                        readOnly: !isEdit,
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        isPrice: true,
-                        prefixText: '$_currencySymbol '),
-                    const SizedBox(height: 16),
-                    _buildDialogTextField(
-                        defaultDiscountCtrl, 'Default Discount', Icons.discount,
-                        readOnly: !isEdit,
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        isPrice: true,
-                        prefixText: '$_currencySymbol '),
-                    const SizedBox(height: 16),
-                    _buildDialogTextField(
-                        taxRateCtrl, 'Tax Rate (%)', Icons.percent,
-                        readOnly: !isEdit,
-                        keyboardType: TextInputType.number,
-                        isTaxRate: true),
-                    const SizedBox(height: 16),
+                    if (_columnsConfig.purchasePrice) ...[
+                      _buildDialogTextField(
+                          purchasePriceCtrl, 'Purchase Price', Icons.shopping_cart_outlined,
+                          readOnly: !isEdit,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          isPrice: true,
+                          prefixText: '$_currencySymbol '),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_columnsConfig.defaultDiscount) ...[
+                      _buildDialogTextField(
+                          defaultDiscountCtrl, 'Default Discount', Icons.discount,
+                          readOnly: !isEdit,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          isPrice: true,
+                          prefixText: '$_currencySymbol '),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_columnsConfig.taxRate) ...[
+                      _buildDialogTextField(
+                          taxRateCtrl, 'Tax Rate (%)', Icons.percent,
+                          readOnly: !isEdit,
+                          keyboardType: TextInputType.number,
+                          isTaxRate: true),
+                      const SizedBox(height: 16),
+                    ],
                     _buildDialogTextField(stockCtrl, 'Stock', Icons.inventory,
                         readOnly: !isEdit,
                         keyboardType: TextInputType.number,
                         isStock: true),
                     const SizedBox(height: 16),
-                    _buildUnitField(
-                      selectedUnit: dialogUnit,
-                      customController: customUnitCtrl,
-                      onUnitChanged: (v) =>
-                          setDialogState(() => dialogUnit = v),
-                      readOnly: !isEdit,
-                    ),
+                    if (_columnsConfig.unit)
+                      _buildUnitField(
+                        selectedUnit: dialogUnit,
+                        customController: customUnitCtrl,
+                        onUnitChanged: (v) =>
+                            setDialogState(() => dialogUnit = v),
+                        readOnly: !isEdit,
+                      ),
                   ],
                 ),
               ),
@@ -1334,7 +1359,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
               key: _formKey,
               child: Column(
                 children: [
-                  if (_businessType == BusinessType.both) ...[
+                  if (_businessType == BusinessType.both && _columnsConfig.type) ...[
                     SegmentedButton<String>(
                       segments: const [
                         ButtonSegment(
@@ -1358,59 +1383,73 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                   _buildFormField(_nameController, 'Name (In English)', Icons.inventory_2,
                       maxLength: 100),
                   const SizedBox(height: 16),
-                  _buildFormField(_aliasNameController,
-                      'Alias Name (for invoice PDF)', Icons.translate,
-                      maxLength: 100,
-                      required: false,
-                      helperText : "Alias Name is an optional local-language display name used only on PDF invoices.(You can enable this in InvoiceSettings Page)"
-                          "\n You can enter the alias in any supported language, \n"
-                          "such as Malayalam, Tamil, Kannada, Hindi, Telugu, Marathi, or others, to generate customer-friendly invoices."),
-                  const SizedBox(height: 16),
-                  _buildFormField(_hsnCodeController, 'HSN/SAC', Icons.qr_code,
-                      maxLength: 100, required: false),
-                  const SizedBox(height: 16),
-                  _buildFormField(
-                      _descriptionController, 'Description', Icons.description,
-                      maxLines: 3, maxLength: 100, required: false),
-                  const SizedBox(height: 16),
+                  if (_columnsConfig.aliasName) ...[
+                    _buildFormField(_aliasNameController,
+                        'Alias Name (for invoice PDF)', Icons.translate,
+                        maxLength: 100,
+                        required: false,
+                        helperText : "Alias Name is an optional local-language display name used only on PDF invoices.(You can enable this in InvoiceSettings Page)"
+                            "\n You can enter the alias in any supported language, \n"
+                            "such as Malayalam, Tamil, Kannada, Hindi, Telugu, Marathi, or others, to generate customer-friendly invoices."),
+                    const SizedBox(height: 16),
+                  ],
+                  if (_columnsConfig.hsncode) ...[
+                    _buildFormField(_hsnCodeController, 'HSN/SAC', Icons.qr_code,
+                        maxLength: 100, required: false),
+                    const SizedBox(height: 16),
+                  ],
+                  if (_columnsConfig.description) ...[
+                    _buildFormField(
+                        _descriptionController, 'Description', Icons.description,
+                        maxLines: 3, maxLength: 100, required: false),
+                    const SizedBox(height: 16),
+                  ],
                   _buildFormField(_priceController, 'Price', Icons.attach_money,
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
                       isPrice: true,
                       prefixText: '$_currencySymbol '),
                   const SizedBox(height: 16),
-                  _buildFormField(_purchasePriceController,
-                      'Purchase Price', Icons.shopping_cart_outlined,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      isPrice: true,
-                      prefixText: '$_currencySymbol '),
-                  const SizedBox(height: 16),
-                  _buildFormField(
-                      _defaultDiscountController,
-                      'Default Discount', Icons.discount,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      isPrice: true,
-                      required: false,
-                      prefixText: '$_currencySymbol '),
-                  const SizedBox(height: 16),
-                  _buildFormField(
-                      _taxRateController, 'Tax Rate (%)', Icons.percent,
-                      keyboardType: TextInputType.number, isTaxRate: true),
-                  const SizedBox(height: 16),
+                  if (_columnsConfig.purchasePrice) ...[
+                    _buildFormField(_purchasePriceController,
+                        'Purchase Price', Icons.shopping_cart_outlined,
+                        keyboardType:
+                            const TextInputType.numberWithOptions(decimal: true),
+                        isPrice: true,
+                        prefixText: '$_currencySymbol '),
+                    const SizedBox(height: 16),
+                  ],
+                  if (_columnsConfig.defaultDiscount) ...[
+                    _buildFormField(
+                        _defaultDiscountController,
+                        'Default Discount', Icons.discount,
+                        keyboardType:
+                            const TextInputType.numberWithOptions(decimal: true),
+                        isPrice: true,
+                        required: false,
+                        prefixText: '$_currencySymbol '),
+                    const SizedBox(height: 16),
+                  ],
+                  if (_columnsConfig.taxRate) ...[
+                    _buildFormField(
+                        _taxRateController, 'Tax Rate (%)', Icons.percent,
+                        keyboardType: TextInputType.number, isTaxRate: true),
+                    const SizedBox(height: 16),
+                  ],
                   _buildFormField(_stockController, 'Stock', Icons.inventory,
                       keyboardType: TextInputType.number, isStock: true),
                   const SizedBox(height: 16),
-                  _buildUnitField(
-                    selectedUnit: _selectedUnit,
-                    customController: _customUnitController,
-                    onUnitChanged: (v) {
-                      if (!mounted) return;
-                      setState(() => _selectedUnit = v);
-                    },
-                  ),
-                  const SizedBox(height: 24),
+                  if (_columnsConfig.unit) ...[
+                    _buildUnitField(
+                      selectedUnit: _selectedUnit,
+                      customController: _customUnitController,
+                      onUnitChanged: (v) {
+                        if (!mounted) return;
+                        setState(() => _selectedUnit = v);
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                  ],
                   Row(
                     children: [
                       Expanded(
@@ -1784,36 +1823,43 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                 Text('Sl. No', style: TextStyle(fontWeight: FontWeight.bold))),
         const DataColumn(
             label: Text('Name', style: TextStyle(fontWeight: FontWeight.bold))),
-        const DataColumn(
-            label:
-                Text('Alias', style: TextStyle(fontWeight: FontWeight.bold))),
-        if (_businessType == BusinessType.both)
+        if (_columnsConfig.aliasName)
+          const DataColumn(
+              label:
+                  Text('Alias', style: TextStyle(fontWeight: FontWeight.bold))),
+        if (_businessType == BusinessType.both && _columnsConfig.type)
           const DataColumn(
               label:Text('Type', style: TextStyle(fontWeight: FontWeight.bold))),
-        const DataColumn(
-            label: Text('HSN/SAC',
-                style: TextStyle(fontWeight: FontWeight.bold))),
-        const DataColumn(
-            label: Text('Description',
-                style: TextStyle(fontWeight: FontWeight.bold))),
+        if (_columnsConfig.hsncode)
+          const DataColumn(
+              label: Text('HSN/SAC',
+                  style: TextStyle(fontWeight: FontWeight.bold))),
+        if (_columnsConfig.description)
+          const DataColumn(
+              label: Text('Description',
+                  style: TextStyle(fontWeight: FontWeight.bold))),
         const DataColumn(
             label:
                 Text('Price', style: TextStyle(fontWeight: FontWeight.bold))),
-        const DataColumn(
-            label: Text('Purchase Price',
-                style: TextStyle(fontWeight: FontWeight.bold))),
-        const DataColumn(
-            label:
-            Text('Discount', style: TextStyle(fontWeight: FontWeight.bold))),
-        const DataColumn(
-            label: Text('Tax Rate',
-                style: TextStyle(fontWeight: FontWeight.bold))),
+        if (_columnsConfig.purchasePrice)
+          const DataColumn(
+              label: Text('Purchase Price',
+                  style: TextStyle(fontWeight: FontWeight.bold))),
+        if (_columnsConfig.defaultDiscount)
+          const DataColumn(
+              label:
+              Text('Discount', style: TextStyle(fontWeight: FontWeight.bold))),
+        if (_columnsConfig.taxRate)
+          const DataColumn(
+              label: Text('Tax Rate',
+                  style: TextStyle(fontWeight: FontWeight.bold))),
         const DataColumn(
             label:
                 Text('Stock', style: TextStyle(fontWeight: FontWeight.bold))),
-        const DataColumn(
-            label:
-                Text('Unit', style: TextStyle(fontWeight: FontWeight.bold))),
+        if (_columnsConfig.unit)
+          const DataColumn(
+              label:
+                  Text('Unit', style: TextStyle(fontWeight: FontWeight.bold))),
         const DataColumn(
             label:
                 Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
@@ -1831,8 +1877,8 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                 p.name.length > 30 ? '${p.name.substring(0, 30)}...' : p.name,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontWeight: FontWeight.w500))),
-            DataCell(Text(p.aliasName ?? '—')),
-            if (_businessType == BusinessType.both)
+            if (_columnsConfig.aliasName) DataCell(Text(p.aliasName ?? '—')),
+            if (_businessType == BusinessType.both && _columnsConfig.type)
               DataCell(Tooltip(
                 message: p.type == 'service' ? 'Service' : 'Product',
                 child: Chip(
@@ -1848,18 +1894,19 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                   visualDensity: VisualDensity.compact,
                 ),
               )),
-            DataCell(Text(p.hsncode)),
-            DataCell(
-              Tooltip(
-                message: p.description,
-                child: Text(
-                  p.description.length > 30
-                      ? '${p.description.substring(0, 30)}...'
-                      : p.description,
-                  overflow: TextOverflow.ellipsis,
+            if (_columnsConfig.hsncode) DataCell(Text(p.hsncode)),
+            if (_columnsConfig.description)
+              DataCell(
+                Tooltip(
+                  message: p.description,
+                  child: Text(
+                    p.description.length > 30
+                        ? '${p.description.substring(0, 30)}...'
+                        : p.description,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ),
-            ),
             DataCell(
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -1876,6 +1923,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                 ),
               ),
             ),
+            if (_columnsConfig.purchasePrice)
             DataCell(
               p.purchasePrice > 0
                   ? Container(
@@ -1899,6 +1947,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                     )
                   : Text('—', style: TextStyle(color: Colors.grey.shade400)),
             ),
+            if (_columnsConfig.defaultDiscount)
             DataCell(
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -1915,6 +1964,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                 ),
               ),
             ),
+            if (_columnsConfig.taxRate)
             DataCell(
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -1955,7 +2005,8 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                 ),
               ),
             ),
-            DataCell(Text(p.unit.isEmpty ? '—' : p.unit.toUpperCase())),
+            if (_columnsConfig.unit)
+              DataCell(Text(p.unit.isEmpty ? '—' : p.unit.toUpperCase())),
             DataCell(
               Row(
                 mainAxisSize: MainAxisSize.min,

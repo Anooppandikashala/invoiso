@@ -11,6 +11,7 @@ import 'package:invoiso/common.dart';
 import 'package:invoiso/screens/backup_management_screen.dart';
 import 'package:invoiso/screens/invoice_settings_screen.dart';
 import 'package:invoiso/screens/pdf_settings_screen.dart';
+import 'package:invoiso/screens/product_columns_settings_screen.dart';
 import 'package:invoiso/screens/user_management_screen.dart';
 import 'package:invoiso/invoiso_colors.dart';
 import 'package:invoiso/models/company_info.dart';
@@ -1700,24 +1701,46 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Widget _buildContent(AppEditionConfig cfg) {
     final bool hasExtraTab = cfg.extraSettingsTab != null;
+    // Rail order (after Invoice Settings): PDF, Invoice, Product Details,
+    // Customize, Software Info (last). Company/Backup/Users/PDF/Invoice keep
+    // their original raw positions (0-4) — only these three trailing items
+    // moved, so each gets its own position variable + idx special-case below;
+    // the original fallback formula still handles positions 0-4 unchanged.
+    final int productColumnsPosition =
+        cfg.isCloud ? (hasExtraTab ? 4 : 3) : (hasExtraTab ? 6 : 5);
     final int customizeIndex =
-        cfg.isCloud ? (hasExtraTab ? 5 : 4) : 6;
+        cfg.isCloud ? (hasExtraTab ? 5 : 4) : (hasExtraTab ? 7 : 6);
+    final int softwareInfoPosition =
+        cfg.isCloud ? (hasExtraTab ? 6 : 5) : (hasExtraTab ? 8 : 7);
     // When kIsCloud, Backup (1) and Users (2) tabs are hidden. If the edition
     // also supplies an extraSettingsTab (e.g. cloud's Team Management), it
     // takes rail slot 1 and maps to canonical case 7; everything after it
     // shifts down by 1 instead of 2. Offset back to match canonical case
     // numbers used below.
     final int idx;
-    if (!cfg.isCloud) {
-      idx = _selectedIndex;
-    } else if (hasExtraTab && _selectedIndex == 1) {
+    if (_selectedIndex == productColumnsPosition) {
+      idx = 8;
+    }
+    else if (_selectedIndex == customizeIndex) {
+      idx = 6;
+    }
+    else if (_selectedIndex == softwareInfoPosition) {
+      idx = 5;
+    }
+    else if (hasExtraTab && _selectedIndex == 1) {
       idx = 7;
-    } else if (_selectedIndex == 0) {
+    }
+    else if (!cfg.isCloud) {
+      idx = _selectedIndex;
+    }
+    else if (_selectedIndex == 0) {
       idx = 0;
-    } else {
+    }
+    else {
       idx = _selectedIndex + (hasExtraTab ? 1 : 2);
     }
-    switch (idx) {
+
+      switch (idx) {
       case 0:
         return _buildCompanyInfoForm();
       case 1:
@@ -1750,6 +1773,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         return _buildAppInfoScreen();
       case 6:
         return _buildCustomizationScreen();
+      case 8:
+        return const ProductColumnsSettingsScreen();
       default:
         return _buildDummySection("Invoice Settings");
     }
@@ -1801,6 +1826,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 icon: Icon(Icons.file_present),
                 label: Text('Invoice Settings'),
               ),
+              const NavigationRailDestination(
+                icon: Icon(Icons.view_column_outlined),
+                label: Text('Product Details'),
+              ),
+              const NavigationRailDestination(
+                icon: Icon(Icons.tune_rounded),
+                label: Text('Customize'),
+              ),
               NavigationRailDestination(
                 icon: Stack(
                   clipBehavior: Clip.none,
@@ -1822,10 +1855,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ],
                 ),
                 label: const Text('Software Info'),
-              ),
-              const NavigationRailDestination(
-                icon: Icon(Icons.tune_rounded),
-                label: Text('Customize'),
               ),
             ],
           ),

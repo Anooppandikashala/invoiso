@@ -40,6 +40,10 @@ class SqliteSettingsRepository implements SettingsRepository {
   @override
   Future<void> setBankAccounts(List<BankAccount> accounts) => SettingsService.setBankAccounts(accounts);
   @override
+  Future<ProductColumnsConfig> getProductColumnsConfig() => SettingsService.getProductColumnsConfig();
+  @override
+  Future<void> setProductColumnsConfig(ProductColumnsConfig config) => SettingsService.setProductColumnsConfig(config);
+  @override
   Future<bool> getShowBankDetails() => SettingsService.getShowBankDetails();
   @override
   Future<void> setShowBankDetails(bool show) => SettingsService.setShowBankDetails(show);
