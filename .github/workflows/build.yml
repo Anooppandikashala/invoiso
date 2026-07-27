@@ -228,8 +228,6 @@ jobs:
           cp "$LIBSQLITE" /tmp/deb_root/usr/share/invoiso/lib/libsqlite3.so
           cp "$LIBSQLITE" /tmp/deb_root/opt/invoiso/lib/libsqlite3.so
 
-          patchelf --set-rpath '$ORIGIN/lib' /tmp/deb_root/opt/invoiso/invoiso
-
           echo "Contents of opt/invoiso/lib:"
           ls -l /tmp/deb_root/opt/invoiso/lib
 
@@ -395,7 +393,6 @@ jobs:
           fi
           echo "Bundling libsqlite3: $LIBSQLITE"
           cp "$LIBSQLITE" AppDir/usr/lib/libsqlite3.so
-          patchelf --set-rpath '$ORIGIN/../lib' AppDir/usr/bin/invoiso
 
           # Icons
           cp assets/deb/images/logo.png AppDir/usr/share/icons/logo.png
