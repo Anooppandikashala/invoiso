@@ -44,6 +44,7 @@ enum SettingKey {
   pdfThemeColor, // custom PDF accent/theme color as #RRGGBB
   dashboardLayout, // which dashboard layout to use: 'default' | 'classic' | 'simple'
   layoutBannerDismissed, // '1' once user dismisses the new-layouts discovery banner
+  productColumnsBannerDismissed, // '1' once user dismisses the product-columns discovery banner
   signatureImage, // base64-encoded signature image
   signaturePosition, // 'left' | 'right'
   signatureSize, // signature size on PDF: 'small' | 'medium' | 'large'
@@ -118,6 +119,8 @@ extension SettingKeyExtension on SettingKey {
         return 'dashboard_layout';
       case SettingKey.layoutBannerDismissed:
         return 'layout_banner_dismissed';
+      case SettingKey.productColumnsBannerDismissed:
+        return 'product_columns_banner_dismissed';
       case SettingKey.signatureImage:
         return 'signature_image';
       case SettingKey.signaturePosition:

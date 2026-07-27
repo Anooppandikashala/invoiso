@@ -130,7 +130,7 @@ class CustomerService
       'customers',
       where: where,
       whereArgs: whereArgs,
-      orderBy: '$orderBy $order',
+      orderBy: '$orderBy COLLATE NOCASE $order',
       limit: limit,
       offset: offset,
     );

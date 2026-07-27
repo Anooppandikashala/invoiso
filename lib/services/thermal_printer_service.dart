@@ -483,13 +483,14 @@ class ThermalPrinterService {
     Widget text(String text,
         {TextAlign align = TextAlign.left,
         bool bold = false,
-        double fontSize = itemFontSize}) {
+        double fontSize = itemFontSize,
+        bool isInvoiceItems = false}) {
       return Text(
         text,
         textAlign: align,
         style: TextStyle(
           fontSize: fontSize,
-          fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+          fontWeight: bold ? FontWeight.bold : isInvoiceItems ? FontWeight.w500 : FontWeight.normal,
           color: Colors.black,
         ),
       );
@@ -506,10 +507,22 @@ class ThermalPrinterService {
       );
     }
 
-    Widget hr() => Container(
-          height: 1,
-          margin: const EdgeInsets.symmetric(vertical: 4),
-          color: Colors.black,
+    Widget hr() => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              const dashWidth = 5.0, dashGap = 2.0;
+              final count =
+                  (constraints.maxWidth / (dashWidth + dashGap)).floor();
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: List.generate(
+                  count,
+                  (_) => Container(width: dashWidth, height: 1, color: Colors.black),
+                ),
+              );
+            },
+          ),
         );
 
     // ── Item table column widths, in fractions of paper width ──
@@ -537,24 +550,29 @@ class ThermalPrinterService {
     List<Widget> itemTableRow(
         String sl, String name, String qty, String rate, String? gst, String total,
         {bool bold = false}) {
-      Widget cell(String v, TextAlign align, {bool bold_ = false} ) => Padding(
+      Widget cell(String v, TextAlign align, {bool bold_ = false,bool isInvoiceItems_ = false} ) => Padding(
             padding: const EdgeInsets.symmetric(vertical: 1),
-            child: text(v, align: align, bold: bold || bold_),
+            child: text(v, align: align, bold: bold || bold_, isInvoiceItems :isInvoiceItems_),
           );
       return [
-        cell(sl, TextAlign.left),
+        cell(sl, TextAlign.left,isInvoiceItems_: true),
         cell(name, TextAlign.left,bold_: true),
-        cell(qty, TextAlign.center),
-        cell(rate, TextAlign.right),
-        if (gst != null) cell(gst, TextAlign.right),
-        cell(total, TextAlign.right),
+        cell(qty, TextAlign.center,isInvoiceItems_: true),
+        cell(rate, TextAlign.right,isInvoiceItems_: true),
+        if (gst != null) cell(gst, TextAlign.right,isInvoiceItems_: true),
+        cell(total, TextAlign.right,isInvoiceItems_: true),
       ];
     }
 
     final headerCells = itemTableRow(
         'Sl', 'Description', 'Qty', 'Rate', showItemTax ? 'GST%' : null, 'Total',
         bold: true);
-    final itemRows = <TableRow>[TableRow(children: headerCells)];
+    final itemRows = <TableRow>[
+      TableRow(children: headerCells),
+      TableRow(
+        children: List.generate(headerCells.length, (_) => hr()),
+      ),
+    ];
     final detailedRows = <Widget>[];
 
     for (var i = 0; i < invoice.items.length; i++) {

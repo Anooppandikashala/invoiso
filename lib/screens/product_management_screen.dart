@@ -17,6 +17,7 @@ import 'package:invoiso/common.dart';
 import 'package:invoiso/models/product.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/utils/formatters.dart';
+import 'package:invoiso/screens/product_columns_settings_screen.dart';
 
 class ProductManagementScreen extends ConsumerStatefulWidget {
   final User user;
@@ -89,14 +90,98 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     _loadProducts();
     _loadCurrency();
     _loadColumnsConfig();
+    _loadColumnsBannerDismissed();
   }
 
   ProductColumnsConfig _columnsConfig = const ProductColumnsConfig();
+  bool _showColumnsBanner = false;
 
   Future<void> _loadColumnsConfig() async {
     final config = await ref.read(settingsRepositoryProvider).getProductColumnsConfig();
     if (!mounted) return;
     setState(() => _columnsConfig = config);
+  }
+
+  Future<void> _loadColumnsBannerDismissed() async {
+    final dismissed = await ref
+        .read(settingsRepositoryProvider)
+        .getSetting(SettingKey.productColumnsBannerDismissed);
+    if (!mounted) return;
+    setState(() => _showColumnsBanner = dismissed != '1');
+  }
+
+  Future<void> _dismissColumnsBanner() async {
+    await ref
+        .read(settingsRepositoryProvider)
+        .setSetting(SettingKey.productColumnsBannerDismissed, '1');
+    if (mounted) setState(() => _showColumnsBanner = false);
+  }
+
+  Widget _buildColumnsDiscoveryBanner() {
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+      child: _showColumnsBanner
+          ? Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEFF6FF),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFBFDBFE)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.tune, color: Color(0xFF2563EB), size: 20),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'New: Customize product fields',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: Color(0xFF1E40AF),
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Choose which fields show for a simpler catalog. Settings > Customize Product Details.',
+                          style: TextStyle(fontSize: 12, color: Color(0xFF3B82F6)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () async {
+                      await Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => const ProductColumnsSettingsScreen()));
+                      _loadColumnsConfig();
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFF2563EB),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text('Configure',
+                        style: TextStyle(fontWeight: FontWeight.w600)),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 16),
+                    color: const Color(0xFF93C5FD),
+                    onPressed: _dismissColumnsBanner,
+                    tooltip: 'Dismiss',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                  ),
+                ],
+              ),
+            )
+          : const SizedBox.shrink(),
+    );
   }
 
   Future<void> _loadBusinessType() async {
@@ -1304,15 +1389,22 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Column(
           children: [
-            SizedBox(
-              width: 320,
-              child: SingleChildScrollView(child: _buildAddProductCard()),
+            _buildColumnsDiscoveryBanner(),
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 320,
+                    child: SingleChildScrollView(child: _buildAddProductCard()),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(child: _buildProductTable(totalPages)),
+                ],
+              ),
             ),
-            const SizedBox(width: 16),
-            Expanded(child: _buildProductTable(totalPages)),
           ],
         ),
       ),

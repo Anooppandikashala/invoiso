@@ -3950,7 +3950,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            ElevatedButton.icon(
+            Tooltip(
+              message: 'Shortcut: Ctrl+q',
+              child: ElevatedButton.icon(
               onPressed: invoiceItems.isNotEmpty && !isLoading
                   ? (isEditMode ? _updateInvoice : _createInvoice)
                   : null,
@@ -3977,10 +3979,11 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 isLoading
                     ? 'Processing...'
                     : (isEditMode
-                        ? 'Update $invoiceType'
-                        : 'Create $invoiceType'),
+                        ? 'Update $invoiceType (Shortcut: Ctrl+q)'
+                        : 'Create $invoiceType (Shortcut: Ctrl+q)'),
                 style:
                     const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
               ),
             ),
             const SizedBox(width: 16),
@@ -4446,7 +4449,21 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     final invoiceDiscountAmount = totals.invoiceDiscountAmount;
     final total = totals.total;
 
-    return _withUnsavedChangesPopScope(Scaffold(
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.keyQ, control: true): () {
+          if (invoiceItems.isNotEmpty && !isLoading) {
+            widget.invoiceToEdit != null ? _updateInvoice() : _createInvoice();
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Add at least one item before creating the invoice.')),
+            );
+          }
+        },
+      },
+      child: Focus(
+        autofocus: true,
+        child: _withUnsavedChangesPopScope(Scaffold(
       appBar: AppBar(
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -4553,7 +4570,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 );
               },
             ),
-    ));
+    )),
+      ),
+    );
   }
 
   Widget _buildDesktopLayout(double tax, double subtotal, double total,
