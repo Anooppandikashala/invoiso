@@ -484,13 +484,13 @@ class ThermalPrinterService {
         {TextAlign align = TextAlign.left,
         bool bold = false,
         double fontSize = itemFontSize,
-        bool isInvoiceItems = false}) {
+        bool needDarkerText = false}) {
       return Text(
         text,
         textAlign: align,
         style: TextStyle(
           fontSize: fontSize,
-          fontWeight: bold ? FontWeight.bold : isInvoiceItems ? FontWeight.w500 : FontWeight.normal,
+          fontWeight: bold ? FontWeight.bold : needDarkerText ? FontWeight.w500 : FontWeight.normal,
           color: Colors.black,
         ),
       );
@@ -550,17 +550,17 @@ class ThermalPrinterService {
     List<Widget> itemTableRow(
         String sl, String name, String qty, String rate, String? gst, String total,
         {bool bold = false}) {
-      Widget cell(String v, TextAlign align, {bool bold_ = false,bool isInvoiceItems_ = false} ) => Padding(
+      Widget cell(String v, TextAlign align, {bool bold_ = false,bool needDarkerText = false} ) => Padding(
             padding: const EdgeInsets.symmetric(vertical: 1),
-            child: text(v, align: align, bold: bold || bold_, isInvoiceItems :isInvoiceItems_),
+            child: text(v, align: align, bold: bold || bold_, needDarkerText :needDarkerText),
           );
       return [
-        cell(sl, TextAlign.left,isInvoiceItems_: true),
+        cell(sl, TextAlign.left,needDarkerText: true),
         cell(name, TextAlign.left,bold_: true),
-        cell(qty, TextAlign.center,isInvoiceItems_: true),
-        cell(rate, TextAlign.right,isInvoiceItems_: true),
-        if (gst != null) cell(gst, TextAlign.right,isInvoiceItems_: true),
-        cell(total, TextAlign.right,isInvoiceItems_: true),
+        cell(qty, TextAlign.center,needDarkerText: true),
+        cell(rate, TextAlign.right,needDarkerText: true),
+        if (gst != null) cell(gst, TextAlign.right,needDarkerText: true),
+        cell(total, TextAlign.right,needDarkerText: true),
       ];
     }
 
@@ -651,9 +651,9 @@ class ThermalPrinterService {
                 text(company!.name,
                     align: TextAlign.center, bold: true, fontSize: headFontSize),
               if ((company?.address ?? '').isNotEmpty)
-                text(company!.address, align: TextAlign.center),
+                text(company!.address, align: TextAlign.center,needDarkerText: true),
               if ((company?.phone ?? '').isNotEmpty)
-                text('Ph: ${company!.phone}', align: TextAlign.center),
+                text('Ph: ${company!.phone}', align: TextAlign.center,needDarkerText: true),
               if (settings.showGst && (company?.gstin ?? '').isNotEmpty)
                 text('${taxLabel(company?.country)}: ${company!.gstin}',
                     align: TextAlign.center),

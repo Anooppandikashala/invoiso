@@ -391,6 +391,45 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
         bool isSaving = false;
         return StatefulBuilder(
         builder: (context, setDialogState) {
+          Future<void> submitEdit() async {
+            if (isSaving) return;
+            if (!dialogFormKey.currentState!.validate()) return;
+            final dialogPrice = double.parse(priceCtrl.text.trim());
+            final dialogPurchasePrice =
+                double.tryParse(purchasePriceCtrl.text.trim()) ?? 0.0;
+            if (!await _confirmIfSellingAtLoss(
+                dialogPrice, dialogPurchasePrice)) {
+              return;
+            }
+            setDialogState(() => isSaving = true);
+            try {
+              final updatedProduct = Product(
+                id: product.id,
+                name: nameCtrl.text.trim(),
+                description: descriptionCtrl.text.trim(),
+                price: dialogPrice,
+                stock: int.parse(stockCtrl.text.trim()),
+                hsncode: hsnCodeCtrl.text.trim(),
+                tax_rate: int.parse(taxRateCtrl.text.trim()),
+                type: dialogItemType,
+                defaultDiscount:
+                    double.tryParse(defaultDiscountCtrl.text.trim()) ?? 0.0,
+                purchasePrice: dialogPurchasePrice,
+                aliasName: aliasNameCtrl.text.trim().isEmpty
+                    ? null
+                    : aliasNameCtrl.text.trim(),
+                unit: dialogUnit.trim(),
+              );
+
+              await ref.read(productRepositoryProvider).updateProduct(updatedProduct);
+              await _loadProducts();
+              if (context.mounted) Navigator.pop(context);
+              _showSnackBar('Product/Service updated successfully!');
+            } finally {
+              setDialogState(() => isSaving = false);
+            }
+          }
+
           return AlertDialog(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -447,7 +486,8 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                       const SizedBox(height: 16),
                     ],
                     _buildDialogTextField(nameCtrl, 'Name (In English)', Icons.inventory_2,
-                        readOnly: !isEdit, maxLength: 100),
+                        readOnly: !isEdit, maxLength: 100,
+                        onSubmitted: isEdit ? submitEdit : null),
                     const SizedBox(height: 16),
                     if (_columnsConfig.aliasName) ...[
                       _buildDialogTextField(aliasNameCtrl,
@@ -477,7 +517,8 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                         keyboardType: const TextInputType.numberWithOptions(
                             decimal: true),
                         isPrice: true,
-                        prefixText: '$_currencySymbol '),
+                        prefixText: '$_currencySymbol ',
+                        onSubmitted: isEdit ? submitEdit : null),
                     const SizedBox(height: 16),
                     if (_columnsConfig.purchasePrice) ...[
                       _buildDialogTextField(
@@ -532,43 +573,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
             ),
             if (isEdit)
               FilledButton.icon(
-                onPressed: isSaving ? null : () async {
-                  if (!dialogFormKey.currentState!.validate()) return;
-                  final dialogPrice = double.parse(priceCtrl.text.trim());
-                  final dialogPurchasePrice =
-                      double.tryParse(purchasePriceCtrl.text.trim()) ?? 0.0;
-                  if (!await _confirmIfSellingAtLoss(
-                      dialogPrice, dialogPurchasePrice)) {
-                    return;
-                  }
-                  setDialogState(() => isSaving = true);
-                  try {
-                    final updatedProduct = Product(
-                      id: product.id,
-                      name: nameCtrl.text.trim(),
-                      description: descriptionCtrl.text.trim(),
-                      price: dialogPrice,
-                      stock: int.parse(stockCtrl.text.trim()),
-                      hsncode: hsnCodeCtrl.text.trim(),
-                      tax_rate: int.parse(taxRateCtrl.text.trim()),
-                      type: dialogItemType,
-                      defaultDiscount:
-                          double.tryParse(defaultDiscountCtrl.text.trim()) ?? 0.0,
-                      purchasePrice: dialogPurchasePrice,
-                      aliasName: aliasNameCtrl.text.trim().isEmpty
-                          ? null
-                          : aliasNameCtrl.text.trim(),
-                      unit: dialogUnit.trim(),
-                    );
-
-                    await ref.read(productRepositoryProvider).updateProduct(updatedProduct);
-                    await _loadProducts();
-                    if (context.mounted) Navigator.pop(context);
-                    _showSnackBar('Product/Service updated successfully!');
-                  } finally {
-                    setDialogState(() => isSaving = false);
-                  }
-                },
+                onPressed: isSaving ? null : submitEdit,
                 icon: isSaving
                     ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                     : const Icon(Icons.save),
@@ -594,7 +599,8 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     bool isStock = false,
     bool isTaxRate = false,
     String? prefixText,
-    String? helperText
+    String? helperText,
+    VoidCallback? onSubmitted,
   }) {
     return TextFormField(
       controller: controller,
@@ -602,6 +608,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
       maxLines: maxLines,
       maxLength: maxLength,
       keyboardType: keyboardType,
+      onFieldSubmitted: onSubmitted == null ? null : (_) => onSubmitted(),
       inputFormatters: isPrice
           ? [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}$'))]
           : (isStock || isTaxRate)
@@ -1447,130 +1454,133 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
           ),
           Padding(
             padding: const EdgeInsets.all(20),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  if (_businessType == BusinessType.both && _columnsConfig.type) ...[
-                    SegmentedButton<String>(
-                      segments: const [
-                        ButtonSegment(
-                            value: 'product',
-                            label: Text('Product'),
-                            icon: Icon(Icons.inventory_2_outlined, size: 16)),
-                        ButtonSegment(
-                            value: 'service',
-                            label: Text('Service'),
-                            icon:
-                                Icon(Icons.design_services_outlined, size: 16)),
-                      ],
-                      selected: {_newItemType},
-                      onSelectionChanged: (val) {
-                        if(!mounted) return;
-                        setState(() => _newItemType = val.first);
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                  _buildFormField(_nameController, 'Name (In English)', Icons.inventory_2,
-                      maxLength: 100),
-                  const SizedBox(height: 16),
-                  if (_columnsConfig.aliasName) ...[
-                    _buildFormField(_aliasNameController,
-                        'Alias Name (for invoice PDF)', Icons.translate,
-                        maxLength: 100,
-                        required: false,
-                        helperText : "Alias Name is an optional local-language display name used only on PDF invoices.(You can enable this in InvoiceSettings Page)"
-                            "\n You can enter the alias in any supported language, \n"
-                            "such as Malayalam, Tamil, Kannada, Hindi, Telugu, Marathi, or others, to generate customer-friendly invoices."),
-                    const SizedBox(height: 16),
-                  ],
-                  if (_columnsConfig.hsncode) ...[
-                    _buildFormField(_hsnCodeController, 'HSN/SAC', Icons.qr_code,
-                        maxLength: 100, required: false),
-                    const SizedBox(height: 16),
-                  ],
-                  if (_columnsConfig.description) ...[
-                    _buildFormField(
-                        _descriptionController, 'Description', Icons.description,
-                        maxLines: 3, maxLength: 100, required: false),
-                    const SizedBox(height: 16),
-                  ],
-                  _buildFormField(_priceController, 'Price', Icons.attach_money,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      isPrice: true,
-                      prefixText: '$_currencySymbol '),
-                  const SizedBox(height: 16),
-                  if (_columnsConfig.purchasePrice) ...[
-                    _buildFormField(_purchasePriceController,
-                        'Purchase Price', Icons.shopping_cart_outlined,
-                        keyboardType:
-                            const TextInputType.numberWithOptions(decimal: true),
-                        isPrice: true,
-                        prefixText: '$_currencySymbol '),
-                    const SizedBox(height: 16),
-                  ],
-                  if (_columnsConfig.defaultDiscount) ...[
-                    _buildFormField(
-                        _defaultDiscountController,
-                        'Default Discount', Icons.discount,
-                        keyboardType:
-                            const TextInputType.numberWithOptions(decimal: true),
-                        isPrice: true,
-                        required: false,
-                        prefixText: '$_currencySymbol '),
-                    const SizedBox(height: 16),
-                  ],
-                  if (_columnsConfig.taxRate) ...[
-                    _buildFormField(
-                        _taxRateController, 'Tax Rate (%)', Icons.percent,
-                        keyboardType: TextInputType.number, isTaxRate: true),
-                    const SizedBox(height: 16),
-                  ],
-                  _buildFormField(_stockController, 'Stock', Icons.inventory,
-                      keyboardType: TextInputType.number, isStock: true),
-                  const SizedBox(height: 16),
-                  if (_columnsConfig.unit) ...[
-                    _buildUnitField(
-                      selectedUnit: _selectedUnit,
-                      customController: _customUnitController,
-                      onUnitChanged: (v) {
-                        if (!mounted) return;
-                        setState(() => _selectedUnit = v);
-                      },
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _clearForm,
-                          icon: const Icon(Icons.clear),
-                          label: const Text('Clear'),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
-                        ),
+            child: FocusTraversalGroup(
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    if (_businessType == BusinessType.both && _columnsConfig.type) ...[
+                      SegmentedButton<String>(
+                        segments: const [
+                          ButtonSegment(
+                              value: 'product',
+                              label: Text('Product'),
+                              icon: Icon(Icons.inventory_2_outlined, size: 16)),
+                          ButtonSegment(
+                              value: 'service',
+                              label: Text('Service'),
+                              icon:
+                                  Icon(Icons.design_services_outlined, size: 16)),
+                        ],
+                        selected: {_newItemType},
+                        onSelectionChanged: (val) {
+                          if(!mounted) return;
+                          setState(() => _newItemType = val.first);
+                        },
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        flex: 2,
-                        child: FilledButton.icon(
-                          onPressed: _addProduct,
-                          icon: const Icon(Icons.add),
-                          label: Text(_newItemType == 'service'
-                              ? 'Add Service'
-                              : 'Add Product'),
-                          style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
-                        ),
-                      ),
+                      const SizedBox(height: 16),
                     ],
-                  ),
-                ],
+                    _buildFormField(_nameController, 'Name (In English)', Icons.inventory_2,
+                        maxLength: 100, onSubmitted: _addProduct),
+                    const SizedBox(height: 16),
+                    if (_columnsConfig.aliasName) ...[
+                      _buildFormField(_aliasNameController,
+                          'Alias Name (for invoice PDF)', Icons.translate,
+                          maxLength: 100,
+                          required: false,
+                          helperText : "Alias Name is an optional local-language display name used only on PDF invoices.(You can enable this in InvoiceSettings Page)"
+                              "\n You can enter the alias in any supported language, \n"
+                              "such as Malayalam, Tamil, Kannada, Hindi, Telugu, Marathi, or others, to generate customer-friendly invoices."),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_columnsConfig.hsncode) ...[
+                      _buildFormField(_hsnCodeController, 'HSN/SAC', Icons.qr_code,
+                          maxLength: 100, required: false),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_columnsConfig.description) ...[
+                      _buildFormField(
+                          _descriptionController, 'Description', Icons.description,
+                          maxLines: 3, maxLength: 100, required: false),
+                      const SizedBox(height: 16),
+                    ],
+                    _buildFormField(_priceController, 'Price', Icons.attach_money,
+                        keyboardType:
+                            const TextInputType.numberWithOptions(decimal: true),
+                        isPrice: true,
+                        prefixText: '$_currencySymbol ',
+                        onSubmitted: _addProduct),
+                    const SizedBox(height: 16),
+                    if (_columnsConfig.purchasePrice) ...[
+                      _buildFormField(_purchasePriceController,
+                          'Purchase Price', Icons.shopping_cart_outlined,
+                          keyboardType:
+                              const TextInputType.numberWithOptions(decimal: true),
+                          isPrice: true,
+                          prefixText: '$_currencySymbol '),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_columnsConfig.defaultDiscount) ...[
+                      _buildFormField(
+                          _defaultDiscountController,
+                          'Default Discount', Icons.discount,
+                          keyboardType:
+                              const TextInputType.numberWithOptions(decimal: true),
+                          isPrice: true,
+                          required: false,
+                          prefixText: '$_currencySymbol '),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_columnsConfig.taxRate) ...[
+                      _buildFormField(
+                          _taxRateController, 'Tax Rate (%)', Icons.percent,
+                          keyboardType: TextInputType.number, isTaxRate: true),
+                      const SizedBox(height: 16),
+                    ],
+                    _buildFormField(_stockController, 'Stock', Icons.inventory,
+                        keyboardType: TextInputType.number, isStock: true),
+                    const SizedBox(height: 16),
+                    if (_columnsConfig.unit) ...[
+                      _buildUnitField(
+                        selectedUnit: _selectedUnit,
+                        customController: _customUnitController,
+                        onUnitChanged: (v) {
+                          if (!mounted) return;
+                          setState(() => _selectedUnit = v);
+                        },
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _clearForm,
+                            icon: const Icon(Icons.clear),
+                            label: const Text('Clear'),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 2,
+                          child: FilledButton.icon(
+                            onPressed: _addProduct,
+                            icon: const Icon(Icons.add),
+                            label: Text(_newItemType == 'service'
+                                ? 'Add Service'
+                                : 'Add Product'),
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -1606,12 +1616,20 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     bool isTaxRate = false,
     String? prefixText,
     String? helperText,
+    VoidCallback? onSubmitted,
   }) {
     return TextFormField(
       controller: controller,
       maxLines: maxLines,
       maxLength: maxLength,
       keyboardType: keyboardType,
+      onFieldSubmitted: (value) {
+        if (onSubmitted != null) {
+          onSubmitted();
+        } else {
+          FocusScope.of(context).nextFocus();
+        }
+      },
       inputFormatters: isPrice
           ? [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}$'))]
           : (isStock || isTaxRate)

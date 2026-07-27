@@ -550,7 +550,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     }
   }
 
-  void addInvoiceProductPrompt(Product product) {
+  void addInvoiceProductPrompt(Product product)
+  {
     final quantityController = TextEditingController();
     final discountController = TextEditingController(
         text: product.defaultDiscount > 0
@@ -565,10 +566,115 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     String dialogUnit = product.unit;
     int insertAt = invoiceItems.length + 1;
 
+    Future<void> addInvoiceProductImpl() async
+    {
+      final qty = !_showQuantity
+          ? 1.0
+          : _fractionalQuantity
+          ? (double.tryParse(quantityController.text) ?? 1.0)
+          : (int.tryParse(quantityController.text) ?? 1)
+          .toDouble();
+      final discount =
+          double.tryParse(discountController.text) ?? 0.0;
+      final parsedUnitPrice =
+      double.tryParse(unitPriceController.text);
+      final unitPrice = (parsedUnitPrice != null &&
+          parsedUnitPrice != product.price)
+          ? parsedUnitPrice
+          : null;
+      final extraCost = double.tryParse(extraCostController.text);
+
+      // Check stock
+      if (product.stock > 0 && qty > product.stock) {
+        // Insufficient stock — ask user if they want to add anyway
+        Navigator.pop(context);
+        final addAnyway = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Insufficient Stock'),
+            content: Text(
+              'Only ${product.stock} unit(s) available. Add $qty anyway?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange),
+                child: const Text('Add Anyway'),
+              ),
+            ],
+          ),
+        );
+        if (addAnyway == true) {
+          addInvoiceProduct(
+              InvoiceItem(
+                  product: product,
+                  quantity: qty,
+                  discount: discount,
+                  unitPrice: unitPrice,
+                  extraCost: extraCost,
+                  unit: dialogUnit.trim(),
+                  discountPerUnit: discountPerUnit),
+              insertAt: insertAt);
+        }
+      } else if (product.stock <= 0) {
+        Navigator.pop(context);
+        final addAnyway = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Out of Stock'),
+            content:
+            Text('${product.name} is out of stock. Add anyway?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange),
+                child: const Text('Add Anyway'),
+              ),
+            ],
+          ),
+        );
+        if (addAnyway == true) {
+          addInvoiceProduct(
+              InvoiceItem(
+                  product: product,
+                  quantity: qty,
+                  discount: discount,
+                  unitPrice: unitPrice,
+                  extraCost: extraCost,
+                  unit: dialogUnit.trim(),
+                  discountPerUnit: discountPerUnit),
+              insertAt: insertAt);
+        }
+      } else {
+        Navigator.pop(context);
+        addInvoiceProduct(
+            InvoiceItem(
+                product: product,
+                quantity: qty,
+                discount: discount,
+                unitPrice: unitPrice,
+                extraCost: extraCost,
+                unit: dialogUnit.trim(),
+                discountPerUnit: discountPerUnit),
+            insertAt: insertAt);
+      }
+    }
+
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
+        builder: (context, setDialogState) =>
+        AlertDialog(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Row(
@@ -659,6 +765,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     inputFormatters: [
                       FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                     ],
+                    onSubmitted: (_) => addInvoiceProductImpl(),
                   ),
                   const SizedBox(height: 16),
                 ],
@@ -709,6 +816,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                   ],
+                  onSubmitted: (_) => addInvoiceProductImpl(),
                 ),
                 if (_columnsConfig.extraCost) ...[
                   const SizedBox(height: 16),
@@ -785,108 +893,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
-              onPressed: () async {
-                final qty = !_showQuantity
-                    ? 1.0
-                    : _fractionalQuantity
-                        ? (double.tryParse(quantityController.text) ?? 1.0)
-                        : (int.tryParse(quantityController.text) ?? 1)
-                            .toDouble();
-                final discount =
-                    double.tryParse(discountController.text) ?? 0.0;
-                final parsedUnitPrice =
-                    double.tryParse(unitPriceController.text);
-                final unitPrice = (parsedUnitPrice != null &&
-                        parsedUnitPrice != product.price)
-                    ? parsedUnitPrice
-                    : null;
-                final extraCost = double.tryParse(extraCostController.text);
-
-                // Check stock
-                if (product.stock > 0 && qty > product.stock) {
-                  // Insufficient stock — ask user if they want to add anyway
-                  Navigator.pop(context);
-                  final addAnyway = await showDialog<bool>(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      title: const Text('Insufficient Stock'),
-                      content: Text(
-                        'Only ${product.stock} unit(s) available. Add $qty anyway?',
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx, false),
-                          child: const Text('Cancel'),
-                        ),
-                        ElevatedButton(
-                          onPressed: () => Navigator.pop(ctx, true),
-                          style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange),
-                          child: const Text('Add Anyway'),
-                        ),
-                      ],
-                    ),
-                  );
-                  if (addAnyway == true) {
-                    addInvoiceProduct(
-                        InvoiceItem(
-                            product: product,
-                            quantity: qty,
-                            discount: discount,
-                            unitPrice: unitPrice,
-                            extraCost: extraCost,
-                            unit: dialogUnit.trim(),
-                            discountPerUnit: discountPerUnit),
-                        insertAt: insertAt);
-                  }
-                } else if (product.stock <= 0) {
-                  Navigator.pop(context);
-                  final addAnyway = await showDialog<bool>(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      title: const Text('Out of Stock'),
-                      content:
-                          Text('${product.name} is out of stock. Add anyway?'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx, false),
-                          child: const Text('Cancel'),
-                        ),
-                        ElevatedButton(
-                          onPressed: () => Navigator.pop(ctx, true),
-                          style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange),
-                          child: const Text('Add Anyway'),
-                        ),
-                      ],
-                    ),
-                  );
-                  if (addAnyway == true) {
-                    addInvoiceProduct(
-                        InvoiceItem(
-                            product: product,
-                            quantity: qty,
-                            discount: discount,
-                            unitPrice: unitPrice,
-                            extraCost: extraCost,
-                            unit: dialogUnit.trim(),
-                            discountPerUnit: discountPerUnit),
-                        insertAt: insertAt);
-                  }
-                } else {
-                  Navigator.pop(context);
-                  addInvoiceProduct(
-                      InvoiceItem(
-                          product: product,
-                          quantity: qty,
-                          discount: discount,
-                          unitPrice: unitPrice,
-                          extraCost: extraCost,
-                          unit: dialogUnit.trim(),
-                          discountPerUnit: discountPerUnit),
-                      insertAt: insertAt);
-                }
-              },
+              onPressed: () => addInvoiceProductImpl(),
               child: const Text('Add'),
             ),
           ],
@@ -1315,6 +1322,173 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     );
   }
 
+  void _showProductPickerDialog() {
+    final dialogSearchController = TextEditingController();
+    List<Product> dialogResults = List.from(products);
+    Timer? dialogSearchDebounce;
+    int dialogSearchRequestId = 0;
+    int highlightedIndex = 0;
+    void Function(VoidCallback)? rebuild;
+    final scrollController = ScrollController();
+    const itemHeight = 72.0;
+
+    void ensureHighlightedVisible() {
+      if (!scrollController.hasClients) return;
+      final targetTop = highlightedIndex * itemHeight;
+      final targetBottom = targetTop + itemHeight;
+      final viewport = scrollController.position.viewportDimension;
+      final current = scrollController.offset;
+      if (targetTop < current) {
+        scrollController.jumpTo(targetTop);
+      } else if (targetBottom > current + viewport) {
+        scrollController.jumpTo(targetBottom - viewport);
+      }
+    }
+
+    void selectHighlighted() {
+      if (dialogResults.isEmpty) return;
+      final index = highlightedIndex.clamp(0, dialogResults.length - 1);
+      final product = dialogResults[index];
+      Navigator.pop(context);
+      addInvoiceProductPrompt(product);
+    }
+
+    bool handleKey(KeyEvent event) {
+      if (event is! KeyDownEvent) return false;
+      if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+        rebuild?.call(() {
+          if (dialogResults.isNotEmpty) {
+            highlightedIndex =
+                (highlightedIndex + 1).clamp(0, dialogResults.length - 1);
+          }
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) => ensureHighlightedVisible());
+        return true;
+      }
+      if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+        rebuild?.call(() {
+          if (dialogResults.isNotEmpty) {
+            highlightedIndex =
+                (highlightedIndex - 1).clamp(0, dialogResults.length - 1);
+          }
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) => ensureHighlightedVisible());
+        return true;
+      }
+      if (event.logicalKey == LogicalKeyboardKey.enter) {
+        selectHighlighted();
+        return true;
+      }
+      return false;
+    }
+
+    HardwareKeyboard.instance.addHandler(handleKey);
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          rebuild = setDialogState;
+          void runSearch(String query) {
+            dialogSearchDebounce?.cancel();
+            dialogSearchDebounce =
+                Timer(const Duration(milliseconds: 400), () async {
+              final requestId = ++dialogSearchRequestId;
+              final results =
+                  await ref.read(productRepositoryProvider).getProductsPaginated(
+                      offset: 0,
+                      limit: _productFetchLimit,
+                      query: query,
+                      type: _businessType.key);
+              if (requestId != dialogSearchRequestId || !mounted) return;
+              setDialogState(() {
+                dialogResults = results;
+                highlightedIndex = 0;
+              });
+            });
+          }
+
+          return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.search, color: Colors.deepPurple),
+              SizedBox(width: 12),
+              Text('Add Product'),
+            ],
+          ),
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.35,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: dialogSearchController,
+                  autofocus: true,
+                  onChanged: runSearch,
+                  decoration: InputDecoration(
+                    labelText: 'Search Product',
+                    border: OutlineInputBorder(
+                        borderRadius:
+                            BorderRadius.circular(AppBorderRadius.xsmall)),
+                    prefixIcon: const Icon(Icons.search),
+                    filled: true,
+                    fillColor: Colors.grey[50],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.4,
+                  child: dialogResults.isEmpty
+                      ? Center(
+                          child: Text('No products found',
+                              style: TextStyle(color: Colors.grey[600])),
+                        )
+                      : ListView.builder(
+                          controller: scrollController,
+                          shrinkWrap: true,
+                          itemExtent: itemHeight,
+                          itemCount: dialogResults.length,
+                          itemBuilder: (context, index) {
+                            final product = dialogResults[index];
+                            return ListTile(
+                              selected: index == highlightedIndex,
+                              selectedTileColor:
+                                  Colors.deepPurple.withValues(alpha: 0.08),
+                              leading: Icon(Icons.inventory_2,
+                                  color: product.stock <= 0
+                                      ? Colors.red
+                                      : Colors.grey),
+                              title: Text(product.name),
+                              subtitle: Text(
+                                  '$_currencySymbol${product.price.toStringAsFixed(2)}  ·  Stock: ${product.stock}'),
+                              onTap: () {
+                                Navigator.pop(context);
+                                addInvoiceProductPrompt(product);
+                              },
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+          ],
+          );
+        },
+      ),
+    ).then((_) {
+      HardwareKeyboard.instance.removeHandler(handleKey);
+      dialogSearchDebounce?.cancel();
+    });
+  }
+
   void _addAdHocItemDialog() {
     final nameController = TextEditingController();
     final aliasNameController = TextEditingController();
@@ -1333,7 +1507,48 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
+        builder: (context, setDialogState) {
+          void submitAdHocItem() {
+            final name = nameController.text.trim();
+            final price = double.tryParse(priceController.text) ?? 0.0;
+            final taxRate = _taxMode == TaxMode.perItem
+                ? (int.tryParse(taxRateController.text) ?? 0)
+                : 0;
+            if (name.isEmpty) return;
+
+            final adHocProduct = Product(
+              id: 'custom-${const Uuid().v4()}',
+              name: name,
+              description: '',
+              price: price,
+              stock: 0,
+              hsncode: '',
+              tax_rate: taxRate,
+              unit: selectedUnit.trim(),
+              type: dialogItemType,
+              aliasName: aliasNameController.text.trim().isEmpty
+                  ? null
+                  : aliasNameController.text.trim(),
+            );
+            final extraCost = double.tryParse(extraCostController.text);
+            final item = InvoiceItem(
+              product: adHocProduct,
+              quantity: !_showQuantity
+                  ? 1.0
+                  : _fractionalQuantity
+                      ? (double.tryParse(quantityController.text) ?? 1.0)
+                      : (int.tryParse(quantityController.text) ?? 1)
+                          .toDouble(),
+              discount: double.tryParse(discountController.text) ?? 0.0,
+              extraCost: extraCost,
+              unit: selectedUnit.trim(),
+              discountPerUnit: discountPerUnit,
+            );
+            Navigator.pop(context);
+            addInvoiceProduct(item, insertAt: insertAt);
+          }
+
+          return AlertDialog(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Row(
@@ -1379,6 +1594,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     filled: true,
                     fillColor: Colors.grey[50],
                   ),
+                  onSubmitted: (_) => submitAdHocItem(),
                 ),
                 if (_columnsConfig.aliasName) ...[
                   const SizedBox(height: 16),
@@ -1412,6 +1628,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                   ],
+                  onSubmitted: (_) => submitAdHocItem(),
                 ),
                 if (_showQuantity) ...[
                   const SizedBox(height: 16),
@@ -1560,49 +1777,12 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
-              onPressed: () {
-                final name = nameController.text.trim();
-                final price = double.tryParse(priceController.text) ?? 0.0;
-                final taxRate = _taxMode == TaxMode.perItem
-                    ? (int.tryParse(taxRateController.text) ?? 0)
-                    : 0;
-                if (name.isEmpty) return;
-
-                final adHocProduct = Product(
-                  id: 'custom-${const Uuid().v4()}',
-                  name: name,
-                  description: '',
-                  price: price,
-                  stock: 0,
-                  hsncode: '',
-                  tax_rate: taxRate,
-                  unit: selectedUnit.trim(),
-                  type: dialogItemType,
-                  aliasName: aliasNameController.text.trim().isEmpty
-                      ? null
-                      : aliasNameController.text.trim(),
-                );
-                final extraCost = double.tryParse(extraCostController.text);
-                final item = InvoiceItem(
-                  product: adHocProduct,
-                  quantity: !_showQuantity
-                      ? 1.0
-                      : _fractionalQuantity
-                          ? (double.tryParse(quantityController.text) ?? 1.0)
-                          : (int.tryParse(quantityController.text) ?? 1)
-                              .toDouble(),
-                  discount: double.tryParse(discountController.text) ?? 0.0,
-                  extraCost: extraCost,
-                  unit: selectedUnit.trim(),
-                  discountPerUnit: discountPerUnit,
-                );
-                Navigator.pop(context);
-                addInvoiceProduct(item, insertAt: insertAt);
-              },
+              onPressed: submitAdHocItem,
               child: const Text('Add', style: TextStyle(color: Colors.white)),
             ),
           ],
-        ),
+        );
+        },
       ),
     );
   }
@@ -1900,15 +2080,23 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 const SizedBox(height: 8),
                 Align(
                   alignment: Alignment.centerRight,
-                  child: TextButton.icon(
-                    onPressed: _addAdHocItemDialog,
-                    icon: const Icon(Icons.add, size: 16),
-                    label: const Text('Custom Item',
-                        style: TextStyle(fontSize: AppFontSize.small)),
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.deepPurple,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
+                  child: Tooltip(
+                    message: 'Add a custom item (Ctrl + n)',
+                    waitDuration: const Duration(milliseconds: 500),
+                    child: TextButton.icon(
+                      onPressed: _addAdHocItemDialog,
+                      icon: const Icon(Icons.add, size: 16),
+                      label: const Text(
+                        'Custom Item',
+                        style: TextStyle(fontSize: AppFontSize.small),
+                      ),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.deepPurple,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -3217,6 +3405,24 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     );
   }
 
+  Widget _shortcutKey(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade200,
+        border: Border.all(color: Colors.grey.shade400),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: AppFontSize.xsmall,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
   Widget _invoiceItems(double tax, double subtotal, double total,
       double grossSubtotal, double totalDiscount, double invoiceDiscountAmount) {
     return Card(
@@ -3242,7 +3448,62 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       fontSize: AppFontSize.medium,
                       fontWeight: FontWeight.bold),
                 ),
-                const Spacer(),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: [
+                      Text(
+                        'Press',
+                        style: TextStyle(
+                          fontSize: AppFontSize.xsmall,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                      _shortcutKey('Ctrl + n'),
+                      Text(
+                        'to add an existing product',
+                        style: TextStyle(
+                          fontSize: AppFontSize.xsmall,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                      Text(
+                        'or',
+                        style: TextStyle(
+                          fontSize: AppFontSize.xsmall,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      _shortcutKey('Ctrl + m'),
+                      Text(
+                        'to add a custom item',
+                        style: TextStyle(
+                          fontSize: AppFontSize.xsmall,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                      Text(
+                        'or',
+                        style: TextStyle(
+                          fontSize: AppFontSize.xsmall,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      _shortcutKey('Ctrl + q'),
+                      Text(
+                        'to create invoice',
+                        style: TextStyle(
+                          fontSize: AppFontSize.xsmall,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                //const Spacer(),
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -4460,6 +4721,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             );
           }
         },
+        const SingleActivator(LogicalKeyboardKey.keyN, control: true):
+            _showProductPickerDialog,
+        const SingleActivator(LogicalKeyboardKey.keyM, control: true):
+            _addAdHocItemDialog,
       },
       child: Focus(
         autofocus: true,

@@ -342,7 +342,7 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
                   if (_previewedTemplate == InvoiceTemplate.thermal) ...[
                     _buildThermalItemLayoutField(),
                     const SizedBox(height: 6),
-                    _buildThermalWidthMarginField(),
+                    //_buildThermalWidthMarginField(),
                   ],
                 ],
                 const SizedBox(height: 14),
