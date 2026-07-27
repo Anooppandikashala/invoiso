@@ -219,12 +219,6 @@ jobs:
           echo "Injected libsqlite3.so into deb at /usr/share/invoiso/lib/"
           echo "Injected libsqlite3.so into deb at /opt/invoiso/lib/"
 
-          mkdir -p /tmp/deb_root/usr/bin
-          printf '#!/bin/sh\nexport LD_LIBRARY_PATH=/usr/share/invoiso/lib:$LD_LIBRARY_PATH\nexec /usr/share/invoiso/invoiso "$@"\n' \
-            > /tmp/deb_root/usr/bin/invoiso
-          chmod 755 /tmp/deb_root/usr/bin/invoiso
-          echo "Created LD_LIBRARY_PATH launcher at /usr/bin/invoiso"
-
           dpkg-deb -b /tmp/deb_root "$DEB_FILE"
           echo "Repacked with LD_LIBRARY_PATH launcher"
 
