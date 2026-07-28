@@ -188,7 +188,8 @@ class ThermalPrinterService {
     required Printer device,
     required Invoice invoice,
     _ReceiptSettings? settingsOverride,
-  }) async {
+  }) async
+  {
     final printer = FlutterThermalPrinter.instance;
     try {
       final settings = settingsOverride ?? await _fetchReceiptSettings(invoice);
@@ -388,7 +389,8 @@ class ThermalPrinterService {
     required int port,
     required Invoice invoice,
     _ReceiptSettings? settingsOverride,
-  }) async {
+  }) async
+  {
     final settings = settingsOverride ?? await _fetchReceiptSettings(invoice);
     if (!context.mounted) return;
     final widget = await _buildReceiptWidget(invoice, settings);
@@ -477,7 +479,8 @@ class ThermalPrinterService {
     final company = settings.company;
     final showItemTax = invoice.taxMode == TaxMode.perItem;
 
-    const headFontSize = PdfLayout.thermalPrinterHeadFontSize * 0.85;
+    final headFontSize = PdfLayout.thermalPrinterHeadFontSize *
+        thermalCompanyNameSizeFromKey(settings.thermalCompanyNameSize).scale;
     const itemFontSize = PdfLayout.thermalPrinterItemFontSize * 0.85;
 
     Widget text(String text,
@@ -496,13 +499,13 @@ class ThermalPrinterService {
       );
     }
 
-    Widget twoCol(String left, String right, {bool bold = false}) {
+    Widget twoCol(String left, String right, {bool bold = false, bool needDarkerText = false}) {
       return Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(child: text(left, bold: bold)),
+          Expanded(child: text(left, bold: bold,needDarkerText: needDarkerText)),
           const SizedBox(width: 6),
-          text(right, bold: bold, align: TextAlign.right),
+          text(right, bold: bold, align: TextAlign.right,needDarkerText: needDarkerText),
         ],
       );
     }
@@ -664,7 +667,7 @@ class ThermalPrinterService {
               // ── Invoice meta ──
               twoCol(
                   'Inv No: ${settings.invoicePrefix}${invoice.invoiceNumber ?? invoice.id}',
-                  'Date: ${s.dateFmt.format(invoice.date)}'),
+                  'Date: ${s.dateFmt.format(invoice.date)}',needDarkerText: true),
               if (invoice.dueDate != null)
                 twoCol('Due:', s.dateFmt.format(invoice.dueDate!)),
               hr(),
@@ -805,9 +808,9 @@ class _NetworkPrintRowState extends State<_NetworkPrintRow> {
     try {
       final settings =
           await ThermalPrinterService._fetchReceiptSettings(widget.invoice);
-      final useImage = widget.useTextMode
-          ? false
-          : ThermalPrinterService._receiptHasNonLatin1(widget.invoice, settings);
+      final useImage = kDebugMode ? (widget.useTextMode ? false : true) : true;
+      // TODO - We can use it later if user complaint about the printing speed!
+      //ThermalPrinterService._receiptHasNonLatin1(widget.invoice, settings);
       if (!useImage) {
         await ThermalPrinterService._printToNetworkText(
           ip: _ipController.text.trim(),

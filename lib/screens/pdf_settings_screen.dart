@@ -33,6 +33,8 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
   String _previewedThermalWidthMargin = '1';
   String _savedThermalItemLayout = 'table';
   String _previewedThermalItemLayout = 'table';
+  String _savedThermalCompanyNameSize = 'medium';
+  String _previewedThermalCompanyNameSize = 'medium';
   bool _isSaving = false;
 
   static const _presetThemeColors = [
@@ -97,6 +99,7 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
       ref.read(settingsRepositoryProvider).getShowTotalQuantity(),
       ref.read(settingsRepositoryProvider).getSetting(SettingKey.thermalWidthMargin),
       ref.read(settingsRepositoryProvider).getSetting(SettingKey.thermalItemLayout),
+      ref.read(settingsRepositoryProvider).getSetting(SettingKey.thermalCompanyNameSize),
     ]);
     final saved = results[0] as InvoiceTemplate;
     final savedThemeColor = results[1] as String?;
@@ -104,6 +107,7 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
     final savedShowTotalQty = results[3] as bool;
     final savedThermalWidthMargin = results[4] as String?;
     final savedThermalItemLayout = results[5] as String?;
+    final savedThermalCompanyNameSize = results[6] as String?;
     final previewedTemplate =
         effectiveInvoiceTemplateForPageSize(saved, savedPageSize);
     setState(() {
@@ -121,6 +125,8 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
       _thermalWidthMarginController.text = _savedThermalWidthMargin;
       _savedThermalItemLayout = savedThermalItemLayout ?? 'table';
       _previewedThermalItemLayout = _savedThermalItemLayout;
+      _savedThermalCompanyNameSize = savedThermalCompanyNameSize ?? 'medium';
+      _previewedThermalCompanyNameSize = _savedThermalCompanyNameSize;
     });
   }
 
@@ -142,6 +148,8 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
               .toString()),
       ref.read(settingsRepositoryProvider).setSetting(
           SettingKey.thermalItemLayout, _previewedThermalItemLayout),
+      ref.read(settingsRepositoryProvider).setSetting(
+          SettingKey.thermalCompanyNameSize, _previewedThermalCompanyNameSize),
     ]);
     setState(() {
       _savedTemplate = _previewedTemplate;
@@ -150,6 +158,7 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
       _savedShowTotalQuantity = _previewedShowTotalQuantity;
       _savedThermalWidthMargin = _previewedThermalWidthMargin;
       _savedThermalItemLayout = _previewedThermalItemLayout;
+      _savedThermalCompanyNameSize = _previewedThermalCompanyNameSize;
     });
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -266,7 +275,8 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
             _previewedPageSize != _savedPageSize ||
             _previewedShowTotalQuantity != _savedShowTotalQuantity ||
             _previewedThermalWidthMargin != _savedThermalWidthMargin ||
-            _previewedThermalItemLayout != _savedThermalItemLayout);
+            _previewedThermalItemLayout != _savedThermalItemLayout ||
+            _previewedThermalCompanyNameSize != _savedThermalCompanyNameSize);
 
     return Scaffold(
       appBar: AppBar(
@@ -341,6 +351,8 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
                     _buildTotalQuantityToggle(),
                   if (_previewedTemplate == InvoiceTemplate.thermal) ...[
                     _buildThermalItemLayoutField(),
+                    const SizedBox(height: 6),
+                    _buildThermalCompanyNameSizeField(),
                     const SizedBox(height: 6),
                     //_buildThermalWidthMarginField(),
                   ],
@@ -560,6 +572,49 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
             'Table: one line per item (Sl/Name/Qty/Rate/Total). '
             'Detailed: name on its own line, then Qty/Rate/Total below it.',
             style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildThermalCompanyNameSizeField() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppBorderRadius.small),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Company name size',
+            style: TextStyle(
+              fontSize: AppFontSize.small,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[700],
+            ),
+          ),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            value: _previewedThermalCompanyNameSize,
+            isExpanded: true,
+            decoration: InputDecoration(
+              isDense: true,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+              ),
+            ),
+            items: [
+              for (final size in ThermalCompanyNameSize.values)
+                DropdownMenuItem(value: size.key, child: Text(size.label)),
+            ],
+            onChanged: (value) =>
+                setState(() => _previewedThermalCompanyNameSize = value!),
           ),
         ],
       ),

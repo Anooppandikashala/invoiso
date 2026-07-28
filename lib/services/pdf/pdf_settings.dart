@@ -36,6 +36,7 @@ class PdfGenerationSettings {
   final pw.ThemeData pdfTheme;
   final PageSize pageSize;
   final String thermalItemLayout;
+  final String thermalCompanyNameSize;
 
   const PdfGenerationSettings({
     required this.company,
@@ -63,6 +64,7 @@ class PdfGenerationSettings {
     required this.showTotalQuantity,
     required this.pdfTheme,
     this.thermalItemLayout = 'table',
+    this.thermalCompanyNameSize = 'medium',
     this.signatureBytes,
     this.signaturePosition = 'left',
     this.signatureSizePx = 50,

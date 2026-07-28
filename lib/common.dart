@@ -56,6 +56,7 @@ enum SettingKey {
   defaultTaxRate, // default invoice tax rate percentage (e.g. '18')
   thermalWidthMargin, // chars trimmed off the thermal printer's textbook width to avoid edge clipping on real hardware; default '1'
   thermalItemLayout, // 'table' | 'detailed' — how items print on thermal receipts; default 'table'
+  thermalCompanyNameSize, // 'xsmall' | 'small' | 'medium' | 'large' — company name font size on thermal receipts; default 'medium'
   invoiceTemplate, // used by cloud edition's generic setSetting/getSetting path
   companyLogo, // used by cloud edition's generic setSetting/getSetting path
   installationId, // Unique identifier for this installation. Generated on first launch and persisted locally. Used for anonymous analytics and installation tracking.
@@ -143,6 +144,8 @@ extension SettingKeyExtension on SettingKey {
         return 'thermal_width_margin';
       case SettingKey.thermalItemLayout:
         return 'thermal_item_layout';
+      case SettingKey.thermalCompanyNameSize:
+        return 'thermal_company_name_size';
       case SettingKey.invoiceTemplate:
         return 'invoice_template';
       case SettingKey.companyLogo:
@@ -915,6 +918,59 @@ LogoSize logoSizeFromKey(String? key) {
   return LogoSize.values.firstWhere(
     (s) => s.key == key,
     orElse: () => LogoSize.medium,
+  );
+}
+
+enum ThermalCompanyNameSize { xsmall, small, medium, large }
+
+extension ThermalCompanyNameSizeExtension on ThermalCompanyNameSize {
+  String get key {
+    switch (this) {
+      case ThermalCompanyNameSize.xsmall:
+        return 'xsmall';
+      case ThermalCompanyNameSize.small:
+        return 'small';
+      case ThermalCompanyNameSize.medium:
+        return 'medium';
+      case ThermalCompanyNameSize.large:
+        return 'large';
+    }
+  }
+
+  String get label {
+    switch (this) {
+      case ThermalCompanyNameSize.xsmall:
+        return 'X-Small';
+      case ThermalCompanyNameSize.small:
+        return 'Small';
+      case ThermalCompanyNameSize.medium:
+        return 'Medium';
+      case ThermalCompanyNameSize.large:
+        return 'Large';
+    }
+  }
+
+  /// Multiplier applied to [PdfLayout.thermalPrinterHeadFontSize] for the
+  /// company name on thermal receipts. 'medium' matches the previous
+  /// hardcoded 0.9 factor so existing receipts don't change by default.
+  double get scale {
+    switch (this) {
+      case ThermalCompanyNameSize.xsmall:
+        return 0.7;
+      case ThermalCompanyNameSize.small:
+        return 0.8;
+      case ThermalCompanyNameSize.medium:
+        return 0.9;
+      case ThermalCompanyNameSize.large:
+        return 1.1;
+    }
+  }
+}
+
+ThermalCompanyNameSize thermalCompanyNameSizeFromKey(String? key) {
+  return ThermalCompanyNameSize.values.firstWhere(
+    (s) => s.key == key,
+    orElse: () => ThermalCompanyNameSize.medium,
   );
 }
 

@@ -100,7 +100,7 @@ class PdfLayout
   static double thankYouNoteFontSize = 10;
   static double footerBrandingFontSize = 8;
   static const double thermalPrinterItemFontSize = 28;
-  static const double thermalPrinterHeadFontSize = 34;
+  static const double thermalPrinterHeadFontSize = 38;
 }
 
 class UpdateConfig

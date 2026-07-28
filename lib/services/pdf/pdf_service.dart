@@ -83,6 +83,7 @@ class PDFService {
       BackendServices.settings.getSetting(SettingKey.thermalItemLayout), // 23
       BackendServices.settings.getSetting(SettingKey.showAliasNameInPdf), // 24
       BackendServices.settings.getSignatureSize(), // 25
+      BackendServices.settings.getSetting(SettingKey.thermalCompanyNameSize), // 26
     ]);
 
     final rawPrefix = (results[2] as String?) ?? 'INV';
@@ -130,6 +131,7 @@ class PDFService {
       pdfTheme: pdfTheme,
       thermalItemLayout: (results[23] as String?) ?? 'table',
       showAliasName: (results[24] as String?) == 'true',
+      thermalCompanyNameSize: (results[26] as String?) ?? 'medium',
     );
   }
 
