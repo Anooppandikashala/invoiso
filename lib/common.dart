@@ -57,6 +57,7 @@ enum SettingKey {
   thermalWidthMargin, // chars trimmed off the thermal printer's textbook width to avoid edge clipping on real hardware; default '1'
   thermalItemLayout, // 'table' | 'detailed' — how items print on thermal receipts; default 'table'
   thermalCompanyNameSize, // 'xsmall' | 'small' | 'medium' | 'large' — company name font size on thermal receipts; default 'medium'
+  lastUsedThermalPrinter, // JSON-encoded Printer of the last device successfully printed to, used to skip a full rescan on next open
   invoiceTemplate, // used by cloud edition's generic setSetting/getSetting path
   companyLogo, // used by cloud edition's generic setSetting/getSetting path
   installationId, // Unique identifier for this installation. Generated on first launch and persisted locally. Used for anonymous analytics and installation tracking.
@@ -146,6 +147,8 @@ extension SettingKeyExtension on SettingKey {
         return 'thermal_item_layout';
       case SettingKey.thermalCompanyNameSize:
         return 'thermal_company_name_size';
+      case SettingKey.lastUsedThermalPrinter:
+        return 'last_used_thermal_printer';
       case SettingKey.invoiceTemplate:
         return 'invoice_template';
       case SettingKey.companyLogo:

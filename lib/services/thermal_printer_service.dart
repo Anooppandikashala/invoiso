@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart' show kDebugMode;
@@ -23,28 +25,96 @@ import 'package:invoiso/constants.dart';
 /// the app's fonts support, so there's no ESC/POS codepage limitation to
 /// work around for non-Latin1 text.
 class ThermalPrinterService {
+  // Populated by _deviceCacheSub as scans complete, so re-opening the print
+  // dialog can show known devices instantly instead of forcing a fresh scan
+  // every time.
+  static List<Printer> _cachedDevices = [];
+  static StreamSubscription<List<Printer>>? _deviceCacheSub;
+
+  static void _ensureDeviceCacheListener(FlutterThermalPrinter printer) {
+    _deviceCacheSub ??= printer.devicesStream.listen((devices) {
+      _cachedDevices = devices;
+    });
+  }
+
+  static Future<void> _saveLastUsedPrinter(Printer p) async {
+    try {
+      await BackendServices.settings
+          .setSetting(SettingKey.lastUsedThermalPrinter, jsonEncode(p.toJson()));
+    } catch (e) {
+      if (kDebugMode) print(e);
+    }
+  }
+
+  static Future<String?> _getLastUsedPrinterAddress() async {
+    final raw = await BackendServices.settings
+        .getSetting(SettingKey.lastUsedThermalPrinter);
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      return (jsonDecode(raw) as Map<String, dynamic>)['address'] as String?;
+    } catch (e) {
+      return null;
+    }
+  }
+
   static Future<void> printInvoice(
       BuildContext context, Invoice invoice) async {
     final printer = FlutterThermalPrinter.instance;
-    try {
-      await printer.getPrinters(connectionTypes: [ConnectionType.USB]);
-    } catch (e) {
-      if (kDebugMode) print(e);
-      if (!context.mounted) return;
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(content: Text('Failed to scan for printers: $e')),
-      );
-      return;
-    }
+    _ensureDeviceCacheListener(printer);
+    // Skip the auto-scan if we already have devices from a previous scan
+    // this session — manual "Rescan" button covers switching printers.
+    final scanDone = ValueNotifier<bool>(_cachedDevices.isNotEmpty);
+    final lastUsedAddress = await _getLastUsedPrinterAddress();
     if (!context.mounted) return;
 
+    Future<void> scan() {
+      scanDone.value = false;
+      return printer
+          .getPrinters(connectionTypes: [ConnectionType.USB])
+          .catchError((e) {
+        if (kDebugMode) print(e);
+        if (!context.mounted) return;
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          SnackBar(content: Text('Failed to scan for printers: $e')),
+        );
+      }).whenComplete(() => scanDone.value = true);
+    }
+
+    if (_cachedDevices.isEmpty) {
+      unawaited(scan());
+    }
+
     var useTextMode = false;
+    var showDummyPrinter = false;
+    final dummyPrinter = Printer(
+      address: 'DUMMY-TEST-PRINTER',
+      name: 'Test Printer (dummy)',
+      connectionType: ConnectionType.USB,
+    );
 
     await showDialog(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setState) => AlertDialog(
-        title: const Text('Print Receipt'),
+        title: Row(
+          children: [
+            const Expanded(child: Text('Print Receipt')),
+            ValueListenableBuilder<bool>(
+              valueListenable: scanDone,
+              builder: (context, done, _) => IconButton(
+                tooltip: 'Rescan for printers',
+                onPressed: done ? () => unawaited(scan()) : null,
+                icon: done
+                    ? const Icon(Icons.refresh)
+                    : const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+              ),
+            ),
+          ],
+        ),
         content: SizedBox(
           width: 360,
           child: Column(
@@ -60,26 +130,102 @@ class ThermalPrinterService {
                   value: useTextMode,
                   onChanged: (v) => setState(() => useTextMode = v),
                 ),
+              if (kDebugMode)
+                SwitchListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Show dummy printer (debug)'),
+                  subtitle: const Text(
+                      'Fake "last used" entry, to check UI without real hardware'),
+                  value: showDummyPrinter,
+                  onChanged: (v) => setState(() => showDummyPrinter = v),
+                ),
               const Text('USB Printers',
                   style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               StreamBuilder<List<Printer>>(
                 stream: printer.devicesStream,
-                initialData: const [],
+                initialData: _cachedDevices,
                 builder: (context, snapshot) {
-                  final discovered = snapshot.data ?? const <Printer>[];
+                  final discovered =
+                      List<Printer>.from(snapshot.data ?? const <Printer>[]);
+                  if (kDebugMode && showDummyPrinter) {
+                    discovered.add(dummyPrinter);
+                  }
+                  final effectiveLastUsedAddress = (kDebugMode && showDummyPrinter)
+                      ? dummyPrinter.address
+                      : lastUsedAddress;
+                  if (effectiveLastUsedAddress != null) {
+                    discovered.sort((a, b) {
+                      if (a.address == effectiveLastUsedAddress) return -1;
+                      if (b.address == effectiveLastUsedAddress) return 1;
+                      return 0;
+                    });
+                  }
                   if (discovered.isEmpty) {
-                    return const Text('No USB printers found.');
+                    return ValueListenableBuilder<bool>(
+                      valueListenable: scanDone,
+                      builder: (context, done, _) {
+                        if (done) {
+                          return const Text('No USB printers found.');
+                        }
+                        return const Row(
+                          children: [
+                            SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                            SizedBox(width: 8),
+                            Text('Scanning for USB printers...'),
+                          ],
+                        );
+                      },
+                    );
                   }
                   return Column(
                     mainAxisSize: MainAxisSize.min,
                     children: discovered
-                        .map((p) => ListTile(
+                        .map((p) {
+                          final isLastUsed = p.address == effectiveLastUsedAddress;
+                          return ListTile(
                               dense: true,
-                              contentPadding: EdgeInsets.zero,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                              tileColor: isLastUsed
+                                  ? Colors.green.withValues(alpha: 0.08)
+                                  : null,
+                              shape: isLastUsed
+                                  ? RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(6),
+                                      side: BorderSide(
+                                          color: Colors.green.withValues(alpha: 0.4)),
+                                    )
+                                  : null,
+                              leading: isLastUsed
+                                  ? const Icon(Icons.check_circle,
+                                      color: Colors.green, size: 20)
+                                  : const SizedBox(width: 20),
                               title: Text(p.name ?? 'Unknown printer'),
+                              subtitle: isLastUsed
+                                  ? const Text('Last used',
+                                      style: TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.green,
+                                          fontWeight: FontWeight.w600))
+                                  : null,
                               onTap: () async {
                                 Navigator.pop(dialogContext);
+                                if (kDebugMode && p.address == dummyPrinter.address) {
+                                  // Dummy entry — just for checking the
+                                  // "Last used" highlight UI, no real device
+                                  // to print to.
+                                  ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                                    const SnackBar(
+                                        content: Text(
+                                            'Dummy printer tapped — highlight UI check only, not a real print.')),
+                                  );
+                                  return;
+                                }
                                 _ReceiptSettings settings;
                                 try {
                                   settings = await _fetchReceiptSettings(invoice);
@@ -97,9 +243,7 @@ class ThermalPrinterService {
                                 // manually testing that path. Otherwise
                                 // auto-pick: image widget only when the
                                 // receipt actually has non-Latin1 text.
-                                final useImage = useTextMode
-                                    ? false
-                                    : true;
+                                final useImage = useTextMode ? false : true;
                                 // TODO - We can use this later if any user complaint about the printing speed
                                 //_receiptHasNonLatin1(invoice, settings);
                                 if (useImage) {
@@ -116,7 +260,8 @@ class ThermalPrinterService {
                                       settingsOverride: settings);
                                 }
                               },
-                            ))
+                            );
+                        })
                         .toList(),
                   );
                 },
@@ -168,11 +313,19 @@ class ThermalPrinterService {
         paperSize: settings.paperSize,
       );
       await printer.disconnect(device);
+      unawaited(_saveLastUsedPrinter(device));
     } catch (e) {
       if (kDebugMode) print(e);
+      // Device may have been unplugged/removed since it was cached — drop
+      // the cache so the next dialog open does a real rescan instead of
+      // showing this dead entry again.
+      _cachedDevices = [];
       if (!context.mounted) return;
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(content: Text('Print failed: $e')),
+        SnackBar(
+          content: Text(
+              'Print failed: $e\nCheck the printer is connected, then try again.'),
+        ),
       );
     }
   }
@@ -197,11 +350,19 @@ class ThermalPrinterService {
       await printer.connect(device);
       await printer.printData(device, bytes);
       await printer.disconnect(device);
+      unawaited(_saveLastUsedPrinter(device));
     } catch (e) {
       if (kDebugMode) print(e);
+      // Device may have been unplugged/removed since it was cached — drop
+      // the cache so the next dialog open does a real rescan instead of
+      // showing this dead entry again.
+      _cachedDevices = [];
       if (!context.mounted) return;
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(content: Text('Print failed: $e')),
+        SnackBar(
+          content: Text(
+              'Print failed: $e\nCheck the printer is connected, then try again.'),
+        ),
       );
     }
   }
