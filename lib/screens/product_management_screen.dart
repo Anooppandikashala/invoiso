@@ -54,7 +54,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
   final _descriptionController = TextEditingController();
   final _priceController = TextEditingController();
   final _purchasePriceController = TextEditingController();
-  final _stockController = TextEditingController();
+  final _stockController = TextEditingController(text: '0');
   final _hsnCodeController = TextEditingController();
   final _taxRateController = TextEditingController();
   final _customUnitController = TextEditingController();
@@ -370,7 +370,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     final purchasePriceCtrl = TextEditingController(
         text: product.purchasePrice > 0
             ? product.purchasePrice.toString()
-            : '');
+            : '0.0');
     final stockCtrl = TextEditingController(text: product.stock.toString());
     final hsnCodeCtrl = TextEditingController(text: product.hsncode);
     final taxRateCtrl =
@@ -378,7 +378,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     final defaultDiscountCtrl = TextEditingController(
         text: product.defaultDiscount > 0
             ? product.defaultDiscount.toString()
-            : '');
+            : '0.0');
     final customUnitCtrl = TextEditingController(
         text: ProductUnits.presets.contains(product.unit) ? '' : product.unit);
     final dialogFormKey = GlobalKey<FormState>();
@@ -1517,6 +1517,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                           keyboardType:
                               const TextInputType.numberWithOptions(decimal: true),
                           isPrice: true,
+                          required: _newItemType == 'service' ? false : true,
                           prefixText: '$_currencySymbol '),
                       const SizedBox(height: 16),
                     ],
@@ -1537,8 +1538,12 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                           keyboardType: TextInputType.number, isTaxRate: true),
                       const SizedBox(height: 16),
                     ],
-                    _buildFormField(_stockController, 'Stock', Icons.inventory,
-                        keyboardType: TextInputType.number, isStock: true),
+                    _buildFormField(_stockController, 'Stock',
+                        Icons.inventory,
+                        keyboardType: TextInputType.number,
+                        isStock: true,
+                        required: _newItemType == 'service' ? false : true,
+                    ),
                     const SizedBox(height: 16),
                     if (_columnsConfig.unit) ...[
                       _buildUnitField(
