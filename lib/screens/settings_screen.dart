@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/constants.dart';
 import 'package:invoiso/providers/app_config_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
+import 'package:invoiso/providers/theme_provider.dart';
 import 'package:invoiso/services/update_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:invoiso/common.dart';
@@ -374,25 +375,56 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   const SizedBox(height: 10),
                   Text('Upload Logo',
                       style: TextStyle(
-                          color: Colors.grey[600],
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontSize: AppFontSize.small,
                           fontWeight: FontWeight.w500)),
                   const SizedBox(height: 2),
                   Text('Click to browse',
                       style: TextStyle(
-                          color: Colors.grey[400],
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontSize: AppFontSize.xsmall)),
                 ],
               ));
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? null
+          : Theme.of(context).colorScheme.surfaceContainerHighest,
       appBar: AppBar(
         title: const Text('Company Information'),
-        backgroundColor: primaryColor,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor ??
+            primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: SegmentedButton<ThemeMode>(
+              segments: const [
+                ButtonSegment(
+                    value: ThemeMode.light,
+                    icon: Icon(Icons.light_mode_outlined),
+                    tooltip: 'Light'),
+                ButtonSegment(
+                    value: ThemeMode.dark,
+                    icon: Icon(Icons.dark_mode_outlined),
+                    tooltip: 'Dark'),
+                ButtonSegment(
+                    value: ThemeMode.system,
+                    icon: Icon(Icons.brightness_auto_outlined),
+                    tooltip: 'System'),
+              ],
+              selected: {ref.watch(themeModeProvider)},
+              showSelectedIcon: false,
+              onSelectionChanged: (selection) {
+                final mode = selection.first;
+                ref.read(themeModeProvider.notifier).state = mode;
+                ref.read(settingsRepositoryProvider).setThemeMode(themeModeToKey(mode));
+              },
+            ),
+          ),
+        ],
       ),
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -401,7 +433,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           SizedBox(
             width: 240,
             child: Container(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               child: Column(
                 children: [
                   Expanded(
@@ -421,9 +453,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 width: 180,
                                 height: 180,
                                 decoration: BoxDecoration(
-                                  color: Colors.grey[50],
+                                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                                   border: Border.all(
-                                      color: Colors.grey[300]!, width: 2),
+                                      color: Theme.of(context).colorScheme.outlineVariant, width: 2),
                                   borderRadius: BorderRadius.circular(
                                       AppBorderRadius.xsmall),
                                 ),
@@ -501,7 +533,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           ),
 
-          VerticalDivider(width: 1, color: Colors.grey[200]),
+          VerticalDivider(width: 1, color: Theme.of(context).colorScheme.outlineVariant),
 
           // ── Right: scrollable form ───────────────────────────────────
           Expanded(
@@ -623,9 +655,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                      border: Border.all(color: Colors.grey[200]!),
+                      border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -638,9 +670,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ],
                         ),
                         const SizedBox(height: 4),
-                        const Text(
+                        Text(
                           'Controls item type options in the product list and invoices',
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                         const SizedBox(height: 12),
                         SegmentedButton<BusinessType>(
@@ -673,10 +705,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   const SizedBox(height: 16),
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       borderRadius:
                           BorderRadius.circular(AppBorderRadius.xsmall),
-                      border: Border.all(color: Colors.grey[200]!),
+                      border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                     ),
                     child: SwitchListTile(
                       title: const Text('Show QR Code on Invoices'),
@@ -689,7 +721,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       activeColor: primaryColor,
                       secondary: Icon(
                         Icons.payment_rounded,
-                        color: _showUpiQr ? primaryColor : Colors.grey,
+                        color: _showUpiQr ? primaryColor : Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),
@@ -710,7 +742,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             child: IconButton(
                               icon: Icon(
                                 isDefault ? Icons.star_rounded : Icons.star_outline_rounded,
-                                color: isDefault ? Colors.amber[700] : Colors.grey[400],
+                                color: isDefault ? Colors.amber[700] : Theme.of(context).colorScheme.onSurfaceVariant,
                               ),
                               onPressed: () => setState(() => _defaultUpiIndex = index),
                             ),
@@ -781,9 +813,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   // ── Bank Details ─────────────────────────────────────────
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                      border: Border.all(color: Colors.grey[200]!),
+                      border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                     ),
                     child: SwitchListTile(
                       title: const Text('Show Bank Details on Invoices'),
@@ -796,7 +828,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       activeColor: primaryColor,
                       secondary: Icon(
                         Icons.account_balance_outlined,
-                        color: _showBankDetails ? primaryColor : Colors.grey,
+                        color: _showBankDetails ? primaryColor : Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),
@@ -818,7 +850,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             child: IconButton(
                               icon: Icon(
                                 isDefault ? Icons.star_rounded : Icons.star_outline_rounded,
-                                color: isDefault ? Colors.amber[700] : Colors.grey[400],
+                                color: isDefault ? Colors.amber[700] : Theme.of(context).colorScheme.onSurfaceVariant,
                               ),
                               onPressed: () => setState(() => _defaultBankIndex = index),
                             ),
@@ -1661,14 +1693,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-          borderSide: BorderSide(color: Colors.grey[300]!),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
           borderSide: BorderSide(color: primaryColor, width: 2),
         ),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
         counterText: '',
       ),
     );

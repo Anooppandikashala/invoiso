@@ -93,8 +93,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final cfg = ref.watch(appEditionConfigProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: Colors.blue[50],
+      backgroundColor: isDark ? null : Colors.blue[50],
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -151,7 +152,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
             Card(
           elevation: 8,
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           child: Container(
             width: MediaQuery.sizeOf(context).width * 0.25,
             padding: const EdgeInsets.all(32),
@@ -159,7 +160,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Image.asset(
-                  'assets/images/logo.png',
+                  // TODO: swap to a real dark-mode asset once available.
+                  isDark ? 'assets/images/logo_dark.png' : 'assets/images/logo.png',
                   width: 230,
                   height: 100,
                   fit: BoxFit.contain,
@@ -221,14 +223,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     onTap: () => launchUrl(Uri.parse(AppConfig.website), mode: LaunchMode.externalApplication),
                     child: Text(
                       AppConfig.website,
-                      style: TextStyle(fontSize: 12, color: Colors.grey[500], decoration: TextDecoration.underline),
+                      style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant, decoration: TextDecoration.underline),
                     ),
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   AppConfig.version,
-                  style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+                  style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ],
             ),

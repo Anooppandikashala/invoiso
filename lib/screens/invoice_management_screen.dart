@@ -351,9 +351,9 @@ class _InvoiceManagementScreenState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Or filter by date range:',
-                          style: TextStyle(fontSize: 13, color: Colors.black54),
+                          style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                         const SizedBox(height: 12),
                         Row(
@@ -593,12 +593,12 @@ class _InvoiceManagementScreenState
               const SizedBox(height: 16),
               LinearProgressIndicator(
                 value: done / selected.length,
-                backgroundColor: Colors.grey[200],
+                backgroundColor: Theme.of(context).colorScheme.outlineVariant,
               ),
               const SizedBox(height: 8),
               Text(
                 '$done / ${selected.length}',
-                style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13),
               ),
             ],
           ),
@@ -893,10 +893,10 @@ class _InvoiceManagementScreenState
                 const SizedBox(height: 16),
                 LinearProgressIndicator(
                     value: done / invoices.length,
-                    backgroundColor: Colors.grey[200]),
+                    backgroundColor: Theme.of(context).colorScheme.outlineVariant),
                 const SizedBox(height: 8),
                 Text('$done / ${invoices.length}',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13)),
               ],
             ),
           ),
@@ -994,10 +994,13 @@ class _InvoiceManagementScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? null
+          : Colors.grey[50],
       appBar: AppBar(
         title: Text('${widget.filterType} Management'),
-        backgroundColor: Theme.of(context).primaryColor,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor ??
+            Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
@@ -1046,7 +1049,7 @@ class _InvoiceManagementScreenState
               children: [
                 // ── Search + stats ────────────────────────────────────────
                 Container(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   padding: const EdgeInsets.all(24),
                   child: Row(
                     children: [
@@ -1083,7 +1086,7 @@ class _InvoiceManagementScreenState
                                 borderRadius: BorderRadius.circular(
                                     AppBorderRadius.xsmall),
                                 borderSide:
-                                    BorderSide(color: Colors.grey[300]!),
+                                    BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(
@@ -1094,7 +1097,7 @@ class _InvoiceManagementScreenState
                                 ),
                               ),
                               filled: true,
-                              fillColor: Colors.grey[50],
+                              fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                             ),
                             onChanged: (value) {
                               setState(() {
@@ -1138,12 +1141,12 @@ class _InvoiceManagementScreenState
                             decoration: BoxDecoration(
                               color: _hidePaid
                                   ? Colors.orange.withValues(alpha: 0.12)
-                                  : Colors.grey.withValues(alpha: 0.08),
+                                  : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
                                 color: _hidePaid
                                     ? Colors.orange.withValues(alpha: 0.4)
-                                    : Colors.grey[300]!,
+                                    : Theme.of(context).colorScheme.outlineVariant,
                               ),
                             ),
                             child: Row(
@@ -1156,7 +1159,7 @@ class _InvoiceManagementScreenState
                                   size: 18,
                                   color: _hidePaid
                                       ? Colors.orange[700]
-                                      : Colors.grey[600],
+                                      : Theme.of(context).colorScheme.onSurfaceVariant,
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
@@ -1166,7 +1169,7 @@ class _InvoiceManagementScreenState
                                     fontWeight: FontWeight.w500,
                                     color: _hidePaid
                                         ? Colors.orange[700]
-                                        : Colors.grey[700],
+                                        : Theme.of(context).colorScheme.onSurface,
                                   ),
                                 ),
                               ],
@@ -1196,12 +1199,12 @@ class _InvoiceManagementScreenState
                                 decoration: BoxDecoration(
                                   color: isActive
                                       ? option.$3.withValues(alpha: 0.12)
-                                      : Colors.grey.withValues(alpha: 0.08),
+                                      : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.08),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
                                     color: isActive
                                         ? option.$3.withValues(alpha: 0.4)
-                                        : Colors.grey[300]!,
+                                        : Theme.of(context).colorScheme.outlineVariant,
                                   ),
                                 ),
                                 child: Text(
@@ -1210,7 +1213,7 @@ class _InvoiceManagementScreenState
                                     fontSize: 13,
                                     fontWeight: FontWeight.w500,
                                     color:
-                                        isActive ? option.$3 : Colors.grey[700],
+                                        isActive ? option.$3 : Theme.of(context).colorScheme.onSurface,
                                   ),
                                 ),
                               ),
@@ -1243,7 +1246,7 @@ class _InvoiceManagementScreenState
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(Icons.search_off,
-                                  size: 80, color: Colors.grey[300]),
+                                  size: 80, color: Theme.of(context).colorScheme.outlineVariant),
                               const SizedBox(height: 16),
                               Text(
                                 _searchQuery.isEmpty
@@ -1251,7 +1254,7 @@ class _InvoiceManagementScreenState
                                     : 'No results for "$_searchQuery"',
                                 style: TextStyle(
                                   fontSize: 18,
-                                  color: Colors.grey[600],
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -1261,7 +1264,7 @@ class _InvoiceManagementScreenState
                                     ? 'Create your first ${widget.filterType.toLowerCase()} to see it here'
                                     : 'Try adjusting your search',
                                 style: TextStyle(
-                                    fontSize: 14, color: Colors.grey[400]),
+                                    fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                               ),
                             ],
                           ),
@@ -1362,7 +1365,7 @@ class _InvoiceManagementScreenState
                 // ── Pagination ────────────────────────────────────────────
                 if (_pageInvoices.isNotEmpty)
                   Container(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                     padding: const EdgeInsets.symmetric(
                         vertical: 16, horizontal: 24),
                     child: Row(
@@ -1372,7 +1375,7 @@ class _InvoiceManagementScreenState
                           children: [
                             Text('Rows per page:',
                                 style: TextStyle(
-                                    color: Colors.grey.shade700, fontSize: 13)),
+                                    color: Theme.of(context).colorScheme.onSurface, fontSize: 13)),
                             const SizedBox(width: 8),
                             DropdownButton<int>(
                               value: _pageSize,
@@ -1404,12 +1407,12 @@ class _InvoiceManagementScreenState
                               icon: const Icon(Icons.chevron_left, size: 20),
                               label: const Text('Previous'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
+                                backgroundColor: Theme.of(context).colorScheme.surface,
                                 foregroundColor: Theme.of(context).primaryColor,
-                                disabledBackgroundColor: Colors.grey[200],
-                                disabledForegroundColor: Colors.grey[400],
+                                disabledBackgroundColor: Theme.of(context).colorScheme.outlineVariant,
+                                disabledForegroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
                                 elevation: 0,
-                                side: BorderSide(color: Colors.grey[300]!),
+                                side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8)),
                                 padding: const EdgeInsets.symmetric(
@@ -1450,12 +1453,12 @@ class _InvoiceManagementScreenState
                               icon: const Icon(Icons.chevron_right, size: 20),
                               label: const Text('Next'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
+                                backgroundColor: Theme.of(context).colorScheme.surface,
                                 foregroundColor: Theme.of(context).primaryColor,
-                                disabledBackgroundColor: Colors.grey[200],
-                                disabledForegroundColor: Colors.grey[400],
+                                disabledBackgroundColor: Theme.of(context).colorScheme.outlineVariant,
+                                disabledForegroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
                                 elevation: 0,
-                                side: BorderSide(color: Colors.grey[300]!),
+                                side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8)),
                                 padding: const EdgeInsets.symmetric(
@@ -1606,9 +1609,11 @@ class _InvoiceManagementScreenState
       decoration: BoxDecoration(
         color: isSelected
             ? Theme.of(context).primaryColor.withValues(alpha: 0.08)
-            : (isEven ? Colors.grey[50] : Colors.white),
+            : (isEven
+                ? Theme.of(context).colorScheme.surfaceContainerHighest
+                : Theme.of(context).colorScheme.surface),
         border: Border(
-          bottom: BorderSide(color: Colors.grey[200]!, width: 1),
+          bottom: BorderSide(color: Theme.of(context).colorScheme.outlineVariant, width: 1),
           left: isSelected
               ? BorderSide(color: Theme.of(context).primaryColor, width: 3)
               : BorderSide.none,
@@ -1663,7 +1668,7 @@ class _InvoiceManagementScreenState
                       children: [
                         if (showIcon) ...[
                           Icon(Icons.person_outline,
-                              size: 16, color: Colors.grey[600]),
+                              size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                           const SizedBox(width: 6),
                         ],
                         Expanded(
@@ -1715,7 +1720,7 @@ class _InvoiceManagementScreenState
                 // Outstanding balance
                 _buildTableCell(
                   invoice.paymentStatus == PaymentStatus.paid
-                      ? Text('—', style: TextStyle(color: Colors.grey[400]))
+                      ? Text('—', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))
                       : Text(
                           '${invoice.currencySymbol} ${invoice.outstandingBalance.toStringAsFixed(2)}',
                           style: TextStyle(
@@ -1819,7 +1824,7 @@ class _InvoiceManagementScreenState
         ? Colors.red[700]!
         : isToday
             ? Colors.orange[700]!
-            : Colors.grey[600]!;
+            : Theme.of(context).colorScheme.onSurfaceVariant;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -1883,7 +1888,7 @@ class _InvoiceManagementScreenState
               Text(label,
                   style: TextStyle(
                       fontSize: 11,
-                      color: Colors.grey[600],
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w500)),
               Text(value,
                   style: TextStyle(
@@ -1897,7 +1902,7 @@ class _InvoiceManagementScreenState
 
   Widget _buildActionButton(
       IconData icon, Color color, String tooltip, VoidCallback? onPressed) {
-    final effectiveColor = onPressed != null ? color : Colors.grey[400]!;
+    final effectiveColor = onPressed != null ? color : Theme.of(context).colorScheme.onSurfaceVariant;
     return Tooltip(
       message: tooltip,
       child: InkWell(
@@ -2048,11 +2053,11 @@ class _TrashDialogState extends ConsumerState<_TrashDialog> {
             ),
             const SizedBox(height: 16),
             if (_invoices.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(32),
+              Padding(
+                padding: const EdgeInsets.all(32),
                 child: Center(
                   child: Text('Trash is empty',
-                      style: TextStyle(color: Colors.grey, fontSize: 16)),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 16)),
                 ),
               )
             else
@@ -2066,7 +2071,7 @@ class _TrashDialogState extends ConsumerState<_TrashDialog> {
                     final inv = _invoices[index];
                     return ListTile(
                       leading:
-                          const Icon(Icons.receipt_long, color: Colors.grey),
+                          Icon(Icons.receipt_long, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       title: Text('#${inv.invoiceNumber ?? inv.id} — ${inv.customer.name}'),
                       subtitle: Row(
                         children: [
@@ -2197,7 +2202,7 @@ class _DatePickerField extends StatelessWidget {
           value != null ? formatter.format(value!) : 'Any',
           style: TextStyle(
             fontSize: 13,
-            color: value != null ? Colors.black87 : Colors.black38,
+            color: value != null ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
       ),

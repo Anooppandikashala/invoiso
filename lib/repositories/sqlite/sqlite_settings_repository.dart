@@ -95,4 +95,8 @@ class SqliteSettingsRepository implements SettingsRepository {
   Future<bool> getShowAliasNameInPdf() => SettingsService.getShowAliasNameInPdf();
   @override
   Future<bool> getShowTaxButtonInInvoicePage() => SettingsService.getShowTaxButtonInInvoicePage();
+  @override
+  Future<String> getThemeMode() => SettingsService.getThemeMode();
+  @override
+  Future<void> setThemeMode(String mode) => SettingsService.setThemeMode(mode);
 }

@@ -243,9 +243,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       duration: const Duration(milliseconds: 220),
       curve: Curves.easeInOut,
       width: expanded ? 210 : 64,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(right: BorderSide(color: Color(0xFFE2E8F0), width: 1)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(
+            right: BorderSide(
+                color: Theme.of(context).colorScheme.outlineVariant,
+                width: 1)),
       ),
       child: ClipRect(
         child: Column(
@@ -262,7 +265,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       left: 16,
                       right: 36,
                       child: Image.asset(
-                        'assets/images/logo.png',
+                        Theme.of(context).brightness == Brightness.dark ? 'assets/images/logo_dark.png' : 'assets/images/logo.png',
                         height: 36,
                         fit: BoxFit.fitHeight,
                       ),
@@ -297,7 +300,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(10),
                       child: Image.asset(
-                        'assets/images/logo_v.png',
+                        Theme.of(context).brightness == Brightness.dark ? 'assets/images/logo_v_dark.png' : 'assets/images/logo_v.png',
                         width: 38,
                         height: 38,
                         fit: BoxFit.cover,
@@ -323,7 +326,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ),
               ),
 
-            const Divider(color: Color(0xFFE2E8F0), height: 1, thickness: 1),
+            Divider(color: Theme.of(context).colorScheme.outlineVariant, height: 1, thickness: 1),
             const SizedBox(height: 8),
 
             // ── Nav Items ──────────────────────────────
@@ -356,7 +359,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
 
             // ── User Info ──────────────────────────────
-            const Divider(color: Color(0xFFE2E8F0), height: 1, thickness: 1),
+            Divider(color: Theme.of(context).colorScheme.outlineVariant, height: 1, thickness: 1),
             LayoutBuilder(
               builder: (context, constraints) {
                 final useExpanded = constraints.maxWidth > 110;
@@ -547,9 +550,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF1F5F9),
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                     ),
                     child: const Text(
                       'Soon',
@@ -986,10 +989,12 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor:
+          Theme.of(context).brightness == Brightness.dark ? null : Colors.grey[50],
       appBar: AppBar(
         title: const Text('Dashboard Overview'),
-        backgroundColor: Theme.of(context).primaryColor,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor ??
+            Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
@@ -1124,7 +1129,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                   const Spacer(),
                   Text(
                     'Last 5 invoices',
-                    style: TextStyle(fontSize: 13, color: Colors.grey[400]),
+                    style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
                 ],
               ),
@@ -1139,20 +1144,20 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(Icons.receipt_long_outlined,
-                                size: 80, color: Colors.grey[300]),
+                                size: 80, color: Theme.of(context).colorScheme.outlineVariant),
                             const SizedBox(height: 16),
                             Text(
                               'No invoices yet',
                               style: TextStyle(
                                   fontSize: 18,
-                                  color: Colors.grey[600],
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                   fontWeight: FontWeight.w500),
                             ),
                             const SizedBox(height: 8),
                             Text(
                               'Create your first invoice to see it here',
                               style: TextStyle(
-                                  fontSize: 14, color: Colors.grey[400]),
+                                  fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                             ),
                           ],
                         ),
@@ -1318,7 +1323,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                               children: [
                                                 Icon(Icons.person_outline,
                                                     size: 16,
-                                                    color: Colors.grey[600]),
+                                                    color: Theme.of(context).colorScheme.onSurfaceVariant),
                                                 const SizedBox(width: 6),
                                                 Flexible(child: Text(
                                                   invoice.customer.name
@@ -1327,7 +1332,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                                       TextOverflow.ellipsis,
                                                   style: TextStyle(
                                                       fontSize: 15,
-                                                      color: Colors.grey[700]),
+                                                      color: Theme.of(context).colorScheme.onSurface),
                                                 )),
                                               ],
                                             ),
@@ -1335,7 +1340,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                               children: [
                                                 Icon(Icons.calendar_today,
                                                     size: 16,
-                                                    color: Colors.grey[600]),
+                                                    color: Theme.of(context).colorScheme.onSurfaceVariant),
                                                 const SizedBox(width: 6),
                                                 Flexible(child: Text(
                                                   invoice.date
@@ -1345,7 +1350,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                                       TextOverflow.ellipsis,
                                                   style: TextStyle(
                                                       fontSize: 15,
-                                                      color: Colors.grey[700]),
+                                                      color: Theme.of(context).colorScheme.onSurface),
                                                 )),
                                               ],
                                             ),
@@ -1359,7 +1364,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                                 );
                                                 final color = isOverdue
                                                     ? Colors.red[700]!
-                                                    : Colors.grey[600]!;
+                                                    : Theme.of(context).colorScheme.onSurfaceVariant;
                                                 return ConstrainedBox(
                                                   constraints:
                                                       const BoxConstraints(
@@ -1583,7 +1588,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
             const Spacer(),
             Text(
               'Today & Tomorrow',
-              style: TextStyle(fontSize: 13, color: Colors.grey[400]),
+              style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ],
         ),
@@ -1638,7 +1643,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                     const SizedBox(width: 16),
                     // Customer
                     Icon(Icons.person_outline,
-                        size: 15, color: Colors.grey[500]),
+                        size: 15, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Row(
@@ -1648,7 +1653,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                             child: Text(
                               invoice.customer.name,
                               style: TextStyle(
-                                  fontSize: 14, color: Colors.grey[700]),
+                                  fontSize: 14, color: Theme.of(context).colorScheme.onSurface),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -1756,7 +1761,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
             const Spacer(),
             Text(
               'Oldest first',
-              style: TextStyle(fontSize: 13, color: Colors.grey[400]),
+              style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ],
         ),
@@ -1809,7 +1814,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                     const SizedBox(width: 16),
                     // Customer
                     Icon(Icons.person_outline,
-                        size: 15, color: Colors.grey[500]),
+                        size: 15, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Row(
@@ -1819,7 +1824,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                             child: Text(
                               invoice.customer.name,
                               style: TextStyle(
-                                  fontSize: 14, color: Colors.grey[700]),
+                                  fontSize: 14, color: Theme.of(context).colorScheme.onSurface),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -1972,7 +1977,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
             const Spacer(),
             Text(
               'Tap to restock',
-              style: TextStyle(fontSize: 13, color: Colors.grey[400]),
+              style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ],
         ),
@@ -2016,7 +2021,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                             Text(
                               product.type == 'service' ? 'Service' : 'Product',
                               style: TextStyle(
-                                  fontSize: 12, color: Colors.grey[500]),
+                                  fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                             ),
                           ],
                         ),
@@ -2028,7 +2033,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                         style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: Colors.grey[700]),
+                            color: Theme.of(context).colorScheme.onSurface),
                       ),
                       const SizedBox(width: 16),
                       // Stock badge
@@ -2072,7 +2077,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
@@ -2107,7 +2112,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                               fontSize: 11,
-                              color: Colors.grey[500],
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.w500),
                         ),
                       ),
@@ -2138,7 +2143,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                     style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.grey[900]),
+                        color: Theme.of(context).colorScheme.onSurface),
                   ),
                 ],
               ),
@@ -2151,7 +2156,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
 
   Widget _buildActionButton(
       IconData icon, Color color, String tooltip, VoidCallback? onPressed) {
-    final effectiveColor = onPressed != null ? color : Colors.grey[400]!;
+    final effectiveColor = onPressed != null ? color : Theme.of(context).colorScheme.onSurfaceVariant;
     return Tooltip(
       message: tooltip,
       child: InkWell(
@@ -2266,7 +2271,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: TextStyle(color: Colors.grey[600])),
+            child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -2339,7 +2344,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
       value: value,
       child: Row(
         children: [
-          Icon(icon, size: 18, color: active ? primary : Colors.grey[600]),
+          Icon(icon, size: 18, color: active ? primary : Theme.of(context).colorScheme.onSurfaceVariant),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -2351,9 +2356,9 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                         fontSize: 13,
                         fontWeight:
                             active ? FontWeight.w700 : FontWeight.normal,
-                        color: active ? primary : Colors.grey[800])),
+                        color: active ? primary : Theme.of(context).colorScheme.onSurface)),
                 Text(sub,
-                    style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                    style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
               ],
             ),
           ),
@@ -2565,7 +2570,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(14),
           border: alert
               ? Border.all(color: color.withValues(alpha: 0.35), width: 1.5)
@@ -2595,7 +2600,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                   Text(title,
                       style: TextStyle(
                           fontSize: 11,
-                          color: Colors.grey[500],
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w500),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis),
@@ -2604,7 +2609,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                       style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Colors.grey[900]),
+                          color: Theme.of(context).colorScheme.onSurface),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis),
                 ],
@@ -2630,7 +2635,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
@@ -2647,7 +2652,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
               style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: Colors.grey[800])),
+                  color: Theme.of(context).colorScheme.onSurface)),
           const SizedBox(height: 16),
           SizedBox(
             height: 190,
@@ -2703,7 +2708,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                   child: Text(DateFormat('MMM').format(date),
                                       style: TextStyle(
                                           fontSize: 11,
-                                          color: Colors.grey[500])),
+                                          color: Theme.of(context).colorScheme.onSurfaceVariant)),
                                 );
                               } catch (_) {
                                 return const SizedBox.shrink();
@@ -2738,11 +2743,11 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(Icons.bar_chart_outlined,
-                            size: 48, color: Colors.grey[200]),
+                            size: 48, color: Theme.of(context).colorScheme.outlineVariant),
                         const SizedBox(height: 8),
                         Text('No payment data yet',
                             style: TextStyle(
-                                color: Colors.grey[400], fontSize: 13)),
+                                color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13)),
                       ],
                     ),
                   ),
@@ -2761,7 +2766,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
@@ -2778,7 +2783,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
               style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: Colors.grey[800])),
+                  color: Theme.of(context).colorScheme.onSurface)),
           const SizedBox(height: 12),
           SizedBox(
             height: 160,
@@ -2806,7 +2811,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                 : Center(
                     child: Text('No invoices yet',
                         style:
-                            TextStyle(color: Colors.grey[400], fontSize: 13))),
+                            TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13))),
           ),
           const SizedBox(height: 14),
           _buildDonutLegend('Collected', const Color(0xFF2E7D32),
@@ -2852,12 +2857,12 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
         const SizedBox(width: 8),
         Expanded(
             child: Text(label,
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]))),
+                style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant))),
         Text(amount,
             style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: Colors.grey[800])),
+                color: Theme.of(context).colorScheme.onSurface)),
       ],
     );
   }
@@ -2869,7 +2874,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
@@ -2888,10 +2893,10 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                   style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: Colors.grey[800])),
+                      color: Theme.of(context).colorScheme.onSurface)),
               const Spacer(),
               Text('Last $limit',
-                  style: TextStyle(fontSize: 11, color: Colors.grey[400])),
+                  style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
             ],
           ),
           const SizedBox(height: 4),
@@ -2905,14 +2910,14 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                     child: Text('Invoice',
                         style: TextStyle(
                             fontSize: 11,
-                            color: Colors.grey[400],
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w600))),
                 Expanded(
                     flex: 3,
                     child: Text('Customer',
                         style: TextStyle(
                             fontSize: 11,
-                            color: Colors.grey[400],
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w600))),
                 Expanded(
                     flex: 2,
@@ -2920,20 +2925,20 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                         textAlign: TextAlign.right,
                         style: TextStyle(
                             fontSize: 11,
-                            color: Colors.grey[400],
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w600))),
                 const SizedBox(width: 60),
               ],
             ),
           ),
-          const Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
+          Divider(height: 1, thickness: 1, color: Theme.of(context).colorScheme.outlineVariant),
           const SizedBox(height: 4),
           if (invoices.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 32),
               child: Center(
                   child: Text('No invoices yet',
-                      style: TextStyle(color: Colors.grey[400], fontSize: 13))),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13))),
             )
           else
             ...invoices.map(_buildCompactInvoiceRow),
@@ -2978,7 +2983,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
           Expanded(
             flex: 3,
             child: Text(inv.customer.name,
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis),
           ),
@@ -3011,7 +3016,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
               child: Padding(
                 padding: const EdgeInsets.all(4),
                 child: Icon(Icons.edit_outlined,
-                    size: 15, color: Colors.grey[400]),
+                    size: 15, color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
             ),
           ),
@@ -3024,7 +3029,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
               child: Padding(
                 padding: const EdgeInsets.all(4),
                 child: Icon(Icons.download_outlined,
-                    size: 15, color: Colors.grey[400]),
+                    size: 15, color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
             ),
           ),
@@ -3039,7 +3044,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
@@ -3067,7 +3072,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                   style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: Colors.grey[800])),
+                      color: Theme.of(context).colorScheme.onSurface)),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
@@ -3111,7 +3116,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.red.withValues(alpha: 0.18), width: 1),
         boxShadow: [
@@ -3140,7 +3145,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                   style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: Colors.grey[800])),
+                      color: Theme.of(context).colorScheme.onSurface)),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
@@ -3213,7 +3218,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
             color: const Color(0xFFC62828).withValues(alpha: 0.2), width: 1),
@@ -3243,7 +3248,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                   style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: Colors.grey[800])),
+                      color: Theme.of(context).colorScheme.onSurface)),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
@@ -3326,7 +3331,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
@@ -3343,7 +3348,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
               style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: Colors.grey[800])),
+                  color: Theme.of(context).colorScheme.onSurface)),
           const SizedBox(height: 12),
           _buildQuickActionRow(Icons.add_circle_outline_rounded, 'New Invoice',
               Theme.of(context).primaryColor, () {
@@ -3408,10 +3413,10 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                 child: Text(label,
                     style: TextStyle(
                         fontSize: 13,
-                        color: Colors.grey[800],
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontWeight: FontWeight.w500))),
             Icon(Icons.chevron_right_rounded,
-                size: 16, color: Colors.grey[400]),
+                size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
           ],
         ),
       ),
@@ -3577,7 +3582,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
 
   Widget _buildPdfActionMenu(Invoice inv) {
     return PopupMenuButton<String>(
-      icon: Icon(Icons.more_vert_rounded, size: 15, color: Colors.grey[400]),
+      icon: Icon(Icons.more_vert_rounded, size: 15, color: Theme.of(context).colorScheme.onSurfaceVariant),
       iconSize: 22,
       padding: EdgeInsets.zero,
       tooltip: 'PDF Actions',
@@ -3614,7 +3619,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
 
   Widget _buildInvoiceActionMenu(Invoice inv) {
     return PopupMenuButton<String>(
-      icon: Icon(Icons.more_vert_rounded, size: 15, color: Colors.grey[400]),
+      icon: Icon(Icons.more_vert_rounded, size: 15, color: Theme.of(context).colorScheme.onSurfaceVariant),
       iconSize: 22,
       padding: EdgeInsets.zero,
       tooltip: 'Actions',
@@ -3674,7 +3679,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
@@ -3702,7 +3707,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                   style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: Colors.grey[800])),
+                      color: Theme.of(context).colorScheme.onSurface)),
             ],
           ),
           const SizedBox(height: 12),
@@ -3735,7 +3740,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                       style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: Colors.grey[700])),
+                          color: Theme.of(context).colorScheme.onSurface)),
                 ],
               ),
             );
@@ -3751,7 +3756,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
@@ -3779,7 +3784,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                   style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: Colors.grey[800])),
+                      color: Theme.of(context).colorScheme.onSurface)),
             ],
           ),
           const SizedBox(height: 12),
@@ -3809,7 +3814,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                       style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: Colors.grey[700])),
+                          color: Theme.of(context).colorScheme.onSurface)),
                 ],
               ),
             );

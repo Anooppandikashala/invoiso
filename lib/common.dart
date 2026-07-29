@@ -59,7 +59,8 @@ enum SettingKey {
   companyLogo, // used by cloud edition's generic setSetting/getSetting path
   installationId, // Unique identifier for this installation. Generated on first launch and persisted locally. Used for anonymous analytics and installation tracking.
   showAliasNameInPdf, // whether to print a product's local-language alias name instead of its actual name on PDFs (default false)
-  showTaxButtonInInvoicePage
+  showTaxButtonInInvoicePage,
+  themeMode // app theme: 'light' | 'dark' | 'system'
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -149,6 +150,8 @@ extension SettingKeyExtension on SettingKey {
         return 'show_alias_name_in_pdf';
       case SettingKey.showTaxButtonInInvoicePage:
         return 'show_tax_button_in_invoice_page';
+      case SettingKey.themeMode:
+        return 'theme_mode';
     }
   }
 }
