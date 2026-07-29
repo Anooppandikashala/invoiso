@@ -777,7 +777,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   ),
                   const SizedBox(height: 16),
                 ],
-                if (product.defaultDiscount > 0) ...[
+                if (_columnsConfig.defaultDiscount || product.defaultDiscount > 0) ...[
                   TextField(
                     controller: discountController,
                     decoration: InputDecoration(
@@ -1201,7 +1201,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     onUnitChanged: (v) => setDialogState(() => dialogUnit = v),
                   ),
                 ],
-                if (item.product.defaultDiscount > 0 || item.discount > 0) ...[
+                if (_columnsConfig.defaultDiscount || item.product.defaultDiscount > 0 || item.discount > 0) ...[
                   const SizedBox(height: 16),
                   TextField(
                     controller: discountController,
@@ -3654,7 +3654,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                             : 'Qty',
                                         '${item.quantity == item.quantity.roundToDouble() ? item.quantity.toInt().toString() : item.quantity.toString()}'
                                         '${item.effectiveUnit.trim().isEmpty ? '' : ' ${item.effectiveUnit}'}'),
-                                  if(item.discount > 0)
+                                  if(_columnsConfig.defaultDiscount || item.discount > 0)
                                     _buildItemDetail('Discount',
                                         '$_currencySymbol${item.discount.toStringAsFixed(2)}${item.discountPerUnit ? ' ×qty' : ''}'),
                                   if (item.discountPerUnit && item.discount > 0)
