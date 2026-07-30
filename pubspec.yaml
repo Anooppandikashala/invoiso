@@ -52,8 +52,10 @@ flutter:
   uses-material-design: true
   assets:
    - assets/images/logo.png
+   - assets/images/logo_dark.png
    - assets/images/logo.svg
    - assets/images/logo_v.png
+   - assets/images/logo_v_dark.png
    - assets/templates/classic.png
    - assets/templates/modern.png
    - assets/templates/minimal.png

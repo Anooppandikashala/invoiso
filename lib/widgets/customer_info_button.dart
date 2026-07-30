@@ -82,17 +82,17 @@ class CustomerInfoButton extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         child: Text(
                           'No contact details available.',
-                          style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13),
                         ),
                       ),
                     if (c.phone.isNotEmpty)
-                      _infoRow(Icons.phone_outlined, 'Phone', c.phone, Colors.green),
+                      _infoRow(context, Icons.phone_outlined, 'Phone', c.phone, Colors.green),
                     if (c.email.isNotEmpty)
-                      _infoRow(Icons.email_outlined, 'Email', c.email, Colors.blue),
+                      _infoRow(context, Icons.email_outlined, 'Email', c.email, Colors.blue),
                     if (c.address.isNotEmpty)
-                      _infoRow(Icons.location_on_outlined, 'Address', c.address, Colors.orange),
+                      _infoRow(context, Icons.location_on_outlined, 'Address', c.address, Colors.orange),
                     if (c.gstin.isNotEmpty)
-                      _infoRow(Icons.badge_outlined, 'GSTIN', c.gstin, Colors.purple),
+                      _infoRow(context, Icons.badge_outlined, 'GSTIN', c.gstin, Colors.purple),
                   ],
                 ),
               ),
@@ -115,7 +115,7 @@ class CustomerInfoButton extends StatelessWidget {
     );
   }
 
-  Widget _infoRow(IconData icon, String label, String value, Color color) {
+  Widget _infoRow(BuildContext context, IconData icon, String label, String value, Color color) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Row(
@@ -138,14 +138,14 @@ class CustomerInfoButton extends StatelessWidget {
                   label,
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.grey[500],
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   value,
-                  style: const TextStyle(fontSize: 13, color: Colors.black87),
+                  style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurface),
                 ),
               ],
             ),

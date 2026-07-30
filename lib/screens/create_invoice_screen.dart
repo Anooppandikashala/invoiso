@@ -757,7 +757,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                               BorderRadius.circular(AppBorderRadius.xsmall)),
                       prefixIcon: const Icon(Icons.numbers),
                       filled: true,
-                      fillColor: Colors.grey[50],
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                     ),
                     keyboardType: _fractionalQuantity
                         ? const TextInputType.numberWithOptions(decimal: true)
@@ -787,7 +787,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                               BorderRadius.circular(AppBorderRadius.xsmall)),
                       prefixIcon: const Icon(Icons.discount),
                       filled: true,
-                      fillColor: Colors.grey[50],
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                     ),
                     keyboardType: TextInputType.number,
                     inputFormatters: [
@@ -799,6 +799,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       (val) => setDialogState(() => discountPerUnit = val)),
                   const SizedBox(height: 16),
                 ],
+                const SizedBox(height: 8),
+                _buildDiscountPerUnitToggle(discountPerUnit,
+                    (val) => setDialogState(() => discountPerUnit = val)),
+                const SizedBox(height: 16),
                 TextField(
                   controller: unitPriceController,
                   decoration: InputDecoration(
@@ -809,7 +813,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                             BorderRadius.circular(AppBorderRadius.xsmall)),
                     prefixText: '$_currencySymbol ',
                     filled: true,
-                    fillColor: Colors.grey[50],
+                    fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                   ),
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
@@ -831,7 +835,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                               BorderRadius.circular(AppBorderRadius.xsmall)),
                       prefixIcon: const Icon(Icons.add_circle_outline, size: 18),
                       filled: true,
-                      fillColor: Colors.grey[50],
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                     ),
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
@@ -846,11 +850,11 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Icon(Icons.format_list_numbered,
-                          size: 16, color: Colors.grey),
+                      Icon(Icons.format_list_numbered,
+                          size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       const SizedBox(width: 8),
-                      const Text('Insert at position',
-                          style: TextStyle(fontSize: 13, color: Colors.grey)),
+                      Text('Insert at position',
+                          style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                       const Spacer(),
                       IconButton(
                         icon: const Icon(Icons.remove_circle_outline),
@@ -1183,7 +1187,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                               BorderRadius.circular(AppBorderRadius.xsmall)),
                       prefixIcon: const Icon(Icons.numbers),
                       filled: true,
-                      fillColor: Colors.grey[50],
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                     ),
                     keyboardType: _fractionalQuantity
                         ? const TextInputType.numberWithOptions(decimal: true)
@@ -1212,7 +1216,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                               BorderRadius.circular(AppBorderRadius.xsmall)),
                       prefixIcon: const Icon(Icons.discount),
                       filled: true,
-                      fillColor: Colors.grey[50],
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                     ),
                     keyboardType: TextInputType.number,
                     inputFormatters: [
@@ -1235,7 +1239,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                             BorderRadius.circular(AppBorderRadius.xsmall)),
                     prefixText: '$_currencySymbol ',
                     filled: true,
-                    fillColor: Colors.grey[50],
+                    fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                   ),
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
@@ -1256,7 +1260,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                               BorderRadius.circular(AppBorderRadius.xsmall)),
                       prefixIcon: const Icon(Icons.add_circle_outline, size: 18),
                       filled: true,
-                      fillColor: Colors.grey[50],
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                     ),
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
@@ -1592,7 +1596,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                             BorderRadius.circular(AppBorderRadius.xsmall)),
                     prefixIcon: const Icon(Icons.label),
                     filled: true,
-                    fillColor: Colors.grey[50],
+                    fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                   ),
                   onSubmitted: (_) => submitAdHocItem(),
                 ),
@@ -1607,7 +1611,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                               BorderRadius.circular(AppBorderRadius.xsmall)),
                       prefixIcon: const Icon(Icons.translate),
                       filled: true,
-                      fillColor: Colors.grey[50],
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                     ),
                   ),
                 ],
@@ -1621,7 +1625,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                             BorderRadius.circular(AppBorderRadius.xsmall)),
                     prefixText: '$_currencySymbol ',
                     filled: true,
-                    fillColor: Colors.grey[50],
+                    fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                   ),
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
@@ -1644,7 +1648,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                               BorderRadius.circular(AppBorderRadius.xsmall)),
                       prefixIcon: const Icon(Icons.numbers),
                       filled: true,
-                      fillColor: Colors.grey[50],
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                     ),
                     keyboardType: _fractionalQuantity
                         ? const TextInputType.numberWithOptions(decimal: true)
@@ -1672,7 +1676,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                             BorderRadius.circular(AppBorderRadius.xsmall)),
                     prefixIcon: const Icon(Icons.discount),
                     filled: true,
-                    fillColor: Colors.grey[50],
+                    fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                   ),
                   keyboardType: TextInputType.number,
                   inputFormatters: [
@@ -1695,7 +1699,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                               BorderRadius.circular(AppBorderRadius.xsmall)),
                       prefixIcon: const Icon(Icons.add_circle_outline, size: 18),
                       filled: true,
-                      fillColor: Colors.grey[50],
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                     ),
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
@@ -1715,7 +1719,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                               BorderRadius.circular(AppBorderRadius.xsmall)),
                       prefixIcon: const Icon(Icons.percent),
                       filled: true,
-                      fillColor: Colors.grey[50],
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                     ),
                     keyboardType: TextInputType.number,
                     inputFormatters: [
@@ -1729,11 +1733,11 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Icon(Icons.format_list_numbered,
-                          size: 16, color: Colors.grey),
+                      Icon(Icons.format_list_numbered,
+                          size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       const SizedBox(width: 8),
-                      const Text('Insert at position',
-                          style: TextStyle(fontSize: 13, color: Colors.grey)),
+                      Text('Insert at position',
+                          style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                       const Spacer(),
                       IconButton(
                         icon: const Icon(Icons.remove_circle_outline),
@@ -1921,7 +1925,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                             BorderRadius.circular(AppBorderRadius.xsmall)),
                     prefixIcon: const Icon(Icons.search),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: AppPadding.small,
                         vertical: AppPadding.xsmall),
@@ -1938,10 +1942,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(Icons.search_off,
-                            size: 48, color: Colors.grey[400]),
+                            size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         const SizedBox(height: 8),
                         Text('No customers found',
-                            style: TextStyle(color: Colors.grey[600])),
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                       ],
                     ),
                   )
@@ -2049,12 +2053,12 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   children: [
                     Icon(Icons.circle, color: Colors.red, size: 8),
                     const SizedBox(width: 4),
-                    const Flexible(
+                    Flexible(
                       child: Text(
                         'Out of stock items are shown in red',
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                            fontSize: AppFontSize.xsmall, color: Colors.grey),
+                            fontSize: AppFontSize.xsmall, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       ),
                     ),
                   ],
@@ -2071,7 +2075,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                             BorderRadius.circular(AppBorderRadius.xsmall)),
                     prefixIcon: const Icon(Icons.search),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: AppPadding.small,
                         vertical: AppPadding.xsmall),
@@ -2111,10 +2115,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(Icons.search_off,
-                            size: 40, color: Colors.grey[400]),
+                            size: 40, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         const SizedBox(height: 8),
                         Text('No products found',
-                            style: TextStyle(color: Colors.grey[600])),
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                       ],
                     ),
                   )
@@ -2144,7 +2148,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                 Icons.inventory_2,
                                 color: product.stock <= 0
                                     ? Colors.red
-                                    : Colors.grey,
+                                    : Theme.of(context).colorScheme.onSurfaceVariant,
                                 size: AppFontSize.xlarge,
                               ),
                             ),
@@ -2264,7 +2268,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 //       labelText: '$invoiceType Number',
                 //       border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
                 //       filled: true,
-                //       fillColor: Colors.grey[100],
+                //       fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                 //     ),
                 //   ),
                 // ),
@@ -2281,7 +2285,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                           borderRadius:
                               BorderRadius.circular(AppBorderRadius.xsmall)),
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                       suffixIcon: const Icon(Icons.calendar_today, size: 18),
                     ),
                     onTap: () async {
@@ -2316,7 +2320,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                           borderRadius:
                               BorderRadius.circular(AppBorderRadius.xsmall)),
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                       suffixIcon: dueDateController.text.isNotEmpty
                           ? IconButton(
                               icon: const Icon(Icons.clear, size: 18),
@@ -2367,7 +2371,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                           borderRadius:
                               BorderRadius.circular(AppBorderRadius.xsmall)),
                       filled: true,
-                      fillColor: isEditing ? Colors.grey[100] : Colors.white,
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                     ),
                     items: const [
                       DropdownMenuItem(
@@ -2403,13 +2407,13 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                               borderRadius: BorderRadius.circular(
                                   AppBorderRadius.xsmall)),
                           filled: true,
-                          fillColor: Colors.grey[100],
+                          fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                         ),
                         child: Text(
                           _quantityLabel.trim(),
                           style: TextStyle(
                               fontSize: AppFontSize.medium,
-                              color: Colors.grey[700]),
+                              color: Theme.of(context).colorScheme.onSurface),
                         ),
                       ),
                     ),
@@ -2676,7 +2680,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       Icons.person_add_outlined,
                       size: 16,
                       color: selectedCustomer != null
-                          ? Colors.grey
+                          ? Theme.of(context).colorScheme.onSurfaceVariant
                           : Theme.of(context).primaryColor,
                     ),
                     label: Text(
@@ -2684,7 +2688,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       style: TextStyle(
                         fontSize: AppFontSize.small,
                         color: selectedCustomer != null
-                            ? Colors.grey
+                            ? Theme.of(context).colorScheme.onSurfaceVariant
                             : Theme.of(context).primaryColor,
                       ),
                     ),
@@ -2693,7 +2697,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                           horizontal: 12, vertical: 6),
                       side: BorderSide(
                         color: selectedCustomer != null
-                            ? Colors.grey[300]!
+                            ? Theme.of(context).colorScheme.outlineVariant
                             : Theme.of(context).primaryColor,
                       ),
                     ),
@@ -2749,7 +2753,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                           borderRadius:
                               BorderRadius.circular(AppBorderRadius.xsmall)),
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                     ),
                   ),
                 ),
@@ -2765,7 +2769,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                           borderRadius:
                               BorderRadius.circular(AppBorderRadius.xsmall)),
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                     ),
                   ),
                 ),
@@ -2781,7 +2785,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                           borderRadius:
                               BorderRadius.circular(AppBorderRadius.xsmall)),
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                     ),
                   ),
                 ),
@@ -2802,7 +2806,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                           borderRadius:
                               BorderRadius.circular(AppBorderRadius.xsmall)),
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                     ),
                   ),
                 ),
@@ -2818,7 +2822,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                           borderRadius:
                               BorderRadius.circular(AppBorderRadius.xsmall)),
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                     ),
                   ),
                 ),
@@ -2835,7 +2839,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                             borderRadius:
                                 BorderRadius.circular(AppBorderRadius.xsmall)),
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                       ),
                     ),
                   ),
@@ -2960,7 +2964,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                       AppBorderRadius.xsmall),
                                 ),
                                 filled: true,
-                                fillColor: Colors.white,
+                                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                               ),
                             ),
                           ),
@@ -2985,7 +2989,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                       AppBorderRadius.xsmall),
                                 ),
                                 filled: true,
-                                fillColor: Colors.white,
+                                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                               ),
                             ),
                           ),
@@ -3147,7 +3151,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
             Text(
               value ? '(price − discount) × qty' : '(price × qty) − discount',
-              style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+              style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ],
         ),
@@ -3176,7 +3180,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           '$label: ',
           style: TextStyle(
             fontSize: 13,
-            color: Colors.grey[600],
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
         Text(
@@ -3200,7 +3204,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           style: TextStyle(
             fontSize: isTotal ? 18 : 14,
             fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-            color: isTotal ? Colors.green : Colors.grey[700],
+            color: isTotal ? Colors.green : Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(width: 8),
@@ -3212,7 +3216,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             style: TextStyle(
               fontSize: isTotal ? 20 : 14,
               fontWeight: FontWeight.bold,
-              color: isTotal ? Colors.green : Colors.black87,
+              color: isTotal ? Colors.green : Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ),
@@ -3528,18 +3532,18 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(Icons.shopping_cart_outlined,
-                            size: 64, color: Colors.grey[300]),
+                            size: 64, color: Theme.of(context).colorScheme.outlineVariant),
                         const SizedBox(height: 16),
                         Text(
                           'No items added yet',
                           style:
-                              TextStyle(fontSize: 16, color: Colors.grey[600]),
+                              TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'Add products from the right panel',
                           style:
-                              TextStyle(fontSize: 14, color: Colors.grey[500]),
+                              TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                       ],
                     ),
@@ -3557,10 +3561,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                               horizontal: AppMargin.small,
                               vertical: AppMargin.xxxsmall),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surfaceContainer,
                             borderRadius:
                                 BorderRadius.circular(AppBorderRadius.xsmall),
-                            border: Border.all(color: Colors.grey[200]!),
+                            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                           ),
                           child: ListTile(
                             contentPadding: const EdgeInsets.symmetric(
@@ -3807,7 +3811,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           Container(
             padding: const EdgeInsets.all(AppPadding.medium),
             decoration: BoxDecoration(
-              color: Colors.grey[50],
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius:
                   const BorderRadius.vertical(bottom: Radius.circular(16)),
             ),
@@ -3830,7 +3834,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                               borderRadius: BorderRadius.circular(
                                   AppBorderRadius.xsmall)),
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                         ),
                         maxLines: 3,
                       ),
@@ -3854,15 +3858,15 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                       borderRadius: BorderRadius.circular(
                                           AppBorderRadius.xsmall)),
                                   filled: true,
-                                  fillColor: Colors.white,
+                                  fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                                   contentPadding: const EdgeInsets.symmetric(
                                       horizontal: 12, vertical: 14),
                                 ),
                                 items: [
-                                  const DropdownMenuItem<UpiEntry?>(
+                                  DropdownMenuItem<UpiEntry?>(
                                     value: null,
                                     child: Text('None',
-                                        style: TextStyle(color: Colors.grey,
+                                        style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant,
                                             fontSize: 12),),
                                   ),
                                   ..._upiEntries
@@ -3904,15 +3908,15 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                       borderRadius: BorderRadius.circular(
                                           AppBorderRadius.xsmall)),
                                   filled: true,
-                                  fillColor: Colors.white,
+                                  fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                                   contentPadding: const EdgeInsets.symmetric(
                                       horizontal: 12, vertical: 14),
                                 ),
                                 items: [
-                                  const DropdownMenuItem<BankAccount?>(
+                                  DropdownMenuItem<BankAccount?>(
                                     value: null,
                                     child: Text('None',
-                                        style: TextStyle(color: Colors.grey,fontSize: 12)),
+                                        style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant,fontSize: 12)),
                                   ),
                                   ..._bankAccounts.map(
                                       (e) => DropdownMenuItem<BankAccount?>(
@@ -4013,7 +4017,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                           AppBorderRadius.xsmall)),
                                   suffixText: '%',
                                   filled: true,
-                                  fillColor: Colors.white,
+                                  fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                                 ),
                                 keyboardType: TextInputType.number,
                                 onChanged: (value) {
@@ -4063,10 +4067,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(AppPadding.medium),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surfaceContainer,
                           borderRadius:
                               BorderRadius.circular(AppBorderRadius.xsmall),
-                          border: Border.all(color: Colors.grey[300]!),
+                          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
@@ -4176,12 +4180,12 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           decoration: BoxDecoration(
             color: onPressed != null
                 ? color.withValues(alpha: 0.1)
-                : Colors.grey[200],
+                : Theme.of(context).colorScheme.outlineVariant,
             borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
           ),
           child: IconButton(
             icon: Icon(icon),
-            color: onPressed != null ? color : Colors.grey,
+            color: onPressed != null ? color : Theme.of(context).colorScheme.onSurfaceVariant,
             iconSize: 28,
             onPressed: onPressed,
             tooltip: label,
@@ -4192,7 +4196,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           label,
           style: TextStyle(
             fontSize: 12,
-            color: onPressed != null ? color : Colors.grey,
+            color: onPressed != null ? color : Theme.of(context).colorScheme.onSurfaceVariant,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -4444,10 +4448,15 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Colors.green.shade50,
-                Colors.white,
-              ],
+              colors: Theme.of(context).brightness == Brightness.dark
+                  ? [
+                      Theme.of(context).colorScheme.surfaceContainerHighest,
+                      Theme.of(context).colorScheme.surface,
+                    ]
+                  : [
+                      Colors.green.shade50,
+                      Colors.white,
+                    ],
             ),
           ),
           child: Padding(
@@ -4601,7 +4610,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                         ),
                         TextButton(
                           style: TextButton.styleFrom(
-                            foregroundColor: Colors.grey,
+                            foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 8),
                           ),
@@ -4669,7 +4678,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       return _withUnsavedChangesPopScope(Scaffold(
         appBar: AppBar(
           title: Text('Create New $invoiceType'),
-          backgroundColor: Theme.of(context).primaryColor,
+          backgroundColor: Theme.of(context).appBarTheme.backgroundColor ??
+              Theme.of(context).primaryColor,
           foregroundColor: Colors.white,
         ),
         body: const Center(
@@ -4758,7 +4768,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     label: const Text('New Invoice',
                         style: TextStyle(fontSize: 13)),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
+                      backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
                       foregroundColor: Theme.of(context).primaryColor,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
@@ -4796,7 +4806,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             ),
           ],
         ),
-        backgroundColor: Theme.of(context).primaryColor,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor ??
+            Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
@@ -4809,7 +4820,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     constraints.maxWidth > 800 && constraints.maxWidth <= 1200;
 
                 return Container(
-                  color: Colors.grey[100],
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(AppPadding.xsmall),
                     child: Center(
@@ -5004,7 +5015,7 @@ class _UnitPickerState extends State<_UnitPicker> {
             border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
             filled: true,
-            fillColor: Colors.grey[50],
+            fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
           ),
           items: [
             const DropdownMenuItem(value: '', child: Text('None')),
@@ -5031,7 +5042,7 @@ class _UnitPickerState extends State<_UnitPicker> {
               border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
               filled: true,
-              fillColor: Colors.grey[50],
+              fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
             ),
             onChanged: widget.onUnitChanged,
           ),

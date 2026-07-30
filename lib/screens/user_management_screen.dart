@@ -237,7 +237,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
                               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                             ),
                             filled: true,
-                            fillColor: Colors.grey[50],
+                            fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
@@ -269,7 +269,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
                               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                             ),
                             filled: true,
-                            fillColor: Colors.grey[50],
+                            fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
@@ -305,7 +305,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
                               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                             ),
                             filled: true,
-                            fillColor: Colors.grey[50],
+                            fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
@@ -409,13 +409,13 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
             children: [
               Text(
                 'Are you sure you want to delete user:',
-                style: TextStyle(color: Colors.grey[700]),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
               ),
               const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -546,9 +546,9 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 12, 6, 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(AppBorderRadius.small),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -568,14 +568,14 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
                   style: TextStyle(
                     fontSize: AppFontSize.medium,
                     fontWeight: FontWeight.w700,
-                    color: Colors.grey[800],
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 2),
-          Divider(color: Colors.grey[200], height: 20),
+          Divider(color: Theme.of(context).colorScheme.outlineVariant, height: 20),
           Expanded(
             child: Form(
               key: _formKey,
@@ -594,7 +594,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
                           borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                         ),
                         filled: true,
-                        fillColor: Colors.grey[50],
+                        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                           borderSide: BorderSide(color: primaryColor, width: 2),
@@ -630,7 +630,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
                             borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                           ),
                           filled: true,
-                          fillColor: Colors.grey[50],
+                          fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                             borderSide: BorderSide(color: primaryColor, width: 2),
@@ -655,7 +655,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
                           borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                         ),
                         filled: true,
-                        fillColor: Colors.grey[50],
+                        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                           borderSide: BorderSide(color: primaryColor, width: 2),
@@ -709,8 +709,8 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
                           onPressed: _resetForm,
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 12),
-                            side: BorderSide(color: Colors.grey[300]!),
-                            foregroundColor: Colors.grey[600],
+                            side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+                            foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                             ),
@@ -733,9 +733,9 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
     return Container(
       margin: const EdgeInsets.fromLTRB(6, 12, 12, 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(AppBorderRadius.small),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Column(
         children: [
@@ -751,23 +751,23 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
                   style: TextStyle(
                     fontSize: AppFontSize.medium,
                     fontWeight: FontWeight.w700,
-                    color: Colors.grey[800],
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(width: 6),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.grey[300]!),
+                    border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                   ),
                   child: Text(
                     '${_filteredUsers.length}',
                     style: TextStyle(
                       fontSize: AppFontSize.xsmall,
                       fontWeight: FontWeight.w600,
-                      color: Colors.grey[600],
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),
@@ -782,24 +782,24 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
                 controller: _searchController,
                 decoration: InputDecoration(
                   hintText: 'Search users...',
-                  hintStyle: TextStyle(fontSize: AppFontSize.small, color: Colors.grey[400]),
-                  prefixIcon: Icon(Icons.search, size: 18, color: Colors.grey[400]),
+                  hintStyle: TextStyle(fontSize: AppFontSize.small, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  prefixIcon: Icon(Icons.search, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
                           icon: const Icon(Icons.clear, size: 16),
-                          color: Colors.grey[400],
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           onPressed: _searchController.clear,
                         )
                       : null,
                   filled: true,
-                  fillColor: Colors.grey[50],
+                  fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
+                    borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
+                    borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                   ),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 ),
@@ -807,7 +807,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
             ),
           ],
           const SizedBox(height: 4),
-          Divider(color: Colors.grey[200], height: 12),
+          Divider(color: Theme.of(context).colorScheme.outlineVariant, height: 12),
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -821,7 +821,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
                                   ? Icons.search_off
                                   : Icons.person_add_outlined,
                               size: 48,
-                              color: Colors.grey[300],
+                              color: Theme.of(context).colorScheme.outlineVariant,
                             ),
                             const SizedBox(height: 12),
                             Text(
@@ -829,7 +829,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
                                   ? 'No users found'
                                   : 'No users yet',
                               style: TextStyle(
-                                  color: Colors.grey[500], fontSize: AppFontSize.small),
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: AppFontSize.small),
                             ),
                           ],
                         ),
@@ -851,13 +851,13 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
                               decoration: BoxDecoration(
                                 color: isEditing
                                     ? primaryColor.withValues(alpha: 0.05)
-                                    : Colors.grey[50],
+                                    : Theme.of(context).colorScheme.surfaceContainerHighest,
                                 borderRadius:
                                     BorderRadius.circular(AppBorderRadius.xsmall),
                                 border: Border.all(
                                   color: isEditing
                                       ? primaryColor.withValues(alpha: 0.4)
-                                      : Colors.grey[200]!,
+                                      : Theme.of(context).colorScheme.outlineVariant,
                                 ),
                               ),
                               child: ListTile(
@@ -881,7 +881,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
                                   style: TextStyle(
                                     fontWeight: FontWeight.w600,
                                     fontSize: AppFontSize.medium,
-                                    color: isEditing ? primaryColor : Colors.grey[800],
+                                    color: isEditing ? primaryColor : Theme.of(context).colorScheme.onSurface,
                                   ),
                                 ),
                                 subtitle: Padding(
@@ -974,7 +974,8 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
           "User Management",
           style: TextStyle(letterSpacing: 0.5),
         ),
-        backgroundColor: Theme.of(context).primaryColor,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor ??
+            Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
@@ -993,7 +994,9 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
             ),
         ],
       ),
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? null
+          : Theme.of(context).colorScheme.surfaceContainerHighest,
       body: LayoutBuilder(
         builder: (context, constraints) {
           if (constraints.maxWidth > 900) {

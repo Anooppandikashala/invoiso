@@ -162,7 +162,7 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
             Container(
               padding: const EdgeInsets.fromLTRB(20, 18, 12, 18),
               decoration: BoxDecoration(
-                color: theme.primaryColor,
+                color: theme.appBarTheme.backgroundColor ?? theme.primaryColor,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(16),
                   topRight: Radius.circular(16),
@@ -237,7 +237,7 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
                         style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: Colors.grey[800])),
+                            color: Theme.of(context).colorScheme.onSurfaceVariant)),
                     const SizedBox(height: 8),
 
                     if (_isLoadingPayments)
@@ -251,13 +251,13 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         decoration: BoxDecoration(
-                          color: Colors.grey[50],
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey[200]!),
+                          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                         ),
-                        child: const Center(
+                        child: Center(
                           child: Text('No payments recorded yet',
-                              style: TextStyle(color: Colors.grey)),
+                              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                         ),
                       )
                     else
@@ -302,7 +302,7 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
                           style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: Colors.grey[800])),
+                              color: Theme.of(context).colorScheme.onSurface)),
                       const SizedBox(height: 12),
                       Form(
                         key: _formKey,
@@ -396,14 +396,14 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
                                       border: OutlineInputBorder(
                                           borderRadius:
                                               BorderRadius.circular(8)),
-                                      fillColor: Colors.grey[50],
+                                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                                       filled: true,
                                       helperText: 'Auto-calculated',
                                     ),
                                     child: Text(
                                       '$sym ${_taxOnEnteredAmount.toStringAsFixed(2)}',
-                                      style: const TextStyle(
-                                          fontSize: 16, color: Colors.grey),
+                                      style: TextStyle(
+                                          fontSize: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                                     ),
                                   ),
                                 ),
@@ -474,7 +474,7 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
   Widget _buildPaymentHistoryTable(String sym) {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -482,7 +482,7 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(8),
                 topRight: Radius.circular(8),
@@ -527,7 +527,7 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: Colors.grey[200]!)),
+        border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
       ),
       child: Row(
         children: [
@@ -560,14 +560,14 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
           Expanded(
             child: Text(
               '$sym ${payment.taxAmountPaid.toStringAsFixed(2)}',
-              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ),
           SizedBox(
             width: 100,
             child: Text(
               payment.paymentMethod ?? '—',
-              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ),
           SizedBox(
@@ -636,7 +636,7 @@ class PaymentSummaryCard extends StatelessWidget {
             Text(label,
                 style: TextStyle(
                     fontSize: 11,
-                    color: Colors.grey[600],
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w500)),
             const SizedBox(height: 4),
             Text(value,

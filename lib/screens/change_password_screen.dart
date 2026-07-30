@@ -113,11 +113,13 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     return PopScope(
       canPop: !widget.forced,
       child: Scaffold(
-        backgroundColor: Colors.blue[50],
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? null
+            : Colors.blue[50],
         body: Center(
           child: Card(
             elevation: 8,
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surfaceContainer,
             child: Container(
               width: MediaQuery.sizeOf(context).width * 0.3,
               padding: const EdgeInsets.all(32),

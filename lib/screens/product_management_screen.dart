@@ -621,7 +621,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
         border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         filled: readOnly,
-        fillColor: readOnly ? Colors.grey.shade100 : null,
+        fillColor: readOnly ? Theme.of(context).colorScheme.surfaceContainerHighest : null,
         counterText: '',
           helper: helperText != null ? Tooltip(
             message: helperText,
@@ -750,7 +750,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                 const SizedBox(height: 12),
                 Table(
                   border: TableBorder.all(
-                      color: Colors.grey.shade300,
+                      color: Theme.of(context).colorScheme.outlineVariant,
                       borderRadius: BorderRadius.circular(6)),
                   columnWidths: const {
                     0: FlexColumnWidth(1.4),
@@ -759,34 +759,34 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                   },
                   children: [
                     TableRow(
-                      decoration: BoxDecoration(color: Colors.grey.shade100),
+                      decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest),
                       children: const [
                         _TableHeader('Column'),
                         _TableHeader('Required'),
                         _TableHeader('Description'),
                       ],
                     ),
-                    _csvRuleRow('name', 'Yes', 'Product name'),
-                    _csvRuleRow('price', 'Yes', 'Unit price (numeric)'),
-                    _csvRuleRow('hsn_code', 'No', 'HSN / SAC code'),
-                    _csvRuleRow('description', 'No', 'Short description'),
-                    _csvRuleRow('tax_rate', 'No', 'Tax % (0–100), default 0'),
-                    _csvRuleRow('stock', 'No', 'Stock quantity, default 0'),
-                    _csvRuleRow('type', 'No', '"product" or "service", default product'),
-                    _csvRuleRow('default_discount', 'No', 'Flat discount amount (currency), default 0'),
-                    _csvRuleRow('purchase_price', 'No', 'Cost price (numeric), default 0'),
-                    _csvRuleRow('alias_name', 'No', 'Local-language display name for PDFs'),
-                    _csvRuleRow('unit', 'No', 'Unit of measure (e.g. kg, bag, pcs), default pcs'),
+                    _csvRuleRow(context, 'name', 'Yes', 'Product name'),
+                    _csvRuleRow(context, 'price', 'Yes', 'Unit price (numeric)'),
+                    _csvRuleRow(context, 'hsn_code', 'No', 'HSN / SAC code'),
+                    _csvRuleRow(context, 'description', 'No', 'Short description'),
+                    _csvRuleRow(context, 'tax_rate', 'No', 'Tax % (0–100), default 0'),
+                    _csvRuleRow(context, 'stock', 'No', 'Stock quantity, default 0'),
+                    _csvRuleRow(context, 'type', 'No', '"product" or "service", default product'),
+                    _csvRuleRow(context, 'default_discount', 'No', 'Flat discount amount (currency), default 0'),
+                    _csvRuleRow(context, 'purchase_price', 'No', 'Cost price (numeric), default 0'),
+                    _csvRuleRow(context, 'alias_name', 'No', 'Local-language display name for PDFs'),
+                    _csvRuleRow(context, 'unit', 'No', 'Unit of measure (e.g. kg, bag, pcs), default pcs'),
                   ],
                 ),
                 const SizedBox(height: 16),
-                _ruleNote(Icons.info_outline,
+                _ruleNote(context, Icons.info_outline,
                     'Maximum $_csvMaxRows rows per import.'),
-                _ruleNote(Icons.info_outline,
+                _ruleNote(context, Icons.info_outline,
                     'Duplicates are detected by product name (case-insensitive). You will be asked to overwrite or skip each one.'),
-                _ruleNote(Icons.info_outline,
+                _ruleNote(context, Icons.info_outline,
                     'Rows missing name or price are skipped and reported.'),
-                _ruleNote(Icons.info_outline,
+                _ruleNote(context, Icons.info_outline,
                     'UTF-8 encoding recommended. Excel BOM is handled automatically.'),
                 const SizedBox(height: 16),
                 OutlinedButton.icon(
@@ -817,7 +817,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     if (proceed == true) await _importFromCSV();
   }
 
-  static TableRow _csvRuleRow(String col, String req, String desc) {
+  static TableRow _csvRuleRow(BuildContext context, String col, String req, String desc) {
     return TableRow(
       children: [
         Padding(
@@ -832,7 +832,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: req == 'Yes' ? Colors.red.shade700 : Colors.grey.shade600,
+              color: req == 'Yes' ? Colors.red.shade700 : Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ),
@@ -844,7 +844,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     );
   }
 
-  static Widget _ruleNote(IconData icon, String text) {
+  static Widget _ruleNote(BuildContext context, IconData icon, String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
@@ -854,7 +854,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
           const SizedBox(width: 6),
           Expanded(
               child: Text(text,
-                  style: const TextStyle(fontSize: 12, color: Colors.black87))),
+                  style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface))),
         ],
       ),
     );
@@ -1382,7 +1382,8 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     return Scaffold(
       appBar: AppBar(
         title: const Text('Product/Service Management'),
-        backgroundColor: Theme.of(context).primaryColor,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor ??
+            Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
@@ -1861,7 +1862,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                     borderRadius:
                         BorderRadius.circular(AppBorderRadius.xsmall)),
                 filled: true,
-                fillColor: Colors.grey.shade50,
+                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
               ),
               onChanged: _onSearchChanged,
             ),
@@ -1870,9 +1871,9 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
+              border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-              color: Colors.grey.shade50,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
             ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
@@ -1907,18 +1908,18 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.inventory_2_outlined,
-              size: 80, color: Colors.grey.shade300),
+              size: 80, color: Theme.of(context).colorScheme.outlineVariant),
           const SizedBox(height: 16),
           Text(
             'No products found',
-            style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
+            style: TextStyle(fontSize: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
           const SizedBox(height: 8),
           Text(
             _searchQuery.isEmpty
                 ? 'Add your first product to get started'
                 : 'Try adjusting your search',
-            style: TextStyle(color: Colors.grey.shade500),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ],
       ),
@@ -1984,7 +1985,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
         final serialNumber = (_currentPage * _pageSize) + index + 1;
         return DataRow(
           color: WidgetStateProperty.all(
-            index.isEven ? Colors.transparent : Colors.grey.shade50,
+            index.isEven ? Colors.transparent : Theme.of(context).colorScheme.surfaceContainerHighest,
           ),
           cells: [
             DataCell(Text(serialNumber.toString())),
@@ -2060,7 +2061,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                         ),
                       ),
                     )
-                  : Text('—', style: TextStyle(color: Colors.grey.shade400)),
+                  : Text('—', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
             ),
             if (_columnsConfig.defaultDiscount)
             DataCell(
@@ -2158,7 +2159,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(16),
           bottomRight: Radius.circular(16),
@@ -2169,7 +2170,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
         children: [
           Row(
             children: [
-              Text('Rows per page:', style: TextStyle(color: Colors.grey.shade700, fontSize: 13)),
+              Text('Rows per page:', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 13)),
               const SizedBox(width: 8),
               DropdownButton<int>(
                 value: _pageSize,
@@ -2187,7 +2188,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
               const SizedBox(width: 16),
               Text(
                 'Showing ${_currentPage * _pageSize + 1} - ${(_currentPage * _pageSize + _pageSize).clamp(0, _totalProducts)} of $_totalProducts',
-                style: TextStyle(color: Colors.grey.shade700),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
               ),
             ],
           ),
@@ -2291,7 +2292,7 @@ class _UnitFieldState extends State<_UnitField> {
             border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
             filled: widget.readOnly,
-            fillColor: widget.readOnly ? Colors.grey.shade100 : null,
+            fillColor: widget.readOnly ? Theme.of(context).colorScheme.surfaceContainerHighest : null,
           ),
           items: [
             const DropdownMenuItem(value: '', child: Text('None')),
@@ -2321,7 +2322,7 @@ class _UnitFieldState extends State<_UnitField> {
               border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
               filled: widget.readOnly,
-              fillColor: widget.readOnly ? Colors.grey.shade100 : null,
+              fillColor: widget.readOnly ? Theme.of(context).colorScheme.surfaceContainerHighest : null,
             ),
             onChanged: widget.onUnitChanged,
           ),
