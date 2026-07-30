@@ -1438,7 +1438,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                             BorderRadius.circular(AppBorderRadius.xsmall)),
                     prefixIcon: const Icon(Icons.search),
                     filled: true,
-                    fillColor: Colors.grey[50],
+                    fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -1447,7 +1447,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   child: dialogResults.isEmpty
                       ? Center(
                           child: Text('No products found',
-                              style: TextStyle(color: Colors.grey[600])),
+                              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                         )
                       : ListView.builder(
                           controller: scrollController,
@@ -1463,7 +1463,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                               leading: Icon(Icons.inventory_2,
                                   color: product.stock <= 0
                                       ? Colors.red
-                                      : Colors.grey),
+                                      : Theme.of(context).colorScheme.onSurfaceVariant),
                               title: Text(product.name),
                               subtitle: Text(
                                   '$_currencySymbol${product.price.toStringAsFixed(2)}  ·  Stock: ${product.stock}'),
@@ -3082,7 +3082,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                 ),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
               ),
             ),
           ),
@@ -3091,7 +3091,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             height: 40,
             padding: const EdgeInsets.symmetric(horizontal: 10),
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey),
+              border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
               borderRadius: BorderRadius.circular(12),
             ),
             child: DropdownButtonHideUnderline(
@@ -3413,8 +3413,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: Colors.grey.shade200,
-        border: Border.all(color: Colors.grey.shade400),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
@@ -3422,6 +3422,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         style: TextStyle(
           fontSize: AppFontSize.xsmall,
           fontWeight: FontWeight.bold,
+          color: Theme.of(context).colorScheme.onSurface,
         ),
       ),
     );
@@ -3463,7 +3464,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                         'Press',
                         style: TextStyle(
                           fontSize: AppFontSize.xsmall,
-                          color: Colors.grey[700],
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       _shortcutKey('Ctrl + n'),
@@ -3471,14 +3472,14 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                         'to add an existing product',
                         style: TextStyle(
                           fontSize: AppFontSize.xsmall,
-                          color: Colors.grey[700],
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       Text(
                         'or',
                         style: TextStyle(
                           fontSize: AppFontSize.xsmall,
-                          color: Colors.grey,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       _shortcutKey('Ctrl + m'),
@@ -3486,14 +3487,14 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                         'to add a custom item',
                         style: TextStyle(
                           fontSize: AppFontSize.xsmall,
-                          color: Colors.grey[700],
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       Text(
                         'or',
                         style: TextStyle(
                           fontSize: AppFontSize.xsmall,
-                          color: Colors.grey,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       _shortcutKey('Ctrl + q'),
@@ -3501,7 +3502,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                         'to create invoice',
                         style: TextStyle(
                           fontSize: AppFontSize.xsmall,
-                          color: Colors.grey[700],
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
