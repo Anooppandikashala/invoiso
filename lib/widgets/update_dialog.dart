@@ -38,13 +38,13 @@ class UpdateDialog extends StatelessWidget {
         children: [
           const Divider(height: 1),
           const SizedBox(height: 16),
-          _versionRow('Current version', info.currentVersion, Colors.grey.shade600),
+          _versionRow(context, 'Current version', info.currentVersion, Theme.of(context).colorScheme.onSurfaceVariant),
           const SizedBox(height: 6),
-          _versionRow('Latest version', info.latestVersion, Colors.green.shade700),
+          _versionRow(context, 'Latest version', info.latestVersion, Colors.green.shade700),
           const SizedBox(height: 16),
           Text(
             'A new version of invoiso is available. Visit the download page to get the latest release.',
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade700, height: 1.5),
+            style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant, height: 1.5),
           ),
           const SizedBox(height: 8),
         ],
@@ -55,7 +55,7 @@ class UpdateDialog extends StatelessWidget {
             await UpdateService.markNotified(info.latestVersion);
             if (context.mounted) Navigator.of(context).pop();
           },
-          child: Text('Dismiss', style: TextStyle(color: Colors.grey.shade600)),
+          child: Text('Dismiss', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
         ),
         FilledButton.icon(
           style: FilledButton.styleFrom(backgroundColor: primary),
@@ -74,12 +74,12 @@ class UpdateDialog extends StatelessWidget {
     );
   }
 
-  Widget _versionRow(String label, String version, Color versionColor) {
+  Widget _versionRow(BuildContext context, String label, String version, Color versionColor) {
     return Row(
       children: [
         SizedBox(
           width: 120,
-          child: Text(label, style: const TextStyle(fontSize: 13, color: Colors.black54)),
+          child: Text(label, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant)),
         ),
         Text(
           version,

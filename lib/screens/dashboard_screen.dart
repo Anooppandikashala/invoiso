@@ -244,7 +244,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       curve: Curves.easeInOut,
       width: expanded ? 210 : 64,
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: Theme.of(context).colorScheme.surfaceContainer,
         border: Border(
             right: BorderSide(
                 color: Theme.of(context).colorScheme.outlineVariant,
@@ -283,7 +283,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           child: Padding(
                             padding: const EdgeInsets.all(6),
                             child: Icon(Icons.chevron_left_rounded,
-                                color: const Color(0xFF64748B), size: 20),
+                                color: Theme.of(context).colorScheme.onSurfaceVariant, size: 20),
                           ),
                         ),
                       ),
@@ -318,7 +318,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         child: Padding(
                           padding: const EdgeInsets.all(4),
                           child: Icon(Icons.chevron_right_rounded,
-                              color: const Color(0xFF64748B), size: 18),
+                              color: Theme.of(context).colorScheme.onSurfaceVariant, size: 18),
                         ),
                       ),
                     ),
@@ -393,16 +393,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                 children: [
                                   Text(
                                     _currentUser.username,
-                                    style: const TextStyle(
-                                        color: Color(0xFF1E293B),
+                                    style: TextStyle(
+                                        color: Theme.of(context).colorScheme.onSurface,
                                         fontSize: 13,
                                         fontWeight: FontWeight.w500),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   Text(
                                     _currentUser.isAdmin() ? 'Admin' : 'User',
-                                    style: const TextStyle(
-                                        color: Color(0xFF64748B), fontSize: 11),
+                                    style: TextStyle(
+                                        color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 11),
                                   ),
                                 ],
                               ),
@@ -412,10 +412,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               child: InkWell(
                                 onTap: () =>  _logoutAndResetSession(),
                                 borderRadius: BorderRadius.circular(6),
-                                child: const Padding(
+                                child: Padding(
                                   padding: EdgeInsets.all(6),
                                   child: Icon(Icons.logout_rounded,
-                                      color: Color(0xFF64748B), size: 18),
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant, size: 18),
                                 ),
                               ),
                             ),
@@ -425,9 +425,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         Center(
                           child: Text(
                             cfg.version,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: Color(0xFFCBD5E1),
+                              color: Theme.of(context).colorScheme.outlineVariant,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -466,10 +466,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           child: InkWell(
                             onTap: () => _logoutAndResetSession(),
                             borderRadius: BorderRadius.circular(6),
-                            child: const Padding(
+                            child: Padding(
                               padding: EdgeInsets.all(6),
                               child: Icon(Icons.logout_rounded,
-                                  color: Color(0xFF64748B), size: 18),
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant, size: 18),
                             ),
                           ),
                         ),
@@ -478,9 +478,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       Center(
                         child: Text(
                           cfg.version,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 9,
-                            color: Color(0xFFCBD5E1),
+                            color: Theme.of(context).colorScheme.outlineVariant,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -614,7 +614,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       children: [
                         Icon(
                           selected ? filledIcon : outlinedIcon,
-                          color: selected ? primary : const Color(0xFF64748B),
+                          color: selected ? primary : Theme.of(context).colorScheme.onSurfaceVariant,
                           size: 20,
                         ),
                         if (showDot)
@@ -666,7 +666,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       children: [
                         Icon(
                           selected ? filledIcon : outlinedIcon,
-                          color: selected ? primary : const Color(0xFF64748B),
+                          color: selected ? primary : Theme.of(context).colorScheme.onSurfaceVariant,
                           size: 18,
                         ),
                         if (showDot)
@@ -689,7 +689,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       child: Text(
                         label,
                         style: TextStyle(
-                          color: selected ? primary : const Color(0xFF64748B),
+                          color: selected ? primary : Theme.of(context).colorScheme.onSurfaceVariant,
                           fontWeight:
                               selected ? FontWeight.w600 : FontWeight.w400,
                           fontSize: 13.5,
@@ -746,6 +746,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
   bool isLoading = true;
   String _dashboardLayout = 'default';
   bool _showLayoutBanner = false;
+  bool _showThemeBanner = false;
   bool _showSupportBanner = false;
   String _supportMilestone = '';
   List<Map<String, dynamic>> _monthlyRevenue = [];
@@ -778,6 +779,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
       ref.read(settingsRepositoryProvider).getSetting(SettingKey.layoutBannerDismissed), // 11
       ref.read(settingsRepositoryProvider).getSetting(SettingKey.supportBannerDismissed), // 12
       ref.read(productRepositoryProvider).getOutOfStockProducts(), // 13
+      ref.read(settingsRepositoryProvider).getSetting(SettingKey.themeBannerDismissed), // 14
     ]);
 
     final customerCount = results[0] as int;
@@ -795,6 +797,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     final bannerDismissed = results[11] as String?;
     final supportDismissed = results[12] as String?;
     final outOfStock = results[13] as List<Product>;
+    final themeBannerDismissed = results[14] as String?;
     final String milestone = financials.count >= 100
         ? '100'
         : financials.count >= 50
@@ -819,6 +822,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
       _topCustomers = topCust;
       _topProducts = topProd;
       _showLayoutBanner = bannerDismissed != '1';
+      _showThemeBanner = themeBannerDismissed != '1';
       _supportMilestone = milestone;
       _showSupportBanner = milestone.isNotEmpty && supportDismissed != milestone;
       isLoading = false;
@@ -834,6 +838,11 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
   Future<void> _dismissLayoutBanner() async {
     await ref.read(settingsRepositoryProvider).setSetting(SettingKey.layoutBannerDismissed, '1');
     if (mounted) setState(() => _showLayoutBanner = false);
+  }
+
+  Future<void> _dismissThemeBanner() async {
+    await ref.read(settingsRepositoryProvider).setSetting(SettingKey.themeBannerDismissed, '1');
+    if (mounted) setState(() => _showThemeBanner = false);
   }
 
   Widget _buildLayoutDiscoveryBanner() {
@@ -892,6 +901,80 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                     icon: const Icon(Icons.close, size: 16),
                     color: const Color(0xFF93C5FD),
                     onPressed: _dismissLayoutBanner,
+                    tooltip: 'Dismiss',
+                    padding: EdgeInsets.zero,
+                    constraints:
+                        const BoxConstraints(minWidth: 28, minHeight: 28),
+                  ),
+                ],
+              ),
+            )
+          : const SizedBox.shrink(),
+    );
+  }
+
+  Widget _buildThemeDiscoveryBanner() {
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+      child: _showThemeBanner
+          ? Container(
+              margin: const EdgeInsets.only(bottom: 20),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F3FF),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFDDD6FE)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.dark_mode_outlined,
+                      color: Color(0xFF7C3AED), size: 20),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              'New: Dark mode',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                                color: Color(0xFF5B21B6),
+                              ),
+                            ),
+                            SizedBox(width: 6),
+                            _BetaTag(),
+                          ],
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'We\'re still polishing it — switch it on from Settings > Company Info and let us know what looks off.',
+                          style:
+                              TextStyle(fontSize: 12, color: Color(0xFF7C3AED)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: _dismissThemeBanner,
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFF7C3AED),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text('Got it',
+                        style: TextStyle(fontWeight: FontWeight.w600)),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 16),
+                    color: const Color(0xFFC4B5FD),
+                    onPressed: _dismissThemeBanner,
                     tooltip: 'Dismiss',
                     padding: EdgeInsets.zero,
                     constraints:
@@ -1037,6 +1120,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildLayoutDiscoveryBanner(),
+              _buildThemeDiscoveryBanner(),
               _buildSupportBanner(),
               // ── Greeting Banner ──────────────────────────────
               _buildGreetingBanner(),
@@ -2077,7 +2161,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
+          color: Theme.of(context).colorScheme.surfaceContainer,
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
@@ -2381,6 +2465,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildLayoutDiscoveryBanner(),
+              _buildThemeDiscoveryBanner(),
               _buildSupportBanner(),
               _buildGreetingBanner(),
               const SizedBox(height: 20),
@@ -2477,6 +2562,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildLayoutDiscoveryBanner(),
+              _buildThemeDiscoveryBanner(),
               _buildSupportBanner(),
               _buildGreetingBanner(),
               const SizedBox(height: 20),
@@ -2570,7 +2656,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
+          color: Theme.of(context).colorScheme.surfaceContainer,
           borderRadius: BorderRadius.circular(14),
           border: alert
               ? Border.all(color: color.withValues(alpha: 0.35), width: 1.5)
@@ -2635,7 +2721,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: Theme.of(context).colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
@@ -2766,7 +2852,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: Theme.of(context).colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
@@ -2874,7 +2960,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: Theme.of(context).colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
@@ -3044,7 +3130,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: Theme.of(context).colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
@@ -3116,7 +3202,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: Theme.of(context).colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.red.withValues(alpha: 0.18), width: 1),
         boxShadow: [
@@ -3218,7 +3304,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: Theme.of(context).colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
             color: const Color(0xFFC62828).withValues(alpha: 0.2), width: 1),
@@ -3331,7 +3417,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: Theme.of(context).colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
@@ -3447,6 +3533,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildLayoutDiscoveryBanner(),
+              _buildThemeDiscoveryBanner(),
               _buildSupportBanner(),
               _buildGreetingBanner(),
               const SizedBox(height: 20),
@@ -3679,7 +3766,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: Theme.of(context).colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
@@ -3756,7 +3843,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: Theme.of(context).colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
@@ -3820,6 +3907,30 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
             );
           }),
         ],
+      ),
+    );
+  }
+}
+
+class _BetaTag extends StatelessWidget {
+  const _BetaTag();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+      decoration: BoxDecoration(
+        color: const Color(0xFF7C3AED),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: const Text(
+        'BETA',
+        style: TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+          letterSpacing: 0.5,
+        ),
       ),
     );
   }

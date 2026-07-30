@@ -685,7 +685,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             child: Container(
               color: Theme.of(context).brightness == Brightness.dark
                   ? Theme.of(context).scaffoldBackgroundColor
-                  : Theme.of(context).colorScheme.surface,
+                  : Theme.of(context).colorScheme.surfaceContainer,
               child: isCurrentTabLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _buildContent(),

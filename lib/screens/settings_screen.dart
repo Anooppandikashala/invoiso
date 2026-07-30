@@ -417,6 +417,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ],
               selected: {ref.watch(themeModeProvider)},
               showSelectedIcon: false,
+              style: SegmentedButton.styleFrom(
+                foregroundColor: Colors.white,
+                selectedForegroundColor: Theme.of(context).primaryColor,
+                selectedBackgroundColor: Colors.white,
+                side: const BorderSide(color: Colors.white70),
+              ),
               onSelectionChanged: (selection) {
                 final mode = selection.first;
                 ref.read(themeModeProvider.notifier).state = mode;
@@ -433,7 +439,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           SizedBox(
             width: 240,
             child: Container(
-              color: Theme.of(context).colorScheme.surface,
+              color: Theme.of(context).colorScheme.surfaceContainer,
               child: Column(
                 children: [
                   Expanded(
@@ -655,7 +661,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
+                      color: Theme.of(context).colorScheme.surfaceContainer,
                       borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                       border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                     ),
@@ -705,7 +711,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   const SizedBox(height: 16),
                   Container(
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
+                      color: Theme.of(context).colorScheme.surfaceContainer,
                       borderRadius:
                           BorderRadius.circular(AppBorderRadius.xsmall),
                       border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
@@ -813,7 +819,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   // ── Bank Details ─────────────────────────────────────────
                   Container(
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
+                      color: Theme.of(context).colorScheme.surfaceContainer,
                       borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                       border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                     ),
@@ -996,7 +1002,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? null
+          : Colors.grey[50],
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(32),
         child: Column(
@@ -1007,7 +1015,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               style: TextStyle(
                 fontSize: AppFontSize.xsmall,
                 fontWeight: FontWeight.w700,
-                color: Colors.grey[400],
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 letterSpacing: 1.2,
               ),
             ),
@@ -1017,13 +1025,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               style: TextStyle(
                 fontSize: AppFontSize.xlarge,
                 fontWeight: FontWeight.w700,
-                color: Colors.grey[800],
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'Pick what you need and send a request. We\'ll get back to you within 24 hours.',
-              style: TextStyle(fontSize: AppFontSize.small, color: Colors.grey[500]),
+              style: TextStyle(fontSize: AppFontSize.small, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 32),
             GridView.builder(
@@ -1042,11 +1050,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 return Card(
                   elevation: isHighlighted ? 4 : 0,
                   shadowColor: isHighlighted ? primaryColor.withValues(alpha: 0.3) : Colors.transparent,
-                  color: isHighlighted ? primaryColor.withValues(alpha: 0.04) : Colors.white,
+                  color: isHighlighted
+                      ? primaryColor.withValues(alpha: 0.04)
+                      : Theme.of(context).colorScheme.surfaceContainer,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppBorderRadius.medium),
                     side: BorderSide(
-                      color: isHighlighted ? primaryColor : Colors.grey[200]!,
+                      color: isHighlighted ? primaryColor : Theme.of(context).colorScheme.outlineVariant,
                       width: isHighlighted ? 2 : 1,
                     ),
                   ),
@@ -1107,7 +1117,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           style: TextStyle(
                             fontSize: AppFontSize.medium,
                             fontWeight: FontWeight.w600,
-                            color: Colors.grey[800],
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -1116,7 +1126,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             opt.description,
                             style: TextStyle(
                               fontSize: AppFontSize.xsmall,
-                              color: Colors.grey[600],
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                               height: 1.5,
                             ),
                           ),
@@ -1124,14 +1134,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         const SizedBox(height: 12),
                         Row(
                           children: [
-                            Icon(Icons.schedule_rounded, size: 13, color: Colors.grey[600]),
+                            Icon(Icons.schedule_rounded, size: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
                                 'Delivery: ${opt.delivery}',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(fontSize: AppFontSize.xsmall, color: Colors.grey[600]),
+                                style: TextStyle(fontSize: AppFontSize.xsmall, color: Theme.of(context).colorScheme.onSurfaceVariant),
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -1205,10 +1215,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final cfg = ref.watch(appEditionConfigProvider);
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? null
+          : Colors.grey[50],
       appBar: AppBar(
         title: const Text('Software Information'),
-        backgroundColor: primaryColor,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor ??
+            primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
@@ -1224,10 +1237,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 // ── Hero card ────────────────────────────────────────────
                 Card(
                   elevation: 0,
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surfaceContainer,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppBorderRadius.medium),
-                    side: BorderSide(color: Colors.grey[200]!),
+                    side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
@@ -1236,7 +1249,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Image.asset(
-                          'assets/images/logo.png',
+                          Theme.of(context).brightness == Brightness.dark ? 'assets/images/logo_dark.png' : 'assets/images/logo.png',
                           width: 130,
                           height: 52,
                           fit: BoxFit.contain,
@@ -1259,7 +1272,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 cfg.description,
                                 style: TextStyle(
                                   fontSize: AppFontSize.small,
-                                  color: Colors.grey[600],
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                   height: 1.5,
                                 ),
                               ),
@@ -1335,7 +1348,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   '© ${DateTime.now().year} ${cfg.developer}  |  Released under the ${cfg.license} License',
                   style: TextStyle(
                     fontSize: AppFontSize.small,
-                    color: Colors.grey[400],
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -1413,10 +1426,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     return Card(
       elevation: 0,
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surfaceContainer,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppBorderRadius.medium),
-        side: BorderSide(color: Colors.grey[200]!),
+        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -1430,7 +1443,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   style: TextStyle(
                     fontSize: AppFontSize.xsmall,
                     fontWeight: FontWeight.w700,
-                    color: Colors.grey[400],
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     letterSpacing: 1.0,
                   ),
                 ),
@@ -1446,13 +1459,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 Expanded(
                   child: Row(
                     children: [
-                      Icon(Icons.tag_rounded, size: 18, color: Colors.grey[400]),
+                      Icon(Icons.tag_rounded, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       const SizedBox(width: 14),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Current Version',
-                              style: TextStyle(fontSize: AppFontSize.xsmall, color: Colors.grey[500], fontWeight: FontWeight.w500)),
+                              style: TextStyle(fontSize: AppFontSize.xsmall, color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500)),
                           const SizedBox(height: 3),
                           Text(cfg.version,
                               style: const TextStyle(fontSize: AppFontSize.medium, fontWeight: FontWeight.w500)),
@@ -1460,13 +1473,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                       if (info != null) ...[
                         const SizedBox(width: 32),
-                        Icon(Icons.new_releases_outlined, size: 18, color: hasUpdate ? Colors.orange.shade400 : Colors.grey[400]),
+                        Icon(Icons.new_releases_outlined, size: 18, color: hasUpdate ? Colors.orange.shade400 : Theme.of(context).colorScheme.onSurfaceVariant),
                         const SizedBox(width: 14),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text('Latest Version',
-                                style: TextStyle(fontSize: AppFontSize.xsmall, color: Colors.grey[500], fontWeight: FontWeight.w500)),
+                                style: TextStyle(fontSize: AppFontSize.xsmall, color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500)),
                             const SizedBox(height: 3),
                             Text(
                               info.latestVersion,
@@ -1518,10 +1531,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget _infoCard(String title, List<Widget> rows) {
     return Card(
       elevation: 0,
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surfaceContainer,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppBorderRadius.medium),
-        side: BorderSide(color: Colors.grey[200]!),
+        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -1533,14 +1546,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               style: TextStyle(
                 fontSize: AppFontSize.xsmall,
                 fontWeight: FontWeight.w700,
-                color: Colors.grey[400],
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 letterSpacing: 1.0,
               ),
             ),
             const SizedBox(height: 16),
             ...rows.expand((row) => [
                   row,
-                  Divider(height: 1, color: Colors.grey[100]),
+                  Divider(height: 1, color: Theme.of(context).colorScheme.surfaceContainerHighest),
                 ]).toList()
               ..removeLast(),
           ],
@@ -1555,7 +1568,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18, color: Colors.grey[400]),
+          Icon(icon, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -1565,7 +1578,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   label,
                   style: TextStyle(
                     fontSize: AppFontSize.xsmall,
-                    color: Colors.grey[500],
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -1624,14 +1637,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-              borderSide: BorderSide(color: Colors.grey[300]!),
+              borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
               borderSide: BorderSide(color: primaryColor, width: 2),
             ),
             filled: true,
-            fillColor: Colors.white,
+            fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
           ),
         );
       },
@@ -1640,6 +1653,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           alignment: Alignment.topLeft,
           child: Material(
             elevation: 4,
+            color: Theme.of(context).colorScheme.surfaceContainer,
             borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 200, maxWidth: 320),
@@ -1710,7 +1724,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
-        backgroundColor: Theme.of(context).primaryColor,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor ??
+            Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
       ),

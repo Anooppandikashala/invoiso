@@ -152,7 +152,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
             Card(
           elevation: 8,
-          color: Theme.of(context).colorScheme.surface,
+          color: Theme.of(context).colorScheme.surfaceContainer,
           child: Container(
             width: MediaQuery.sizeOf(context).width * 0.25,
             padding: const EdgeInsets.all(32),

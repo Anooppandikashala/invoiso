@@ -3145,7 +3145,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                               horizontal: AppMargin.small,
                               vertical: AppMargin.xxxsmall),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surface,
+                            color: Theme.of(context).colorScheme.surfaceContainer,
                             borderRadius:
                                 BorderRadius.circular(AppBorderRadius.xsmall),
                             border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
@@ -3647,7 +3647,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(AppPadding.medium),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface,
+                          color: Theme.of(context).colorScheme.surfaceContainer,
                           borderRadius:
                               BorderRadius.circular(AppBorderRadius.xsmall),
                           border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
@@ -4295,7 +4295,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     label: const Text('New Invoice',
                         style: TextStyle(fontSize: 13)),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.surface,
+                      backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
                       foregroundColor: Theme.of(context).primaryColor,
                       elevation: 0,
                       shape: RoundedRectangleBorder(

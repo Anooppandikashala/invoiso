@@ -1049,7 +1049,7 @@ class _InvoiceManagementScreenState
               children: [
                 // ── Search + stats ────────────────────────────────────────
                 Container(
-                  color: Theme.of(context).colorScheme.surface,
+                  color: Theme.of(context).colorScheme.surfaceContainer,
                   padding: const EdgeInsets.all(24),
                   child: Row(
                     children: [
@@ -1365,7 +1365,7 @@ class _InvoiceManagementScreenState
                 // ── Pagination ────────────────────────────────────────────
                 if (_pageInvoices.isNotEmpty)
                   Container(
-                    color: Theme.of(context).colorScheme.surface,
+                    color: Theme.of(context).colorScheme.surfaceContainer,
                     padding: const EdgeInsets.symmetric(
                         vertical: 16, horizontal: 24),
                     child: Row(
@@ -1407,7 +1407,7 @@ class _InvoiceManagementScreenState
                               icon: const Icon(Icons.chevron_left, size: 20),
                               label: const Text('Previous'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Theme.of(context).colorScheme.surface,
+                                backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
                                 foregroundColor: Theme.of(context).primaryColor,
                                 disabledBackgroundColor: Theme.of(context).colorScheme.outlineVariant,
                                 disabledForegroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -1453,7 +1453,7 @@ class _InvoiceManagementScreenState
                               icon: const Icon(Icons.chevron_right, size: 20),
                               label: const Text('Next'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Theme.of(context).colorScheme.surface,
+                                backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
                                 foregroundColor: Theme.of(context).primaryColor,
                                 disabledBackgroundColor: Theme.of(context).colorScheme.outlineVariant,
                                 disabledForegroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -1611,7 +1611,7 @@ class _InvoiceManagementScreenState
             ? Theme.of(context).primaryColor.withValues(alpha: 0.08)
             : (isEven
                 ? Theme.of(context).colorScheme.surfaceContainerHighest
-                : Theme.of(context).colorScheme.surface),
+                : Theme.of(context).colorScheme.surfaceContainer),
         border: Border(
           bottom: BorderSide(color: Theme.of(context).colorScheme.outlineVariant, width: 1),
           left: isSelected

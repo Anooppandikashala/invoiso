@@ -112,14 +112,24 @@ class _MyAppState extends ConsumerState<MyApp> {
   @override
   Widget build(BuildContext context) {
     final themeMode = ref.watch(themeModeProvider);
+    final baseLightTheme = ThemeData(
+      primarySwatch: Colors.blue,
+      primaryColor: const Color(0xFF002E78),
+      visualDensity: VisualDensity.adaptivePlatformDensity,
+    );
     return MaterialApp(
       title: AppConfig.name,
       debugShowCheckedModeBanner: false,
       themeMode: themeMode,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        primaryColor: const Color(0xFF002E78),
-        visualDensity: VisualDensity.adaptivePlatformDensity,
+      theme: baseLightTheme.copyWith(
+        colorScheme: baseLightTheme.colorScheme.copyWith(
+          surfaceContainer: Colors.white,
+          surfaceContainerHighest: Colors.grey[50]!,
+          outline: Colors.grey[400]!,
+          outlineVariant: Colors.grey[300]!,
+          onSurface: Colors.black,
+          onSurfaceVariant: Colors.grey[600]!,
+        ),
       ),
       darkTheme: ThemeData(
         brightness: Brightness.dark,
@@ -131,7 +141,9 @@ class _MyAppState extends ConsumerState<MyApp> {
           foregroundColor: Colors.white,
         ),
         colorScheme: const ColorScheme.dark(
+          primary: Color(0xFF6B9BFF),
           surface: Color(0xFF1E1E1E),
+          surfaceContainer: Color(0xFF1E1E1E),
           surfaceContainerHighest: Color(0xFF2A2A2A),
           outline: Color(0xFF4A4A4A),
           outlineVariant: Color(0xFF3A3A3A),
@@ -139,6 +151,7 @@ class _MyAppState extends ConsumerState<MyApp> {
           onSurfaceVariant: Color(0xFF9E9E9E),
         ),
         cardColor: const Color(0xFF1E1E1E),
+        cardTheme: const CardThemeData(surfaceTintColor: Colors.transparent),
         dialogTheme: const DialogThemeData(
           backgroundColor: Color(0xFF262626),
         ),
