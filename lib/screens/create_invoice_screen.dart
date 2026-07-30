@@ -236,9 +236,11 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     } else if (!forceDefault && widget.cloneFrom != null) {
       addNote = widget.cloneFrom!.notes ?? '';
     } else {
+      if(!mounted) return;
       addNote = await ref.read(settingsRepositoryProvider).getSetting(SettingKey.additionalInfo) ??
           ref.read(appEditionConfigProvider).additionalNote;
     }
+    if(!mounted) return;
     final taxRateSetting = await ref.read(settingsRepositoryProvider).getSetting(SettingKey.defaultTaxRate);
     final parsedRate = double.tryParse(taxRateSetting ?? '') ?? 18.0;
     if (widget.invoiceToEdit == null && widget.cloneFrom == null) {
@@ -2443,6 +2445,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   Future<void> resetValues(String invoiceType_) async {
     if(!mounted) return;
     final invType = await InvoicePdfServices.peekNextInvoiceNumber(invoiceType_);
+    if(!mounted) return;
     setState(() {
       invoiceType = invoiceType_;
       currentInvoiceNumber = invType;
@@ -3497,7 +3500,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
-                      _shortcutKey('Ctrl + q'),
+                      _shortcutKey('Ctrl + s'),
                       Text(
                         'to create invoice',
                         style: TextStyle(
@@ -4174,6 +4177,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     required String label,
     required Color color,
     required VoidCallback? onPressed,
+    String? tooltip,
   }) {
     return Column(
       children: [
@@ -4189,7 +4193,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             color: onPressed != null ? color : Theme.of(context).colorScheme.onSurfaceVariant,
             iconSize: 28,
             onPressed: onPressed,
-            tooltip: label,
+            tooltip: tooltip ?? label,
           ),
         ),
         const SizedBox(height: 4),
@@ -4217,7 +4221,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Tooltip(
-              message: 'Shortcut: Ctrl+q',
+              message: 'Shortcut: Ctrl+s',
               child: ElevatedButton.icon(
               onPressed: invoiceItems.isNotEmpty && !isLoading
                   ? (isEditMode ? _updateInvoice : _createInvoice)
@@ -4245,8 +4249,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 isLoading
                     ? 'Processing...'
                     : (isEditMode
-                        ? 'Update $invoiceType (Shortcut: Ctrl+q)'
-                        : 'Create $invoiceType (Shortcut: Ctrl+q)'),
+                        ? 'Update $invoiceType (Shortcut: Ctrl+s)'
+                        : 'Create $invoiceType (Shortcut: Ctrl+s)'),
                 style:
                     const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
@@ -4266,6 +4270,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             _buildActionButton(
               icon: Icons.picture_as_pdf,
               label: 'Preview',
+              tooltip: 'Preview (Shortcut: Ctrl+o)',
               color: Colors.purple,
               onPressed: _invoice != null
                   ? () => InvoicePdfServices.previewPDF(context, _invoice!)
@@ -4284,6 +4289,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             _buildActionButton(
               icon: Icons.print,
               label: 'Print',
+              tooltip: 'Print (Shortcut: Ctrl+p)',
               color: Colors.blue,
               onPressed: _invoice != null
                   ? () => InvoicePdfServices.generatePDF(context, _invoice!)
@@ -4406,6 +4412,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     required String label,
     required Color color,
     required VoidCallback onPressed,
+    String? tooltip,
   }) {
     return Column(
       children: [
@@ -4420,7 +4427,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             color: color,
             iconSize: 32,
             onPressed: onPressed,
-            tooltip: label,
+            tooltip: tooltip ?? label,
             padding: const EdgeInsets.all(16),
           ),
         ),
@@ -4516,6 +4523,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     _buildSuccessActionButton(
                       icon: Icons.picture_as_pdf,
                       label: 'Preview PDF',
+                      tooltip: 'Preview PDF (Shortcut: Ctrl+o)',
                       color: Colors.purple,
                       onPressed: () =>
                           InvoicePdfServices.previewPDF(context, _invoice!),
@@ -4532,6 +4540,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     _buildSuccessActionButton(
                       icon: Icons.print,
                       label: 'Print PDF',
+                      tooltip: 'Print PDF (Shortcut: Ctrl+p)',
                       color: Colors.blue,
                       onPressed: () =>
                           InvoicePdfServices.generatePDF(context, _invoice!),
@@ -4648,7 +4657,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   onPressed: () => resetValues("Invoice"),
                   icon: const Icon(Icons.add_circle_outline),
                   label: const Text(
-                    'Create New Invoice',
+                    'Create New Invoice (Shortcut: Ctrl+q)',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -4721,9 +4730,12 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     final invoiceDiscountAmount = totals.invoiceDiscountAmount;
     final total = totals.total;
 
+    final bool showingSuccessScreen = !isEditing && _invoice != null;
+
     return CallbackShortcuts(
       bindings: {
-        const SingleActivator(LogicalKeyboardKey.keyQ, control: true): () {
+        const SingleActivator(LogicalKeyboardKey.keyS, control: true): () {
+          if (showingSuccessScreen) return;
           if (invoiceItems.isNotEmpty && !isLoading) {
             widget.invoiceToEdit != null ? _updateInvoice() : _createInvoice();
           } else {
@@ -4732,10 +4744,39 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             );
           }
         },
-        const SingleActivator(LogicalKeyboardKey.keyN, control: true):
-            _showProductPickerDialog,
-        const SingleActivator(LogicalKeyboardKey.keyM, control: true):
-            _addAdHocItemDialog,
+        const SingleActivator(LogicalKeyboardKey.keyQ, control: true): () async {
+          if (showingSuccessScreen)
+          {
+            if(mounted) await resetValues('Invoice');
+          }
+          else if(isEditing)
+          {
+            if (await _confirmLeaveIfDirty() && mounted) {
+              widget.onCreateNewInvoice?.call();
+              await resetValues('Invoice');
+            }
+          }
+          else
+          {
+            if(kDebugMode) print("already in create invoice page !");
+          }
+        },
+        const SingleActivator(LogicalKeyboardKey.keyN, control: true): () {
+          if (showingSuccessScreen) return;
+          _showProductPickerDialog();
+        },
+        const SingleActivator(LogicalKeyboardKey.keyM, control: true): () {
+          if (showingSuccessScreen) return;
+          _addAdHocItemDialog();
+        },
+        const SingleActivator(LogicalKeyboardKey.keyO, control: true): () {
+          if (_invoice == null) return;
+          InvoicePdfServices.previewPDF(context, _invoice!);
+        },
+        const SingleActivator(LogicalKeyboardKey.keyP, control: true): () {
+          if (_invoice == null) return;
+          InvoicePdfServices.generatePDF(context, _invoice!);
+        },
       },
       child: Focus(
         autofocus: true,
@@ -4766,7 +4807,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       }
                     },
                     icon: const Icon(Icons.add, size: 16),
-                    label: const Text('New Invoice',
+                    label: const Text('New Invoice (Shortcut: Ctrl+q)',
                         style: TextStyle(fontSize: 13)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).colorScheme.surfaceContainer,

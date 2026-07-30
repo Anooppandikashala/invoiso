@@ -648,25 +648,26 @@ class ThermalPrinterService {
         {TextAlign align = TextAlign.left,
         bool bold = false,
         double fontSize = itemFontSize,
-        bool needDarkerText = false}) {
+        bool needDarkerText = false,
+        bool isTotal = false}) {
       return Text(
         text,
         textAlign: align,
         style: TextStyle(
-          fontSize: fontSize,
+          fontSize: isTotal ? fontSize + 3 : fontSize,
           fontWeight: bold ? FontWeight.bold : needDarkerText ? FontWeight.w500 : FontWeight.normal,
           color: Colors.black,
         ),
       );
     }
 
-    Widget twoCol(String left, String right, {bool bold = false, bool needDarkerText = false}) {
+    Widget twoCol(String left, String right, {bool bold = false, bool needDarkerText = false, bool isTotal = false}) {
       return Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(child: text(left, bold: bold,needDarkerText: needDarkerText)),
           const SizedBox(width: 6),
-          text(right, bold: bold, align: TextAlign.right,needDarkerText: needDarkerText),
+          text(right, bold: bold, align: TextAlign.right,needDarkerText: needDarkerText,isTotal:isTotal),
         ],
       );
     }
@@ -876,7 +877,7 @@ class ThermalPrinterService {
                 "-$currency ${invoice.invoiceDiscountAmount.toStringAsFixed(2)}"),
               twoCol('TOTAL',
                   '$currency ${(invoice.total + s.previousBalance).toStringAsFixed(2)}',
-                  bold: true),
+                  bold: true,isTotal:true),
 
               if (showTaxSummary) ...[
                 hr(),
