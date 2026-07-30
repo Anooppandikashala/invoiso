@@ -271,12 +271,15 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("PDF Settings"),
-        backgroundColor: Theme.of(context).primaryColor,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor ??
+            Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
       ),
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? null
+          : Colors.grey[50],
       body: LayoutBuilder(
         builder: (context, constraints) {
           final isNarrow = constraints.maxWidth < 760;
@@ -299,7 +302,7 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
                       .toDouble(),
                   child: _buildSettingsPanel(hasUnsavedChange),
                 ),
-                Divider(height: 1, color: Colors.grey[300]),
+                Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
                 Expanded(child: previewPanel),
               ],
             );
@@ -311,7 +314,7 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
                 width: panelWidth,
                 child: _buildSettingsPanel(hasUnsavedChange),
               ),
-              VerticalDivider(width: 1, color: Colors.grey[300]),
+              VerticalDivider(width: 1, color: Theme.of(context).colorScheme.outlineVariant),
               Expanded(child: previewPanel),
             ],
           );
@@ -411,8 +414,8 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).primaryColor,
                 foregroundColor: Colors.white,
-                disabledBackgroundColor: Colors.grey[300],
-                disabledForegroundColor: Colors.grey[500],
+                disabledBackgroundColor: Theme.of(context).colorScheme.outlineVariant,
+                disabledForegroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppBorderRadius.small),
@@ -431,7 +434,7 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
       style: TextStyle(
         fontSize: AppFontSize.xsmall,
         fontWeight: FontWeight.w700,
-        color: Colors.grey[500],
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
         letterSpacing: 0.9,
       ),
     );
@@ -441,9 +444,9 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(AppBorderRadius.small),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -453,7 +456,7 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
             style: TextStyle(
               fontSize: AppFontSize.small,
               fontWeight: FontWeight.w600,
-              color: Colors.grey[700],
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 8),
@@ -465,11 +468,11 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
                   const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                borderSide: BorderSide(color: Colors.grey[300]!),
+                borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                borderSide: BorderSide(color: Colors.grey[300]!),
+                borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
               ),
             ),
             items: PageSize.values
@@ -493,9 +496,9 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(AppBorderRadius.small),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -505,7 +508,7 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
             style: TextStyle(
               fontSize: AppFontSize.small,
               fontWeight: FontWeight.w500,
-              color: Colors.grey[700],
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           Switch(
@@ -522,9 +525,9 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(AppBorderRadius.small),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -534,7 +537,7 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
             style: TextStyle(
               fontSize: AppFontSize.small,
               fontWeight: FontWeight.w600,
-              color: Colors.grey[700],
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 8),
@@ -559,7 +562,7 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
           Text(
             'Table: one line per item (Sl/Name/Qty/Rate/Total). '
             'Detailed: name on its own line, then Qty/Rate/Total below it.',
-            style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+            style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ],
       ),
@@ -570,9 +573,9 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(AppBorderRadius.small),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Row(
         children: [
@@ -585,14 +588,14 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
                   style: TextStyle(
                     fontSize: AppFontSize.small,
                     fontWeight: FontWeight.w600,
-                    color: Colors.grey[700],
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   'Characters trimmed from each line to avoid edge clipping. '
                   'Increase if text runs off the paper edge on your printer.',
-                  style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                  style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ],
             ),
@@ -617,7 +620,7 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                  borderSide: BorderSide(color: Colors.grey[300]!),
+                  borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                 ),
               ),
               onChanged: (val) =>
@@ -663,7 +666,7 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
             'Get a design that matches your brand — colors, fonts, and layout.',
             style: TextStyle(
               fontSize: AppFontSize.xsmall,
-              color: Colors.grey[600],
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               height: 1.4,
             ),
           ),
@@ -766,9 +769,11 @@ class _TemplateListTile extends StatelessWidget {
           decoration: BoxDecoration(
             color: isPreviewed
                 ? primaryColor.withValues(alpha: 0.08)
-                : Colors.white,
+                : Theme.of(context).colorScheme.surfaceContainer,
             border: Border.all(
-              color: isPreviewed ? primaryColor : Colors.grey[300]!,
+              color: isPreviewed
+                  ? primaryColor
+                  : Theme.of(context).colorScheme.outlineVariant,
               width: isPreviewed ? 2 : 1,
             ),
             borderRadius: BorderRadius.circular(AppBorderRadius.small),
@@ -801,8 +806,9 @@ class _TemplateListTile extends StatelessWidget {
                             style: TextStyle(
                               fontSize: AppFontSize.medium,
                               fontWeight: FontWeight.w600,
-                              color:
-                                  isPreviewed ? primaryColor : Colors.black87,
+                              color: isPreviewed
+                                  ? primaryColor
+                                  : Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                         ),
@@ -816,7 +822,7 @@ class _TemplateListTile extends StatelessWidget {
                       description,
                       style: TextStyle(
                         fontSize: AppFontSize.xsmall,
-                        color: Colors.grey[600],
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -827,14 +833,14 @@ class _TemplateListTile extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 5, vertical: 1),
                         decoration: BoxDecoration(
-                          color: Colors.grey[200],
+                          color: Theme.of(context).colorScheme.outlineVariant,
                           borderRadius: BorderRadius.circular(3),
                         ),
                         child: Text(
                           "Default",
                           style: TextStyle(
                             fontSize: AppFontSize.xsmall,
-                            color: Colors.grey[600],
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -904,7 +910,7 @@ class _PreviewPanel extends StatelessWidget {
         Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surfaceContainer,
           child: Wrap(
             spacing: 12,
             runSpacing: 8,
@@ -927,7 +933,7 @@ class _PreviewPanel extends StatelessWidget {
                       description,
                       style: TextStyle(
                         fontSize: AppFontSize.medium,
-                        color: Colors.grey[600],
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -953,7 +959,7 @@ class _PreviewPanel extends StatelessWidget {
             ],
           ),
         ),
-        Divider(height: 1, color: Colors.grey[200]),
+        Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
         // Large preview
         Expanded(
           child: LayoutBuilder(
@@ -1031,9 +1037,9 @@ class _ThemeColorCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(AppBorderRadius.small),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1043,7 +1049,7 @@ class _ThemeColorCard extends StatelessWidget {
             style: TextStyle(
               fontSize: AppFontSize.small,
               fontWeight: FontWeight.w600,
-              color: Colors.grey[700],
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 10),
@@ -1067,7 +1073,9 @@ class _ThemeColorCard extends StatelessWidget {
                         color: color,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: selected ? Colors.black87 : Colors.white,
+                          color: selected
+                              ? Theme.of(context).colorScheme.onSurface
+                              : Theme.of(context).colorScheme.surfaceContainer,
                           width: selected ? 2 : 1,
                         ),
                         boxShadow: [
@@ -1116,7 +1124,7 @@ class _ThemeColorCard extends StatelessWidget {
                     width: 20,
                     height: 20,
                     decoration: BoxDecoration(
-                      color: _colorFromHex(selectedHex) ?? Colors.grey[300]!,
+                      color: _colorFromHex(selectedHex) ?? Theme.of(context).colorScheme.outlineVariant,
                       shape: BoxShape.circle,
                       border: Border.all(
                         color: Colors.black.withValues(alpha: 0.15),
@@ -1141,7 +1149,7 @@ class _ThemeColorCard extends StatelessWidget {
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                borderSide: BorderSide(color: Colors.grey[300]!),
+                borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),

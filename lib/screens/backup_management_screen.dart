@@ -158,7 +158,8 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Backup Management'),
-        backgroundColor: Theme.of(context).primaryColor,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor ??
+            Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
         actionsPadding: EdgeInsets.only(right: 50),
         actions: [

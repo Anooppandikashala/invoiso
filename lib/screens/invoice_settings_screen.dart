@@ -195,10 +195,13 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: Colors.grey[50],
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? null
+            : Theme.of(context).colorScheme.surfaceContainerHighest,
         appBar: AppBar(
           title: const Text('Invoice Settings'),
-          backgroundColor: Theme.of(context).primaryColor,
+          backgroundColor: Theme.of(context).appBarTheme.backgroundColor ??
+              Theme.of(context).primaryColor,
           foregroundColor: Colors.white,
           centerTitle: false,
         ),
@@ -207,10 +210,13 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? null
+          : Theme.of(context).colorScheme.surfaceContainerHighest,
       appBar: AppBar(
         title: const Text('Invoice Settings'),
-        backgroundColor: Theme.of(context).primaryColor,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor ??
+            Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
@@ -220,7 +226,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
           SizedBox(
             width: 240,
             child: Container(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surfaceContainer,
               child: Column(
                 children: [
                   Spacer(),
@@ -274,7 +280,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                 'Add PO number, project code, department, or any custom field.',
                                 style: TextStyle(
                                   fontSize: AppFontSize.xsmall,
-                                  color: Colors.grey[600],
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                   height: 1.4,
                                 ),
                               ),
@@ -337,7 +343,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
               ),
             ),
           ),
-          VerticalDivider(width: 1, color: Colors.grey[200]),
+          VerticalDivider(width: 1, color: Theme.of(context).colorScheme.outlineVariant),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(vertical: 28),
@@ -346,7 +352,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                   constraints: const BoxConstraints(maxWidth: 900),
                   child: Card(
                     elevation: 4,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surfaceContainer,
                     shadowColor: Colors.black.withValues(alpha: 0.1),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -405,7 +411,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                           borderRadius: BorderRadius.circular(
                                               AppBorderRadius.xsmall),
                                           borderSide:
-                                              BorderSide(color: Colors.grey[300]!),
+                                              BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                                         ),
                                         focusedBorder: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(
@@ -416,7 +422,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                           ),
                                         ),
                                         filled: true,
-                                        fillColor: Colors.grey[50],
+                                        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                                         counterText: '',
                                       ),
                                     ),
@@ -441,7 +447,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                                 borderRadius: BorderRadius.circular(
                                                     AppBorderRadius.xsmall),
                                                 borderSide:
-                                                    BorderSide(color: Colors.grey[300]!),
+                                                    BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                                               ),
                                               focusedBorder: OutlineInputBorder(
                                                 borderRadius: BorderRadius.circular(
@@ -452,7 +458,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                                 ),
                                               ),
                                               filled: true,
-                                              fillColor: Colors.grey[50],
+                                              fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                                               counterText: '',
                                               helperText: 'First invoice will start from this number',
                                             ),
@@ -502,7 +508,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                           borderRadius: BorderRadius.circular(
                                               AppBorderRadius.xsmall),
                                           borderSide:
-                                              BorderSide(color: Colors.grey[300]!),
+                                              BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                                         ),
                                         focusedBorder: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(
@@ -513,7 +519,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                           ),
                                         ),
                                         filled: true,
-                                        fillColor: Colors.grey[50],
+                                        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                                       ),
                                       items: const [
                                         DropdownMenuItem(
@@ -546,7 +552,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                           borderRadius: BorderRadius.circular(
                                               AppBorderRadius.xsmall),
                                           borderSide:
-                                              BorderSide(color: Colors.grey[300]!),
+                                              BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                                         ),
                                         focusedBorder: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(
@@ -557,7 +563,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                           ),
                                         ),
                                         filled: true,
-                                        fillColor: Colors.grey[50],
+                                        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                                       ),
                                       items: [
                                         for (final size in LogoSize.values)
@@ -592,7 +598,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                           borderRadius: BorderRadius.circular(
                                               AppBorderRadius.xsmall),
                                           borderSide:
-                                              BorderSide(color: Colors.grey[300]!),
+                                              BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                                         ),
                                         focusedBorder: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(
@@ -603,7 +609,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                           ),
                                         ),
                                         filled: true,
-                                        fillColor: Colors.grey[50],
+                                        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                                         counterText: '',
                                       ),
                                     ),
@@ -626,7 +632,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                           borderRadius: BorderRadius.circular(
                                               AppBorderRadius.xsmall),
                                           borderSide:
-                                              BorderSide(color: Colors.grey[300]!),
+                                              BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                                         ),
                                         focusedBorder: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(
@@ -637,7 +643,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                           ),
                                         ),
                                         filled: true,
-                                        fillColor: Colors.grey[50],
+                                        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                                       ),
                                       items: SupportedCurrencies.all.map((c) {
                                         return DropdownMenuItem<String>(
@@ -675,7 +681,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                           borderRadius: BorderRadius.circular(
                                               AppBorderRadius.xsmall),
                                           borderSide:
-                                              BorderSide(color: Colors.grey[300]!),
+                                              BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                                         ),
                                         focusedBorder: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(
@@ -686,7 +692,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                           ),
                                         ),
                                         filled: true,
-                                        fillColor: Colors.grey[50],
+                                        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                                       ),
                                       items: DateFormatOption.values.map((opt) {
                                         return DropdownMenuItem<DateFormatOption>(
@@ -731,14 +737,14 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                         ),
                                         enabledBorder: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                                          borderSide: BorderSide(color: Colors.grey[300]!),
+                                          borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                                         ),
                                         focusedBorder: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                                           borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 2),
                                         ),
                                         filled: true,
-                                        fillColor: Colors.grey[50],
+                                        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                                         counterText: '',
                                       ),
                                     ),
@@ -751,10 +757,10 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                     width: constraints.maxWidth,
                                     child: Container(
                                       decoration: BoxDecoration(
-                                        color: Colors.grey[50],
+                                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
                                         borderRadius: BorderRadius.circular(
                                             AppBorderRadius.xsmall),
-                                        border: Border.all(color: Colors.grey[300]!),
+                                        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                                       ),
                                       child: SwitchListTile(
                                         title: const Text('Tax Enabled by Default'),
@@ -765,7 +771,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                           Icons.percent_rounded,
                                           color: _showTaxButtonInInvoicePage
                                               ? Theme.of(context).primaryColor
-                                              : Colors.grey,
+                                              : Theme.of(context).colorScheme.onSurfaceVariant,
                                         ),
                                         value: _showTaxButtonInInvoicePage,
                                         onChanged: (val) {
@@ -784,10 +790,10 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                     width: constraints.maxWidth,
                                     child: Container(
                                       decoration: BoxDecoration(
-                                        color: Colors.grey[50],
+                                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
                                         borderRadius: BorderRadius.circular(
                                             AppBorderRadius.xsmall),
-                                        border: Border.all(color: Colors.grey[300]!),
+                                        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                                       ),
                                       child: SwitchListTile(
                                         title: const Text('Show GST Fields'),
@@ -798,7 +804,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                           Icons.receipt_long_rounded,
                                           color: _showGstFields
                                               ? Theme.of(context).primaryColor
-                                              : Colors.grey,
+                                              : Theme.of(context).colorScheme.onSurfaceVariant,
                                         ),
                                         value: _showGstFields,
                                         onChanged: (val) {
@@ -817,10 +823,10 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                     width: constraints.maxWidth,
                                     child: Container(
                                       decoration: BoxDecoration(
-                                        color: Colors.grey[50],
+                                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
                                         borderRadius: BorderRadius.circular(
                                             AppBorderRadius.xsmall),
-                                        border: Border.all(color: Colors.grey[300]!),
+                                        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                                       ),
                                       child: SwitchListTile(
                                         title:
@@ -832,7 +838,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                           Icons.pin_outlined,
                                           color: _fractionalQuantity
                                               ? Theme.of(context).primaryColor
-                                              : Colors.grey,
+                                              : Theme.of(context).colorScheme.onSurfaceVariant,
                                         ),
                                         value: _fractionalQuantity,
                                         onChanged: (val) {
@@ -851,10 +857,10 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                     width: constraints.maxWidth,
                                     child: Container(
                                       decoration: BoxDecoration(
-                                        color: Colors.grey[50],
+                                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
                                         borderRadius: BorderRadius.circular(
                                             AppBorderRadius.xsmall),
-                                        border: Border.all(color: Colors.grey[300]!),
+                                        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                                       ),
                                       child: SwitchListTile(
                                         title: const Text('Show Quantity Field'),
@@ -865,7 +871,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                           Icons.onetwothree_rounded,
                                           color: _showQuantity
                                               ? Theme.of(context).primaryColor
-                                              : Colors.grey,
+                                              : Theme.of(context).colorScheme.onSurfaceVariant,
                                         ),
                                         value: _showQuantity,
                                         onChanged: (val) {
@@ -886,10 +892,10 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                     width: constraints.maxWidth,
                                     child: Container(
                                       decoration: BoxDecoration(
-                                        color: Colors.grey[50],
+                                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
                                         borderRadius: BorderRadius.circular(
                                             AppBorderRadius.xsmall),
-                                        border: Border.all(color: Colors.grey[300]!),
+                                        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                                       ),
                                       child: SwitchListTile(
                                         title: const Text('Show Discount Column'),
@@ -900,7 +906,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                           Icons.discount_outlined,
                                           color: _showDiscount
                                               ? Theme.of(context).primaryColor
-                                              : Colors.grey,
+                                              : Theme.of(context).colorScheme.onSurfaceVariant,
                                         ),
                                         value: _showDiscount,
                                         onChanged: (val) {
@@ -918,10 +924,10 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                     width: constraints.maxWidth,
                                     child: Container(
                                       decoration: BoxDecoration(
-                                        color: Colors.grey[50],
+                                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
                                         borderRadius: BorderRadius.circular(
                                             AppBorderRadius.xsmall),
-                                        border: Border.all(color: Colors.grey[300]!),
+                                        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                                       ),
                                       child: SwitchListTile(
                                         title: const Text('Show Product/Service Tag'),
@@ -932,7 +938,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                           Icons.label_outline,
                                           color: _showTypeTag
                                               ? Theme.of(context).primaryColor
-                                              : Colors.grey,
+                                              : Theme.of(context).colorScheme.onSurfaceVariant,
                                         ),
                                         value: _showTypeTag,
                                         onChanged: (val) {
@@ -950,10 +956,10 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                     width: constraints.maxWidth,
                                     child: Container(
                                       decoration: BoxDecoration(
-                                        color: Colors.grey[50],
+                                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
                                         borderRadius: BorderRadius.circular(
                                             AppBorderRadius.xsmall),
-                                        border: Border.all(color: Colors.grey[300]!),
+                                        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                                       ),
                                       child: SwitchListTile(
                                         title:
@@ -965,7 +971,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                           Icons.account_balance_wallet_outlined,
                                           color: _showPreviousBalance
                                               ? Theme.of(context).primaryColor
-                                              : Colors.grey,
+                                              : Theme.of(context).colorScheme.onSurfaceVariant,
                                         ),
                                         value: _showPreviousBalance,
                                         onChanged: (val) {
@@ -984,10 +990,10 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                     width: constraints.maxWidth,
                                     child: Container(
                                       decoration: BoxDecoration(
-                                        color: Colors.grey[50],
+                                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
                                         borderRadius: BorderRadius.circular(
                                             AppBorderRadius.xsmall),
-                                        border: Border.all(color: Colors.grey[300]!),
+                                        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                                       ),
                                       child: SwitchListTile(
                                         title: const Text('Show Alias Name in PDF'),
@@ -998,7 +1004,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                           Icons.translate_outlined,
                                           color: _showAliasNameInPdf
                                               ? Theme.of(context).primaryColor
-                                              : Colors.grey,
+                                              : Theme.of(context).colorScheme.onSurfaceVariant,
                                         ),
                                         value: _showAliasNameInPdf,
                                         onChanged: (val) {
@@ -1017,10 +1023,10 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                     child: Container(
                                       padding: const EdgeInsets.all(16),
                                       decoration: BoxDecoration(
-                                        color: Colors.grey[50],
+                                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
                                         borderRadius: BorderRadius.circular(
                                             AppBorderRadius.xsmall),
-                                        border: Border.all(color: Colors.grey[300]!),
+                                        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                                       ),
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1030,15 +1036,15 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                                   fontSize: 14,
                                                   fontWeight: FontWeight.w500)),
                                           const SizedBox(height: 4),
-                                          const Text(
+                                          Text(
                                             'Printed on invoices as Authorised Signature',
                                             style: TextStyle(
-                                                fontSize: 12, color: Colors.grey),
+                                                fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                                           ),
-                                          const Text(
+                                          Text(
                                             'PNG, JPG or JPEG — max 2 MB',
                                             style: TextStyle(
-                                                fontSize: 12, color: Colors.grey),
+                                                fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                                           ),
                                           const SizedBox(height: 12),
                                           if (_signatureBase64 != null &&
@@ -1100,10 +1106,10 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                                       borderRadius: BorderRadius.circular(
                                                           AppBorderRadius.xsmall),
                                                       borderSide: BorderSide(
-                                                          color: Colors.grey[300]!),
+                                                          color: Theme.of(context).colorScheme.outlineVariant),
                                                     ),
                                                     filled: true,
-                                                    fillColor: Colors.white,
+                                                    fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                                                   ),
                                                   items: [
                                                     for (final size in SignatureSize.values)
@@ -1135,10 +1141,10 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                                       borderRadius: BorderRadius.circular(
                                                           AppBorderRadius.xsmall),
                                                       borderSide: BorderSide(
-                                                          color: Colors.grey[300]!),
+                                                          color: Theme.of(context).colorScheme.outlineVariant),
                                                     ),
                                                     filled: true,
-                                                    fillColor: Colors.white,
+                                                    fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                                                   ),
                                                   items: const [
                                                     DropdownMenuItem(
@@ -1181,7 +1187,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                           borderRadius: BorderRadius.circular(
                                               AppBorderRadius.xsmall),
                                           borderSide:
-                                              BorderSide(color: Colors.grey[300]!),
+                                              BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                                         ),
                                         focusedBorder: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(
@@ -1192,7 +1198,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                           ),
                                         ),
                                         filled: true,
-                                        fillColor: Colors.grey[50],
+                                        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                                         counterText: '',
                                       ),
                                     ),
@@ -1218,7 +1224,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                           borderRadius: BorderRadius.circular(
                                               AppBorderRadius.xsmall),
                                           borderSide:
-                                              BorderSide(color: Colors.grey[300]!),
+                                              BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                                         ),
                                         focusedBorder: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(
@@ -1229,7 +1235,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                           ),
                                         ),
                                         filled: true,
-                                        fillColor: Colors.grey[50],
+                                        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                                         counterText: '',
                                       ),
                                     ),
@@ -1284,7 +1290,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                             'Add PO number, project code, department, or any custom field.',
                                             style: TextStyle(
                                               fontSize: AppFontSize.xsmall,
-                                              color: Colors.grey[600],
+                                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                                               height: 1.4,
                                             ),
                                           ),

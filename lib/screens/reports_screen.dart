@@ -477,12 +477,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                               child: Text('No customers match this search',
                                   style: TextStyle(
                                       fontSize: 13,
-                                      color: Colors.grey.shade600)),
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
                             )
                           : ListView.separated(
                               itemCount: customers.length,
-                              separatorBuilder: (_, __) => const Divider(
-                                  height: 1, color: Color(0xFFE2E8F0)),
+                              separatorBuilder: (_, __) => Divider(
+                                  height: 1, color: Theme.of(context).colorScheme.outlineVariant),
                               itemBuilder: (context, index) {
                                 final customer = customers[index];
                                 final selected =
@@ -648,7 +648,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     final isCurrentTabLoading = _tabLoading[_selectedIndex] == true;
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: primary,
+        backgroundColor:
+            Theme.of(context).appBarTheme.backgroundColor ?? primary,
         foregroundColor: Colors.white,
         elevation: 0,
         title: const Text('Reports',
@@ -676,11 +677,15 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _buildSidebar(primary),
-          const VerticalDivider(
-              width: 1, thickness: 1, color: Color(0xFFE2E8F0)),
+          VerticalDivider(
+              width: 1,
+              thickness: 1,
+              color: Theme.of(context).colorScheme.outlineVariant),
           Expanded(
             child: Container(
-              color: Colors.white,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Theme.of(context).scaffoldBackgroundColor
+                  : Theme.of(context).colorScheme.surfaceContainer,
               child: isCurrentTabLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _buildContent(),
@@ -694,42 +699,42 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   Widget _buildSidebar(Color primary) {
     return Container(
       width: 192,
-      color: const Color(0xFFF8FAFC),
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 8),
           // ── Nav items ──
           for (int i = 0; i < _navItems.length; i++) _navItem(i, primary),
-          const Padding(
+          Padding(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Divider(height: 1, color: Color(0xFFE2E8F0)),
+            child: Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
           ),
           // ── Currency scope ──
-          const Padding(
+          Padding(
             padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: Text('CURRENCY',
                 style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF94A3B8),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     letterSpacing: 0.8)),
           ),
           _currencyScopeItem(_CurrencyScope.selected, primary),
           _currencyScopeItem(_CurrencyScope.all, primary),
           if (_selectedIndex != 6 && _selectedIndex != 7) ...[
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Divider(height: 1, color: Color(0xFFE2E8F0)),
+              child: Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
             ),
             // ── Period filter ──
-            const Padding(
+            Padding(
               padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
               child: Text('PERIOD',
                   style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF94A3B8),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       letterSpacing: 0.8)),
             ),
             Expanded(
@@ -745,9 +750,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                         padding: const EdgeInsets.fromLTRB(40, 2, 16, 8),
                         child: Text(
                           '${_formatDate(_customFrom!)} –\n${_formatDate(_customTo!)}',
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 11,
-                              color: Color(0xFF64748B),
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                               height: 1.5),
                         ),
                       ),
@@ -776,7 +781,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             Icon(
               sel ? Icons.radio_button_checked : Icons.radio_button_unchecked,
               size: 15,
-              color: sel ? primary : const Color(0xFFCBD5E1),
+              color: sel ? primary : Theme.of(context).colorScheme.outlineVariant,
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -784,8 +789,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   style: TextStyle(
                       fontSize: 13,
                       color: sel
-                          ? const Color(0xFF1E293B)
-                          : const Color(0xFF64748B),
+                          ? Theme.of(context).colorScheme.onSurface
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
                       fontWeight: sel ? FontWeight.w600 : FontWeight.normal)),
             ),
           ],
@@ -815,13 +820,13 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         child: Row(
           children: [
             Icon(sel ? iconFilled : iconOut,
-                size: 18, color: sel ? primary : const Color(0xFF64748B)),
+                size: 18, color: sel ? primary : Theme.of(context).colorScheme.onSurfaceVariant),
             const SizedBox(width: 10),
             Text(label,
                 style: TextStyle(
                     fontSize: 13,
                     fontWeight: sel ? FontWeight.w600 : FontWeight.normal,
-                    color: sel ? primary : const Color(0xFF475569))),
+                    color: sel ? primary : Theme.of(context).colorScheme.onSurfaceVariant)),
           ],
         ),
       ),
@@ -840,14 +845,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             Icon(
               sel ? Icons.radio_button_checked : Icons.radio_button_unchecked,
               size: 15,
-              color: sel ? primary : const Color(0xFFCBD5E1),
+              color: sel ? primary : Theme.of(context).colorScheme.outlineVariant,
             ),
             const SizedBox(width: 8),
             Text(isCustom ? 'Custom…' : p.label,
                 style: TextStyle(
                     fontSize: 13,
                     color:
-                        sel ? const Color(0xFF1E293B) : const Color(0xFF64748B),
+                        sel ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurfaceVariant,
                     fontWeight: sel ? FontWeight.w600 : FontWeight.normal)),
           ],
         ),
@@ -887,10 +892,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     return Row(
       children: [
         Text(text,
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1E293B))),
+                color: Theme.of(context).colorScheme.onSurface)),
         if (trailing != null) ...[const Spacer(), trailing],
       ],
     );
@@ -919,8 +924,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(label,
-                      style: const TextStyle(
-                          fontSize: 12, color: Color(0xFF64748B))),
+                      style: TextStyle(
+                          fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                 ),
               ],
             ),
@@ -958,8 +963,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        border: const Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -967,7 +972,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           Row(
             children: [
               Text('Rows per page:',
-                  style: TextStyle(color: Colors.grey.shade700, fontSize: 13)),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 13)),
               const SizedBox(width: 8),
               DropdownButton<int>(
                 value: pageSize,
@@ -981,7 +986,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               ),
               const SizedBox(width: 16),
               Text('$start – $end of $total',
-                  style: TextStyle(color: Colors.grey.shade700, fontSize: 13)),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 13)),
             ],
           ),
           Row(
@@ -997,7 +1002,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
-                      color: Colors.grey.shade700)),
+                      color: Theme.of(context).colorScheme.onSurface)),
               IconButton(
                 icon: const Icon(Icons.chevron_right),
                 onPressed: currentPage < totalPages - 1
@@ -1018,7 +1023,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       icon: const Icon(Icons.download_outlined, size: 16),
       label: Text(label, style: const TextStyle(fontSize: 12)),
       style: TextButton.styleFrom(
-        foregroundColor: const Color(0xFF64748B),
+        foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       ),
     );
@@ -1060,10 +1065,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.bar_chart_outlined,
-                size: 48, color: Colors.grey.shade300),
+                size: 48, color: Theme.of(context).colorScheme.outlineVariant),
             const SizedBox(height: 12),
             Text(msg,
-                style: TextStyle(color: Colors.grey.shade500, fontSize: 14)),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 14)),
           ],
         ),
       ),
@@ -1148,8 +1153,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     const SizedBox(height: 4),
                     Text(
                       '${_fmtInt.format(_kpi.invoiceCount)} invoice${_kpi.invoiceCount == 1 ? '' : 's'} in period · $_currencyScopeLabel',
-                      style: const TextStyle(
-                          fontSize: 12, color: Color(0xFF64748B)),
+                      style: TextStyle(
+                          fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
                     const SizedBox(height: 20),
                     if (_trend.isEmpty)
@@ -1193,7 +1198,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 color: color, borderRadius: BorderRadius.circular(3))),
         const SizedBox(width: 6),
         Text(label,
-            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+            style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
       ],
     );
   }
@@ -1253,7 +1258,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           drawVerticalLine: false,
           horizontalInterval: maxY == 0 ? 25 : maxY / 4,
           getDrawingHorizontalLine: (_) => FlLine(
-            color: const Color(0xFFE2E8F0),
+            color: Theme.of(context).colorScheme.outlineVariant,
             strokeWidth: 1,
           ),
         ),
@@ -1269,7 +1274,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               reservedSize: 56,
               getTitlesWidget: (value, _) => Text(
                 _abbreviateNum(value),
-                style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
+                style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
             ),
           ),
@@ -1289,8 +1294,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
                       DateFormat('MMM yy').format(dt),
-                      style: const TextStyle(
-                          fontSize: 10, color: Color(0xFF94A3B8)),
+                      style: TextStyle(
+                          fontSize: 10, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
                   );
                 } catch (_) {
@@ -1361,8 +1366,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                               const SizedBox(height: 16),
                               Text(
                                 '${_fmtInt.format(_status.total)} total invoices',
-                                style: const TextStyle(
-                                    fontSize: 12, color: Color(0xFF64748B)),
+                                style: TextStyle(
+                                    fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                               ),
                             ],
                           ),
@@ -1483,12 +1488,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 color: color, borderRadius: BorderRadius.circular(4))),
         const SizedBox(width: 8),
         Text('$label  ',
-            style: const TextStyle(fontSize: 13, color: Color(0xFF1E293B))),
+            style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurface)),
         Text('$count  ($pct%)',
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1E293B))),
+                color: Theme.of(context).colorScheme.onSurface)),
       ],
     );
   }
@@ -1496,7 +1501,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   Widget _agedHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      color: const Color(0xFFF8FAFC),
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Row(
         children: const [
           Expanded(flex: 3, child: _TableHead('Customer')),
@@ -1512,9 +1517,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   Widget _agedRow(AgedReceivable r) {
     final d = r.daysOverdue;
     final (bucketLabel, bucketColor) = r.hasNoDueDate
-        ? ('No Due Date', const Color(0xFF94A3B8))
+        ? ('No Due Date', Theme.of(context).colorScheme.onSurfaceVariant)
         : switch (d) {
-            0 => ('Current', const Color(0xFF64748B)),
+            0 => ('Current', Theme.of(context).colorScheme.onSurfaceVariant),
             <= 30 => ('0–30 days', const Color(0xFF22C55E)),
             <= 60 => ('31–60 days', const Color(0xFFF59E0B)),
             <= 90 => ('61–90 days', const Color(0xFFEF4444)),
@@ -1522,8 +1527,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           };
 
     return Container(
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
@@ -1532,14 +1537,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               flex: 3,
               child: Text(r.customerName,
                   style:
-                      const TextStyle(fontSize: 13, color: Color(0xFF1E293B)),
+                      TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurface),
                   overflow: TextOverflow.ellipsis)),
           Expanded(
               flex: 3,
               child: Text(r.invoiceId,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF64748B),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontFamily: 'monospace'),
                   overflow: TextOverflow.ellipsis)),
           Expanded(
@@ -1555,7 +1560,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               child: Text(r.hasNoDueDate ? '—' : '$d days',
                   textAlign: TextAlign.right,
                   style:
-                      const TextStyle(fontSize: 13, color: Color(0xFF475569)))),
+                      TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant))),
           Expanded(
             flex: 2,
             child: Align(
@@ -1662,7 +1667,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   Widget _taxTableHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      color: const Color(0xFFF8FAFC),
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: const Row(
         children: [
           Expanded(flex: 2, child: _TableHead('Tax Rate (%)')),
@@ -1677,8 +1682,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     final share =
         total == 0 ? '0' : (b.taxCollected / total * 100).toStringAsFixed(1);
     return Container(
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
@@ -1686,22 +1691,22 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           Expanded(
               flex: 2,
               child: Text('${b.rate.toStringAsFixed(0)}%',
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1E293B)))),
+                      color: Theme.of(context).colorScheme.onSurface))),
           Expanded(
               flex: 3,
               child: Text(_money(b.taxCollected),
                   textAlign: TextAlign.right,
                   style:
-                      const TextStyle(fontSize: 14, color: Color(0xFF1E293B)))),
+                      TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurface))),
           Expanded(
               flex: 2,
               child: Text('$share%',
                   textAlign: TextAlign.right,
                   style:
-                      const TextStyle(fontSize: 13, color: Color(0xFF64748B)))),
+                      TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant))),
         ],
       ),
     );
@@ -1709,36 +1714,36 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   Widget _taxTotalRow(double total) {
     return Container(
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: Color(0xFFCBD5E1), width: 1.5)),
-        color: Color(0xFFF8FAFC),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant, width: 1.5)),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
         children: [
-          const Expanded(
+          Expanded(
               flex: 2,
               child: Text('Total',
                   style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E293B)))),
+                      color: Theme.of(context).colorScheme.onSurface))),
           Expanded(
               flex: 3,
               child: Text(_money(total),
                   textAlign: TextAlign.right,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E293B)))),
-          const Expanded(
+                      color: Theme.of(context).colorScheme.onSurface))),
+          Expanded(
               flex: 2,
               child: Text('100%',
                   textAlign: TextAlign.right,
                   style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF64748B)))),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant))),
         ],
       ),
     );
@@ -1791,10 +1796,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       labelStyle: TextStyle(
         fontSize: 12,
         fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-        color: selected ? const Color(0xFF002E78) : const Color(0xFF64748B),
+        color: selected ? const Color(0xFF002E78) : Theme.of(context).colorScheme.onSurfaceVariant,
       ),
       side: BorderSide(
-          color: selected ? const Color(0xFF002E78) : const Color(0xFFE2E8F0)),
+          color: selected ? const Color(0xFF002E78) : Theme.of(context).colorScheme.outlineVariant),
       onSelected: (_) {
         if (!mounted) return;
         setState(() => _customerMode = mode);
@@ -1836,8 +1841,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                         SizedBox(
                           width: 140,
                           child: Text(c.name,
-                              style: const TextStyle(
-                                  fontSize: 13, color: Color(0xFF1E293B)),
+                              style: TextStyle(
+                                  fontSize: 13, color: Theme.of(context).colorScheme.onSurface),
                               overflow: TextOverflow.ellipsis),
                         ),
                         const SizedBox(width: 12),
@@ -1847,7 +1852,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                               Container(
                                 height: 20,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFF1F5F9),
+                                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                               ),
@@ -1947,8 +1952,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                         style: TextStyle(
                           fontSize: 14,
                           color: selectedCustomer == null
-                              ? const Color(0xFF94A3B8)
-                              : const Color(0xFF1E293B),
+                              ? Theme.of(context).colorScheme.onSurfaceVariant
+                              : Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ),
@@ -2023,10 +2028,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           child: Row(
             children: [
               Text(statement.customerName,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E293B))),
+                      color: Theme.of(context).colorScheme.onSurface)),
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -2063,7 +2068,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   Widget _statementSummaryCards(CustomerStatement statement) {
     final cards = [
       _kpiCard('Opening', _statementMoney(statement, statement.openingBalance),
-          const Color(0xFF64748B), Icons.account_balance_wallet),
+          Theme.of(context).colorScheme.onSurfaceVariant, Icons.account_balance_wallet),
       _kpiCard('Invoiced', _statementMoney(statement, statement.invoiced),
           const Color(0xFF002E78), Icons.receipt_long_outlined),
       _kpiCard('Paid', _statementMoney(statement, statement.paid),
@@ -2101,7 +2106,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   Widget _statementTableHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      color: const Color(0xFFF8FAFC),
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: const Row(
         children: [
           SizedBox(width: 48, child: _TableHead('SL')),
@@ -2120,8 +2125,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   Widget _statementRow(
       CustomerStatement statement, int rank, CustomerStatementLine line) {
     return Container(
-      decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: Color(0xFFE2E8F0)))),
+      decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant))),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
       child: Row(
         children: [
@@ -2129,12 +2134,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               width: 48,
               child: Text('$rank',
                   style:
-                      const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)))),
+                      TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant))),
           Expanded(
               flex: 2,
               child: Text(_formatStoredDate(line.date),
                   style:
-                      const TextStyle(fontSize: 12, color: Color(0xFF475569)))),
+                      TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant))),
           Expanded(
               flex: 2,
               child: Text(line.type,
@@ -2147,16 +2152,16 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           Expanded(
               flex: 3,
               child: Text(line.reference,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF64748B),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontFamily: 'monospace'),
                   overflow: TextOverflow.ellipsis)),
           Expanded(
               flex: 4,
               child: Text(line.description,
                   style:
-                      const TextStyle(fontSize: 12, color: Color(0xFF475569)),
+                      TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   overflow: TextOverflow.ellipsis)),
           Expanded(
               flex: 2,
@@ -2164,7 +2169,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   line.debit > 0 ? _statementMoney(statement, line.debit) : '-',
                   textAlign: TextAlign.right,
                   style:
-                      const TextStyle(fontSize: 12, color: Color(0xFF475569)))),
+                      TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant))),
           Expanded(
               flex: 2,
               child: Text(
@@ -2179,7 +2184,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               child: Text(_statementMoney(statement, line.balance),
                   textAlign: TextAlign.right,
                   style:
-                      const TextStyle(fontSize: 12, color: Color(0xFF1E293B)))),
+                      TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface))),
         ],
       ),
     );
@@ -2188,7 +2193,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   Widget _customerTableHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      color: const Color(0xFFF8FAFC),
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: const Row(
         children: [
           SizedBox(width: 48, child: _TableHead('SL')),
@@ -2204,8 +2209,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   Widget _customerRow(int rank, TopCustomer c) {
     return Container(
-      decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: Color(0xFFE2E8F0)))),
+      decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant))),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
         children: [
@@ -2213,25 +2218,25 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               width: 48,
               child: Text('$rank',
                   style:
-                      const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)))),
+                      TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant))),
           Expanded(
               flex: 4,
               child: Text(c.name,
                   style:
-                      const TextStyle(fontSize: 13, color: Color(0xFF1E293B)),
+                      TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurface),
                   overflow: TextOverflow.ellipsis)),
           Expanded(
               flex: 1,
               child: Text('${c.invoiceCount}',
                   textAlign: TextAlign.right,
                   style:
-                      const TextStyle(fontSize: 13, color: Color(0xFF64748B)))),
+                      TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant))),
           Expanded(
               flex: 2,
               child: Text(_money(c.billed),
                   textAlign: TextAlign.right,
                   style:
-                      const TextStyle(fontSize: 13, color: Color(0xFF475569)))),
+                      TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant))),
           Expanded(
               flex: 2,
               child: Text(_money(c.collected),
@@ -2248,7 +2253,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                       fontSize: 13,
                       color: c.outstanding > 0
                           ? const Color(0xFFDC2626)
-                          : const Color(0xFF94A3B8)))),
+                          : Theme.of(context).colorScheme.onSurfaceVariant))),
         ],
       ),
     );
@@ -2302,7 +2307,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                                             : 'Rank: Revenue',
                                         style: const TextStyle(fontSize: 12)),
                                     style: TextButton.styleFrom(
-                                      foregroundColor: const Color(0xFF64748B),
+                                      foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 10, vertical: 6),
                                     ),
@@ -2343,9 +2348,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                                         SizedBox(
                                           width: 160,
                                           child: Text(p.name,
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                   fontSize: 13,
-                                                  color: Color(0xFF1E293B)),
+                                                  color: Theme.of(context).colorScheme.onSurface),
                                               overflow: TextOverflow.ellipsis),
                                         ),
                                         const SizedBox(width: 12),
@@ -2356,7 +2361,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                                                 height: 20,
                                                 decoration: BoxDecoration(
                                                   color:
-                                                      const Color(0xFFF1F5F9),
+                                                      Theme.of(context).colorScheme.surfaceContainerHighest,
                                                   borderRadius:
                                                       BorderRadius.circular(4),
                                                 ),
@@ -2436,7 +2441,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   Widget _productTableHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      color: const Color(0xFFF8FAFC),
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: const Row(
         children: [
           SizedBox(width: 48, child: _TableHead('SL')),
@@ -2453,8 +2458,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   Widget _productRow(int rank, TopProduct p) {
     return Container(
-      decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: Color(0xFFE2E8F0)))),
+      decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant))),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
         children: [
@@ -2462,19 +2467,19 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               width: 48,
               child: Text('$rank',
                   style:
-                      const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)))),
+                      TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant))),
           Expanded(
               flex: 4,
               child: Text(p.name,
                   style:
-                      const TextStyle(fontSize: 13, color: Color(0xFF1E293B)),
+                      TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurface),
                   overflow: TextOverflow.ellipsis)),
           Expanded(
               flex: 2,
               child: Text(_fmtInt.format(p.unitsSold),
                   textAlign: TextAlign.right,
                   style:
-                      const TextStyle(fontSize: 13, color: Color(0xFF64748B)))),
+                      TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant))),
           Expanded(
               flex: 2,
               child: Text(_money(p.revenue),
@@ -2488,7 +2493,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               child: Text(p.discountGiven > 0 ? _money(p.discountGiven) : '—',
                   textAlign: TextAlign.right,
                   style:
-                      const TextStyle(fontSize: 13, color: Color(0xFF64748B)))),
+                      TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant))),
           Expanded(
               flex: 2,
               child: Text(_money(p.profit),
@@ -2504,7 +2509,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               child: Text('${p.marginPercent.toStringAsFixed(0)}%',
                   textAlign: TextAlign.right,
                   style:
-                      const TextStyle(fontSize: 13, color: Color(0xFF64748B)))),
+                      TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant))),
         ],
       ),
     );
@@ -2692,9 +2697,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: sel ? const Color(0xFFEFF6FF) : Colors.transparent,
+          color: sel
+              ? const Color(0xFF1D4ED8).withValues(alpha: 0.12)
+              : Colors.transparent,
           border: Border.all(
-              color: sel ? const Color(0xFF1D4ED8) : const Color(0xFFCBD5E1)),
+              color: sel ? const Color(0xFF1D4ED8) : Theme.of(context).colorScheme.outlineVariant),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(label,
@@ -2702,7 +2709,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 fontSize: 12,
                 fontWeight: sel ? FontWeight.w600 : FontWeight.normal,
                 color:
-                    sel ? const Color(0xFF1D4ED8) : const Color(0xFF64748B))),
+                    sel ? const Color(0xFF1D4ED8) : Theme.of(context).colorScheme.onSurfaceVariant)),
       ),
     );
   }
@@ -2710,7 +2717,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   Widget _dailyTableHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      color: const Color(0xFFF8FAFC),
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: const Row(
         children: [
           Expanded(flex: 2, child: _TableHead('Date')),
@@ -2740,22 +2747,22 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     return InkWell(
       onTap: () => _openDayInInvoiceStatus(d.date),
       child: Container(
-        decoration: const BoxDecoration(
-            border: Border(top: BorderSide(color: Color(0xFFE2E8F0)))),
+        decoration: BoxDecoration(
+            border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant))),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Row(
           children: [
             Expanded(
                 flex: 2,
                 child: Text(_formatStoredDate(d.date),
-                    style: const TextStyle(
-                        fontSize: 13, color: Color(0xFF1E293B)))),
+                    style: TextStyle(
+                        fontSize: 13, color: Theme.of(context).colorScheme.onSurface))),
             Expanded(
                 flex: 1,
                 child: Text(_fmtInt.format(d.invoiceCount),
                     textAlign: TextAlign.right,
-                    style: const TextStyle(
-                        fontSize: 13, color: Color(0xFF64748B)))),
+                    style: TextStyle(
+                        fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant))),
             Expanded(
                 flex: 2,
                 child: Text(_money(d.billed),
@@ -2768,8 +2775,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 flex: 2,
                 child: Text(_money(d.cogs),
                     textAlign: TextAlign.right,
-                    style: const TextStyle(
-                        fontSize: 13, color: Color(0xFF64748B)))),
+                    style: TextStyle(
+                        fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant))),
             Expanded(
                 flex: 2,
                 child: Text(_money(d.profit),
@@ -2784,8 +2791,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 flex: 1,
                 child: Text('${d.marginPercent.toStringAsFixed(0)}%',
                     textAlign: TextAlign.right,
-                    style: const TextStyle(
-                        fontSize: 13, color: Color(0xFF64748B)))),
+                    style: TextStyle(
+                        fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant))),
           ],
         ),
       ),
@@ -2852,7 +2859,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                             'Note: this is a period-level ratio, not individual quote-to-invoice tracking.',
                             style: TextStyle(
                                 fontSize: 13,
-                                color: Colors.grey.shade600,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 height: 1.6),
                           ),
                         ],
@@ -2912,12 +2919,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                 child: Row(
                   children: [
-                    const Icon(Icons.info_outline,
-                        size: 14, color: Color(0xFF94A3B8)),
+                    Icon(Icons.info_outline,
+                        size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     const SizedBox(width: 6),
                     Text('Showing invoices dated $_invoiceStatusRangeLabel',
                         style: TextStyle(
-                            fontSize: 12, color: Colors.grey.shade500)),
+                            fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                   ],
                 ),
               ),
@@ -2997,7 +3004,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           child: _kpiCard(
                               'Unpaid',
                               _fmtInt.format(_invoiceCount('Unpaid')),
-                              const Color(0xFF64748B),
+                              Theme.of(context).colorScheme.onSurfaceVariant,
                               Icons.remove_circle_outline)),
                       const SizedBox(width: 12),
                       Expanded(
@@ -3088,7 +3095,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     final color = switch (f) {
       _InvoiceFilter.paid => const Color(0xFF16A34A),
       _InvoiceFilter.partial => const Color(0xFFF59E0B),
-      _InvoiceFilter.unpaid => const Color(0xFF64748B),
+      _InvoiceFilter.unpaid => Theme.of(context).colorScheme.onSurfaceVariant,
       _InvoiceFilter.overdue => const Color(0xFFDC2626),
       _ => const Color(0xFF002E78),
     };
@@ -3099,9 +3106,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       labelStyle: TextStyle(
         fontSize: 12,
         fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
-        color: sel ? color : const Color(0xFF64748B),
+        color: sel ? color : Theme.of(context).colorScheme.onSurfaceVariant,
       ),
-      side: BorderSide(color: sel ? color : const Color(0xFFE2E8F0)),
+      side: BorderSide(color: sel ? color : Theme.of(context).colorScheme.outlineVariant),
       onSelected: (_) {
         if (!mounted) return;
         setState(() {
@@ -3115,7 +3122,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   Widget _invoiceStatusHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      color: const Color(0xFFF8FAFC),
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: const Row(
         children: [
           SizedBox(width: 32, child: _TableHead('#')),
@@ -3132,10 +3139,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   Widget _invoiceStatusRow(int rank, InvoiceStatusRow r) {
-    final statusColor = _statusColors[r.status] ?? const Color(0xFF64748B);
+    final statusColor = _statusColors[r.status] ?? Theme.of(context).colorScheme.onSurfaceVariant;
     return Container(
-      decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: Color(0xFFE2E8F0)))),
+      decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant))),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
       child: Row(
         children: [
@@ -3143,32 +3150,32 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               width: 32,
               child: Text('$rank',
                   style:
-                      const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)))),
+                      TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant))),
           Expanded(
               flex: 2,
               child: Text(_formatStoredDate(r.date),
                   style:
-                      const TextStyle(fontSize: 12, color: Color(0xFF475569)))),
+                      TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant))),
           Expanded(
               flex: 3,
               child: Text(r.id,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF64748B),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontFamily: 'monospace'),
                   overflow: TextOverflow.ellipsis)),
           Expanded(
               flex: 4,
               child: Text(r.customerName,
                   style:
-                      const TextStyle(fontSize: 13, color: Color(0xFF1E293B)),
+                      TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurface),
                   overflow: TextOverflow.ellipsis)),
           Expanded(
               flex: 2,
               child: Text(_money(r.total),
                   textAlign: TextAlign.right,
                   style:
-                      const TextStyle(fontSize: 13, color: Color(0xFF475569)))),
+                      TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant))),
           Expanded(
               flex: 2,
               child: Text(_money(r.paid),
@@ -3183,7 +3190,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                       fontSize: 13,
                       color: r.outstanding > 0
                           ? const Color(0xFFDC2626)
-                          : const Color(0xFF94A3B8)))),
+                          : Theme.of(context).colorScheme.onSurfaceVariant))),
           Expanded(
               flex: 2,
               child: Align(
@@ -3244,10 +3251,10 @@ class _TableHead extends StatelessWidget {
     return Text(
       text.toUpperCase(),
       textAlign: right ? TextAlign.right : TextAlign.left,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 11,
         fontWeight: FontWeight.bold,
-        color: Color(0xFF94A3B8),
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
         letterSpacing: 0.5,
       ),
     );

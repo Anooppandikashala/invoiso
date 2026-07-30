@@ -317,7 +317,7 @@ class _CustomerManagementScreenState extends ConsumerState<CustomerManagementScr
         prefixIcon: Icon(icon),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         filled: readOnly,
-        fillColor: readOnly ? Colors.grey.shade100 : null,
+        fillColor: readOnly ? Theme.of(context).colorScheme.surfaceContainerHighest : null,
       ),
       validator: (value) {
         if (label == 'Name' && (value == null || value.trim().isEmpty)) {
@@ -412,7 +412,7 @@ class _CustomerManagementScreenState extends ConsumerState<CustomerManagementScr
                 const SizedBox(height: 12),
                 // Columns table
                 Table(
-                  border: TableBorder.all(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(6)),
+                  border: TableBorder.all(color: Theme.of(context).colorScheme.outlineVariant, borderRadius: BorderRadius.circular(6)),
                   columnWidths: const {
                     0: FlexColumnWidth(1.4),
                     1: FlexColumnWidth(0.7),
@@ -420,27 +420,27 @@ class _CustomerManagementScreenState extends ConsumerState<CustomerManagementScr
                   },
                   children: [
                     TableRow(
-                      decoration: BoxDecoration(color: Colors.grey.shade100),
+                      decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest),
                       children: const [
                         _TableHeader('Column'),
                         _TableHeader('Required'),
                         _TableHeader('Description'),
                       ],
                     ),
-                    _csvRuleRow('name',          'Yes', 'Customer full name'),
-                    _csvRuleRow('email',         'No',  'Email address'),
-                    _csvRuleRow('phone',         'No',  'Phone number'),
-                    _csvRuleRow('address',       'No',  'Full address'),
-                    _csvRuleRow('business_name', 'No',  'Company / business name'),
-                    _csvRuleRow('tax_number',    'No',  'Tax / VAT / GSTIN number'),
+                    _csvRuleRow(context, 'name',          'Yes', 'Customer full name'),
+                    _csvRuleRow(context, 'email',         'No',  'Email address'),
+                    _csvRuleRow(context, 'phone',         'No',  'Phone number'),
+                    _csvRuleRow(context, 'address',       'No',  'Full address'),
+                    _csvRuleRow(context, 'business_name', 'No',  'Company / business name'),
+                    _csvRuleRow(context, 'tax_number',    'No',  'Tax / VAT / GSTIN number'),
                   ],
                 ),
                 const SizedBox(height: 16),
                 // Notes
-                _ruleNote(Icons.info_outline, 'Maximum $_csvMaxRows rows per import.'),
-                _ruleNote(Icons.info_outline, 'Duplicates are detected by email or phone. You will be asked to overwrite or skip each one.'),
-                _ruleNote(Icons.info_outline, 'Rows missing a name are skipped and reported at the end.'),
-                _ruleNote(Icons.info_outline, 'UTF-8 encoding recommended. Excel BOM is handled automatically.'),
+                _ruleNote(context, Icons.info_outline, 'Maximum $_csvMaxRows rows per import.'),
+                _ruleNote(context, Icons.info_outline, 'Duplicates are detected by email or phone. You will be asked to overwrite or skip each one.'),
+                _ruleNote(context, Icons.info_outline, 'Rows missing a name are skipped and reported at the end.'),
+                _ruleNote(context, Icons.info_outline, 'UTF-8 encoding recommended. Excel BOM is handled automatically.'),
                 const SizedBox(height: 16),
                 OutlinedButton.icon(
                   onPressed: () async {
@@ -470,7 +470,7 @@ class _CustomerManagementScreenState extends ConsumerState<CustomerManagementScr
     if (proceed == true) await _importFromCSV();
   }
 
-  static TableRow _csvRuleRow(String col, String req, String desc) {
+  static TableRow _csvRuleRow(BuildContext context, String col, String req, String desc) {
     return TableRow(
       children: [
         Padding(
@@ -484,7 +484,7 @@ class _CustomerManagementScreenState extends ConsumerState<CustomerManagementScr
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: req == 'Yes' ? Colors.red.shade700 : Colors.grey.shade600,
+              color: req == 'Yes' ? Colors.red.shade700 : Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ),
@@ -496,7 +496,7 @@ class _CustomerManagementScreenState extends ConsumerState<CustomerManagementScr
     );
   }
 
-  static Widget _ruleNote(IconData icon, String text) {
+  static Widget _ruleNote(BuildContext context, IconData icon, String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
@@ -504,7 +504,7 @@ class _CustomerManagementScreenState extends ConsumerState<CustomerManagementScr
         children: [
           Icon(icon, size: 15, color: Colors.blueGrey),
           const SizedBox(width: 6),
-          Expanded(child: Text(text, style: const TextStyle(fontSize: 12, color: Colors.black87))),
+          Expanded(child: Text(text, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface))),
         ],
       ),
     );
@@ -919,7 +919,8 @@ class _CustomerManagementScreenState extends ConsumerState<CustomerManagementScr
     return Scaffold(
       appBar: AppBar(
         title: const Text('Customer Management'),
-        backgroundColor: Theme.of(context).primaryColor,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor ??
+            Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
@@ -1214,7 +1215,7 @@ class _CustomerManagementScreenState extends ConsumerState<CustomerManagementScr
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
                 filled: true,
-                fillColor: Colors.grey.shade50,
+                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
               ),
               onChanged: (value) {
                 if(!mounted) return;
@@ -1229,9 +1230,9 @@ class _CustomerManagementScreenState extends ConsumerState<CustomerManagementScr
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
+              border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-              color: Colors.grey.shade50,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
             ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
@@ -1269,18 +1270,18 @@ class _CustomerManagementScreenState extends ConsumerState<CustomerManagementScr
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.person_off, size: 80, color: Colors.grey.shade300),
+          Icon(Icons.person_off, size: 80, color: Theme.of(context).colorScheme.outlineVariant),
           const SizedBox(height: 16),
           Text(
             'No customers found',
-            style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
+            style: TextStyle(fontSize: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
           const SizedBox(height: 8),
           Text(
             _searchQuery.isEmpty
                 ? 'Add your first customer to get started'
                 : 'Try adjusting your search',
-            style: TextStyle(color: Colors.grey.shade500),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ],
       ),
@@ -1309,7 +1310,7 @@ class _CustomerManagementScreenState extends ConsumerState<CustomerManagementScr
         final serial = (_currentPage * _pageSize) + index + 1;
         return DataRow(
           color: WidgetStateProperty.all(
-            index.isEven ? Colors.transparent : Colors.grey.shade50,
+            index.isEven ? Colors.transparent : Theme.of(context).colorScheme.surfaceContainerHighest,
           ),
           cells: [
             DataCell(Text(serial.toString())),
@@ -1365,7 +1366,7 @@ class _CustomerManagementScreenState extends ConsumerState<CustomerManagementScr
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(16),
           bottomRight: Radius.circular(16),
@@ -1376,7 +1377,7 @@ class _CustomerManagementScreenState extends ConsumerState<CustomerManagementScr
         children: [
           Row(
             children: [
-              Text('Rows per page:', style: TextStyle(color: Colors.grey.shade700, fontSize: 13)),
+              Text('Rows per page:', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 13)),
               const SizedBox(width: 8),
               DropdownButton<int>(
                 value: _pageSize,
@@ -1393,7 +1394,7 @@ class _CustomerManagementScreenState extends ConsumerState<CustomerManagementScr
               const SizedBox(width: 16),
               Text(
                 'Showing ${_currentPage * _pageSize + 1} - ${(_currentPage * _pageSize + _pageSize).clamp(0, _filteredCustomers.length)} of ${_filteredCustomers.length}',
-                style: TextStyle(color: Colors.grey.shade700),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
               ),
             ],
           ),
@@ -1960,7 +1961,7 @@ class _TableHeader extends StatelessWidget {
 //                                 color: WidgetStateProperty.resolveWith<Color>(
 //                                   (Set<WidgetState> states) {
 //                                     return (index + 1).isEven
-//                                         ? Colors.grey.shade200
+//                                         ? Theme.of(context).colorScheme.outlineVariant
 //                                         : Colors.white;
 //                                   },
 //                                 ),

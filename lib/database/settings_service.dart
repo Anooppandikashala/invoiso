@@ -294,4 +294,13 @@ class SettingsService {
     final val = await getSetting(SettingKey.showTaxButtonInInvoicePage);
     return val != 'false';
   }
+
+  static Future<String> getThemeMode() async {
+    final val = await getSetting(SettingKey.themeMode);
+    return val ?? 'system';
+  }
+
+  static Future<void> setThemeMode(String mode) async {
+    await setSetting(SettingKey.themeMode, mode);
+  }
 }
