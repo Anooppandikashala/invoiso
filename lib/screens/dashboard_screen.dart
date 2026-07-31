@@ -408,6 +408,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               ),
                             ),
                             Tooltip(
+                              message: 'Support',
+                              child: InkWell(
+                                onTap: () => launchUrl(Uri.parse(AppConfig.supportForm), mode: LaunchMode.externalApplication),
+                                borderRadius: BorderRadius.circular(6),
+                                child: Padding(
+                                  padding: EdgeInsets.all(6),
+                                  child: Icon(Icons.support_agent_outlined,
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant, size: 18),
+                                ),
+                              ),
+                            ),
+                            Tooltip(
                               message: 'Logout',
                               child: InkWell(
                                 onTap: () =>  _logoutAndResetSession(),
@@ -455,6 +467,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                   color: primary,
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Center(
+                        child: Tooltip(
+                          message: 'Support',
+                          child: InkWell(
+                            onTap: () => launchUrl(Uri.parse(AppConfig.supportForm), mode: LaunchMode.externalApplication),
+                            borderRadius: BorderRadius.circular(6),
+                            child: Padding(
+                              padding: EdgeInsets.all(6),
+                              child: Icon(Icons.support_agent_outlined,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant, size: 18),
                             ),
                           ),
                         ),
