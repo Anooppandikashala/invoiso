@@ -65,7 +65,8 @@ enum SettingKey {
   showAliasNameInPdf, // whether to print a product's local-language alias name instead of its actual name on PDFs (default false)
   showTaxButtonInInvoicePage,
   productColumnsConfig, // JSON ProductColumnsConfig — which optional product fields (and invoice extra cost) are visible/editable
-  themeMode // app theme: 'light' | 'dark' | 'system'
+  themeMode, // app theme: 'light' | 'dark' | 'system'
+  shortcutsBannerDismissed, // '1' once user dismisses the keyboard-shortcuts discovery banner
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -167,6 +168,8 @@ extension SettingKeyExtension on SettingKey {
         return 'product_columns_config';
       case SettingKey.themeMode:
         return 'theme_mode';
+      case SettingKey.shortcutsBannerDismissed:
+        return 'shortcuts_banner_dismissed';
     }
   }
 }

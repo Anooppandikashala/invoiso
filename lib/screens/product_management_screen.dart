@@ -17,7 +17,7 @@ import 'package:invoiso/common.dart';
 import 'package:invoiso/models/product.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/utils/formatters.dart';
-import 'package:invoiso/screens/product_columns_settings_screen.dart';
+import 'package:invoiso/screens/settings/product_columns_settings_screen.dart';
 
 class ProductManagementScreen extends ConsumerStatefulWidget {
   final User user;

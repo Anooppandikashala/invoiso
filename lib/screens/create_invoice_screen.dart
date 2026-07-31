@@ -749,6 +749,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 if (_showQuantity) ...[
                   TextField(
                     controller: quantityController,
+                    autofocus: true,
                     decoration: InputDecoration(
                       labelText: _quantityLabel.trim().isNotEmpty
                           ? _quantityLabel.trim()
@@ -807,6 +808,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 const SizedBox(height: 16),
                 TextField(
                   controller: unitPriceController,
+                  autofocus: !_showQuantity,
                   decoration: InputDecoration(
                     labelText: 'Unit Price (override)',
                     helperText: 'Default: $_currencySymbol${product.price}',
@@ -1591,6 +1593,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 ],
                 TextField(
                   controller: nameController,
+                  autofocus: true,
                   decoration: InputDecoration(
                     labelText: 'Item Name',
                     border: OutlineInputBorder(

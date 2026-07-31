@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:invoiso/services/backend_services.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show LogicalKeyboardKey, KeyDownEvent;
 import 'package:flutter_thermal_printer/flutter_thermal_printer.dart';
 import 'package:flutter_thermal_printer/network/network_print_result.dart';
 import 'package:flutter_thermal_printer/utils/printer.dart';
@@ -86,6 +87,8 @@ class ThermalPrinterService {
 
     var useTextMode = false;
     var showDummyPrinter = false;
+    var selectedIndex = 0;
+    final listFocusNode = FocusNode();
     final dummyPrinter = Printer(
       address: 'DUMMY-TEST-PRINTER',
       name: 'Test Printer (dummy)',
@@ -183,86 +186,126 @@ class ThermalPrinterService {
                       },
                     );
                   }
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: discovered
-                        .map((p) {
-                          final isLastUsed = p.address == effectiveLastUsedAddress;
-                          return ListTile(
-                              dense: true,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                              tileColor: isLastUsed
-                                  ? Colors.green.withValues(alpha: 0.08)
-                                  : null,
-                              shape: isLastUsed
-                                  ? RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(6),
-                                      side: BorderSide(
-                                          color: Colors.green.withValues(alpha: 0.4)),
-                                    )
-                                  : null,
-                              leading: isLastUsed
-                                  ? const Icon(Icons.check_circle,
-                                      color: Colors.green, size: 20)
-                                  : const SizedBox(width: 20),
-                              title: Text(p.name ?? 'Unknown printer'),
-                              subtitle: isLastUsed
-                                  ? const Text('Last used',
-                                      style: TextStyle(
-                                          fontSize: 11,
-                                          color: Colors.green,
-                                          fontWeight: FontWeight.w600))
-                                  : null,
-                              onTap: () async {
-                                Navigator.pop(dialogContext);
-                                if (kDebugMode && p.address == dummyPrinter.address) {
-                                  // Dummy entry — just for checking the
-                                  // "Last used" highlight UI, no real device
-                                  // to print to.
-                                  ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                                    const SnackBar(
-                                        content: Text(
-                                            'Dummy printer tapped — highlight UI check only, not a real print.')),
-                                  );
-                                  return;
-                                }
-                                _ReceiptSettings settings;
-                                try {
-                                  settings = await _fetchReceiptSettings(invoice);
-                                } catch (e) {
-                                  if (kDebugMode) print(e);
-                                  if (!context.mounted) return;
-                                  ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                                    SnackBar(content: Text('Print failed: $e')),
-                                  );
-                                  return;
-                                }
-                                if (!context.mounted) return;
-                                // useTextMode (debug-only) forces plain
-                                // ESC/POS text regardless of content, for
-                                // manually testing that path. Otherwise
-                                // auto-pick: image widget only when the
-                                // receipt actually has non-Latin1 text.
-                                final useImage = useTextMode ? false : true;
-                                // TODO - We can use this later if any user complaint about the printing speed
-                                //_receiptHasNonLatin1(invoice, settings);
-                                if (useImage) {
-                                  await _printToDevice(
-                                      context: context,
-                                      device: p,
-                                      invoice: invoice,
-                                      settingsOverride: settings);
-                                } else {
-                                  await _printToDeviceText(
-                                      context: context,
-                                      device: p,
-                                      invoice: invoice,
-                                      settingsOverride: settings);
-                                }
-                              },
-                            );
-                        })
-                        .toList(),
+                  if (selectedIndex >= discovered.length) selectedIndex = 0;
+
+                  Future<void> selectPrinter(Printer p) async {
+                    Navigator.pop(dialogContext);
+                    if (kDebugMode && p.address == dummyPrinter.address) {
+                      // Dummy entry — just for checking the
+                      // "Last used" highlight UI, no real device
+                      // to print to.
+                      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                        const SnackBar(
+                            content: Text(
+                                'Dummy printer tapped — highlight UI check only, not a real print.')),
+                      );
+                      return;
+                    }
+                    _ReceiptSettings settings;
+                    try {
+                      settings = await _fetchReceiptSettings(invoice);
+                    } catch (e) {
+                      if (kDebugMode) print(e);
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                        SnackBar(content: Text('Print failed: $e')),
+                      );
+                      return;
+                    }
+                    if (!context.mounted) return;
+                    // useTextMode (debug-only) forces plain
+                    // ESC/POS text regardless of content, for
+                    // manually testing that path. Otherwise
+                    // auto-pick: image widget only when the
+                    // receipt actually has non-Latin1 text.
+                    final useImage = useTextMode ? false : true;
+                    // TODO - We can use this later if any user complaint about the printing speed
+                    //_receiptHasNonLatin1(invoice, settings);
+                    if (useImage) {
+                      await _printToDevice(
+                          context: context,
+                          device: p,
+                          invoice: invoice,
+                          settingsOverride: settings);
+                    } else {
+                      await _printToDeviceText(
+                          context: context,
+                          device: p,
+                          invoice: invoice,
+                          settingsOverride: settings);
+                    }
+                  }
+
+                  return Focus(
+                    focusNode: listFocusNode,
+                    autofocus: true,
+                    onKeyEvent: (node, event) {
+                      if (event is! KeyDownEvent) return KeyEventResult.ignored;
+                      if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+                        setState(() =>
+                            selectedIndex = (selectedIndex + 1) % discovered.length);
+                        return KeyEventResult.handled;
+                      }
+                      if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+                        setState(() => selectedIndex =
+                            (selectedIndex - 1 + discovered.length) % discovered.length);
+                        return KeyEventResult.handled;
+                      }
+                      if (event.logicalKey == LogicalKeyboardKey.enter ||
+                          event.logicalKey == LogicalKeyboardKey.numpadEnter) {
+                        unawaited(selectPrinter(discovered[selectedIndex]));
+                        return KeyEventResult.handled;
+                      }
+                      return KeyEventResult.ignored;
+                    },
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: discovered
+                          .asMap()
+                          .entries
+                          .map((entry) {
+                            final index = entry.key;
+                            final p = entry.value;
+                            final isLastUsed = p.address == effectiveLastUsedAddress;
+                            final isKeyboardSelected = index == selectedIndex;
+                            return ListTile(
+                                dense: true,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                                selected: isKeyboardSelected,
+                                selectedTileColor:
+                                    Theme.of(context).primaryColor.withValues(alpha: 0.08),
+                                tileColor: isLastUsed
+                                    ? Colors.green.withValues(alpha: 0.08)
+                                    : null,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                  side: isKeyboardSelected
+                                      ? BorderSide(color: Theme.of(context).primaryColor, width: 1.5)
+                                      : isLastUsed
+                                          ? BorderSide(
+                                              color: Colors.green.withValues(alpha: 0.4))
+                                          : BorderSide.none,
+                                ),
+                                leading: isLastUsed
+                                    ? const Icon(Icons.check_circle,
+                                        color: Colors.green, size: 20)
+                                    : const SizedBox(width: 20),
+                                title: Text(p.name ?? 'Unknown printer'),
+                                subtitle: isLastUsed
+                                    ? const Text('Last used',
+                                        style: TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.green,
+                                            fontWeight: FontWeight.w600))
+                                    : null,
+                                onTap: () {
+                                  setState(() => selectedIndex = index);
+                                  unawaited(selectPrinter(p));
+                                },
+                              );
+                          })
+                          .toList(),
+                    ),
                   );
                 },
               ),
@@ -290,6 +333,7 @@ class ThermalPrinterService {
         ),
       ),
     );
+    listFocusNode.dispose();
   }
 
   static Future<void> _printToDevice({

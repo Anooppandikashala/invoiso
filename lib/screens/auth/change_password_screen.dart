@@ -4,7 +4,7 @@ import 'package:invoiso/constants.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/utils/password_utils.dart';
-import 'dashboard_screen.dart';
+import '../dashboard_screen.dart';
 
 class ChangePasswordScreen extends ConsumerStatefulWidget {
   final User user;
