@@ -232,6 +232,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   AppConfig.version,
                   style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
+                const SizedBox(height: 8),
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () => launchUrl(Uri.parse(AppConfig.supportForm), mode: LaunchMode.externalApplication),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.support_agent_outlined, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Need help? Contact Support',
+                          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant, decoration: TextDecoration.underline),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
