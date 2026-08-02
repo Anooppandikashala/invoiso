@@ -142,14 +142,6 @@ pw.MultiPage buildExecutiveTemplate(
             children: [
               if (logoImage != null && logoPosition == LogoPosition.right)
                 buildCompanyLogo(logoImage, size: logoSizePx),
-              pw.Text(
-                (invoice.invoiceTitle ?? invoice.type).toUpperCase(),
-                style: pw.TextStyle(
-                  fontSize: 20,
-                  fontWeight: pw.FontWeight.bold,
-                  color: accentColor,
-                ),
-              ),
               pw.SizedBox(height: 6),
               pw.Text('# $invoicePrefix${invoice.invoiceNumber ?? invoice.id}',
                   style: pw.TextStyle(
@@ -163,7 +155,16 @@ pw.MultiPage buildExecutiveTemplate(
           ),
         ],
       ),
-      pw.SizedBox(height: 15),
+      pw.SizedBox(height: 3),
+      pw.Center(child: pw.Text(
+        (invoice.invoiceTitle ?? invoice.type).toUpperCase(),
+        style: pw.TextStyle(
+          fontSize: 12,
+          fontWeight: pw.FontWeight.bold,
+          color: accentColor,
+        ),
+      ),),
+      pw.SizedBox(height: 3),
       pw.Row(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [

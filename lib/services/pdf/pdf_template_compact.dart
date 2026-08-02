@@ -55,11 +55,15 @@ pw.MultiPage buildCompactTemplate(
       : (8 * fontScale).clamp(4.0, 8.0);
   final double totalsFontSize = 10 * fontScale;
   final double headerFont = 13 * fontScale;
-  final double labelFont = 14 * fontScale;
+  final double labelFont = 8 * fontScale;
   final double addressFont = 8 * fontScale;
   final double sectionHeaderFont = 8 * fontScale;
   final double bodyFont = 9 * fontScale;
   final double pageMargin = pageFormat == PdfPageFormat.a6 ? 16.0 : 20.0;
+
+  final title = (invoice.invoiceTitle?.trim().isNotEmpty ?? false)
+      ? invoice.invoiceTitle!.toUpperCase()
+      : invoice.type.toUpperCase();
 
   final totalQty = showTotalQuantity
       ? invoice.items.fold<double>(0, (s, i) => s + i.quantity)
@@ -101,6 +105,14 @@ pw.MultiPage buildCompactTemplate(
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
+                pw.Text(
+                  title,
+                  style: pw.TextStyle(
+                    fontSize: labelFont,
+                    fontWeight: pw.FontWeight.bold,
+                    color: accentColor,
+                  ),
+                ),
                 pw.Row(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
@@ -137,14 +149,6 @@ pw.MultiPage buildCompactTemplate(
                                     fontSize: addressFont,
                                     color: PdfColors.grey700)),
                         ],
-                      ),
-                    ),
-                    pw.Text(
-                      invoice.invoiceTitle ?? invoice.type,
-                      style: pw.TextStyle(
-                        fontSize: labelFont,
-                        fontWeight: pw.FontWeight.bold,
-                        color: accentColor,
                       ),
                     ),
                   ],

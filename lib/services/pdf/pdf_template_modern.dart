@@ -43,6 +43,10 @@ pw.MultiPage buildModernTemplate(
       signatureBytes != null ? pw.MemoryImage(signatureBytes) : null;
   final thankyouNote = thankYouNote;
 
+  final title = (invoice.invoiceTitle?.trim().isNotEmpty ?? false)
+      ? invoice.invoiceTitle!.toUpperCase()
+      : invoice.type.toUpperCase();
+
   return pw.MultiPage(
     pageFormat: pageFormat,
     theme: pdfTheme,
@@ -118,7 +122,9 @@ pw.MultiPage buildModernTemplate(
           ],
         ),
       ),
-
+      pw.SizedBox(height: 2),
+      pw.Center(child: pw.Text(title,
+        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12),),),
       pw.Padding(
         padding: pw.EdgeInsets.fromLTRB(
             PdfLayout.defaultHMargin, 8, PdfLayout.defaultHMargin, 8),
@@ -164,7 +170,7 @@ pw.MultiPage buildModernTemplate(
             pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.end,
               children: [
-                pw.Text("${invoice.invoiceTitle ?? invoice.type} #: $invoicePrefix${invoice.invoiceNumber ?? invoice.id}",
+                pw.Text("#: $invoicePrefix${invoice.invoiceNumber ?? invoice.id}",
                     style: pw.TextStyle(
                         fontWeight: pw.FontWeight.bold, fontSize: 12)),
                 pw.Text("Date: ${formatPdfDate(invoice.date, datePattern)}",

@@ -43,6 +43,10 @@ pw.MultiPage buildMinimalTemplate(
       signatureBytes != null ? pw.MemoryImage(signatureBytes) : null;
   final thankyouNote = thankYouNote;
 
+  final title = (invoice.invoiceTitle?.trim().isNotEmpty ?? false)
+      ? invoice.invoiceTitle!.toUpperCase()
+      : invoice.type.toUpperCase();
+
   return pw.MultiPage(
     pageFormat: pageFormat,
     theme: pdfTheme,
@@ -66,11 +70,6 @@ pw.MultiPage buildMinimalTemplate(
             pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text("${invoice.invoiceTitle ?? invoice.type} #: ",
-                    style: pw.TextStyle(
-                        fontWeight: pw.FontWeight.bold,
-                        fontSize: 10,
-                        color: accentColor)),
                 pw.Text("$invoicePrefix${invoice.invoiceNumber ?? invoice.id}",
                     style: const pw.TextStyle(fontSize: 12)),
                 pw.SizedBox(height: 5)
@@ -110,11 +109,6 @@ pw.MultiPage buildMinimalTemplate(
             pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text("${invoice.invoiceTitle ?? invoice.type} #: ",
-                    style: pw.TextStyle(
-                        fontWeight: pw.FontWeight.bold,
-                        fontSize: 10,
-                        color: accentColor)),
                 pw.Text("$invoicePrefix${invoice.invoiceNumber ?? invoice.id}",
                     style: const pw.TextStyle(fontSize: 12)),
                 pw.SizedBox(height: 5),
@@ -143,8 +137,12 @@ pw.MultiPage buildMinimalTemplate(
         ),
       pw.SizedBox(height: 5),
       pw.Divider(thickness: 0.5, color: PdfColors.grey400),
-      pw.SizedBox(height: 5),
-
+      pw.SizedBox(height: 2),
+      pw.Center(child: pw.Text(title,
+          style: pw.TextStyle(
+              fontWeight: pw.FontWeight.bold,
+              fontSize: 12,
+              color: accentColor)),),
       pw.Row(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
