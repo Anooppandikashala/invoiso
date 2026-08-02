@@ -250,6 +250,32 @@ class SettingsService {
     return getSetting(SettingKey.signatureImage);
   }
 
+  static Future<void> setWatermarkImage(String base64Image) async {
+    await setSetting(SettingKey.watermarkImage, base64Image);
+  }
+
+  static Future<String?> getWatermarkImage() async {
+    return getSetting(SettingKey.watermarkImage);
+  }
+
+  static Future<void> setWatermarkOpacity(double opacity) async {
+    await setSetting(SettingKey.watermarkOpacity, opacity.toString());
+  }
+
+  static Future<double> getWatermarkOpacity() async {
+    final val = await getSetting(SettingKey.watermarkOpacity);
+    return val != null ? double.tryParse(val) ?? 0.12 : 0.12;
+  }
+
+  static Future<void> setDefaultInvoiceTitle(String? title) async {
+    await setSetting(SettingKey.defaultInvoiceTitle, title ?? '');
+  }
+
+  static Future<String?> getDefaultInvoiceTitle() async {
+    final val = await getSetting(SettingKey.defaultInvoiceTitle);
+    return (val == null || val.isEmpty) ? null : val;
+  }
+
   static Future<String> getSignaturePosition() async {
     return await getSetting(SettingKey.signaturePosition) ?? 'left';
   }

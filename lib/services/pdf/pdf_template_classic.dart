@@ -34,6 +34,8 @@ pw.MultiPage buildClassicTemplate(
   double previousBalanceDue = 0.0,
   PdfPageFormat pageFormat = PdfPageFormat.a4,
   pw.ThemeData? pdfTheme,
+  Uint8List? watermarkBytes,
+  double watermarkOpacity = 0.12,
 }) {
   final accentColor = themeColor ?? PdfColors.indigo900;
   final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
@@ -162,7 +164,7 @@ pw.MultiPage buildClassicTemplate(
           pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.end,
             children: [
-              pw.Text("${invoice.type} #: $invoicePrefix${invoice.invoiceNumber ?? invoice.id}",
+              pw.Text("${invoice.invoiceTitle ?? invoice.type} #: $invoicePrefix${invoice.invoiceNumber ?? invoice.id}",
                   style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
               pw.Text("Date: ${formatPdfDate(invoice.date, datePattern)}",
                   style: const pw.TextStyle(fontSize: 10)),
@@ -185,7 +187,9 @@ pw.MultiPage buildClassicTemplate(
           showDiscount: showDiscount,
           showTypeTag: showTypeTag,
           showAliasName: showAliasName,
-          businessType: businessType),
+          businessType: businessType,
+          watermarkBytes: watermarkBytes,
+          watermarkOpacity: watermarkOpacity),
 
       pw.SizedBox(height: 20),
 

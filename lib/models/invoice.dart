@@ -15,6 +15,7 @@ class Invoice {
   String? notes;
   double taxRate;
   String type;
+  String? invoiceTitle; // GST document title override (e.g. "Tax Invoice", "Bill of Supply"); null = use type
   String currencyCode;
   String currencySymbol;
   TaxMode taxMode;
@@ -37,6 +38,7 @@ class Invoice {
     required this.items,
     required this.date,
     required this.type,
+    this.invoiceTitle,
     this.notes,
     this.taxRate = 0.0,
     this.currencyCode = 'INR',

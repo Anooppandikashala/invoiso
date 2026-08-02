@@ -103,6 +103,8 @@ void main() {
         () async {
       final pageSize = _pageSizeFor(template);
       final pdfTheme = await TestPdfFontService.loadTheme();
+      final watermarkBytes =
+          await File('assets/images/watermark.png').readAsBytes();
       final settings = PdfGenerationSettings(
         company: _company,
         template: template,
@@ -128,6 +130,8 @@ void main() {
         pageSize: pageSize,
         showTotalQuantity: true,
         pdfTheme: pdfTheme,
+        watermarkBytes: watermarkBytes,
+        watermarkOpacity: 0.15,
       );
 
       final pdf = PDFService.generateInvoicePDFWithSettings(

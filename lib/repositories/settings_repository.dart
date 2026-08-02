@@ -39,6 +39,12 @@ abstract class SettingsRepository {
   Future<void> setShowPreviousBalance(bool show);
   Future<void> setSignatureImage(String base64Image);
   Future<String?> getSignatureImage();
+  Future<void> setWatermarkImage(String base64Image);
+  Future<String?> getWatermarkImage();
+  Future<void> setWatermarkOpacity(double opacity);
+  Future<double> getWatermarkOpacity();
+  Future<void> setDefaultInvoiceTitle(String? title);
+  Future<String?> getDefaultInvoiceTitle();
   Future<String> getSignaturePosition();
   Future<String> getSignatureSize();
   Future<BusinessType> getBusinessType();

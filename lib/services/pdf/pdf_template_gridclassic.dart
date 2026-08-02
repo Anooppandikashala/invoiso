@@ -43,6 +43,8 @@ pw.MultiPage buildGridClassicTemplate(
   double previousBalanceDue = 0.0,
   PdfPageFormat pageFormat = PdfPageFormat.a4,
   pw.ThemeData? pdfTheme,
+  Uint8List? watermarkBytes,
+  double watermarkOpacity = 0.12,
 }) {
   final accentColor = themeColor ?? PdfColors.black;
   final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
@@ -193,7 +195,7 @@ pw.MultiPage buildGridClassicTemplate(
             pw.Divider(thickness: 0.5, color: borderColor,height: 8),
             // pw.SizedBox(height: 0.5 * fontScale),
             pw.Center(
-                child: pw.Text(invoice.type.toUpperCase(),
+                child: pw.Text((invoice.invoiceTitle ?? invoice.type).toUpperCase(),
                     textAlign: pw.TextAlign.left,
                     style: pw.TextStyle(
                         fontSize: titleFont-2,
@@ -225,7 +227,7 @@ pw.MultiPage buildGridClassicTemplate(
                   child: pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      infoRow('${invoice.type} No',
+                      infoRow('${invoice.invoiceTitle ?? invoice.type} No',
                           '$invoicePrefix${invoice.invoiceNumber ?? invoice.id}'),
                       infoRow('Date', formatPdfDate(invoice.date, datePattern)),
                       infoRow('Time', DateFormat('HH:mm:ss').format(invoice.date)),
@@ -427,6 +429,8 @@ pw.MultiPage buildGridClassicTemplate(
         totalQuantityText: showTotalQuantity && showQuantity
             ? '${totalQty == totalQty.roundToDouble() ? totalQty.toInt() : totalQty}'
             : null,
+        watermarkBytes: watermarkBytes,
+        watermarkOpacity: watermarkOpacity,
       ),
       // ── Notes, totals, signature, footer (inset again) ──
       buildInvoiceFooter()

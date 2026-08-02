@@ -31,6 +31,8 @@ import 'pdf_template_gridclassic.dart';
 class PDFService {
   static Uint8List? _logoBytesCache;
   static String? _logoBase64Cache;
+  static Uint8List? _watermarkBytesCache;
+  static String? _watermarkBase64Cache;
 
   static Uint8List? _cachedLogoBytes(String? base64Logo) {
     if (base64Logo == null || base64Logo.isEmpty) {
@@ -49,6 +51,25 @@ class PDFService {
   static void clearLogoCache() {
     _logoBytesCache = null;
     _logoBase64Cache = null;
+  }
+
+  static Uint8List? _cachedWatermarkBytes(String? base64Watermark) {
+    if (base64Watermark == null || base64Watermark.isEmpty) {
+      _watermarkBytesCache = null;
+      _watermarkBase64Cache = null;
+      return null;
+    }
+    if (base64Watermark == _watermarkBase64Cache && _watermarkBytesCache != null) {
+      return _watermarkBytesCache;
+    }
+    _watermarkBase64Cache = base64Watermark;
+    _watermarkBytesCache = base64Decode(base64Watermark);
+    return _watermarkBytesCache;
+  }
+
+  static void clearWatermarkCache() {
+    _watermarkBytesCache = null;
+    _watermarkBase64Cache = null;
   }
 
   /// Fetch all PDF generation settings in one parallel batch.
@@ -84,6 +105,8 @@ class PDFService {
       BackendServices.settings.getSetting(SettingKey.showAliasNameInPdf), // 24
       BackendServices.settings.getSignatureSize(), // 25
       BackendServices.settings.getSetting(SettingKey.thermalCompanyNameSize), // 26
+      BackendServices.settings.getWatermarkImage(), // 26
+      BackendServices.settings.getWatermarkOpacity(), // 27
     ]);
 
     final rawPrefix = (results[2] as String?) ?? 'INV';
@@ -131,6 +154,8 @@ class PDFService {
       pdfTheme: pdfTheme,
       thermalItemLayout: (results[23] as String?) ?? 'table',
       showAliasName: (results[24] as String?) == 'true',
+      watermarkBytes: _cachedWatermarkBytes(results[26] as String?),
+      watermarkOpacity: results[27] as double,
       thermalCompanyNameSize: (results[26] as String?) ?? 'medium',
     );
   }
@@ -198,6 +223,8 @@ class PDFService {
           previousBalanceDue: effectivePreviousBalance,
           pageFormat: s.pageFormat,
           pdfTheme: pdfTheme,
+          watermarkBytes: s.watermarkBytes,
+          watermarkOpacity: s.watermarkOpacity,
         ));
       case InvoiceTemplate.modern:
         pdf.addPage(buildModernTemplate(
@@ -227,6 +254,8 @@ class PDFService {
           previousBalanceDue: effectivePreviousBalance,
           pageFormat: s.pageFormat,
           pdfTheme: pdfTheme,
+          watermarkBytes: s.watermarkBytes,
+          watermarkOpacity: s.watermarkOpacity,
         ));
       case InvoiceTemplate.minimal:
         pdf.addPage(buildMinimalTemplate(
@@ -256,6 +285,8 @@ class PDFService {
           previousBalanceDue: effectivePreviousBalance,
           pageFormat: s.pageFormat,
           pdfTheme: pdfTheme,
+          watermarkBytes: s.watermarkBytes,
+          watermarkOpacity: s.watermarkOpacity,
         ));
       case InvoiceTemplate.executive:
         pdf.addPage(buildExecutiveTemplate(
@@ -285,6 +316,8 @@ class PDFService {
           previousBalanceDue: effectivePreviousBalance,
           pageFormat: s.pageFormat,
           pdfTheme: pdfTheme,
+          watermarkBytes: s.watermarkBytes,
+          watermarkOpacity: s.watermarkOpacity,
         ));
       case InvoiceTemplate.compact:
         pdf.addPage(buildCompactTemplate(
@@ -315,6 +348,8 @@ class PDFService {
           showTotalQuantity: s.showTotalQuantity,
           pageFormat: s.pageFormat,
           pdfTheme: pdfTheme,
+          watermarkBytes: s.watermarkBytes,
+          watermarkOpacity: s.watermarkOpacity,
         ));
       case InvoiceTemplate.thermal:
         pdf.addPage(buildThermalTemplate(
@@ -364,7 +399,9 @@ class PDFService {
           previousBalanceDue: effectivePreviousBalance,
           pageFormat: s.pageFormat,
           pdfTheme: pdfTheme,
-          logoPosition: s.logoPosition
+          logoPosition: s.logoPosition,
+          watermarkBytes: s.watermarkBytes,
+          watermarkOpacity: s.watermarkOpacity,
         ));
     }
     return pdf;
@@ -465,7 +502,7 @@ class PDFService {
             children: [
               AppBar(
                 automaticallyImplyLeading: false,
-                title: Text('${invoice.type} #${invoice.invoiceNumber ?? invoice.id}'),
+                title: Text('${invoice.invoiceTitle ?? invoice.type} #${invoice.invoiceNumber ?? invoice.id}'),
                 actions: [
                   IconButton(
                     icon: const Icon(Icons.print_outlined),

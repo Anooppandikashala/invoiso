@@ -39,6 +39,7 @@ class InvoiceService {
         'notes': invoice.notes,
         'tax_rate': invoice.taxRate,
         'type': invoice.type,
+        'invoice_title': invoice.invoiceTitle,
         'currency_code': invoice.currencyCode,
         'currency_symbol': invoice.currencySymbol,
         'tax_mode': invoice.taxMode.key,
@@ -110,6 +111,7 @@ class InvoiceService {
           'notes': invoice.notes,
           'tax_rate': invoice.taxRate,
           'type': invoice.type,
+          'invoice_title': invoice.invoiceTitle,
           'tax_mode': invoice.taxMode.key,
           'upi_id': invoice.upiId,
           'due_date': invoice.dueDate?.toIso8601String(),
@@ -363,6 +365,7 @@ class InvoiceService {
           ? (i['tax_rate'] as int).toDouble()
           : (i['tax_rate'] ?? 0.0) as double,
       type: i['type'] as String,
+      invoiceTitle: i['invoice_title'] as String?,
       currencyCode: i['currency_code'] as String? ?? 'INR',
       currencySymbol: i['currency_symbol'] as String? ?? '₹',
       taxMode: TaxModeExtension.fromKey(i['tax_mode'] as String?),
@@ -634,6 +637,7 @@ class InvoiceService {
               ? taxRateRaw.toDouble()
               : (taxRateRaw as double? ?? 0.0),
           type: type,
+          invoiceTitle: map['invoice_title'] as String?,
           currencyCode: map['currency_code'] as String? ?? 'INR',
           currencySymbol: map['currency_symbol'] as String? ?? '₹',
           taxMode: TaxModeExtension.fromKey(map['tax_mode'] as String?),

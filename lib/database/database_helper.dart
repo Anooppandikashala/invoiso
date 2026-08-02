@@ -15,7 +15,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 33;
+  final dbVersion = 34;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -98,7 +98,8 @@ class DatabaseHelper {
         previous_balance REAL DEFAULT 0.0,
         invoice_number TEXT,
         invoice_discount_type TEXT DEFAULT 'percent',
-        invoice_discount_value REAL DEFAULT 0.0
+        invoice_discount_value REAL DEFAULT 0.0,
+        invoice_title TEXT
       )
     ''');
 
@@ -531,7 +532,7 @@ class DatabaseHelper {
       });
     }
 
-    if (oldVersion < 33) {
+    if (oldVersion < 34) {
       await _runMigrationStep(
           db, 33, 'add_invoice_discount_to_invoices', () async {
         await db.execute(
@@ -541,7 +542,14 @@ class DatabaseHelper {
           'ALTER TABLE invoices ADD COLUMN invoice_discount_value REAL DEFAULT 0.0',
         );
       });
+      await _runMigrationStep(db, 34, 'add_invoice_title_to_invoices',
+          () async {
+        await db.execute(
+          'ALTER TABLE invoices ADD COLUMN invoice_title TEXT',
+        );
+      });
     }
+
   }
 
   Future<void> _runMigrationStep(

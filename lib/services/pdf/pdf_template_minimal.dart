@@ -34,6 +34,8 @@ pw.MultiPage buildMinimalTemplate(
   double previousBalanceDue = 0.0,
   PdfPageFormat pageFormat = PdfPageFormat.a4,
   pw.ThemeData? pdfTheme,
+  Uint8List? watermarkBytes,
+  double watermarkOpacity = 0.12,
 }) {
   final accentColor = themeColor ?? PdfColors.grey700;
   final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
@@ -64,7 +66,7 @@ pw.MultiPage buildMinimalTemplate(
             pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text("${invoice.type} #: ",
+                pw.Text("${invoice.invoiceTitle ?? invoice.type} #: ",
                     style: pw.TextStyle(
                         fontWeight: pw.FontWeight.bold,
                         fontSize: 10,
@@ -108,7 +110,7 @@ pw.MultiPage buildMinimalTemplate(
             pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text("${invoice.type} #: ",
+                pw.Text("${invoice.invoiceTitle ?? invoice.type} #: ",
                     style: pw.TextStyle(
                         fontWeight: pw.FontWeight.bold,
                         fontSize: 10,
@@ -222,7 +224,9 @@ pw.MultiPage buildMinimalTemplate(
           showDiscount: showDiscount,
           showTypeTag: showTypeTag,
           showAliasName: showAliasName,
-          businessType: businessType),
+          businessType: businessType,
+          watermarkBytes: watermarkBytes,
+          watermarkOpacity: watermarkOpacity),
 
       pw.SizedBox(height: 15),
 

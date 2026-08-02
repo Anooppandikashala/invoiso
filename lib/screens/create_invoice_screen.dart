@@ -107,6 +107,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   bool isLoading = false;
 
   String invoiceType = 'Invoice';
+  String? invoiceTitle;
   double taxRate = Tax.defaultTaxRate;
   Invoice? _invoice;
   String currentInvoiceNumber = "";
@@ -163,6 +164,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       _isTaxEnabled = _invoice!.taxMode != TaxMode.none;
       _isPerItem = _invoice!.taxMode == TaxMode.perItem;
       invoiceType = _invoice!.type;
+      invoiceTitle = _invoice!.invoiceTitle;
       currentInvoiceNumber = _invoice!.invoiceNumber ?? _invoice!.id;
       _selectedOrderDate = _invoice!.date;
       dateController.text = DateFormat(_datePattern).format(_selectedOrderDate);
@@ -201,6 +203,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       _isTaxEnabled = src.taxMode != TaxMode.none;
       _isPerItem = src.taxMode == TaxMode.perItem;
       invoiceType = widget.cloneType ?? src.type;
+      invoiceTitle = invoiceType == src.type ? src.invoiceTitle : null;
       _quantityLabel = src.quantityLabel ?? '';
       for (final c in src.additionalCosts) {
         _additionalCostControllers.add((
@@ -424,6 +427,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         settingsRepo.getShowPreviousBalance(), // 12
         settingsRepo.getShowAliasNameInPdf(), // 13
         settingsRepo.getShowTaxButtonInInvoicePage(), // 14
+        settingsRepo.getDefaultInvoiceTitle(), // 15
       ]);
 
       final c = results[0] as List<Customer>;
@@ -457,6 +461,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       final showPrevBalance = results[12] as bool;
       final showAliasNameInPdf = results[13] as bool;
       final showTaxButtonInInvoicePage = results[14] as bool;
+      final defaultInvoiceTitle = results[15] as String?;
 
       // Determine which UPI to pre-select.
       String? existingUpiId;
@@ -525,6 +530,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         // For new invoices, use the global setting. Edit/clone already set _quantityLabel in initState.
         if (!isEditing && widget.cloneFrom == null) {
           _quantityLabel = quantityLabelSetting;
+          invoiceTitle = invoiceType == 'Invoice' ? defaultInvoiceTitle : null;
         }
         _datePattern = dateFormatOpt.key;
         dateController.text =
@@ -535,6 +541,19 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         }
         isLoading = false;
       });
+      // Edit/clone may have preloaded selectedCustomer from an invoice
+      // snapshot whose id was never actually saved to the customers table
+      // (see _resolveInvoiceCustomer). Confirm it still exists so the UI
+      // doesn't silently treat an unsaved customer as saved.
+      if ((isEditing || widget.cloneFrom != null) && selectedCustomer != null) {
+        final stillExists = await ref
+            .read(customerRepositoryProvider)
+            .getCustomerById(selectedCustomer!.id);
+        if (!mounted) return;
+        if (stillExists == null) {
+          setState(() => selectedCustomer = null);
+        }
+      }
       if (showPrevBalance && selectedCustomer != null) {
         await _loadPreviousBalanceDue(selectedCustomer);
       }
@@ -546,7 +565,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       if (mounted) {
         if(kDebugMode) print(e);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading data: $e')),
+          SnackBar(content: Text('Error loading data: $e'),showCloseIcon: true,),
         );
       }
     }
@@ -927,6 +946,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           ),
           backgroundColor: Colors.orange,
           behavior: SnackBarBehavior.floating,
+          showCloseIcon: true,
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         ),
@@ -959,6 +979,17 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   /// customer's id — doing so would link invoiceId -> customerId while the
   /// snapshot's name/address/etc silently disagree with that customer's
   /// actual row. Falls back to a fresh, unlinked id in that case.
+  bool get _customerFormMatchesSelected {
+    final sel = selectedCustomer;
+    return sel != null &&
+        sel.name == nameController.text &&
+        sel.email == emailController.text &&
+        sel.phone == phoneController.text &&
+        sel.address == addressController.text &&
+        sel.gstin == gstinController.text &&
+        sel.businessName == businessNameController.text;
+  }
+
   Customer _resolveInvoiceCustomer() {
     final name = nameController.text;
     final email = emailController.text;
@@ -967,17 +998,11 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     final gstin = gstinController.text;
     final businessName = businessNameController.text;
 
+    final matchesSelected = _customerFormMatchesSelected;
     final sel = selectedCustomer;
-    final matchesSelected = sel != null &&
-        sel.name == name &&
-        sel.email == email &&
-        sel.phone == phone &&
-        sel.address == address &&
-        sel.gstin == gstin &&
-        sel.businessName == businessName;
 
     return Customer(
-      id: matchesSelected ? sel.id : const Uuid().v4(),
+      id: matchesSelected ? sel!.id : const Uuid().v4(),
       name: name,
       email: email,
       phone: phone,
@@ -1000,6 +1025,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           ),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
+          showCloseIcon: true,
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         ),
@@ -1019,6 +1045,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           ),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
+          showCloseIcon: true,
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         ),
@@ -1043,6 +1070,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         notes: notesController.text.isNotEmpty ? notesController.text : null,
         taxRate: _taxMode == TaxMode.global ? taxRate : 0.0,
         type: invoiceType,
+        invoiceTitle: invoiceType == 'Invoice' ? invoiceTitle : null,
         currencyCode: _currencyCode,
         currencySymbol: _currencySymbol,
         taxMode: _taxMode,
@@ -1076,6 +1104,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           ),
           backgroundColor: Colors.green,
           behavior: SnackBarBehavior.floating,
+          showCloseIcon: true,
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         ),
@@ -1085,7 +1114,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       if (!mounted) return false;
       setState(() => isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error creating invoice: $e')),
+        SnackBar(content: Text('Error creating invoice: $e'),showCloseIcon: true,),
       );
       return false;
     }
@@ -2399,6 +2428,55 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                           },
                   ),
                 ),
+                if (invoiceType == 'Invoice') ...[
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: DropdownButtonFormField<String?>(
+                      isExpanded: true,
+                      value: invoiceTitle,
+                      decoration: InputDecoration(
+                        labelText: _showGstFields ? 'GST Title' : 'TAX Title',
+                        border: OutlineInputBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppBorderRadius.xsmall)),
+                        filled: true,
+                        fillColor:
+                            Theme.of(context).colorScheme.surfaceContainerHighest,
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                            value: null,
+                            child: Text('Invoice',
+                                style: TextStyle(fontSize: AppFontSize.medium))),
+                        DropdownMenuItem(
+                            value: 'Tax Invoice',
+                            child: Text('Tax Invoice',
+                                style: TextStyle(fontSize: AppFontSize.medium))),
+                        DropdownMenuItem(
+                            value: 'Bill of Supply',
+                            child: Text('Bill of Supply',
+                                style: TextStyle(fontSize: AppFontSize.medium))),
+                        DropdownMenuItem(
+                            value: 'Invoice-cum-Bill of Supply',
+                            child: Text('Invoice-cum-Bill of Supply',
+                                style: TextStyle(fontSize: AppFontSize.medium))),
+                        DropdownMenuItem(
+                            value: 'Credit Note',
+                            child: Text('Credit Note',
+                                style: TextStyle(fontSize: AppFontSize.medium))),
+                        DropdownMenuItem(
+                            value: 'Debit Note',
+                            child: Text('Debit Note',
+                                style: TextStyle(fontSize: AppFontSize.medium))),
+                        DropdownMenuItem(
+                            value: 'Revised Invoice',
+                            child: Text('Revised Invoice',
+                                style: TextStyle(fontSize: AppFontSize.medium))),
+                      ],
+                      onChanged: (value) => setState(() => invoiceTitle = value),
+                    ),
+                  ),
+                ],
                 if (_quantityLabel.trim().isNotEmpty) ...[
                   const SizedBox(width: 8),
                   Expanded(
@@ -2436,6 +2514,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     if(!mounted) return;
     setState(() {
       invoiceType = invoiceType_;
+      if (invoiceType_ != 'Invoice') invoiceTitle = null;
     });
     if (!isEditing) {
       final invNumber =
@@ -2481,6 +2560,32 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     _markFormClean();
   }
 
+  Future<void> _showPhoneTakenError(String ownerName) async {
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.error_outline, color: Colors.red),
+            SizedBox(width: 12),
+            Text('Phone Number Already In Use'),
+          ],
+        ),
+        content: Text(
+          'This phone number belongs to "$ownerName".\n\nCannot save this customer with a phone number that already belongs to someone else.',
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _saveCustomer() async {
     if (_isSavingCustomer) return;
     if(!mounted) return;
@@ -2499,6 +2604,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           ),
           backgroundColor: Colors.orange,
           behavior: SnackBarBehavior.floating,
+          showCloseIcon: true,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       );
@@ -2506,11 +2612,101 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     }
 
     final phone = phoneController.text.trim();
+
+    // Editing an already-selected customer whose phone changed: ask whether
+    // to overwrite that customer's record or split off a new one, instead
+    // of silently matching/creating based on phone alone.
+    var forceNew = false;
+    final sel = selectedCustomer;
+    if (sel != null && sel.id.isNotEmpty && phone != sel.phone) {
+      if (!mounted) return;
+      final choice = await showDialog<String>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.phone_forwarded, color: Colors.orange),
+              SizedBox(width: 12),
+              Text('Phone Number Changed'),
+            ],
+          ),
+          content: Text(
+            'The phone number for "${sel.name}" was changed.\n\nUpdate their existing record, or save these details as a new customer?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, null),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, 'new'),
+              child: const Text('Save as New'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+              onPressed: () => Navigator.pop(ctx, 'update'),
+              child: const Text('Update Existing',
+                  style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      );
+      if (choice == null) return;
+      if (choice == 'update') {
+        final phoneOwner = await ref.read(customerRepositoryProvider).findByPhone(phone);
+        if (phoneOwner != null && phoneOwner.id != sel.id) {
+          await _showPhoneTakenError(phoneOwner.name);
+          return;
+        }
+        final updated = Customer(
+          id: sel.id,
+          name: name,
+          email: emailController.text.trim(),
+          phone: phone,
+          address: addressController.text.trim(),
+          gstin: gstinController.text.trim(),
+          businessName: businessNameController.text.trim(),
+        );
+        await ref.read(customerRepositoryProvider).updateCustomer(updated);
+        final reloaded = await ref.read(customerRepositoryProvider).getAllCustomers();
+        if (!mounted) return;
+        setState(() {
+          selectedCustomer = updated;
+          customers = reloaded;
+          filteredCustomers = reloaded;
+        });
+        await _loadPreviousBalanceDue(updated);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${updated.name} updated in customer list'),
+              behavior: SnackBarBehavior.floating,
+              showCloseIcon: true,
+            ),
+          );
+        }
+        return;
+      }
+      // choice == 'new': fall through to the phone-lookup flow below,
+      // which still guards against colliding with a *different* customer's phone.
+      forceNew = true;
+    }
+
     final existing = await ref.read(customerRepositoryProvider).findByPhone(phone);
+
+    if (existing != null && forceNew) {
+      // User explicitly chose "Save as New" above, but this phone number
+      // is already used by a different customer. Phone numbers must be
+      // unique — block instead of creating a duplicate.
+      await _showPhoneTakenError(existing.name);
+      return;
+    }
 
     if (existing != null) {
       if (!mounted) return;
-      final update = await showDialog<bool>(
+      final choice = await showDialog<String>(
         context: context,
         builder: (ctx) => AlertDialog(
           shape:
@@ -2523,23 +2719,47 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             ],
           ),
           content: Text(
-            '"${existing.name}" is already saved with this phone number.\n\nUpdate their details with the current information?',
+            '"${existing.name}" is already saved with this phone number.\n\nUse their existing details, or update their record with the current information?',
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Keep Existing'),
+              onPressed: () => Navigator.pop(ctx, 'use'),
+              child: const Text('Use Existing'),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-              onPressed: () => Navigator.pop(ctx, true),
+              onPressed: () => Navigator.pop(ctx, 'update'),
               child:
                   const Text('Update', style: TextStyle(color: Colors.white)),
             ),
           ],
         ),
       );
-      if (update != true) return;
+      if (choice == null) return;
+
+      if (choice == 'use') {
+        if (!mounted) return;
+        setState(() {
+          selectedCustomer = existing;
+          nameController.text = existing.name;
+          emailController.text = existing.email;
+          phoneController.text = existing.phone;
+          addressController.text = existing.address;
+          gstinController.text = existing.gstin;
+          businessNameController.text = existing.businessName;
+        });
+        await _loadPreviousBalanceDue(existing);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Using existing customer "${existing.name}"'),
+              behavior: SnackBarBehavior.floating,
+              showCloseIcon: true,
+            ),
+          );
+        }
+        return;
+      }
 
       final updated = Customer(
         id: existing.id,
@@ -2564,6 +2784,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           SnackBar(
             content: Text('${updated.name} updated in customer list'),
             behavior: SnackBarBehavior.floating,
+            showCloseIcon: true,
           ),
         );
       }
@@ -2591,6 +2812,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           SnackBar(
             content: Text('${newCustomer.name} saved to customer list'),
             behavior: SnackBarBehavior.floating,
+            showCloseIcon: true,
           ),
         );
       }
@@ -2611,7 +2833,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     if (!mounted) return;
     if (latest == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Customer record no longer exists')),
+        const SnackBar(content: Text('Customer record no longer exists'),showCloseIcon: true,),
       );
       return;
     }
@@ -2627,7 +2849,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     });
     if(!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Customer details refreshed')),
+      const SnackBar(
+          content: Text('Customer details refreshed'),
+      showCloseIcon: true,),
     );
   }
 
@@ -2674,41 +2898,58 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                Tooltip(
-                  message: selectedCustomer != null
-                      ? 'Customer already saved — deselect to save a new one'
-                      : 'Save customer to customer list',
-                  child: OutlinedButton.icon(
-                    onPressed: (selectedCustomer != null || _isSavingCustomer) ? null : _saveCustomer,
-                    icon: _isSavingCustomer
-                        ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                        : Icon(
-                      Icons.person_add_outlined,
-                      size: 16,
-                      color: selectedCustomer != null
-                          ? Theme.of(context).colorScheme.onSurfaceVariant
-                          : Theme.of(context).primaryColor,
-                    ),
-                    label: Text(
-                      _isSavingCustomer ? 'Saving...' : (selectedCustomer != null ? 'Saved' : 'Save Customer'),
-                      style: TextStyle(
-                        fontSize: AppFontSize.small,
-                        color: selectedCustomer != null
-                            ? Theme.of(context).colorScheme.onSurfaceVariant
-                            : Theme.of(context).primaryColor,
+                (selectedCustomer != null && _customerFormMatchesSelected)
+                    ? Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.check_circle,
+                                size: 16,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Saved',
+                              style: TextStyle(
+                                fontSize: AppFontSize.small,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : Tooltip(
+                        message: 'Save customer to customer list',
+                        child: OutlinedButton.icon(
+                          onPressed: _isSavingCustomer ? null : _saveCustomer,
+                          icon: _isSavingCustomer
+                              ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                              : Icon(
+                            Icons.person_add_outlined,
+                            size: 16,
+                            color: Theme.of(context).primaryColor,
+                          ),
+                          label: Text(
+                            _isSavingCustomer ? 'Saving...' : 'Save Customer',
+                            style: TextStyle(
+                              fontSize: AppFontSize.small,
+                              color: Theme.of(context).primaryColor,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            side: BorderSide(
+                              color: Theme.of(context).primaryColor,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      side: BorderSide(
-                        color: selectedCustomer != null
-                            ? Theme.of(context).colorScheme.outlineVariant
-                            : Theme.of(context).primaryColor,
-                      ),
-                    ),
-                  ),
-                ),
                 if (selectedCustomer != null && selectedCustomer!.id.trim().isNotEmpty) ...[
                   Tooltip(
                     message: 'Reload this customer\'s latest saved details '
@@ -2751,6 +2992,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 Expanded(
                   child: TextField(
                     controller: nameController,
+                    onChanged: (_) => setState(() {}),
                     style: TextStyle(fontSize: AppFontSize.medium),
                     decoration: InputDecoration(
                       labelText: 'Customer Name *',
@@ -2767,6 +3009,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 Expanded(
                   child: TextField(
                     controller: businessNameController,
+                    onChanged: (_) => setState(() {}),
                     style: TextStyle(fontSize: AppFontSize.medium),
                     decoration: InputDecoration(
                       labelText: 'Business Name',
@@ -2783,6 +3026,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 Expanded(
                   child: TextField(
                     controller: phoneController,
+                    onChanged: (_) => setState(() {}),
                     style: TextStyle(fontSize: AppFontSize.medium),
                     decoration: InputDecoration(
                       labelText: 'Phone',
@@ -2804,6 +3048,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 Expanded(
                   child: TextField(
                     controller: emailController,
+                    onChanged: (_) => setState(() {}),
                     style: TextStyle(fontSize: AppFontSize.medium),
                     decoration: InputDecoration(
                       labelText: 'Email',
@@ -2820,6 +3065,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 Expanded(
                   child: TextField(
                     controller: addressController,
+                    onChanged: (_) => setState(() {}),
                     style: TextStyle(fontSize: AppFontSize.medium),
                     decoration: InputDecoration(
                       labelText: 'Address',
@@ -2837,6 +3083,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   Expanded(
                     child: TextField(
                       controller: gstinController,
+                      onChanged: (_) => setState(() {}),
                       style: TextStyle(fontSize: AppFontSize.medium),
                       decoration: InputDecoration(
                         labelText: 'Tax/VAT Number (GSTIN)',
@@ -4318,6 +4565,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             ],
           ),
           backgroundColor: Colors.red,
+          showCloseIcon: true,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
@@ -4337,6 +4585,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             ],
           ),
           backgroundColor: Colors.red,
+          showCloseIcon: true,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
@@ -4358,6 +4607,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         notes: notesController.text.isNotEmpty ? notesController.text : null,
         taxRate: _taxMode == TaxMode.global ? taxRate : 0.0,
         type: invoiceType,
+        invoiceTitle: invoiceType == 'Invoice' ? invoiceTitle : null,
         currencyCode: _currencyCode,
         currencySymbol: _currencySymbol,
         taxMode: _taxMode,
@@ -4404,7 +4654,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       if (!mounted) return false;
       setState(() => isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error updating invoice: $e')),
+        SnackBar(content: Text('Error updating invoice: $e'),showCloseIcon: true,),
       );
       return false;
     }
@@ -4614,6 +4864,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                   content: Text(
                                       '${newCustomer.name} saved to customer list'),
                                   behavior: SnackBarBehavior.floating,
+                                  showCloseIcon: true,
                                 ),
                               );
                             }

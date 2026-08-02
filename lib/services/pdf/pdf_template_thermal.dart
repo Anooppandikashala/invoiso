@@ -249,7 +249,7 @@ pw.Page buildThermalTemplate(
             fontSize: smallFs),
       pw.SizedBox(height: 3),
       sp(),
-      centerText(invoice.type.toUpperCase(), fontSize: boldFs, bold: true),
+      centerText((invoice.invoiceTitle ?? invoice.type).toUpperCase(), fontSize: boldFs, bold: true),
       sp(),
       pw.SizedBox(height: 3),
       // ── Invoice meta ──

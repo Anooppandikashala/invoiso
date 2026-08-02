@@ -34,6 +34,8 @@ pw.MultiPage buildExecutiveTemplate(
   double previousBalanceDue = 0.0,
   PdfPageFormat pageFormat = PdfPageFormat.a4,
   pw.ThemeData? pdfTheme,
+  Uint8List? watermarkBytes,
+  double watermarkOpacity = 0.12,
 }) {
   final accentColor = themeColor ?? PdfColors.blueGrey800;
   final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
@@ -141,7 +143,7 @@ pw.MultiPage buildExecutiveTemplate(
               if (logoImage != null && logoPosition == LogoPosition.right)
                 buildCompanyLogo(logoImage, size: logoSizePx),
               pw.Text(
-                invoice.type.toUpperCase(),
+                (invoice.invoiceTitle ?? invoice.type).toUpperCase(),
                 style: pw.TextStyle(
                   fontSize: 20,
                   fontWeight: pw.FontWeight.bold,
@@ -184,6 +186,8 @@ pw.MultiPage buildExecutiveTemplate(
         showTypeTag: showTypeTag,
         showAliasName: showAliasName,
         businessType: businessType,
+        watermarkBytes: watermarkBytes,
+        watermarkOpacity: watermarkOpacity,
       ),
       pw.SizedBox(height: 15),
       pw.Row(

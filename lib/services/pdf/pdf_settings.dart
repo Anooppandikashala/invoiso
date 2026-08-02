@@ -37,6 +37,8 @@ class PdfGenerationSettings {
   final PageSize pageSize;
   final String thermalItemLayout;
   final String thermalCompanyNameSize;
+  final Uint8List? watermarkBytes;
+  final double watermarkOpacity;
 
   const PdfGenerationSettings({
     required this.company,
@@ -69,5 +71,7 @@ class PdfGenerationSettings {
     this.signaturePosition = 'left',
     this.signatureSizePx = 50,
     this.showAliasName = false,
+    this.watermarkBytes,
+    this.watermarkOpacity = 0.12,
   });
 }

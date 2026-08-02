@@ -64,8 +64,11 @@ enum SettingKey {
   installationId, // Unique identifier for this installation. Generated on first launch and persisted locally. Used for anonymous analytics and installation tracking.
   showAliasNameInPdf, // whether to print a product's local-language alias name instead of its actual name on PDFs (default false)
   showTaxButtonInInvoicePage,
-  productColumnsConfig, // JSON ProductColumnsConfig — which optional product fields (and invoice extra cost) are visible/editable
   themeMode, // app theme: 'light' | 'dark' | 'system'
+  watermarkImage, // base64-encoded watermark image shown behind invoice items table
+  watermarkOpacity, // watermark opacity 0.0-1.0 as string; default '0.12'
+  defaultInvoiceTitle, // GST document title preselected on new invoices: 'Tax Invoice' | 'Bill of Supply' | etc; null/empty = plain 'Invoice'
+  productColumnsConfig, // JSON ProductColumnsConfig — which optional product fields (and invoice extra cost) are visible/editable
   shortcutsBannerDismissed, // '1' once user dismisses the keyboard-shortcuts discovery banner
 }
 
@@ -170,6 +173,12 @@ extension SettingKeyExtension on SettingKey {
         return 'theme_mode';
       case SettingKey.shortcutsBannerDismissed:
         return 'shortcuts_banner_dismissed';
+      case SettingKey.watermarkImage:
+        return 'watermark_image';
+      case SettingKey.watermarkOpacity:
+        return 'watermark_opacity';
+      case SettingKey.defaultInvoiceTitle:
+        return 'default_invoice_title';
     }
   }
 }
