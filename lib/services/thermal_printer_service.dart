@@ -437,6 +437,10 @@ class ThermalPrinterService {
     final generator = Generator(s.paperSize, profile);
     List<int> bytes = [];
 
+    final title = (invoice.invoiceTitle?.trim().isNotEmpty ?? false)
+        ? invoice.invoiceTitle!.toUpperCase()
+        : invoice.type.toUpperCase();
+
     void line(String text, {PosAlign align = PosAlign.left, bool bold = false}) {
       bytes += generator.text(text, styles: PosStyles(align: align, bold: bold));
     }
@@ -470,7 +474,7 @@ class ThermalPrinterService {
           align: PosAlign.center);
     }
     hr();
-    line(invoice.type.toUpperCase(), align: PosAlign.center, bold: true);
+    line(title, align: PosAlign.center, bold: true);
     hr();
 
     twoCol('Inv No: ${settings.invoicePrefix}${invoice.invoiceNumber ?? invoice.id}',
@@ -688,6 +692,10 @@ class ThermalPrinterService {
         thermalCompanyNameSizeFromKey(settings.thermalCompanyNameSize).scale;
     const itemFontSize = PdfLayout.thermalPrinterItemFontSize * 0.85;
 
+    final title = (invoice.invoiceTitle?.trim().isNotEmpty ?? false)
+        ? invoice.invoiceTitle!.toUpperCase()
+        : invoice.type.toUpperCase();
+
     Widget text(String text,
         {TextAlign align = TextAlign.left,
         bool bold = false,
@@ -867,7 +875,7 @@ class ThermalPrinterService {
                 text('${taxLabel(company?.country)}: ${company!.gstin}',
                     align: TextAlign.center),
               hr(),
-              text(invoice.type.toUpperCase(), align: TextAlign.center, bold: true),
+              text(title, align: TextAlign.center, bold: true),
               hr(),
 
               // ── Invoice meta ──

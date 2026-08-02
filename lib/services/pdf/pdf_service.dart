@@ -105,8 +105,8 @@ class PDFService {
       BackendServices.settings.getSetting(SettingKey.showAliasNameInPdf), // 24
       BackendServices.settings.getSignatureSize(), // 25
       BackendServices.settings.getSetting(SettingKey.thermalCompanyNameSize), // 26
-      BackendServices.settings.getWatermarkImage(), // 26
-      BackendServices.settings.getWatermarkOpacity(), // 27
+      BackendServices.settings.getWatermarkImage(), // 27
+      BackendServices.settings.getWatermarkOpacity(), // 28
     ]);
 
     final rawPrefix = (results[2] as String?) ?? 'INV';
@@ -154,8 +154,8 @@ class PDFService {
       pdfTheme: pdfTheme,
       thermalItemLayout: (results[23] as String?) ?? 'table',
       showAliasName: (results[24] as String?) == 'true',
-      watermarkBytes: _cachedWatermarkBytes(results[26] as String?),
-      watermarkOpacity: results[27] as double,
+      watermarkBytes: _cachedWatermarkBytes(results[27] as String?),
+      watermarkOpacity: results[28] as double,
       thermalCompanyNameSize: (results[26] as String?) ?? 'medium',
     );
   }
