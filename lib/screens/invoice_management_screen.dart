@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show PointerDeviceKind;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -56,6 +57,7 @@ class _InvoiceManagementScreenState
   final Set<String> _selectedIds = {};
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
+  final ScrollController _statsBarScrollController = ScrollController();
   Timer? _searchDebounce;
 
   /// Shared column widths used by both the header table and every row table so
@@ -79,7 +81,8 @@ class _InvoiceManagementScreenState
     6: FlexColumnWidth(1.0),
     7: FixedColumnWidth(90),
     8: FlexColumnWidth(1.0),
-    9: FixedColumnWidth(360),
+    9: FlexColumnWidth(0.8),
+    10: FixedColumnWidth(360),
   };
 
   // Quotation table: checkbox | # | ID | Customer | Date | Items | Total | Actions
@@ -117,6 +120,7 @@ class _InvoiceManagementScreenState
   void dispose() {
     _searchController.dispose();
     _searchFocusNode.dispose();
+    _statsBarScrollController.dispose();
     _searchDebounce?.cancel();
     super.dispose();
   }
@@ -1114,6 +1118,23 @@ class _InvoiceManagementScreenState
                         ),
                       ),
                       const SizedBox(width: 24),
+                      Expanded(
+                        child: ScrollConfiguration(
+                          behavior: ScrollConfiguration.of(context).copyWith(
+                            dragDevices: {
+                              PointerDeviceKind.touch,
+                              PointerDeviceKind.mouse,
+                              PointerDeviceKind.trackpad,
+                            },
+                          ),
+                          child: Scrollbar(
+                            controller: _statsBarScrollController,
+                            child: SingleChildScrollView(
+                            controller: _statsBarScrollController,
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
                       _buildStatChip('Total', _totalCount.toString(),
                           Colors.blue, Icons.receipt_long),
                       const SizedBox(width: 12),
@@ -1221,6 +1242,12 @@ class _InvoiceManagementScreenState
                           );
                         }),
                       ], // end filterType == 'Invoice' (due date chips)
+                            ],
+                            ),
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -1334,6 +1361,7 @@ class _InvoiceManagementScreenState
                                                 _buildTableHeader('Status'),
                                                 _buildTableHeader(
                                                     'Outstanding'),
+                                                _buildTableHeader('Title'),
                                               ],
                                               _buildTableHeader('Actions'),
                                             ],
@@ -1733,6 +1761,20 @@ class _InvoiceManagementScreenState
                                     : Colors.red[700],
                           ),
                         ),
+                ),
+                _buildTableCell(
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      if (constraints.maxWidth < 40) return const SizedBox.shrink();
+                      return Text(
+                        invoice.invoiceTitle ?? '—',
+                        style: TextStyle(
+                            fontSize: 13,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        overflow: TextOverflow.ellipsis,
+                      );
+                    },
+                  ),
                 ),
               ],
               _buildTableCell(

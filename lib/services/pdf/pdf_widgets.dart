@@ -1,9 +1,62 @@
+import 'dart:typed_data';
+
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:qr/qr.dart';
 import 'package:invoiso/common.dart';
 import 'package:invoiso/models/invoice.dart';
+
+/// Tracks how much table-row height has been painted so far, so the
+/// watermark image reads as one continuous strip running down the items
+/// table (and across page breaks) instead of resetting per row/page.
+class _WatermarkCursor {
+  double value = 0;
+}
+
+/// Paints a vertical slice of [image] into each row's box, using [cursor]
+/// to pick up where the previous row left off. Draws two copies scaledH
+/// apart so a row straddling the image's repeat seam is still covered
+/// seamlessly by the clip.
+class _WatermarkStripeImage extends pw.DecorationGraphic {
+  _WatermarkStripeImage({
+    required this.image,
+    required this.opacity,
+    required this.cursor,
+  });
+
+  final pw.ImageProvider image;
+  final double opacity;
+  final _WatermarkCursor cursor;
+
+  @override
+  void paint(pw.Context context, PdfRect box) {
+    if (box.width <= 0 || box.height <= 0) return;
+    final resolved = image.resolve(context, box.size);
+    final imgW = resolved.width.toDouble();
+    final imgH = resolved.height.toDouble();
+    if (imgW <= 0 || imgH <= 0) return;
+
+    final scale = box.width / imgW;
+    final scaledH = imgH * scale;
+    if (scaledH <= 0) return;
+
+    final topDepth = cursor.value % scaledH;
+    cursor.value += box.height;
+
+    final rowTopY = box.y + box.height;
+    final originY = rowTopY + topDepth - scaledH;
+
+    context.canvas
+      ..saveContext()
+      ..drawBox(box)
+      ..clipPath()
+      ..setGraphicState(PdfGraphicState(opacity: opacity))
+      ..drawImage(resolved, box.x, originY, box.width, scaledH)
+      ..drawImage(resolved, box.x, originY - scaledH, box.width, scaledH)
+      ..restoreContext();
+  }
+}
 
 pw.Widget buildCompanyLogo(pw.MemoryImage image, {double size = 90}) {
   return pw.Container(
@@ -407,8 +460,13 @@ pw.Widget buildInvoiceTable(Invoice invoice,
     double cellPaddingH = 6,
     double cellPaddingV = 8,
     String? totalQuantityText,
-    pw.TableBorder? border,}) {
+    pw.TableBorder? border,
+    Uint8List? watermarkBytes,
+    double watermarkOpacity = 0.12,}) {
   final bool showItemTax = invoice.taxMode == TaxMode.perItem;
+  final watermarkImage =
+      watermarkBytes != null ? pw.MemoryImage(watermarkBytes) : null;
+  final watermarkCursor = _WatermarkCursor();
   final String priceHeader = showQuantity ? 'Price' : 'Rate';
 
   int col = 0;
@@ -503,10 +561,22 @@ pw.Widget buildInvoiceTable(Invoice invoice,
       ...invoice.items.asMap().entries.map((entry) {
         final index = entry.key;
         final item = entry.value;
+        final rowColor = (template == InvoiceTemplate.gridClassic)
+            ? null
+            : (index % 2 == 0 ? PdfColors.white : PdfColors.grey100);
         return pw.TableRow(
-          decoration: (template == InvoiceTemplate.gridClassic) ? null : index % 2 == 0
-              ? const pw.BoxDecoration(color: PdfColors.white)
-              : const pw.BoxDecoration(color: PdfColors.grey100),
+          decoration: (rowColor == null && watermarkImage == null)
+              ? null
+              : pw.BoxDecoration(
+                  color: rowColor,
+                  image: watermarkImage != null
+                      ? _WatermarkStripeImage(
+                          image: watermarkImage,
+                          opacity: watermarkOpacity,
+                          cursor: watermarkCursor,
+                        )
+                      : null,
+                ),
           children: [
             buildTableCell('${index + 1}',
                 fontSize: tableFontSize,

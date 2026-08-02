@@ -41,6 +41,9 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
   String? _signatureBase64;
   String _signaturePosition = 'left';
   String _selectedSignatureSize = 'medium';
+  String? _watermarkBase64;
+  double _watermarkOpacity = 0.12;
+  String? _defaultInvoiceTitle;
   int _invoiceCount = 0;
   bool _isLoading = true;
   bool _isSaving = false;
@@ -78,6 +81,9 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
       settingsRepo.getSetting(SettingKey.showAliasNameInPdf),
       settingsRepo.getShowTaxButtonInInvoicePage(),
       settingsRepo.getSignatureSize(),
+      settingsRepo.getWatermarkImage(),
+      settingsRepo.getWatermarkOpacity(),
+      settingsRepo.getDefaultInvoiceTitle(),
     ]);
 
     if (!mounted) return;
@@ -108,6 +114,9 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
       _showAliasNameInPdf = (results[19] as String?) == 'true';
       _showTaxButtonInInvoicePage = results[20] as bool;
       _selectedSignatureSize = results[21] as String;
+      _watermarkBase64 = results[22] as String?;
+      _watermarkOpacity = results[23] as double;
+      _defaultInvoiceTitle = results[24] as String?;
       _isLoading = false;
     });
   }
@@ -189,6 +198,44 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
     await ref.read(settingsRepositoryProvider).setSignatureImage('');
     if(!mounted) return;
     setState(() => _signatureBase64 = null);
+  }
+
+  Future<void> _pickWatermark() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['png', 'jpg', 'jpeg'],
+    );
+    if (result == null || result.files.single.path == null) return;
+    final bytes = await File(result.files.single.path!).readAsBytes();
+    if (bytes.length > 2 * 1024 * 1024) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Watermark image must be less than 2 MB.')),
+        );
+      }
+      return;
+    }
+    final base64Watermark = base64Encode(bytes);
+    await ref.read(settingsRepositoryProvider).setWatermarkImage(base64Watermark);
+    if(mounted) {
+      setState(() => _watermarkBase64 = base64Watermark);
+    }
+  }
+
+  Future<void> _clearWatermark() async {
+    await ref.read(settingsRepositoryProvider).setWatermarkImage('');
+    if(!mounted) return;
+    setState(() => _watermarkBase64 = null);
+  }
+
+  Future<void> _setWatermarkOpacity(double opacity) async {
+    await ref.read(settingsRepositoryProvider).setWatermarkOpacity(opacity);
+  }
+
+  Future<void> _setDefaultInvoiceTitle(String? title) async {
+    await ref.read(settingsRepositoryProvider).setDefaultInvoiceTitle(title);
+    setState(() => _defaultInvoiceTitle = title);
   }
 
   @override
@@ -817,6 +864,72 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                   ),
 
                                   const SizedBox(height: 12),
+                                  // Default GST Invoice Title
+                                  SizedBox(
+                                    width: constraints.maxWidth,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                        borderRadius: BorderRadius.circular(
+                                            AppBorderRadius.xsmall),
+                                        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(_showGstFields ? 'Default GST Invoice Title' : 'Default TAX Invoice Title',
+                                              style: TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w500)),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            _showGstFields ? 'Preselected on new invoices — e.g. "Bill of Supply" for GST Composition Scheme dealers' : 'Preselected on new invoices',
+                                            style: TextStyle(
+                                                fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          DropdownButtonFormField<String?>(
+                                            isExpanded: true,
+                                            value: _defaultInvoiceTitle,
+                                            decoration: InputDecoration(
+                                              border: OutlineInputBorder(
+                                                  borderRadius: BorderRadius.circular(
+                                                      AppBorderRadius.xsmall)),
+                                              filled: true,
+                                              fillColor: Theme.of(context).colorScheme.surface,
+                                            ),
+                                            items: const [
+                                              DropdownMenuItem(
+                                                  value: null, child: Text('Invoice')),
+                                              DropdownMenuItem(
+                                                  value: 'Tax Invoice',
+                                                  child: Text('Tax Invoice')),
+                                              DropdownMenuItem(
+                                                  value: 'Bill of Supply',
+                                                  child: Text('Bill of Supply')),
+                                              DropdownMenuItem(
+                                                  value: 'Invoice-cum-Bill of Supply',
+                                                  child: Text(
+                                                      'Invoice-cum-Bill of Supply')),
+                                              DropdownMenuItem(
+                                                  value: 'Credit Note',
+                                                  child: Text('Credit Note')),
+                                              DropdownMenuItem(
+                                                  value: 'Debit Note',
+                                                  child: Text('Debit Note')),
+                                              DropdownMenuItem(
+                                                  value: 'Revised Invoice',
+                                                  child: Text('Revised Invoice')),
+                                            ],
+                                            onChanged: _setDefaultInvoiceTitle,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 12),
 
                                   // Fractional Quantity Toggle
                                   SizedBox(
@@ -1162,6 +1275,101 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                               ),
                                             ],
                                           ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 12),
+                                  // Watermark Image
+                                  SizedBox(
+                                    width: constraints.maxWidth,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                        borderRadius: BorderRadius.circular(
+                                            AppBorderRadius.xsmall),
+                                        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Text('Watermark Image',
+                                              style: TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w500)),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            'Shown behind the items table on invoice PDFs (not printed on thermal receipts)',
+                                            style: TextStyle(
+                                                fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                          ),
+                                          Text(
+                                            'PNG, JPG or JPEG — max 2 MB',
+                                            style: TextStyle(
+                                                fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          if (_watermarkBase64 != null &&
+                                              _watermarkBase64!.isNotEmpty) ...[
+                                            ClipRRect(
+                                              borderRadius: BorderRadius.circular(4),
+                                              child: Image.memory(
+                                                base64Decode(_watermarkBase64!),
+                                                height: 60,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                          ],
+                                          Row(
+                                            children: [
+                                              OutlinedButton.icon(
+                                                onPressed: _pickWatermark,
+                                                icon: const Icon(
+                                                    Icons.upload_outlined,
+                                                    size: 16),
+                                                label: Text(_watermarkBase64 !=
+                                                            null &&
+                                                        _watermarkBase64!.isNotEmpty
+                                                    ? 'Change Watermark'
+                                                    : 'Upload Watermark'),
+                                              ),
+                                              if (_watermarkBase64 != null &&
+                                                  _watermarkBase64!.isNotEmpty) ...[
+                                                const SizedBox(width: 8),
+                                                TextButton.icon(
+                                                  onPressed: _clearWatermark,
+                                                  icon: const Icon(
+                                                      Icons.delete_outline,
+                                                      size: 16,
+                                                      color: Colors.red),
+                                                  label: const Text('Remove',
+                                                      style: TextStyle(
+                                                          color: Colors.red)),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                          if (_watermarkBase64 != null &&
+                                              _watermarkBase64!.isNotEmpty) ...[
+                                            const SizedBox(height: 12),
+                                            Text(
+                                                'Opacity: ${(_watermarkOpacity * 100).round()}%',
+                                                style: const TextStyle(fontSize: 13)),
+                                            Slider(
+                                              value: _watermarkOpacity,
+                                              min: 0.02,
+                                              max: 0.6,
+                                              divisions: 29,
+                                              label: '${(_watermarkOpacity * 100).round()}%',
+                                              onChanged: (val) {
+                                                if (!mounted) return;
+                                                setState(() => _watermarkOpacity = val);
+                                              },
+                                              onChangeEnd: _setWatermarkOpacity,
+                                            ),
+                                          ],
                                         ],
                                       ),
                                     ),

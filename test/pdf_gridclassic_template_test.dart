@@ -149,4 +149,31 @@ void main() {
     await outputFile.parent.create(recursive: true);
     await outputFile.writeAsBytes(await doc.save());
   });
+
+  test('gridClassic renders watermark behind items table across a multi-page invoice',
+      () async {
+    final watermarkBytes =
+        await File('assets/images/watermark.png').readAsBytes();
+    final doc = pw.Document();
+
+    pw.MultiPage w = buildGridClassicTemplate(
+      _sampleInvoice(),
+      _company,
+      'Rs.',
+      '',
+      pageFormat: PdfPageFormat.a4,
+      showFooterBranding: true,
+      showTotalQuantity: true,
+      watermarkBytes: watermarkBytes,
+      watermarkOpacity: 0.15,
+    );
+
+    doc.addPage(w);
+    final bytes = await doc.save();
+    expect(bytes, isNotEmpty);
+    final outputPath = 'output/invoiso_grid_pdf_watermark.pdf';
+    final outputFile = File(outputPath);
+    await outputFile.parent.create(recursive: true);
+    await outputFile.writeAsBytes(await doc.save());
+  });
 }

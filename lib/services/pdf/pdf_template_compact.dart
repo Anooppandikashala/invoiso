@@ -35,6 +35,8 @@ pw.MultiPage buildCompactTemplate(
   bool showTotalQuantity = false,
   PdfPageFormat pageFormat = PdfPageFormat.a6,
   pw.ThemeData? pdfTheme,
+  Uint8List? watermarkBytes,
+  double watermarkOpacity = 0.12,
 }) {
   final accentColor = themeColor ?? PdfColors.black;
   final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
@@ -138,7 +140,7 @@ pw.MultiPage buildCompactTemplate(
                       ),
                     ),
                     pw.Text(
-                      invoice.type,
+                      invoice.invoiceTitle ?? invoice.type,
                       style: pw.TextStyle(
                         fontSize: labelFont,
                         fontWeight: pw.FontWeight.bold,
@@ -255,6 +257,8 @@ pw.MultiPage buildCompactTemplate(
         totalQuantityText: showTotalQuantity && showQuantity
             ? '${totalQty == totalQty.roundToDouble() ? totalQty.toInt() : totalQty}'
             : null,
+        watermarkBytes: watermarkBytes,
+        watermarkOpacity: watermarkOpacity,
       ),
 
       pw.SizedBox(height: 6),
