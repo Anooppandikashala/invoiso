@@ -34,6 +34,8 @@ pw.MultiPage buildClassicTemplate(
   double previousBalanceDue = 0.0,
   PdfPageFormat pageFormat = PdfPageFormat.a4,
   pw.ThemeData? pdfTheme,
+  Uint8List? watermarkBytes,
+  double watermarkOpacity = 0.12,
 }) {
   final accentColor = themeColor ?? PdfColors.indigo900;
   final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
@@ -185,7 +187,9 @@ pw.MultiPage buildClassicTemplate(
           showDiscount: showDiscount,
           showTypeTag: showTypeTag,
           showAliasName: showAliasName,
-          businessType: businessType),
+          businessType: businessType,
+          watermarkBytes: watermarkBytes,
+          watermarkOpacity: watermarkOpacity),
 
       pw.SizedBox(height: 20),
 

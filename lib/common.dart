@@ -61,7 +61,9 @@ enum SettingKey {
   installationId, // Unique identifier for this installation. Generated on first launch and persisted locally. Used for anonymous analytics and installation tracking.
   showAliasNameInPdf, // whether to print a product's local-language alias name instead of its actual name on PDFs (default false)
   showTaxButtonInInvoicePage,
-  themeMode // app theme: 'light' | 'dark' | 'system'
+  themeMode, // app theme: 'light' | 'dark' | 'system'
+  watermarkImage, // base64-encoded watermark image shown behind invoice items table
+  watermarkOpacity, // watermark opacity 0.0-1.0 as string; default '0.12'
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -155,6 +157,10 @@ extension SettingKeyExtension on SettingKey {
         return 'show_tax_button_in_invoice_page';
       case SettingKey.themeMode:
         return 'theme_mode';
+      case SettingKey.watermarkImage:
+        return 'watermark_image';
+      case SettingKey.watermarkOpacity:
+        return 'watermark_opacity';
     }
   }
 }

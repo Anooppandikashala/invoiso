@@ -43,6 +43,8 @@ pw.MultiPage buildGridClassicTemplate(
   double previousBalanceDue = 0.0,
   PdfPageFormat pageFormat = PdfPageFormat.a4,
   pw.ThemeData? pdfTheme,
+  Uint8List? watermarkBytes,
+  double watermarkOpacity = 0.12,
 }) {
   final accentColor = themeColor ?? PdfColors.black;
   final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
@@ -421,6 +423,8 @@ pw.MultiPage buildGridClassicTemplate(
         totalQuantityText: showTotalQuantity && showQuantity
             ? '${totalQty == totalQty.roundToDouble() ? totalQty.toInt() : totalQty}'
             : null,
+        watermarkBytes: watermarkBytes,
+        watermarkOpacity: watermarkOpacity,
       ),
       // ── Notes, totals, signature, footer (inset again) ──
       buildInvoiceFooter()
