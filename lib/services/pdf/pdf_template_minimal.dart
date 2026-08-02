@@ -66,7 +66,7 @@ pw.MultiPage buildMinimalTemplate(
             pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text("${invoice.type} #: ",
+                pw.Text("${invoice.invoiceTitle ?? invoice.type} #: ",
                     style: pw.TextStyle(
                         fontWeight: pw.FontWeight.bold,
                         fontSize: 10,
@@ -110,7 +110,7 @@ pw.MultiPage buildMinimalTemplate(
             pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text("${invoice.type} #: ",
+                pw.Text("${invoice.invoiceTitle ?? invoice.type} #: ",
                     style: pw.TextStyle(
                         fontWeight: pw.FontWeight.bold,
                         fontSize: 10,

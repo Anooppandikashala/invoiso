@@ -83,6 +83,12 @@ class SqliteSettingsRepository implements SettingsRepository {
   Future<void> setWatermarkOpacity(double opacity) => SettingsService.setWatermarkOpacity(opacity);
   @override
   Future<double> getWatermarkOpacity() => SettingsService.getWatermarkOpacity();
+
+  @override
+  Future<void> setDefaultInvoiceTitle(String? title) => SettingsService.setDefaultInvoiceTitle(title);
+
+  @override
+  Future<String?> getDefaultInvoiceTitle() => SettingsService.getDefaultInvoiceTitle();
   @override
   Future<String> getSignaturePosition() => SettingsService.getSignaturePosition();
   @override

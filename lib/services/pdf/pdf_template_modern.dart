@@ -164,7 +164,7 @@ pw.MultiPage buildModernTemplate(
             pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.end,
               children: [
-                pw.Text("${invoice.type} #: $invoicePrefix${invoice.invoiceNumber ?? invoice.id}",
+                pw.Text("${invoice.invoiceTitle ?? invoice.type} #: $invoicePrefix${invoice.invoiceNumber ?? invoice.id}",
                     style: pw.TextStyle(
                         fontWeight: pw.FontWeight.bold, fontSize: 12)),
                 pw.Text("Date: ${formatPdfDate(invoice.date, datePattern)}",

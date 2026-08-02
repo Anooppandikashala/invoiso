@@ -43,6 +43,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
   String _selectedSignatureSize = 'medium';
   String? _watermarkBase64;
   double _watermarkOpacity = 0.12;
+  String? _defaultInvoiceTitle;
   int _invoiceCount = 0;
   bool _isLoading = true;
   bool _isSaving = false;
@@ -82,6 +83,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
       settingsRepo.getSignatureSize(),
       settingsRepo.getWatermarkImage(),
       settingsRepo.getWatermarkOpacity(),
+      settingsRepo.getDefaultInvoiceTitle(),
     ]);
 
     if (!mounted) return;
@@ -114,6 +116,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
       _selectedSignatureSize = results[21] as String;
       _watermarkBase64 = results[22] as String?;
       _watermarkOpacity = results[23] as double;
+      _defaultInvoiceTitle = results[24] as String?;
       _isLoading = false;
     });
   }
@@ -228,6 +231,11 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
 
   Future<void> _setWatermarkOpacity(double opacity) async {
     await ref.read(settingsRepositoryProvider).setWatermarkOpacity(opacity);
+  }
+
+  Future<void> _setDefaultInvoiceTitle(String? title) async {
+    await ref.read(settingsRepositoryProvider).setDefaultInvoiceTitle(title);
+    setState(() => _defaultInvoiceTitle = title);
   }
 
   @override
@@ -851,6 +859,72 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                           setState(() => _showGstFields = val);
                                         },
                                         activeColor: Theme.of(context).primaryColor,
+                                      ),
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 12),
+                                  // Default GST Invoice Title
+                                  SizedBox(
+                                    width: constraints.maxWidth,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                        borderRadius: BorderRadius.circular(
+                                            AppBorderRadius.xsmall),
+                                        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(_showGstFields ? 'Default GST Invoice Title' : 'Default TAX Invoice Title',
+                                              style: TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w500)),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            _showGstFields ? 'Preselected on new invoices — e.g. "Bill of Supply" for GST Composition Scheme dealers' : 'Preselected on new invoices',
+                                            style: TextStyle(
+                                                fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          DropdownButtonFormField<String?>(
+                                            isExpanded: true,
+                                            value: _defaultInvoiceTitle,
+                                            decoration: InputDecoration(
+                                              border: OutlineInputBorder(
+                                                  borderRadius: BorderRadius.circular(
+                                                      AppBorderRadius.xsmall)),
+                                              filled: true,
+                                              fillColor: Theme.of(context).colorScheme.surface,
+                                            ),
+                                            items: const [
+                                              DropdownMenuItem(
+                                                  value: null, child: Text('Invoice')),
+                                              DropdownMenuItem(
+                                                  value: 'Tax Invoice',
+                                                  child: Text('Tax Invoice')),
+                                              DropdownMenuItem(
+                                                  value: 'Bill of Supply',
+                                                  child: Text('Bill of Supply')),
+                                              DropdownMenuItem(
+                                                  value: 'Invoice-cum-Bill of Supply',
+                                                  child: Text(
+                                                      'Invoice-cum-Bill of Supply')),
+                                              DropdownMenuItem(
+                                                  value: 'Credit Note',
+                                                  child: Text('Credit Note')),
+                                              DropdownMenuItem(
+                                                  value: 'Debit Note',
+                                                  child: Text('Debit Note')),
+                                              DropdownMenuItem(
+                                                  value: 'Revised Invoice',
+                                                  child: Text('Revised Invoice')),
+                                            ],
+                                            onChanged: _setDefaultInvoiceTitle,
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ),

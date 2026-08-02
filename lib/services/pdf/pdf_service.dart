@@ -500,7 +500,7 @@ class PDFService {
             children: [
               AppBar(
                 automaticallyImplyLeading: false,
-                title: Text('${invoice.type} #${invoice.invoiceNumber ?? invoice.id}'),
+                title: Text('${invoice.invoiceTitle ?? invoice.type} #${invoice.invoiceNumber ?? invoice.id}'),
                 actions: [
                   IconButton(
                     icon: const Icon(Icons.print_outlined),

@@ -140,7 +140,7 @@ pw.MultiPage buildCompactTemplate(
                       ),
                     ),
                     pw.Text(
-                      invoice.type,
+                      invoice.invoiceTitle ?? invoice.type,
                       style: pw.TextStyle(
                         fontSize: labelFont,
                         fontWeight: pw.FontWeight.bold,

@@ -255,6 +255,15 @@ class SettingsService {
     return val != null ? double.tryParse(val) ?? 0.12 : 0.12;
   }
 
+  static Future<void> setDefaultInvoiceTitle(String? title) async {
+    await setSetting(SettingKey.defaultInvoiceTitle, title ?? '');
+  }
+
+  static Future<String?> getDefaultInvoiceTitle() async {
+    final val = await getSetting(SettingKey.defaultInvoiceTitle);
+    return (val == null || val.isEmpty) ? null : val;
+  }
+
   static Future<String> getSignaturePosition() async {
     return await getSetting(SettingKey.signaturePosition) ?? 'left';
   }

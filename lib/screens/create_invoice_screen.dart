@@ -97,6 +97,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   bool isLoading = false;
 
   String invoiceType = 'Invoice';
+  String? invoiceTitle;
   double taxRate = Tax.defaultTaxRate;
   Invoice? _invoice;
   String currentInvoiceNumber = "";
@@ -152,6 +153,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       _isTaxEnabled = _invoice!.taxMode != TaxMode.none;
       _isPerItem = _invoice!.taxMode == TaxMode.perItem;
       invoiceType = _invoice!.type;
+      invoiceTitle = _invoice!.invoiceTitle;
       currentInvoiceNumber = _invoice!.invoiceNumber ?? _invoice!.id;
       _selectedOrderDate = _invoice!.date;
       dateController.text = DateFormat(_datePattern).format(_selectedOrderDate);
@@ -185,6 +187,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       _isTaxEnabled = src.taxMode != TaxMode.none;
       _isPerItem = src.taxMode == TaxMode.perItem;
       invoiceType = widget.cloneType ?? src.type;
+      invoiceTitle = invoiceType == src.type ? src.invoiceTitle : null;
       _quantityLabel = src.quantityLabel ?? '';
       for (final c in src.additionalCosts) {
         _additionalCostControllers.add((
@@ -400,6 +403,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         settingsRepo.getShowPreviousBalance(), // 12
         settingsRepo.getShowAliasNameInPdf(), // 13
         settingsRepo.getShowTaxButtonInInvoicePage(), // 14
+        settingsRepo.getDefaultInvoiceTitle(), // 15
       ]);
 
       final c = results[0] as List<Customer>;
@@ -433,6 +437,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       final showPrevBalance = results[12] as bool;
       final showAliasNameInPdf = results[13] as bool;
       final showTaxButtonInInvoicePage = results[14] as bool;
+      final defaultInvoiceTitle = results[15] as String?;
 
       // Determine which UPI to pre-select.
       String? existingUpiId;
@@ -501,6 +506,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         // For new invoices, use the global setting. Edit/clone already set _quantityLabel in initState.
         if (!isEditing && widget.cloneFrom == null) {
           _quantityLabel = quantityLabelSetting;
+          invoiceTitle = invoiceType == 'Invoice' ? defaultInvoiceTitle : null;
         }
         _datePattern = dateFormatOpt.key;
         dateController.text =
@@ -1021,6 +1027,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         notes: notesController.text.isNotEmpty ? notesController.text : null,
         taxRate: _taxMode == TaxMode.global ? taxRate : 0.0,
         type: invoiceType,
+        invoiceTitle: invoiceType == 'Invoice' ? invoiceTitle : null,
         currencyCode: _currencyCode,
         currencySymbol: _currencySymbol,
         taxMode: _taxMode,
@@ -2178,6 +2185,55 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                           },
                   ),
                 ),
+                if (invoiceType == 'Invoice') ...[
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: DropdownButtonFormField<String?>(
+                      isExpanded: true,
+                      value: invoiceTitle,
+                      decoration: InputDecoration(
+                        labelText: _showGstFields ? 'GST Title' : 'TAX Title',
+                        border: OutlineInputBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppBorderRadius.xsmall)),
+                        filled: true,
+                        fillColor:
+                            Theme.of(context).colorScheme.surfaceContainerHighest,
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                            value: null,
+                            child: Text('Invoice',
+                                style: TextStyle(fontSize: AppFontSize.medium))),
+                        DropdownMenuItem(
+                            value: 'Tax Invoice',
+                            child: Text('Tax Invoice',
+                                style: TextStyle(fontSize: AppFontSize.medium))),
+                        DropdownMenuItem(
+                            value: 'Bill of Supply',
+                            child: Text('Bill of Supply',
+                                style: TextStyle(fontSize: AppFontSize.medium))),
+                        DropdownMenuItem(
+                            value: 'Invoice-cum-Bill of Supply',
+                            child: Text('Invoice-cum-Bill of Supply',
+                                style: TextStyle(fontSize: AppFontSize.medium))),
+                        DropdownMenuItem(
+                            value: 'Credit Note',
+                            child: Text('Credit Note',
+                                style: TextStyle(fontSize: AppFontSize.medium))),
+                        DropdownMenuItem(
+                            value: 'Debit Note',
+                            child: Text('Debit Note',
+                                style: TextStyle(fontSize: AppFontSize.medium))),
+                        DropdownMenuItem(
+                            value: 'Revised Invoice',
+                            child: Text('Revised Invoice',
+                                style: TextStyle(fontSize: AppFontSize.medium))),
+                      ],
+                      onChanged: (value) => setState(() => invoiceTitle = value),
+                    ),
+                  ),
+                ],
                 if (_quantityLabel.trim().isNotEmpty) ...[
                   const SizedBox(width: 8),
                   Expanded(
@@ -2215,6 +2271,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     if(!mounted) return;
     setState(() {
       invoiceType = invoiceType_;
+      if (invoiceType_ != 'Invoice') invoiceTitle = null;
     });
     if (!isEditing) {
       final invNumber =
@@ -4090,6 +4147,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         notes: notesController.text.isNotEmpty ? notesController.text : null,
         taxRate: _taxMode == TaxMode.global ? taxRate : 0.0,
         type: invoiceType,
+        invoiceTitle: invoiceType == 'Invoice' ? invoiceTitle : null,
         currencyCode: _currencyCode,
         currencySymbol: _currencySymbol,
         taxMode: _taxMode,

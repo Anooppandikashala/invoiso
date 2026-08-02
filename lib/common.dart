@@ -64,6 +64,7 @@ enum SettingKey {
   themeMode, // app theme: 'light' | 'dark' | 'system'
   watermarkImage, // base64-encoded watermark image shown behind invoice items table
   watermarkOpacity, // watermark opacity 0.0-1.0 as string; default '0.12'
+  defaultInvoiceTitle, // GST document title preselected on new invoices: 'Tax Invoice' | 'Bill of Supply' | etc; null/empty = plain 'Invoice'
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -161,6 +162,8 @@ extension SettingKeyExtension on SettingKey {
         return 'watermark_image';
       case SettingKey.watermarkOpacity:
         return 'watermark_opacity';
+      case SettingKey.defaultInvoiceTitle:
+        return 'default_invoice_title';
     }
   }
 }

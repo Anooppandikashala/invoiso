@@ -143,7 +143,7 @@ pw.MultiPage buildExecutiveTemplate(
               if (logoImage != null && logoPosition == LogoPosition.right)
                 buildCompanyLogo(logoImage, size: logoSizePx),
               pw.Text(
-                invoice.type.toUpperCase(),
+                (invoice.invoiceTitle ?? invoice.type).toUpperCase(),
                 style: pw.TextStyle(
                   fontSize: 20,
                   fontWeight: pw.FontWeight.bold,
