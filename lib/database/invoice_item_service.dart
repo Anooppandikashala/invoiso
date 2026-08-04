@@ -11,6 +11,7 @@ class InvoiceItemService {
   static Future<void> insertInvoiceItems(String invId, InvoiceItem item) async {
     final db = await dbHelper.database;
     await db.insert('invoice_items', {
+      'id': item.id,
       'invoice_id': invId,
       'product_id': item.product.id,
       'product_name': item.product.name,
@@ -48,6 +49,7 @@ class InvoiceItemService {
             : (rawExtraCost is int ? rawExtraCost.toDouble() : rawExtraCost as double);
         items.add(
           InvoiceItem(
+            id: map['id'] as String?,
             product: product,
             quantity: (map['quantity'] is int)
                 ? (map['quantity'] as int).toDouble()

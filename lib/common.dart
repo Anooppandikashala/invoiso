@@ -65,6 +65,7 @@ enum SettingKey {
   watermarkImage, // base64-encoded watermark image shown behind invoice items table
   watermarkOpacity, // watermark opacity 0.0-1.0 as string; default '0.12'
   defaultInvoiceTitle, // GST document title preselected on new invoices: 'Tax Invoice' | 'Bill of Supply' | etc; null/empty = plain 'Invoice'
+  allowDuplicateInvoiceItems, // whether the same product can be added twice to one invoice (default false)
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -164,6 +165,8 @@ extension SettingKeyExtension on SettingKey {
         return 'watermark_opacity';
       case SettingKey.defaultInvoiceTitle:
         return 'default_invoice_title';
+      case SettingKey.allowDuplicateInvoiceItems:
+        return 'allow_duplicate_invoice_items';
     }
   }
 }

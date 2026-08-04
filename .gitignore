@@ -59,3 +59,20 @@ appimage-build/
 graphify-out/
 
 *landing/*
+
+output/
+email_builder/
+*.pdf
+*.txt
+*.csv
+*.pickle
+video/
+*.patch
+new_landing2/
+landing*
+.cursorrules
+.windsurfrules
+.opencode.json
+.mcp.json
+.claude/
+.cursor/

@@ -1,8 +1,11 @@
+import 'package:uuid/uuid.dart';
+
 import 'package:invoiso/models/product.dart';
 
 import 'package:invoiso/domain/invoice_totals_calculator.dart';
 
 class InvoiceItem {
+  String id;
   Product product;
   double quantity;
   double discount;
@@ -16,6 +19,7 @@ class InvoiceItem {
       isProductSaved; // true → custom item was saved to product list; hides the save button
 
   InvoiceItem({
+    String? id,
     required this.product,
     required this.quantity, // supports decimals (e.g. 1.5 hrs)
     this.discount = 0.0,
@@ -24,7 +28,7 @@ class InvoiceItem {
     this.unit,
     this.discountPerUnit = false,
     this.isProductSaved = false,
-  });
+  }) : id = id ?? const Uuid().v4();
 
   double get effectivePrice => unitPrice ?? product.price;
 

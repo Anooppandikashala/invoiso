@@ -114,6 +114,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   bool _showQuantity = true;
   bool _showPreviousBalance = false;
   bool _showAliasNameInPdf = false;
+  bool _allowDuplicateInvoiceItems = false;
   double _previousBalanceDue = 0.0;
   bool _isPreviousBalanceLoading = false;
   bool _isSavingCustomer = false;
@@ -405,6 +406,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         settingsRepo.getShowAliasNameInPdf(), // 13
         settingsRepo.getShowTaxButtonInInvoicePage(), // 14
         settingsRepo.getDefaultInvoiceTitle(), // 15
+        settingsRepo.getAllowDuplicateInvoiceItems(), // 16
       ]);
 
       final c = results[0] as List<Customer>;
@@ -446,6 +448,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       final showAliasNameInPdf = results[13] as bool;
       final showTaxButtonInInvoicePage = results[14] as bool;
       final defaultInvoiceTitle = results[15] as String?;
+      final allowDuplicateInvoiceItems = results[16] as bool;
 
       // Determine which UPI to pre-select.
       String? existingUpiId;
@@ -508,6 +511,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         _showQuantity = showQuantity;
         _showPreviousBalance = showPrevBalance;
         _showAliasNameInPdf = showAliasNameInPdf;
+        _allowDuplicateInvoiceItems = allowDuplicateInvoiceItems;
         _isTaxEnabled = showTaxButtonInInvoicePage;
         _businessType = businessType;
         _adHocItemType =
@@ -967,6 +971,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   void addInvoiceProduct(InvoiceItem invoiceItem, {int? insertAt}) {
     final isAdHoc = invoiceItem.product.id.startsWith('custom-');
     final exists = !isAdHoc &&
+        !_allowDuplicateInvoiceItems &&
         invoiceItems.any((item) => item.product.id == invoiceItem.product.id);
 
     if (exists) {

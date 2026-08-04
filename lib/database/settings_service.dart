@@ -329,4 +329,12 @@ class SettingsService {
   static Future<void> setThemeMode(String mode) async {
     await setSetting(SettingKey.themeMode, mode);
   }
+
+  static Future<bool> getAllowDuplicateInvoiceItems() async {
+    return await getSetting(SettingKey.allowDuplicateInvoiceItems) == 'true';
+  }
+
+  static Future<void> setAllowDuplicateInvoiceItems(bool allow) async {
+    await setSetting(SettingKey.allowDuplicateInvoiceItems, allow.toString());
+  }
 }
