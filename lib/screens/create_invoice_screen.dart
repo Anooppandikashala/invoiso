@@ -67,6 +67,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   List<Customer> filteredCustomers = [];
   List<Product> products = [];
   List<Product> filteredProducts = [];
+  Map<String, ProductMetadata> _productMetadata = {};
   Timer? _productSearchDebounce;
   int _productSearchRequestId = 0;
   static const int _productFetchLimit = 10;
@@ -432,6 +433,13 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
 
       final c = results[0] as List<Customer>;
       final p = results[1] as List<Product>;
+      final metadataIds = {
+        ...p.map((e) => e.id),
+        ...invoiceItems.map((e) => e.product.id),
+      }.toList();
+      final productMetadata = await ref
+          .read(productRepositoryProvider)
+          .getProductMetadataForIds(metadataIds);
       final invNumber = results[2] as String?;
 
       // Use the existing invoice's currency when editing or cloning,
@@ -509,6 +517,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         filteredCustomers = List.from(c);
         products = p;
         filteredProducts = List.from(p);
+        _productMetadata = productMetadata;
         if (invNumber != null) {
           currentInvoiceNumber = invNumber;
         }
@@ -723,7 +732,27 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (product.stock <= 0)
+                if (product.unlimitedStock)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.green[50],
+                      border: Border.all(color: Colors.green[200]!),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.all_inclusive,
+                            color: Colors.green, size: 18),
+                        const SizedBox(width: 8),
+                        const Text('Unlimited Stock',
+                            style: TextStyle(color: Colors.green)),
+                      ],
+                    ),
+                  )
+                else if (product.stock <= 0)
                   Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     padding:
@@ -765,6 +794,53 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       ],
                     ),
                   ),
+                Builder(builder: (context) {
+                  final meta = _productMetadata[product.id];
+                  final expiryDate = (meta?.expiryDate?.isNotEmpty ?? false)
+                      ? DateTime.tryParse(meta!.expiryDate!)
+                      : null;
+                  final isExpired =
+                      expiryDate != null && expiryDate.isBefore(DateTime.now());
+                  final storageLocation = meta?.storageLocation;
+                  if ((storageLocation == null || storageLocation.isEmpty) &&
+                      expiryDate == null) {
+                    return const SizedBox.shrink();
+                  }
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: [
+                        if (storageLocation != null && storageLocation.isNotEmpty)
+                          Chip(
+                            avatar: const Icon(Icons.place_outlined,
+                                size: 14, color: Colors.blueGrey),
+                            label: Text(storageLocation,
+                                style: const TextStyle(fontSize: AppFontSize.xsmall)),
+                            visualDensity: VisualDensity.compact,
+                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            backgroundColor: Colors.blueGrey[50],
+                          ),
+                        if (expiryDate != null)
+                          Chip(
+                            avatar: Icon(
+                                isExpired ? Icons.error_outline : Icons.event_outlined,
+                                size: 14,
+                                color: isExpired ? Colors.red : Colors.orange[800]),
+                            label: Text(
+                                '${isExpired ? 'Expired ' : 'Exp '}${DateFormat(_datePattern).format(expiryDate)}',
+                                style: TextStyle(
+                                    fontSize: AppFontSize.xsmall,
+                                    color: isExpired ? Colors.red : null)),
+                            visualDensity: VisualDensity.compact,
+                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            backgroundColor: isExpired ? Colors.red[50] : Colors.orange[50],
+                          ),
+                      ],
+                    ),
+                  );
+                }),
                 if (_showQuantity) ...[
                   TextField(
                     controller: quantityController,
@@ -1207,6 +1283,53 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     ],
                   ),
                 ),
+                Builder(builder: (context) {
+                  final meta = _productMetadata[item.product.id];
+                  final expiryDate = (meta?.expiryDate?.isNotEmpty ?? false)
+                      ? DateTime.tryParse(meta!.expiryDate!)
+                      : null;
+                  final isExpired =
+                      expiryDate != null && expiryDate.isBefore(DateTime.now());
+                  final storageLocation = meta?.storageLocation;
+                  if ((storageLocation == null || storageLocation.isEmpty) &&
+                      expiryDate == null) {
+                    return const SizedBox.shrink();
+                  }
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: [
+                        if (storageLocation != null && storageLocation.isNotEmpty)
+                          Chip(
+                            avatar: const Icon(Icons.place_outlined,
+                                size: 14, color: Colors.blueGrey),
+                            label: Text(storageLocation,
+                                style: const TextStyle(fontSize: AppFontSize.xsmall)),
+                            visualDensity: VisualDensity.compact,
+                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            backgroundColor: Colors.blueGrey[50],
+                          ),
+                        if (expiryDate != null)
+                          Chip(
+                            avatar: Icon(
+                                isExpired ? Icons.error_outline : Icons.event_outlined,
+                                size: 14,
+                                color: isExpired ? Colors.red : Colors.orange[800]),
+                            label: Text(
+                                '${isExpired ? 'Expired ' : 'Exp '}${DateFormat(_datePattern).format(expiryDate)}',
+                                style: TextStyle(
+                                    fontSize: AppFontSize.xsmall,
+                                    color: isExpired ? Colors.red : null)),
+                            visualDensity: VisualDensity.compact,
+                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            backgroundColor: isExpired ? Colors.red[50] : Colors.orange[50],
+                          ),
+                      ],
+                    ),
+                  );
+                }),
                 const SizedBox(height: 20),
                 if (_showQuantity) ...[
                   TextField(
@@ -1842,11 +1965,15 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     _productSearchDebounce?.cancel();
     _productSearchDebounce = Timer(const Duration(milliseconds: 400), () async {
       final requestId = ++_productSearchRequestId;
-      final results = await ref.read(productRepositoryProvider).getProductsPaginated(
+      final repo = ref.read(productRepositoryProvider);
+      final results = await repo.getProductsPaginated(
           offset: 0, limit: _productFetchLimit, query: query, type: _businessType.key);
+      final metadata =
+          await repo.getProductMetadataForIds(results.map((e) => e.id).toList());
       if (requestId != _productSearchRequestId || !mounted) return;
       setState(() {
         filteredProducts = results;
+        _productMetadata = {..._productMetadata, ...metadata};
       });
     });
   }
@@ -2166,6 +2293,13 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       controller: _productScrollController,
                       itemBuilder: (context, index) {
                         final product = filteredProducts[index];
+                        final meta = _productMetadata[product.id];
+                        final expiryDate = (meta?.expiryDate?.isNotEmpty ?? false)
+                            ? DateTime.tryParse(meta!.expiryDate!)
+                            : null;
+                        final isExpired =
+                            expiryDate != null && expiryDate.isBefore(DateTime.now());
+                        final storageLocation = meta?.storageLocation;
                         return Container(
                           margin: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 4),
@@ -2173,14 +2307,14 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                             leading: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: product.stock <= 0
+                                color: (!product.unlimitedStock && product.stock <= 0)
                                     ? Colors.red.withValues(alpha: 0.1)
                                     : Colors.blue.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Icon(
                                 Icons.inventory_2,
-                                color: product.stock <= 0
+                                color: (!product.unlimitedStock && product.stock <= 0)
                                     ? Colors.red
                                     : Theme.of(context).colorScheme.onSurfaceVariant,
                                 size: AppFontSize.xlarge,
@@ -2211,7 +2345,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                   children: [
                                     Flexible(
                                       child: Text(
-                                        '$_currencySymbol${product.price.toStringAsFixed(2)}  ·  Stock: ${product.stock}',
+                                        '$_currencySymbol${product.price.toStringAsFixed(2)}  ·  Stock: ${product.unlimitedStock ? '∞' : product.stock}',
                                         overflow: TextOverflow.ellipsis,
                                         style: const TextStyle(
                                             color: Colors.green,
@@ -2245,6 +2379,56 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                     ],
                                   ],
                                 ),
+                                if (storageLocation != null &&
+                                        storageLocation.isNotEmpty ||
+                                    expiryDate != null) ...[
+                                  const SizedBox(height: 4),
+                                  Wrap(
+                                    spacing: 6,
+                                    runSpacing: 4,
+                                    children: [
+                                      if (storageLocation != null &&
+                                          storageLocation.isNotEmpty)
+                                        Chip(
+                                          avatar: const Icon(Icons.place_outlined,
+                                              size: 14, color: Colors.blueGrey),
+                                          label: Text(storageLocation,
+                                              style: const TextStyle(
+                                                  fontSize: AppFontSize.xsmall)),
+                                          visualDensity: VisualDensity.compact,
+                                          materialTapTargetSize:
+                                              MaterialTapTargetSize.shrinkWrap,
+                                          padding: EdgeInsets.zero,
+                                          backgroundColor: Colors.blueGrey[50],
+                                        ),
+                                      if (expiryDate != null)
+                                        Chip(
+                                          avatar: Icon(
+                                              isExpired
+                                                  ? Icons.error_outline
+                                                  : Icons.event_outlined,
+                                              size: 14,
+                                              color: isExpired
+                                                  ? Colors.red
+                                                  : Colors.orange[800]),
+                                          label: Text(
+                                              '${isExpired ? 'Expired ' : 'Exp '}${DateFormat(_datePattern).format(expiryDate)}',
+                                              style: TextStyle(
+                                                  fontSize: AppFontSize.xsmall,
+                                                  color: isExpired
+                                                      ? Colors.red
+                                                      : null)),
+                                          visualDensity: VisualDensity.compact,
+                                          materialTapTargetSize:
+                                              MaterialTapTargetSize.shrinkWrap,
+                                          padding: EdgeInsets.zero,
+                                          backgroundColor: isExpired
+                                              ? Colors.red[50]
+                                              : Colors.orange[50],
+                                        ),
+                                    ],
+                                  ),
+                                ],
                               ],
                             ),
                             trailing: IconButton(

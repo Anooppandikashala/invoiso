@@ -34,7 +34,7 @@ class ProductService {
     final db = await dbHelper.database;
     final maps = await db.query(
       'products',
-      where: 'stock <= ?',
+      where: 'stock <= ? AND unlimited_stock = 0',
       whereArgs: [0],
       orderBy: 'name COLLATE NOCASE ASC',
     );
@@ -160,6 +160,59 @@ class ProductService {
   static Future<void> deleteProduct(String id) async {
     final db = await dbHelper.database;
     await db.delete('products', where: 'id = ?', whereArgs: [id]);
+    await db.delete('product_metadata', where: 'product_id = ?', whereArgs: [id]);
+  }
+
+  // ─────────────────────────────────────────────
+  // CRUD for ProductMetadata
+  static Future<ProductMetadata?> getProductMetadata(String productId) async {
+    final db = await dbHelper.database;
+    final maps = await db.query(
+      'product_metadata',
+      where: 'product_id = ?',
+      whereArgs: [productId],
+    );
+    return maps.isNotEmpty ? ProductMetadata.fromMap(maps.first) : null;
+  }
+
+  static Future<Map<String, ProductMetadata>> getAllProductMetadata() async {
+    final db = await dbHelper.database;
+    final maps = await db.query('product_metadata');
+    return {
+      for (final m in maps) m['product_id'] as String: ProductMetadata.fromMap(m)
+    };
+  }
+
+  static Future<Map<String, ProductMetadata>> getProductMetadataForIds(
+      List<String> productIds) async {
+    if (productIds.isEmpty) return {};
+    final db = await dbHelper.database;
+    final maps = await db.query(
+      'product_metadata',
+      where: 'product_id IN (${List.filled(productIds.length, '?').join(',')})',
+      whereArgs: productIds,
+    );
+    return {
+      for (final m in maps) m['product_id'] as String: ProductMetadata.fromMap(m)
+    };
+  }
+
+  static Future<void> upsertProductMetadata(ProductMetadata metadata) async {
+    if (metadata.isEmpty) {
+      await deleteProductMetadata(metadata.productId);
+      return;
+    }
+    final db = await dbHelper.database;
+    await db.insert(
+      'product_metadata',
+      metadata.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  static Future<void> deleteProductMetadata(String productId) async {
+    final db = await dbHelper.database;
+    await db.delete('product_metadata', where: 'product_id = ?', whereArgs: [productId]);
   }
 
   static Future<void> updateProductStock(String id, int newStock) async {
@@ -171,7 +224,7 @@ class ProductService {
   static Future<bool> hasSufficientStock(String productId, int quantity) async {
     final product = await getProductById(productId);
     if (product == null) return false;
-    return product.stock >= quantity;
+    return product.unlimitedStock || product.stock >= quantity;
   }
 
   /// Find an existing product by name (case-insensitive).
