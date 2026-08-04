@@ -15,7 +15,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 36;
+  final dbVersion = 37;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -120,6 +120,7 @@ class DatabaseHelper {
 
     await db.execute('''
       CREATE TABLE invoice_items (
+        id TEXT PRIMARY KEY,
         invoice_id TEXT,
         product_id TEXT,
         product_name TEXT,
@@ -137,8 +138,7 @@ class DatabaseHelper {
         product_purchase_price REAL DEFAULT 0.0,
         product_alias_name TEXT,
         product_unit TEXT DEFAULT '',
-        unit TEXT,
-        PRIMARY KEY (invoice_id, product_id)
+        unit TEXT
       )
     ''');
 
@@ -591,6 +591,51 @@ class DatabaseHelper {
         await db.execute(
           'ALTER TABLE invoices ADD COLUMN invoice_discount_value REAL DEFAULT 0.0',
         );
+      });
+    }
+
+    if (oldVersion < 37) {
+      // invoice_items had PRIMARY KEY (invoice_id, product_id), which blocked
+      // adding the same product twice to one invoice (allow_duplicate_invoice_items
+      // setting). SQLite can't drop a PK via ALTER, so rebuild the table.
+      await _runMigrationStep(db, 37, 'add_id_pk_to_invoice_items',
+          () async {
+        await db.execute('ALTER TABLE invoice_items RENAME TO invoice_items_old');
+        await db.execute('''
+          CREATE TABLE invoice_items (
+            id TEXT PRIMARY KEY,
+            invoice_id TEXT,
+            product_id TEXT,
+            product_name TEXT,
+            product_description TEXT,
+            product_price REAL,
+            product_tax_rate INTEGER,
+            product_hsn_code TEXT,
+            quantity REAL,
+            discount REAL,
+            unit_price REAL,
+            extra_cost REAL,
+            discount_per_unit INTEGER DEFAULT 0,
+            is_product_saved INTEGER DEFAULT 0,
+            product_type TEXT DEFAULT 'product',
+            product_purchase_price REAL DEFAULT 0.0,
+            product_alias_name TEXT,
+            product_unit TEXT DEFAULT '',
+            unit TEXT
+          )
+        ''');
+        await db.execute('''
+          INSERT INTO invoice_items SELECT
+            lower(hex(randomblob(16))),
+            invoice_id, product_id, product_name, product_description, product_price,
+            product_tax_rate, product_hsn_code, quantity, discount, unit_price, extra_cost,
+            discount_per_unit, is_product_saved, product_type, product_purchase_price,
+            product_alias_name, product_unit, unit
+          FROM invoice_items_old
+        ''');
+        await db.execute('DROP TABLE invoice_items_old');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_invoice_items_invoice ON invoice_items(invoice_id)');
       });
     }
   }

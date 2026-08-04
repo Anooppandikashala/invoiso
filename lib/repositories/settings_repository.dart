@@ -57,4 +57,6 @@ abstract class SettingsRepository {
   Future<bool> getShowTaxButtonInInvoicePage();
   Future<String> getThemeMode();
   Future<void> setThemeMode(String mode);
+  Future<bool> getAllowDuplicateInvoiceItems();
+  Future<void> setAllowDuplicateInvoiceItems(bool allow);
 }

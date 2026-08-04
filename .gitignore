@@ -59,4 +59,24 @@ appimage-build/
 graphify-out/
 
 *landing/*
+<<<<<<< HEAD
 windows/packaging/exe/vc_redist.x64.exe
+=======
+
+output/
+email_builder/
+*.pdf
+*.txt
+*.csv
+*.pickle
+video/
+*.patch
+new_landing2/
+landing*
+.cursorrules
+.windsurfrules
+.opencode.json
+.mcp.json
+.claude/
+.cursor/
+>>>>>>> origin/main

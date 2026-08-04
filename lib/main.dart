@@ -6,6 +6,7 @@ import 'package:invoiso/constants.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/providers/sqlite_repository_overrides.dart';
 import 'package:invoiso/providers/theme_provider.dart';
+import 'package:invoiso/theme/app_theme.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_company_info_repository.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_installation_repository.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_invoice_repository.dart';
@@ -112,51 +113,12 @@ class _MyAppState extends ConsumerState<MyApp> {
   @override
   Widget build(BuildContext context) {
     final themeMode = ref.watch(themeModeProvider);
-    final baseLightTheme = ThemeData(
-      primarySwatch: Colors.blue,
-      primaryColor: const Color(0xFF002E78),
-      visualDensity: VisualDensity.adaptivePlatformDensity,
-    );
     return MaterialApp(
       title: AppConfig.name,
       debugShowCheckedModeBanner: false,
       themeMode: themeMode,
-      theme: baseLightTheme.copyWith(
-        colorScheme: baseLightTheme.colorScheme.copyWith(
-          surfaceContainer: Colors.white,
-          surfaceContainerHighest: Colors.grey[50]!,
-          outline: Colors.grey[400]!,
-          outlineVariant: Colors.grey[300]!,
-          onSurface: Colors.black,
-          onSurfaceVariant: Colors.grey[600]!,
-        ),
-      ),
-      darkTheme: ThemeData(
-        brightness: Brightness.dark,
-        primarySwatch: Colors.blue,
-        primaryColor: const Color(0xFF6B9BFF),
-        scaffoldBackgroundColor: const Color(0xFF121212),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF1E3A5F),
-          foregroundColor: Colors.white,
-        ),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF6B9BFF),
-          surface: Color(0xFF1E1E1E),
-          surfaceContainer: Color(0xFF1E1E1E),
-          surfaceContainerHighest: Color(0xFF2A2A2A),
-          outline: Color(0xFF4A4A4A),
-          outlineVariant: Color(0xFF3A3A3A),
-          onSurface: Color(0xFFCCCCCC),
-          onSurfaceVariant: Color(0xFF9E9E9E),
-        ),
-        cardColor: const Color(0xFF1E1E1E),
-        cardTheme: const CardThemeData(surfaceTintColor: Colors.transparent),
-        dialogTheme: const DialogThemeData(
-          backgroundColor: Color(0xFF262626),
-        ),
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
       home: const SplashScreen(),
     );
   }

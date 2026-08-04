@@ -70,6 +70,7 @@ enum SettingKey {
   defaultInvoiceTitle, // GST document title preselected on new invoices: 'Tax Invoice' | 'Bill of Supply' | etc; null/empty = plain 'Invoice'
   productColumnsConfig, // JSON ProductColumnsConfig — which optional product fields (and invoice extra cost) are visible/editable
   shortcutsBannerDismissed, // '1' once user dismisses the keyboard-shortcuts discovery banner
+  allowDuplicateInvoiceItems, // whether the same product can be added twice to one invoice (default false)
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -179,6 +180,8 @@ extension SettingKeyExtension on SettingKey {
         return 'watermark_opacity';
       case SettingKey.defaultInvoiceTitle:
         return 'default_invoice_title';
+      case SettingKey.allowDuplicateInvoiceItems:
+        return 'allow_duplicate_invoice_items';
     }
   }
 }

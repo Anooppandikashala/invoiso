@@ -54,6 +54,7 @@ class InvoiceService {
 
       for (var item in invoice.items) {
         await txn.insert('invoice_items', {
+          'id': item.id,
           'invoice_id': invoice.id,
           'product_id': item.product.id,
           'product_name': item.product.name,
@@ -135,6 +136,7 @@ class InvoiceService {
       // 3. Insert new invoice items
       for (var item in invoice.items) {
         await txn.insert('invoice_items', {
+          'id': item.id,
           'invoice_id': invoice.id,
           'product_id': item.product.id,
           'product_name': item.product.name,
@@ -334,6 +336,7 @@ class InvoiceService {
                 ? rawExtraCost.toDouble()
                 : rawExtraCost as double);
         items.add(InvoiceItem(
+          id: row['id'] as String?,
           product: product,
           quantity: (row['quantity'] is int)
               ? (row['quantity'] as int).toDouble()
