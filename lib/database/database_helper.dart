@@ -15,7 +15,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 33;
+  final dbVersion = 35;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -68,7 +68,22 @@ class DatabaseHelper {
         default_discount REAL DEFAULT 0,
         purchase_price REAL DEFAULT 0.0,
         alias_name TEXT,
-        unit TEXT DEFAULT ''
+        unit TEXT DEFAULT '',
+        unlimited_stock INTEGER DEFAULT 0
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE product_metadata (
+        product_id TEXT PRIMARY KEY,
+        storage_location TEXT,
+        container_number TEXT,
+        batch_number TEXT,
+        expiry_date TEXT,
+        manufacture_date TEXT,
+        supplier_name TEXT,
+        sku_code TEXT,
+        notes TEXT
       )
     ''');
 
@@ -536,6 +551,34 @@ class DatabaseHelper {
         await db.execute(
           'ALTER TABLE invoices ADD COLUMN invoice_title TEXT',
         );
+      });
+    }
+
+    if (oldVersion < 34) {
+      await _runMigrationStep(db, 34, 'add_unlimited_stock_to_products',
+          () async {
+        await db.execute(
+          'ALTER TABLE products ADD COLUMN unlimited_stock INTEGER DEFAULT 0',
+        );
+      });
+    }
+
+    if (oldVersion < 35) {
+      await _runMigrationStep(db, 35, 'create_product_metadata_table',
+          () async {
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS product_metadata (
+            product_id TEXT PRIMARY KEY,
+            storage_location TEXT,
+            container_number TEXT,
+            batch_number TEXT,
+            expiry_date TEXT,
+            manufacture_date TEXT,
+            supplier_name TEXT,
+            sku_code TEXT,
+            notes TEXT
+          )
+        ''');
       });
     }
   }

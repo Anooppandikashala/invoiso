@@ -77,7 +77,7 @@ class InvoiceService {
     // Stock deduction happens outside the transaction to avoid nested DB calls
     for (var item in invoice.items) {
       final product = await ProductService.getProductById(item.product.id);
-      if (product != null) {
+      if (product != null && !product.unlimitedStock) {
         final newStock = product.stock - item.quantity.round();
         await ProductService.updateProductStock(product.id, newStock);
       }
@@ -157,7 +157,7 @@ class InvoiceService {
     for (var oldItem in oldItems) {
       final product =
           await ProductService.getProductById(oldItem['product_id'] as String);
-      if (product != null) {
+      if (product != null && !product.unlimitedStock) {
         final rawQty = oldItem['quantity'];
         final oldQty = rawQty is int ? rawQty : (rawQty as double).round();
         final restoredStock = product.stock + oldQty;
@@ -168,7 +168,7 @@ class InvoiceService {
     // Deduct stock for new items
     for (var item in invoice.items) {
       final product = await ProductService.getProductById(item.product.id);
-      if (product != null) {
+      if (product != null && !product.unlimitedStock) {
         final newStock = product.stock - item.quantity.round();
         await ProductService.updateProductStock(product.id, newStock);
       }

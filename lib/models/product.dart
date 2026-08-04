@@ -12,6 +12,7 @@ class Product {
   double purchasePrice;
   String? aliasName; // local-language display name for PDFs
   String unit;
+  bool unlimitedStock;
 
   Product({
     required this.id,
@@ -27,6 +28,7 @@ class Product {
     this.purchasePrice = 0.0,
     this.aliasName,
     this.unit = '',
+    this.unlimitedStock = false,
   });
 
   // Convert a Map into a Product object
@@ -46,6 +48,7 @@ class Product {
       purchasePrice: (map['purchase_price'] as num?)?.toDouble() ?? 0.0,
       aliasName: map['alias_name'] as String?,
       unit: map['unit'] as String? ?? '',
+      unlimitedStock: (map['unlimited_stock'] ?? 0) == 1,
     );
   }
 
@@ -83,10 +86,73 @@ class Product {
       'purchase_price': purchasePrice,
       'alias_name': aliasName,
       'unit': unit,
+      'unlimited_stock': unlimitedStock ? 1 : 0,
     };
   }
 
   /// Name to print on PDFs — [aliasName] when [useAlias] is on and set, else [name].
   String displayName(bool useAlias) =>
       (useAlias && (aliasName?.trim().isNotEmpty ?? false)) ? aliasName! : name;
+}
+
+class ProductMetadata {
+  String productId;
+  String? storageLocation;
+  String? containerNumber;
+  String? batchNumber;
+  String? expiryDate;
+  String? manufactureDate;
+  String? supplierName;
+  String? skuCode;
+  String? notes;
+
+  ProductMetadata({
+    required this.productId,
+    this.storageLocation,
+    this.containerNumber,
+    this.batchNumber,
+    this.expiryDate,
+    this.manufactureDate,
+    this.supplierName,
+    this.skuCode,
+    this.notes,
+  });
+
+  bool get isEmpty =>
+      (storageLocation?.isEmpty ?? true) &&
+      (containerNumber?.isEmpty ?? true) &&
+      (batchNumber?.isEmpty ?? true) &&
+      (expiryDate?.isEmpty ?? true) &&
+      (manufactureDate?.isEmpty ?? true) &&
+      (supplierName?.isEmpty ?? true) &&
+      (skuCode?.isEmpty ?? true) &&
+      (notes?.isEmpty ?? true);
+
+  factory ProductMetadata.fromMap(Map<String, dynamic> map) {
+    return ProductMetadata(
+      productId: map['product_id'] ?? '',
+      storageLocation: map['storage_location'] as String?,
+      containerNumber: map['container_number'] as String?,
+      batchNumber: map['batch_number'] as String?,
+      expiryDate: map['expiry_date'] as String?,
+      manufactureDate: map['manufacture_date'] as String?,
+      supplierName: map['supplier_name'] as String?,
+      skuCode: map['sku_code'] as String?,
+      notes: map['notes'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'product_id': productId,
+      'storage_location': storageLocation,
+      'container_number': containerNumber,
+      'batch_number': batchNumber,
+      'expiry_date': expiryDate,
+      'manufacture_date': manufactureDate,
+      'supplier_name': supplierName,
+      'sku_code': skuCode,
+      'notes': notes,
+    };
+  }
 }
