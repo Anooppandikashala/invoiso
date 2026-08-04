@@ -129,7 +129,10 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
   Future<void> _loadColumnsConfig() async {
     final config = await ref.read(settingsRepositoryProvider).getProductColumnsConfig();
     if (!mounted) return;
-    setState(() => _columnsConfig = config);
+    setState(() {
+      _columnsConfig = config;
+      if (!config.stock) _unlimitedStock = true;
+    });
   }
 
   Future<void> _loadColumnsBannerDismissed() async {
@@ -364,7 +367,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     _notesController.clear();
     if (mounted) setState(() {
       _selectedUnit = '';
-      _unlimitedStock = false;
+      _unlimitedStock = !_columnsConfig.stock;
       _expiryDate = null;
       _manufactureDate = null;
     });
@@ -467,7 +470,8 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     final dialogFormKey = GlobalKey<FormState>();
     String dialogItemType = product.type;
     String dialogUnit = product.unit;
-    bool dialogUnlimitedStock = product.unlimitedStock;
+    bool dialogUnlimitedStock =
+        !_columnsConfig.stock ? true : product.unlimitedStock;
 
     showDialog(
       context: context,
@@ -646,20 +650,22 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                           isTaxRate: true),
                       const SizedBox(height: 16),
                     ],
-                    _buildDialogTextField(stockCtrl, 'Stock', Icons.inventory,
-                        readOnly: !isEdit || dialogUnlimitedStock,
-                        keyboardType: TextInputType.number,
-                        isStock: !dialogUnlimitedStock),
-                    if (isEdit)
-                      CheckboxListTile(
-                        contentPadding: EdgeInsets.zero,
-                        controlAffinity: ListTileControlAffinity.leading,
-                        value: dialogUnlimitedStock,
-                        onChanged: (v) => setDialogState(
-                            () => dialogUnlimitedStock = v ?? false),
-                        title: const Text('Unlimited stock'),
-                      ),
-                    const SizedBox(height: 16),
+                    if (_columnsConfig.stock) ...[
+                      _buildDialogTextField(stockCtrl, 'Stock', Icons.inventory,
+                          readOnly: !isEdit || dialogUnlimitedStock,
+                          keyboardType: TextInputType.number,
+                          isStock: !dialogUnlimitedStock),
+                      if (isEdit)
+                        CheckboxListTile(
+                          contentPadding: EdgeInsets.zero,
+                          controlAffinity: ListTileControlAffinity.leading,
+                          value: dialogUnlimitedStock,
+                          onChanged: (v) => setDialogState(
+                              () => dialogUnlimitedStock = v ?? false),
+                          title: const Text('Unlimited stock'),
+                        ),
+                      const SizedBox(height: 16),
+                    ],
                     if (_columnsConfig.unit)
                     _buildUnitField(
                       selectedUnit: dialogUnit,
@@ -669,6 +675,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                       readOnly: !isEdit,
                     ),
                     const SizedBox(height: 16),
+                    if (_columnsConfig.productMetadata)
                     _buildMetadataSection(
                       storageLocationCtrl: storageLocationCtrl,
                       containerNumberCtrl: containerNumberCtrl,
@@ -791,14 +798,22 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
         leading: const Icon(Icons.more_horiz),
         childrenPadding: const EdgeInsets.only(top: 8),
         children: [
-          field(storageLocationCtrl, 'Storage Location', Icons.place_outlined),
-          field(containerNumberCtrl, 'Container Number', Icons.inventory_2_outlined),
-          field(batchNumberCtrl, 'Batch Number', Icons.tag),
-          dateField('Expiry Date', expiryDate, onExpiryChanged),
-          dateField('Manufacture Date', manufactureDate, onManufactureChanged),
-          field(supplierNameCtrl, 'Supplier Name', Icons.local_shipping_outlined),
-          field(skuCodeCtrl, 'SKU Code', Icons.qr_code_2),
-          field(notesCtrl, 'Notes', Icons.notes, maxLines: 3),
+          if (_columnsConfig.metaStorageLocation)
+            field(storageLocationCtrl, 'Storage Location', Icons.place_outlined),
+          if (_columnsConfig.metaContainerNumber)
+            field(containerNumberCtrl, 'Container Number', Icons.inventory_2_outlined),
+          if (_columnsConfig.metaBatchNumber)
+            field(batchNumberCtrl, 'Batch Number', Icons.tag),
+          if (_columnsConfig.metaExpiryDate)
+            dateField('Expiry Date', expiryDate, onExpiryChanged),
+          if (_columnsConfig.metaManufactureDate)
+            dateField('Manufacture Date', manufactureDate, onManufactureChanged),
+          if (_columnsConfig.metaSupplierName)
+            field(supplierNameCtrl, 'Supplier Name', Icons.local_shipping_outlined),
+          if (_columnsConfig.metaSkuCode)
+            field(skuCodeCtrl, 'SKU Code', Icons.qr_code_2),
+          if (_columnsConfig.metaNotes)
+            field(notesCtrl, 'Notes', Icons.notes, maxLines: 3),
         ],
       ),
     );
@@ -1735,7 +1750,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                           setState(()
                           {
                             _newItemType = val.first;
-                            if(_newItemType == 'service')
+                            if(_newItemType == 'service' || !_columnsConfig.stock)
                             {
                               _unlimitedStock = true;
                             }
@@ -1806,22 +1821,24 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                           keyboardType: TextInputType.number, isTaxRate: true),
                       const SizedBox(height: 16),
                     ],
-                    _buildFormField(_stockController, 'Stock', Icons.inventory,
-                        keyboardType: TextInputType.number,
-                        isStock: true,
-                        required: !_unlimitedStock,
-                        enabled: !_unlimitedStock),
-                    CheckboxListTile(
-                      contentPadding: EdgeInsets.zero,
-                      controlAffinity: ListTileControlAffinity.leading,
-                      value: _unlimitedStock,
-                      onChanged: (v) {
-                        if (!mounted) return;
-                        setState(() => _unlimitedStock = v ?? false);
-                      },
-                      title: const Text('Unlimited stock'),
-                    ),
-                    const SizedBox(height: 16),
+                    if (_columnsConfig.stock) ...[
+                      _buildFormField(_stockController, 'Stock', Icons.inventory,
+                          keyboardType: TextInputType.number,
+                          isStock: true,
+                          required: !_unlimitedStock,
+                          enabled: !_unlimitedStock),
+                      CheckboxListTile(
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                        value: _unlimitedStock,
+                        onChanged: (v) {
+                          if (!mounted) return;
+                          setState(() => _unlimitedStock = v ?? false);
+                        },
+                        title: const Text('Unlimited stock'),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                     if (_columnsConfig.unit) ...[
                       _buildUnitField(
                         selectedUnit: _selectedUnit,
@@ -1832,6 +1849,8 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                         },
                       ),
                       const SizedBox(height: 16),
+                    ],
+                    if (_columnsConfig.productMetadata)
                       _buildMetadataSection(
                         storageLocationCtrl: _storageLocationController,
                         containerNumberCtrl: _containerNumberController,
@@ -1851,7 +1870,6 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                           setState(() => _manufactureDate = d);
                         },
                       ),
-                    ],
                     Row(
                       children: [
                         Expanded(
@@ -2266,9 +2284,10 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
           const DataColumn(
               label: Text('Tax Rate',
                   style: TextStyle(fontWeight: FontWeight.bold))),
-        const DataColumn(
-            label:
-                Text('Stock', style: TextStyle(fontWeight: FontWeight.bold))),
+        if (_columnsConfig.stock)
+          const DataColumn(
+              label:
+                  Text('Stock', style: TextStyle(fontWeight: FontWeight.bold))),
         if (_columnsConfig.unit)
           const DataColumn(
               label:
@@ -2394,6 +2413,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                 ),
               ),
             ),
+            if (_columnsConfig.stock)
             DataCell(
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

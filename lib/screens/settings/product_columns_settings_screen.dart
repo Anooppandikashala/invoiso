@@ -81,6 +81,24 @@ class _ProductColumnsSettingsScreenState
     );
   }
 
+  Widget _subTile({
+    required String title,
+    required bool value,
+    required ValueChanged<bool>? onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 24, bottom: 4),
+      child: SwitchListTile(
+        dense: true,
+        title: Text(title, style: const TextStyle(fontSize: AppFontSize.small)),
+        value: value,
+        onChanged: onChanged,
+        activeColor: Theme.of(context).primaryColor,
+        controlAffinity: ListTileControlAffinity.leading,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -176,8 +194,8 @@ class _ProductColumnsSettingsScreenState
                             padding: const EdgeInsets.only(bottom: 12),
                             child: Text(
                               'Choose which fields appear on the product add/edit forms, '
-                              'the product list, and invoice line items. Name, Price, '
-                              'and Stock are always required.',
+                              'the product list, and invoice line items. Name and Price '
+                              'are always required.',
                               style: TextStyle(
                                   color: Theme.of(context)
                                       .colorScheme
@@ -200,10 +218,12 @@ class _ProductColumnsSettingsScreenState
                           ),
                           _tile(
                             title: 'Stock',
-                            subtitle: 'Always shown — required.',
+                            subtitle: 'Turn off if you never track stock — '
+                                'products default to unlimited stock instead.',
                             icon: Icons.inventory_2_outlined,
-                            value: true,
-                            onChanged: null,
+                            value: _config.stock,
+                            onChanged: (v) => setState(
+                                () => _config = _config.copyWith(stock: v)),
                           ),
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 8),
@@ -276,6 +296,66 @@ class _ProductColumnsSettingsScreenState
                             onChanged: (v) => setState(
                                 () => _config = _config.copyWith(type: v)),
                           ),
+                          _tile(
+                            title: 'Product Metadata',
+                            subtitle:
+                                'Storage location, container/batch number, expiry, '
+                                'manufacture date, supplier, SKU, notes.',
+                            icon: Icons.more_horiz,
+                            value: _config.productMetadata,
+                            onChanged: (v) => setState(() =>
+                                _config = _config.copyWith(productMetadata: v)),
+                          ),
+                          if (_config.productMetadata) ...[
+                            _subTile(
+                              title: 'Storage Location',
+                              value: _config.metaStorageLocation,
+                              onChanged: (v) => setState(() => _config =
+                                  _config.copyWith(metaStorageLocation: v)),
+                            ),
+                            _subTile(
+                              title: 'Container Number',
+                              value: _config.metaContainerNumber,
+                              onChanged: (v) => setState(() => _config =
+                                  _config.copyWith(metaContainerNumber: v)),
+                            ),
+                            _subTile(
+                              title: 'Batch Number',
+                              value: _config.metaBatchNumber,
+                              onChanged: (v) => setState(() => _config =
+                                  _config.copyWith(metaBatchNumber: v)),
+                            ),
+                            _subTile(
+                              title: 'Expiry Date',
+                              value: _config.metaExpiryDate,
+                              onChanged: (v) => setState(() => _config =
+                                  _config.copyWith(metaExpiryDate: v)),
+                            ),
+                            _subTile(
+                              title: 'Manufacture Date',
+                              value: _config.metaManufactureDate,
+                              onChanged: (v) => setState(() => _config =
+                                  _config.copyWith(metaManufactureDate: v)),
+                            ),
+                            _subTile(
+                              title: 'Supplier Name',
+                              value: _config.metaSupplierName,
+                              onChanged: (v) => setState(() => _config =
+                                  _config.copyWith(metaSupplierName: v)),
+                            ),
+                            _subTile(
+                              title: 'SKU Code',
+                              value: _config.metaSkuCode,
+                              onChanged: (v) => setState(() =>
+                                  _config = _config.copyWith(metaSkuCode: v)),
+                            ),
+                            _subTile(
+                              title: 'Notes',
+                              value: _config.metaNotes,
+                              onChanged: (v) => setState(() =>
+                                  _config = _config.copyWith(metaNotes: v)),
+                            ),
+                          ],
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 8),
                             child: Text('Invoice',

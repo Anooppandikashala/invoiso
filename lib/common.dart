@@ -491,6 +491,16 @@ class ProductColumnsConfig {
   final bool unit;
   final bool type;
   final bool extraCost;
+  final bool stock;
+  final bool productMetadata;
+  final bool metaStorageLocation;
+  final bool metaContainerNumber;
+  final bool metaBatchNumber;
+  final bool metaExpiryDate;
+  final bool metaManufactureDate;
+  final bool metaSupplierName;
+  final bool metaSkuCode;
+  final bool metaNotes;
 
   const ProductColumnsConfig({
     this.aliasName = true,
@@ -502,6 +512,16 @@ class ProductColumnsConfig {
     this.unit = true,
     this.type = true,
     this.extraCost = true,
+    this.stock = true,
+    this.productMetadata = true,
+    this.metaStorageLocation = true,
+    this.metaContainerNumber = true,
+    this.metaBatchNumber = true,
+    this.metaExpiryDate = true,
+    this.metaManufactureDate = true,
+    this.metaSupplierName = true,
+    this.metaSkuCode = true,
+    this.metaNotes = true,
   });
 
   Map<String, dynamic> toJson() => {
@@ -514,6 +534,16 @@ class ProductColumnsConfig {
         'unit': unit,
         'type': type,
         'extraCost': extraCost,
+        'stock': stock,
+        'productMetadata': productMetadata,
+        'metaStorageLocation': metaStorageLocation,
+        'metaContainerNumber': metaContainerNumber,
+        'metaBatchNumber': metaBatchNumber,
+        'metaExpiryDate': metaExpiryDate,
+        'metaManufactureDate': metaManufactureDate,
+        'metaSupplierName': metaSupplierName,
+        'metaSkuCode': metaSkuCode,
+        'metaNotes': metaNotes,
       };
 
   factory ProductColumnsConfig.fromJson(Map<String, dynamic> json) =>
@@ -527,6 +557,16 @@ class ProductColumnsConfig {
         unit: json['unit'] as bool? ?? true,
         type: json['type'] as bool? ?? true,
         extraCost: json['extraCost'] as bool? ?? true,
+        stock: json['stock'] as bool? ?? true,
+        productMetadata: json['productMetadata'] as bool? ?? true,
+        metaStorageLocation: json['metaStorageLocation'] as bool? ?? true,
+        metaContainerNumber: json['metaContainerNumber'] as bool? ?? true,
+        metaBatchNumber: json['metaBatchNumber'] as bool? ?? true,
+        metaExpiryDate: json['metaExpiryDate'] as bool? ?? true,
+        metaManufactureDate: json['metaManufactureDate'] as bool? ?? true,
+        metaSupplierName: json['metaSupplierName'] as bool? ?? true,
+        metaSkuCode: json['metaSkuCode'] as bool? ?? true,
+        metaNotes: json['metaNotes'] as bool? ?? true,
       );
 
   ProductColumnsConfig copyWith({
@@ -539,6 +579,16 @@ class ProductColumnsConfig {
     bool? unit,
     bool? type,
     bool? extraCost,
+    bool? stock,
+    bool? productMetadata,
+    bool? metaStorageLocation,
+    bool? metaContainerNumber,
+    bool? metaBatchNumber,
+    bool? metaExpiryDate,
+    bool? metaManufactureDate,
+    bool? metaSupplierName,
+    bool? metaSkuCode,
+    bool? metaNotes,
   }) =>
       ProductColumnsConfig(
         aliasName: aliasName ?? this.aliasName,
@@ -550,6 +600,16 @@ class ProductColumnsConfig {
         unit: unit ?? this.unit,
         type: type ?? this.type,
         extraCost: extraCost ?? this.extraCost,
+        stock: stock ?? this.stock,
+        productMetadata: productMetadata ?? this.productMetadata,
+        metaStorageLocation: metaStorageLocation ?? this.metaStorageLocation,
+        metaContainerNumber: metaContainerNumber ?? this.metaContainerNumber,
+        metaBatchNumber: metaBatchNumber ?? this.metaBatchNumber,
+        metaExpiryDate: metaExpiryDate ?? this.metaExpiryDate,
+        metaManufactureDate: metaManufactureDate ?? this.metaManufactureDate,
+        metaSupplierName: metaSupplierName ?? this.metaSupplierName,
+        metaSkuCode: metaSkuCode ?? this.metaSkuCode,
+        metaNotes: metaNotes ?? this.metaNotes,
       );
 }
 

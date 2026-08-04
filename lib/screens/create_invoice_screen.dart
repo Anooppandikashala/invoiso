@@ -615,7 +615,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       final extraCost = double.tryParse(extraCostController.text);
 
       // Check stock
-      if (product.stock > 0 && qty > product.stock) {
+      if (!product.unlimitedStock &&
+          product.stock > 0 &&
+          qty > product.stock) {
         // Insufficient stock — ask user if they want to add anyway
         Navigator.pop(context);
         final addAnyway = await showDialog<bool>(
@@ -651,7 +653,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   discountPerUnit: discountPerUnit),
               insertAt: insertAt);
         }
-      } else if (product.stock <= 0) {
+      } else if (!product.unlimitedStock && product.stock <= 0) {
         Navigator.pop(context);
         final addAnyway = await showDialog<bool>(
           context: context,
@@ -795,13 +797,16 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     ),
                   ),
                 Builder(builder: (context) {
+                  if (!_columnsConfig.productMetadata) return const SizedBox.shrink();
                   final meta = _productMetadata[product.id];
-                  final expiryDate = (meta?.expiryDate?.isNotEmpty ?? false)
+                  final expiryDate = (_columnsConfig.metaExpiryDate &&
+                          (meta?.expiryDate?.isNotEmpty ?? false))
                       ? DateTime.tryParse(meta!.expiryDate!)
                       : null;
                   final isExpired =
                       expiryDate != null && expiryDate.isBefore(DateTime.now());
-                  final storageLocation = meta?.storageLocation;
+                  final storageLocation =
+                      _columnsConfig.metaStorageLocation ? meta?.storageLocation : null;
                   if ((storageLocation == null || storageLocation.isEmpty) &&
                       expiryDate == null) {
                     return const SizedBox.shrink();
@@ -1284,13 +1289,16 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   ),
                 ),
                 Builder(builder: (context) {
+                  if (!_columnsConfig.productMetadata) return const SizedBox.shrink();
                   final meta = _productMetadata[item.product.id];
-                  final expiryDate = (meta?.expiryDate?.isNotEmpty ?? false)
+                  final expiryDate = (_columnsConfig.metaExpiryDate &&
+                          (meta?.expiryDate?.isNotEmpty ?? false))
                       ? DateTime.tryParse(meta!.expiryDate!)
                       : null;
                   final isExpired =
                       expiryDate != null && expiryDate.isBefore(DateTime.now());
-                  final storageLocation = meta?.storageLocation;
+                  final storageLocation =
+                      _columnsConfig.metaStorageLocation ? meta?.storageLocation : null;
                   if ((storageLocation == null || storageLocation.isEmpty) &&
                       expiryDate == null) {
                     return const SizedBox.shrink();
@@ -2293,13 +2301,18 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       controller: _productScrollController,
                       itemBuilder: (context, index) {
                         final product = filteredProducts[index];
-                        final meta = _productMetadata[product.id];
-                        final expiryDate = (meta?.expiryDate?.isNotEmpty ?? false)
+                        final meta = _columnsConfig.productMetadata
+                            ? _productMetadata[product.id]
+                            : null;
+                        final expiryDate = (_columnsConfig.metaExpiryDate &&
+                                (meta?.expiryDate?.isNotEmpty ?? false))
                             ? DateTime.tryParse(meta!.expiryDate!)
                             : null;
                         final isExpired =
                             expiryDate != null && expiryDate.isBefore(DateTime.now());
-                        final storageLocation = meta?.storageLocation;
+                        final storageLocation = _columnsConfig.metaStorageLocation
+                            ? meta?.storageLocation
+                            : null;
                         return Container(
                           margin: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 4),
