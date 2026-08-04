@@ -44,6 +44,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
   String? _watermarkBase64;
   double _watermarkOpacity = 0.12;
   String? _defaultInvoiceTitle;
+  bool _allowDuplicateInvoiceItems = false;
   int _invoiceCount = 0;
   bool _isLoading = true;
   bool _isSaving = false;
@@ -84,6 +85,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
       settingsRepo.getWatermarkImage(),
       settingsRepo.getWatermarkOpacity(),
       settingsRepo.getDefaultInvoiceTitle(),
+      settingsRepo.getAllowDuplicateInvoiceItems(),
     ]);
 
     if (!mounted) return;
@@ -117,6 +119,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
       _watermarkBase64 = results[22] as String?;
       _watermarkOpacity = results[23] as double;
       _defaultInvoiceTitle = results[24] as String?;
+      _allowDuplicateInvoiceItems = results[25] as bool;
       _isLoading = false;
     });
   }
@@ -157,6 +160,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
           SettingKey.showAliasNameInPdf, _showAliasNameInPdf.toString()),
       settingsRepo.setSetting(
           SettingKey.showTaxButtonInInvoicePage, _showTaxButtonInInvoicePage.toString()),
+      settingsRepo.setAllowDuplicateInvoiceItems(_allowDuplicateInvoiceItems),
     ]);
 
     if (!mounted) return;
@@ -1057,6 +1061,38 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                         onChanged: (val) {
                                           if(!mounted) return;
                                           setState(() => _showTypeTag = val);
+                                        },
+                                        activeColor: Theme.of(context).primaryColor,
+                                      ),
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 12),
+                                  // Allow Duplicate Invoice Items Toggle
+                                  SizedBox(
+                                    width: constraints.maxWidth,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                        borderRadius: BorderRadius.circular(
+                                            AppBorderRadius.xsmall),
+                                        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                                      ),
+                                      child: SwitchListTile(
+                                        title: const Text('Allow Duplicate Invoice Items'),
+                                        subtitle: const Text(
+                                          'Allow adding the same product more than once to an invoice',
+                                        ),
+                                        secondary: Icon(
+                                          Icons.content_copy_outlined,
+                                          color: _allowDuplicateInvoiceItems
+                                              ? Theme.of(context).primaryColor
+                                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                                        ),
+                                        value: _allowDuplicateInvoiceItems,
+                                        onChanged: (val) {
+                                          if(!mounted) return;
+                                          setState(() => _allowDuplicateInvoiceItems = val);
                                         },
                                         activeColor: Theme.of(context).primaryColor,
                                       ),
