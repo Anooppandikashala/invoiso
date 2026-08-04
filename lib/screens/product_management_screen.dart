@@ -13,6 +13,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:file_picker/file_picker.dart';
 import 'package:csv/csv.dart';
 
+import 'package:intl/intl.dart';
 import 'package:invoiso/common.dart';
 import 'package:invoiso/models/product.dart';
 import 'package:invoiso/models/user.dart';
@@ -60,10 +61,22 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
   String _selectedUnit = '';
   final _formKey = GlobalKey<FormState>();
 
+  // Metadata form controllers (add form)
+  final _storageLocationController = TextEditingController();
+  final _containerNumberController = TextEditingController();
+  final _batchNumberController = TextEditingController();
+  final _supplierNameController = TextEditingController();
+  final _skuCodeController = TextEditingController();
+  final _notesController = TextEditingController();
+  DateTime? _expiryDate;
+  DateTime? _manufactureDate;
+  String _datePattern = 'dd/MM/yyyy';
+
   String _currencySymbol = '₹';
   BusinessType _businessType = BusinessType.both;
   String _typeFilter = 'both'; // 'both' | 'product' | 'service'
   String _newItemType = 'product'; // type for the add-product form
+  bool _unlimitedStock = false;
 
   static const _csvMaxRows = 500;
   static const _csvHeaders = [
@@ -78,6 +91,15 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     'purchase_price',
     'alias_name',
     'unit',
+    'unlimited_stock',
+    'storage_location',
+    'container_number',
+    'batch_number',
+    'expiry_date',
+    'manufacture_date',
+    'supplier_name',
+    'sku_code',
+    'notes',
   ];
 
   @override
@@ -88,6 +110,14 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     _loadBusinessType();
     _loadProducts();
     _loadCurrency();
+    _loadDateFormat();
+  }
+
+  Future<void> _loadDateFormat() async {
+    if (!mounted) return;
+    final fmt = await ref.read(settingsRepositoryProvider).getDateFormat();
+    if (!mounted) return;
+    setState(() => _datePattern = fmt.key);
   }
 
   Future<void> _loadBusinessType() async {
@@ -120,6 +150,12 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     _taxRateController.dispose();
     _hsnCodeController.dispose();
     _customUnitController.dispose();
+    _storageLocationController.dispose();
+    _containerNumberController.dispose();
+    _batchNumberController.dispose();
+    _supplierNameController.dispose();
+    _skuCodeController.dispose();
+    _notesController.dispose();
     _searchFocusNode.dispose();
     _horizontalScrollController.dispose();
     _searchDebounce?.cancel();
@@ -175,7 +211,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
         price: price,
-        stock: int.parse(_stockController.text.trim()),
+        stock: _unlimitedStock ? 0 : int.parse(_stockController.text.trim()),
         hsncode: _hsnCodeController.text.trim(),
         tax_rate: int.parse(_taxRateController.text.trim()),
         type: _newItemType,
@@ -186,9 +222,23 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
             ? null
             : _aliasNameController.text.trim(),
         unit: _selectedUnit.trim(),
+        unlimitedStock: _unlimitedStock,
       );
 
       await ref.read(productRepositoryProvider).insertProduct(newProduct);
+      await ref.read(productRepositoryProvider).upsertProductMetadata(
+            ProductMetadata(
+              productId: newProduct.id,
+              storageLocation: _storageLocationController.text.trim(),
+              containerNumber: _containerNumberController.text.trim(),
+              batchNumber: _batchNumberController.text.trim(),
+              expiryDate: _isoDate(_expiryDate),
+              manufactureDate: _isoDate(_manufactureDate),
+              supplierName: _supplierNameController.text.trim(),
+              skuCode: _skuCodeController.text.trim(),
+              notes: _notesController.text.trim(),
+            ),
+          );
       _clearForm();
       await _loadProducts();
       _showSnackBar('Product added successfully!');
@@ -212,8 +262,25 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     _taxRateController.clear();
     _taxRateController.text = "18";
     _customUnitController.clear();
-    if (mounted) setState(() => _selectedUnit = '');
+    _storageLocationController.clear();
+    _containerNumberController.clear();
+    _batchNumberController.clear();
+    _supplierNameController.clear();
+    _skuCodeController.clear();
+    _notesController.clear();
+    if (mounted) setState(() {
+      _selectedUnit = '';
+      _unlimitedStock = false;
+      _expiryDate = null;
+      _manufactureDate = null;
+    });
   }
+
+  static String _isoDate(DateTime? d) =>
+      d == null ? '' : DateFormat('yyyy-MM-dd').format(d);
+
+  static DateTime? _parseIsoDate(String? s) =>
+      (s == null || s.isEmpty) ? null : DateTime.tryParse(s);
 
   void _showSnackBar(String message, {bool isError = false}) {
     if (!mounted) return;
@@ -267,7 +334,23 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     return proceed ?? false;
   }
 
-  void _showProductDialog(Product product, bool isEdit) {
+  Future<void> _showProductDialog(Product product, bool isEdit) async {
+    final existingMetadata =
+        await ref.read(productRepositoryProvider).getProductMetadata(product.id);
+    final storageLocationCtrl =
+        TextEditingController(text: existingMetadata?.storageLocation ?? '');
+    final containerNumberCtrl =
+        TextEditingController(text: existingMetadata?.containerNumber ?? '');
+    final batchNumberCtrl =
+        TextEditingController(text: existingMetadata?.batchNumber ?? '');
+    DateTime? dialogExpiryDate = _parseIsoDate(existingMetadata?.expiryDate);
+    DateTime? dialogManufactureDate =
+        _parseIsoDate(existingMetadata?.manufactureDate);
+    final supplierNameCtrl =
+        TextEditingController(text: existingMetadata?.supplierName ?? '');
+    final skuCodeCtrl = TextEditingController(text: existingMetadata?.skuCode ?? '');
+    final notesCtrl = TextEditingController(text: existingMetadata?.notes ?? '');
+    if (!mounted) return;
     //final isEdit = product != null;
     final nameCtrl = TextEditingController(text: product.name);
     final aliasNameCtrl = TextEditingController(text: product.aliasName ?? '');
@@ -290,6 +373,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     final dialogFormKey = GlobalKey<FormState>();
     String dialogItemType = product.type;
     String dialogUnit = product.unit;
+    bool dialogUnlimitedStock = product.unlimitedStock;
 
     showDialog(
       context: context,
@@ -399,9 +483,18 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                         isTaxRate: true),
                     const SizedBox(height: 16),
                     _buildDialogTextField(stockCtrl, 'Stock', Icons.inventory,
-                        readOnly: !isEdit,
+                        readOnly: !isEdit || dialogUnlimitedStock,
                         keyboardType: TextInputType.number,
-                        isStock: true),
+                        isStock: !dialogUnlimitedStock),
+                    if (isEdit)
+                      CheckboxListTile(
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                        value: dialogUnlimitedStock,
+                        onChanged: (v) => setDialogState(
+                            () => dialogUnlimitedStock = v ?? false),
+                        title: const Text('Unlimited stock'),
+                      ),
                     const SizedBox(height: 16),
                     _buildUnitField(
                       selectedUnit: dialogUnit,
@@ -409,6 +502,23 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                       onUnitChanged: (v) =>
                           setDialogState(() => dialogUnit = v),
                       readOnly: !isEdit,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildMetadataSection(
+                      storageLocationCtrl: storageLocationCtrl,
+                      containerNumberCtrl: containerNumberCtrl,
+                      batchNumberCtrl: batchNumberCtrl,
+                      supplierNameCtrl: supplierNameCtrl,
+                      skuCodeCtrl: skuCodeCtrl,
+                      notesCtrl: notesCtrl,
+                      expiryDate: dialogExpiryDate,
+                      manufactureDate: dialogManufactureDate,
+                      datePattern: _datePattern,
+                      readOnly: !isEdit,
+                      onExpiryChanged: (d) =>
+                          setDialogState(() => dialogExpiryDate = d),
+                      onManufactureChanged: (d) =>
+                          setDialogState(() => dialogManufactureDate = d),
                     ),
                   ],
                 ),
@@ -438,7 +548,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                       name: nameCtrl.text.trim(),
                       description: descriptionCtrl.text.trim(),
                       price: dialogPrice,
-                      stock: int.parse(stockCtrl.text.trim()),
+                      stock: dialogUnlimitedStock ? 0 : int.parse(stockCtrl.text.trim()),
                       hsncode: hsnCodeCtrl.text.trim(),
                       tax_rate: int.parse(taxRateCtrl.text.trim()),
                       type: dialogItemType,
@@ -449,9 +559,23 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                           ? null
                           : aliasNameCtrl.text.trim(),
                       unit: dialogUnit.trim(),
+                      unlimitedStock: dialogUnlimitedStock
                     );
 
                     await ref.read(productRepositoryProvider).updateProduct(updatedProduct);
+                    await ref.read(productRepositoryProvider).upsertProductMetadata(
+                          ProductMetadata(
+                            productId: product.id,
+                            storageLocation: storageLocationCtrl.text.trim(),
+                            containerNumber: containerNumberCtrl.text.trim(),
+                            batchNumber: batchNumberCtrl.text.trim(),
+                            expiryDate: _isoDate(dialogExpiryDate),
+                            manufactureDate: _isoDate(dialogManufactureDate),
+                            supplierName: supplierNameCtrl.text.trim(),
+                            skuCode: skuCodeCtrl.text.trim(),
+                            notes: notesCtrl.text.trim(),
+                          ),
+                        );
                     await _loadProducts();
                     if (context.mounted) Navigator.pop(context);
                     _showSnackBar('Product/Service updated successfully!');
@@ -469,6 +593,99 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
         },
         );
       },
+    );
+  }
+
+  Widget _buildMetadataSection({
+    required TextEditingController storageLocationCtrl,
+    required TextEditingController containerNumberCtrl,
+    required TextEditingController batchNumberCtrl,
+    required TextEditingController supplierNameCtrl,
+    required TextEditingController skuCodeCtrl,
+    required TextEditingController notesCtrl,
+    required DateTime? expiryDate,
+    required DateTime? manufactureDate,
+    required String datePattern,
+    required ValueChanged<DateTime?> onExpiryChanged,
+    required ValueChanged<DateTime?> onManufactureChanged,
+    bool readOnly = false,
+  }) {
+    Widget field(TextEditingController ctrl, String label, IconData icon,
+        {int maxLines = 1}) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: TextFormField(
+          controller: ctrl,
+          readOnly: readOnly,
+          maxLines: maxLines,
+          decoration: InputDecoration(
+            labelText: label,
+            prefixIcon: Icon(icon),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+            filled: readOnly,
+            fillColor:
+                readOnly ? Theme.of(context).colorScheme.surfaceContainerHighest : null,
+          ),
+        ),
+      );
+    }
+
+    Widget dateField(String label, DateTime? value, ValueChanged<DateTime?> onChanged) {
+      final display = value == null ? '' : DateFormat(datePattern).format(value);
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: TextFormField(
+          readOnly: true,
+          controller: TextEditingController(text: display),
+          onTap: readOnly
+              ? null
+              : () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: value ?? DateTime.now(),
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2100),
+                  );
+                  if (picked != null) onChanged(picked);
+                },
+          decoration: InputDecoration(
+            labelText: label,
+            prefixIcon: const Icon(Icons.calendar_today_outlined),
+            suffixIcon: (!readOnly && value != null)
+                ? IconButton(
+                    icon: const Icon(Icons.clear, size: 18),
+                    onPressed: () => onChanged(null),
+                  )
+                : null,
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+            filled: readOnly,
+            fillColor:
+                readOnly ? Theme.of(context).colorScheme.surfaceContainerHighest : null,
+          ),
+        ),
+      );
+    }
+
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        tilePadding: EdgeInsets.zero,
+        title: const Text('Additional Info (optional)'),
+        leading: const Icon(Icons.more_horiz),
+        childrenPadding: const EdgeInsets.only(top: 8),
+        children: [
+          field(storageLocationCtrl, 'Storage Location', Icons.place_outlined),
+          field(containerNumberCtrl, 'Container Number', Icons.inventory_2_outlined),
+          field(batchNumberCtrl, 'Batch Number', Icons.tag),
+          dateField('Expiry Date', expiryDate, onExpiryChanged),
+          dateField('Manufacture Date', manufactureDate, onManufactureChanged),
+          field(supplierNameCtrl, 'Supplier Name', Icons.local_shipping_outlined),
+          field(skuCodeCtrl, 'SKU Code', Icons.qr_code_2),
+          field(notesCtrl, 'Notes', Icons.notes, maxLines: 3),
+        ],
+      ),
     );
   }
 
@@ -586,10 +803,10 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
 
   Future<void> _downloadSampleCSV() async {
     const sample =
-        '"name","hsn_code","description","price","tax_rate","stock","type","default_discount","purchase_price","alias_name","unit"\n'
-        '"Wireless Mouse","84716010","Ergonomic wireless mouse","599.00","18","50","product","5.00","400.00","","pcs"\n'
-        '"USB Hub","84734000","4-port USB 3.0 hub","299.00","18","100","product","0","180.00","","pcs"\n'
-        '"Annual Support","998314","Annual technical support plan","4999.00","18","0","service","10.00","0","","unit\n';
+        '"name","hsn_code","description","price","tax_rate","stock","type","default_discount","purchase_price","alias_name","unit","unlimited_stock","storage_location","container_number","batch_number","expiry_date","manufacture_date","supplier_name","sku_code","notes"\n'
+        '"Wireless Mouse","84716010","Ergonomic wireless mouse","599.00","18","50","product","5.00","400.00","","pcs","0","Rack A1","","","","","","",""\n'
+        '"USB Hub","84734000","4-port USB 3.0 hub","299.00","18","100","product","0","180.00","","pcs","0","","CNT-1023","","","","","",""\n'
+        '"Annual Support","998314","Annual technical support plan","4999.00","18","0","service","10.00","0","","unit","1","","","","","","","",""\n';
 
     final savePath = await FilePicker.platform.saveFile(
       dialogTitle: 'Save Sample CSV',
@@ -818,6 +1035,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
       final List<Product> valid = [];
       final List<Product> duplicates = [];
       final List<String> errors = [];
+      final Map<String, ProductMetadata> metadataById = {};
 
       for (int i = 0; i < dataRows.length; i++) {
         final row = dataRows[i];
@@ -841,8 +1059,10 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
         final purchasePriceStr = getField(row, 'purchase_price');
         final aliasNameStr = getField(row, 'alias_name');
         final unitStr = getField(row, 'unit');
+        final unlimitedStockStr = getField(row, 'unlimited_stock');
         final taxRate = taxStr.isEmpty ? 0 : (int.tryParse(taxStr) ?? 0);
         final stock = stockStr.isEmpty ? 0 : (int.tryParse(stockStr) ?? 0);
+        final unlimitedStock = unlimitedStockStr == '1' || unlimitedStockStr.toLowerCase() == 'true';
         final discount = discountStr.isEmpty ? 0.0 : (double.tryParse(discountStr) ?? 0.0);
         final purchasePrice = purchasePriceStr.isEmpty ? 0.0 : (double.tryParse(purchasePriceStr) ?? 0.0);
         final type = (typeStr == 'service') ? 'service' : 'product';
@@ -861,6 +1081,19 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
           purchasePrice: purchasePrice < 0 ? 0.0 : purchasePrice,
           aliasName: aliasNameStr.isEmpty ? null : aliasNameStr,
           unit: unitStr,
+          unlimitedStock: unlimitedStock,
+        );
+
+        metadataById[product.id] = ProductMetadata(
+          productId: product.id,
+          storageLocation: getField(row, 'storage_location'),
+          containerNumber: getField(row, 'container_number'),
+          batchNumber: getField(row, 'batch_number'),
+          expiryDate: getField(row, 'expiry_date'),
+          manufactureDate: getField(row, 'manufacture_date'),
+          supplierName: getField(row, 'supplier_name'),
+          skuCode: getField(row, 'sku_code'),
+          notes: getField(row, 'notes'),
         );
 
         if (existing != null) {
@@ -872,7 +1105,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
       if(!mounted) return;
       setState(() => _isLoading = false);
       if (!mounted) return;
-      await _showImportPreviewDialog(valid, duplicates, errors);
+      await _showImportPreviewDialog(valid, duplicates, errors, metadataById);
     } catch (e) {
       setState(() => _isLoading = false);
       _showSnackBar('Error reading CSV: $e', isError: true);
@@ -883,6 +1116,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     List<Product> newProducts,
     List<Product> duplicates,
     List<String> errors,
+    Map<String, ProductMetadata> metadataById,
   ) async {
     final overwriteFlags = List<bool>.filled(duplicates.length, false);
 
@@ -1012,7 +1246,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                     : () async {
                         Navigator.pop(ctx);
                         await _executeImport(
-                            newProducts, duplicates, overwriteFlags);
+                            newProducts, duplicates, overwriteFlags, metadataById);
                       },
                 icon: const Icon(Icons.upload),
                 label: Text('Import $total'),
@@ -1028,16 +1262,24 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     List<Product> newProducts,
     List<Product> duplicates,
     List<bool> overwriteFlags,
+    Map<String, ProductMetadata> metadataById,
   ) async {
     if(!mounted) return;
     setState(() => _isLoading = true);
     try {
+      final repo = ref.read(productRepositoryProvider);
       if (newProducts.isNotEmpty) {
-        await ref.read(productRepositoryProvider).insertBatch(newProducts);
+        await repo.insertBatch(newProducts);
+        for (final p in newProducts) {
+          final meta = metadataById[p.id];
+          if (meta != null) await repo.upsertProductMetadata(meta);
+        }
       }
       for (int i = 0; i < duplicates.length; i++) {
         if (overwriteFlags[i]) {
-          await ref.read(productRepositoryProvider).updateProduct(duplicates[i]);
+          await repo.updateProduct(duplicates[i]);
+          final meta = metadataById[duplicates[i].id];
+          if (meta != null) await repo.upsertProductMetadata(meta);
         }
       }
       await _loadProducts();
@@ -1096,10 +1338,14 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
 
   Future<void> _exportToCSV() async {
     try {
-      final allProducts = await ref.read(productRepositoryProvider).getAllProducts();
+      final repo = ref.read(productRepositoryProvider);
+      final allProducts = await repo.getAllProducts();
+      final allMetadata = await repo.getAllProductMetadata();
       final List<List<dynamic>> rows = [
-        ['name', 'hsn_code', 'description', 'price', 'tax_rate', 'stock', 'type', 'default_discount', 'purchase_price', 'alias_name', 'unit'],
-        ...allProducts.map((p) => [
+        ['name', 'hsn_code', 'description', 'price', 'tax_rate', 'stock', 'type', 'default_discount', 'purchase_price', 'alias_name', 'unit', 'unlimited_stock', 'storage_location', 'container_number', 'batch_number', 'expiry_date', 'manufacture_date', 'supplier_name', 'sku_code', 'notes'],
+        ...allProducts.map((p) {
+          final meta = allMetadata[p.id];
+          return [
               p.name,
               p.hsncode,
               p.description,
@@ -1111,7 +1357,17 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
               p.purchasePrice,
               p.aliasName ?? '',
               p.unit,
-            ]),
+              p.unlimitedStock ? 1 : 0,
+              meta?.storageLocation ?? '',
+              meta?.containerNumber ?? '',
+              meta?.batchNumber ?? '',
+              meta?.expiryDate ?? '',
+              meta?.manufactureDate ?? '',
+              meta?.supplierName ?? '',
+              meta?.skuCode ?? '',
+              meta?.notes ?? '',
+            ];
+        }),
       ];
       final csvData = buildQuotedCsv(rows);
       final savePath = await FilePicker.platform.saveFile(
@@ -1200,7 +1456,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                       e.$2.description,
                       e.$2.price.toStringAsFixed(2),
                       '${e.$2.tax_rate}%',
-                      e.$2.stock,
+                      e.$2.unlimitedStock ? 'Unlimited' : e.$2.stock,
                       e.$2.type,
                       e.$2.defaultDiscount > 0 ? e.$2.defaultDiscount.toStringAsFixed(2) : '-',
                       e.$2.unit,
@@ -1351,7 +1607,18 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                       selected: {_newItemType},
                       onSelectionChanged: (val) {
                         if(!mounted) return;
-                        setState(() => _newItemType = val.first);
+                        setState(()
+                        {
+                          _newItemType = val.first;
+                          if(_newItemType == 'service')
+                          {
+                            _unlimitedStock = true;
+                          }
+                          else
+                          {
+                            _unlimitedStock = false;
+                          }
+                        });
                       },
                     ),
                     const SizedBox(height: 16),
@@ -1401,7 +1668,20 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                       keyboardType: TextInputType.number, isTaxRate: true),
                   const SizedBox(height: 16),
                   _buildFormField(_stockController, 'Stock', Icons.inventory,
-                      keyboardType: TextInputType.number, isStock: true),
+                      keyboardType: TextInputType.number,
+                      isStock: true,
+                      required: !_unlimitedStock,
+                      enabled: !_unlimitedStock),
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    value: _unlimitedStock,
+                    onChanged: (v) {
+                      if (!mounted) return;
+                      setState(() => _unlimitedStock = v ?? false);
+                    },
+                    title: const Text('Unlimited stock'),
+                  ),
                   const SizedBox(height: 16),
                   _buildUnitField(
                     selectedUnit: _selectedUnit,
@@ -1409,6 +1689,26 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                     onUnitChanged: (v) {
                       if (!mounted) return;
                       setState(() => _selectedUnit = v);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildMetadataSection(
+                    storageLocationCtrl: _storageLocationController,
+                    containerNumberCtrl: _containerNumberController,
+                    batchNumberCtrl: _batchNumberController,
+                    supplierNameCtrl: _supplierNameController,
+                    skuCodeCtrl: _skuCodeController,
+                    notesCtrl: _notesController,
+                    expiryDate: _expiryDate,
+                    manufactureDate: _manufactureDate,
+                    datePattern: _datePattern,
+                    onExpiryChanged: (d) {
+                      if (!mounted) return;
+                      setState(() => _expiryDate = d);
+                    },
+                    onManufactureChanged: (d) {
+                      if (!mounted) return;
+                      setState(() => _manufactureDate = d);
                     },
                   ),
                   const SizedBox(height: 24),
@@ -1476,9 +1776,11 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     bool isTaxRate = false,
     String? prefixText,
     String? helperText,
+    bool enabled = true,
   }) {
     return TextFormField(
       controller: controller,
+      enabled: enabled,
       maxLines: maxLines,
       maxLength: maxLength,
       keyboardType: keyboardType,
@@ -1936,22 +2238,26 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: p.stock > 10
-                      ? Colors.green.shade50
-                      : p.stock > 0
-                          ? Colors.orange.shade50
-                          : Colors.red.shade50,
+                  color: p.unlimitedStock
+                      ? Colors.blue.shade50
+                      : p.stock > 10
+                          ? Colors.green.shade50
+                          : p.stock > 0
+                              ? Colors.orange.shade50
+                              : Colors.red.shade50,
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  p.stock.toString(),
+                  p.unlimitedStock ? '∞' : p.stock.toString(),
                   style: TextStyle(
                     fontWeight: FontWeight.w500,
-                    color: p.stock > 10
-                        ? Colors.green.shade700
-                        : p.stock > 0
-                            ? Colors.orange.shade700
-                            : Colors.red.shade700,
+                    color: p.unlimitedStock
+                        ? Colors.blue.shade700
+                        : p.stock > 10
+                            ? Colors.green.shade700
+                            : p.stock > 0
+                                ? Colors.orange.shade700
+                                : Colors.red.shade700,
                   ),
                 ),
               ),

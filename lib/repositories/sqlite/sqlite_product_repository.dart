@@ -53,4 +53,16 @@ class SqliteProductRepository implements ProductRepository {
       ProductService.insertBatch(products, batchSize: batchSize);
   @override
   Future<List<Product>> getOutOfStockProducts() => ProductService.getOutOfStockProducts();
+  @override
+  Future<ProductMetadata?> getProductMetadata(String productId) =>
+      ProductService.getProductMetadata(productId);
+  @override
+  Future<Map<String, ProductMetadata>> getAllProductMetadata() =>
+      ProductService.getAllProductMetadata();
+  @override
+  Future<Map<String, ProductMetadata>> getProductMetadataForIds(List<String> productIds) =>
+      ProductService.getProductMetadataForIds(productIds);
+  @override
+  Future<void> upsertProductMetadata(ProductMetadata metadata) =>
+      ProductService.upsertProductMetadata(metadata);
 }
