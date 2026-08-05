@@ -37,6 +37,7 @@ pw.MultiPage buildCompactTemplate(
   pw.ThemeData? pdfTheme,
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
+  bool showCgstSgst = false,
 }) {
   final accentColor = themeColor ?? PdfColors.black;
   final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
@@ -145,6 +146,12 @@ pw.MultiPage buildCompactTemplate(
                           if ((company?.panNumber ?? '').isNotEmpty)
                             pw.Text(
                                 '${panLabel(company?.country)}: ${company!.panNumber}',
+                                style: pw.TextStyle(
+                                    fontSize: addressFont,
+                                    color: PdfColors.grey700)),
+                          if ((company?.fssaiCode ?? '').isNotEmpty)
+                            pw.Text(
+                                'FSSAI: ${company!.fssaiCode}',
                                 style: pw.TextStyle(
                                     fontSize: addressFont,
                                     color: PdfColors.grey700)),
@@ -258,6 +265,7 @@ pw.MultiPage buildCompactTemplate(
         tableFontSize: tableFontSize,
         cellPaddingH: cellPaddingH,
         cellPaddingV: cellPaddingV,
+        showCgstSgst: showCgstSgst,
         totalQuantityText: showTotalQuantity && showQuantity
             ? '${totalQty == totalQty.roundToDouble() ? totalQty.toInt() : totalQty}'
             : null,
@@ -279,6 +287,7 @@ pw.MultiPage buildCompactTemplate(
           previousBalanceDue: previousBalanceDue,
           fontSize: totalsFontSize,
           compact: true,
+          showCgstSgst: showCgstSgst,
         ),
       ),
 

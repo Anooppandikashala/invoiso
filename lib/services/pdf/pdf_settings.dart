@@ -38,6 +38,7 @@ class PdfGenerationSettings {
   final String thermalItemLayout;
   final Uint8List? watermarkBytes;
   final double watermarkOpacity;
+  final bool showCgstSgst;
 
   const PdfGenerationSettings({
     required this.company,
@@ -64,6 +65,7 @@ class PdfGenerationSettings {
     required this.pageSize,
     required this.showTotalQuantity,
     required this.pdfTheme,
+    required this.showCgstSgst,
     this.thermalItemLayout = 'table',
     this.signatureBytes,
     this.signaturePosition = 'left',

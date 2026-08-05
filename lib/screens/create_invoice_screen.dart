@@ -407,6 +407,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         settingsRepo.getShowTaxButtonInInvoicePage(), // 14
         settingsRepo.getDefaultInvoiceTitle(), // 15
         settingsRepo.getAllowDuplicateInvoiceItems(), // 16
+        settingsRepo.getDefaultTaxMode(), // 17
       ]);
 
       final c = results[0] as List<Customer>;
@@ -449,6 +450,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       final showTaxButtonInInvoicePage = results[14] as bool;
       final defaultInvoiceTitle = results[15] as String?;
       final allowDuplicateInvoiceItems = results[16] as bool;
+      final defaultTaxMode = results[17] as String;
 
       // Determine which UPI to pre-select.
       String? existingUpiId;
@@ -514,6 +516,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         _allowDuplicateInvoiceItems = allowDuplicateInvoiceItems;
         if (!isEditing && widget.cloneFrom == null) {
           _isTaxEnabled = showTaxButtonInInvoicePage;
+          _isPerItem = defaultTaxMode == 'perItem';
         }
         _businessType = businessType;
         _adHocItemType =
@@ -3665,13 +3668,20 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                 spacing: 16,
                                 runSpacing: 4,
                                 children: [
-                                  if (item.unitPrice != null)
+                                  if(item.unitPrice != null)
                                     _buildItemDetail('Price',
                                         '$_currencySymbol${item.effectivePrice.toStringAsFixed(2)} *',
                                         color: Colors.orange[700])
                                   else
                                     _buildItemDetail('Price',
                                         '$_currencySymbol${item.product.price.toStringAsFixed(2)}'),
+                                  if (_taxMode == TaxMode.perItem)
+                                    _buildItemDetail(
+                                        'Tax', '${item.product.tax_rate}%'),
+                                  if(item.product.priceIncludesTax)...[
+                                    _buildItemDetail(
+                                        _taxMode == TaxMode.perItem ? '' : 'Tax', 'Inclusive',color: Colors.teal[700]),
+                                  ],
                                   _buildItemDetail(
                                       'HSN/SAC', item.product.hsncode.toString()),
                                   if (_showQuantity)
@@ -3692,9 +3702,6 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                     _buildItemDetail('Extra',
                                         '+$_currencySymbol${item.extraCost!.toStringAsFixed(2)}',
                                         color: Colors.teal[700]),
-                                  if (_taxMode == TaxMode.perItem)
-                                    _buildItemDetail(
-                                        'Tax', '${item.product.tax_rate}%'),
                                 ],
                               ),
                             ),
@@ -3773,6 +3780,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                           unit: item.product.unit,
                                           type: item.product.type,
                                           aliasName: item.product.aliasName,
+                                          priceIncludesTax:
+                                              item.product.priceIncludesTax,
                                         );
                                         await ref.read(productRepositoryProvider).insertProduct(
                                             newProduct);
@@ -4697,6 +4706,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             discountPerUnit: item.discountPerUnit,
             extraCost: item.extraCost ?? 0.0,
             taxRatePercent: item.product.tax_rate.toDouble(),
+            priceIncludesTax: item.product.priceIncludesTax,
           )),
       taxMode: _taxMode,
       globalTaxRate: taxRate,

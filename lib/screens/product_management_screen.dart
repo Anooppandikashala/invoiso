@@ -77,6 +77,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
   String _typeFilter = 'both'; // 'both' | 'product' | 'service'
   String _newItemType = 'product'; // type for the add-product form
   bool _unlimitedStock = false;
+  bool _priceIncludesTax = false;
 
   static const _csvMaxRows = 500;
   static const _csvHeaders = [
@@ -223,6 +224,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
             : _aliasNameController.text.trim(),
         unit: _selectedUnit.trim(),
         unlimitedStock: _unlimitedStock,
+        priceIncludesTax: _priceIncludesTax,
       );
 
       await ref.read(productRepositoryProvider).insertProduct(newProduct);
@@ -271,6 +273,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     if (mounted) setState(() {
       _selectedUnit = '';
       _unlimitedStock = false;
+      _priceIncludesTax = false;
       _expiryDate = null;
       _manufactureDate = null;
     });
@@ -374,6 +377,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     String dialogItemType = product.type;
     String dialogUnit = product.unit;
     bool dialogUnlimitedStock = product.unlimitedStock;
+    bool dialogPriceIncludesTax = product.priceIncludesTax;
 
     showDialog(
       context: context,
@@ -481,6 +485,18 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                         readOnly: !isEdit,
                         keyboardType: TextInputType.number,
                         isTaxRate: true),
+                    CheckboxListTile(
+                      contentPadding: EdgeInsets.zero,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      value: dialogPriceIncludesTax,
+                      onChanged: !isEdit
+                          ? null
+                          : (v) => setDialogState(
+                              () => dialogPriceIncludesTax = v ?? false),
+                      title: const Text('Price Includes Tax'),
+                      subtitle: const Text(
+                          'Product price already includes tax (per-item tax mode only)'),
+                    ),
                     const SizedBox(height: 16),
                     _buildDialogTextField(stockCtrl, 'Stock', Icons.inventory,
                         readOnly: !isEdit || dialogUnlimitedStock,
@@ -559,7 +575,8 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                           ? null
                           : aliasNameCtrl.text.trim(),
                       unit: dialogUnit.trim(),
-                      unlimitedStock: dialogUnlimitedStock
+                      unlimitedStock: dialogUnlimitedStock,
+                      priceIncludesTax: dialogPriceIncludesTax,
                     );
 
                     await ref.read(productRepositoryProvider).updateProduct(updatedProduct);
@@ -1666,6 +1683,18 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                   _buildFormField(
                       _taxRateController, 'Tax Rate (%)', Icons.percent,
                       keyboardType: TextInputType.number, isTaxRate: true),
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    value: _priceIncludesTax,
+                    onChanged: (v) {
+                      if (!mounted) return;
+                      setState(() => _priceIncludesTax = v ?? false);
+                    },
+                    title: const Text('Price Includes Tax'),
+                    subtitle: const Text(
+                        'Product price already includes tax (per-item tax mode only)'),
+                  ),
                   const SizedBox(height: 16),
                   _buildFormField(_stockController, 'Stock', Icons.inventory,
                       keyboardType: TextInputType.number,

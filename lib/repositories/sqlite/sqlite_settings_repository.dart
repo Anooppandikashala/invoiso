@@ -92,6 +92,8 @@ class SqliteSettingsRepository implements SettingsRepository {
   @override
   Future<String> getSignaturePosition() => SettingsService.getSignaturePosition();
   @override
+  Future<String> getDefaultTaxMode() => SettingsService.getDefaultTaxMode();
+  @override
   Future<String> getSignatureSize() => SettingsService.getSignatureSize();
   @override
   Future<BusinessType> getBusinessType() => SettingsService.getBusinessType();

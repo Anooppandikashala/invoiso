@@ -66,6 +66,8 @@ enum SettingKey {
   watermarkOpacity, // watermark opacity 0.0-1.0 as string; default '0.12'
   defaultInvoiceTitle, // GST document title preselected on new invoices: 'Tax Invoice' | 'Bill of Supply' | etc; null/empty = plain 'Invoice'
   allowDuplicateInvoiceItems, // whether the same product can be added twice to one invoice (default false)
+  showCgstSgst, // whether to split tax into CGST/SGST (India, 50/50)
+  defaultTaxMode, // 'global' | 'perItem' — default tax mode for new invoices
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -167,6 +169,10 @@ extension SettingKeyExtension on SettingKey {
         return 'default_invoice_title';
       case SettingKey.allowDuplicateInvoiceItems:
         return 'allow_duplicate_invoice_items';
+      case SettingKey.showCgstSgst:
+        return 'show_cgst_sgst';
+      case SettingKey.defaultTaxMode:
+        return 'default_tax_mode';
     }
   }
 }
@@ -557,6 +563,10 @@ String panLabel(String? country) {
   if (country == null || country.isEmpty || country == 'India') return 'PAN';
   return 'TIN';
 }
+
+/// True if country is unset (backward-compat) or explicitly India.
+bool isIndiaCountry(String? country) =>
+    country == null || country.isEmpty || country.toLowerCase() == 'india';
 
 /// Full list of world countries (alphabetical).
 class AppCountries {

@@ -89,5 +89,6 @@ extension _InvoiceItemTotals on InvoiceItem {
         discountPerUnit: discountPerUnit,
         extraCost: extraCost ?? 0.0,
         taxRatePercent: product.tax_rate.toDouble(),
+        priceIncludesTax: product.priceIncludesTax,
       );
 }

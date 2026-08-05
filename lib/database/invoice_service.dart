@@ -59,6 +59,7 @@ class InvoiceService {
           'product_description': item.product.description,
           'product_price': item.product.price,
           'product_tax_rate': item.product.tax_rate,
+          'product_price_includes_tax': item.product.priceIncludesTax ? 1 : 0,
           'product_hsn_code': item.product.hsncode,
           'quantity': item.quantity,
           'discount': item.discount,
@@ -139,6 +140,7 @@ class InvoiceService {
           'product_description': item.product.description,
           'product_price': item.product.price,
           'product_tax_rate': item.product.tax_rate,
+          'product_price_includes_tax': item.product.priceIncludesTax ? 1 : 0,
           'product_hsn_code': item.product.hsncode,
           'quantity': item.quantity,
           'discount': item.discount,
@@ -232,7 +234,7 @@ class InvoiceService {
     final placeholders = List.filled(ids.length, '?').join(',');
     final itemRows = await db.rawQuery(
       'SELECT invoice_id, unit_price, product_price, quantity, discount, '
-      'discount_per_unit, extra_cost, product_tax_rate '
+      'discount_per_unit, extra_cost, product_tax_rate, product_price_includes_tax '
       'FROM invoice_items WHERE invoice_id IN ($placeholders) ORDER BY rowid ASC',
       ids,
     );
@@ -709,7 +711,7 @@ class InvoiceService {
 
     final itemRows = await db.rawQuery(
       'SELECT invoice_id, unit_price, product_price, quantity, discount, '
-      'discount_per_unit, extra_cost, product_tax_rate '
+      'discount_per_unit, extra_cost, product_tax_rate, product_price_includes_tax '
       'FROM invoice_items WHERE invoice_id IN ($placeholders) ORDER BY rowid ASC',
       ids,
     );

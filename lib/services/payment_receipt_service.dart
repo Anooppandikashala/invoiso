@@ -121,6 +121,10 @@ class PaymentReceiptService {
                     pw.Text('${panLabel(company?.country)}: ${company!.panNumber}',
                         style: const pw.TextStyle(
                             fontSize: 9, color: PdfColors.grey700)),
+                  if ((company?.fssaiCode ?? '').isNotEmpty)
+                    pw.Text('FSSAI: ${company!.fssaiCode}',
+                        style: const pw.TextStyle(
+                            fontSize: 9, color: PdfColors.grey700)),
                 ],
               ),
             ),

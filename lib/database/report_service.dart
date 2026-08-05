@@ -129,7 +129,7 @@ class ReportService {
 
     final itemRows = await db.rawQuery(
       'SELECT invoice_id, quantity, unit_price, product_price, discount, '
-      'discount_per_unit, extra_cost, product_tax_rate '
+      'discount_per_unit, extra_cost, product_tax_rate, product_price_includes_tax '
       'FROM invoice_items WHERE invoice_id IN ($ph)',
       ids,
     );
@@ -472,7 +472,10 @@ class ReportService {
     // Per-item mode: tax computed per line item's product_tax_rate
     final perItemRows = await db.rawQuery(
       "SELECT ii.product_tax_rate AS rate, "
-      "SUM($_invoiceItemNetSql * ii.product_tax_rate / 100) AS tax_amount "
+      "SUM(CASE WHEN ii.product_price_includes_tax = 1 "
+      "THEN $_invoiceItemNetSql * ii.product_tax_rate / (100 + ii.product_tax_rate) "
+      "ELSE $_invoiceItemNetSql * ii.product_tax_rate / 100 "
+      "END) AS tax_amount "
       "FROM invoice_items ii "
       "JOIN invoices i ON i.id = ii.invoice_id "
       "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "

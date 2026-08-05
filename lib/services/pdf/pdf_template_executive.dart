@@ -36,6 +36,7 @@ pw.MultiPage buildExecutiveTemplate(
   pw.ThemeData? pdfTheme,
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
+  bool showCgstSgst = false,
 }) {
   final accentColor = themeColor ?? PdfColors.blueGrey800;
   final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
@@ -133,6 +134,10 @@ pw.MultiPage buildExecutiveTemplate(
                   pw.Text(
                       '${panLabel(company?.country)}: ${company!.panNumber}',
                       style: const pw.TextStyle(fontSize: 9)),
+                if ((company?.fssaiCode ?? '').isNotEmpty)
+                  pw.Text(
+                      'FSSAI: ${company!.fssaiCode}',
+                      style: const pw.TextStyle(fontSize: 9)),
               ],
             ),
           ),
@@ -189,6 +194,7 @@ pw.MultiPage buildExecutiveTemplate(
         businessType: businessType,
         watermarkBytes: watermarkBytes,
         watermarkOpacity: watermarkOpacity,
+        showCgstSgst: showCgstSgst,
       ),
       pw.SizedBox(height: 15),
       pw.Row(
@@ -204,6 +210,7 @@ pw.MultiPage buildExecutiveTemplate(
             accentColor,
             currencySymbol,
             previousBalanceDue: previousBalanceDue,
+            showCgstSgst: showCgstSgst,
           ),
         ],
       ),

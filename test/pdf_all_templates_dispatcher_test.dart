@@ -132,6 +132,7 @@ void main() {
         pdfTheme: pdfTheme,
         watermarkBytes: watermarkBytes,
         watermarkOpacity: 0.15,
+        showCgstSgst: false,
       );
 
       final pdf = PDFService.generateInvoicePDFWithSettings(

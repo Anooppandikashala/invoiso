@@ -10,12 +10,14 @@ class InvoiceLineAmount {
   final double grossTotal;
   final double discountTotal;
   final double taxRatePercent;
+  final double displayTotal;
 
   const InvoiceLineAmount({
     required this.lineTotal,
     required this.grossTotal,
     required this.discountTotal,
     required this.taxRatePercent,
+    required this.displayTotal,
   });
 
   double get itemTax => lineTotal * (taxRatePercent / 100);
@@ -49,15 +51,29 @@ class InvoiceTotalsCalculator {
     required bool discountPerUnit,
     double extraCost = 0,
     double taxRatePercent = 0,
+    bool priceIncludesTax = false,
   }) {
-    final lineTotal = discountPerUnit
+    final displayTotal = discountPerUnit
         ? (price - discount) * quantity + extraCost
         : (price * quantity) - discount + extraCost;
+    // When price is tax-inclusive, back out the tax so lineTotal holds the
+    // taxable base — itemTax and every downstream subtotal/tax sum then
+    // stay correct without touching the totals() aggregation formula.
+    final taxDivisor = (priceIncludesTax && taxRatePercent > 0)
+        ? (1 + taxRatePercent / 100)
+        : 1.0;
+    final lineTotal = displayTotal / taxDivisor;
     return InvoiceLineAmount(
       lineTotal: lineTotal,
-      grossTotal: price * quantity + extraCost,
+      // Back out tax here too, so grossSubtotal (pre-discount subtotal,
+      // used whenever any line has a discount) stays on the same taxable
+      // basis as subtotal — otherwise mixing inclusive/exclusive items
+      // with a discount flips the displayed pre-discount figure between
+      // tax-inclusive and tax-exclusive depending on which is shown.
+      grossTotal: (price * quantity + extraCost) / taxDivisor,
       discountTotal: discountPerUnit ? discount * quantity : discount,
       taxRatePercent: taxRatePercent,
+      displayTotal: displayTotal,
     );
   }
 
@@ -72,6 +88,7 @@ class InvoiceTotalsCalculator {
       discountPerUnit: (row['discount_per_unit'] as int?) == 1,
       extraCost: (row['extra_cost'] as num?)?.toDouble() ?? 0.0,
       taxRatePercent: (row['product_tax_rate'] as num?)?.toDouble() ?? 0.0,
+      priceIncludesTax: (row['product_price_includes_tax'] as int?) == 1,
     );
   }
 

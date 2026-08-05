@@ -106,6 +106,7 @@ class PDFService {
       BackendServices.settings.getSignatureSize(), // 25
       BackendServices.settings.getWatermarkImage(), // 26
       BackendServices.settings.getWatermarkOpacity(), // 27
+      BackendServices.settings.getSetting(SettingKey.showCgstSgst), // 28
     ]);
 
     final rawPrefix = (results[2] as String?) ?? 'INV';
@@ -155,6 +156,7 @@ class PDFService {
       showAliasName: (results[24] as String?) == 'true',
       watermarkBytes: _cachedWatermarkBytes(results[26] as String?),
       watermarkOpacity: results[27] as double,
+      showCgstSgst: (results[28] as String?) == 'true',
     );
   }
 
@@ -168,6 +170,8 @@ class PDFService {
     final effectivePreviousBalance =
         s.showPreviousBalance ? previousBalanceDue : 0.0;
     final pdfTheme = s.pdfTheme;
+    final effectiveShowCgstSgst =
+        s.showCgstSgst && isIndiaCountry(s.company?.country);
 
     String? effectiveUpiId = invoice.upiId;
     if (effectiveUpiId == null || effectiveUpiId.trim().isEmpty) {
@@ -223,6 +227,7 @@ class PDFService {
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
+          showCgstSgst: effectiveShowCgstSgst,
         ));
       case InvoiceTemplate.modern:
         pdf.addPage(buildModernTemplate(
@@ -254,6 +259,7 @@ class PDFService {
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
+          showCgstSgst: effectiveShowCgstSgst,
         ));
       case InvoiceTemplate.minimal:
         pdf.addPage(buildMinimalTemplate(
@@ -285,6 +291,7 @@ class PDFService {
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
+          showCgstSgst: effectiveShowCgstSgst,
         ));
       case InvoiceTemplate.executive:
         pdf.addPage(buildExecutiveTemplate(
@@ -316,6 +323,7 @@ class PDFService {
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
+          showCgstSgst: effectiveShowCgstSgst,
         ));
       case InvoiceTemplate.compact:
         pdf.addPage(buildCompactTemplate(
@@ -348,6 +356,7 @@ class PDFService {
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
+          showCgstSgst: effectiveShowCgstSgst,
         ));
       case InvoiceTemplate.thermal:
         pdf.addPage(buildThermalTemplate(
@@ -400,6 +409,7 @@ class PDFService {
           logoPosition: s.logoPosition,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
+          showCgstSgst: effectiveShowCgstSgst,
         ));
     }
     return pdf;

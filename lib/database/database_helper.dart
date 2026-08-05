@@ -15,7 +15,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 36;
+  final dbVersion = 38;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -69,7 +69,8 @@ class DatabaseHelper {
         purchase_price REAL DEFAULT 0.0,
         alias_name TEXT,
         unit TEXT DEFAULT '',
-        unlimited_stock INTEGER DEFAULT 0
+        unlimited_stock INTEGER DEFAULT 0,
+        price_includes_tax INTEGER DEFAULT 0
       )
     ''');
 
@@ -136,7 +137,8 @@ class DatabaseHelper {
         product_purchase_price REAL DEFAULT 0.0,
         product_alias_name TEXT,
         product_unit TEXT DEFAULT '',
-        unit TEXT
+        unit TEXT,
+        product_price_includes_tax INTEGER DEFAULT 0
       )
     ''');
 
@@ -161,6 +163,7 @@ class DatabaseHelper {
         website TEXT,
         gstin TEXT,
         pan_number TEXT DEFAULT '',
+        fssai_code TEXT DEFAULT '',
         country TEXT DEFAULT 'India'
       )
     ''');
@@ -624,6 +627,28 @@ class DatabaseHelper {
         await db.execute('DROP TABLE invoice_items_old');
         await db.execute(
             'CREATE INDEX IF NOT EXISTS idx_invoice_items_invoice ON invoice_items(invoice_id)');
+      });
+    }
+
+    if (oldVersion < 37) {
+      await _runMigrationStep(db, 37, 'add_fssai_code_to_company_info', () async {
+        await db.execute(
+          "ALTER TABLE company_info ADD COLUMN fssai_code TEXT DEFAULT ''",
+        );
+      });
+    }
+
+    if (oldVersion < 38) {
+      await _runMigrationStep(db, 38, 'add_price_includes_tax_to_products', () async {
+        await db.execute(
+          "ALTER TABLE products ADD COLUMN price_includes_tax INTEGER DEFAULT 0",
+        );
+      });
+      await _runMigrationStep(
+          db, 38, 'add_product_price_includes_tax_to_invoice_items', () async {
+        await db.execute(
+          "ALTER TABLE invoice_items ADD COLUMN product_price_includes_tax INTEGER DEFAULT 0",
+        );
       });
     }
   }

@@ -45,6 +45,7 @@ pw.MultiPage buildGridClassicTemplate(
   pw.ThemeData? pdfTheme,
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
+  bool showCgstSgst = false,
 }) {
   final accentColor = themeColor ?? PdfColors.black;
   final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
@@ -69,6 +70,13 @@ pw.MultiPage buildGridClassicTemplate(
 
   final gstin = company?.gstin ?? '';
   final gstLabel = taxLabel(company?.country);
+  final panNumber = company?.panNumber ?? '';
+  final fssaiCode = company?.fssaiCode ?? '';
+  final companyIdLine = [
+    if (showGst && gstin.isNotEmpty) '$gstLabel: $gstin',
+    if (panNumber.isNotEmpty) 'PAN: $panNumber',
+    if (fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
+  ].join('   ');
   final hasPreviousBalance = previousBalanceDue > 0;
   final hasPaid = invoice.amountPaid > 0;
 
@@ -154,8 +162,8 @@ pw.MultiPage buildGridClassicTemplate(
                           pw.Text('Ph: ${company!.phone}',
                               textAlign: pw.TextAlign.left,
                               style: pw.TextStyle(fontSize: subFont)),
-                        if (showGst && gstin.isNotEmpty)
-                          pw.Text('$gstLabel: $gstin',
+                        if (companyIdLine.isNotEmpty)
+                          pw.Text(companyIdLine,
                               textAlign: pw.TextAlign.left,
                               style: pw.TextStyle(
                                   fontSize: subFont, fontWeight: pw.FontWeight.normal)),
@@ -183,8 +191,8 @@ pw.MultiPage buildGridClassicTemplate(
                       pw.Text('Ph: ${company!.phone}',
                           textAlign: pw.TextAlign.center,
                           style: pw.TextStyle(fontSize: subFont)),
-                    if (showGst && gstin.isNotEmpty)
-                      pw.Text('$gstLabel: $gstin',
+                    if (companyIdLine.isNotEmpty)
+                      pw.Text(companyIdLine,
                           textAlign: pw.TextAlign.center,
                           style: pw.TextStyle(
                               fontSize: subFont, fontWeight: pw.FontWeight.normal)),
@@ -278,6 +286,12 @@ pw.MultiPage buildGridClassicTemplate(
                     if (invoice.taxMode != TaxMode.none)
                       totalsRow(invoiceTaxLabel(invoice),
                           '$currencySymbol ${invoice.tax.toStringAsFixed(2)}'),
+                    if (invoice.taxMode != TaxMode.none && showCgstSgst) ...[
+                      totalsRow('CGST',
+                          '$currencySymbol ${(invoice.tax / 2).toStringAsFixed(2)}'),
+                      totalsRow('SGST',
+                          '$currencySymbol ${(invoice.tax / 2).toStringAsFixed(2)}'),
+                    ],
                     ...invoice.additionalCosts.map((c) => totalsRow(
                         c.label.isEmpty ? 'Extra Cost' : c.label,
                         '$currencySymbol ${c.amount.toStringAsFixed(2)}')),
@@ -425,6 +439,7 @@ pw.MultiPage buildGridClassicTemplate(
             : null,
         watermarkBytes: watermarkBytes,
         watermarkOpacity: watermarkOpacity,
+        showCgstSgst: showCgstSgst,
       ),
       // ── Notes, totals, signature, footer (inset again) ──
       buildInvoiceFooter()
