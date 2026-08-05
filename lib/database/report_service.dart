@@ -522,10 +522,13 @@ class ReportService {
               (itemsByInv[id] ?? []).map(InvoiceTotalsCalculator.lineFromDbRow),
           taxMode: TaxMode.global,
           globalTaxRate: taxRate,
-          globalTaxRateFormat: TaxRateFormat.percent,
+          globalTaxRateFormat: TaxRateFormat.fraction,
         );
         final tax = totals.tax;
-        if (tax > 0) buckets[taxRate] = (buckets[taxRate] ?? 0) + tax;
+        final ratePercent = taxRate * 100;
+        if (tax > 0) {
+          buckets[ratePercent] = (buckets[ratePercent] ?? 0) + tax;
+        }
       }
     }
 

@@ -512,7 +512,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         _showPreviousBalance = showPrevBalance;
         _showAliasNameInPdf = showAliasNameInPdf;
         _allowDuplicateInvoiceItems = allowDuplicateInvoiceItems;
-        _isTaxEnabled = showTaxButtonInInvoicePage;
+        if (!isEditing && widget.cloneFrom == null) {
+          _isTaxEnabled = showTaxButtonInInvoicePage;
+        }
         _businessType = businessType;
         _adHocItemType =
             businessType == BusinessType.service ? 'service' : 'product';
