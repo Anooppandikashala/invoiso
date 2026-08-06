@@ -38,6 +38,9 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
   bool _showPreviousBalance = false;
   bool _showAliasNameInPdf = false;
   bool _showTaxButtonInInvoicePage = true;
+  bool _showCgstSgst = false;
+  bool _showRoundOff = false;
+  String _defaultTaxMode = 'global';
   String? _signatureBase64;
   String _signaturePosition = 'left';
   String _selectedSignatureSize = 'medium';
@@ -86,6 +89,9 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
       settingsRepo.getWatermarkOpacity(),
       settingsRepo.getDefaultInvoiceTitle(),
       settingsRepo.getAllowDuplicateInvoiceItems(),
+      settingsRepo.getSetting(SettingKey.showCgstSgst),
+      settingsRepo.getSetting(SettingKey.defaultTaxMode),
+      settingsRepo.getSetting(SettingKey.showRoundOff),
     ]);
 
     if (!mounted) return;
@@ -120,6 +126,9 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
       _watermarkOpacity = results[23] as double;
       _defaultInvoiceTitle = results[24] as String?;
       _allowDuplicateInvoiceItems = results[25] as bool;
+      _showCgstSgst = (results[26] as String?) == 'true';
+      _defaultTaxMode = (results[27] as String?) ?? 'global';
+      _showRoundOff = (results[28] as String?) == 'true';
       _isLoading = false;
     });
   }
@@ -161,6 +170,9 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
       settingsRepo.setSetting(
           SettingKey.showTaxButtonInInvoicePage, _showTaxButtonInInvoicePage.toString()),
       settingsRepo.setAllowDuplicateInvoiceItems(_allowDuplicateInvoiceItems),
+      settingsRepo.setSetting(SettingKey.showCgstSgst, _showCgstSgst.toString()),
+      settingsRepo.setSetting(SettingKey.defaultTaxMode, _defaultTaxMode),
+      settingsRepo.setSetting(SettingKey.showRoundOff, _showRoundOff.toString()),
     ]);
 
     if (!mounted) return;
@@ -830,6 +842,120 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                           setState(() => _showTaxButtonInInvoicePage = val);
                                         },
                                         activeColor: Theme.of(context).primaryColor,
+                                      ),
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 12),
+
+                                  // Show CGST/SGST Toggle
+                                  SizedBox(
+                                    width: constraints.maxWidth,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                        borderRadius: BorderRadius.circular(
+                                            AppBorderRadius.xsmall),
+                                        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                                      ),
+                                      child: SwitchListTile(
+                                        title: const Text('Show CGST/SGST'),
+                                        subtitle: const Text(
+                                          "Split tax into CGST + SGST on invoices (India only).",
+                                        ),
+                                        secondary: Icon(
+                                          Icons.percent_rounded,
+                                          color: _showCgstSgst
+                                              ? Theme.of(context).primaryColor
+                                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                                        ),
+                                        value: _showCgstSgst,
+                                        onChanged: (val) {
+                                          if(!mounted) return;
+                                          setState(() => _showCgstSgst = val);
+                                        },
+                                        activeColor: Theme.of(context).primaryColor,
+                                      ),
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 12),
+
+                                  // Show Round Off Toggle
+                                  SizedBox(
+                                    width: constraints.maxWidth,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                        borderRadius: BorderRadius.circular(
+                                            AppBorderRadius.xsmall),
+                                        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                                      ),
+                                      child: SwitchListTile(
+                                        title: const Text('Show Round Off'),
+                                        subtitle: const Text(
+                                          "Show a Round Off row + Net Amount (rounded to nearest) and amount in words on invoice PDFs.",
+                                        ),
+                                        secondary: Icon(
+                                          Icons.currency_rupee_rounded,
+                                          color: _showRoundOff
+                                              ? Theme.of(context).primaryColor
+                                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                                        ),
+                                        value: _showRoundOff,
+                                        onChanged: (val) {
+                                          if(!mounted) return;
+                                          setState(() => _showRoundOff = val);
+                                        },
+                                        activeColor: Theme.of(context).primaryColor,
+                                      ),
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 12),
+
+                                  // Default Tax Rate Mode Selector
+                                  SizedBox(
+                                    width: constraints.maxWidth,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                        borderRadius: BorderRadius.circular(
+                                            AppBorderRadius.xsmall),
+                                        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Text('Default Tax Rate Mode'),
+                                          const Text(
+                                            'Applies to new invoices only',
+                                            style: TextStyle(fontSize: 12),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          SegmentedButton<bool>(
+                                            segments: const [
+                                              ButtonSegment<bool>(
+                                                value: false,
+                                                icon: Icon(Icons.percent, size: 16),
+                                                label: Text('Global'),
+                                              ),
+                                              ButtonSegment<bool>(
+                                                value: true,
+                                                icon: Icon(Icons.list_alt, size: 16),
+                                                label: Text('Per Item'),
+                                              ),
+                                            ],
+                                            selected: {_defaultTaxMode == 'perItem'},
+                                            onSelectionChanged: (selection) {
+                                              if(!mounted) return;
+                                              setState(() {
+                                                _defaultTaxMode = selection.first ? 'perItem' : 'global';
+                                              });
+                                            },
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ),

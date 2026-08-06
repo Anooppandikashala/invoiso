@@ -46,6 +46,7 @@ abstract class SettingsRepository {
   Future<void> setDefaultInvoiceTitle(String? title);
   Future<String?> getDefaultInvoiceTitle();
   Future<String> getSignaturePosition();
+  Future<String> getDefaultTaxMode();
   Future<String> getSignatureSize();
   Future<BusinessType> getBusinessType();
   Future<void> setBusinessType(BusinessType type);

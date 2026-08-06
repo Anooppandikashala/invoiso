@@ -107,6 +107,8 @@ class PDFService {
       BackendServices.settings.getSetting(SettingKey.thermalCompanyNameSize), // 26
       BackendServices.settings.getWatermarkImage(), // 27
       BackendServices.settings.getWatermarkOpacity(), // 28
+      BackendServices.settings.getSetting(SettingKey.showCgstSgst), // 29
+      BackendServices.settings.getSetting(SettingKey.showRoundOff), // 30
     ]);
 
     final rawPrefix = (results[2] as String?) ?? 'INV';
@@ -157,6 +159,8 @@ class PDFService {
       watermarkBytes: _cachedWatermarkBytes(results[27] as String?),
       watermarkOpacity: results[28] as double,
       thermalCompanyNameSize: (results[26] as String?) ?? 'medium',
+      showCgstSgst: (results[29] as String?) == 'true',
+      showRoundOff: (results[30] as String?) == 'true',
     );
   }
 
@@ -170,6 +174,8 @@ class PDFService {
     final effectivePreviousBalance =
         s.showPreviousBalance ? previousBalanceDue : 0.0;
     final pdfTheme = s.pdfTheme;
+    final effectiveShowCgstSgst =
+        s.showCgstSgst && isIndiaCountry(s.company?.country);
 
     String? effectiveUpiId = invoice.upiId;
     if (effectiveUpiId == null || effectiveUpiId.trim().isEmpty) {
@@ -225,6 +231,8 @@ class PDFService {
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
+          showCgstSgst: effectiveShowCgstSgst,
+          showRoundOff: s.showRoundOff,
         ));
       case InvoiceTemplate.modern:
         pdf.addPage(buildModernTemplate(
@@ -256,6 +264,8 @@ class PDFService {
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
+          showCgstSgst: effectiveShowCgstSgst,
+          showRoundOff: s.showRoundOff,
         ));
       case InvoiceTemplate.minimal:
         pdf.addPage(buildMinimalTemplate(
@@ -287,6 +297,8 @@ class PDFService {
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
+          showCgstSgst: effectiveShowCgstSgst,
+          showRoundOff: s.showRoundOff,
         ));
       case InvoiceTemplate.executive:
         pdf.addPage(buildExecutiveTemplate(
@@ -318,6 +330,8 @@ class PDFService {
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
+          showCgstSgst: effectiveShowCgstSgst,
+          showRoundOff: s.showRoundOff,
         ));
       case InvoiceTemplate.compact:
         pdf.addPage(buildCompactTemplate(
@@ -350,6 +364,8 @@ class PDFService {
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
+          showCgstSgst: effectiveShowCgstSgst,
+          showRoundOff: s.showRoundOff,
         ));
       case InvoiceTemplate.thermal:
         pdf.addPage(buildThermalTemplate(
@@ -370,6 +386,7 @@ class PDFService {
           pageSize:s.pageSize,
           pdfTheme: pdfTheme,
           itemLayout: s.thermalItemLayout,
+          showRoundOff: s.showRoundOff,
         ));
       case InvoiceTemplate.gridClassic:
         pdf.addPage(buildGridClassicTemplate(
@@ -402,6 +419,8 @@ class PDFService {
           logoPosition: s.logoPosition,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
+          showCgstSgst: effectiveShowCgstSgst,
+          showRoundOff: s.showRoundOff,
         ));
     }
     return pdf;

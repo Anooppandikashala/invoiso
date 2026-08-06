@@ -209,6 +209,7 @@ void main() {
     final companyInfo = (await db.query('company_info')).first;
     expect(companyInfo['country'], 'India');
     expect(companyInfo['pan_number'], '');
+    expect(companyInfo['fssai_code'], '');
 
     await db.close();
   });

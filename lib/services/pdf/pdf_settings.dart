@@ -39,6 +39,8 @@ class PdfGenerationSettings {
   final String thermalCompanyNameSize;
   final Uint8List? watermarkBytes;
   final double watermarkOpacity;
+  final bool showCgstSgst;
+  final bool showRoundOff;
 
   const PdfGenerationSettings({
     required this.company,
@@ -65,6 +67,7 @@ class PdfGenerationSettings {
     required this.pageSize,
     required this.showTotalQuantity,
     required this.pdfTheme,
+    required this.showCgstSgst,
     this.thermalItemLayout = 'table',
     this.thermalCompanyNameSize = 'medium',
     this.signatureBytes,
@@ -73,5 +76,6 @@ class PdfGenerationSettings {
     this.showAliasName = false,
     this.watermarkBytes,
     this.watermarkOpacity = 0.12,
+    this.showRoundOff = false,
   });
 }

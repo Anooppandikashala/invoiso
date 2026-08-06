@@ -36,6 +36,8 @@ pw.MultiPage buildClassicTemplate(
   pw.ThemeData? pdfTheme,
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
+  bool showCgstSgst = false,
+  bool showRoundOff = false,
 }) {
   final accentColor = themeColor ?? PdfColors.indigo900;
   final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
@@ -45,6 +47,15 @@ pw.MultiPage buildClassicTemplate(
   final title = (invoice.invoiceTitle?.trim().isNotEmpty ?? false)
       ? invoice.invoiceTitle!.toUpperCase()
       : invoice.type.toUpperCase();
+  final gstin = company?.gstin ?? '';
+  final gstLabel = taxLabel(company?.country);
+  final panNumber = company?.panNumber ?? '';
+  final fssaiCode = company?.fssaiCode ?? '';
+  final companyIdLine = [
+    if (showGst && gstin.isNotEmpty) '$gstLabel: $gstin',
+    if (panNumber.isNotEmpty) '${panLabel(company?.country)}: $panNumber',
+    if (fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
+  ].join('   ');
 
   return pw.MultiPage(
     pageFormat: pageFormat,
@@ -80,33 +91,19 @@ pw.MultiPage buildClassicTemplate(
               children: [
                 pw.Text(company?.name ?? '',
                     style: pw.TextStyle(
-                        fontSize: 20,
+                        fontSize: classicPdfStyle.titleFontSize,
                         fontWeight: pw.FontWeight.bold,
                         color: accentColor)),
                 pw.SizedBox(height: 4),
                 pw.Text(company?.address ?? '',
-                    style: const pw.TextStyle(fontSize: 10)),
+                    style: pw.TextStyle(fontSize: classicPdfStyle.subtitleFontSize)),
                 pw.Text('Phone: ${company?.phone ?? ''}',
-                    style: const pw.TextStyle(fontSize: 10)),
+                    style: pw.TextStyle(fontSize: classicPdfStyle.subtitleFontSize)),
                 pw.Text('Email: ${company?.email ?? ''}',
-                    style: const pw.TextStyle(fontSize: 10)),
+                    style: pw.TextStyle(fontSize: classicPdfStyle.subtitleFontSize)),
                 if ((company?.website ?? '').isNotEmpty)
                   pw.Text('Web: ${company!.website}',
-                      style: const pw.TextStyle(fontSize: 10)),
-                if (showGst)
-                  pw.Text(
-                      '${taxLabel(company?.country)}: ${company?.gstin ?? ''}',
-                      style: pw.TextStyle(
-                          fontStyle: pw.FontStyle.italic,
-                          fontSize: 10,
-                          color: PdfColors.grey700)),
-                if ((company?.panNumber ?? '').isNotEmpty)
-                  pw.Text(
-                      '${panLabel(company?.country)}: ${company!.panNumber}',
-                      style: pw.TextStyle(
-                          fontStyle: pw.FontStyle.italic,
-                          fontSize: 10,
-                          color: PdfColors.grey700)),
+                      style: pw.TextStyle(fontSize: classicPdfStyle.subtitleFontSize)),
               ],
             ),
           ),
@@ -116,10 +113,16 @@ pw.MultiPage buildClassicTemplate(
       ),
 
       pw.SizedBox(height: 6),
+      if (companyIdLine.isNotEmpty)
+        pw.Center(child: pw.Text(companyIdLine,
+            style: pw.TextStyle(
+                fontStyle: pw.FontStyle.normal,
+                fontSize: classicPdfStyle.subtitleFontSize,
+                color: PdfColors.grey700)),),
       pw.Divider(thickness: 1, color: accentColor),
-      pw.SizedBox(height: 2),
+      //pw.SizedBox(height: classicPdfStyle.headerGap),
       pw.Center(child: pw.Text(title,
-        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12),),),
+        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: classicPdfStyle.typeFont),),),
       pw.Row(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -128,37 +131,37 @@ pw.MultiPage buildClassicTemplate(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               pw.Container(
-                padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                padding: pw.EdgeInsets.symmetric(horizontal: classicPdfStyle.sectionPadding, vertical: classicPdfStyle.sectionPadding),
                 color: PdfColors.grey200,
                 child: pw.Text("BILL TO",
                     style: pw.TextStyle(
                         fontWeight: pw.FontWeight.bold,
-                        fontSize: 10,
+                        fontSize: classicPdfStyle.labelFontSize,
                         color: PdfColors.grey700)),
               ),
               pw.Padding(
-                padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                padding: pw.EdgeInsets.symmetric(horizontal: classicPdfStyle.sectionPadding, vertical: classicPdfStyle.sectionPadding),
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    pw.SizedBox(height: 2),
+                    pw.SizedBox(height: classicPdfStyle.headerGap),
                     pw.Text(invoice.customer.name,
-                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11)),
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: classicPdfStyle.bodyFontSize)),
                     if (invoice.customer.businessName.isNotEmpty)
                       pw.Text(invoice.customer.businessName,
-                          style: const pw.TextStyle(fontSize: 10)),
+                          style: pw.TextStyle(fontSize: classicPdfStyle.bodyFontSize)),
                     pw.Text(invoice.customer.address,
-                        style: const pw.TextStyle(fontSize: 10)),
+                        style: pw.TextStyle(fontSize: classicPdfStyle.bodyFontSize)),
                     pw.Text(invoice.customer.phone,
-                        style: const pw.TextStyle(fontSize: 10)),
+                        style: pw.TextStyle(fontSize: classicPdfStyle.bodyFontSize)),
                     pw.Text(invoice.customer.email,
-                        style: const pw.TextStyle(fontSize: 10)),
+                        style: pw.TextStyle(fontSize: classicPdfStyle.bodyFontSize)),
                     if (showGst)
                       pw.Text(
                           "${taxLabel(company?.country)}: ${invoice.customer.gstin}",
                           style: pw.TextStyle(
                               fontStyle: pw.FontStyle.italic,
-                              fontSize: 10,
+                              fontSize: classicPdfStyle.subtitleFontSize,
                               color: PdfColors.grey600)),
                   ],
                 ),
@@ -169,19 +172,17 @@ pw.MultiPage buildClassicTemplate(
             crossAxisAlignment: pw.CrossAxisAlignment.end,
             children: [
               pw.Text("#: $invoicePrefix${invoice.invoiceNumber ?? invoice.id}",
-                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
+                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: classicPdfStyle.subtitleFontSize)),
               pw.Text("Date: ${formatPdfDate(invoice.date, datePattern)}",
-                  style: const pw.TextStyle(fontSize: 10)),
+                  style: pw.TextStyle(fontSize: classicPdfStyle.bodyFontSize)),
               if (invoice.dueDate != null)
                 pw.Text("Due Date: ${formatPdfDate(invoice.dueDate!, datePattern)}",
-                    style: const pw.TextStyle(fontSize: 10)),
+                    style: pw.TextStyle(fontSize: classicPdfStyle.bodyFontSize)),
             ],
           ),
         ],
       ),
-
-      pw.SizedBox(height: 10),
-
+      pw.SizedBox(height: 5),
       buildInvoiceTable(invoice,
           InvoiceTemplate.classic,
           headerColor: accentColor,
@@ -193,9 +194,13 @@ pw.MultiPage buildClassicTemplate(
           showAliasName: showAliasName,
           businessType: businessType,
           watermarkBytes: watermarkBytes,
-          watermarkOpacity: watermarkOpacity),
+          watermarkOpacity: watermarkOpacity,
+          showCgstSgst: showCgstSgst,
+          tableFontSize: classicPdfStyle.tableFontSize,
+          cellPaddingH: classicPdfStyle.cellPaddingH,
+          cellPaddingV: classicPdfStyle.cellPaddingV),
 
-      pw.SizedBox(height: 20),
+      pw.SizedBox(height: 5),
 
       pw.Row(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -210,18 +215,21 @@ pw.MultiPage buildClassicTemplate(
             accentColor,
             currencySymbol,
             previousBalanceDue: previousBalanceDue,
+            showCgstSgst: showCgstSgst,
+            showRoundOff: showRoundOff,
+            fontSize: classicPdfStyle.totalsFontSize,
           ),
         ],
       ),
 
       if (signatureImage != null) ...[
-        pw.SizedBox(height: 16),
+        pw.SizedBox(height: 5),
         buildSignatureWidget(signatureImage, signaturePosition,
             imageHeight: signatureSizePx),
       ],
 
       if (showUpiQr && upiId != null || bankAccount != null)
-        pw.SizedBox(height: 12),
+        pw.SizedBox(height: 5),
 
       if (showUpiQr && upiId != null || bankAccount != null)
         pw.Align(
@@ -247,7 +255,7 @@ pw.MultiPage buildClassicTemplate(
           ),
         ),
 
-      pw.SizedBox(height: 30),
+      pw.SizedBox(height: 5),
       pw.Center(
         child: pw.Text(thankyouNote,
             style: pw.TextStyle(

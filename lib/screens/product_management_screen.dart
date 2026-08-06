@@ -78,6 +78,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
   String _typeFilter = 'both'; // 'both' | 'product' | 'service'
   String _newItemType = 'product'; // type for the add-product form
   bool _unlimitedStock = false;
+  bool _priceIncludesTax = false;
 
   static const _csvMaxRows = 500;
   static const _csvHeaders = [
@@ -93,6 +94,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     'alias_name',
     'unit',
     'unlimited_stock',
+    'price_includes_tax',
     'storage_location',
     'container_number',
     'batch_number',
@@ -320,6 +322,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
             : _aliasNameController.text.trim(),
         unit: _selectedUnit.trim(),
         unlimitedStock: _unlimitedStock,
+        priceIncludesTax: _priceIncludesTax,
       );
 
       await ref.read(productRepositoryProvider).insertProduct(newProduct);
@@ -365,12 +368,15 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     _supplierNameController.clear();
     _skuCodeController.clear();
     _notesController.clear();
-    if (mounted) setState(() {
+    if (mounted) {
+      setState(() {
       _selectedUnit = '';
       _unlimitedStock = !_columnsConfig.stock;
+      _priceIncludesTax = false;
       _expiryDate = null;
       _manufactureDate = null;
     });
+    }
   }
 
   static String _isoDate(DateTime? d) =>
@@ -470,6 +476,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     final dialogFormKey = GlobalKey<FormState>();
     String dialogItemType = product.type;
     String dialogUnit = product.unit;
+    bool dialogPriceIncludesTax = product.priceIncludesTax;
     bool dialogUnlimitedStock =
         !_columnsConfig.stock ? true : product.unlimitedStock;
 
@@ -507,7 +514,8 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                       ? null
                       : aliasNameCtrl.text.trim(),
                   unit: dialogUnit.trim(),
-                  unlimitedStock: dialogUnlimitedStock
+                  unlimitedStock: dialogUnlimitedStock,
+                  priceIncludesTax: dialogPriceIncludesTax,
               );
 
               await ref.read(productRepositoryProvider).updateProduct(updatedProduct);
@@ -648,6 +656,18 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                           readOnly: !isEdit,
                           keyboardType: TextInputType.number,
                           isTaxRate: true),
+                      CheckboxListTile(
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                        value: dialogPriceIncludesTax,
+                        onChanged: !isEdit
+                            ? null
+                            : (v) => setDialogState(
+                                () => dialogPriceIncludesTax = v ?? false),
+                        title: const Text('Price Includes Tax'),
+                        subtitle: const Text(
+                            'Product price already includes tax (per-item tax mode only)'),
+                      ),
                       const SizedBox(height: 16),
                     ],
                     if (_columnsConfig.stock) ...[
@@ -935,10 +955,10 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
 
   Future<void> _downloadSampleCSV() async {
     const sample =
-        '"name","hsn_code","description","price","tax_rate","stock","type","default_discount","purchase_price","alias_name","unit","unlimited_stock","storage_location","container_number","batch_number","expiry_date","manufacture_date","supplier_name","sku_code","notes"\n'
-        '"Wireless Mouse","84716010","Ergonomic wireless mouse","599.00","18","50","product","5.00","400.00","","pcs","0","Rack A1","","","","","","",""\n'
-        '"USB Hub","84734000","4-port USB 3.0 hub","299.00","18","100","product","0","180.00","","pcs","0","","CNT-1023","","","","","",""\n'
-        '"Annual Support","998314","Annual technical support plan","4999.00","18","0","service","10.00","0","","unit","1","","","","","","","",""\n';
+        '"name","hsn_code","description","price","tax_rate","stock","type","default_discount","purchase_price","alias_name","unit","unlimited_stock","price_includes_tax","storage_location","container_number","batch_number","expiry_date","manufacture_date","supplier_name","sku_code","notes"\n'
+        '"Wireless Mouse","84716010","Ergonomic wireless mouse","599.00","18","50","product","5.00","400.00","","pcs","0","0","Rack A1","","","","","","",""\n'
+        '"USB Hub","84734000","4-port USB 3.0 hub","299.00","18","100","product","0","180.00","","pcs","0","0","","CNT-1023","","","","","",""\n'
+        '"Annual Support","998314","Annual technical support plan","4999.00","18","0","service","10.00","0","","unit","1","1","","","","","","","",""\n';
 
     final savePath = await FilePicker.platform.saveFile(
       dialogTitle: 'Save Sample CSV',
@@ -1009,6 +1029,16 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                     _csvRuleRow(context, 'purchase_price', 'No', 'Cost price (numeric), default 0'),
                     _csvRuleRow(context, 'alias_name', 'No', 'Local-language display name for PDFs'),
                     _csvRuleRow(context, 'unit', 'No', 'Unit of measure (e.g. kg, bag, pcs), default pcs'),
+                    _csvRuleRow(context, 'unlimited_stock', 'No', '1/true for unlimited stock, default 0'),
+                    _csvRuleRow(context, 'price_includes_tax', 'No', '1/true if price already includes tax, default 0'),
+                    _csvRuleRow(context, 'storage_location', 'No', 'Warehouse/shelf location'),
+                    _csvRuleRow(context, 'container_number', 'No', 'Container/box number'),
+                    _csvRuleRow(context, 'batch_number', 'No', 'Batch/lot number'),
+                    _csvRuleRow(context, 'expiry_date', 'No', 'Expiry date'),
+                    _csvRuleRow(context, 'manufacture_date', 'No', 'Manufacture date'),
+                    _csvRuleRow(context, 'supplier_name', 'No', 'Supplier name'),
+                    _csvRuleRow(context, 'sku_code', 'No', 'SKU code'),
+                    _csvRuleRow(context, 'notes', 'No', 'Free-text notes'),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -1192,9 +1222,11 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
         final aliasNameStr = getField(row, 'alias_name');
         final unitStr = getField(row, 'unit');
         final unlimitedStockStr = getField(row, 'unlimited_stock');
+        final priceIncludesTaxStr = getField(row, 'price_includes_tax');
         final taxRate = taxStr.isEmpty ? 0 : (int.tryParse(taxStr) ?? 0);
         final stock = stockStr.isEmpty ? 0 : (int.tryParse(stockStr) ?? 0);
         final unlimitedStock = unlimitedStockStr == '1' || unlimitedStockStr.toLowerCase() == 'true';
+        final priceIncludesTax = priceIncludesTaxStr == '1' || priceIncludesTaxStr.toLowerCase() == 'true';
         final discount = discountStr.isEmpty ? 0.0 : (double.tryParse(discountStr) ?? 0.0);
         final purchasePrice = purchasePriceStr.isEmpty ? 0.0 : (double.tryParse(purchasePriceStr) ?? 0.0);
         final type = (typeStr == 'service') ? 'service' : 'product';
@@ -1214,6 +1246,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
           aliasName: aliasNameStr.isEmpty ? null : aliasNameStr,
           unit: unitStr,
           unlimitedStock: unlimitedStock,
+          priceIncludesTax: priceIncludesTax,
         );
 
         metadataById[product.id] = ProductMetadata(
@@ -1474,7 +1507,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
       final allProducts = await repo.getAllProducts();
       final allMetadata = await repo.getAllProductMetadata();
       final List<List<dynamic>> rows = [
-        ['name', 'hsn_code', 'description', 'price', 'tax_rate', 'stock', 'type', 'default_discount', 'purchase_price', 'alias_name', 'unit', 'unlimited_stock', 'storage_location', 'container_number', 'batch_number', 'expiry_date', 'manufacture_date', 'supplier_name', 'sku_code', 'notes'],
+        ['name', 'hsn_code', 'description', 'price', 'tax_rate', 'stock', 'type', 'default_discount', 'purchase_price', 'alias_name', 'unit', 'unlimited_stock', 'price_includes_tax', 'storage_location', 'container_number', 'batch_number', 'expiry_date', 'manufacture_date', 'supplier_name', 'sku_code', 'notes'],
         ...allProducts.map((p) {
           final meta = allMetadata[p.id];
           return [
@@ -1490,6 +1523,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
               p.aliasName ?? '',
               p.unit,
               p.unlimitedStock ? 1 : 0,
+              p.priceIncludesTax ? 1 : 0,
               meta?.storageLocation ?? '',
               meta?.containerNumber ?? '',
               meta?.batchNumber ?? '',
@@ -1819,6 +1853,18 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                       _buildFormField(
                           _taxRateController, 'Tax Rate (%)', Icons.percent,
                           keyboardType: TextInputType.number, isTaxRate: true),
+                      CheckboxListTile(
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                        value: _priceIncludesTax,
+                        onChanged: (v) {
+                          if (!mounted) return;
+                          setState(() => _priceIncludesTax = v ?? false);
+                        },
+                        title: const Text('Price Includes Tax'),
+                        subtitle: const Text(
+                            'Product price already includes tax (per-item tax mode only)'),
+                      ),
                       const SizedBox(height: 16),
                     ],
                     if (_columnsConfig.stock) ...[

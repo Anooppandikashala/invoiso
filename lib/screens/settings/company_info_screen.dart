@@ -28,6 +28,7 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
   final websiteController = TextEditingController();
   final gstinController = TextEditingController();
   final panController = TextEditingController();
+  final fssaiController = TextEditingController();
   bool _isSaving = false;
   String _selectedCountry = 'India';
   int _companyInfoLoadCount = 0; // incremented once when DB data arrives; forces Autocomplete reinit
@@ -93,6 +94,7 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
       websiteController.text = info.website;
       gstinController.text = info.gstin;
       panController.text = info.panNumber;
+      fssaiController.text = info.fssaiCode;
 
       _selectedCountry = info.country.isEmpty ? 'India' : info.country;
       _companyInfoLoadCount++;
@@ -168,6 +170,7 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
         website: websiteController.text,
         gstin: gstinController.text,
         panNumber: panController.text,
+        fssaiCode: fssaiController.text,
         country: _selectedCountry);
 
     final upiEntries = <UpiEntry>[];
@@ -230,6 +233,7 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
     websiteController.dispose();
     gstinController.dispose();
     panController.dispose();
+    fssaiController.dispose();
     for (final row in _upiControllers) {
       row.label.dispose();
       row.id.dispose();
@@ -548,7 +552,15 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                         ),
                       ),
                       const SizedBox(width: 16),
-                      const Expanded(child: SizedBox()),
+                      Expanded(
+                        child: _buildField(
+                          controller: fssaiController,
+                          label: 'FSSAI Code',
+                          icon: Icons.verified_rounded,
+                          maxLength: 14,
+                          hint: '12345678901234',
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
