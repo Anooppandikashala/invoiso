@@ -54,6 +54,7 @@ class CreateInvoiceScreen extends ConsumerStatefulWidget {
 }
 
 class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
+  final FocusNode _screenFocusNode = FocusNode();
   ProductColumnsConfig _columnsConfig = const ProductColumnsConfig();
 
   Future<void> _loadColumnsConfig() async {
@@ -261,6 +262,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
 
   @override
   void dispose() {
+    _screenFocusNode.dispose();
     _productSearchDebounce?.cancel();
     _customerSearchDebounce?.cancel();
     if (widget.guard?.canLeave == _confirmLeaveIfDirty) {
@@ -1454,8 +1456,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
               onPressed: () {
-                final parsedUnitPrice =
-                    double.tryParse(unitPriceController.text);
+                final parsedUnitPrice = double.tryParse(unitPriceController.text);
                 final unitPrice = (parsedUnitPrice != null &&
                         parsedUnitPrice != item.product.price)
                     ? parsedUnitPrice
@@ -1492,7 +1493,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           ],
         ),
       ),
-    );
+    ).then((_) => _screenFocusNode.requestFocus());
   }
 
   void _showProductPickerDialog() {
@@ -5235,8 +5236,12 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         },
       },
       child: Focus(
+        focusNode: _screenFocusNode,
         autofocus: true,
-        child: _withUnsavedChangesPopScope(Scaffold(
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () => _screenFocusNode.requestFocus(),
+          child: _withUnsavedChangesPopScope(Scaffold(
       appBar: AppBar(
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -5345,6 +5350,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
               },
             ),
     )),
+        ),
       ),
     );
   }
