@@ -39,6 +39,7 @@ class PdfGenerationSettings {
   final Uint8List? watermarkBytes;
   final double watermarkOpacity;
   final bool showCgstSgst;
+  final bool showRoundOff;
 
   const PdfGenerationSettings({
     required this.company,
@@ -73,5 +74,6 @@ class PdfGenerationSettings {
     this.showAliasName = false,
     this.watermarkBytes,
     this.watermarkOpacity = 0.12,
+    this.showRoundOff = false,
   });
 }

@@ -39,6 +39,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
   bool _showAliasNameInPdf = false;
   bool _showTaxButtonInInvoicePage = true;
   bool _showCgstSgst = false;
+  bool _showRoundOff = false;
   String _defaultTaxMode = 'global';
   String? _signatureBase64;
   String _signaturePosition = 'left';
@@ -90,6 +91,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
       settingsRepo.getAllowDuplicateInvoiceItems(),
       settingsRepo.getSetting(SettingKey.showCgstSgst),
       settingsRepo.getSetting(SettingKey.defaultTaxMode),
+      settingsRepo.getSetting(SettingKey.showRoundOff),
     ]);
 
     if (!mounted) return;
@@ -126,6 +128,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
       _allowDuplicateInvoiceItems = results[25] as bool;
       _showCgstSgst = (results[26] as String?) == 'true';
       _defaultTaxMode = (results[27] as String?) ?? 'global';
+      _showRoundOff = (results[28] as String?) == 'true';
       _isLoading = false;
     });
   }
@@ -169,6 +172,7 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
       settingsRepo.setAllowDuplicateInvoiceItems(_allowDuplicateInvoiceItems),
       settingsRepo.setSetting(SettingKey.showCgstSgst, _showCgstSgst.toString()),
       settingsRepo.setSetting(SettingKey.defaultTaxMode, _defaultTaxMode),
+      settingsRepo.setSetting(SettingKey.showRoundOff, _showRoundOff.toString()),
     ]);
 
     if (!mounted) return;
@@ -869,6 +873,39 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                         onChanged: (val) {
                                           if(!mounted) return;
                                           setState(() => _showCgstSgst = val);
+                                        },
+                                        activeColor: Theme.of(context).primaryColor,
+                                      ),
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 12),
+
+                                  // Show Round Off Toggle
+                                  SizedBox(
+                                    width: constraints.maxWidth,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                        borderRadius: BorderRadius.circular(
+                                            AppBorderRadius.xsmall),
+                                        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                                      ),
+                                      child: SwitchListTile(
+                                        title: const Text('Show Round Off'),
+                                        subtitle: const Text(
+                                          "Show a Round Off row + Net Amount (rounded to nearest) and amount in words on invoice PDFs.",
+                                        ),
+                                        secondary: Icon(
+                                          Icons.currency_rupee_rounded,
+                                          color: _showRoundOff
+                                              ? Theme.of(context).primaryColor
+                                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                                        ),
+                                        value: _showRoundOff,
+                                        onChanged: (val) {
+                                          if(!mounted) return;
+                                          setState(() => _showRoundOff = val);
                                         },
                                         activeColor: Theme.of(context).primaryColor,
                                       ),

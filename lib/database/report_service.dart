@@ -74,6 +74,17 @@ class ReportService {
       '- ii.discount + COALESCE(ii.extra_cost, 0) END';
   static const _invoiceItemDiscountSql = 'CASE WHEN ii.discount_per_unit = 1 '
       'THEN ii.discount * ii.quantity ELSE ii.discount END';
+  // Revenue basis for P&L/dashboard: backs out embedded tax for
+  // tax-inclusive-priced items so "revenue" stays a tax-exclusive figure,
+  // matching the sales tax report and invoice subtotal. Only applies in
+  // per-item tax mode — global-mode invoices never derive tax from
+  // per-product rates, so the stored product tax rate isn't part of that
+  // invoice's actual tax calc.
+  static const _invoiceItemTaxableNetSql =
+      "CASE WHEN i.tax_mode = 'per_item' AND ii.product_price_includes_tax = 1 "
+      'AND ii.product_tax_rate > 0 '
+      'THEN ($_invoiceItemNetSql) / (1 + ii.product_tax_rate / 100.0) '
+      'ELSE $_invoiceItemNetSql END';
 
   // ── Batch loader: invoice totals computed in Dart (accurate, no N+1) ────────
 
@@ -234,7 +245,7 @@ class ReportService {
       t,
     ];
     final rows = await db.rawQuery(
-      "SELECT SUM($_invoiceItemNetSql) AS revenue, "
+      "SELECT SUM($_invoiceItemTaxableNetSql) AS revenue, "
       "SUM(ii.quantity * ii.product_purchase_price) AS cogs "
       "FROM invoice_items ii "
       "JOIN invoices i ON i.id = ii.invoice_id "
@@ -329,7 +340,7 @@ class ReportService {
     // Profit grouped by invoice date (net revenue minus COGS)
     final profitRows = await db.rawQuery(
       "SELECT strftime('%Y-%m', i.date) AS month, "
-      "SUM($_invoiceItemNetSql) AS revenue, "
+      "SUM($_invoiceItemTaxableNetSql) AS revenue, "
       "SUM(ii.quantity * ii.product_purchase_price) AS cogs "
       "FROM invoice_items ii "
       "JOIN invoices i ON i.id = ii.invoice_id "
@@ -379,7 +390,7 @@ class ReportService {
     final rows = await db.rawQuery(
       "SELECT strftime('%Y-%m-%d', i.date) AS day, "
       "COUNT(DISTINCT i.id) AS invoice_count, "
-      "SUM($_invoiceItemNetSql) AS revenue, "
+      "SUM($_invoiceItemTaxableNetSql) AS revenue, "
       "SUM(ii.quantity * ii.product_purchase_price) AS cogs "
       "FROM invoice_items ii "
       "JOIN invoices i ON i.id = ii.invoice_id "
@@ -762,12 +773,12 @@ class ReportService {
       limit,
     ];
     final orderBy = rankByProfit
-        ? '(SUM($_invoiceItemNetSql) - SUM(ii.quantity * ii.product_purchase_price))'
+        ? '(SUM($_invoiceItemTaxableNetSql) - SUM(ii.quantity * ii.product_purchase_price))'
         : 'revenue';
     final rows = await db.rawQuery(
       "SELECT ii.product_name, "
       "SUM(ii.quantity) AS units_sold, "
-      "SUM($_invoiceItemNetSql) AS revenue, "
+      "SUM($_invoiceItemTaxableNetSql) AS revenue, "
       "SUM($_invoiceItemDiscountSql) AS discount_given, "
       "SUM(ii.quantity * ii.product_purchase_price) AS cogs "
       "FROM invoice_items ii "

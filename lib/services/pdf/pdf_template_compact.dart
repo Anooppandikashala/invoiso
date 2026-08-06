@@ -38,6 +38,7 @@ pw.MultiPage buildCompactTemplate(
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
   bool showCgstSgst = false,
+  bool showRoundOff = false,
 }) {
   final accentColor = themeColor ?? PdfColors.black;
   final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
@@ -54,12 +55,12 @@ pw.MultiPage buildCompactTemplate(
   final double cellPaddingV = pageFormat == PdfPageFormat.a6
       ? compactPdfLayoutStyle.tableVerticalPadding
       : (8 * fontScale).clamp(4.0, 8.0);
-  final double totalsFontSize = 10 * fontScale;
-  final double headerFont = 13 * fontScale;
-  final double labelFont = 8 * fontScale;
-  final double addressFont = 8 * fontScale;
-  final double sectionHeaderFont = 8 * fontScale;
-  final double bodyFont = 9 * fontScale;
+  final double totalsFontSize = compactPdfLayoutStyle.totalsFontSize * fontScale;
+  final double headerFont = compactPdfLayoutStyle.titleFontSize * fontScale;
+  final double labelFont = compactPdfLayoutStyle.subtitleFontSize * fontScale;
+  final double addressFont = compactPdfLayoutStyle.subtitleFontSize * fontScale;
+  final double sectionHeaderFont = compactPdfLayoutStyle.subtitleFontSize * fontScale;
+  final double bodyFont = compactPdfLayoutStyle.bodyFontSize * fontScale;
   final double pageMargin = pageFormat == PdfPageFormat.a6 ? 16.0 : 20.0;
 
   final title = (invoice.invoiceTitle?.trim().isNotEmpty ?? false)
@@ -75,6 +76,16 @@ pw.MultiPage buildCompactTemplate(
   final compactLogoSize = pageFormat == PdfPageFormat.a6
       ? logoSizePx * compactPdfLayoutStyle.logoScale
       : logoSizePx;
+
+  final gstin = company?.gstin ?? '';
+  final gstLabel = taxLabel(company?.country);
+  final panNumber = company?.panNumber ?? '';
+  final fssaiCode = company?.fssaiCode ?? '';
+  final companyIdLine = [
+    if (showGst && gstin.isNotEmpty) '$gstLabel: $gstin',
+    if (panNumber.isNotEmpty) '${panLabel(company?.country)}: $panNumber',
+    if (fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
+  ].join('   ');
 
   return pw.MultiPage(
     pageFormat: pageFormat,
@@ -137,21 +148,8 @@ pw.MultiPage buildCompactTemplate(
                                 style: pw.TextStyle(
                                     fontSize: addressFont,
                                     color: PdfColors.grey700)),
-                          if (showGst && (company?.gstin ?? '').isNotEmpty)
-                            pw.Text(
-                                '${taxLabel(company?.country)}: ${company!.gstin}',
-                                style: pw.TextStyle(
-                                    fontSize: addressFont,
-                                    color: PdfColors.grey700)),
-                          if ((company?.panNumber ?? '').isNotEmpty)
-                            pw.Text(
-                                '${panLabel(company?.country)}: ${company!.panNumber}',
-                                style: pw.TextStyle(
-                                    fontSize: addressFont,
-                                    color: PdfColors.grey700)),
-                          if ((company?.fssaiCode ?? '').isNotEmpty)
-                            pw.Text(
-                                'FSSAI: ${company!.fssaiCode}',
+                          if (companyIdLine.isNotEmpty)
+                            pw.Text(companyIdLine,
                                 style: pw.TextStyle(
                                     fontSize: addressFont,
                                     color: PdfColors.grey700)),
@@ -288,6 +286,7 @@ pw.MultiPage buildCompactTemplate(
           fontSize: totalsFontSize,
           compact: true,
           showCgstSgst: showCgstSgst,
+          showRoundOff: showRoundOff,
         ),
       ),
 

@@ -3681,6 +3681,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                   if(item.product.priceIncludesTax)...[
                                     _buildItemDetail(
                                         _taxMode == TaxMode.perItem ? '' : 'Tax', 'Inclusive',color: Colors.teal[700]),
+                                    _buildItemDetail('Net Price',
+                                        '$_currencySymbol${InvoiceTotalsCalculator.netPrice(price: item.effectivePrice, taxRatePercent: item.product.tax_rate.toDouble(), priceIncludesTax: true).toStringAsFixed(2)}',
+                                        color: Colors.teal[700]),
                                   ],
                                   _buildItemDetail(
                                       'HSN/SAC', item.product.hsncode.toString()),

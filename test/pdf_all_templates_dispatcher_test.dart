@@ -29,6 +29,9 @@ final _company = CompanyInfo(
   email: '',
   website: '',
   gstin: '32CHMPN7497M1ZF',
+  fssaiCode: 'ABDDDGGGHHHJJJ',
+  panNumber: 'ASDWERTYUG',
+  country: 'India',
 );
 
 // 25 items so the invoice spans multiple physical pages — exercises
@@ -105,6 +108,8 @@ void main() {
       final pdfTheme = await TestPdfFontService.loadTheme();
       final watermarkBytes =
           await File('assets/images/watermark.png').readAsBytes();
+      final logoBytes =
+      await File('assets/images/demo_logo.png').readAsBytes();
       final settings = PdfGenerationSettings(
         company: _company,
         template: template,
@@ -119,8 +124,8 @@ void main() {
         showBankDetails: false,
         bankAccounts: const [],
         logoPosition: LogoPosition.left,
-        logoSizePx: 60,
-        logoBytes: null,
+        logoSizePx: 80,
+        logoBytes: logoBytes,
         thankYouNote: 'Thank you for your business!',
         datePattern: 'dd/MM/yyyy',
         showFooterBranding: true,

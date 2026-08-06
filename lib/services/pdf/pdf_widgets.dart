@@ -6,6 +6,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:qr/qr.dart';
 import 'package:invoiso/common.dart';
 import 'package:invoiso/models/invoice.dart';
+import 'package:invoiso/utils/amount_in_words.dart';
 
 /// Tracks how much table-row height has been painted so far, so the
 /// watermark image reads as one continuous strip running down the items
@@ -236,6 +237,14 @@ pw.Widget buildUpiQrSection({
   );
 }
 
+/// Rounds [net] to the nearest whole currency unit for the "Net Amount"
+/// row. Returns the rounded value and the round-off diff (rounded - net),
+/// e.g. net=1234.56 -> (rounded: 1235.0, roundOff: 0.44).
+({double rounded, double roundOff}) roundNetTotal(double net) {
+  final rounded = net.roundToDouble();
+  return (rounded: rounded, roundOff: rounded - net);
+}
+
 pw.Widget buildEnhancedTotals(
     Invoice invoice,
     PdfColor accentRowColor,
@@ -245,11 +254,13 @@ pw.Widget buildEnhancedTotals(
     {double previousBalanceDue = 0.0,
     double fontSize = 10,
     bool compact = false,
-    bool showCgstSgst = false}) {
+    bool showCgstSgst = false,
+    bool showRoundOff = false}) {
   final hasPaid = invoice.amountPaid > 0;
   final isPaidInFull = invoice.outstandingBalance <= 0;
   final hasPreviousBalance = previousBalanceDue > 0;
   final totalDue = invoice.total + previousBalanceDue;
+  final netTotal = roundNetTotal(hasPreviousBalance ? totalDue : invoice.total);
 
   final compactStyle = compact ? compactPdfTotalsStyle : null;
   final totalWidth = compactStyle?.width ?? 200.0;
@@ -264,7 +275,7 @@ pw.Widget buildEnhancedTotals(
   final rowVerticalPadding = compactStyle?.rowVerticalPadding;
   final borderRadius = compactStyle?.borderRadius ?? 6.0;
 
-  return pw.Container(
+  final totalsBox = pw.Container(
     width: totalWidth,
     decoration: pw.BoxDecoration(
       border: pw.Border.all(color: PdfColors.grey300),
@@ -377,6 +388,42 @@ pw.Widget buildEnhancedTotals(
             ),
           ),
         ],
+        if (showRoundOff) ...[
+          pdfTotalRow(
+            "Round off",
+            "$currencySymbol ${netTotal.roundOff.toStringAsFixed(2)}",
+            fontSize: rowFontSize,
+            horizontalPadding: rowHorizontalPadding,
+            verticalPadding: rowVerticalPadding,
+          ),
+          pw.Container(
+            padding: pw.EdgeInsets.symmetric(
+              horizontal: highlightHorizontalPadding,
+              vertical: highlightVerticalPadding,
+            ),
+            decoration: pw.BoxDecoration(
+              color: totalHighlightColor,
+              borderRadius: hasPaid
+                  ? pw.BorderRadius.zero
+                  : const pw.BorderRadius.vertical(bottom: pw.Radius.circular(5)),
+            ),
+            child: pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text("Net Amount",
+                    style: pw.TextStyle(
+                        fontSize: highlightFontSize,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.white)),
+                pw.Text("$currencySymbol ${netTotal.rounded.toStringAsFixed(2)}",
+                    style: pw.TextStyle(
+                        fontSize: highlightFontSize,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.white)),
+              ],
+            ),
+          ),
+        ],
         if (hasPaid) ...[
           pdfTotalRow(
             "Amount Paid",
@@ -420,6 +467,24 @@ pw.Widget buildEnhancedTotals(
       ],
     ),
   );
+
+  if (!showRoundOff) return totalsBox;
+
+  return pw.Column(
+    crossAxisAlignment: pw.CrossAxisAlignment.end,
+    children: [
+      totalsBox,
+      pw.SizedBox(height: 6),
+      pw.SizedBox(
+        width: totalWidth,
+        child: pw.Text(AmountInWords.amount(netTotal.rounded),
+            textAlign: pw.TextAlign.right,
+            style: pw.TextStyle(
+                fontSize: rowFontSize - 1,
+                fontStyle: pw.FontStyle.italic)),
+      ),
+    ],
+  );
 }
 
 /// Tax line label for invoice totals (e.g. "Tax (18%)", "Tax (per item)").
@@ -441,7 +506,7 @@ pw.Widget pdfTotalRow(String label, String value,
     double? horizontalPadding,
     double? verticalPadding}) {
   final style = pw.TextStyle(fontSize: fontSize, color: color);
-  final p = (fontSize * 0.8).clamp(5.0, 8.0);
+  final p = (fontSize * 0.5).clamp(4.0, 8.0);
   return pw.Padding(
     padding: pw.EdgeInsets.symmetric(
       horizontal: horizontalPadding ?? p,
@@ -489,19 +554,19 @@ pw.Widget buildInvoiceTable(Invoice invoice,
   final Map<int, pw.TableColumnWidth> colWidths = {
     col++: const pw.FlexColumnWidth(1),
     col++: const pw.FlexColumnWidth(3),
-    if (showGst) col: const pw.FlexColumnWidth(2),
+    if (showGst) col: const pw.FlexColumnWidth(1.4),
   };
   if (showGst) col++;
   if (showQuantity) colWidths[col++] = const pw.FlexColumnWidth(1);
   colWidths[col++] = const pw.FlexColumnWidth(1.5);
   if (splitCgstSgst) {
-    colWidths[col++] = const pw.FlexColumnWidth(0.7);
-    colWidths[col++] = const pw.FlexColumnWidth(0.7);
+    colWidths[col++] = const pw.FlexColumnWidth(1.2);
+    colWidths[col++] = const pw.FlexColumnWidth(1.2);
   } else if (showItemTax) {
     colWidths[col++] = const pw.FlexColumnWidth(1);
   }
   if (showDiscount) {
-    colWidths[col++] = const pw.FlexColumnWidth(1.5);
+    colWidths[col++] = const pw.FlexColumnWidth(1.2);
   }
   colWidths[col++] = const pw.FlexColumnWidth(1.5);
   final columnCount = col;

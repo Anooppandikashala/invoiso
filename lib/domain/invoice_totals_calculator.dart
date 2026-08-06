@@ -1,5 +1,35 @@
 import 'package:invoiso/common.dart';
 
+// Price glossary — which "price" to use where:
+//
+// product.price          Stored catalog price. Tax-inclusive or exclusive
+//                         depending on product.priceIncludesTax.
+// item.unitPrice          Optional per-invoice override of product.price
+//                         (null = use product.price). Same inclusive/exclusive
+//                         rule as product.price applies to it too.
+// item.effectivePrice     unitPrice ?? product.price. "The price actually
+//                         charged for one unit on this invoice." Use this,
+//                         never product.price directly, when displaying/
+//                         calculating an invoice line.
+// netPrice()              effectivePrice with tax backed out (only when
+//                         priceIncludesTax is true). "What the unit is worth
+//                         before tax." Use for tax-exclusive display only —
+//                         never feed it back into line()'s `price` param.
+// InvoiceLineAmount.lineTotal    Taxable base for the line (qty applied,
+//                         discount/extraCost applied, tax backed out if
+//                         inclusive). Feeds itemTax and totals().
+// InvoiceLineAmount.grossTotal   Same as lineTotal but pre-discount —
+//                         used for line-item "before discount" display.
+// InvoiceLineAmount.displayTotal Qty × price incl. discount/extraCost,
+//                         WITHOUT backing out tax. "What the line item row
+//                         shows as its total." == item.total.
+// InvoiceLineAmount.itemTax      lineTotal × taxRatePercent/100. == item.taxAmount.
+// InvoiceTotals.subtotal/tax/total  Invoice-wide sums of the above across
+//                         all lines — see totals() below.
+//
+// Rule of thumb: effectivePrice for calculating, netPrice() only for showing
+// a tax-exclusive number to the user, displayTotal/total for the row's price tag.
+
 enum TaxRateFormat {
   fraction,
   percent,
@@ -43,6 +73,17 @@ class InvoiceTotals {
 
 class InvoiceTotalsCalculator {
   const InvoiceTotalsCalculator._();
+
+  /// Backs tax out of a tax-inclusive price. Returns [price] unchanged
+  /// when the price is exclusive or tax rate is 0.
+  static double netPrice({
+    required double price,
+    required double taxRatePercent,
+    required bool priceIncludesTax,
+  }) {
+    if (!priceIncludesTax || taxRatePercent <= 0) return price;
+    return price / (1 + taxRatePercent / 100);
+  }
 
   static InvoiceLineAmount line({
     required double price,
