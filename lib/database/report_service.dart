@@ -174,10 +174,11 @@ class ReportService {
           AdditionalCost.listFromJson(inv['additional_costs'] as String?)
               .fold(0.0, (s, c) => s + c.amount);
       final totals = InvoiceTotalsCalculator.totals(
-        lines: items.map(InvoiceTotalsCalculator.lineFromDbRow),
+        lines: items.map((r) => InvoiceTotalsCalculator.lineFromDbRow(r,
+            taxMode: taxMode, globalTaxRatePercent: taxRate * 100)),
         taxMode: taxMode,
         globalTaxRate: taxRate,
-        globalTaxRateFormat: TaxRateFormat.percent,
+        globalTaxRateFormat: TaxRateFormat.fraction,
         additionalCostsTotal: addCosts,
       );
       final total = totals.total;
@@ -519,7 +520,7 @@ class ReportService {
       final ph = List.filled(ids.length, '?').join(',');
       final itemRows = await db.rawQuery(
         "SELECT invoice_id, quantity, unit_price, product_price, discount, "
-        "discount_per_unit, extra_cost "
+        "discount_per_unit, extra_cost, product_tax_rate, product_price_includes_tax "
         "FROM invoice_items WHERE invoice_id IN ($ph)",
         ids,
       );
@@ -532,8 +533,10 @@ class ReportService {
         final id = inv['id'] as String;
         final taxRate = (inv['tax_rate'] as num?)?.toDouble() ?? 0.0;
         final totals = InvoiceTotalsCalculator.totals(
-          lines:
-              (itemsByInv[id] ?? []).map(InvoiceTotalsCalculator.lineFromDbRow),
+          lines: (itemsByInv[id] ?? []).map((r) =>
+              InvoiceTotalsCalculator.lineFromDbRow(r,
+                  taxMode: TaxMode.global,
+                  globalTaxRatePercent: taxRate * 100)),
           taxMode: TaxMode.global,
           globalTaxRate: taxRate,
           globalTaxRateFormat: TaxRateFormat.fraction,

@@ -1453,6 +1453,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     final unitController = TextEditingController();
 
     bool discountPerUnit = true;
+    bool dialogPriceIncludesTax = false;
     String dialogItemType = _adHocItemType;
     int insertAt = invoiceItems.length + 1;
     String selectedUnit = '';
@@ -1625,6 +1626,14 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                     ],
                   ),
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    title: const Text('Price includes tax'),
+                    value: dialogPriceIncludesTax,
+                    onChanged: (val) => setDialogState(
+                        () => dialogPriceIncludesTax = val ?? false),
+                  ),
                 ],
                 if (invoiceItems.isNotEmpty) ...[
                   const SizedBox(height: 16),
@@ -1701,6 +1710,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   aliasName: aliasNameController.text.trim().isEmpty
                       ? null
                       : aliasNameController.text.trim(),
+                  priceIncludesTax: dialogPriceIncludesTax,
                 );
                 final extraCost = double.tryParse(extraCostController.text);
                 final item = InvoiceItem(
@@ -4710,6 +4720,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             extraCost: item.extraCost ?? 0.0,
             taxRatePercent: item.product.tax_rate.toDouble(),
             priceIncludesTax: item.product.priceIncludesTax,
+            taxMode: _taxMode,
+            globalTaxRatePercent: taxRate * 100,
           )),
       taxMode: _taxMode,
       globalTaxRate: taxRate,

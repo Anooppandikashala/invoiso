@@ -1373,7 +1373,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
       final allProducts = await repo.getAllProducts();
       final allMetadata = await repo.getAllProductMetadata();
       final List<List<dynamic>> rows = [
-        ['name', 'hsn_code', 'description', 'price', 'tax_rate', 'stock', 'type', 'default_discount', 'purchase_price', 'alias_name', 'unit', 'unlimited_stock', 'storage_location', 'container_number', 'batch_number', 'expiry_date', 'manufacture_date', 'supplier_name', 'sku_code', 'notes'],
+        ['name', 'hsn_code', 'description', 'price', 'tax_rate', 'stock', 'type', 'default_discount', 'purchase_price', 'alias_name', 'unit', 'unlimited_stock', 'price_includes_tax', 'storage_location', 'container_number', 'batch_number', 'expiry_date', 'manufacture_date', 'supplier_name', 'sku_code', 'notes'],
         ...allProducts.map((p) {
           final meta = allMetadata[p.id];
           return [
@@ -1389,6 +1389,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
               p.aliasName ?? '',
               p.unit,
               p.unlimitedStock ? 1 : 0,
+              p.priceIncludesTax ? 1 : 0,
               meta?.storageLocation ?? '',
               meta?.containerNumber ?? '',
               meta?.batchNumber ?? '',

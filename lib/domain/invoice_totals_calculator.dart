@@ -93,6 +93,8 @@ class InvoiceTotalsCalculator {
     double extraCost = 0,
     double taxRatePercent = 0,
     bool priceIncludesTax = false,
+    TaxMode taxMode = TaxMode.perItem,
+    double globalTaxRatePercent = 0,
   }) {
     final displayTotal = discountPerUnit
         ? (price - discount) * quantity + extraCost
@@ -100,8 +102,13 @@ class InvoiceTotalsCalculator {
     // When price is tax-inclusive, back out the tax so lineTotal holds the
     // taxable base — itemTax and every downstream subtotal/tax sum then
     // stay correct without touching the totals() aggregation formula.
-    final taxDivisor = (priceIncludesTax && taxRatePercent > 0)
-        ? (1 + taxRatePercent / 100)
+    // In global mode the invoice charges globalTaxRatePercent, not the
+    // item's own rate, so that's the rate actually baked into the price
+    // and the one that must be backed out here.
+    final backOutRatePercent =
+        taxMode == TaxMode.global ? globalTaxRatePercent : taxRatePercent;
+    final taxDivisor = (priceIncludesTax && backOutRatePercent > 0)
+        ? (1 + backOutRatePercent / 100)
         : 1.0;
     final lineTotal = displayTotal / taxDivisor;
     return InvoiceLineAmount(
@@ -118,7 +125,11 @@ class InvoiceTotalsCalculator {
     );
   }
 
-  static InvoiceLineAmount lineFromDbRow(Map<String, dynamic> row) {
+  static InvoiceLineAmount lineFromDbRow(
+    Map<String, dynamic> row, {
+    TaxMode taxMode = TaxMode.perItem,
+    double globalTaxRatePercent = 0,
+  }) {
     final price = (row['unit_price'] as num?)?.toDouble() ??
         (row['product_price'] as num?)?.toDouble() ??
         0.0;
@@ -130,6 +141,8 @@ class InvoiceTotalsCalculator {
       extraCost: (row['extra_cost'] as num?)?.toDouble() ?? 0.0,
       taxRatePercent: (row['product_tax_rate'] as num?)?.toDouble() ?? 0.0,
       priceIncludesTax: (row['product_price_includes_tax'] as int?) == 1,
+      taxMode: taxMode,
+      globalTaxRatePercent: globalTaxRatePercent,
     );
   }
 

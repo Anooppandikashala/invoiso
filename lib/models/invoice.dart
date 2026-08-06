@@ -52,7 +52,8 @@ class Invoice {
   });
 
   InvoiceTotals get _totals => InvoiceTotalsCalculator.totals(
-        lines: items.map((item) => item._amountsForInvoice),
+        lines: items.map((item) => item._amountsForInvoice(
+            taxMode: taxMode, globalTaxRatePercent: taxRate * 100)),
         taxMode: taxMode,
         globalTaxRate: taxRate,
         globalTaxRateFormat: TaxRateFormat.fraction,
@@ -82,7 +83,11 @@ class Invoice {
 }
 
 extension _InvoiceItemTotals on InvoiceItem {
-  InvoiceLineAmount get _amountsForInvoice => InvoiceTotalsCalculator.line(
+  InvoiceLineAmount _amountsForInvoice({
+    required TaxMode taxMode,
+    required double globalTaxRatePercent,
+  }) =>
+      InvoiceTotalsCalculator.line(
         price: effectivePrice,
         quantity: quantity,
         discount: discount,
@@ -90,5 +95,7 @@ extension _InvoiceItemTotals on InvoiceItem {
         extraCost: extraCost ?? 0.0,
         taxRatePercent: product.tax_rate.toDouble(),
         priceIncludesTax: product.priceIncludesTax,
+        taxMode: taxMode,
+        globalTaxRatePercent: globalTaxRatePercent,
       );
 }
