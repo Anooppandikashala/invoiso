@@ -1690,11 +1690,12 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         builder: (context, setDialogState) {
           void submitAdHocItem() {
             final name = nameController.text.trim();
+            if (name.isEmpty || priceController.text.trim().isEmpty) return;
             final price = double.tryParse(priceController.text) ?? 0.0;
+            if (price <= 0) return;
             final taxRate = _taxMode == TaxMode.perItem
                 ? (int.tryParse(taxRateController.text) ?? 0)
                 : 0;
-            if (name.isEmpty) return;
 
             final adHocProduct = Product(
               id: 'custom-${const Uuid().v4()}',
