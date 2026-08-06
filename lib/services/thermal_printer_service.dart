@@ -14,7 +14,8 @@ import 'package:invoiso/common.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/services/pdf/pdf_service.dart';
 import 'package:invoiso/services/pdf/pdf_settings.dart';
-import 'package:invoiso/services/pdf/pdf_widgets.dart' show invoiceTaxLabel;
+import 'package:invoiso/services/pdf/pdf_widgets.dart' show invoiceTaxLabel, roundNetTotal;
+import 'package:invoiso/utils/amount_in_words.dart';
 import 'package:invoiso/constants.dart';
 
 /// Prints receipts by rendering a real Flutter widget tree to a bitmap and
@@ -432,6 +433,8 @@ class ThermalPrinterService {
     final settings = s.pdf;
     final currency = invoice.currencySymbol;
     final company = settings.company;
+    final isIndia = (company?.country ?? '').isEmpty ||
+        company!.country.toLowerCase() == 'india';
 
     final profile = await CapabilityProfile.load();
     final generator = Generator(s.paperSize, profile);
@@ -552,6 +555,10 @@ class ThermalPrinterService {
     if (invoice.taxMode != TaxMode.none) {
       twoCol(invoiceTaxLabel(invoice), '$currency ${invoice.tax.toStringAsFixed(2)}');
     }
+    if (invoice.taxMode != TaxMode.none && isIndia && settings.showCgstSgst) {
+      twoCol('SGST:', '$currency ${(invoice.tax / 2).toStringAsFixed(2)}');
+      twoCol('CGST:', '$currency ${(invoice.tax / 2).toStringAsFixed(2)}');
+    }
     for (final c in invoice.additionalCosts) {
       twoCol(c.label.isEmpty ? 'Extra Cost' : c.label,
           '$currency ${c.amount.toStringAsFixed(2)}');
@@ -568,6 +575,14 @@ class ThermalPrinterService {
     }
     twoCol('TOTAL', '$currency ${(invoice.total + s.previousBalance).toStringAsFixed(2)}',
         bold: true);
+
+    if (settings.showRoundOff) {
+      final net = roundNetTotal(invoice.total + s.previousBalance);
+      twoCol('Round off:', '$currency ${net.roundOff.toStringAsFixed(2)}');
+      twoCol('Net Amount:', '$currency ${net.rounded.toStringAsFixed(2)}', bold: true);
+      hr();
+      line(AmountInWords.amount(net.rounded), align: PosAlign.left);
+    }
 
     if (invoice.amountPaid > 0) {
       hr();
@@ -701,12 +716,14 @@ class ThermalPrinterService {
         bool bold = false,
         double fontSize = itemFontSize,
         bool needDarkerText = false,
-        bool isTotal = false}) {
+        bool isTotal = false,
+        bool isItalic = false}) {
       return Text(
         text,
         textAlign: align,
         style: TextStyle(
           fontSize: isTotal ? fontSize + 3 : fontSize,
+          fontStyle: isItalic ? FontStyle.italic : FontStyle.normal,
           fontWeight: bold ? FontWeight.bold : needDarkerText ? FontWeight.w500 : FontWeight.normal,
           color: Colors.black,
         ),
@@ -931,11 +948,29 @@ class ThermalPrinterService {
                   '$currency ${(invoice.total + s.previousBalance).toStringAsFixed(2)}',
                   bold: true,isTotal:true),
 
+              if (settings.showRoundOff) ...[
+                Builder(builder: (_) {
+                  final net = roundNetTotal(invoice.total + s.previousBalance);
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      twoCol('Round off:', '$currency ${net.roundOff.toStringAsFixed(2)}'),
+                      twoCol('Net Amount:', '$currency ${net.rounded.toStringAsFixed(2)}', bold: true),
+                      hr(),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: text(AmountInWords.amount(net.rounded), align: TextAlign.left,fontSize: itemFontSize-2,isItalic: true),
+                      ),
+                    ],
+                  );
+                }),
+              ],
+
               if (showTaxSummary) ...[
                 hr(),
                 text('=== TAX SUMMARY ===', align: TextAlign.center, bold: true),
                 twoCol('Taxable Amt:', '$currency ${invoice.subtotal.toStringAsFixed(2)}'),
-                if (isIndia) ...[
+                if (isIndia && settings.showCgstSgst) ...[
                   twoCol('SGST:', '$currency ${(invoice.tax / 2).toStringAsFixed(2)}'),
                   twoCol('CGST:', '$currency ${(invoice.tax / 2).toStringAsFixed(2)}'),
                 ],
