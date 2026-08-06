@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:invoiso/common.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/invoice_payment.dart';
-import 'package:invoiso/services/pdf_font_service.dart';
+import 'package:invoiso/services/pdf/pdf_font_service.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';

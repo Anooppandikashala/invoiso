@@ -15,7 +15,7 @@ import 'package:invoiso/common.dart';
 import 'package:invoiso/constants.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/invoice.dart';
-import 'package:invoiso/services/pdf_font_service.dart';
+import 'package:invoiso/services/pdf/pdf_font_service.dart';
 import 'package:invoiso/services/thermal_printer_service.dart';
 
 import 'pdf_settings.dart';

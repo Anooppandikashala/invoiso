@@ -1,5 +1,5 @@
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:invoiso/services/pdf_font_assets.dart';
+import 'package:invoiso/services/pdf/pdf_font_assets.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 class PdfFontService {

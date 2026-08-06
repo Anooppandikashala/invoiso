@@ -8,7 +8,7 @@ import 'package:invoiso/models/additional_cost.dart';
 import 'package:invoiso/utils/app_date.dart';
 import 'package:invoiso/utils/formatters.dart';
 import 'package:invoiso/models/report_models.dart';
-import 'package:invoiso/services/pdf_font_service.dart';
+import 'package:invoiso/services/pdf/pdf_font_service.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
