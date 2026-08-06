@@ -193,7 +193,7 @@ pw.MultiPage buildMinimalTemplate(
               if (companyIdLine.isNotEmpty)
                 pw.Text(companyIdLine,
                     style: pw.TextStyle(
-                        fontStyle: pw.FontStyle.italic, fontSize: 9)),
+                        fontStyle: pw.FontStyle.italic, fontSize: minimalPdfStyle.bodyFontSize)),
             ],
           ),
           pw.Column(
@@ -221,7 +221,7 @@ pw.MultiPage buildMinimalTemplate(
                 pw.Text(
                     "${taxLabel(company?.country)}: ${invoice.customer.gstin}",
                     style: pw.TextStyle(
-                        fontStyle: pw.FontStyle.italic, fontSize: 9)),
+                        fontStyle: pw.FontStyle.italic, fontSize: minimalPdfStyle.bodyFontSize)),
             ],
           ),
         ],
