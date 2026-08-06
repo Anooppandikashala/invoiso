@@ -59,6 +59,7 @@ class InvoiceService {
           'product_description': item.product.description,
           'product_price': item.product.price,
           'product_tax_rate': item.product.tax_rate,
+          'product_price_includes_tax': item.product.priceIncludesTax ? 1 : 0,
           'product_hsn_code': item.product.hsncode,
           'quantity': item.quantity,
           'discount': item.discount,
@@ -139,6 +140,7 @@ class InvoiceService {
           'product_description': item.product.description,
           'product_price': item.product.price,
           'product_tax_rate': item.product.tax_rate,
+          'product_price_includes_tax': item.product.priceIncludesTax ? 1 : 0,
           'product_hsn_code': item.product.hsncode,
           'quantity': item.quantity,
           'discount': item.discount,
@@ -232,7 +234,7 @@ class InvoiceService {
     final placeholders = List.filled(ids.length, '?').join(',');
     final itemRows = await db.rawQuery(
       'SELECT invoice_id, unit_price, product_price, quantity, discount, '
-      'discount_per_unit, extra_cost, product_tax_rate '
+      'discount_per_unit, extra_cost, product_tax_rate, product_price_includes_tax '
       'FROM invoice_items WHERE invoice_id IN ($placeholders) ORDER BY rowid ASC',
       ids,
     );
@@ -261,11 +263,14 @@ class InvoiceService {
       final additionalCostsTotal =
           AdditionalCost.listFromJson(row['additional_costs'] as String?)
               .fold(0.0, (sum, cost) => sum + cost.amount);
+      final rowTaxMode = TaxModeExtension.fromKey(row['tax_mode'] as String?);
+      final rowTaxRate = (row['tax_rate'] as num?)?.toDouble() ?? 0.0;
       final totals = InvoiceTotalsCalculator.totals(
-        lines: (itemsByInvoice[invoiceId] ?? [])
-            .map(InvoiceTotalsCalculator.lineFromDbRow),
-        taxMode: TaxModeExtension.fromKey(row['tax_mode'] as String?),
-        globalTaxRate: (row['tax_rate'] as num?)?.toDouble() ?? 0.0,
+        lines: (itemsByInvoice[invoiceId] ?? []).map((r) =>
+            InvoiceTotalsCalculator.lineFromDbRow(r,
+                taxMode: rowTaxMode, globalTaxRatePercent: rowTaxRate * 100)),
+        taxMode: rowTaxMode,
+        globalTaxRate: rowTaxRate,
         globalTaxRateFormat: TaxRateFormat.fraction,
         additionalCostsTotal: additionalCostsTotal,
       );
@@ -709,7 +714,7 @@ class InvoiceService {
 
     final itemRows = await db.rawQuery(
       'SELECT invoice_id, unit_price, product_price, quantity, discount, '
-      'discount_per_unit, extra_cost, product_tax_rate '
+      'discount_per_unit, extra_cost, product_tax_rate, product_price_includes_tax '
       'FROM invoice_items WHERE invoice_id IN ($placeholders) ORDER BY rowid ASC',
       ids,
     );
@@ -740,16 +745,18 @@ class InvoiceService {
       final invId = inv['id'] as String;
       final taxRate = (inv['tax_rate'] as num?)?.toDouble() ?? 0.0;
       final taxMode = inv['tax_mode'] as String? ?? 'global';
+      final invTaxMode = TaxModeExtension.fromKey(taxMode);
       final items = itemsByInvoice[invId] ?? [];
 
       final additionalTotal =
           AdditionalCost.listFromJson(inv['additional_costs'] as String?)
               .fold(0.0, (sum, c) => sum + c.amount);
       final totals = InvoiceTotalsCalculator.totals(
-        lines: items.map(InvoiceTotalsCalculator.lineFromDbRow),
-        taxMode: TaxModeExtension.fromKey(taxMode),
+        lines: items.map((r) => InvoiceTotalsCalculator.lineFromDbRow(r,
+            taxMode: invTaxMode, globalTaxRatePercent: taxRate * 100)),
+        taxMode: invTaxMode,
         globalTaxRate: taxRate,
-        globalTaxRateFormat: TaxRateFormat.percent,
+        globalTaxRateFormat: TaxRateFormat.fraction,
         additionalCostsTotal: additionalTotal,
       );
       final total = totals.total;

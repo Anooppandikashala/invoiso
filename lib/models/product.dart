@@ -13,6 +13,7 @@ class Product {
   String? aliasName; // local-language display name for PDFs
   String unit;
   bool unlimitedStock;
+  bool priceIncludesTax;
 
   Product({
     required this.id,
@@ -29,6 +30,7 @@ class Product {
     this.aliasName,
     this.unit = '',
     this.unlimitedStock = false,
+    this.priceIncludesTax = false,
   });
 
   // Convert a Map into a Product object
@@ -49,6 +51,7 @@ class Product {
       aliasName: map['alias_name'] as String?,
       unit: map['unit'] as String? ?? '',
       unlimitedStock: (map['unlimited_stock'] ?? 0) == 1,
+      priceIncludesTax: (map['price_includes_tax'] ?? 0) == 1,
     );
   }
 
@@ -68,6 +71,7 @@ class Product {
       purchasePrice: (map['product_purchase_price'] as num?)?.toDouble() ?? 0.0,
       aliasName: map['product_alias_name'] as String?,
       unit: map['product_unit'] as String? ?? '',
+      priceIncludesTax: (map['product_price_includes_tax'] ?? 0) == 1,
     );
   }
 
@@ -87,6 +91,7 @@ class Product {
       'alias_name': aliasName,
       'unit': unit,
       'unlimited_stock': unlimitedStock ? 1 : 0,
+      'price_includes_tax': priceIncludesTax ? 1 : 0,
     };
   }
 

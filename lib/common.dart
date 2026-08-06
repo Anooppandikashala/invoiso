@@ -66,6 +66,9 @@ enum SettingKey {
   watermarkOpacity, // watermark opacity 0.0-1.0 as string; default '0.12'
   defaultInvoiceTitle, // GST document title preselected on new invoices: 'Tax Invoice' | 'Bill of Supply' | etc; null/empty = plain 'Invoice'
   allowDuplicateInvoiceItems, // whether the same product can be added twice to one invoice (default false)
+  showCgstSgst, // whether to split tax into CGST/SGST (India, 50/50)
+  defaultTaxMode, // 'global' | 'perItem' — default tax mode for new invoices
+  showRoundOff, // whether to show round-off row + amount-in-words on PDFs (default false)
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -167,6 +170,12 @@ extension SettingKeyExtension on SettingKey {
         return 'default_invoice_title';
       case SettingKey.allowDuplicateInvoiceItems:
         return 'allow_duplicate_invoice_items';
+      case SettingKey.showCgstSgst:
+        return 'show_cgst_sgst';
+      case SettingKey.defaultTaxMode:
+        return 'default_tax_mode';
+      case SettingKey.showRoundOff:
+        return 'show_round_off';
     }
   }
 }
@@ -299,6 +308,10 @@ class CompactPdfLayoutStyle {
     this.signatureLabelFontSize = 5.8,
     this.footerBrandingFontSize = 5.6,
     this.footerTopMargin = 4,
+    this.titleFontSize = 13,
+    this.subtitleFontSize = 8,
+    this.bodyFontSize = 9,
+    this.totalsFontSize = 10,
   });
 
   final double logoScale;
@@ -313,9 +326,101 @@ class CompactPdfLayoutStyle {
   final double signatureLabelFontSize;
   final double footerBrandingFontSize;
   final double footerTopMargin;
+  final double titleFontSize;
+  final double subtitleFontSize;
+  final double bodyFontSize;
+  final double totalsFontSize;
 }
 
 const compactPdfLayoutStyle = CompactPdfLayoutStyle();
+
+/// Tunable font sizes/paddings for a single PDF template. One const instance
+/// per template (below) holds that template's current values as defaults —
+/// edit an instance's values here to restyle that template everywhere.
+class PdfTemplateStyle {
+  const PdfTemplateStyle({
+    this.titleFontSize = 14,
+    this.subtitleFontSize = 9,
+    this.labelFontSize = 8,
+    this.bodyFontSize = 9,
+    this.tableHeaderFontSize = 8,
+    this.tableFontSize = 8,
+    this.totalsFontSize = 9,
+    this.totalsHighlightFontSize = 11,
+    this.footerFontSize = 8,
+    this.cellPaddingH = 6,
+    this.cellPaddingV = 6,
+    this.sectionPadding = 8,
+    this.headerGap = 6,
+    this.typeFont = 10,
+  });
+
+  final double titleFontSize;
+  final double subtitleFontSize;
+  final double labelFontSize;
+  final double bodyFontSize;
+  final double tableHeaderFontSize;
+  final double tableFontSize;
+  final double totalsFontSize;
+  final double totalsHighlightFontSize;
+  final double footerFontSize;
+  final double cellPaddingH;
+  final double cellPaddingV;
+  final double sectionPadding;
+  final double headerGap;
+  final double typeFont;
+}
+
+const classicPdfStyle = PdfTemplateStyle(
+  titleFontSize: 14,
+  subtitleFontSize: 8,
+  labelFontSize: 8,
+  bodyFontSize: 8,
+  headerGap: 2,
+  sectionPadding: 4,
+  tableFontSize: 8,
+  typeFont: 10,
+);
+const executivePdfStyle = PdfTemplateStyle(
+  titleFontSize: 14,
+  subtitleFontSize: 9,
+  labelFontSize: 8,
+  bodyFontSize: 8,
+  sectionPadding: 8,
+  headerGap: 6,
+);
+const minimalPdfStyle = PdfTemplateStyle(
+  titleFontSize: 12,
+  subtitleFontSize: 9,
+  labelFontSize: 9,
+  bodyFontSize: 8,
+  headerGap: 5,
+);
+const modernPdfStyle = PdfTemplateStyle(
+  titleFontSize: 15,
+  subtitleFontSize: 10,
+  labelFontSize: 10,
+  bodyFontSize: 8,
+  sectionPadding: 10,
+  headerGap: 8,
+  tableFontSize: 8,
+  typeFont: 10
+);
+const gridClassicPdfStyle = PdfTemplateStyle(
+  titleFontSize: 12,
+  subtitleFontSize: 8,
+  labelFontSize: 7.5,
+  bodyFontSize: 9,
+  tableHeaderFontSize: 7.5,
+  tableFontSize: 7.5,
+  totalsFontSize: 8,
+  totalsHighlightFontSize: 10,
+  footerFontSize: 7,
+  cellPaddingH: 4,
+  cellPaddingV: 4,
+  sectionPadding: 7,
+  headerGap: 6,
+);
 
 enum DateFormatOption {
   ddmmyyyy, // dd/MM/yyyy  — default
@@ -557,6 +662,10 @@ String panLabel(String? country) {
   if (country == null || country.isEmpty || country == 'India') return 'PAN';
   return 'TIN';
 }
+
+/// True if country is unset (backward-compat) or explicitly India.
+bool isIndiaCountry(String? country) =>
+    country == null || country.isEmpty || country.toLowerCase() == 'india';
 
 /// Full list of world countries (alphabetical).
 class AppCountries {

@@ -41,13 +41,14 @@ class InvoiceItem {
         discountPerUnit: discountPerUnit,
         extraCost: extraCost ?? 0.0,
         taxRatePercent: product.tax_rate.toDouble(),
+        priceIncludesTax: product.priceIncludesTax,
       );
 
   double get grossPrice => _amounts.grossTotal;
 
   double get totalDiscount => _amounts.discountTotal;
 
-  double get total => _amounts.lineTotal;
+  double get total => _amounts.displayTotal;
 
   double get taxAmount => _amounts.itemTax;
 }

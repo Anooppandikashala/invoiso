@@ -7,6 +7,7 @@ class CompanyInfo {
   final String website;
   final String gstin;
   final String panNumber;
+  final String fssaiCode;
   final String country;
 
   CompanyInfo({
@@ -18,6 +19,7 @@ class CompanyInfo {
     required this.website,
     required this.gstin,
     this.panNumber = '',
+    this.fssaiCode = '',
     this.country = 'India',
   });
 
@@ -31,6 +33,7 @@ class CompanyInfo {
       website: map['website'],
       gstin: map['gstin'],
       panNumber: map['pan_number'] ?? '',
+      fssaiCode: map['fssai_code'] ?? '',
       country: map['country'] ?? 'India',
     );
   }
@@ -45,6 +48,7 @@ class CompanyInfo {
       'website': website,
       'gstin': gstin,
       'pan_number': panNumber,
+      'fssai_code': fssaiCode,
       'country': country,
     };
   }

@@ -4,6 +4,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:invoiso/common.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/invoice.dart';
+import 'package:invoiso/utils/amount_in_words.dart';
 import 'pdf_widgets.dart';
 
 const double _thermalMargin = 4 * PdfPageFormat.mm;
@@ -26,6 +27,7 @@ pw.Page buildThermalTemplate(
   PageSize pageSize = PageSize.a4,
   pw.ThemeData? pdfTheme,
   String itemLayout = 'table',
+  bool showRoundOff = false,
 }) {
   const double bodyFs = 6;
   const double smallFs = 5.5;
@@ -236,6 +238,7 @@ pw.Page buildThermalTemplate(
 
   List<pw.Widget> buildPdfBody() {
     final dateStr = DateFormat(datePattern).format(invoice.date);
+    final netTotal = roundNetTotal(invoice.total + previousBalanceDue);
     return [
       // ── Business Header ──
       centerText(company?.name ?? '', fontSize: titleFs, bold: true),
@@ -391,6 +394,26 @@ pw.Page buildThermalTemplate(
                   fontSize: boldFs, fontWeight: pw.FontWeight.bold)),
         ],
       ),
+      if (showRoundOff) ...[
+        pw.SizedBox(height: 2),
+        labelValue('Round off:',
+            '$currencySymbol ${netTotal.roundOff.toStringAsFixed(2)}'),
+        pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Text('NET AMOUNT',
+                style: pw.TextStyle(
+                    fontSize: boldFs, fontWeight: pw.FontWeight.bold)),
+            pw.Text('$currencySymbol ${netTotal.rounded.toStringAsFixed(2)}',
+                style: pw.TextStyle(
+                    fontSize: boldFs, fontWeight: pw.FontWeight.bold)),
+          ],
+        ),
+        pw.SizedBox(height: 2),
+        pw.Text(AmountInWords.amount(netTotal.rounded),
+            style: pw.TextStyle(
+                fontSize: bodyFs - 1, fontStyle: pw.FontStyle.italic)),
+      ],
 
       if (invoice.amountPaid > 0) ...[
         pw.SizedBox(height: 2),

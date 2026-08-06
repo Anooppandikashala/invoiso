@@ -36,6 +36,8 @@ pw.MultiPage buildExecutiveTemplate(
   pw.ThemeData? pdfTheme,
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
+  bool showCgstSgst = false,
+  bool showRoundOff = false,
 }) {
   final accentColor = themeColor ?? PdfColors.blueGrey800;
   final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
@@ -45,7 +47,7 @@ pw.MultiPage buildExecutiveTemplate(
   pw.Widget partyBlock(String title, List<String> lines,
       {pw.CrossAxisAlignment alignment = pw.CrossAxisAlignment.start}) {
     return pw.Container(
-      padding: const pw.EdgeInsets.all(12),
+      padding: pw.EdgeInsets.all(executivePdfStyle.sectionPadding),
       decoration: pw.BoxDecoration(
         border: pw.Border.all(color: PdfColors.grey300, width: 0.7),
         borderRadius: pw.BorderRadius.circular(6),
@@ -57,17 +59,27 @@ pw.MultiPage buildExecutiveTemplate(
             title,
             style: pw.TextStyle(
               color: accentColor,
-              fontSize: 9,
+              fontSize: executivePdfStyle.bodyFontSize,
               fontWeight: pw.FontWeight.bold,
             ),
           ),
           pw.SizedBox(height: 6),
           ...lines.where((line) => line.trim().isNotEmpty).map((line) =>
-              pw.Text(line, style: const pw.TextStyle(fontSize: 9))),
+              pw.Text(line, style: pw.TextStyle(fontSize: executivePdfStyle.bodyFontSize))),
         ],
       ),
     );
   }
+
+  final gstin = company?.gstin ?? '';
+  final gstLabel = taxLabel(company?.country);
+  final panNumber = company?.panNumber ?? '';
+  final fssaiCode = company?.fssaiCode ?? '';
+  final companyIdLine = [
+    if (showGst && gstin.isNotEmpty) '$gstLabel: $gstin',
+    if (panNumber.isNotEmpty) '${panLabel(company?.country)}: $panNumber',
+    if (fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
+  ].join('   ');
 
   final customerLines = [
     invoice.customer.name,
@@ -110,29 +122,23 @@ pw.MultiPage buildExecutiveTemplate(
                 pw.Text(
                   company?.name ?? '',
                   style: pw.TextStyle(
-                    fontSize: 18,
+                    fontSize: executivePdfStyle.titleFontSize,
                     fontWeight: pw.FontWeight.bold,
                     color: PdfColors.grey900,
                   ),
                 ),
-                pw.SizedBox(height: 6),
+                pw.SizedBox(height: executivePdfStyle.headerGap),
                 pw.Text(company?.address ?? '',
-                    style: const pw.TextStyle(fontSize: 9)),
+                    style: pw.TextStyle(fontSize: executivePdfStyle.subtitleFontSize)),
                 pw.Text('Phone: ${company?.phone ?? ''}',
-                    style: const pw.TextStyle(fontSize: 9)),
+                    style: pw.TextStyle(fontSize: executivePdfStyle.subtitleFontSize)),
                 pw.Text('Email: ${company?.email ?? ''}',
-                    style: const pw.TextStyle(fontSize: 9)),
+                    style: pw.TextStyle(fontSize: executivePdfStyle.subtitleFontSize)),
                 if ((company?.website ?? '').isNotEmpty)
                   pw.Text(company!.website,
-                      style: const pw.TextStyle(fontSize: 9)),
-                if (showGst)
-                  pw.Text(
-                      '${taxLabel(company?.country)}: ${company?.gstin ?? ''}',
-                      style: const pw.TextStyle(fontSize: 9)),
-                if ((company?.panNumber ?? '').isNotEmpty)
-                  pw.Text(
-                      '${panLabel(company?.country)}: ${company!.panNumber}',
-                      style: const pw.TextStyle(fontSize: 9)),
+                      style: pw.TextStyle(fontSize: executivePdfStyle.subtitleFontSize)),
+                if (companyIdLine.isNotEmpty)
+                  pw.Text(companyIdLine, style: pw.TextStyle(fontSize: executivePdfStyle.subtitleFontSize)),
               ],
             ),
           ),
@@ -142,15 +148,15 @@ pw.MultiPage buildExecutiveTemplate(
             children: [
               if (logoImage != null && logoPosition == LogoPosition.right)
                 buildCompanyLogo(logoImage, size: logoSizePx),
-              pw.SizedBox(height: 6),
+              pw.SizedBox(height: executivePdfStyle.headerGap),
               pw.Text('# $invoicePrefix${invoice.invoiceNumber ?? invoice.id}',
                   style: pw.TextStyle(
-                      fontSize: 11, fontWeight: pw.FontWeight.bold)),
+                      fontSize: executivePdfStyle.bodyFontSize, fontWeight: pw.FontWeight.bold)),
               pw.Text('Date: ${formatPdfDate(invoice.date, datePattern)}',
-                  style: const pw.TextStyle(fontSize: 9)),
+                  style: pw.TextStyle(fontSize: executivePdfStyle.bodyFontSize)),
               if (invoice.dueDate != null)
                 pw.Text('Due: ${formatPdfDate(invoice.dueDate!, datePattern)}',
-                    style: const pw.TextStyle(fontSize: 9)),
+                    style: pw.TextStyle(fontSize: executivePdfStyle.bodyFontSize)),
             ],
           ),
         ],
@@ -159,7 +165,7 @@ pw.MultiPage buildExecutiveTemplate(
       pw.Center(child: pw.Text(
         (invoice.invoiceTitle ?? invoice.type).toUpperCase(),
         style: pw.TextStyle(
-          fontSize: 12,
+          fontSize: executivePdfStyle.typeFont,
           fontWeight: pw.FontWeight.bold,
           color: accentColor,
         ),
@@ -175,7 +181,7 @@ pw.MultiPage buildExecutiveTemplate(
           pw.Expanded(flex: 1, child: pw.Container()),
         ],
       ),
-      pw.SizedBox(height: 15),
+      pw.SizedBox(height: 5),
       buildInvoiceTable(
         invoice,
         InvoiceTemplate.executive,
@@ -189,8 +195,10 @@ pw.MultiPage buildExecutiveTemplate(
         businessType: businessType,
         watermarkBytes: watermarkBytes,
         watermarkOpacity: watermarkOpacity,
+        showCgstSgst: showCgstSgst,
+        tableFontSize: executivePdfStyle.tableFontSize
       ),
-      pw.SizedBox(height: 15),
+      pw.SizedBox(height: 5),
       pw.Row(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -204,16 +212,19 @@ pw.MultiPage buildExecutiveTemplate(
             accentColor,
             currencySymbol,
             previousBalanceDue: previousBalanceDue,
+            showCgstSgst: showCgstSgst,
+            showRoundOff: showRoundOff,
+            fontSize: executivePdfStyle.totalsFontSize
           ),
         ],
       ),
       if (signatureImage != null) ...[
-        pw.SizedBox(height: 16),
+        pw.SizedBox(height: 5),
         buildSignatureWidget(signatureImage, signaturePosition,
             imageHeight: signatureSizePx),
       ],
       if (showUpiQr && upiId != null || bankAccount != null)
-        pw.SizedBox(height: 12),
+        pw.SizedBox(height: 5),
       if (showUpiQr && upiId != null || bankAccount != null)
         pw.Align(
           alignment: pw.Alignment.centerRight,
@@ -237,9 +248,9 @@ pw.MultiPage buildExecutiveTemplate(
             ],
           ),
         ),
-      pw.SizedBox(height: 26),
+      pw.SizedBox(height: 5),
       pw.Container(height: 2, color: accentColor),
-      pw.SizedBox(height: 10),
+      pw.SizedBox(height: 5),
       pw.Center(
         child: pw.Text(
           thankYouNote,

@@ -1,5 +1,35 @@
 import 'package:invoiso/common.dart';
 
+// Price glossary — which "price" to use where:
+//
+// product.price          Stored catalog price. Tax-inclusive or exclusive
+//                         depending on product.priceIncludesTax.
+// item.unitPrice          Optional per-invoice override of product.price
+//                         (null = use product.price). Same inclusive/exclusive
+//                         rule as product.price applies to it too.
+// item.effectivePrice     unitPrice ?? product.price. "The price actually
+//                         charged for one unit on this invoice." Use this,
+//                         never product.price directly, when displaying/
+//                         calculating an invoice line.
+// netPrice()              effectivePrice with tax backed out (only when
+//                         priceIncludesTax is true). "What the unit is worth
+//                         before tax." Use for tax-exclusive display only —
+//                         never feed it back into line()'s `price` param.
+// InvoiceLineAmount.lineTotal    Taxable base for the line (qty applied,
+//                         discount/extraCost applied, tax backed out if
+//                         inclusive). Feeds itemTax and totals().
+// InvoiceLineAmount.grossTotal   Same as lineTotal but pre-discount —
+//                         used for line-item "before discount" display.
+// InvoiceLineAmount.displayTotal Qty × price incl. discount/extraCost,
+//                         WITHOUT backing out tax. "What the line item row
+//                         shows as its total." == item.total.
+// InvoiceLineAmount.itemTax      lineTotal × taxRatePercent/100. == item.taxAmount.
+// InvoiceTotals.subtotal/tax/total  Invoice-wide sums of the above across
+//                         all lines — see totals() below.
+//
+// Rule of thumb: effectivePrice for calculating, netPrice() only for showing
+// a tax-exclusive number to the user, displayTotal/total for the row's price tag.
+
 enum TaxRateFormat {
   fraction,
   percent,
@@ -10,12 +40,14 @@ class InvoiceLineAmount {
   final double grossTotal;
   final double discountTotal;
   final double taxRatePercent;
+  final double displayTotal;
 
   const InvoiceLineAmount({
     required this.lineTotal,
     required this.grossTotal,
     required this.discountTotal,
     required this.taxRatePercent,
+    required this.displayTotal,
   });
 
   double get itemTax => lineTotal * (taxRatePercent / 100);
@@ -42,6 +74,17 @@ class InvoiceTotals {
 class InvoiceTotalsCalculator {
   const InvoiceTotalsCalculator._();
 
+  /// Backs tax out of a tax-inclusive price. Returns [price] unchanged
+  /// when the price is exclusive or tax rate is 0.
+  static double netPrice({
+    required double price,
+    required double taxRatePercent,
+    required bool priceIncludesTax,
+  }) {
+    if (!priceIncludesTax || taxRatePercent <= 0) return price;
+    return price / (1 + taxRatePercent / 100);
+  }
+
   static InvoiceLineAmount line({
     required double price,
     required double quantity,
@@ -49,19 +92,44 @@ class InvoiceTotalsCalculator {
     required bool discountPerUnit,
     double extraCost = 0,
     double taxRatePercent = 0,
+    bool priceIncludesTax = false,
+    TaxMode taxMode = TaxMode.perItem,
+    double globalTaxRatePercent = 0,
   }) {
-    final lineTotal = discountPerUnit
+    final displayTotal = discountPerUnit
         ? (price - discount) * quantity + extraCost
         : (price * quantity) - discount + extraCost;
+    // When price is tax-inclusive, back out the tax so lineTotal holds the
+    // taxable base — itemTax and every downstream subtotal/tax sum then
+    // stay correct without touching the totals() aggregation formula.
+    // In global mode the invoice charges globalTaxRatePercent, not the
+    // item's own rate, so that's the rate actually baked into the price
+    // and the one that must be backed out here.
+    final backOutRatePercent =
+        taxMode == TaxMode.global ? globalTaxRatePercent : taxRatePercent;
+    final taxDivisor = (priceIncludesTax && backOutRatePercent > 0)
+        ? (1 + backOutRatePercent / 100)
+        : 1.0;
+    final lineTotal = displayTotal / taxDivisor;
     return InvoiceLineAmount(
       lineTotal: lineTotal,
-      grossTotal: price * quantity + extraCost,
+      // Back out tax here too, so grossSubtotal (pre-discount subtotal,
+      // used whenever any line has a discount) stays on the same taxable
+      // basis as subtotal — otherwise mixing inclusive/exclusive items
+      // with a discount flips the displayed pre-discount figure between
+      // tax-inclusive and tax-exclusive depending on which is shown.
+      grossTotal: (price * quantity + extraCost) / taxDivisor,
       discountTotal: discountPerUnit ? discount * quantity : discount,
       taxRatePercent: taxRatePercent,
+      displayTotal: displayTotal,
     );
   }
 
-  static InvoiceLineAmount lineFromDbRow(Map<String, dynamic> row) {
+  static InvoiceLineAmount lineFromDbRow(
+    Map<String, dynamic> row, {
+    TaxMode taxMode = TaxMode.perItem,
+    double globalTaxRatePercent = 0,
+  }) {
     final price = (row['unit_price'] as num?)?.toDouble() ??
         (row['product_price'] as num?)?.toDouble() ??
         0.0;
@@ -72,6 +140,9 @@ class InvoiceTotalsCalculator {
       discountPerUnit: (row['discount_per_unit'] as int?) == 1,
       extraCost: (row['extra_cost'] as num?)?.toDouble() ?? 0.0,
       taxRatePercent: (row['product_tax_rate'] as num?)?.toDouble() ?? 0.0,
+      priceIncludesTax: (row['product_price_includes_tax'] as int?) == 1,
+      taxMode: taxMode,
+      globalTaxRatePercent: globalTaxRatePercent,
     );
   }
 

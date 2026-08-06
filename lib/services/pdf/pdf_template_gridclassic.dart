@@ -45,6 +45,8 @@ pw.MultiPage buildGridClassicTemplate(
   pw.ThemeData? pdfTheme,
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
+  bool showCgstSgst = false,
+  bool showRoundOff = false,
 }) {
   final accentColor = themeColor ?? PdfColors.black;
   final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
@@ -57,24 +59,33 @@ pw.MultiPage buildGridClassicTemplate(
   final double fontScale = isA6 ? 0.60 : (isA5 ? 0.88 : 1.0);
   final double pageMarginH = isA6 ? 10.0 : (isA5 ? 15.0 : PdfLayout.defaultHMargin);
   final double pageMarginV = isA6 ? 5.0 : (isA5 ? 8.0 : PdfLayout.defaultVMargin);
-  final double innerPad = 7 * fontScale;
-  final double titleFont = 12 * fontScale;
-  final double subFont = 8 * fontScale;
-  final double labelFont = 7.5 * fontScale;
-  final double tableFontSize = 7.5 * fontScale;
-  final double totalsFont = 8 * fontScale;
-  final double netAmountFont = 10 * fontScale;
-  final double cellPadH = (4 * fontScale).clamp(3.0, 6.0);
-  final double cellPadV = (4 * fontScale).clamp(3.0, 6.0);
+  final double innerPad = gridClassicPdfStyle.sectionPadding * fontScale;
+  final double titleFont = gridClassicPdfStyle.titleFontSize * fontScale;
+  final double subFont = gridClassicPdfStyle.subtitleFontSize * fontScale;
+  final double labelFont = gridClassicPdfStyle.labelFontSize * fontScale;
+  final double tableFontSize = gridClassicPdfStyle.tableFontSize * fontScale;
+  final double totalsFont = gridClassicPdfStyle.totalsFontSize * fontScale;
+  final double netAmountFont = gridClassicPdfStyle.totalsHighlightFontSize * fontScale;
+  final double cellPadH = (gridClassicPdfStyle.cellPaddingH * fontScale).clamp(3.0, 6.0);
+  final double cellPadV = (gridClassicPdfStyle.cellPaddingV * fontScale).clamp(3.0, 6.0);
 
   final gstin = company?.gstin ?? '';
   final gstLabel = taxLabel(company?.country);
+  final panNumber = company?.panNumber ?? '';
+  final fssaiCode = company?.fssaiCode ?? '';
+  final companyIdLine = [
+    if (showGst && gstin.isNotEmpty) '$gstLabel: $gstin',
+    if (panNumber.isNotEmpty) 'PAN: $panNumber',
+    if (fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
+  ].join('   ');
   final hasPreviousBalance = previousBalanceDue > 0;
   final hasPaid = invoice.amountPaid > 0;
 
   final rawNet = invoice.total + (hasPreviousBalance ? previousBalanceDue : 0);
-  final roundedNet = rawNet.floorToDouble();
-  final roundOff = roundedNet - rawNet;
+  final netTotal = roundNetTotal(rawNet);
+  final roundedNet = netTotal.rounded;
+  final roundOff = netTotal.roundOff;
+  final payableAmount = showRoundOff ? roundedNet : rawNet;
 
   final totalQty = showTotalQuantity
       ? invoice.items.fold<double>(0, (s, i) => s + i.quantity)
@@ -130,7 +141,7 @@ pw.MultiPage buildGridClassicTemplate(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
             // Entire logo section
-            if (logoImage != null)
+            if (logoImage != null)...[
               pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
@@ -154,17 +165,18 @@ pw.MultiPage buildGridClassicTemplate(
                           pw.Text('Ph: ${company!.phone}',
                               textAlign: pw.TextAlign.left,
                               style: pw.TextStyle(fontSize: subFont)),
-                        if (showGst && gstin.isNotEmpty)
-                          pw.Text('$gstLabel: $gstin',
-                              textAlign: pw.TextAlign.left,
-                              style: pw.TextStyle(
-                                  fontSize: subFont, fontWeight: pw.FontWeight.normal)),
                       ],
                     ),
                     if(logoPosition == LogoPosition.right)
                       buildCompanyLogo(logoImage, size: logoSizePx),
                   ]
               ),
+              if (companyIdLine.isNotEmpty)
+                pw.Center(child: pw.Text(companyIdLine,
+                    textAlign: pw.TextAlign.left,
+                    style: pw.TextStyle(
+                        fontSize: subFont, fontWeight: pw.FontWeight.normal)),)
+            ],
             if (logoImage == null)
               pw.Center(
                 child: pw.Column(
@@ -183,8 +195,8 @@ pw.MultiPage buildGridClassicTemplate(
                       pw.Text('Ph: ${company!.phone}',
                           textAlign: pw.TextAlign.center,
                           style: pw.TextStyle(fontSize: subFont)),
-                    if (showGst && gstin.isNotEmpty)
-                      pw.Text('$gstLabel: $gstin',
+                    if (companyIdLine.isNotEmpty)
+                      pw.Text(companyIdLine,
                           textAlign: pw.TextAlign.center,
                           style: pw.TextStyle(
                               fontSize: subFont, fontWeight: pw.FontWeight.normal)),
@@ -262,7 +274,7 @@ pw.MultiPage buildGridClassicTemplate(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              pw.Expanded(child: buildAdditionalNotes(invoice,fontSize: 9*fontScale)),
+              pw.Expanded(child: buildAdditionalNotes(invoice,fontSize: gridClassicPdfStyle.bodyFontSize*fontScale)),
               pw.SizedBox(width: 5 * fontScale),
               pw.SizedBox(
                 width: 200 * fontScale,
@@ -278,6 +290,12 @@ pw.MultiPage buildGridClassicTemplate(
                     if (invoice.taxMode != TaxMode.none)
                       totalsRow(invoiceTaxLabel(invoice),
                           '$currencySymbol ${invoice.tax.toStringAsFixed(2)}'),
+                    if (invoice.taxMode != TaxMode.none && showCgstSgst) ...[
+                      totalsRow('CGST',
+                          '$currencySymbol ${(invoice.tax / 2).toStringAsFixed(2)}'),
+                      totalsRow('SGST',
+                          '$currencySymbol ${(invoice.tax / 2).toStringAsFixed(2)}'),
+                    ],
                     ...invoice.additionalCosts.map((c) => totalsRow(
                         c.label.isEmpty ? 'Extra Cost' : c.label,
                         '$currencySymbol ${c.amount.toStringAsFixed(2)}')),
@@ -292,12 +310,14 @@ pw.MultiPage buildGridClassicTemplate(
                           '$currencySymbol ${(invoice.total + previousBalanceDue).toStringAsFixed(2)}',
                           bold: true),
                     ],
-                    totalsRow('Round off',
-                        '$currencySymbol ${roundOff.toStringAsFixed(2)}'),
-                    pw.Divider(thickness: 0.5, color: borderColor,height: 5),
-                    totalsRow('Net Amount',
-                        '$currencySymbol ${roundedNet.toStringAsFixed(2)}',
-                        bold: true, size: netAmountFont),
+                    if (showRoundOff) ...[
+                      totalsRow('Round off',
+                          '$currencySymbol ${roundOff.toStringAsFixed(2)}'),
+                      pw.Divider(thickness: 0.5, color: borderColor,height: 5),
+                      totalsRow('Net Amount',
+                          '$currencySymbol ${roundedNet.toStringAsFixed(2)}',
+                          bold: true, size: netAmountFont),
+                    ],
                     if (hasPaid) ...[
                       pw.SizedBox(height: 4 * fontScale),
                       totalsRow('Amount Paid',
@@ -313,9 +333,10 @@ pw.MultiPage buildGridClassicTemplate(
           pw.SizedBox(height: 10 * fontScale),
 
           // ── Amount in words ──
-          pw.Text(AmountInWords.amount(roundedNet),
-              style: pw.TextStyle(
-                  fontSize: labelFont - 1 , fontWeight: pw.FontWeight.normal, fontStyle: pw.FontStyle.italic)),
+          if (showRoundOff)
+            pw.Text(AmountInWords.amount(roundedNet),
+                style: pw.TextStyle(
+                    fontSize: labelFont - 1 , fontWeight: pw.FontWeight.normal, fontStyle: pw.FontStyle.italic)),
 
           if (signatureImage != null) ...[
             pw.SizedBox(height: 16 * fontScale),
@@ -335,7 +356,7 @@ pw.MultiPage buildGridClassicTemplate(
                     buildUpiQrSection(
                       upiId: upiId,
                       companyName: company?.name ?? '',
-                      amount: invoice.total,
+                      amount: payableAmount,
                       currencyCode: invoice.currencyCode,
                       invoiceId: invoice.id,
                       accentColor: accentColor,
@@ -366,7 +387,7 @@ pw.MultiPage buildGridClassicTemplate(
               alignment: pw.Alignment.bottomRight,
               child: pw.Text('Generated by Invoiso',
                   style: pw.TextStyle(
-                      fontSize: 7 * fontScale, color: PdfColors.grey600)),
+                      fontSize: gridClassicPdfStyle.footerFontSize * fontScale, color: PdfColors.grey600)),
             ),
           ],
         ],
@@ -425,6 +446,7 @@ pw.MultiPage buildGridClassicTemplate(
             : null,
         watermarkBytes: watermarkBytes,
         watermarkOpacity: watermarkOpacity,
+        showCgstSgst: showCgstSgst,
       ),
       // ── Notes, totals, signature, footer (inset again) ──
       buildInvoiceFooter()
