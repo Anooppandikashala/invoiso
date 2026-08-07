@@ -24,6 +24,14 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
   final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  // Explicit FocusNodes give each field a place in the focus tree and let
+  // us chain them together below. Without these (and the
+  // FocusTraversalGroup/textInputAction wiring further down), there's no
+  // defined tab order for Flutter to follow, so pressing Tab or Enter
+  // doesn't move focus between the fields.
+  final _currentPasswordFocus = FocusNode();
+  final _newPasswordFocus = FocusNode();
+  final _confirmPasswordFocus = FocusNode();
   bool _isLoading = false;
   String? _errorMessage;
   bool _obscurePassword = true;
@@ -33,6 +41,9 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     _currentPasswordController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
+    _currentPasswordFocus.dispose();
+    _newPasswordFocus.dispose();
+    _confirmPasswordFocus.dispose();
     super.dispose();
   }
 
@@ -123,81 +134,109 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
             child: Container(
               width: MediaQuery.sizeOf(context).width * 0.3,
               padding: const EdgeInsets.all(32),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.lock_reset,
-                        color: Theme.of(context).primaryColor,
-                        size: 32,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.forced ? 'Change Password Required' : 'Change Password',
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            if (widget.forced)
+              child: FocusTraversalGroup(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.lock_reset,
+                          color: Theme.of(context).primaryColor,
+                          size: 32,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
                               Text(
-                                'You must set a new password before continuing.',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.orange[700],
+                                widget.forced ? 'Change Password Required' : 'Change Password',
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  AppSpacing.hXlarge,
-
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.amber[50],
-                      border: Border.all(color: Colors.amber[300]!),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(Icons.warning_amber_rounded, color: Colors.amber[800], size: 20),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Remember this password.\nThere is no reset option - recovering it requires erasing all app data.',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.amber[900],
-                            ),
+                              if (widget.forced)
+                                Text(
+                                  'You must set a new password before continuing.',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.orange[700],
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                  ),
 
-                  AppSpacing.hXlarge,
+                    AppSpacing.hXlarge,
 
-                  if (!widget.forced) ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.amber[50],
+                        border: Border.all(color: Colors.amber[300]!),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.warning_amber_rounded, color: Colors.amber[800], size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Remember this password.\nThere is no reset option - recovering it requires erasing all app data.',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.amber[900],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    AppSpacing.hXlarge,
+
+                    if (!widget.forced) ...[
+                      TextField(
+                        controller: _currentPasswordController,
+                        focusNode: _currentPasswordFocus,
+                        autofocus: true,
+                        obscureText: _obscurePassword,
+                        textInputAction: TextInputAction.next,
+                        onSubmitted: (_) => _newPasswordFocus.requestFocus(),
+                        decoration: InputDecoration(
+                            labelText: 'Current Password',
+                            prefixIcon: Icon(Icons.lock_outline),
+                            border: OutlineInputBorder(),
+                            suffixIcon: IconButton(
+                              icon: Icon(_obscurePassword
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined),
+                              onPressed: () =>
+                                  setState(() => _obscurePassword = !_obscurePassword),
+                            )
+                        ),
+                      ),
+                      AppSpacing.hMedium,
+                    ],
+
                     TextField(
-                      controller: _currentPasswordController,
+                      controller: _newPasswordController,
+                      focusNode: _newPasswordFocus,
+                      autofocus: widget.forced,
                       obscureText: _obscurePassword,
+                      textInputAction: TextInputAction.next,
+                      onSubmitted: (_) => _confirmPasswordFocus.requestFocus(),
                       decoration: InputDecoration(
-                        labelText: 'Current Password',
-                        prefixIcon: Icon(Icons.lock_outline),
-                        border: OutlineInputBorder(),
+                          labelText: 'New Password (min 8 characters)',
+                          prefixIcon: const Icon(Icons.lock),
+                          border: const OutlineInputBorder(),
                           suffixIcon: IconButton(
                             icon: Icon(_obscurePassword
                                 ? Icons.visibility_outlined
@@ -207,93 +246,78 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                           )
                       ),
                     ),
+
                     AppSpacing.hMedium,
-                  ],
 
-                  TextField(
-                    controller: _newPasswordController,
-                    obscureText: _obscurePassword,
-                    decoration: InputDecoration(
-                      labelText: 'New Password (min 8 characters)',
-                      prefixIcon: const Icon(Icons.lock),
-                      border: const OutlineInputBorder(),
-                      suffixIcon: IconButton(
-                        icon: Icon(_obscurePassword
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined),
-                        onPressed: () =>
-                            setState(() => _obscurePassword = !_obscurePassword),
-                      )
-                    ),
-                  ),
-
-                  AppSpacing.hMedium,
-
-                  TextField(
-                    controller: _confirmPasswordController,
-                    obscureText: _obscurePassword,
-                    decoration: InputDecoration(
-                      labelText: 'Confirm New Password',
-                      prefixIcon: const Icon(Icons.lock),
-                      border: const OutlineInputBorder(),
-                      suffixIcon: IconButton(
-                        icon: Icon(_obscurePassword
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined),
-                        onPressed: () =>
-                            setState(() => _obscurePassword = !_obscurePassword),
-                      )
-                    ),
-                  ),
-
-                  if (_errorMessage != null) ...[
-                    AppSpacing.hMedium,
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.red[50],
-                        border: Border.all(color: Colors.red[200]!),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.error_outline, color: Colors.red, size: 18),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _errorMessage!,
-                              style: const TextStyle(color: Colors.red, fontSize: 13),
-                            ),
-                          ),
-                        ],
+                    TextField(
+                      controller: _confirmPasswordController,
+                      focusNode: _confirmPasswordFocus,
+                      obscureText: _obscurePassword,
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) => _isLoading ? null : _changePassword(),
+                      decoration: InputDecoration(
+                          labelText: 'Confirm New Password',
+                          prefixIcon: const Icon(Icons.lock),
+                          border: const OutlineInputBorder(),
+                          suffixIcon: IconButton(
+                            icon: Icon(_obscurePassword
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined),
+                            onPressed: () =>
+                                setState(() => _obscurePassword = !_obscurePassword),
+                          )
                       ),
                     ),
-                  ],
 
-                  AppSpacing.hXlarge,
-
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _changePassword,
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 50),
-                        backgroundColor: Theme.of(context).primaryColor,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
+                    if (_errorMessage != null) ...[
+                      AppSpacing.hMedium,
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.red[50],
+                          border: Border.all(color: Colors.red[200]!),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.error_outline, color: Colors.red, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _errorMessage!,
+                                style: const TextStyle(color: Colors.red, fontSize: 13),
                               ),
-                            )
-                          : const Text('Change Password'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
+                    AppSpacing.hXlarge,
+
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _changePassword,
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 50),
+                          backgroundColor: Theme.of(context).primaryColor,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                            : const Text('Change Password'),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
