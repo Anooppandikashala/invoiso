@@ -1061,82 +1061,98 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
     required IconData icon,
     required Color accent,
   }) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: _flatCardDecorationV2(context),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label,
-                      style: TextStyle(
-                          fontSize: 12,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                  const SizedBox(height: 6),
-                  Text(value,
-                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
-                  const SizedBox(height: 2),
-                  Text(subtitle,
-                      style: TextStyle(
-                          fontSize: 11.5,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                ],
-              ),
+    return Container(
+      constraints: const BoxConstraints(minWidth: 170),
+      padding: const EdgeInsets.all(16),
+      decoration: _flatCardDecorationV2(context),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                const SizedBox(height: 6),
+                Text(value,
+                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+                const SizedBox(height: 2),
+                Text(subtitle,
+                    style: TextStyle(
+                        fontSize: 11.5,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              ],
             ),
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: accent.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: accent, size: 20),
+          ),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
             ),
-          ],
-        ),
+            child: Icon(icon, color: accent, size: 20),
+          ),
+        ],
       ),
     );
   }
 
   Widget _statCardsRowV2() {
-    return Row(
-      children: [
-        _statCardV2(
-          label: 'Total Customers',
-          value: '${_customers.length}',
-          subtitle: 'All customers',
-          icon: Icons.groups_outlined,
-          accent: Theme.of(context).primaryColor,
-        ),
-        const SizedBox(width: 12),
-        _statCardV2(
-          label: 'Businesses',
-          value: '$_businessesCountV2',
-          subtitle: 'Registered businesses',
-          icon: Icons.apartment_outlined,
-          accent: Colors.green,
-        ),
-        const SizedBox(width: 12),
-        _statCardV2(
-          label: 'Individuals',
-          value: '$_individualsCountV2',
-          subtitle: 'Individual customers',
-          icon: Icons.person_outline,
-          accent: Colors.deepPurple,
-        ),
-        const SizedBox(width: 12),
-        _statCardV2(
-          label: 'GST Registered',
-          value: '$_gstRegisteredCountV2',
-          subtitle: 'With GST number',
-          icon: Icons.receipt_long_outlined,
-          accent: Colors.orange,
-        ),
-      ],
+    final cards = [
+      _statCardV2(
+        label: 'Total Customers',
+        value: '${_customers.length}',
+        subtitle: 'All customers',
+        icon: Icons.groups_outlined,
+        accent: Theme.of(context).primaryColor,
+      ),
+      _statCardV2(
+        label: 'Businesses',
+        value: '$_businessesCountV2',
+        subtitle: 'Registered businesses',
+        icon: Icons.apartment_outlined,
+        accent: Colors.green,
+      ),
+      _statCardV2(
+        label: 'Individuals',
+        value: '$_individualsCountV2',
+        subtitle: 'Individual customers',
+        icon: Icons.person_outline,
+        accent: Colors.deepPurple,
+      ),
+      _statCardV2(
+        label: 'GST Registered',
+        value: '$_gstRegisteredCountV2',
+        subtitle: 'With GST number',
+        icon: Icons.receipt_long_outlined,
+        accent: Colors.orange,
+      ),
+    ];
+
+    // Responsive: fit as many equal-width cards per row as the available
+    // width allows (min ~170px each), wrapping to additional rows instead
+    // of squeezing/overflowing on narrow screens.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const spacing = 12.0;
+        const minCardWidth = 170.0;
+        final perRow = (constraints.maxWidth + spacing) ~/ (minCardWidth + spacing);
+        final columns = perRow.clamp(1, cards.length);
+        final cardWidth =
+            (constraints.maxWidth - spacing * (columns - 1)) / columns;
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: [
+            for (final card in cards)
+              SizedBox(width: cardWidth, child: card),
+          ],
+        );
+      },
     );
   }
 
@@ -1546,15 +1562,22 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
           top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
+      // A plain Row with no Expanded/Wrap will overflow horizontally on a
+      // narrow table. A horizontally-scrolling Row keeps this bar's height
+      // constant and never overflows regardless of how narrow it gets.
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
           Text(
             'Showing ${total == 0 ? 0 : _currentPage * _pageSize + 1} to '
             '${(_currentPage * _pageSize + _pageSize).clamp(0, total)} of $total customers',
             style: TextStyle(
                 fontSize: 12.5, color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
+          const SizedBox(width: 24),
           Row(
             children: [
               Text('Rows per page',
@@ -1610,11 +1633,17 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
               ),
             ],
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
+  // This widget sizes itself naturally instead of relying on `Expanded` to
+  // fill whatever space a bounded ancestor gives it — the page itself is a
+  // CustomScrollView (see _buildV2), so the list here is shrink-wrapped
+  // (its own scrolling disabled) and the page just scrolls further if the
+  // natural content (header + rows + pagination) doesn't fit the viewport.
   Widget _tableSectionV2() {
     final totalPages =
         _filteredCustomers.isEmpty ? 1 : (_filteredCustomers.length / _pageSize).ceil();
@@ -1622,26 +1651,26 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
     final end = (start + _pageSize).clamp(0, _filteredCustomers.length);
     final pageItems = start < end ? _filteredCustomers.sublist(start, end) : <Customer>[];
 
-    return Expanded(
-      child: Container(
-        decoration: _flatCardDecorationV2(context),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          children: [
-            _tableHeaderRowV2(),
-            Expanded(
-              child: _isLoading && _customers.isEmpty
-                  ? const Center(child: CircularProgressIndicator())
-                  : pageItems.isEmpty
-                      ? _buildEmptyState()
-                      : ListView.builder(
-                          itemCount: pageItems.length,
-                          itemBuilder: (context, index) => _tableRowV2(pageItems[index]),
-                        ),
-            ),
-            _paginationV2(pageItems, totalPages),
-          ],
-        ),
+    return Container(
+      decoration: _flatCardDecorationV2(context),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _tableHeaderRowV2(),
+          _isLoading && _customers.isEmpty
+              ? const SizedBox(
+                  height: 240, child: Center(child: CircularProgressIndicator()))
+              : pageItems.isEmpty
+                  ? SizedBox(height: 240, child: _buildEmptyState())
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: pageItems.length,
+                      itemBuilder: (context, index) => _tableRowV2(pageItems[index]),
+                    ),
+          _paginationV2(pageItems, totalPages),
+        ],
       ),
     );
   }
@@ -1652,8 +1681,10 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
   // this is a single section rather than a tabbed panel.
 
   Widget _addPanelV2() {
+    // Width is now controlled by the Positioned wrapper in _buildV2 (scales
+    // with the window, capped between 520–680px, full width on narrow
+    // screens), so this no longer hardcodes its own width.
     return Container(
-      width: 400,
       decoration: _flatCardDecorationV2(context),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -1768,43 +1799,86 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
   Widget _buildV2(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _headerBarV2(),
-                    const SizedBox(height: 12),
-                    _statCardsRowV2(),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: _flatCardDecorationV2(context),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _searchFilterRowV2(),
-                          const SizedBox(height: 10),
-                          _tabsRowV2(),
-                        ],
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Add/Edit panel width: was a flat 400px, squeezed into a Row
+            // next to the main content (which could force the main
+            // content's Expanded to near-zero on narrow windows). Now the
+            // panel floats as an overlay instead, so it never steals width
+            // from the table, and its own width scales a bit with the
+            // window on large screens (capped so it doesn't get unwieldy)
+            // while dropping to full width (minus margins) on narrow ones.
+            final panelWidth = constraints.maxWidth < 750
+                ? constraints.maxWidth - 32
+                : (constraints.maxWidth * 0.42).clamp(520.0, 680.0);
+
+            return Stack(
+              children: [
+                // The table section no longer relies on `Expanded` to fill
+                // leftover space — it sizes itself naturally (header row +
+                // actual row heights + pagination row), and sits in a plain
+                // SliverToBoxAdapter below the rest of the page's content,
+                // inside this CustomScrollView. Nothing here is forced into
+                // a box smaller than it needs, so there's nothing to
+                // overflow: if the natural content is taller than the
+                // visible viewport, the page scrolls further to show it,
+                // and if it fits (only a couple of customers), it fits with
+                // no extra scrolling.
+                CustomScrollView(
+                  slivers: [
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                      sliver: SliverToBoxAdapter(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _headerBarV2(),
+                            const SizedBox(height: 12),
+                            _statCardsRowV2(),
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: _flatCardDecorationV2(context),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _searchFilterRowV2(),
+                                  const SizedBox(height: 10),
+                                  _tabsRowV2(),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    _tableSectionV2(),
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      sliver: SliverToBoxAdapter(
+                        child: _tableSectionV2(),
+                      ),
+                    ),
                   ],
                 ),
-              ),
-            ),
-            if (_showAddPanelV2)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(0, 16, 16, 16),
-                child: _addPanelV2(),
-              ),
-          ],
+                if (_showAddPanelV2) ...[
+                  Positioned.fill(
+                    child: GestureDetector(
+                      onTap: () => setState(() => _showAddPanelV2 = false),
+                      child: Container(color: Colors.black.withValues(alpha: 0.3)),
+                    ),
+                  ),
+                  Positioned(
+                    top: 16,
+                    right: 16,
+                    bottom: 16,
+                    width: panelWidth,
+                    child: _addPanelV2(),
+                  ),
+                ],
+              ],
+            );
+          },
         ),
       ),
     );

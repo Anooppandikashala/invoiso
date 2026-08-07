@@ -7,7 +7,8 @@ import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/screens/settings/accessibility_screen.dart';
 import 'package:invoiso/screens/settings/backup_management_screen.dart';
 import 'package:invoiso/screens/settings/invoice_settings_screen.dart';
-import 'package:invoiso/screens/settings/pdf_settings_screen.dart';
+// import 'package:invoiso/screens/settings/pdf_settings_screen.dart';
+import 'package:invoiso/screens/settings/pdf_settings_screen_v2.dart';
 import 'package:invoiso/screens/settings/product_columns_settings_screen.dart';
 import 'package:invoiso/screens/settings/app_info_screen.dart';
 import 'package:invoiso/screens/settings/company_info_screen.dart';
@@ -192,7 +193,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       case 7:
         return cfg.extraSettingsTab!(context);
       case 3:
-        return PdfSettingsScreen(
+        return PdfSettingsScreenV2(
           onNavigateToCustomization: () {
             setState(() {
               _selectedIndex = customizeIndex;

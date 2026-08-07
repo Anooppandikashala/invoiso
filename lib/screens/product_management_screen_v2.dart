@@ -828,7 +828,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: ExpansionTile(
         tilePadding: EdgeInsets.zero,
-        title: const Text('Additional Info (optional)'),
+        title: const Text('Advanced Information'),
         leading: const Icon(Icons.more_horiz),
         childrenPadding: const EdgeInsets.only(top: 8),
         children: [
@@ -1831,12 +1831,11 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
   }
 
   Future<void> _editProductV2(Product product) async {
-    await _showProductDialog(product, true);
-    await _loadStatsV2();
+    await _showDetailDialogV2(product, startInEdit: true);
   }
 
   Future<void> _viewProductV2(Product product) async {
-    await _showProductDialog(product, false);
+    await _showDetailDialogV2(product, startInEdit: false);
   }
 
   Future<void> _deleteProductV2(Product product) async {
@@ -1892,11 +1891,11 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     required Color accent,
     String? subtitle,
   }) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: _flatCardDecorationV2(context),
-        child: Row(
+    return Container(
+      constraints: const BoxConstraints(minWidth: 170),
+      padding: const EdgeInsets.all(16),
+      decoration: _flatCardDecorationV2(context),
+      child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
@@ -1930,45 +1929,61 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
             ),
           ],
         ),
-      ),
     );
   }
 
   Widget _statCardsRowV2() {
-    return Row(
-      children: [
-        _statCardV2(
-          label: 'All Products',
-          value: '$_allCountV2',
-          subtitle: 'Total items',
-          icon: Icons.inventory_2_outlined,
-          accent: Theme.of(context).primaryColor,
-        ),
-        const SizedBox(width: 12),
-        _statCardV2(
-          label: 'Products',
-          value: '$_productsCountV2',
-          subtitle: 'Tangible products',
-          icon: Icons.widgets_outlined,
-          accent: Colors.green,
-        ),
-        const SizedBox(width: 12),
-        _statCardV2(
-          label: 'Services',
-          value: '$_servicesCountV2',
-          subtitle: 'Non-tangible services',
-          icon: Icons.design_services_outlined,
-          accent: Colors.orange,
-        ),
-        const SizedBox(width: 12),
-        _statCardV2(
-          label: 'Low Stock',
-          value: '$_lowStockCountV2',
-          subtitle: 'Need attention',
-          icon: Icons.warning_amber_rounded,
-          accent: Colors.red,
-        ),
-      ],
+    final cards = [
+      _statCardV2(
+        label: 'All Products',
+        value: '$_allCountV2',
+        subtitle: 'Total items',
+        icon: Icons.inventory_2_outlined,
+        accent: Theme.of(context).primaryColor,
+      ),
+      _statCardV2(
+        label: 'Products',
+        value: '$_productsCountV2',
+        subtitle: 'Tangible products',
+        icon: Icons.widgets_outlined,
+        accent: Colors.green,
+      ),
+      _statCardV2(
+        label: 'Services',
+        value: '$_servicesCountV2',
+        subtitle: 'Non-tangible services',
+        icon: Icons.design_services_outlined,
+        accent: Colors.orange,
+      ),
+      _statCardV2(
+        label: 'Low Stock',
+        value: '$_lowStockCountV2',
+        subtitle: 'Need attention',
+        icon: Icons.warning_amber_rounded,
+        accent: Colors.red,
+      ),
+    ];
+
+    // Responsive: fit as many equal-width cards per row as the available
+    // width allows (min ~170px each, see _statCardV2), wrapping to
+    // additional rows instead of squeezing/overflowing on narrow screens.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const spacing = 12.0;
+        const minCardWidth = 170.0;
+        final perRow = (constraints.maxWidth + spacing) ~/ (minCardWidth + spacing);
+        final columns = perRow.clamp(1, cards.length);
+        final cardWidth =
+            (constraints.maxWidth - spacing * (columns - 1)) / columns;
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: [
+            for (final card in cards)
+              SizedBox(width: cardWidth, child: card),
+          ],
+        );
+      },
     );
   }
 
@@ -2307,9 +2322,15 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
           if (_columnsConfig.taxRate)
             Expanded(flex: 1, child: Text('${p.tax_rate}%')),
           SizedBox(
-            width: 80,
+            width: 116,
             child: Row(
               children: [
+                IconButton(
+                  icon: const Icon(Icons.visibility_outlined, size: 18),
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => _viewProductV2(p),
+                  tooltip: 'View',
+                ),
                 IconButton(
                   icon: const Icon(Icons.edit_outlined, size: 18),
                   visualDensity: VisualDensity.compact,
@@ -2354,35 +2375,42 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
             Expanded(flex: 2, child: Text('PURCHASE', style: style)),
           if (_columnsConfig.stock) Expanded(flex: 1, child: Text('STOCK', style: style)),
           if (_columnsConfig.taxRate) Expanded(flex: 1, child: Text('TAX %', style: style)),
-          SizedBox(width: 80, child: Text('', style: style)),
+          SizedBox(width: 116, child: Text('', style: style)),
         ],
       ),
     );
   }
 
+  // This widget now sizes itself naturally instead of relying on `Expanded`
+  // to fill whatever space a bounded ancestor gives it. The list is
+  // shrink-wrapped (its own scrolling disabled) because the *page* is
+  // already inside a CustomScrollView — so instead of this Column being
+  // squeezed into a fixed box and overflowing when its fixed rows (header +
+  // pagination) don't fit, it just reports its true height and the page
+  // scrolls further if needed. A naturally-sized widget can't overflow.
   Widget _tableSectionV2() {
     final totalPages = _totalProducts == 0 ? 1 : ((_totalProducts - 1) ~/ _pageSize) + 1;
-    return Expanded(
-      child: Container(
-        decoration: _flatCardDecorationV2(context),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          children: [
-            _tableHeaderRowV2(),
-            Expanded(
-              child: _statsLoadingV2 && _allProductsV2.isEmpty
-                  ? const Center(child: CircularProgressIndicator())
-                  : _products.isEmpty
-                      ? _buildEmptyState()
-                      : ListView.builder(
-                          itemCount: _products.length,
-                          itemBuilder: (context, index) =>
-                              _tableRowV2(_products[index], index),
-                        ),
-            ),
-            _paginationV2(totalPages),
-          ],
-        ),
+    return Container(
+      decoration: _flatCardDecorationV2(context),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _tableHeaderRowV2(),
+          _statsLoadingV2 && _allProductsV2.isEmpty
+              ? const SizedBox(
+                  height: 240, child: Center(child: CircularProgressIndicator()))
+              : _products.isEmpty
+                  ? SizedBox(height: 240, child: _buildEmptyState())
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: _products.length,
+                      itemBuilder: (context, index) =>
+                          _tableRowV2(_products[index], index),
+                    ),
+          _paginationV2(totalPages),
+        ],
       ),
     );
   }
@@ -2395,16 +2423,28 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
           top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
+      // Was a Wrap(alignment: spaceBetween, ...): when the row got narrow it
+      // would silently wrap onto a second line, growing this widget's
+      // height and stealing space the table's Expanded(ListView) needed —
+      // the direct cause of the reported "RenderFlex overflowed by 55
+      // pixels" error. A horizontally-scrolling Row keeps this bar's
+      // height constant no matter how narrow the table gets.
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
           Text(
             'Showing ${_totalProducts == 0 ? 0 : _currentPage * _pageSize + 1} to '
             '${(_currentPage * _pageSize + _pageSize).clamp(0, _totalProducts)} of $_totalProducts products',
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
                 fontSize: 12.5, color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
+          const SizedBox(width: 24),
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text('Rows per page',
                   style: TextStyle(
@@ -2461,7 +2501,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
               ),
             ],
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -2677,8 +2718,10 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
   }
 
   Widget _addPanelV2() {
+    // Width is now controlled by the Positioned wrapper in _buildV2 (fixed
+    // 400 on wide screens, screen-width-minus-margins on narrow ones), so
+    // this no longer hardcodes its own width.
     return Container(
-      width: 400,
       decoration: _flatCardDecorationV2(context),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -2784,50 +2827,582 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     );
   }
 
+  // ── View/Edit dialog ─────────────────────────────────────────────────
+  // Same content/layout as the old right-side panel (sectioned General/
+  // Pricing/Inventory groups, Product/Service toggle, Advanced Info,
+  // tip banner) but shown as a proper Dialog instead. Each open creates
+  // fresh local controllers scoped to this call (same pattern as the
+  // original _showProductDialog) so there's no shared-controller state
+  // to accidentally double-dispose between opens — that was the bug
+  // that made the panel stop reopening after being closed.
+
+  Future<void> _showDetailDialogV2(Product product, {required bool startInEdit}) async {
+    final metadata =
+        await ref.read(productRepositoryProvider).getProductMetadata(product.id);
+    if (!mounted) return;
+
+    final nameCtrl = TextEditingController(text: product.name);
+    final aliasCtrl = TextEditingController(text: product.aliasName ?? '');
+    final descCtrl = TextEditingController(text: product.description);
+    final hsnCtrl = TextEditingController(text: product.hsncode);
+    final priceCtrl = TextEditingController(text: product.price.toString());
+    final purchaseCtrl = TextEditingController(
+        text: product.purchasePrice > 0 ? product.purchasePrice.toString() : '0.0');
+    final discountCtrl = TextEditingController(
+        text: product.defaultDiscount > 0 ? product.defaultDiscount.toString() : '0.0');
+    final taxCtrl = TextEditingController(text: product.tax_rate.toString());
+    final stockCtrl = TextEditingController(text: product.stock.toString());
+    final customUnitCtrl = TextEditingController(
+        text: ProductUnits.presets.contains(product.unit) ? '' : product.unit);
+    final storageCtrl = TextEditingController(text: metadata?.storageLocation ?? '');
+    final containerCtrl = TextEditingController(text: metadata?.containerNumber ?? '');
+    final batchCtrl = TextEditingController(text: metadata?.batchNumber ?? '');
+    final supplierCtrl = TextEditingController(text: metadata?.supplierName ?? '');
+    final skuCtrl = TextEditingController(text: metadata?.skuCode ?? '');
+    final notesCtrl = TextEditingController(text: metadata?.notes ?? '');
+    final formKey = GlobalKey<FormState>();
+
+    String itemType = product.type;
+    String unit = product.unit;
+    bool priceIncludesTax = product.priceIncludesTax;
+    bool unlimitedStock = !_columnsConfig.stock ? true : product.unlimitedStock;
+    DateTime? expiryDate = _parseIsoDate(metadata?.expiryDate);
+    DateTime? manufactureDate = _parseIsoDate(metadata?.manufactureDate);
+    bool isEdit = startInEdit;
+    bool isSaving = false;
+
+    void disposeAll() {
+      nameCtrl.dispose();
+      aliasCtrl.dispose();
+      descCtrl.dispose();
+      hsnCtrl.dispose();
+      priceCtrl.dispose();
+      purchaseCtrl.dispose();
+      discountCtrl.dispose();
+      taxCtrl.dispose();
+      stockCtrl.dispose();
+      customUnitCtrl.dispose();
+      storageCtrl.dispose();
+      containerCtrl.dispose();
+      batchCtrl.dispose();
+      supplierCtrl.dispose();
+      skuCtrl.dispose();
+      notesCtrl.dispose();
+    }
+
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(builder: (dialogContext, setDialogState) {
+          Widget field(
+            TextEditingController controller,
+            String label,
+            IconData icon, {
+            int maxLines = 1,
+            int? maxLength,
+            TextInputType? keyboardType,
+            bool isPrice = false,
+            bool isStock = false,
+            bool isTaxRate = false,
+            String? prefixText,
+          }) {
+            return _buildDialogTextField(
+              controller,
+              label,
+              icon,
+              readOnly: !isEdit,
+              maxLines: maxLines,
+              maxLength: maxLength,
+              keyboardType: keyboardType,
+              isPrice: isPrice,
+              isStock: isStock,
+              isTaxRate: isTaxRate,
+              prefixText: prefixText,
+            );
+          }
+
+          Widget sectionLabel(String text) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Text(
+                text.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.6,
+                  color: Theme.of(dialogContext).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            );
+          }
+
+          Future<void> save() async {
+            if (isSaving) return;
+            if (!formKey.currentState!.validate()) return;
+            final price = double.parse(priceCtrl.text.trim());
+            final purchasePrice = double.tryParse(purchaseCtrl.text.trim()) ?? 0.0;
+            if (!await _confirmIfSellingAtLoss(price, purchasePrice)) return;
+            setDialogState(() => isSaving = true);
+            try {
+              final updated = Product(
+                id: product.id,
+                name: nameCtrl.text.trim(),
+                description: descCtrl.text.trim(),
+                price: price,
+                stock: unlimitedStock ? 0 : int.parse(stockCtrl.text.trim()),
+                hsncode: hsnCtrl.text.trim(),
+                tax_rate: int.parse(taxCtrl.text.trim()),
+                type: itemType,
+                defaultDiscount: double.tryParse(discountCtrl.text.trim()) ?? 0.0,
+                purchasePrice: purchasePrice,
+                aliasName: aliasCtrl.text.trim().isEmpty ? null : aliasCtrl.text.trim(),
+                unit: unit.trim(),
+                unlimitedStock: unlimitedStock,
+                priceIncludesTax: priceIncludesTax,
+              );
+              await ref.read(productRepositoryProvider).updateProduct(updated);
+              await ref.read(productRepositoryProvider).upsertProductMetadata(
+                    ProductMetadata(
+                      productId: updated.id,
+                      storageLocation: storageCtrl.text.trim(),
+                      containerNumber: containerCtrl.text.trim(),
+                      batchNumber: batchCtrl.text.trim(),
+                      expiryDate: _isoDate(expiryDate),
+                      manufactureDate: _isoDate(manufactureDate),
+                      supplierName: supplierCtrl.text.trim(),
+                      skuCode: skuCtrl.text.trim(),
+                      notes: notesCtrl.text.trim(),
+                    ),
+                  );
+              await _loadStatsV2();
+              if (dialogContext.mounted) Navigator.pop(dialogContext);
+              _showSnackBar('Product/Service updated successfully!');
+            } finally {
+              setDialogState(() => isSaving = false);
+            }
+          }
+
+          final showTypeToggle = _businessType == BusinessType.both && _columnsConfig.type;
+          final screenSize = MediaQuery.of(dialogContext).size;
+          final dialogWidth = (screenSize.width * 0.55).clamp(560.0, 760.0);
+          final dialogMaxHeight = (screenSize.height * 0.88).clamp(500.0, 880.0);
+
+          return Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: dialogMaxHeight),
+              child: SizedBox(
+                width: dialogWidth,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 18, 12, 14),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(isEdit ? 'Edit Product' : 'View Product',
+                                  style: const TextStyle(
+                                      fontSize: 16, fontWeight: FontWeight.w800)),
+                              const SizedBox(height: 2),
+                              Text(isEdit ? 'Update product details' : 'Product details',
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      color:
+                                          Theme.of(dialogContext).colorScheme.onSurfaceVariant)),
+                            ],
+                          ),
+                        ),
+                        if (showTypeToggle) ...[
+                          const SizedBox(width: 8),
+                          if (isEdit)
+                            SegmentedButton<String>(
+                              segments: const [
+                                ButtonSegment(
+                                    value: 'product',
+                                    label: Text('Product'),
+                                    icon: Icon(Icons.inventory_2_outlined, size: 14)),
+                                ButtonSegment(
+                                    value: 'service',
+                                    label: Text('Service'),
+                                    icon:
+                                        Icon(Icons.design_services_outlined, size: 14)),
+                              ],
+                              selected: {itemType},
+                              onSelectionChanged: (val) =>
+                                  setDialogState(() => itemType = val.first),
+                            )
+                          else
+                            Chip(
+                              avatar: Icon(
+                                  itemType == 'service'
+                                      ? Icons.design_services_outlined
+                                      : Icons.inventory_2_outlined,
+                                  size: 14),
+                              label: Text(itemType == 'service' ? 'Service' : 'Product'),
+                            ),
+                        ],
+                        IconButton(
+                          icon: const Icon(Icons.close, size: 20),
+                          onPressed: () => Navigator.pop(dialogContext),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Flexible(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                      child: Form(
+                        key: formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            sectionLabel('General'),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: field(nameCtrl, 'Product Name',
+                                      Icons.inventory_2, maxLength: 100),
+                                ),
+                                if (_columnsConfig.aliasName) ...[
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: field(aliasCtrl,
+                                        'Alias Name (for invoice PDF)', Icons.translate,
+                                        maxLength: 100),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            if (_columnsConfig.description) ...[
+                              const SizedBox(height: 16),
+                              field(descCtrl, 'Description', Icons.description,
+                                  maxLines: 3, maxLength: 500),
+                            ],
+                            if (_columnsConfig.hsncode) ...[
+                              const SizedBox(height: 16),
+                              field(hsnCtrl, 'HSN / SAC', Icons.qr_code, maxLength: 100),
+                            ],
+                            const SizedBox(height: 20),
+                            sectionLabel('Pricing'),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: field(priceCtrl, 'Price', Icons.attach_money,
+                                      keyboardType: const TextInputType.numberWithOptions(
+                                          decimal: true),
+                                      isPrice: true,
+                                      prefixText: '$_currencySymbol '),
+                                ),
+                                if (_columnsConfig.purchasePrice) ...[
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: field(purchaseCtrl, 'Purchase Price',
+                                        Icons.shopping_cart_outlined,
+                                        keyboardType:
+                                            const TextInputType.numberWithOptions(
+                                                decimal: true),
+                                        isPrice: true,
+                                        prefixText: '$_currencySymbol '),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            if (_columnsConfig.defaultDiscount ||
+                                _columnsConfig.taxRate) ...[
+                              const SizedBox(height: 16),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (_columnsConfig.defaultDiscount)
+                                    Expanded(
+                                      child: field(discountCtrl, 'Default Discount',
+                                          Icons.discount,
+                                          keyboardType:
+                                              const TextInputType.numberWithOptions(
+                                                  decimal: true),
+                                          isPrice: true,
+                                          prefixText: '$_currencySymbol '),
+                                    ),
+                                  if (_columnsConfig.defaultDiscount &&
+                                      _columnsConfig.taxRate)
+                                    const SizedBox(width: 12),
+                                  if (_columnsConfig.taxRate)
+                                    Expanded(
+                                      child: field(
+                                          taxCtrl, 'Tax Rate (%)', Icons.percent,
+                                          keyboardType: TextInputType.number,
+                                          isTaxRate: true),
+                                    ),
+                                ],
+                              ),
+                            ],
+                            if (_columnsConfig.taxRate)
+                              CheckboxListTile(
+                                contentPadding: EdgeInsets.zero,
+                                controlAffinity: ListTileControlAffinity.leading,
+                                value: priceIncludesTax,
+                                onChanged: !isEdit
+                                    ? null
+                                    : (v) => setDialogState(
+                                        () => priceIncludesTax = v ?? false),
+                                title: const Text('Price includes tax'),
+                                subtitle: const Text(
+                                    'Product price already includes tax (per-item tax mode only)'),
+                              ),
+                            if (_columnsConfig.stock || _columnsConfig.unit) ...[
+                              const SizedBox(height: 12),
+                              sectionLabel('Inventory'),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (_columnsConfig.stock)
+                                    Expanded(
+                                      child: field(stockCtrl, 'Stock', Icons.inventory,
+                                          keyboardType: TextInputType.number,
+                                          isStock: !unlimitedStock),
+                                    ),
+                                  if (_columnsConfig.stock && _columnsConfig.unit)
+                                    const SizedBox(width: 12),
+                                  if (_columnsConfig.unit)
+                                    Expanded(
+                                      child: _buildUnitField(
+                                        selectedUnit: unit,
+                                        customController: customUnitCtrl,
+                                        onUnitChanged: (v) =>
+                                            setDialogState(() => unit = v),
+                                        readOnly: !isEdit,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              if (_columnsConfig.stock)
+                                CheckboxListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  controlAffinity: ListTileControlAffinity.leading,
+                                  value: unlimitedStock,
+                                  onChanged: !isEdit
+                                      ? null
+                                      : (v) => setDialogState(
+                                          () => unlimitedStock = v ?? false),
+                                  title: const Text('Unlimited stock'),
+                                  subtitle:
+                                      const Text('Track infinite stock for this product'),
+                                ),
+                            ],
+                            if (_columnsConfig.productMetadata) ...[
+                              const SizedBox(height: 8),
+                              _buildMetadataSection(
+                                storageLocationCtrl: storageCtrl,
+                                containerNumberCtrl: containerCtrl,
+                                batchNumberCtrl: batchCtrl,
+                                supplierNameCtrl: supplierCtrl,
+                                skuCodeCtrl: skuCtrl,
+                                notesCtrl: notesCtrl,
+                                expiryDate: expiryDate,
+                                manufactureDate: manufactureDate,
+                                datePattern: _datePattern,
+                                readOnly: !isEdit,
+                                onExpiryChanged: (d) =>
+                                    setDialogState(() => expiryDate = d),
+                                onManufactureChanged: (d) =>
+                                    setDialogState(() => manufactureDate = d),
+                              ),
+                            ],
+                            if (isEdit) ...[
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.withValues(alpha: 0.08),
+                                  borderRadius:
+                                      BorderRadius.circular(AppBorderRadius.xsmall),
+                                  border: Border.all(
+                                      color: Colors.amber.withValues(alpha: 0.3)),
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Icon(Icons.lightbulb_outline,
+                                        size: 16, color: Colors.amber),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                          'Tip: Enable custom fields from Columns to add more details.',
+                                          style: TextStyle(
+                                              fontSize: 12,
+                                              color: Theme.of(dialogContext)
+                                                  .colorScheme
+                                                  .onSurfaceVariant)),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        top: BorderSide(
+                            color: Theme.of(dialogContext).colorScheme.outlineVariant),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        if (widget.user.isAdmin())
+                          OutlinedButton.icon(
+                            onPressed: () async {
+                              Navigator.pop(dialogContext);
+                              await _deleteProductV2(product);
+                            },
+                            icon: const Icon(Icons.delete_outline,
+                                size: 18, color: Colors.red),
+                            label: const Text('Delete Product',
+                                style: TextStyle(color: Colors.red)),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Colors.red),
+                            ),
+                          ),
+                        const Spacer(),
+                        if (isEdit) ...[
+                          OutlinedButton(
+                            onPressed: () => Navigator.pop(dialogContext),
+                            child: const Text('Cancel'),
+                          ),
+                          const SizedBox(width: 12),
+                          FilledButton.icon(
+                            onPressed: isSaving ? null : save,
+                            icon: isSaving
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2, color: Colors.white))
+                                : const Icon(Icons.save_outlined, size: 18),
+                            label: const Text('Save Changes'),
+                          ),
+                        ] else ...[
+                          OutlinedButton(
+                            onPressed: () => Navigator.pop(dialogContext),
+                            child: const Text('Close'),
+                          ),
+                          const SizedBox(width: 12),
+                          FilledButton.icon(
+                            onPressed: () => setDialogState(() => isEdit = true),
+                            icon: const Icon(Icons.edit_outlined, size: 18),
+                            label: const Text('Edit'),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              ),
+            ),
+          );
+        });
+      },
+    );
+    disposeAll();
+  }
+
+
   Widget _buildV2(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildColumnsDiscoveryBanner(),
-                    _headerBarV2(),
-                    const SizedBox(height: 12),
-                    _statCardsRowV2(),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: _flatCardDecorationV2(context),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _searchFilterRowV2(),
-                          const SizedBox(height: 10),
-                          _tabsRowV2(),
-                        ],
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // The table section (`_tableSectionV2`) no longer relies on
+            // `Expanded` to fill leftover space — it sizes itself naturally
+            // (header row + actual row heights + pagination row), and sits
+            // in a plain SliverToBoxAdapter below the rest of the page's
+            // content, inside this CustomScrollView. Since nothing here
+            // is forced into a box smaller than it needs, there is nothing
+            // to overflow: if the natural content is taller than the
+            // visible viewport, the page simply scrolls further to show it,
+            // and if it fits (e.g. only a couple of products), it fits with
+            // no extra scrolling — no guessed heights involved anywhere.
+            final isNarrow = constraints.maxWidth < 700;
+
+            return Stack(
+              children: [
+                CustomScrollView(
+                  slivers: [
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                      sliver: SliverToBoxAdapter(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildColumnsDiscoveryBanner(),
+                            _headerBarV2(),
+                            const SizedBox(height: 12),
+                            _statCardsRowV2(),
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: _flatCardDecorationV2(context),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _searchFilterRowV2(),
+                                  const SizedBox(height: 10),
+                                  _tabsRowV2(),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    _tableSectionV2(),
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      sliver: SliverToBoxAdapter(
+                        child: _tableSectionV2(),
+                      ),
+                    ),
                   ],
                 ),
-              ),
-            ),
-            // Sized against the whole screen (not just the table row), so
-            // it gets the full available height instead of only whatever
-            // was left after the header/stats/search stacked above it.
-            if (_showAddPanelV2)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(0, 16, 16, 16),
-                child: _addPanelV2(),
-              ),
-          ],
+                // The Add/Edit panel now floats as an overlay on top of the
+                // page instead of living in a Row next to the main content.
+                // Previously it was a fixed-width (400px) sibling in a Row,
+                // which forced the main content's Expanded down to almost
+                // nothing (and could itself overflow) on narrower windows.
+                // As an overlay it never steals width from the table.
+                if (_showAddPanelV2) ...[
+                  Positioned.fill(
+                    child: GestureDetector(
+                      onTap: () => setState(() => _showAddPanelV2 = false),
+                      child: Container(color: Colors.black.withValues(alpha: 0.3)),
+                    ),
+                  ),
+                  Positioned(
+                    top: 16,
+                    right: 16,
+                    bottom: 16,
+                    width: isNarrow
+                        ? constraints.maxWidth - 32
+                        : 550,
+                    child: _addPanelV2(),
+                  ),
+                ],
+              ],
+            );
+          },
         ),
       ),
     );

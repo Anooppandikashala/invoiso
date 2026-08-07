@@ -5294,71 +5294,100 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           onTap: () => _screenFocusNode.requestFocus(),
           child: _withUnsavedChangesPopScope(Scaffold(
       appBar: AppBar(
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
+        title: LayoutBuilder(
+          builder: (context, titleConstraints) {
+            // The old title Row had three unconstrained children (title +
+            // optional button, date, and a 24px-font invoice number +
+            // tooltip) with nothing able to shrink — any one of them being
+            // a little long (a longer invoice number, "Edit Invoice" plus
+            // the button, etc.) pushed the total past the AppBar's
+            // available width and overflowed. Now each piece is wrapped in
+            // Flexible with ellipsis so it can never force an overflow, the
+            // oversized 24px invoice-number font is toned down, and the
+            // lowest-priority piece (the date) is dropped entirely on
+            // narrow windows instead of fighting for space.
+            final compact = titleConstraints.maxWidth < 640;
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  _invoice != null && !isEditing
-                      ? '$invoiceType Created'
-                      : widget.invoiceToEdit != null
-                          ? 'Edit $invoiceType'
-                          : widget.cloneFrom != null
-                              ? 'Duplicate as $invoiceType'
-                              : 'Create New $invoiceType',
-                ),
-                if (isEditing) ...[
-                  const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      if (await _confirmLeaveIfDirty() && mounted) {
-                        widget.onCreateNewInvoice?.call();
-                        await resetValues('Invoice');
-                      }
-                    },
-                    icon: const Icon(Icons.add, size: 16),
-                    label: const Text('New Invoice (Shortcut: Ctrl+q)',
-                        style: TextStyle(fontSize: 13)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
-                      foregroundColor: Theme.of(context).primaryColor,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
+                Flexible(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          _invoice != null && !isEditing
+                              ? '$invoiceType Created'
+                              : widget.invoiceToEdit != null
+                                  ? 'Edit $invoiceType'
+                                  : widget.cloneFrom != null
+                                      ? 'Duplicate as $invoiceType'
+                                      : 'Create New $invoiceType',
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
                       ),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 8),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      if (isEditing) ...[
+                        const SizedBox(width: 12),
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            if (await _confirmLeaveIfDirty() && mounted) {
+                              widget.onCreateNewInvoice?.call();
+                              await resetValues('Invoice');
+                            }
+                          },
+                          icon: const Icon(Icons.add, size: 16),
+                          label: Text(
+                              compact ? 'New' : 'New Invoice (Shortcut: Ctrl+q)',
+                              style: const TextStyle(fontSize: 13)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                Theme.of(context).colorScheme.surfaceContainer,
+                            foregroundColor: Theme.of(context).primaryColor,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 8),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                if (!compact) Text(DateFormat(_datePattern).format(DateTime.now())),
+                Flexible(
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            style: TextStyle(fontSize: compact ? 15 : 18),
+                            '$invoiceType Number : #[$currentInvoiceNumber]',
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Tooltip(
+                          message: 'Invoice numbers are auto-generated.\n'
+                              'The next number is calculated from the last\n'
+                              'invoice in the database (including deleted ones).\n'
+                              'Manual editing is not supported.',
+                          child: const Icon(Icons.info_outline,
+                              size: 16, color: Colors.white70),
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ],
-            ),
-            Text(DateFormat(_datePattern).format(DateTime.now())),
-            Padding(
-              padding: const EdgeInsets.only(right: 8.0),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    style: TextStyle(fontSize: 24),
-                    '$invoiceType Number : #[$currentInvoiceNumber]',
-                  ),
-                  const SizedBox(width: 6),
-                  Tooltip(
-                    message: 'Invoice numbers are auto-generated.\n'
-                        'The next number is calculated from the last\n'
-                        'invoice in the database (including deleted ones).\n'
-                        'Manual editing is not supported.',
-                    child: const Icon(Icons.info_outline,
-                        size: 16, color: Colors.white70),
-                  ),
-                ],
-              ),
-            ),
-          ],
+            );
+          },
         ),
         backgroundColor: Theme.of(context).appBarTheme.backgroundColor ??
             Theme.of(context).primaryColor,
@@ -6674,88 +6703,108 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
         ),
       ),
-      child: Row(
-        children: [
-          const SizedBox(width: 60),
-          Expanded(
-            child: Wrap(
-              spacing: 10,
-              runSpacing: 8,
-              children: [
-                _buildActionButton(
-                  icon: Icons.visibility_outlined,
-                  label: 'View',
-                  color: Colors.green,
-                  onPressed: _invoice != null
-                      ? () => InvoicePdfServices.showInvoiceDetails(
-                          context, _invoice!)
-                      : null,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Previously: SizedBox(60) + Expanded(Wrap(...)) + SizedBox(12) +
+          // a fixed-size Save/Update button (with a "(Ctrl+S)" hint baked
+          // into its label) + SizedBox(60). Only the Wrap could shrink —
+          // the two 60px bookends and the button's own intrinsic width set
+          // a hard minimum for the row, so a narrow window could come up
+          // just short (as little as a few pixels) and overflow. The
+          // bookends now shrink away on narrow windows, the button's
+          // "(Ctrl+S)" hint drops (it's still in the tooltip), and the
+          // button itself is wrapped in Flexible with ellipsis as a
+          // last-resort safety net.
+          final compact = constraints.maxWidth < 560;
+          final bookend = compact ? 0.0 : 60.0;
+          return Row(
+            children: [
+              SizedBox(width: bookend),
+              Expanded(
+                child: Wrap(
+                  spacing: 10,
+                  runSpacing: 8,
+                  children: [
+                    _buildActionButton(
+                      icon: Icons.visibility_outlined,
+                      label: 'View',
+                      color: Colors.green,
+                      onPressed: _invoice != null
+                          ? () => InvoicePdfServices.showInvoiceDetails(
+                              context, _invoice!)
+                          : null,
+                    ),
+                    _buildActionButton(
+                      icon: Icons.picture_as_pdf_outlined,
+                      label: 'Preview',
+                      tooltip: 'Preview (Shortcut: Ctrl+o)',
+                      color: Colors.purple,
+                      onPressed: _invoice != null
+                          ? () => InvoicePdfServices.previewPDF(context, _invoice!)
+                          : null,
+                    ),
+                    _buildActionButton(
+                      icon: Icons.download_outlined,
+                      label: 'Download',
+                      color: Colors.deepPurple,
+                      onPressed: _invoice != null
+                          ? () => PDFService.downloadPDF(context, _invoice!)
+                          : null,
+                    ),
+                    _buildActionButton(
+                      icon: Icons.print_outlined,
+                      label: 'Print',
+                      tooltip: 'Print (Shortcut: Ctrl+p)',
+                      color: Colors.blue,
+                      onPressed: _invoice != null
+                          ? () => InvoicePdfServices.generatePDF(context, _invoice!)
+                          : null,
+                    ),
+                  ],
                 ),
-                _buildActionButton(
-                  icon: Icons.picture_as_pdf_outlined,
-                  label: 'Preview',
-                  tooltip: 'Preview (Shortcut: Ctrl+o)',
-                  color: Colors.purple,
-                  onPressed: _invoice != null
-                      ? () => InvoicePdfServices.previewPDF(context, _invoice!)
-                      : null,
-                ),
-                _buildActionButton(
-                  icon: Icons.download_outlined,
-                  label: 'Download',
-                  color: Colors.deepPurple,
-                  onPressed: _invoice != null
-                      ? () => PDFService.downloadPDF(context, _invoice!)
-                      : null,
-                ),
-                _buildActionButton(
-                  icon: Icons.print_outlined,
-                  label: 'Print',
-                  tooltip: 'Print (Shortcut: Ctrl+p)',
-                  color: Colors.blue,
-                  onPressed: _invoice != null
-                      ? () => InvoicePdfServices.generatePDF(context, _invoice!)
-                      : null,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Tooltip(
-            message: 'Shortcut: Ctrl+s',
-            child: ElevatedButton.icon(
-              onPressed: invoiceItems.isNotEmpty && !isLoading
-                  ? (isEditMode ? _updateInvoice : _createInvoice)
-                  : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).primaryColor,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
               ),
-              icon: isLoading
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                          color: Colors.white, strokeWidth: 2),
-                    )
-                  : Icon(isEditMode ? Icons.update : Icons.save_outlined),
-              label: Text(
-                isLoading
-                    ? 'Processing...'
-                    : (isEditMode
-                        ? 'Update $invoiceType (Ctrl+S)'
-                        : 'Create $invoiceType (Ctrl+S)'),
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              const SizedBox(width: 12),
+              Flexible(
+                child: Tooltip(
+                  message: 'Shortcut: Ctrl+s',
+                  child: ElevatedButton.icon(
+                    onPressed: invoiceItems.isNotEmpty && !isLoading
+                        ? (isEditMode ? _updateInvoice : _createInvoice)
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).primaryColor,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 22, vertical: 16),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                    ),
+                    icon: isLoading
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                                color: Colors.white, strokeWidth: 2),
+                          )
+                        : Icon(isEditMode ? Icons.update : Icons.save_outlined),
+                    label: Text(
+                      isLoading
+                          ? 'Processing...'
+                          : (isEditMode
+                              ? (compact ? 'Update $invoiceType' : 'Update $invoiceType (Ctrl+S)')
+                              : (compact ? 'Create $invoiceType' : 'Create $invoiceType (Ctrl+S)')),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
               ),
-            ),
-          ),
-          const SizedBox(width: 60),
-        ],
+              SizedBox(width: bookend),
+            ],
+          );
+        },
       ),
     );
   }
