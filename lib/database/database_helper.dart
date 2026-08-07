@@ -15,7 +15,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 38;
+  final dbVersion = 39;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -584,19 +584,6 @@ class DatabaseHelper {
       });
     }
 
-    if(oldVersion < 36)
-    {
-      await _runMigrationStep(
-          db, 33, 'add_invoice_discount_to_invoices', () async {
-        await db.execute(
-          "ALTER TABLE invoices ADD COLUMN invoice_discount_type TEXT DEFAULT 'percent'",
-        );
-        await db.execute(
-          'ALTER TABLE invoices ADD COLUMN invoice_discount_value REAL DEFAULT 0.0',
-        );
-      });
-    }
-
     if (oldVersion < 37) {
       // invoice_items had PRIMARY KEY (invoice_id, product_id), which blocked
       // adding the same product twice to one invoice (allow_duplicate_invoice_items
@@ -660,6 +647,19 @@ class DatabaseHelper {
           db, 38, 'add_product_price_includes_tax_to_invoice_items', () async {
         await db.execute(
           "ALTER TABLE invoice_items ADD COLUMN product_price_includes_tax INTEGER DEFAULT 0",
+        );
+      });
+    }
+
+    if(oldVersion < 39)
+    {
+      await _runMigrationStep(
+          db, 39, 'add_invoice_discount_to_invoices', () async {
+        await db.execute(
+          "ALTER TABLE invoices ADD COLUMN invoice_discount_type TEXT DEFAULT 'percent'",
+        );
+        await db.execute(
+          'ALTER TABLE invoices ADD COLUMN invoice_discount_value REAL DEFAULT 0.0',
         );
       });
     }
