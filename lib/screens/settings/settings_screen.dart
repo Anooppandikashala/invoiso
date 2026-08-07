@@ -18,7 +18,11 @@ import 'package:invoiso/services/update_service.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   final User currentUser;
-  const SettingsScreen({super.key, required this.currentUser});
+  // Bump this (e.g. a counter) each time the caller wants to force-navigate
+  // to the Accessibility tab, even if this screen is already mounted.
+  final Object? openAccessibilityToken;
+  const SettingsScreen(
+      {super.key, required this.currentUser, this.openAccessibilityToken});
 
   @override
   ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
@@ -27,6 +31,7 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   int _selectedIndex = 0;
   int? _highlightCustomIndex;
+  Object? _handledAccessibilityToken;
 
   // Update check state — shared between the NavigationRail badge and
   // AppInfoScreen, so it lives here rather than duplicated in both.
@@ -40,6 +45,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (ref.read(appEditionConfigProvider).enableUpdateCheck) {
       _loadCachedUpdateInfo();
     }
+    _maybeJumpToAccessibility();
+  }
+
+  @override
+  void didUpdateWidget(covariant SettingsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.openAccessibilityToken != oldWidget.openAccessibilityToken) {
+      setState(_maybeJumpToAccessibility);
+    }
+  }
+
+  // Rail position of the Accessibility tab — mirrors the layout built in
+  // NavigationRail's `destinations` / _buildContent's index math below.
+  void _maybeJumpToAccessibility() {
+    if (widget.openAccessibilityToken == null ||
+        widget.openAccessibilityToken == _handledAccessibilityToken) {
+      return;
+    }
+    _handledAccessibilityToken = widget.openAccessibilityToken;
+    final cfg = ref.read(appEditionConfigProvider);
+    final hasExtraTab = cfg.extraSettingsTab != null;
+    final productColumnsPosition =
+        cfg.isCloud ? (hasExtraTab ? 4 : 3) : (hasExtraTab ? 6 : 5);
+    _selectedIndex = productColumnsPosition + 2;
   }
 
   Future<void> _loadCachedUpdateInfo() async {

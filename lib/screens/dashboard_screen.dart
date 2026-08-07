@@ -26,7 +26,8 @@ import 'package:invoiso/utils/session_manager.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/screens/customer_management_screen.dart';
 import 'package:invoiso/database/database_helper.dart';
-import 'package:invoiso/screens/create_invoice_screen.dart';
+import 'package:invoiso/screens/create_invoice_screen.dart' as v1;
+import 'package:invoiso/screens/create_invoice_screen_v2.dart';
 import 'package:invoiso/screens/product_management_screen.dart';
 import 'package:invoiso/screens/invoice_management_screen.dart';
 import 'package:invoiso/screens/auth/login_screen.dart';
@@ -51,13 +52,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Invoice? _invoiceToClone;
   String _cloneType = 'Invoice';
   bool _hasUpdate = false;
+  String _createInvoiceLayout = 'v2';
+  int _accessibilityJumpToken = 0;
   final InvoiceFormGuard _invoiceFormGuard = InvoiceFormGuard();
+  final v1.InvoiceFormGuard _invoiceFormGuardV1 = v1.InvoiceFormGuard();
   final FocusNode _shortcutsFocusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
     _currentUser = widget.loggedInUser;
+    _loadCreateInvoiceLayout();
     SessionManager.initialize(_onSessionTimeout);
     if (ref.read(appEditionConfigProvider).enableUpdateCheck)
     {
@@ -69,6 +74,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     if (_selectedIndex != 1) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _shortcutsFocusNode.requestFocus());
     }
+  }
+
+  Future<void> _loadCreateInvoiceLayout() async {
+    final layout = await ref.read(settingsRepositoryProvider).getSetting(SettingKey.createInvoiceLayout);
+    if (!mounted) return;
+    setState(() => _createInvoiceLayout = layout ?? 'v2');
   }
 
   Future<void> _checkForUpdates() async {
@@ -128,21 +139,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             onCloneInvoice: cloneInvoice,
             user: _currentUser);
       case 1:
-        return CreateInvoiceScreen(
-          key: ValueKey(
-              'create_invoice_${invoiceToEdit?.id ?? 'new'}_${_invoiceToClone?.id ?? ''}'),
-          invoiceToEdit: invoiceToEdit,
-          cloneFrom: _invoiceToClone,
-          cloneType: _invoiceToClone != null ? _cloneType : null,
-          guard: _invoiceFormGuard,
-          onCreateNewInvoice: () {
-            if(!mounted) return;
-            setState(() {
-              invoiceToEdit = null;
-              _invoiceToClone = null;
-            });
-          },
-        );
+        final createInvoiceKey = ValueKey(
+            'create_invoice_${invoiceToEdit?.id ?? 'new'}_${_invoiceToClone?.id ?? ''}');
+        void onCreateNewInvoice() {
+          if(!mounted) return;
+          setState(() {
+            invoiceToEdit = null;
+            _invoiceToClone = null;
+          });
+        }
+        return _createInvoiceLayout == 'v1'
+            ? v1.CreateInvoiceScreen(
+                key: createInvoiceKey,
+                invoiceToEdit: invoiceToEdit,
+                cloneFrom: _invoiceToClone,
+                cloneType: _invoiceToClone != null ? _cloneType : null,
+                guard: _invoiceFormGuardV1,
+                onCreateNewInvoice: onCreateNewInvoice,
+              )
+            : CreateInvoiceScreenV2(
+                key: createInvoiceKey,
+                invoiceToEdit: invoiceToEdit,
+                cloneFrom: _invoiceToClone,
+                cloneType: _invoiceToClone != null ? _cloneType : null,
+                guard: _invoiceFormGuard,
+                onCreateNewInvoice: onCreateNewInvoice,
+              );
       case 2:
         return InvoiceManagementScreen(
           key: const ValueKey('invoice_list'),
@@ -174,10 +196,57 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       case 7:
         return const ReportsScreen();
       case 8:
-        return SettingsScreen(currentUser: _currentUser);
+        return SettingsScreen(
+          currentUser: _currentUser,
+          openAccessibilityToken: _accessibilityJumpToken,
+        );
       default:
         return const Center(child: Text('Unknown tab'));
     }
+  }
+
+  Widget _buildCreateInvoiceLayoutToggle() {
+    final isV2 = _createInvoiceLayout == 'v2';
+    return Material(
+      color: Theme.of(context).colorScheme.surface,
+      shape: CircleBorder(
+          side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
+      elevation: 2,
+      child: IconButton(
+        icon: Icon(isV2 ? Icons.auto_awesome : Icons.history, size: 20),
+        tooltip: 'Invoice layout: ${isV2 ? 'New' : 'Classic'} — tap for info',
+        onPressed: _showCreateInvoiceLayoutInfo,
+      ),
+    );
+  }
+
+  void _showCreateInvoiceLayoutInfo() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Invoice layout'),
+        content: Text(
+            'You\'re using the ${_createInvoiceLayout == 'v1' ? 'classic' : 'new'} "New Invoice" layout. '
+            'You can switch it from Settings > Accessibility. '
+            'Note: switching mid-edit discards any unsaved changes on this form.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          FilledButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              if (!await _canLeaveInvoiceForm()) return;
+              if (!mounted) return;
+              setState(() {
+                _selectedIndex = 8;
+                _accessibilityJumpToken++;
+              });
+            },
+            child: const Text('Open Settings'),
+          ),
+        ],
+      ),
+    );
   }
 
   void editInvoice(Invoice invoice) {
@@ -212,6 +281,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Future<bool> _canLeaveInvoiceForm() async {
+    if (_createInvoiceLayout == 'v1') {
+      return await _invoiceFormGuardV1.canLeave?.call() ?? true;
+    }
     return await _invoiceFormGuard.canLeave?.call() ?? true;
   }
 
@@ -219,6 +291,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     if (_selectedIndex == index) return;
     if (_selectedIndex == 1 && !await _canLeaveInvoiceForm()) return;
     if (_selectedIndex == 7 && index != 7) await _refreshUser();
+    if (index == 1) await _loadCreateInvoiceLayout();
     if (!mounted) return;
     setState(() {
       _selectedIndex = index;
@@ -256,7 +329,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             body: Row(
               children: [
                 _buildSidebar(),
-                Expanded(child: buildScreen()),
+                Expanded(
+                  child: Stack(
+                    children: [
+                      buildScreen(),
+                      if (_selectedIndex == 1)
+                        Positioned(
+                            bottom: 16,
+                            right: 16,
+                            child: _buildCreateInvoiceLayoutToggle()),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),

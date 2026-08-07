@@ -73,6 +73,7 @@ enum SettingKey {
   allowDuplicateInvoiceItems, // whether the same product can be added twice to one invoice (default false)
   showCgstSgst, // whether to split tax into CGST/SGST (India, 50/50)
   defaultTaxMode, // 'global' | 'perItem' — default tax mode for new invoices
+  createInvoiceLayout, // which create-invoice screen layout to use: 'v1' | 'v2'
   showRoundOff, // whether to show round-off row + amount-in-words on PDFs (default false)
 }
 
@@ -191,6 +192,8 @@ extension SettingKeyExtension on SettingKey {
         return 'default_tax_mode';
       case SettingKey.showRoundOff:
         return 'show_round_off';
+      case SettingKey.createInvoiceLayout:
+        return 'create_invoice_layout';
     }
   }
 }
