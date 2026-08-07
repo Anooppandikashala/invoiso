@@ -1,0 +1,1995 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:invoiso/providers/repositories.dart';
+import 'package:invoiso/constants.dart';
+import 'package:invoiso/models/user.dart';
+import 'package:invoiso/utils/password_utils.dart';
+
+class UserManagementScreenV2 extends ConsumerStatefulWidget {
+  final User currentUser;
+  const UserManagementScreenV2({super.key, required this.currentUser});
+
+  @override
+  ConsumerState<UserManagementScreenV2> createState() => _UserManagementScreenV2State();
+}
+
+class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
+    with SingleTickerProviderStateMixin {
+  List<User> _users = [];
+  List<User> _filteredUsers = [];
+  bool _isLoading = false;
+
+  final _formKey = GlobalKey<FormState>();
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _userTypeController = TextEditingController();
+  final _searchController = TextEditingController();
+  String? _editingUserId;
+  bool _obscurePassword = true;
+
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+
+  // ── V2 state ──────────────────────────────────────────────────────────
+  bool _showAddPanelV2 = false;
+  String _roleFilterV2 = 'all'; // 'all' | 'admin' | 'user'
+  int _currentPageV2 = 0;
+  int _pageSizeV2 = 10;
+  final Set<String> _selectedIdsV2 = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeIn,
+    );
+    _loadUsers();
+    _searchController.addListener(_filterUsers);
+  }
+
+  Future<void> _loadUsers() async {
+    setState(() => _isLoading = true);
+
+    try {
+      if (widget.currentUser.isAdmin()) {
+        final users = await ref.read(authRepositoryProvider).getAllUsers();
+        setState(() {
+          _users = users;
+          _filteredUsers = users;
+          _isLoading = false;
+        });
+      } else {
+        final fresh = await ref.read(authRepositoryProvider).getUserById(widget.currentUser.id);
+        final user = fresh ?? widget.currentUser;
+        setState(() {
+          _users = [user];
+          _filteredUsers = [user];
+          _editingUserId = user.id;
+          _isLoading = false;
+        });
+      }
+      _animationController.forward();
+    } catch (e) {
+      setState(() => _isLoading = false);
+      _showSnackBar('Error loading users: $e', Colors.red);
+    }
+  }
+
+  void _filterUsers() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      if (query.isEmpty) {
+        _filteredUsers = List.from(_users);
+      } else {
+        _filteredUsers = _users
+            .where((user) =>
+        user.username.toLowerCase().contains(query) ||
+            user.userType.toLowerCase().contains(query))
+            .toList();
+      }
+    });
+  }
+
+  Future<void> _saveUser() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
+
+      try {
+        final user = User(
+          id: _editingUserId ?? UniqueKey().toString(),
+          username: _usernameController.text.trim(),
+          password: _passwordController.text,
+          userType: _userTypeController.text,
+        );
+
+        if (_editingUserId == null) {
+          await ref.read(authRepositoryProvider).insertUser(user);
+          if (!mounted) return;
+          _showSnackBar('User added successfully', Colors.green);
+        } else {
+          await ref.read(authRepositoryProvider).updateUser(user);
+          if (!mounted) return;
+          _showSnackBar(
+              'User updated successfully', Theme.of(context).primaryColor);
+        }
+
+        _resetForm();
+        await _loadUsers();
+      } catch (e) {
+        setState(() => _isLoading = false);
+        _showSnackBar('Error saving user: $e', Colors.red);
+      }
+    }
+  }
+
+  void _resetForm() {
+    _usernameController.clear();
+    _passwordController.clear();
+    _userTypeController.clear();
+    if (widget.currentUser.isAdmin()) {
+      setState(() {
+        _editingUserId = null;
+        _obscurePassword = true;
+      });
+    } else {
+      setState(() {
+        _editingUserId = widget.currentUser.id;
+        _obscurePassword = true;
+      });
+    }
+  }
+
+  Future<void> _showChangePasswordDialog(String userId, String username) async {
+    final oldPasswordController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    bool obscureOldPassword = true;
+    bool obscureNewPassword = true;
+    bool obscureConfirmPassword = true;
+
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).primaryColor,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.lock_outline,
+                          color: Colors.white, size: 24),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Change Password',
+                        style: TextStyle(fontSize: 20),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              content: SizedBox(
+                width: 400,
+                child: Form(
+                  key: formKey,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.blue.shade200),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.person, color: Colors.blue.shade700),
+                              const SizedBox(width: 8),
+                              Text(
+                                'User: $username',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.blue.shade700,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        TextFormField(
+                          controller: oldPasswordController,
+                          obscureText: obscureOldPassword,
+                          decoration: InputDecoration(
+                            labelText: 'Current Password',
+                            prefixIcon: const Icon(Icons.lock_outline),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                obscureOldPassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  obscureOldPassword = !obscureOldPassword;
+                                });
+                              },
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                            ),
+                            filled: true,
+                            fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Current password is required';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: newPasswordController,
+                          obscureText: obscureNewPassword,
+                          decoration: InputDecoration(
+                            labelText: 'New Password',
+                            prefixIcon: const Icon(Icons.lock),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                obscureNewPassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  obscureNewPassword = !obscureNewPassword;
+                                });
+                              },
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                            ),
+                            filled: true,
+                            fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'New password is required';
+                            }
+                            if (value.length < 6) {
+                              return 'Password must be at least 6 characters';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: confirmPasswordController,
+                          obscureText: obscureConfirmPassword,
+                          decoration: InputDecoration(
+                            labelText: 'Confirm New Password',
+                            prefixIcon: const Icon(Icons.lock_clock),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                obscureConfirmPassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  obscureConfirmPassword =
+                                  !obscureConfirmPassword;
+                                });
+                              },
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                            ),
+                            filled: true,
+                            fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please confirm your password';
+                            }
+                            if (value != newPasswordController.text) {
+                              return 'Passwords do not match';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
+                  ),
+                  child: const Text('Cancel', style: TextStyle(fontSize: 15)),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                    ),
+                  ),
+                  icon: const Icon(Icons.check_circle_outline),
+                  label: const Text('Change Password',
+                      style: TextStyle(fontSize: 15)),
+                  onPressed: () async {
+                    if (formKey.currentState!.validate()) {
+                      final user = _users.firstWhere((u) => u.id == userId);
+                      if (user.password == PasswordUtils.hash(oldPasswordController.text)) {
+                        await ref.read(authRepositoryProvider).updatePassword(
+                            userId, newPasswordController.text);
+                        if (!context.mounted) return;
+                        Navigator.of(context).pop();
+                        _showSnackBar(
+                            'Password changed successfully', Colors.green);
+                        _loadUsers();
+                      } else {
+                        if (!context.mounted) return;
+                        _showSnackBar(
+                            'Current password is incorrect', Colors.red);
+                      }
+                    }
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _confirmDeleteUser(User user) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.red.shade50,
+              borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child:
+                  const Icon(Icons.warning, color: Colors.white, size: 24),
+                ),
+                const SizedBox(width: 12),
+                const Text('Delete User', style: TextStyle(fontSize: 20)),
+              ],
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Are you sure you want to delete user:',
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.person, color: Colors.blue),
+                    const SizedBox(width: 8),
+                    Text(
+                      user.username,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'This action cannot be undone.',
+                style: TextStyle(
+                  color: Colors.red[700],
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              style: TextButton.styleFrom(
+                padding:
+                const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: const Text('Cancel', style: TextStyle(fontSize: 15)),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                padding:
+                const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                ),
+              ),
+              icon: const Icon(Icons.delete_forever),
+              label: const Text('Delete', style: TextStyle(fontSize: 15)),
+              onPressed: () async {
+                await ref.read(authRepositoryProvider).deleteUserSafely(user.id);
+                if (!context.mounted) return;
+                Navigator.of(context).pop();
+                _showSnackBar('User deleted successfully', Colors.orange);
+                _loadUsers();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showSnackBar(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              color == Colors.green
+                  ? Icons.check_circle
+                  : color == Colors.red
+                  ? Icons.error
+                  : Icons.info,
+              color: Colors.white,
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+        ),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
+  Widget _buildUserTypeChip(String userType) {
+    final isAdmin = userType == 'admin';
+    final color = isAdmin ? Colors.purple : Colors.blue;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isAdmin ? Icons.admin_panel_settings : Icons.person,
+            color: color,
+            size: 13,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            isAdmin ? 'Admin' : 'User',
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUserForm() {
+    final primaryColor = Theme.of(context).primaryColor;
+    final isAdding = _editingUserId == null;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 12, 6, 12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(AppBorderRadius.small),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+            child: Row(
+              children: [
+                Icon(
+                  isAdding ? Icons.person_add_outlined : Icons.edit_outlined,
+                  size: 18,
+                  color: primaryColor,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  isAdding ? 'Add User' : 'Edit User',
+                  style: TextStyle(
+                    fontSize: AppFontSize.medium,
+                    fontWeight: FontWeight.w700,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 2),
+          Divider(color: Theme.of(context).colorScheme.outlineVariant, height: 20),
+          Expanded(
+            child: Form(
+              key: _formKey,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextFormField(
+                      controller: _usernameController,
+                      decoration: InputDecoration(
+                        labelText: 'Username',
+                        hintText: 'Enter username',
+                        prefixIcon: const Icon(Icons.person_outline),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                        ),
+                        filled: true,
+                        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                          borderSide: BorderSide(color: primaryColor, width: 2),
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Username is required';
+                        }
+                        if (value.trim().length < 3) {
+                          return 'Username must be at least 3 characters';
+                        }
+                        return null;
+                      },
+                    ),
+                    if (isAdding) ...[
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        controller: _passwordController,
+                        obscureText: _obscurePassword,
+                        decoration: InputDecoration(
+                          labelText: 'Password',
+                          hintText: 'Enter password',
+                          prefixIcon: const Icon(Icons.lock_outline),
+                          suffixIcon: IconButton(
+                            icon: Icon(_obscurePassword
+                                ? Icons.visibility_off
+                                : Icons.visibility),
+                            onPressed: () =>
+                                setState(() => _obscurePassword = !_obscurePassword),
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                          ),
+                          filled: true,
+                          fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                            borderSide: BorderSide(color: primaryColor, width: 2),
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) return 'Password is required';
+                          if (value.length < 6) return 'Minimum 6 characters';
+                          return null;
+                        },
+                      ),
+                    ],
+                    const SizedBox(height: 14),
+                    DropdownButtonFormField<String>(
+                      value: _userTypeController.text.isNotEmpty
+                          ? _userTypeController.text
+                          : null,
+                      decoration: InputDecoration(
+                        labelText: 'Role',
+                        prefixIcon: const Icon(Icons.admin_panel_settings_outlined),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                        ),
+                        filled: true,
+                        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                          borderSide: BorderSide(color: primaryColor, width: 2),
+                        ),
+                      ),
+                      items: [
+                        if (widget.currentUser.isAdmin())
+                          const DropdownMenuItem(
+                            value: 'admin',
+                            child: Text('Admin'),
+                          ),
+                        const DropdownMenuItem(
+                          value: 'user',
+                          child: Text('User'),
+                        ),
+                      ],
+                      onChanged: (value) => _userTypeController.text = value!,
+                      validator: (value) =>
+                          value == null ? 'Role is required' : null,
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _isLoading ? null : _saveUser,
+                        icon: _isLoading
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white),
+                              )
+                            : Icon(isAdding ? Icons.add : Icons.check, size: 18),
+                        label: Text(isAdding ? 'Add User' : 'Save Changes'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                          ),
+                          elevation: 0,
+                        ),
+                      ),
+                    ),
+                    if (!isAdding && widget.currentUser.isAdmin()) ...[
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          onPressed: _resetForm,
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+                            foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                            ),
+                          ),
+                          child: const Text('Cancel'),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUsersList() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(6, 12, 12, 12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(AppBorderRadius.small),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 12, 0),
+            child: Row(
+              children: [
+                Icon(Icons.people_outline, size: 18,
+                    color: Theme.of(context).primaryColor),
+                const SizedBox(width: 8),
+                Text(
+                  'Users',
+                  style: TextStyle(
+                    fontSize: AppFontSize.medium,
+                    fontWeight: FontWeight.w700,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                  ),
+                  child: Text(
+                    '${_filteredUsers.length}',
+                    style: TextStyle(
+                      fontSize: AppFontSize.xsmall,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (widget.currentUser.isAdmin()) ...[
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search users...',
+                  hintStyle: TextStyle(fontSize: AppFontSize.small, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  prefixIcon: Icon(Icons.search, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 16),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          onPressed: _searchController.clear,
+                        )
+                      : null,
+                  filled: true,
+                  fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                    borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                    borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 4),
+          Divider(color: Theme.of(context).colorScheme.outlineVariant, height: 12),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _filteredUsers.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              _searchController.text.isNotEmpty
+                                  ? Icons.search_off
+                                  : Icons.person_add_outlined,
+                              size: 48,
+                              color: Theme.of(context).colorScheme.outlineVariant,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              _searchController.text.isNotEmpty
+                                  ? 'No users found'
+                                  : 'No users yet',
+                              style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: AppFontSize.small),
+                            ),
+                          ],
+                        ),
+                      )
+                    : FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                          itemCount: _filteredUsers.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 8),
+                          itemBuilder: (context, index) {
+                            final user = _filteredUsers[index];
+                            final isEditing = _editingUserId == user.id;
+                            final isAdmin = user.userType == 'admin';
+                            final primaryColor = Theme.of(context).primaryColor;
+                            final avatarColor = isAdmin ? Colors.purple : Colors.blue;
+
+                            return Container(
+                              decoration: BoxDecoration(
+                                color: isEditing
+                                    ? primaryColor.withValues(alpha: 0.05)
+                                    : Theme.of(context).colorScheme.surfaceContainerHighest,
+                                borderRadius:
+                                    BorderRadius.circular(AppBorderRadius.xsmall),
+                                border: Border.all(
+                                  color: isEditing
+                                      ? primaryColor.withValues(alpha: 0.4)
+                                      : Theme.of(context).colorScheme.outlineVariant,
+                                ),
+                              ),
+                              child: ListTile(
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 6),
+                                leading: CircleAvatar(
+                                  radius: 22,
+                                  backgroundColor:
+                                      avatarColor.withValues(alpha: 0.12),
+                                  child: Text(
+                                    user.username.substring(0, 1).toUpperCase(),
+                                    style: TextStyle(
+                                      color: avatarColor,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
+                                title: Text(
+                                  user.username,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: AppFontSize.medium,
+                                    color: isEditing ? primaryColor : Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                ),
+                                subtitle: Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: _buildUserTypeChip(user.userType),
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    _buildActionButton(
+                                      icon: Icons.edit_outlined,
+                                      color: Colors.blue,
+                                      tooltip: 'Edit',
+                                      onPressed: () {
+                                        _usernameController.text = user.username;
+                                        _passwordController.text = user.password;
+                                        _userTypeController.text = user.userType;
+                                        setState(() => _editingUserId = user.id);
+                                      },
+                                    ),
+                                    const SizedBox(width: 6),
+                                    _buildActionButton(
+                                      icon: Icons.lock_reset,
+                                      color: Colors.orange,
+                                      tooltip: 'Change Password',
+                                      onPressed: () => _showChangePasswordDialog(
+                                          user.id, user.username),
+                                    ),
+                                    if (widget.currentUser.isAdmin()) ...[
+                                      const SizedBox(width: 6),
+                                      _buildActionButton(
+                                        icon: Icons.delete_outline,
+                                        color: Colors.red,
+                                        tooltip: 'Delete',
+                                        onPressed: () => _confirmDeleteUser(user),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required Color color,
+    required String tooltip,
+    required VoidCallback onPressed,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          padding: const EdgeInsets.all(7),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: color.withValues(alpha: 0.15)),
+          ),
+          child: Icon(icon, color: color, size: 18),
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    _userTypeController.dispose();
+    _searchController.dispose();
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => _buildV2(context);
+
+  // ============================================================
+  // V2 — flat / modern layout. Reuses all v1 state, controllers,
+  // validation and repository calls (_saveUser, _resetForm,
+  // _confirmDeleteUser, _showChangePasswordDialog, _buildUserTypeChip,
+  // _buildActionButton are all untouched). New pieces: stat cards,
+  // role filter, a flat table with optional bulk-select, and a
+  // slide-out Add/Edit User panel.
+  //
+  // Honest scope note: the User model here only has id/username/
+  // password/userType (admin|user) — no full name, email, active/
+  // inactive status, or last-login timestamp. Rather than fabricate
+  // those, this UI only shows what's real.
+  // ============================================================
+
+  int get _adminCountV2 => _users.where((u) => u.userType == 'admin').length;
+  int get _regularCountV2 => _users.where((u) => u.userType != 'admin').length;
+
+  List<User> get _roleFilteredUsersV2 {
+    if (_roleFilterV2 == 'all') return _filteredUsers;
+    return _filteredUsers.where((u) => u.userType == _roleFilterV2).toList();
+  }
+
+  void _openAddPanelV2() {
+    _resetForm();
+    setState(() {
+      _editingUserId = null;
+      _showAddPanelV2 = true;
+    });
+  }
+
+  void _editUserV2(User user) {
+    _usernameController.text = user.username;
+    _passwordController.text = user.password;
+    _userTypeController.text = user.userType;
+    setState(() {
+      _editingUserId = user.id;
+      _showAddPanelV2 = true;
+    });
+  }
+
+  Future<void> _saveUserV2() async {
+    await _saveUser();
+    // _saveUser only clears _isLoading/_editingUserId on failure (it
+    // rethrows into the catch and leaves the form populated); on success
+    // it calls _resetForm() + _loadUsers(). Use the username field being
+    // cleared as the signal that it actually succeeded, same approach
+    // used on the other v2 screens.
+    if (_usernameController.text.isEmpty && !_isLoading) {
+      if (!mounted) return;
+      setState(() => _showAddPanelV2 = false);
+    }
+  }
+
+  Future<void> _deleteUserV2(User user) async {
+    await _confirmDeleteUser(user);
+  }
+
+  void _showViewUserDialogV2(User user) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: (user.userType == 'admin' ? Colors.purple : Colors.blue)
+                  .withValues(alpha: 0.12),
+              child: Text(
+                user.username.isNotEmpty ? user.username[0].toUpperCase() : '?',
+                style: TextStyle(
+                    color: user.userType == 'admin' ? Colors.purple : Colors.blue,
+                    fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(user.username,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildUserTypeChip(user.userType),
+            if (user.id == widget.currentUser.id) ...[
+              const SizedBox(height: 10),
+              Text('This is your account',
+                  style: TextStyle(
+                      fontSize: 12.5,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _bulkDeleteSelectedV2() async {
+    final includesSelf = _selectedIdsV2.contains(widget.currentUser.id);
+    final ids = _selectedIdsV2.where((id) => id != widget.currentUser.id).toList();
+    if (ids.isEmpty) {
+      if (includesSelf) {
+        _showSnackBar("You can't delete your own account", Colors.red);
+      }
+      return;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Delete selected users?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+                'This will permanently delete ${ids.length} user${ids.length == 1 ? '' : 's'}. '
+                'This action cannot be undone.'),
+            if (includesSelf) ...[
+              const SizedBox(height: 8),
+              Text('Your own account was in the selection but will be skipped.',
+                  style: TextStyle(
+                      fontSize: 12.5,
+                      fontStyle: FontStyle.italic,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel')),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red, foregroundColor: Colors.white),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            icon: const Icon(Icons.delete_forever, size: 18),
+            label: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    setState(() => _isLoading = true);
+    try {
+      for (final id in ids) {
+        await ref.read(authRepositoryProvider).deleteUserSafely(id);
+      }
+      _showSnackBar('${ids.length} user${ids.length == 1 ? '' : 's'} deleted', Colors.orange);
+      _selectedIdsV2.clear();
+      await _loadUsers();
+    } catch (e) {
+      setState(() => _isLoading = false);
+      _showSnackBar('Error deleting users: $e', Colors.red);
+    }
+  }
+
+  BoxDecoration _flatCardDecorationV2(BuildContext context) => BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border:
+            Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      );
+
+  Widget _menuButtonLookV2(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+      decoration: BoxDecoration(
+        border:
+            Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: Theme.of(context).colorScheme.onSurface),
+          const SizedBox(width: 6),
+          Text(label,
+              style: TextStyle(
+                  fontSize: 13.5, color: Theme.of(context).colorScheme.onSurface)),
+          const SizedBox(width: 4),
+          Icon(Icons.arrow_drop_down,
+              size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+        ],
+      ),
+    );
+  }
+
+  Widget _statCardV2({
+    required String label,
+    required String value,
+    required String subtitle,
+    required IconData icon,
+    required Color accent,
+  }) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: _flatCardDecorationV2(context),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label,
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                  const SizedBox(height: 6),
+                  Text(value,
+                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 2),
+                  Text(subtitle,
+                      style: TextStyle(
+                          fontSize: 11.5,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                ],
+              ),
+            ),
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: accent, size: 20),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _statCardsRowV2() {
+    return Row(
+      children: [
+        _statCardV2(
+          label: 'Total Users',
+          value: '${_users.length}',
+          subtitle: 'All users',
+          icon: Icons.groups_outlined,
+          accent: Theme.of(context).primaryColor,
+        ),
+        const SizedBox(width: 12),
+        _statCardV2(
+          label: 'Admin Users',
+          value: '$_adminCountV2',
+          subtitle: 'Full access',
+          icon: Icons.admin_panel_settings_outlined,
+          accent: Colors.purple,
+        ),
+        const SizedBox(width: 12),
+        _statCardV2(
+          label: 'Regular Users',
+          value: '$_regularCountV2',
+          subtitle: 'Standard access',
+          icon: Icons.person_outline,
+          accent: Colors.blue,
+        ),
+      ],
+    );
+  }
+
+  Widget _headerBarV2() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('User Management',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: Theme.of(context).colorScheme.onSurface)),
+              const SizedBox(height: 2),
+              Text('Manage application users and access permissions',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            ],
+          ),
+        ),
+        Flexible(
+          child: Wrap(
+            alignment: WrapAlignment.end,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              IconButton(
+                onPressed: _isLoading ? null : _loadUsers,
+                icon: _isLoading
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.refresh),
+                tooltip: 'Refresh',
+              ),
+              if (widget.currentUser.isAdmin())
+                FilledButton.icon(
+                  onPressed: _openAddPanelV2,
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Add User'),
+                  style: FilledButton.styleFrom(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _searchFilterRowV2() {
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Search users by name or role…',
+              prefixIcon: const Icon(Icons.search, size: 20),
+              isDense: true,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 16),
+                      onPressed: _searchController.clear,
+                    )
+                  : null,
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                  borderSide:
+                      BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
+              enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                  borderSide:
+                      BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        PopupMenuButton<String>(
+          tooltip: 'Filter by role',
+          onSelected: (value) {
+            if (!mounted) return;
+            setState(() {
+              _roleFilterV2 = value;
+              _currentPageV2 = 0;
+            });
+          },
+          itemBuilder: (ctx) => const [
+            PopupMenuItem(value: 'all', child: Text('All roles')),
+            PopupMenuItem(value: 'admin', child: Text('Admin')),
+            PopupMenuItem(value: 'user', child: Text('User')),
+          ],
+          child: _menuButtonLookV2(Icons.filter_list,
+              'Role: ${_roleFilterV2 == 'all' ? 'All' : (_roleFilterV2 == 'admin' ? 'Admin' : 'User')}'),
+        ),
+      ],
+    );
+  }
+
+  Widget _tableHeaderRowV2() {
+    TextStyle style = TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.4,
+        color: Theme.of(context).colorScheme.onSurfaceVariant);
+    final pageItems = _pagedUsersV2();
+    final allSelected = pageItems.isNotEmpty &&
+        pageItems.every((u) => _selectedIdsV2.contains(u.id));
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: Theme.of(context).colorScheme.outlineVariant, width: 1.4),
+        ),
+      ),
+      child: Row(
+        children: [
+          if (widget.currentUser.isAdmin())
+            SizedBox(
+              width: 36,
+              child: Checkbox(
+                value: allSelected,
+                onChanged: (v) {
+                  if (!mounted) return;
+                  setState(() {
+                    if (v == true) {
+                      _selectedIdsV2.addAll(pageItems.map((u) => u.id));
+                    } else {
+                      _selectedIdsV2.removeAll(pageItems.map((u) => u.id));
+                    }
+                  });
+                },
+              ),
+            ),
+          Expanded(flex: 3, child: Text('USER', style: style)),
+          Expanded(flex: 2, child: Text('ROLE', style: style)),
+          SizedBox(width: 164, child: Text('ACTIONS', style: style)),
+        ],
+      ),
+    );
+  }
+
+  Widget _tableRowV2(User user) {
+    final isAdmin = user.userType == 'admin';
+    final avatarColor = isAdmin ? Colors.purple : Colors.blue;
+    final isYou = user.id == widget.currentUser.id;
+    final selected = _selectedIdsV2.contains(user.id);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+        ),
+      ),
+      child: Row(
+        children: [
+          if (widget.currentUser.isAdmin())
+            SizedBox(
+              width: 36,
+              child: Checkbox(
+                value: selected,
+                onChanged: (v) {
+                  if (!mounted) return;
+                  setState(() {
+                    if (v == true) {
+                      _selectedIdsV2.add(user.id);
+                    } else {
+                      _selectedIdsV2.remove(user.id);
+                    }
+                  });
+                },
+              ),
+            ),
+          Expanded(
+            flex: 3,
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: avatarColor.withValues(alpha: 0.12),
+                  child: Text(
+                    user.username.isNotEmpty ? user.username[0].toUpperCase() : '?',
+                    style: TextStyle(color: avatarColor, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(user.username,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                      if (isYou)
+                        Container(
+                          margin: const EdgeInsets.only(top: 2),
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).primaryColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text('You',
+                              style: TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: Theme.of(context).primaryColor)),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(flex: 2, child: _buildUserTypeChip(user.userType)),
+          SizedBox(
+            width: 164,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildActionButton(
+                  icon: Icons.visibility_outlined,
+                  color: Colors.green,
+                  tooltip: 'View',
+                  onPressed: () => _showViewUserDialogV2(user),
+                ),
+                const SizedBox(width: 6),
+                _buildActionButton(
+                  icon: Icons.edit_outlined,
+                  color: Colors.blue,
+                  tooltip: 'Edit',
+                  onPressed: () => _editUserV2(user),
+                ),
+                const SizedBox(width: 6),
+                _buildActionButton(
+                  icon: Icons.lock_reset,
+                  color: Colors.orange,
+                  tooltip: 'Change Password',
+                  onPressed: () =>
+                      _showChangePasswordDialog(user.id, user.username),
+                ),
+                if (widget.currentUser.isAdmin()) ...[
+                  const SizedBox(width: 6),
+                  _buildActionButton(
+                    icon: Icons.delete_outline,
+                    color: Colors.red,
+                    tooltip: 'Delete',
+                    onPressed: () => _deleteUserV2(user),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<User> _pagedUsersV2() {
+    final list = _roleFilteredUsersV2;
+    final start = (_currentPageV2 * _pageSizeV2).clamp(0, list.length);
+    final end = (start + _pageSizeV2).clamp(0, list.length);
+    return start < end ? list.sublist(start, end) : <User>[];
+  }
+
+  Widget _paginationV2() {
+    final total = _roleFilteredUsersV2.length;
+    final totalPages = total == 0 ? 1 : ((total - 1) ~/ _pageSizeV2) + 1;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              if (widget.currentUser.isAdmin())
+                PopupMenuButton<String>(
+                  enabled: _selectedIdsV2.isNotEmpty,
+                  tooltip: 'Bulk actions',
+                  onSelected: (value) {
+                    if (value == 'delete') _bulkDeleteSelectedV2();
+                  },
+                  itemBuilder: (ctx) => [
+                    PopupMenuItem(
+                      value: 'delete',
+                      enabled: _selectedIdsV2.isNotEmpty,
+                      child: const Row(
+                        children: [
+                          Icon(Icons.delete_outline, color: Colors.red, size: 18),
+                          SizedBox(width: 8),
+                          Text('Delete selected', style: TextStyle(color: Colors.red)),
+                        ],
+                      ),
+                    ),
+                  ],
+                  child: _menuButtonLookV2(Icons.checklist,
+                      'Bulk Actions${_selectedIdsV2.isNotEmpty ? ' (${_selectedIdsV2.length})' : ''}'),
+                ),
+              const SizedBox(width: 12),
+              Text('Showing ${total == 0 ? 0 : _currentPageV2 * _pageSizeV2 + 1} to '
+                  '${(_currentPageV2 * _pageSizeV2 + _pageSizeV2).clamp(0, total)} of $total users',
+                  style: TextStyle(
+                      fontSize: 12.5, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            ],
+          ),
+          Row(
+            children: [
+              IconButton(
+                onPressed: _currentPageV2 > 0
+                    ? () => setState(() => _currentPageV2--)
+                    : null,
+                icon: const Icon(Icons.chevron_left),
+                iconSize: 20,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                visualDensity: VisualDensity.compact,
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text('${_currentPageV2 + 1}',
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(width: 4),
+              Text('of $totalPages',
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              IconButton(
+                onPressed: _currentPageV2 < totalPages - 1
+                    ? () => setState(() => _currentPageV2++)
+                    : null,
+                icon: const Icon(Icons.chevron_right),
+                iconSize: 20,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                visualDensity: VisualDensity.compact,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tableSectionV2() {
+    final pageItems = _pagedUsersV2();
+    return Expanded(
+      child: Container(
+        decoration: _flatCardDecorationV2(context),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          children: [
+            _tableHeaderRowV2(),
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : pageItems.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.person_search_outlined,
+                                  size: 48,
+                                  color: Theme.of(context).colorScheme.outlineVariant),
+                              const SizedBox(height: 12),
+                              Text('No users found',
+                                  style: TextStyle(
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: pageItems.length,
+                          itemBuilder: (context, index) => _tableRowV2(pageItems[index]),
+                        ),
+            ),
+            _paginationV2(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Slide-out Add/Edit User panel ──────────────────────────────────
+  // Only real fields: username, password (add only), role. No
+  // full name / email / status — the User model doesn't have them.
+
+  Widget _addPanelV2() {
+    final isAdding = _editingUserId == null;
+    final primaryColor = Theme.of(context).primaryColor;
+    return Container(
+      width: 400,
+      decoration: _flatCardDecorationV2(context),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 16, 10, 16),
+            child: Row(
+              children: [
+                Text(isAdding ? 'Add New User' : 'Edit User',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.close, size: 20),
+                  onPressed: () {
+                    _resetForm();
+                    setState(() => _showAddPanelV2 = false);
+                  },
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextFormField(
+                      controller: _usernameController,
+                      decoration: InputDecoration(
+                        labelText: 'Username *',
+                        hintText: 'Enter username',
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Username is required';
+                        }
+                        if (value.trim().length < 3) {
+                          return 'Username must be at least 3 characters';
+                        }
+                        return null;
+                      },
+                    ),
+                    if (isAdding) ...[
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _passwordController,
+                        obscureText: _obscurePassword,
+                        decoration: InputDecoration(
+                          labelText: 'Password *',
+                          hintText: 'Enter password',
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                          suffixIcon: IconButton(
+                            icon: Icon(_obscurePassword
+                                ? Icons.visibility_off
+                                : Icons.visibility),
+                            onPressed: () =>
+                                setState(() => _obscurePassword = !_obscurePassword),
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) return 'Password is required';
+                          if (value.length < 6) return 'Minimum 6 characters';
+                          return null;
+                        },
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: _userTypeController.text.isNotEmpty
+                          ? _userTypeController.text
+                          : null,
+                      decoration: InputDecoration(
+                        labelText: 'Role *',
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'admin', child: Text('Admin')),
+                        DropdownMenuItem(value: 'user', child: Text('User')),
+                      ],
+                      onChanged: (value) => _userTypeController.text = value!,
+                      validator: (value) => value == null ? 'Role is required' : null,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      _resetForm();
+                      setState(() => _showAddPanelV2 = false);
+                    },
+                    child: const Text('Cancel'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: FilledButton.icon(
+                    onPressed: _isLoading ? null : _saveUserV2,
+                    style: FilledButton.styleFrom(backgroundColor: primaryColor),
+                    icon: _isLoading
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white))
+                        : Icon(isAdding ? Icons.add : Icons.check, size: 18),
+                    label: Text(isAdding ? 'Save User' : 'Save Changes'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Non-admin users only ever see their own account (matches v1's
+  // _loadUsers behaviour) — a full management table doesn't make sense
+  // for them, so this is a simple "my account" panel instead.
+  Widget _selfAccountViewV2() {
+    final user = _users.isNotEmpty ? _users.first : widget.currentUser;
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 440),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: _flatCardDecorationV2(context),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: Colors.blue.withValues(alpha: 0.12),
+                    child: Text(
+                      user.username.isNotEmpty ? user.username[0].toUpperCase() : '?',
+                      style: const TextStyle(
+                          color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 18),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(user.username,
+                            style: const TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 4),
+                        _buildUserTypeChip(user.userType),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Form(
+                key: _formKey,
+                child: TextFormField(
+                  controller: _usernameController,
+                  decoration: InputDecoration(
+                    labelText: 'Username *',
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) return 'Username is required';
+                    if (value.trim().length < 3) return 'Username must be at least 3 characters';
+                    return null;
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () =>
+                          _showChangePasswordDialog(user.id, user.username),
+                      icon: const Icon(Icons.lock_reset, size: 18),
+                      label: const Text('Change Password'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: _isLoading ? null : _saveUser,
+                      icon: _isLoading
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white))
+                          : const Icon(Icons.check, size: 18),
+                      label: const Text('Save'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildV2(BuildContext context) {
+    if (!widget.currentUser.isAdmin()) {
+      return Scaffold(
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: _selfAccountViewV2(),
+          ),
+        ),
+      );
+    }
+
+    return Scaffold(
+      body: SafeArea(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _headerBarV2(),
+                    const SizedBox(height: 12),
+                    _statCardsRowV2(),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: _flatCardDecorationV2(context),
+                      child: _searchFilterRowV2(),
+                    ),
+                    const SizedBox(height: 12),
+                    _tableSectionV2(),
+                  ],
+                ),
+              ),
+            ),
+            if (_showAddPanelV2)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(0, 16, 16, 16),
+                child: _addPanelV2(),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Original v1 layout, kept for reference; no longer called.
+  Widget _buildV1UnusedLayout(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          "User Management",
+          style: TextStyle(letterSpacing: 0.5),
+        ),
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor ??
+            Theme.of(context).primaryColor,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: false,
+        actions: [
+          if (_isLoading)
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+        ],
+      ),
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? null
+          : Theme.of(context).colorScheme.surfaceContainerHighest,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth > 900) {
+            return Row(
+              children: [
+                Expanded(flex: 2, child: _buildUserForm()),
+                Expanded(flex: 4, child: _buildUsersList()),
+              ],
+            );
+          } else {
+            return Column(
+              children: [
+                Expanded(flex: 2, child: _buildUserForm()),
+                Expanded(flex: 3, child: _buildUsersList()),
+              ],
+            );
+          }
+        },
+      ),
+    );
+  }
+}
+

@@ -24,11 +24,13 @@ import 'package:invoiso/widgets/customer_info_button.dart';
 import 'package:invoiso/utils/session_manager.dart';
 
 import 'package:invoiso/models/user.dart';
-import 'package:invoiso/screens/customer_management_screen.dart';
+// import 'package:invoiso/screens/customer_management_screen.dart';
+import 'package:invoiso/screens/customer_management_screen_v2.dart';
 import 'package:invoiso/database/database_helper.dart';
 import 'package:invoiso/screens/create_invoice_screen.dart' as v1;
 import 'package:invoiso/screens/create_invoice_screen_v2.dart';
-import 'package:invoiso/screens/product_management_screen.dart';
+// import 'package:invoiso/screens/product_management_screen.dart';
+import 'package:invoiso/screens/product_management_screen_v2.dart';
 import 'package:invoiso/screens/invoice_management_screen.dart';
 import 'package:invoiso/screens/auth/login_screen.dart';
 import 'package:invoiso/screens/reports_screen.dart';
@@ -53,7 +55,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   String _cloneType = 'Invoice';
   bool _hasUpdate = false;
   String _createInvoiceLayout = 'v2';
-  int _accessibilityJumpToken = 0;
+  int? _accessibilityJumpToken;
   final InvoiceFormGuard _invoiceFormGuard = InvoiceFormGuard();
   final v1.InvoiceFormGuard _invoiceFormGuardV1 = v1.InvoiceFormGuard();
   final FocusNode _shortcutsFocusNode = FocusNode();
@@ -190,9 +192,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           filterType: 'Receipt',
         );
       case 5:
-        return CustomerManagementScreen(user: _currentUser);
+        return CustomerManagementScreenV2(user: _currentUser);
       case 6:
-        return ProductManagementScreen(user: _currentUser);
+        return ProductManagementScreenV2(user: _currentUser);
       case 7:
         return const ReportsScreen();
       case 8:
@@ -239,7 +241,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               if (!mounted) return;
               setState(() {
                 _selectedIndex = 8;
-                _accessibilityJumpToken++;
+                _accessibilityJumpToken = (_accessibilityJumpToken ?? 0) + 1;
               });
             },
             child: const Text('Open Settings'),

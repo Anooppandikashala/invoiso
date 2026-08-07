@@ -12,7 +12,8 @@ import 'package:invoiso/screens/settings/product_columns_settings_screen.dart';
 import 'package:invoiso/screens/settings/app_info_screen.dart';
 import 'package:invoiso/screens/settings/company_info_screen.dart';
 import 'package:invoiso/screens/settings/customization_screen.dart';
-import 'package:invoiso/screens/settings/user_management_screen.dart';
+// import 'package:invoiso/screens/settings/user_management_screen.dart';
+import 'package:invoiso/screens/settings/user_management_screen_v2.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/services/update_service.dart';
 
@@ -185,7 +186,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       case 1:
         return BackupManagementScreen();
       case 2:
-        return UserManagementScreen(
+        return UserManagementScreenV2(
           currentUser: widget.currentUser,
         );
       case 7:
