@@ -6826,7 +6826,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         ),
         AppSpacing.wSmall,
         SizedBox(
-          width: 360,
+          width: 420,
           child: _rightPanelV2(tax, subtotal, total, grossSubtotal,
               totalDiscount, invoiceDiscountAmount),
         ),
