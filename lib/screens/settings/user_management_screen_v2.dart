@@ -747,7 +747,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
   }
 
   BoxDecoration _flatCardDecorationV2(BuildContext context) => BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
         border:
             Border.all(color: Theme.of(context).colorScheme.outlineVariant),

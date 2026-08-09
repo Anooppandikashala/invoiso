@@ -242,9 +242,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       children: [
                         Icon(Icons.support_agent_outlined, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         const SizedBox(width: 4),
-                        Text(
-                          'Need help? Contact Support',
-                          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant, decoration: TextDecoration.underline),
+                        Flexible(
+                          child: Text(
+                            'Need help? Contact Support',
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant, decoration: TextDecoration.underline),
+                          ),
                         ),
                       ],
                     ),

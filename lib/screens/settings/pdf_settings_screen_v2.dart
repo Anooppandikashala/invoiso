@@ -314,7 +314,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
   }
 
   BoxDecoration _flatCardDecorationV2(BuildContext context) => BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
         border:
             Border.all(color: Theme.of(context).colorScheme.outlineVariant),

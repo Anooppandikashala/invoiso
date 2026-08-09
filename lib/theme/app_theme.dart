@@ -8,9 +8,16 @@ class AppTheme {
       visualDensity: VisualDensity.adaptivePlatformDensity,
     );
     return base.copyWith(
+      // Explicit split between the page canvas and card surfaces — cards
+      // are pure white, the page sits on a very light grey behind them,
+      // so cards actually stand out instead of blending into the page.
+      scaffoldBackgroundColor: Colors.white,
+      //cardColor: Colors.grey[50],
+      cardTheme: const CardThemeData(surfaceTintColor: Colors.transparent),
       colorScheme: base.colorScheme.copyWith(
-        surfaceContainer: Colors.white,
-        surfaceContainerHighest: Colors.grey[50]!,
+        surfaceContainer: Colors.grey[50]!,
+        surface: Colors.grey[50]!,
+        surfaceContainerHighest: Colors.white,
         outline: Colors.grey[400]!,
         outlineVariant: Colors.grey[300]!,
         onSurface: Colors.black,

@@ -3388,7 +3388,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                 final isWide = constraints.maxWidth >= wideBreakpoint;
 
                 return Container(
-                  color: Theme.of(context).colorScheme.surface,
+                  color: Theme.of(context).scaffoldBackgroundColor,
                   padding: const EdgeInsets.all(AppPadding.small),
                   child: Column(
                     children: [
@@ -3425,10 +3425,17 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   // ============================================================
 
   BoxDecoration _flatCardDecorationV2(BuildContext context) => BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
         border:
             Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
       );
 
   Widget _flatCardV2({required Widget child, EdgeInsetsGeometry? padding}) {
@@ -3459,7 +3466,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       helperText: helperText,
       labelStyle: TextStyle(fontSize: AppFontSize.small),
       isDense: true,
-      filled: false,
+      filled: true,
+      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       contentPadding:
           const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       border: outline,
@@ -3923,7 +3931,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
 
   void _ensureHighlightedProductVisibleV2() {
     if (!_productDropdownScrollControllerV2.hasClients) return;
-    const itemExtent = 56.0;
+    const itemExtent = 58.0;
     final targetTop = _highlightedProductIndexV2 * itemExtent;
     final targetBottom = targetTop + itemExtent;
     final viewport = _productDropdownScrollControllerV2.position.viewportDimension;
@@ -3944,13 +3952,13 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   }
 
   Widget _productDropdownListV2() {
-    const itemExtent = 56.0;
+    const itemExtent = 58.0;
     return Material(
       elevation: 6,
       borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
       color: Theme.of(context).colorScheme.surface,
       child: Container(
-        constraints: const BoxConstraints(maxHeight: 240),
+        constraints: const BoxConstraints(maxHeight: 260),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
           border:
@@ -3973,6 +3981,23 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   final product = filteredProducts[index];
                   final outOfStock = product.stock <= 0;
                   final isHighlighted = index == _highlightedProductIndexV2;
+                  final mutedColor = Theme.of(context).colorScheme.onSurfaceVariant;
+
+                  // Same metadata source as the Ctrl+N product picker
+                  // dialog — pre-loaded in _productMetadata, keyed by
+                  // product id, no extra async fetch needed here.
+                  final meta =
+                      _columnsConfig.productMetadata ? _productMetadata[product.id] : null;
+                  final expiryDate = (_columnsConfig.metaExpiryDate &&
+                          (meta?.expiryDate?.isNotEmpty ?? false))
+                      ? DateTime.tryParse(meta!.expiryDate!)
+                      : null;
+                  final isExpired =
+                      expiryDate != null && expiryDate.isBefore(DateTime.now());
+                  final storageLocation =
+                      _columnsConfig.metaStorageLocation ? meta?.storageLocation : null;
+                  final hasStorage = storageLocation != null && storageLocation.isNotEmpty;
+
                   return Container(
                     color: isHighlighted
                         ? Theme.of(context).primaryColor.withValues(alpha: 0.08)
@@ -3982,13 +4007,47 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                       selected: isHighlighted,
                       title: Text(
                         product.name,
+                        overflow: TextOverflow.ellipsis,
                         style: outOfStock
                             ? TextStyle(color: Theme.of(context).colorScheme.error)
                             : null,
                       ),
-                      subtitle: Text(
-                          '$_currencySymbol${product.price.toStringAsFixed(2)}  ·  Stock: ${product.stock}',
-                          style: const TextStyle(fontSize: 11)),
+                      // Everything — price, stock, HSN, storage location,
+                      // expiry — on one line. Location and expiry are
+                      // bolded/colored to stand out from the plain price/
+                      // stock/HSN text; an expired date turns red.
+                      subtitle: Text.rich(
+                        TextSpan(
+                          style: TextStyle(fontSize: 11, color: mutedColor),
+                          children: [
+                            TextSpan(
+                                text:
+                                    '$_currencySymbol${product.price.toStringAsFixed(2)}  ·  Stock: ${product.stock}'
+                                    '${product.hsncode.trim().isEmpty ? '' : '  ·  HSN ${product.hsncode}'}'),
+                            if (hasStorage) ...[
+                              const TextSpan(text: '  ·  '),
+                              TextSpan(
+                                text: '📍 $storageLocation',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold, color: Colors.blueGrey),
+                              ),
+                            ],
+                            if (expiryDate != null) ...[
+                              const TextSpan(text: '  ·  '),
+                              TextSpan(
+                                text:
+                                    '${isExpired ? 'Expired ' : 'Exp '}${DateFormat(_datePattern).format(expiryDate)}',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: isExpired ? Colors.red : Colors.orange[800],
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                       onTap: () => _selectProductFromDropdownV2(product),
                     ),
                   );
@@ -3997,7 +4056,6 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       ),
     );
   }
-
   Future<void> _saveAdHocItemV2(InvoiceItem item) async {
     final messenger = ScaffoldMessenger.of(context);
     final existing = await ref
@@ -4064,6 +4122,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14),
       decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainer,
         border: Border(
           bottom:
               BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
@@ -4073,21 +4132,20 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 24,
-            height: 24,
+            width: 30,
+            height: 30,
             margin: const EdgeInsets.only(top: 2),
             alignment: Alignment.center,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(
-                  color: Theme.of(context).colorScheme.outlineVariant),
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.12),
             ),
             child: Text(
               '${index + 1}',
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                color: Theme.of(context).primaryColor,
               ),
             ),
           ),

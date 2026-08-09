@@ -1008,7 +1008,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
   }
 
   BoxDecoration _flatCardDecorationV2(BuildContext context) => BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
         border:
             Border.all(color: Theme.of(context).colorScheme.outlineVariant),
@@ -1418,9 +1418,10 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
     );
   }
 
-  Widget _tableRowV2(Customer c) {
+  Widget _tableRowV2(Customer c, int index) {
+    final serial = _currentPage * _pageSize + index + 1;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+      padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
@@ -1428,6 +1429,15 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
       ),
       child: Row(
         children: [
+          SizedBox(
+            width: 56,
+            child: Text('$serial',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    fontSize: 12.5,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          ),
           Expanded(
             flex: 3,
             child: Row(
@@ -1517,7 +1527,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
         letterSpacing: 0.4,
         color: Theme.of(context).colorScheme.onSurfaceVariant);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+      padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(color: Theme.of(context).colorScheme.outlineVariant, width: 1.4),
@@ -1525,6 +1535,10 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
       ),
       child: Row(
         children: [
+          SizedBox(
+              width: 56,
+              child: Text('SL. NO.',
+                  maxLines: 1, overflow: TextOverflow.ellipsis, style: style)),
           Expanded(flex: 3, child: Text('NAME / BUSINESS', style: style)),
           if (_visibleColumnsV2['phone'] ?? true)
             Expanded(flex: 2, child: Text('PHONE', style: style)),
@@ -1654,7 +1668,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: pageItems.length,
-                      itemBuilder: (context, index) => _tableRowV2(pageItems[index]),
+                      itemBuilder: (context, index) => _tableRowV2(pageItems[index], index),
                     ),
           _paginationV2(pageItems, totalPages),
         ],
