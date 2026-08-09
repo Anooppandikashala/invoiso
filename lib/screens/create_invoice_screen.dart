@@ -1689,6 +1689,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     String dialogItemType = _adHocItemType;
     int insertAt = invoiceItems.length + 1;
     String selectedUnit = '';
+    String? nameError;
+    String? priceError;
 
     showDialog(
       context: context,
@@ -1696,9 +1698,21 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         builder: (context, setDialogState) {
           void submitAdHocItem() {
             final name = nameController.text.trim();
-            if (name.isEmpty || priceController.text.trim().isEmpty) return;
-            final price = double.tryParse(priceController.text) ?? 0.0;
-            if (price <= 0) return;
+            final priceText = priceController.text.trim();
+            final price = double.tryParse(priceText) ?? 0.0;
+            final newNameError = name.isEmpty ? 'Required' : null;
+            final newPriceError = priceText.isEmpty
+                ? 'Required'
+                : price <= 0
+                    ? 'Must be > 0'
+                    : null;
+            if (newNameError != null || newPriceError != null) {
+              setDialogState(() {
+                nameError = newNameError;
+                priceError = newPriceError;
+              });
+              return;
+            }
             final taxRate = _taxMode == TaxMode.perItem
                 ? (int.tryParse(taxRateController.text) ?? 0)
                 : 0;
@@ -1776,6 +1790,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   autofocus: true,
                   decoration: InputDecoration(
                     labelText: 'Item Name',
+                    errorText: nameError,
                     border: OutlineInputBorder(
                         borderRadius:
                             BorderRadius.circular(AppBorderRadius.xsmall)),
@@ -1783,6 +1798,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     filled: true,
                     fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                   ),
+                  onChanged: (_) {
+                    if (nameError != null) setDialogState(() => nameError = null);
+                  },
                   onSubmitted: (_) => submitAdHocItem(),
                 ),
                 if (_columnsConfig.aliasName) ...[
@@ -1805,6 +1823,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   controller: priceController,
                   decoration: InputDecoration(
                     labelText: _showQuantity ? 'Unit Price' : 'Rate',
+                    errorText: priceError,
                     border: OutlineInputBorder(
                         borderRadius:
                             BorderRadius.circular(AppBorderRadius.xsmall)),
@@ -1817,6 +1836,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                   ],
+                  onChanged: (_) {
+                    if (priceError != null) setDialogState(() => priceError = null);
+                  },
                   onSubmitted: (_) => submitAdHocItem(),
                 ),
                 if (_showQuantity) ...[
