@@ -652,6 +652,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             ],
           ),
         );
+        _screenFocusNode.requestFocus();
         if (addAnyway == true) {
           addInvoiceProduct(
               InvoiceItem(
@@ -686,6 +687,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             ],
           ),
         );
+        _screenFocusNode.requestFocus();
         if (addAnyway == true) {
           addInvoiceProduct(
               InvoiceItem(
@@ -1018,7 +1020,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           ],
         ),
       ),
-    );
+    ).then((_) => _screenFocusNode.requestFocus());
   }
 
   void addInvoiceProduct(InvoiceItem invoiceItem, {int? insertAt}) {
@@ -1525,7 +1527,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     }
 
     void selectHighlighted() {
-      if (dialogResults.isEmpty) return;
+      if (dialogResults.isEmpty) {
+        Navigator.pop(context);
+        return;
+      }
       final index = highlightedIndex.clamp(0, dialogResults.length - 1);
       final product = dialogResults[index];
       Navigator.pop(context);
@@ -1665,6 +1670,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     ).then((_) {
       HardwareKeyboard.instance.removeHandler(handleKey);
       dialogSearchDebounce?.cancel();
+      _screenFocusNode.requestFocus();
     });
   }
 
@@ -5246,7 +5252,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             if(kDebugMode) print("already in create invoice page !");
           }
         },
-        const SingleActivator(LogicalKeyboardKey.keyN, control: true): () {
+        const SingleActivator(LogicalKeyboardKey.keyF, control: true): () {
           if (showingSuccessScreen) return;
           _showProductPickerDialog();
         },

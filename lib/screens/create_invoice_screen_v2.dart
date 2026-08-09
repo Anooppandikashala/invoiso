@@ -159,6 +159,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         Future.delayed(const Duration(milliseconds: 150), () {
           if (!mounted) return;
           setState(() => _showProductDropdownV2 = false);
+          if (!_productSearchFocusNodeV2.hasFocus &&
+              (ModalRoute.of(context)?.isCurrent ?? true)) {
+            _screenFocusNode.requestFocus();
+          }
         });
       }
     });
@@ -671,6 +675,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
             ],
           ),
         );
+        _screenFocusNode.requestFocus();
         if (addAnyway == true) {
           addInvoiceProduct(
               InvoiceItem(
@@ -705,6 +710,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
             ],
           ),
         );
+        _screenFocusNode.requestFocus();
         if (addAnyway == true) {
           addInvoiceProduct(
               InvoiceItem(
@@ -1037,7 +1043,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           ],
         ),
       ),
-    );
+    ).then((_) => _screenFocusNode.requestFocus());
   }
 
   void addInvoiceProduct(InvoiceItem invoiceItem, {int? insertAt}) {
@@ -1827,7 +1833,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         );
         },
       ),
-    );
+    ).then((_) => _screenFocusNode.requestFocus());
   }
 
   // void _filterProducts(String query) {
