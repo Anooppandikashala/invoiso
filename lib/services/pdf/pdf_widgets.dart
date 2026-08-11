@@ -60,8 +60,12 @@ class _WatermarkStripeImage extends pw.DecorationGraphic {
 }
 
 pw.Widget buildCompanyLogo(pw.MemoryImage image, {double size = 90}) {
+  final iw = image.width;
+  final ih = image.height;
+  final aspect = (iw != null && ih != null && ih > 0) ? iw / ih : 1.0;
+  final width = (size * aspect).clamp(size * 0.6, size * 3.5);
   return pw.Container(
-    width: size,
+    width: width,
     height: size,
     child: pw.Image(image, fit: pw.BoxFit.contain),
   );
@@ -95,9 +99,64 @@ pw.Widget buildSignatureWidget(
   );
 }
 
+pw.Widget buildBankUpiRow({
+  BankAccount? bankAccount,
+  bool showUpiQr = false,
+  String? upiId,
+  required String companyName,
+  required double amount,
+  required String currencyCode,
+  required String invoiceId,
+  required PdfColor accentColor,
+  double gap = 12,
+  double qrSize = 90.0,
+  double bankFontSize = 7.5,
+  double sectionTitleFontSize = 8,
+  double sectionPadding = 8,
+  double upiIdFontSize = 7,
+  double upiAmountFontSize = 7,
+}) {
+  if (bankAccount == null && !(showUpiQr && upiId != null)) {
+    return pw.SizedBox();
+  }
+  return pw.Row(
+    mainAxisAlignment: pw.MainAxisAlignment.end,
+    crossAxisAlignment: pw.CrossAxisAlignment.start,
+    children: [
+      if (bankAccount != null)
+        buildBankDetailsSection(
+          bankAccount: bankAccount,
+          accentColor: accentColor,
+          titleFontSize: sectionTitleFontSize,
+          rowFontSize: bankFontSize,
+          padding: sectionPadding,
+        ),
+      if (showUpiQr && upiId != null) ...[
+        pw.SizedBox(width: gap),
+        buildUpiQrSection(
+          upiId: upiId,
+          companyName: companyName,
+          amount: amount,
+          currencyCode: currencyCode,
+          invoiceId: invoiceId,
+          accentColor: accentColor,
+          qrSize: qrSize,
+          titleFontSize: sectionTitleFontSize,
+          padding: sectionPadding,
+          idFontSize: upiIdFontSize,
+          amountFontSize: upiAmountFontSize,
+        ),
+      ],
+    ],
+  );
+}
+
 pw.Widget buildBankDetailsSection({
   required BankAccount bankAccount,
   required PdfColor accentColor,
+  double titleFontSize = 8,
+  double rowFontSize = 7.5,
+  double padding = 8,
 }) {
   pw.Widget row(String label, String value) => pw.Padding(
         padding: const pw.EdgeInsets.only(bottom: 2),
@@ -106,12 +165,12 @@ pw.Widget buildBankDetailsSection({
             children: [
               pw.TextSpan(
                 text: '$label: ',
-                style: pw.TextStyle(fontSize: 7.5, color: PdfColors.grey600),
+                style: pw.TextStyle(fontSize: rowFontSize, color: PdfColors.grey600),
               ),
               pw.TextSpan(
                 text: value,
                 style: pw.TextStyle(
-                    fontSize: 7.5, fontWeight: pw.FontWeight.bold),
+                    fontSize: rowFontSize, fontWeight: pw.FontWeight.bold),
               ),
             ],
           ),
@@ -119,7 +178,7 @@ pw.Widget buildBankDetailsSection({
       );
 
   return pw.Container(
-    padding: const pw.EdgeInsets.all(8),
+    padding: pw.EdgeInsets.all(padding),
     decoration: pw.BoxDecoration(
       border: pw.Border.all(color: accentColor, width: 0.5),
       borderRadius: pw.BorderRadius.circular(4),
@@ -131,7 +190,7 @@ pw.Widget buildBankDetailsSection({
         pw.Text(
           'Bank Account Details',
           style: pw.TextStyle(
-            fontSize: 8,
+            fontSize: titleFontSize,
             fontWeight: pw.FontWeight.bold,
             color: accentColor,
           ),
@@ -158,8 +217,12 @@ pw.Widget buildUpiQrSection({
   required String currencyCode,
   required String invoiceId,
   required PdfColor accentColor,
+  double qrSize = 90.0,
+  double titleFontSize = 8,
+  double idFontSize = 7,
+  double amountFontSize = 7,
+  double padding = 8,
 }) {
-  const double qrSize = 90.0;
   final encodedName = Uri.encodeComponent(companyName);
   final encodedNote = Uri.encodeComponent('Invoice $invoiceId');
   final upiUri = 'upi://pay?pa=$upiId&pn=$encodedName'
@@ -181,7 +244,7 @@ pw.Widget buildUpiQrSection({
   final int moduleCount = qrCode.moduleCount;
 
   return pw.Container(
-    padding: const pw.EdgeInsets.all(8),
+    padding: pw.EdgeInsets.all(padding),
     decoration: pw.BoxDecoration(
       border: pw.Border.all(color: accentColor, width: 0.5),
       borderRadius: pw.BorderRadius.circular(4),
@@ -193,7 +256,7 @@ pw.Widget buildUpiQrSection({
         pw.Text(
           'Pay via UPI',
           style: pw.TextStyle(
-            fontSize: 8,
+            fontSize: titleFontSize,
             fontWeight: pw.FontWeight.bold,
             color: accentColor,
           ),
@@ -220,13 +283,13 @@ pw.Widget buildUpiQrSection({
         pw.SizedBox(height: 4),
         pw.Text(
           upiId,
-          style: pw.TextStyle(fontSize: 7, color: PdfColors.grey700),
+          style: pw.TextStyle(fontSize: idFontSize, color: PdfColors.grey700),
           textAlign: pw.TextAlign.center,
         ),
         pw.Text(
           '${currencyCode.toUpperCase()} ${amount.toStringAsFixed(2)}',
           style: pw.TextStyle(
-            fontSize: 7,
+            fontSize: amountFontSize,
             fontWeight: pw.FontWeight.bold,
             color: accentColor,
           ),
@@ -299,7 +362,7 @@ pw.Widget buildEnhancedTotals(
             horizontalPadding: rowHorizontalPadding,
             verticalPadding: rowVerticalPadding,
           ),
-        if (invoice.taxMode != TaxMode.none)
+        if (invoice.taxMode != TaxMode.none && !showCgstSgst)
           pdfTotalRow(invoiceTaxLabel(invoice),
               "$currencySymbol ${invoice.tax.toStringAsFixed(2)}",
               fontSize: rowFontSize,
@@ -505,7 +568,7 @@ String invoiceTaxLabel(Invoice invoice) {
     case TaxMode.global:
       return "Tax (${(invoice.taxRate * 100).toStringAsFixed(0)}%)";
     case TaxMode.perItem:
-      return "Tax (per item)";
+      return "Tax";
     case TaxMode.none:
       return "Tax";
   }

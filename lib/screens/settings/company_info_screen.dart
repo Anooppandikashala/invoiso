@@ -287,10 +287,12 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
     }
 
     // Validate dimensions
-    if (decodedImage.width > 512 || decodedImage.height > 512) {
+    if (decodedImage.width > 1080 || decodedImage.height > 1080) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Image must be max 512x512 pixels.')),
+        const SnackBar(
+          content: Text('Image must be max 1080x1080 pixels.'),
+        ),
       );
       return;
     }
@@ -456,7 +458,7 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            'Max 512×512 px · 2 MB\nPNG or JPG only',
+                            'Max 1080×1080 px · 2 MB\nPNG or JPG only',
                             style: TextStyle(
                               fontSize: AppFontSize.xsmall,
                               color: CompanyInfoScreenColors.sectionHeadingColor,
