@@ -2304,7 +2304,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: Tooltip(
-                    message: 'Add a custom item (Ctrl + n)',
+                    message: 'Add a custom item (Ctrl + m)',
                     waitDuration: const Duration(milliseconds: 500),
                     child: TextButton.icon(
                       onPressed: _addAdHocItemDialog,
@@ -3967,7 +3967,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
-                      _shortcutKey('Ctrl + n'),
+                      _shortcutKey('Ctrl + f'),
                       Text(
                         'to add an existing product',
                         style: TextStyle(

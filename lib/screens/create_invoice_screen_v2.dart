@@ -108,7 +108,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   bool isEditing = false;
   bool isLoading = false;
   // V2: inline product search dropdown (replaces click-to-open popup;
-  // the popup dialog is now reserved for the Ctrl+N shortcut only).
+  // the popup dialog is now reserved for the Ctrl+F shortcut only).
   bool _showProductDropdownV2 = false;
   int _highlightedProductIndexV2 = 0;
   final FocusNode _productSearchFocusNodeV2 = FocusNode();
@@ -4011,7 +4011,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   final isHighlighted = index == _highlightedProductIndexV2;
                   final mutedColor = Theme.of(context).colorScheme.onSurfaceVariant;
 
-                  // Same metadata source as the Ctrl+N product picker
+                  // Same metadata source as the Ctrl+F product picker
                   // dialog — pre-loaded in _productMetadata, keyed by
                   // product id, no extra async fetch needed here.
                   final meta =
@@ -4325,7 +4325,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
             style:
                 TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
         const SizedBox(height: 4),
-        Text('Search below or press Ctrl+N',
+        Text('Search below or press Ctrl+F',
             style: TextStyle(
                 fontSize: 12,
                 color: Theme.of(context).colorScheme.onSurfaceVariant)),
@@ -4419,7 +4419,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           ),
           // Inline search dropdown floats above the items list, anchored
           // just above the search bar at the bottom of the card. The
-          // Ctrl+N modal (_showProductPickerDialog) stays available as a
+          // Ctrl+F modal (_showProductPickerDialog) stays available as a
           // separate, keyboard-only shortcut and is no longer opened by
           // clicking or typing into this field.
           if (_showProductDropdownV2)

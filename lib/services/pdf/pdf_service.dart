@@ -479,7 +479,8 @@ class PDFService {
 
   static Future<void> downloadPDF(BuildContext context, Invoice invoice) async {
     try {
-      final pdf = await generateInvoicePDF(invoice);
+      final dateFmt = await BackendServices.settings.getDateFormat();
+      final pdf = await generateInvoicePDF(invoice, datePattern: dateFmt.key);
       final bytes = await pdf.save();
       if (context.mounted) {
         await _downloadWithPicker(context, bytes, invoice);

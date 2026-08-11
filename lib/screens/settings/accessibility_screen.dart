@@ -62,17 +62,17 @@ class _AccessibilityScreenState extends ConsumerState<AccessibilityScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text('Invoice Creation Layout',
+                const Text('New Create Invoice Page Layout',
                     style: TextStyle(
                         fontSize: AppFontSize.large,
                         fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
-                Text(
-                  'Switching mid-edit discards any unsaved changes on the invoice form — save or finish the invoice first.',
-                  style: TextStyle(
-                      fontSize: AppFontSize.small,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant),
-                ),
+                // Text(
+                //   'Switching mid-edit discards any unsaved changes on the invoice form — save or finish the invoice first.',
+                //   style: TextStyle(
+                //       fontSize: AppFontSize.small,
+                //       color: Theme.of(context).colorScheme.onSurfaceVariant),
+                // ),
                 const SizedBox(height: 16),
                 Card(
                   elevation: 0,

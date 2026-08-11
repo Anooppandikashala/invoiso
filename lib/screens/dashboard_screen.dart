@@ -31,7 +31,8 @@ import 'package:invoiso/screens/create_invoice_screen.dart' as v1;
 import 'package:invoiso/screens/create_invoice_screen_v2.dart';
 // import 'package:invoiso/screens/product_management_screen.dart';
 import 'package:invoiso/screens/product_management_screen_v2.dart';
-import 'package:invoiso/screens/invoice_management_screen.dart';
+// import 'package:invoiso/screens/invoice_management_screen.dart';
+import 'package:invoiso/screens/invoice_management_screen_v2.dart';
 import 'package:invoiso/screens/auth/login_screen.dart';
 import 'package:invoiso/screens/reports_screen.dart';
 
@@ -168,7 +169,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 onCreateNewInvoice: onCreateNewInvoice,
               );
       case 2:
-        return InvoiceManagementScreen(
+        return InvoiceManagementScreenV2(
           key: const ValueKey('invoice_list'),
           onEditInvoice: editInvoice,
           onCloneInvoice: cloneInvoice,
@@ -176,7 +177,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           filterType: 'Invoice',
         );
       case 3:
-        return InvoiceManagementScreen(
+        return InvoiceManagementScreenV2(
           key: const ValueKey('quotation_list'),
           onEditInvoice: editInvoice,
           onCloneInvoice: cloneInvoice,
@@ -184,7 +185,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           filterType: 'Quotation',
         );
       case 4:
-        return InvoiceManagementScreen(
+        return InvoiceManagementScreenV2(
           key: const ValueKey('receipt_list'),
           onEditInvoice: editInvoice,
           onCloneInvoice: cloneInvoice,

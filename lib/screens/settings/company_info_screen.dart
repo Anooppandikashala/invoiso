@@ -814,84 +814,88 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                     final isDefault = index == _defaultBankIndex;
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 10),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Default star
-                          Tooltip(
-                            message: isDefault ? 'Default' : 'Set as Default',
-                            child: IconButton(
-                              icon: Icon(
-                                isDefault ? Icons.star_rounded : Icons.star_outline_rounded,
-                                color: isDefault ? Colors.amber[700] : Theme.of(context).colorScheme.onSurfaceVariant,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Default star
+                            Tooltip(
+                              message: isDefault ? 'Default' : 'Set as Default',
+                              child: IconButton(
+                                icon: Icon(
+                                  isDefault ? Icons.star_rounded : Icons.star_outline_rounded,
+                                  color: isDefault ? Colors.amber[700] : Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                                onPressed: () => setState(() => _defaultBankIndex = index),
                               ),
-                              onPressed: () => setState(() => _defaultBankIndex = index),
                             ),
-                          ),
-                          SizedBox(
-                            width: 130,
-                            child: _buildField(
-                              controller: row.label,
-                              label: 'Label',
-                              icon: Icons.label_outline_rounded,
-                              hint: 'e.g. Main Account',
-                              maxLength: 40,
+                            SizedBox(
+                              width: 130,
+                              child: _buildField(
+                                controller: row.label,
+                                label: 'Label',
+                                icon: Icons.label_outline_rounded,
+                                hint: 'e.g. Main Account',
+                                maxLength: 40,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          SizedBox(
-                            width: 140,
-                            child: _buildField(
-                              controller: row.bankName,
-                              label: 'Bank Name',
-                              icon: Icons.account_balance_outlined,
-                              hint: 'e.g. HDFC Bank',
-                              maxLength: 60,
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              width: 140,
+                              child: _buildField(
+                                controller: row.bankName,
+                                label: 'Bank Name',
+                                icon: Icons.account_balance_outlined,
+                                hint: 'e.g. HDFC Bank',
+                                maxLength: 60,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildField(
-                              controller: row.accountNumber,
-                              label: 'Account Number',
-                              icon: Icons.numbers_outlined,
-                              hint: '123456789012',
-                              maxLength: 20,
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              width: 180,
+                              child: _buildField(
+                                controller: row.accountNumber,
+                                label: 'Account Number',
+                                icon: Icons.numbers_outlined,
+                                hint: '123456789012',
+                                maxLength: 20,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          SizedBox(
-                            width: 130,
-                            child: _buildField(
-                              controller: row.ifscCode,
-                              label: 'IFSC Code',
-                              icon: Icons.code_outlined,
-                              hint: 'HDFC0001234',
-                              maxLength: 11,
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              width: 130,
+                              child: _buildField(
+                                controller: row.ifscCode,
+                                label: 'IFSC Code',
+                                icon: Icons.code_outlined,
+                                hint: 'HDFC0001234',
+                                maxLength: 11,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          IconButton(
-                            tooltip: 'Remove',
-                            icon: const Icon(Icons.remove_circle_outline,
-                                color: Colors.redAccent),
-                            onPressed: () {
-                              setState(() {
-                                _bankControllers[index].label.dispose();
-                                _bankControllers[index].bankName.dispose();
-                                _bankControllers[index].accountNumber.dispose();
-                                _bankControllers[index].ifscCode.dispose();
-                                _bankControllers.removeAt(index);
-                                if (_defaultBankIndex == index) {
-                                  _defaultBankIndex = null;
-                                } else if (_defaultBankIndex != null &&
-                                    _defaultBankIndex! > index) {
-                                  _defaultBankIndex = _defaultBankIndex! - 1;
-                                }
-                              });
-                            },
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            IconButton(
+                              tooltip: 'Remove',
+                              icon: const Icon(Icons.remove_circle_outline,
+                                  color: Colors.redAccent),
+                              onPressed: () {
+                                setState(() {
+                                  _bankControllers[index].label.dispose();
+                                  _bankControllers[index].bankName.dispose();
+                                  _bankControllers[index].accountNumber.dispose();
+                                  _bankControllers[index].ifscCode.dispose();
+                                  _bankControllers.removeAt(index);
+                                  if (_defaultBankIndex == index) {
+                                    _defaultBankIndex = null;
+                                  } else if (_defaultBankIndex != null &&
+                                      _defaultBankIndex! > index) {
+                                    _defaultBankIndex = _defaultBankIndex! - 1;
+                                  }
+                                });
+                              },
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   }),
