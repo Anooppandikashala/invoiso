@@ -338,36 +338,48 @@ pw.MultiPage buildGridClassicTemplate(
                 style: pw.TextStyle(
                     fontSize: labelFont - 1 , fontWeight: pw.FontWeight.normal, fontStyle: pw.FontStyle.italic)),
 
-          if (signatureImage != null) ...[
+          if (signatureImage != null || (showUpiQr && upiId != null) || bankAccount != null) ...[
             pw.SizedBox(height: 16 * fontScale),
-            buildSignatureWidget(signatureImage, signaturePosition,
-                imageHeight: 40 * fontScale * (signatureSizePx / 50),
-                labelFontSize: labelFont),
-          ],
-
-          if ((showUpiQr && upiId != null) || bankAccount != null) ...[
-            pw.SizedBox(height: 12 * fontScale),
-            pw.Align(
-              alignment: pw.Alignment.centerRight,
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.end,
-                children: [
-                  if (showUpiQr && upiId != null)
-                    buildUpiQrSection(
-                      upiId: upiId,
-                      companyName: company?.name ?? '',
-                      amount: payableAmount,
-                      currencyCode: invoice.currencyCode,
-                      invoiceId: invoice.id,
-                      accentColor: accentColor,
-                    ),
-                  if (bankAccount != null) ...[
-                    if (showUpiQr && upiId != null) pw.SizedBox(height: 12 * fontScale),
-                    buildBankDetailsSection(
-                        bankAccount: bankAccount, accentColor: accentColor),
-                  ],
-                ],
-              ),
+            pw.Row(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: signaturePosition == 'right'
+                  ? [
+                      buildBankUpiRow(
+                        bankAccount: bankAccount,
+                        showUpiQr: showUpiQr,
+                        upiId: upiId,
+                        companyName: company?.name ?? '',
+                        amount: payableAmount,
+                        currencyCode: invoice.currencyCode,
+                        invoiceId: invoice.id,
+                        accentColor: accentColor,
+                        gap: 12 * fontScale,
+                      ),
+                      signatureImage != null
+                          ? buildSignatureWidget(signatureImage, signaturePosition,
+                              imageHeight: 40 * fontScale * (signatureSizePx / 50),
+                              labelFontSize: labelFont)
+                          : pw.SizedBox(),
+                    ]
+                  : [
+                      signatureImage != null
+                          ? buildSignatureWidget(signatureImage, signaturePosition,
+                              imageHeight: 40 * fontScale * (signatureSizePx / 50),
+                              labelFontSize: labelFont)
+                          : pw.SizedBox(),
+                      buildBankUpiRow(
+                        bankAccount: bankAccount,
+                        showUpiQr: showUpiQr,
+                        upiId: upiId,
+                        companyName: company?.name ?? '',
+                        amount: payableAmount,
+                        currencyCode: invoice.currencyCode,
+                        invoiceId: invoice.id,
+                        accentColor: accentColor,
+                        gap: 12 * fontScale,
+                      ),
+                    ],
             ),
           ],
 

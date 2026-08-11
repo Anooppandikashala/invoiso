@@ -290,45 +290,73 @@ pw.MultiPage buildCompactTemplate(
         ),
       ),
 
-      // ── Signature ──
-      if (signatureImage != null) ...[
+      // ── Signature + UPI/Bank ──
+      if (signatureImage != null || (showUpiQr && upiId != null) || bankAccount != null) ...[
         pw.SizedBox(height: compactPdfLayoutStyle.signatureTopGap),
-        buildSignatureWidget(
-          signatureImage,
-          signaturePosition,
-          imageHeight:
-              compactPdfLayoutStyle.signatureImageHeight * (signatureSizePx / 50),
-          labelGap: compactPdfLayoutStyle.signatureLabelGap,
-          labelFontSize: compactPdfLayoutStyle.signatureLabelFontSize,
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: signaturePosition == 'right'
+              ? [
+                  buildBankUpiRow(
+                    bankAccount: bankAccount,
+                    showUpiQr: showUpiQr,
+                    upiId: upiId,
+                    companyName: company?.name ?? '',
+                    amount: invoice.total,
+                    currencyCode: invoice.currencyCode,
+                    invoiceId: invoice.id,
+                    accentColor: accentColor,
+                    gap: 6,
+                    qrSize: 50,
+                    bankFontSize: 5.2,
+                    sectionTitleFontSize: 5.8,
+                    sectionPadding: 4,
+                    upiIdFontSize: 5,
+                    upiAmountFontSize: 5,
+                  ),
+                  signatureImage != null
+                      ? buildSignatureWidget(
+                          signatureImage,
+                          signaturePosition,
+                          imageHeight: compactPdfLayoutStyle.signatureImageHeight *
+                              (signatureSizePx / 50),
+                          labelGap: compactPdfLayoutStyle.signatureLabelGap,
+                          labelFontSize: compactPdfLayoutStyle.signatureLabelFontSize,
+                        )
+                      : pw.SizedBox(),
+                ]
+              : [
+                  signatureImage != null
+                      ? buildSignatureWidget(
+                          signatureImage,
+                          signaturePosition,
+                          imageHeight: compactPdfLayoutStyle.signatureImageHeight *
+                              (signatureSizePx / 50),
+                          labelGap: compactPdfLayoutStyle.signatureLabelGap,
+                          labelFontSize: compactPdfLayoutStyle.signatureLabelFontSize,
+                        )
+                      : pw.SizedBox(),
+                  buildBankUpiRow(
+                    bankAccount: bankAccount,
+                    showUpiQr: showUpiQr,
+                    upiId: upiId,
+                    companyName: company?.name ?? '',
+                    amount: invoice.total,
+                    currencyCode: invoice.currencyCode,
+                    invoiceId: invoice.id,
+                    accentColor: accentColor,
+                    gap: 6,
+                    qrSize: 50,
+                    bankFontSize: 5.2,
+                    sectionTitleFontSize: 5.8,
+                    sectionPadding: 4,
+                    upiIdFontSize: 5,
+                    upiAmountFontSize: 5,
+                  ),
+                ],
         ),
       ],
-
-      // ── UPI + Bank (optional) ──
-      if ((showUpiQr && upiId != null) || bankAccount != null)
-        pw.SizedBox(height: 10),
-      if ((showUpiQr && upiId != null) || bankAccount != null)
-        pw.Align(
-          alignment: pw.Alignment.centerRight,
-          child: pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.end,
-            children: [
-              if (showUpiQr && upiId != null)
-                buildUpiQrSection(
-                  upiId: upiId,
-                  companyName: company?.name ?? '',
-                  amount: invoice.total,
-                  currencyCode: invoice.currencyCode,
-                  invoiceId: invoice.id,
-                  accentColor: accentColor,
-                ),
-              if (bankAccount != null) ...[
-                if (showUpiQr && upiId != null) pw.SizedBox(height: 8),
-                buildBankDetailsSection(
-                    bankAccount: bankAccount, accentColor: accentColor),
-              ],
-            ],
-          ),
-        ),
 
       if (thankYouNote.isNotEmpty) ...[
         pw.SizedBox(height: 8),

@@ -64,8 +64,8 @@ Invoice _sampleInvoice() {
     items: _sampleItems(),
     date: DateTime(2026, 7, 17, 9, 25, 13),
     type: 'Invoice',
-    taxRate: 18,
-    taxMode: TaxMode.global,
+    taxRate: 0.18,
+    taxMode: TaxMode.perItem,
     notes: 'Handle with care',
   );
 }
@@ -99,58 +99,81 @@ PageSize _pageSizeFor(InvoiceTemplate template) => switch (template) {
       _ => PageSize.a4,
     };
 
+const _logoVariants = {
+  'square': 'assets/images/demo_logo.png',
+  'wide': 'assets/images/wide_logo.png',
+};
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   for (final template in InvoiceTemplate.values) {
-    test('${template.name} template renders via the real PDFService dispatcher',
-        () async {
-      final pageSize = _pageSizeFor(template);
-      final pdfTheme = await TestPdfFontService.loadTheme();
-      final watermarkBytes =
-          await File('assets/images/watermark.png').readAsBytes();
-      final logoBytes =
-      await File('assets/images/demo_logo.png').readAsBytes();
-      final settings = PdfGenerationSettings(
-        company: _company,
-        template: template,
-        invoicePrefix: 'INV-',
-        showGst: true,
-        showQuantity: true,
-        showDiscount: true,
-        showTypeTag: true,
-        businessType: BusinessType.both,
-        upiEntries: const [],
-        showQrStr: 'false',
-        showBankDetails: false,
-        bankAccounts: const [],
-        logoPosition: LogoPosition.left,
-        logoSizePx: 80,
-        logoBytes: logoBytes,
-        thankYouNote: 'Thank you for your business!',
-        datePattern: 'dd/MM/yyyy',
-        showFooterBranding: true,
-        themeColor: null,
-        showPreviousBalance: true,
-        pageFormat: PDFService.pageSizeToFormat(pageSize),
-        pageSize: pageSize,
-        showTotalQuantity: true,
-        pdfTheme: pdfTheme,
-        watermarkBytes: watermarkBytes,
-        watermarkOpacity: 0.15,
-        showCgstSgst: false,
-      );
+    for (final logoVariant in _logoVariants.entries) {
+      test(
+          '${template.name} template renders with ${logoVariant.key} logo via the real PDFService dispatcher',
+          () async {
+        final pageSize = _pageSizeFor(template);
+        final pdfTheme = await TestPdfFontService.loadTheme();
+        final watermarkBytes =
+            await File('assets/images/watermark.png').readAsBytes();
+        final logoBytes = await File(logoVariant.value).readAsBytes();
+        final signatureBytes =
+            await File('assets/images/sig.jpeg').readAsBytes();
+        final settings = PdfGenerationSettings(
+          company: _company,
+          template: template,
+          invoicePrefix: 'INV-',
+          showGst: true,
+          showQuantity: true,
+          showDiscount: true,
+          showTypeTag: true,
+          businessType: BusinessType.both,
+          upiEntries: const [
+            UpiEntry(
+                label: 'HDFC Bank', id: 'business@okhdfcbank', isDefault: true),
+          ],
+          showQrStr: 'true',
+          showBankDetails: true,
+          bankAccounts: const [
+            BankAccount(
+              label: 'Business Account',
+              bankName: 'HDFC Bank',
+              accountNumber: '123456789012',
+              ifscCode: 'HDFC0001234',
+              isDefault: true,
+            ),
+          ],
+          logoPosition: LogoPosition.left,
+          logoSizePx: 80,
+          logoBytes: logoBytes,
+          signatureBytes: signatureBytes,
+          thankYouNote: 'Thank you for your business!',
+          datePattern: 'dd/MM/yyyy',
+          showFooterBranding: true,
+          themeColor: null,
+          showPreviousBalance: true,
+          pageFormat: PDFService.pageSizeToFormat(pageSize),
+          pageSize: pageSize,
+          showTotalQuantity: true,
+          pdfTheme: pdfTheme,
+          watermarkBytes: watermarkBytes,
+          watermarkOpacity: 0.15,
+          signaturePosition: 'right',
+          showCgstSgst: true,
+        );
 
-      final pdf = PDFService.generateInvoicePDFWithSettings(
-        _sampleInvoice(),
-        settings,
-        previousBalanceDue: 50.0,
-      );
-      final bytes = await pdf.save();
-      expect(bytes, isNotEmpty);
-      final outputPath = 'output/invoiso_${template.displayName}.pdf';
-      final outputFile = File(outputPath);
-      await outputFile.parent.create(recursive: true);
-      await outputFile.writeAsBytes(await pdf.save());
-    });
+        final pdf = PDFService.generateInvoicePDFWithSettings(
+          _sampleInvoice(),
+          settings,
+          previousBalanceDue: 50.0,
+        );
+        final bytes = await pdf.save();
+        expect(bytes, isNotEmpty);
+        final outputPath =
+            'output/all_pdfs_test/invoiso_${template.displayName}_${logoVariant.key}.pdf';
+        final outputFile = File(outputPath);
+        await outputFile.parent.create(recursive: true);
+        await outputFile.writeAsBytes(await pdf.save());
+      });
+    }
   }
 }
