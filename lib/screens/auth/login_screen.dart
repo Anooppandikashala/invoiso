@@ -1,8 +1,13 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
 import 'package:invoiso/constants.dart';
+import 'package:invoiso/models/user.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/screens/auth/change_password_screen.dart';
+import 'package:invoiso/screens/test_gate_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:invoiso/providers/app_config_provider.dart';
@@ -62,6 +67,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       return;
     }
 
+    _afterLoginNavigate(cfg, user);
+  }
+
+  Future<void> _afterLoginNavigate(AppEditionConfig cfg, User user) async {
+    if (TestBuildConfig.isTestBuild && !await _testGatePasses(cfg, user)) return;
+
     if(cfg.isCloud)
     {
       if (!mounted) return;
@@ -88,6 +99,44 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       );
     }
 
+  }
+
+  // Uses the existing analytics heartbeat endpoint's response Date header as a
+  // trusted clock — local device time is spoofable and would defeat this gate.
+  Future<bool> _testGatePasses(AppEditionConfig cfg, User user) async {
+    DateTime serverTime;
+    try {
+      final resp = await http
+          .head(Uri.parse(AnalyticsConfig.heartbeatUrl))
+          .timeout(const Duration(seconds: 5));
+      final dateHeader = resp.headers['date'];
+      if (dateHeader == null) throw const HttpException('missing Date header');
+      serverTime = HttpDate.parse(dateHeader);
+    } catch (_) {
+      if (!mounted) return false;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => TestGateScreen(
+            reason: TestGateReason.noInternet,
+            onRetry: () => _afterLoginNavigate(cfg, user),
+          ),
+        ),
+      );
+      return false;
+    }
+
+    final expiry = DateTime.fromMillisecondsSinceEpoch(TestBuildConfig.buildEpochSeconds * 1000)
+        .add(const Duration(days: TestBuildConfig.testExpiryDays));
+    if (serverTime.isAfter(expiry)) {
+      if (!mounted) return false;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const TestGateScreen(reason: TestGateReason.expired)),
+      );
+      return false;
+    }
+    return true;
   }
 
   @override

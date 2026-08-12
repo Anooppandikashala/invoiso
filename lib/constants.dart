@@ -120,6 +120,18 @@ class UpdateConfig
   static const enableUpdateCheck = true;
 }
 
+class TestBuildConfig
+{
+  // Replaced by CI (sed) only for test-v* tags; stays literal on local/prod builds.
+  static const _isTestBuildFlag = "__IS_TEST_BUILD__"; // test true
+  static bool get isTestBuild => _isTestBuildFlag == "true";
+
+  static const _buildTimestampRaw = "__BUILD_TIMESTAMP__"; // test 1785818736
+  static int get buildEpochSeconds => int.tryParse(_buildTimestampRaw) ?? 0;
+
+  static const testExpiryDays = 7;
+}
+
 class AnalyticsConfig {
-  static const heartbeatUrl = "__HEARTBEAT_URL__";
+  static const heartbeatUrl = "__HEARTBEAT_URL__"; // test https://www.google.com;
 }
