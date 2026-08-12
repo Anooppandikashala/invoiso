@@ -38,11 +38,15 @@ jobs:
         shell: bash
         run: |
           VERSION="${GITHUB_REF#refs/tags/}"
+          IS_TEST_BUILD="false"
+          if [[ "$VERSION" == test-v* ]]; then IS_TEST_BUILD="true"; fi
           VERSION="${VERSION#test-v}"
           VERSION="${VERSION#v}"
           sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
-          echo "Building version: $VERSION"
+          echo "Building version: $VERSION (test build: $IS_TEST_BUILD)"
           sed -i "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/constants.dart
+          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/constants.dart
+          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/constants.dart
           echo "HEARTBEAT_URL changed"
 
       - name: Install FastForge
@@ -104,11 +108,15 @@ jobs:
       - name: Set version from tag
         run: |
           VERSION="${GITHUB_REF#refs/tags/}"
+          IS_TEST_BUILD="false"
+          if [[ "$VERSION" == test-v* ]]; then IS_TEST_BUILD="true"; fi
           VERSION="${VERSION#test-v}"
           VERSION="${VERSION#v}"
           sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
-          echo "Building version: $VERSION"
+          echo "Building version: $VERSION (test build: $IS_TEST_BUILD)"
           sed -i "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/constants.dart
+          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/constants.dart
+          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/constants.dart
           echo "HEARTBEAT_URL changed"
 
       - name: Install FastForge
@@ -163,11 +171,15 @@ jobs:
       - name: Set version from tag
         run: |
           VERSION="${GITHUB_REF#refs/tags/}"
+          IS_TEST_BUILD="false"
+          if [[ "$VERSION" == test-v* ]]; then IS_TEST_BUILD="true"; fi
           VERSION="${VERSION#test-v}"
           VERSION="${VERSION#v}"
           sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
-          echo "Building version: $VERSION"
+          echo "Building version: $VERSION (test build: $IS_TEST_BUILD)"
           sed -i "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/constants.dart
+          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/constants.dart
+          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/constants.dart
           echo "HEARTBEAT_URL changed"
 
       - name: Install FastForge
@@ -255,11 +267,15 @@ jobs:
       - name: Set version from tag
         run: |
           VERSION="${GITHUB_REF#refs/tags/}"
+          IS_TEST_BUILD="false"
+          if [[ "$VERSION" == test-v* ]]; then IS_TEST_BUILD="true"; fi
           VERSION="${VERSION#test-v}"
           VERSION="${VERSION#v}"
           sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
-          echo "Building version: $VERSION"
+          echo "Building version: $VERSION (test build: $IS_TEST_BUILD)"
           sed -i "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/constants.dart
+          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/constants.dart
+          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/constants.dart
           echo "HEARTBEAT_URL changed"
 
       - name: Flutter Pub Get
@@ -334,11 +350,15 @@ jobs:
       - name: Set version from tag
         run: |
           VERSION="${GITHUB_REF#refs/tags/}"
+          IS_TEST_BUILD="false"
+          if [[ "$VERSION" == test-v* ]]; then IS_TEST_BUILD="true"; fi
           VERSION="${VERSION#test-v}"
           VERSION="${VERSION#v}"
           sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
-          echo "Building version: $VERSION"
+          echo "Building version: $VERSION (test build: $IS_TEST_BUILD)"
           sed -i "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/constants.dart
+          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/constants.dart
+          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/constants.dart
           echo "HEARTBEAT_URL changed"
 
       - name: Flutter Pub Get
@@ -438,11 +458,15 @@ jobs:
       - name: Set version from tag
         run: |
           VERSION="${GITHUB_REF#refs/tags/}"
+          IS_TEST_BUILD="false"
+          if [[ "$VERSION" == test-v* ]]; then IS_TEST_BUILD="true"; fi
           VERSION="${VERSION#test-v}"
           VERSION="${VERSION#v}"
           sed -i '' "s/^version: .*/version: $VERSION/" pubspec.yaml
-          echo "Building version: $VERSION"
+          echo "Building version: $VERSION (test build: $IS_TEST_BUILD)"
           sed -i '' "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/constants.dart
+          sed -i '' "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/constants.dart
+          sed -i '' "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/constants.dart
           echo "HEARTBEAT_URL changed"
 
       - name: Install FastForge
