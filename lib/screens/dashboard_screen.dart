@@ -16,7 +16,6 @@ import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/product.dart';
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/screens/settings/settings_screen.dart';
-import 'package:invoiso/common.dart';
 import 'package:invoiso/services/invoice_pdf_services.dart';
 import 'package:invoiso/services/pdf_service.dart';
 import 'package:invoiso/utils/formatters.dart';

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:invoiso/constants.dart';
+import 'package:invoiso/common/constants.dart';
 
 class AccessibilityScreen extends StatelessWidget {
   const AccessibilityScreen({super.key});

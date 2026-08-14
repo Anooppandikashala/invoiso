@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:invoiso/constants.dart';
+import 'package:invoiso/common/constants.dart';
 
 class CustomizationScreen extends StatefulWidget {
   final int? highlightIndex;

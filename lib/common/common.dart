@@ -432,3 +432,219 @@ SignatureSize signatureSizeFromKey(String? key) {
     orElse: () => SignatureSize.medium,
   );
 }
+
+
+/// Which optional Product fields (and the unrelated invoice Extra Cost
+/// field, bundled in here for a single settings screen) are shown/editable.
+/// All default true so existing installs see zero behavior change until
+/// they opt into hiding fields. Name and Price are never toggleable —
+/// intentionally absent from this class.
+class ProductColumnsConfig {
+  final bool aliasName;
+  final bool taxRate;
+  final bool hsncode;
+  final bool description;
+  final bool purchasePrice;
+  final bool defaultDiscount;
+  final bool unit;
+  final bool type;
+  final bool extraCost;
+  final bool stock;
+  final bool productMetadata;
+  final bool metaStorageLocation;
+  final bool metaContainerNumber;
+  final bool metaBatchNumber;
+  final bool metaExpiryDate;
+  final bool metaManufactureDate;
+  final bool metaSupplierName;
+  final bool metaSkuCode;
+  final bool metaNotes;
+
+  const ProductColumnsConfig({
+    this.aliasName = true,
+    this.taxRate = true,
+    this.hsncode = true,
+    this.description = true,
+    this.purchasePrice = true,
+    this.defaultDiscount = true,
+    this.unit = true,
+    this.type = true,
+    this.extraCost = true,
+    this.stock = true,
+    this.productMetadata = true,
+    this.metaStorageLocation = true,
+    this.metaContainerNumber = true,
+    this.metaBatchNumber = true,
+    this.metaExpiryDate = true,
+    this.metaManufactureDate = true,
+    this.metaSupplierName = true,
+    this.metaSkuCode = true,
+    this.metaNotes = true,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'aliasName': aliasName,
+    'taxRate': taxRate,
+    'hsncode': hsncode,
+    'description': description,
+    'purchasePrice': purchasePrice,
+    'defaultDiscount': defaultDiscount,
+    'unit': unit,
+    'type': type,
+    'extraCost': extraCost,
+    'stock': stock,
+    'productMetadata': productMetadata,
+    'metaStorageLocation': metaStorageLocation,
+    'metaContainerNumber': metaContainerNumber,
+    'metaBatchNumber': metaBatchNumber,
+    'metaExpiryDate': metaExpiryDate,
+    'metaManufactureDate': metaManufactureDate,
+    'metaSupplierName': metaSupplierName,
+    'metaSkuCode': metaSkuCode,
+    'metaNotes': metaNotes,
+  };
+
+  factory ProductColumnsConfig.fromJson(Map<String, dynamic> json) =>
+      ProductColumnsConfig(
+        aliasName: json['aliasName'] as bool? ?? true,
+        taxRate: json['taxRate'] as bool? ?? true,
+        hsncode: json['hsncode'] as bool? ?? true,
+        description: json['description'] as bool? ?? true,
+        purchasePrice: json['purchasePrice'] as bool? ?? true,
+        defaultDiscount: json['defaultDiscount'] as bool? ?? true,
+        unit: json['unit'] as bool? ?? true,
+        type: json['type'] as bool? ?? true,
+        extraCost: json['extraCost'] as bool? ?? true,
+        stock: json['stock'] as bool? ?? true,
+        productMetadata: json['productMetadata'] as bool? ?? true,
+        metaStorageLocation: json['metaStorageLocation'] as bool? ?? true,
+        metaContainerNumber: json['metaContainerNumber'] as bool? ?? true,
+        metaBatchNumber: json['metaBatchNumber'] as bool? ?? true,
+        metaExpiryDate: json['metaExpiryDate'] as bool? ?? true,
+        metaManufactureDate: json['metaManufactureDate'] as bool? ?? true,
+        metaSupplierName: json['metaSupplierName'] as bool? ?? true,
+        metaSkuCode: json['metaSkuCode'] as bool? ?? true,
+        metaNotes: json['metaNotes'] as bool? ?? true,
+      );
+
+  ProductColumnsConfig copyWith({
+    bool? aliasName,
+    bool? taxRate,
+    bool? hsncode,
+    bool? description,
+    bool? purchasePrice,
+    bool? defaultDiscount,
+    bool? unit,
+    bool? type,
+    bool? extraCost,
+    bool? stock,
+    bool? productMetadata,
+    bool? metaStorageLocation,
+    bool? metaContainerNumber,
+    bool? metaBatchNumber,
+    bool? metaExpiryDate,
+    bool? metaManufactureDate,
+    bool? metaSupplierName,
+    bool? metaSkuCode,
+    bool? metaNotes,
+  }) =>
+      ProductColumnsConfig(
+        aliasName: aliasName ?? this.aliasName,
+        taxRate: taxRate ?? this.taxRate,
+        hsncode: hsncode ?? this.hsncode,
+        description: description ?? this.description,
+        purchasePrice: purchasePrice ?? this.purchasePrice,
+        defaultDiscount: defaultDiscount ?? this.defaultDiscount,
+        unit: unit ?? this.unit,
+        type: type ?? this.type,
+        extraCost: extraCost ?? this.extraCost,
+        stock: stock ?? this.stock,
+        productMetadata: productMetadata ?? this.productMetadata,
+        metaStorageLocation: metaStorageLocation ?? this.metaStorageLocation,
+        metaContainerNumber: metaContainerNumber ?? this.metaContainerNumber,
+        metaBatchNumber: metaBatchNumber ?? this.metaBatchNumber,
+        metaExpiryDate: metaExpiryDate ?? this.metaExpiryDate,
+        metaManufactureDate: metaManufactureDate ?? this.metaManufactureDate,
+        metaSupplierName: metaSupplierName ?? this.metaSupplierName,
+        metaSkuCode: metaSkuCode ?? this.metaSkuCode,
+        metaNotes: metaNotes ?? this.metaNotes,
+      );
+}
+
+enum InvoiceDiscountType {
+  percent,
+  amount,
+}
+
+extension InvoiceDiscountTypeExtension on InvoiceDiscountType {
+  String get key {
+    switch (this) {
+      case InvoiceDiscountType.percent:
+        return 'percent';
+      case InvoiceDiscountType.amount:
+        return 'amount';
+    }
+  }
+
+  static InvoiceDiscountType fromKey(String? key) {
+    switch (key) {
+      case 'amount':
+        return InvoiceDiscountType.amount;
+      default:
+        return InvoiceDiscountType.percent;
+    }
+  }
+}
+
+enum ThermalCompanyNameSize { xsmall, small, medium, large }
+
+extension ThermalCompanyNameSizeExtension on ThermalCompanyNameSize {
+  String get key {
+    switch (this) {
+      case ThermalCompanyNameSize.xsmall:
+        return 'xsmall';
+      case ThermalCompanyNameSize.small:
+        return 'small';
+      case ThermalCompanyNameSize.medium:
+        return 'medium';
+      case ThermalCompanyNameSize.large:
+        return 'large';
+    }
+  }
+
+  String get label {
+    switch (this) {
+      case ThermalCompanyNameSize.xsmall:
+        return 'X-Small';
+      case ThermalCompanyNameSize.small:
+        return 'Small';
+      case ThermalCompanyNameSize.medium:
+        return 'Medium';
+      case ThermalCompanyNameSize.large:
+        return 'Large';
+    }
+  }
+
+  /// Multiplier applied to [PdfLayout.thermalPrinterHeadFontSize] for the
+  /// company name on thermal receipts. 'medium' matches the previous
+  /// hardcoded 0.9 factor so existing receipts don't change by default.
+  double get scale {
+    switch (this) {
+      case ThermalCompanyNameSize.xsmall:
+        return 0.7;
+      case ThermalCompanyNameSize.small:
+        return 0.8;
+      case ThermalCompanyNameSize.medium:
+        return 0.9;
+      case ThermalCompanyNameSize.large:
+        return 1.1;
+    }
+  }
+}
+
+ThermalCompanyNameSize thermalCompanyNameSizeFromKey(String? key) {
+  return ThermalCompanyNameSize.values.firstWhere(
+        (s) => s.key == key,
+    orElse: () => ThermalCompanyNameSize.medium,
+  );
+}
