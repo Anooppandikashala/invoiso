@@ -38,6 +38,14 @@ pw.MultiPage buildExecutiveTemplate(
   double watermarkOpacity = 0.12,
   bool showCgstSgst = false,
   bool showRoundOff = false,
+  bool showPhone = true,
+  bool showEmail = true,
+  bool showCompanyName = true,
+  bool showPan = true,
+  bool showFssai = true,
+  bool showWebsite = true,
+  bool showAddress = true,
+  bool showLogo = true,
 }) {
   final accentColor = themeColor ?? PdfColors.blueGrey800;
   final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
@@ -77,8 +85,8 @@ pw.MultiPage buildExecutiveTemplate(
   final fssaiCode = company?.fssaiCode ?? '';
   final companyIdLine = [
     if (showGst && gstin.isNotEmpty) '$gstLabel: $gstin',
-    if (panNumber.isNotEmpty) '${panLabel(company?.country)}: $panNumber',
-    if (fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
+    if (showPan && panNumber.isNotEmpty) '${panLabel(company?.country)}: $panNumber',
+    if (showFssai && fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
   ].join('   ');
 
   final customerLines = [
@@ -111,7 +119,7 @@ pw.MultiPage buildExecutiveTemplate(
         children: [
           pw.Container(width: 8, height: 96, color: accentColor),
           pw.SizedBox(width: 14),
-          if (logoImage != null && logoPosition == LogoPosition.left) ...[
+          if (showLogo && logoImage != null && logoPosition == LogoPosition.left) ...[
             buildCompanyLogo(logoImage, size: logoSizePx),
             pw.SizedBox(width: 14),
           ],
@@ -120,7 +128,7 @@ pw.MultiPage buildExecutiveTemplate(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
                 pw.Text(
-                  company?.name ?? '',
+                  showCompanyName ? (company?.name ?? '') : '',
                   style: pw.TextStyle(
                     fontSize: executivePdfStyle.titleFontSize,
                     fontWeight: pw.FontWeight.bold,
@@ -128,13 +136,16 @@ pw.MultiPage buildExecutiveTemplate(
                   ),
                 ),
                 pw.SizedBox(height: executivePdfStyle.headerGap),
-                pw.Text(company?.address ?? '',
-                    style: pw.TextStyle(fontSize: executivePdfStyle.subtitleFontSize)),
-                pw.Text('Phone: ${company?.phone ?? ''}',
-                    style: pw.TextStyle(fontSize: executivePdfStyle.subtitleFontSize)),
-                pw.Text('Email: ${company?.email ?? ''}',
-                    style: pw.TextStyle(fontSize: executivePdfStyle.subtitleFontSize)),
-                if ((company?.website ?? '').isNotEmpty)
+                if (showAddress)
+                  pw.Text(company?.address ?? '',
+                      style: pw.TextStyle(fontSize: executivePdfStyle.subtitleFontSize)),
+                if (showPhone)
+                  pw.Text('Phone: ${company?.phone ?? ''}',
+                      style: pw.TextStyle(fontSize: executivePdfStyle.subtitleFontSize)),
+                if (showEmail)
+                  pw.Text('Email: ${company?.email ?? ''}',
+                      style: pw.TextStyle(fontSize: executivePdfStyle.subtitleFontSize)),
+                if (showWebsite && (company?.website ?? '').isNotEmpty)
                   pw.Text(company!.website,
                       style: pw.TextStyle(fontSize: executivePdfStyle.subtitleFontSize)),
                 if (companyIdLine.isNotEmpty)
@@ -146,7 +157,7 @@ pw.MultiPage buildExecutiveTemplate(
           pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.end,
             children: [
-              if (logoImage != null && logoPosition == LogoPosition.right)
+              if (showLogo && logoImage != null && logoPosition == LogoPosition.right)
                 buildCompanyLogo(logoImage, size: logoSizePx),
               pw.SizedBox(height: executivePdfStyle.headerGap),
               pw.Text('# $invoicePrefix${invoice.invoiceNumber ?? invoice.id}',

@@ -34,6 +34,8 @@ enum SettingKey {
   showQuantity, // whether to show quantity field (default true)
   bankAccounts, // JSON list of BankAccount objects
   showBankDetails, // whether to show bank details on PDF
+  showPhone, // whether to show company phone on PDF (default true)
+  showEmail, // whether to show company email on PDF (default true)
   showDiscount, // whether to show discount column on PDF (default true)
   showTypeTag, // whether to show product/service tag on invoice items (default true)
   lastUpdateCheck, // ISO timestamp of last GitHub release API call
@@ -69,6 +71,12 @@ enum SettingKey {
   showCgstSgst, // whether to split tax into CGST/SGST (India, 50/50)
   defaultTaxMode, // 'global' | 'perItem' — default tax mode for new invoices
   showRoundOff, // whether to show round-off row + amount-in-words on PDFs (default false)
+  showCompanyName, // whether to show company name on PDF (default true)
+  showPan, // whether to show company PAN on PDF (default true)
+  showFssai, // whether to show company FSSAI code on PDF (default true)
+  showWebsite, // whether to show company website on PDF (default true)
+  showAddress, // whether to show company address on PDF (default true)
+  showLogo, // whether to show company logo on PDF (default true)
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -106,6 +114,10 @@ extension SettingKeyExtension on SettingKey {
         return 'bank_accounts';
       case SettingKey.showBankDetails:
         return 'show_bank_details';
+      case SettingKey.showPhone:
+        return 'show_phone';
+      case SettingKey.showEmail:
+        return 'show_email';
       case SettingKey.showDiscount:
         return 'show_discount';
       case SettingKey.showTypeTag:
@@ -176,6 +188,18 @@ extension SettingKeyExtension on SettingKey {
         return 'default_tax_mode';
       case SettingKey.showRoundOff:
         return 'show_round_off';
+      case SettingKey.showCompanyName:
+        return 'show_company_name';
+      case SettingKey.showPan:
+        return 'show_pan';
+      case SettingKey.showFssai:
+        return 'show_fssai';
+      case SettingKey.showWebsite:
+        return 'show_website';
+      case SettingKey.showAddress:
+        return 'show_address';
+      case SettingKey.showLogo:
+        return 'show_logo';
     }
   }
 }
@@ -606,6 +630,7 @@ class SupportedCurrencies {
     CurrencyOption(code: 'SAR', symbol: 'SAR.', name: 'Saudi Riyal'),
     CurrencyOption(code: 'SGD', symbol: 'S\$', name: 'Singapore Dollar'),
     CurrencyOption(code: 'USD', symbol: '\$', name: 'US Dollar'),
+    CurrencyOption(code: 'XOF', symbol: 'CFA', name: 'West African CFA Franc'),
     CurrencyOption(code: 'ZAR', symbol: 'R.', name: 'South African Rand'),
   ];
 

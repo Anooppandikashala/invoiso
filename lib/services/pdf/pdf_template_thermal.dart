@@ -28,6 +28,9 @@ pw.Page buildThermalTemplate(
   pw.ThemeData? pdfTheme,
   String itemLayout = 'table',
   bool showRoundOff = false,
+  bool showPhone = true,
+  bool showCompanyName = true,
+  bool showAddress = true,
 }) {
   const double bodyFs = 6;
   const double smallFs = 5.5;
@@ -241,11 +244,11 @@ pw.Page buildThermalTemplate(
     final netTotal = roundNetTotal(invoice.total + previousBalanceDue);
     return [
       // ── Business Header ──
-      centerText(company?.name ?? '', fontSize: titleFs, bold: true),
+      centerText(showCompanyName ? (company?.name ?? '') : '', fontSize: titleFs, bold: true),
       pw.SizedBox(height: 2),
-      if ((company?.address ?? '').isNotEmpty)
+      if (showAddress && (company?.address ?? '').isNotEmpty)
         centerText(company!.address, fontSize: smallFs),
-      if ((company?.phone ?? '').isNotEmpty)
+      if (showPhone && (company?.phone ?? '').isNotEmpty)
         centerText('Ph: ${company!.phone}', fontSize: smallFs),
       if (showGst && (company?.gstin ?? '').isNotEmpty)
         centerText('${taxLabel(company?.country)}: ${company!.gstin}',
@@ -410,7 +413,8 @@ pw.Page buildThermalTemplate(
           ],
         ),
         pw.SizedBox(height: 2),
-        pw.Text(AmountInWords.amount(netTotal.rounded),
+        pw.Text(AmountInWords.amount(netTotal.rounded,
+                indian: invoice.currencyCode == 'INR'),
             style: pw.TextStyle(
                 fontSize: bodyFs - 1, fontStyle: pw.FontStyle.italic)),
       ],

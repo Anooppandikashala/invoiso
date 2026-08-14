@@ -540,7 +540,8 @@ pw.Widget buildEnhancedTotals(
       pw.SizedBox(height: 6),
       pw.SizedBox(
         width: totalWidth,
-        child: pw.Text(AmountInWords.amount(netTotal.rounded),
+        child: pw.Text(AmountInWords.amount(netTotal.rounded,
+                indian: invoice.currencyCode == 'INR'),
             textAlign: pw.TextAlign.right,
             style: pw.TextStyle(
                 fontSize: rowFontSize - 1,

@@ -38,6 +38,14 @@ pw.MultiPage buildClassicTemplate(
   double watermarkOpacity = 0.12,
   bool showCgstSgst = false,
   bool showRoundOff = false,
+  bool showPhone = true,
+  bool showEmail = true,
+  bool showCompanyName = true,
+  bool showPan = true,
+  bool showFssai = true,
+  bool showWebsite = true,
+  bool showAddress = true,
+  bool showLogo = true,
 }) {
   final accentColor = themeColor ?? PdfColors.indigo900;
   final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
@@ -53,8 +61,8 @@ pw.MultiPage buildClassicTemplate(
   final fssaiCode = company?.fssaiCode ?? '';
   final companyIdLine = [
     if (showGst && gstin.isNotEmpty) '$gstLabel: $gstin',
-    if (panNumber.isNotEmpty) '${panLabel(company?.country)}: $panNumber',
-    if (fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
+    if (showPan && panNumber.isNotEmpty) '${panLabel(company?.country)}: $panNumber',
+    if (showFssai && fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
   ].join('   ');
 
   return pw.MultiPage(
@@ -76,7 +84,7 @@ pw.MultiPage buildClassicTemplate(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          if (logoImage != null && logoPosition == LogoPosition.left)
+          if (showLogo && logoImage != null && logoPosition == LogoPosition.left)
             buildCompanyLogo(logoImage, size: logoSizePx),
           pw.Container(
             padding:
@@ -89,25 +97,28 @@ pw.MultiPage buildClassicTemplate(
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text(company?.name ?? '',
+                pw.Text(showCompanyName ? (company?.name ?? '') : '',
                     style: pw.TextStyle(
                         fontSize: classicPdfStyle.titleFontSize,
                         fontWeight: pw.FontWeight.bold,
                         color: accentColor)),
                 pw.SizedBox(height: 4),
-                pw.Text(company?.address ?? '',
-                    style: pw.TextStyle(fontSize: classicPdfStyle.subtitleFontSize)),
-                pw.Text('Phone: ${company?.phone ?? ''}',
-                    style: pw.TextStyle(fontSize: classicPdfStyle.subtitleFontSize)),
-                pw.Text('Email: ${company?.email ?? ''}',
-                    style: pw.TextStyle(fontSize: classicPdfStyle.subtitleFontSize)),
-                if ((company?.website ?? '').isNotEmpty)
+                if (showAddress)
+                  pw.Text(company?.address ?? '',
+                      style: pw.TextStyle(fontSize: classicPdfStyle.subtitleFontSize)),
+                if (showPhone)
+                  pw.Text('Phone: ${company?.phone ?? ''}',
+                      style: pw.TextStyle(fontSize: classicPdfStyle.subtitleFontSize)),
+                if (showEmail)
+                  pw.Text('Email: ${company?.email ?? ''}',
+                      style: pw.TextStyle(fontSize: classicPdfStyle.subtitleFontSize)),
+                if (showWebsite && (company?.website ?? '').isNotEmpty)
                   pw.Text('Web: ${company!.website}',
                       style: pw.TextStyle(fontSize: classicPdfStyle.subtitleFontSize)),
               ],
             ),
           ),
-          if (logoImage != null && logoPosition == LogoPosition.right)
+          if (showLogo && logoImage != null && logoPosition == LogoPosition.right)
             buildCompanyLogo(logoImage, size: logoSizePx),
         ],
       ),
