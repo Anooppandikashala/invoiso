@@ -20,6 +20,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:image/image.dart' as img;
 
+import '../common/app_countries.dart';
+
 class SettingsScreen extends ConsumerStatefulWidget {
   final User currentUser;
   const SettingsScreen({super.key, required this.currentUser});
