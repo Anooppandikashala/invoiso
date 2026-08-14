@@ -11,7 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/database/report_service.dart';
 import 'package:invoiso/providers/repositories.dart';
 
-import '../common/supported_currency.dart';
+import '../common/supported_currencies.dart';
 
 // ─── Date preset enum ─────────────────────────────────────────────────────────
 
