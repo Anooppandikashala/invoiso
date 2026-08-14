@@ -7,7 +7,7 @@ import 'package:invoiso/services/pdf_service.dart';
 import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
 
-import 'package:invoiso/common.dart';
+import 'package:invoiso/common/common.dart';
 import 'package:invoiso/utils/formatters.dart';
 
 class InvoicePdfServices {

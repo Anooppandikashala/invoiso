@@ -2,7 +2,8 @@ import 'dart:convert';
 
 import 'package:sqflite/sqflite.dart';
 
-import 'package:invoiso/common.dart';
+import 'package:invoiso/common/common.dart';
+import '../common/supported_currencies.dart';
 import 'database_helper.dart';
 
 class SettingsService {
@@ -222,6 +223,86 @@ class SettingsService {
 
   static Future<void> setShowBankDetails(bool show) async {
     await setSetting(SettingKey.showBankDetails, show.toString());
+  }
+
+  /// Whether the company phone is shown on PDFs. Defaults to true.
+  static Future<bool> getShowPhone() async {
+    final val = await getSetting(SettingKey.showPhone);
+    return val != 'false';
+  }
+
+  static Future<void> setShowPhone(bool show) async {
+    await setSetting(SettingKey.showPhone, show.toString());
+  }
+
+  /// Whether the company email is shown on PDFs. Defaults to true.
+  static Future<bool> getShowEmail() async {
+    final val = await getSetting(SettingKey.showEmail);
+    return val != 'false';
+  }
+
+  static Future<void> setShowEmail(bool show) async {
+    await setSetting(SettingKey.showEmail, show.toString());
+  }
+
+  /// Whether the company name is shown on PDFs. Defaults to true.
+  static Future<bool> getShowCompanyName() async {
+    final val = await getSetting(SettingKey.showCompanyName);
+    return val != 'false';
+  }
+
+  static Future<void> setShowCompanyName(bool show) async {
+    await setSetting(SettingKey.showCompanyName, show.toString());
+  }
+
+  /// Whether the company PAN is shown on PDFs. Defaults to true.
+  static Future<bool> getShowPan() async {
+    final val = await getSetting(SettingKey.showPan);
+    return val != 'false';
+  }
+
+  static Future<void> setShowPan(bool show) async {
+    await setSetting(SettingKey.showPan, show.toString());
+  }
+
+  /// Whether the company FSSAI code is shown on PDFs. Defaults to true.
+  static Future<bool> getShowFssai() async {
+    final val = await getSetting(SettingKey.showFssai);
+    return val != 'false';
+  }
+
+  static Future<void> setShowFssai(bool show) async {
+    await setSetting(SettingKey.showFssai, show.toString());
+  }
+
+  /// Whether the company website is shown on PDFs. Defaults to true.
+  static Future<bool> getShowWebsite() async {
+    final val = await getSetting(SettingKey.showWebsite);
+    return val != 'false';
+  }
+
+  static Future<void> setShowWebsite(bool show) async {
+    await setSetting(SettingKey.showWebsite, show.toString());
+  }
+
+  /// Whether the company address is shown on PDFs. Defaults to true.
+  static Future<bool> getShowAddress() async {
+    final val = await getSetting(SettingKey.showAddress);
+    return val != 'false';
+  }
+
+  static Future<void> setShowAddress(bool show) async {
+    await setSetting(SettingKey.showAddress, show.toString());
+  }
+
+  /// Whether the company logo is shown on PDFs. Defaults to true.
+  static Future<bool> getShowLogo() async {
+    final val = await getSetting(SettingKey.showLogo);
+    return val != 'false';
+  }
+
+  static Future<void> setShowLogo(bool show) async {
+    await setSetting(SettingKey.showLogo, show.toString());
   }
 
   static Future<bool> getShowDiscount() async {

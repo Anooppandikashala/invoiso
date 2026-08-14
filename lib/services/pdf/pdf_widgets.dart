@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:qr/qr.dart';
-import 'package:invoiso/common.dart';
+import 'package:invoiso/common/common.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/utils/amount_in_words.dart';
 
@@ -551,7 +551,8 @@ pw.Widget buildEnhancedTotals(
       pw.SizedBox(height: 6),
       pw.SizedBox(
         width: totalWidth,
-        child: pw.Text(AmountInWords.amount(netTotal.rounded),
+        child: pw.Text(AmountInWords.amount(netTotal.rounded,
+                indian: invoice.currencyCode == 'INR'),
             textAlign: pw.TextAlign.right,
             style: pw.TextStyle(
                 fontSize: rowFontSize - 1,

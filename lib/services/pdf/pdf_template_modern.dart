@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:invoiso/common.dart';
-import 'package:invoiso/constants.dart';
+import 'package:invoiso/common/common.dart';
+import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'pdf_widgets.dart';
@@ -38,6 +38,14 @@ pw.MultiPage buildModernTemplate(
   double watermarkOpacity = 0.12,
   bool showCgstSgst = false,
   bool showRoundOff = false,
+  bool showPhone = true,
+  bool showEmail = true,
+  bool showCompanyName = true,
+  bool showPan = true,
+  bool showFssai = true,
+  bool showWebsite = true,
+  bool showAddress = true,
+  bool showLogo = true,
 }) {
   final accentColor = themeColor ?? PdfColors.blue600;
   final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
@@ -55,8 +63,8 @@ pw.MultiPage buildModernTemplate(
   final fssaiCode = company?.fssaiCode ?? '';
   final companyIdLine = [
     if (showGst && gstin.isNotEmpty) '$gstLabel: $gstin',
-    if (panNumber.isNotEmpty) '${panLabel(company?.country)}: $panNumber',
-    if (fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
+    if (showPan && panNumber.isNotEmpty) '${panLabel(company?.country)}: $panNumber',
+    if (showFssai && fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
   ].join('   ');
 
   return pw.MultiPage(
@@ -87,7 +95,7 @@ pw.MultiPage buildModernTemplate(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
-                if (logoImage != null && logoPosition == LogoPosition.left)
+                if (showLogo && logoImage != null && logoPosition == LogoPosition.left)
                   buildCompanyLogo(logoImage, size: logoSizePx),
                 pw.Expanded(
                   flex: 2,
@@ -95,29 +103,32 @@ pw.MultiPage buildModernTemplate(
                   child: pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      pw.Text(company?.name ?? '',
+                      pw.Text(showCompanyName ? (company?.name ?? '') : '',
                           style: pw.TextStyle(
                               fontSize: modernPdfStyle.titleFontSize,
                               fontWeight: pw.FontWeight.bold,
                               color: PdfColors.white)),
                       pw.SizedBox(height: modernPdfStyle.headerGap),
-                      pw.Text(company?.address ?? '',
-                          style: pw.TextStyle(
-                              color: PdfColors.white, fontSize: modernPdfStyle.subtitleFontSize)),
-                      pw.Text('Phone: ${company?.phone ?? ''}',
-                          style: pw.TextStyle(
-                              color: PdfColors.white, fontSize: modernPdfStyle.subtitleFontSize)),
-                      pw.Text('Email: ${company?.email ?? ''}',
-                          style: pw.TextStyle(
-                              color: PdfColors.white, fontSize: modernPdfStyle.subtitleFontSize)),
-                      if ((company?.website ?? '').isNotEmpty)
+                      if (showAddress)
+                        pw.Text(company?.address ?? '',
+                            style: pw.TextStyle(
+                                color: PdfColors.white, fontSize: modernPdfStyle.subtitleFontSize)),
+                      if (showPhone)
+                        pw.Text('Phone: ${company?.phone ?? ''}',
+                            style: pw.TextStyle(
+                                color: PdfColors.white, fontSize: modernPdfStyle.subtitleFontSize)),
+                      if (showEmail)
+                        pw.Text('Email: ${company?.email ?? ''}',
+                            style: pw.TextStyle(
+                                color: PdfColors.white, fontSize: modernPdfStyle.subtitleFontSize)),
+                      if (showWebsite && (company?.website ?? '').isNotEmpty)
                         pw.Text(company!.website,
                             style: pw.TextStyle(
                                 color: PdfColors.white, fontSize: modernPdfStyle.subtitleFontSize)),
                     ],
                   ),
                 ),
-                if (logoImage != null && logoPosition == LogoPosition.right)
+                if (showLogo && logoImage != null && logoPosition == LogoPosition.right)
                   buildCompanyLogo(logoImage, size: logoSizePx),
               ],
             ),

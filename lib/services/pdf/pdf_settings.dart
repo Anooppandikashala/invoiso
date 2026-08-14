@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:invoiso/common.dart';
+import 'package:invoiso/common/common.dart';
 import 'package:invoiso/models/company_info.dart';
 
 /// All per-session settings needed to render a PDF.
@@ -19,6 +19,14 @@ class PdfGenerationSettings {
   final List<UpiEntry> upiEntries;
   final String? showQrStr;
   final bool showBankDetails;
+  final bool showPhone;
+  final bool showEmail;
+  final bool showCompanyName;
+  final bool showPan;
+  final bool showFssai;
+  final bool showWebsite;
+  final bool showAddress;
+  final bool showLogo;
   final List<BankAccount> bankAccounts;
   final LogoPosition logoPosition;
   final double logoSizePx;
@@ -77,5 +85,13 @@ class PdfGenerationSettings {
     this.watermarkBytes,
     this.watermarkOpacity = 0.12,
     this.showRoundOff = false,
+    this.showPhone = true,
+    this.showEmail = true,
+    this.showCompanyName = true,
+    this.showPan = true,
+    this.showFssai = true,
+    this.showWebsite = true,
+    this.showAddress = true,
+    this.showLogo = true,
   });
 }

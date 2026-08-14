@@ -11,8 +11,8 @@ import 'package:printing/printing.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
-import 'package:invoiso/common.dart';
-import 'package:invoiso/constants.dart';
+import 'package:invoiso/common/common.dart';
+import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/services/pdf/pdf_font_service.dart';
@@ -104,11 +104,19 @@ class PDFService {
       BackendServices.settings.getSetting(SettingKey.thermalItemLayout), // 23
       BackendServices.settings.getSetting(SettingKey.showAliasNameInPdf), // 24
       BackendServices.settings.getSignatureSize(), // 25
-      BackendServices.settings.getSetting(SettingKey.thermalCompanyNameSize), // 26
-      BackendServices.settings.getWatermarkImage(), // 27
-      BackendServices.settings.getWatermarkOpacity(), // 28
-      BackendServices.settings.getSetting(SettingKey.showCgstSgst), // 29
-      BackendServices.settings.getSetting(SettingKey.showRoundOff), // 30
+      BackendServices.settings.getWatermarkImage(), // 26
+      BackendServices.settings.getWatermarkOpacity(), // 27
+      BackendServices.settings.getSetting(SettingKey.showCgstSgst), // 28
+      BackendServices.settings.getSetting(SettingKey.showRoundOff), // 29
+      BackendServices.settings.getShowPhone(), // 30
+      BackendServices.settings.getShowEmail(), // 31
+      BackendServices.settings.getShowCompanyName(), // 32
+      BackendServices.settings.getShowPan(), // 33
+      BackendServices.settings.getShowFssai(), // 34
+      BackendServices.settings.getShowWebsite(), // 35
+      BackendServices.settings.getShowAddress(), // 36
+      BackendServices.settings.getShowLogo(), // 37
+      BackendServices.settings.getSetting(SettingKey.thermalCompanyNameSize), // 38
     ]);
 
     final rawPrefix = (results[2] as String?) ?? 'INV';
@@ -156,11 +164,19 @@ class PDFService {
       pdfTheme: pdfTheme,
       thermalItemLayout: (results[23] as String?) ?? 'table',
       showAliasName: (results[24] as String?) == 'true',
-      watermarkBytes: _cachedWatermarkBytes(results[27] as String?),
-      watermarkOpacity: results[28] as double,
-      thermalCompanyNameSize: (results[26] as String?) ?? 'medium',
-      showCgstSgst: (results[29] as String?) == 'true',
-      showRoundOff: (results[30] as String?) == 'true',
+      watermarkBytes: _cachedWatermarkBytes(results[26] as String?),
+      watermarkOpacity: results[27] as double,
+      showCgstSgst: (results[28] as String?) == 'true',
+      showRoundOff: (results[29] as String?) == 'true',
+      showPhone: results[30] as bool,
+      showEmail: results[31] as bool,
+      showCompanyName: results[32] as bool,
+      showPan: results[33] as bool,
+      showFssai: results[34] as bool,
+      showWebsite: results[35] as bool,
+      showAddress: results[36] as bool,
+      showLogo: results[37] as bool,
+      thermalCompanyNameSize: (results[38] as String?) ?? 'medium',
     );
   }
 
@@ -233,6 +249,14 @@ class PDFService {
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
           showRoundOff: s.showRoundOff,
+          showPhone: s.showPhone,
+          showEmail: s.showEmail,
+          showCompanyName: s.showCompanyName,
+          showPan: s.showPan,
+          showFssai: s.showFssai,
+          showWebsite: s.showWebsite,
+          showAddress: s.showAddress,
+          showLogo: s.showLogo,
         ));
       case InvoiceTemplate.modern:
         pdf.addPage(buildModernTemplate(
@@ -266,6 +290,14 @@ class PDFService {
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
           showRoundOff: s.showRoundOff,
+          showPhone: s.showPhone,
+          showEmail: s.showEmail,
+          showCompanyName: s.showCompanyName,
+          showPan: s.showPan,
+          showFssai: s.showFssai,
+          showWebsite: s.showWebsite,
+          showAddress: s.showAddress,
+          showLogo: s.showLogo,
         ));
       case InvoiceTemplate.minimal:
         pdf.addPage(buildMinimalTemplate(
@@ -299,6 +331,14 @@ class PDFService {
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
           showRoundOff: s.showRoundOff,
+          showPhone: s.showPhone,
+          showEmail: s.showEmail,
+          showCompanyName: s.showCompanyName,
+          showPan: s.showPan,
+          showFssai: s.showFssai,
+          showWebsite: s.showWebsite,
+          showAddress: s.showAddress,
+          showLogo: s.showLogo,
         ));
       case InvoiceTemplate.executive:
         pdf.addPage(buildExecutiveTemplate(
@@ -332,6 +372,14 @@ class PDFService {
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
           showRoundOff: s.showRoundOff,
+          showPhone: s.showPhone,
+          showEmail: s.showEmail,
+          showCompanyName: s.showCompanyName,
+          showPan: s.showPan,
+          showFssai: s.showFssai,
+          showWebsite: s.showWebsite,
+          showAddress: s.showAddress,
+          showLogo: s.showLogo,
         ));
       case InvoiceTemplate.compact:
         pdf.addPage(buildCompactTemplate(
@@ -366,6 +414,12 @@ class PDFService {
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
           showRoundOff: s.showRoundOff,
+          showPhone: s.showPhone,
+          showCompanyName: s.showCompanyName,
+          showPan: s.showPan,
+          showFssai: s.showFssai,
+          showAddress: s.showAddress,
+          showLogo: s.showLogo,
         ));
       case InvoiceTemplate.thermal:
         pdf.addPage(buildThermalTemplate(
@@ -387,6 +441,9 @@ class PDFService {
           pdfTheme: pdfTheme,
           itemLayout: s.thermalItemLayout,
           showRoundOff: s.showRoundOff,
+          showPhone: s.showPhone,
+          showCompanyName: s.showCompanyName,
+          showAddress: s.showAddress,
         ));
       case InvoiceTemplate.gridClassic:
         pdf.addPage(buildGridClassicTemplate(
@@ -421,6 +478,12 @@ class PDFService {
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
           showRoundOff: s.showRoundOff,
+          showPhone: s.showPhone,
+          showCompanyName: s.showCompanyName,
+          showPan: s.showPan,
+          showFssai: s.showFssai,
+          showAddress: s.showAddress,
+          showLogo: s.showLogo,
         ));
     }
     return pdf;

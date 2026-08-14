@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
-import 'package:invoiso/constants.dart';
+import 'package:invoiso/common/constants.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:invoiso/common.dart';
+import 'package:invoiso/common/common.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/utils/amount_in_words.dart';
@@ -47,6 +47,12 @@ pw.MultiPage buildGridClassicTemplate(
   double watermarkOpacity = 0.12,
   bool showCgstSgst = false,
   bool showRoundOff = false,
+  bool showPhone = true,
+  bool showCompanyName = true,
+  bool showPan = true,
+  bool showFssai = true,
+  bool showAddress = true,
+  bool showLogo = true,
 }) {
   final accentColor = themeColor ?? PdfColors.black;
   final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
@@ -75,8 +81,8 @@ pw.MultiPage buildGridClassicTemplate(
   final fssaiCode = company?.fssaiCode ?? '';
   final companyIdLine = [
     if (showGst && gstin.isNotEmpty) '$gstLabel: $gstin',
-    if (panNumber.isNotEmpty) 'PAN: $panNumber',
-    if (fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
+    if (showPan && panNumber.isNotEmpty) 'PAN: $panNumber',
+    if (showFssai && fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
   ].join('   ');
   final hasPreviousBalance = previousBalanceDue > 0;
   final hasPaid = invoice.amountPaid > 0;
@@ -141,7 +147,7 @@ pw.MultiPage buildGridClassicTemplate(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
             // Entire logo section
-            if (logoImage != null)...[
+            if (showLogo && logoImage != null)...[
               pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
@@ -151,17 +157,17 @@ pw.MultiPage buildGridClassicTemplate(
                       mainAxisAlignment: pw.MainAxisAlignment.start,
                       crossAxisAlignment: pw.CrossAxisAlignment.start,
                       children: [
-                        pw.Text(company?.name ?? '',
+                        pw.Text(showCompanyName ? (company?.name ?? '') : '',
                             textAlign: pw.TextAlign.left,
                             style: pw.TextStyle(
                                 fontSize: titleFont,
                                 fontWeight: pw.FontWeight.bold,
                                 color: accentColor)),
-                        if ((company?.address ?? '').isNotEmpty)
+                        if (showAddress && (company?.address ?? '').isNotEmpty)
                           pw.Text(company!.address,
                               textAlign: pw.TextAlign.left,
                               style: pw.TextStyle(fontSize: subFont)),
-                        if ((company?.phone ?? '').isNotEmpty)
+                        if (showPhone && (company?.phone ?? '').isNotEmpty)
                           pw.Text('Ph: ${company!.phone}',
                               textAlign: pw.TextAlign.left,
                               style: pw.TextStyle(fontSize: subFont)),
@@ -177,17 +183,17 @@ pw.MultiPage buildGridClassicTemplate(
                     style: pw.TextStyle(
                         fontSize: subFont, fontWeight: pw.FontWeight.normal)),)
             ],
-            if (logoImage == null)
+            if (!showLogo || logoImage == null)
               pw.Center(
                 child: pw.Column(
                   children: [
-                    pw.Text(company?.name ?? '',
+                    pw.Text(showCompanyName ? (company?.name ?? '') : '',
                         textAlign: pw.TextAlign.center,
                         style: pw.TextStyle(
                             fontSize: titleFont,
                             fontWeight: pw.FontWeight.bold,
                             color: accentColor)),
-                    if ((company?.address ?? '').isNotEmpty)
+                    if (showAddress && (company?.address ?? '').isNotEmpty)
                       pw.Text(company!.address,
                           textAlign: pw.TextAlign.center,
                           style: pw.TextStyle(fontSize: subFont)),
@@ -340,7 +346,8 @@ pw.MultiPage buildGridClassicTemplate(
 
           // ── Amount in words ──
           if (showRoundOff)
-            pw.Text(AmountInWords.amount(roundedNet),
+            pw.Text(AmountInWords.amount(roundedNet,
+                    indian: invoice.currencyCode == 'INR'),
                 style: pw.TextStyle(
                     fontSize: labelFont - 1 , fontWeight: pw.FontWeight.normal, fontStyle: pw.FontStyle.italic)),
 

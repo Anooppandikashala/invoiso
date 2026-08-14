@@ -3,7 +3,7 @@ import 'package:invoiso/services/backend_services.dart';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:invoiso/common.dart';
+import 'package:invoiso/common/common.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/invoice_payment.dart';
 import 'package:invoiso/services/pdf/pdf_font_service.dart';

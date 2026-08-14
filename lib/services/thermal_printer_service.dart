@@ -10,7 +10,7 @@ import 'package:flutter_thermal_printer/flutter_thermal_printer.dart';
 import 'package:flutter_thermal_printer/network/network_print_result.dart';
 import 'package:flutter_thermal_printer/utils/printer.dart';
 import 'package:intl/intl.dart';
-import 'package:invoiso/common.dart';
+import 'package:invoiso/common/common.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/services/pdf/pdf_service.dart';
 import 'package:invoiso/services/pdf/pdf_settings.dart';

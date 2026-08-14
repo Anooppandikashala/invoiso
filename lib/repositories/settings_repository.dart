@@ -1,4 +1,4 @@
-import 'package:invoiso/common.dart';
+import 'package:invoiso/common/common.dart';
 
 abstract class SettingsRepository {
   Future<void> setSetting(SettingKey key, String value);
@@ -23,6 +23,22 @@ abstract class SettingsRepository {
   Future<void> setProductColumnsConfig(ProductColumnsConfig config);
   Future<bool> getShowBankDetails();
   Future<void> setShowBankDetails(bool show);
+  Future<bool> getShowPhone();
+  Future<void> setShowPhone(bool show);
+  Future<bool> getShowEmail();
+  Future<void> setShowEmail(bool show);
+  Future<bool> getShowCompanyName();
+  Future<void> setShowCompanyName(bool show);
+  Future<bool> getShowPan();
+  Future<void> setShowPan(bool show);
+  Future<bool> getShowFssai();
+  Future<void> setShowFssai(bool show);
+  Future<bool> getShowWebsite();
+  Future<void> setShowWebsite(bool show);
+  Future<bool> getShowAddress();
+  Future<void> setShowAddress(bool show);
+  Future<bool> getShowLogo();
+  Future<void> setShowLogo(bool show);
   Future<bool> getShowGstFields();
   Future<bool> getShowInvoiceFooterBranding();
   Future<bool> getFractionalQuantity();
