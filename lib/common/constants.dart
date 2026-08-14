@@ -1,7 +1,7 @@
 
 // constants.dart
 import 'package:flutter/material.dart';
-import 'package:invoiso/common.dart';
+import 'package:invoiso/common/common.dart';
 
 class AppSpacing {
   static const baseValue = 8.0;

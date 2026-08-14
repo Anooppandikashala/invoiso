@@ -605,42 +605,42 @@ class CurrencyOption {
   });
 }
 
-class SupportedCurrencies {
-  static const List<CurrencyOption> all = [
-    // default currency
-    CurrencyOption(code: 'INR', symbol: 'Rs.', name: 'Indian Rupee'),
-    // sorted
-    CurrencyOption(code: 'AED', symbol: 'AED.', name: 'UAE Dirham'),
-    CurrencyOption(code: 'AUD', symbol: 'A\$', name: 'Australian Dollar'),
-    CurrencyOption(code: 'CAD', symbol: 'C\$', name: 'Canadian Dollar'),
-    CurrencyOption(code: 'EUR', symbol: '€', name: 'Euro'),
-    CurrencyOption(code: 'GBP', symbol: '£', name: 'British Pound'),
-    CurrencyOption(code: 'JMD', symbol: 'J\$', name: 'Jamaican Dollar'),
-    CurrencyOption(code: 'JPY', symbol: '¥', name: 'Japanese Yen'),
-    CurrencyOption(code: 'KES', symbol: 'KSh.', name: 'Kenyan Shilling'),
-    CurrencyOption(code: 'LKR', symbol: 'රු', name: 'Sri Lankan Rupee'),
-    CurrencyOption(code: 'MWK', symbol: 'MK', name: 'Malawian Kwacha'),
-    CurrencyOption(code: 'MYR', symbol: 'RM.', name: 'Malaysian Ringgit'),
-    CurrencyOption(code: 'NGN', symbol: '₦', name: 'Nigerian Naira'),
-    CurrencyOption(code: 'NPR', symbol: 'Rs.', name: 'Nepalese Rupee'),
-    CurrencyOption(code: 'NZD', symbol: 'NZ\$', name: 'New Zealand Dollar'),
-    CurrencyOption(code: 'OMR', symbol: 'OMR.', name: 'Omani Rial'),
-    CurrencyOption(code: 'PKR', symbol: 'Rs.', name: 'Pakistani Rupee'),
-    CurrencyOption(code: 'QAR', symbol: 'QAR.', name: 'Qatari Riyal'),
-    CurrencyOption(code: 'SAR', symbol: 'SAR.', name: 'Saudi Riyal'),
-    CurrencyOption(code: 'SGD', symbol: 'S\$', name: 'Singapore Dollar'),
-    CurrencyOption(code: 'USD', symbol: '\$', name: 'US Dollar'),
-    CurrencyOption(code: 'XOF', symbol: 'CFA', name: 'West African CFA Franc'),
-    CurrencyOption(code: 'ZAR', symbol: 'R.', name: 'South African Rand'),
-  ];
-
-  static CurrencyOption fromCode(String code) {
-    return all.firstWhere(
-      (c) => c.code == code,
-      orElse: () => all.first,
-    );
-  }
-}
+// class SupportedCurrencies {
+//   static const List<CurrencyOption> all = [
+//     // default currency
+//     CurrencyOption(code: 'INR', symbol: 'Rs.', name: 'Indian Rupee'),
+//     // sorted
+//     CurrencyOption(code: 'AED', symbol: 'AED.', name: 'UAE Dirham'),
+//     CurrencyOption(code: 'AUD', symbol: 'A\$', name: 'Australian Dollar'),
+//     CurrencyOption(code: 'CAD', symbol: 'C\$', name: 'Canadian Dollar'),
+//     CurrencyOption(code: 'EUR', symbol: '€', name: 'Euro'),
+//     CurrencyOption(code: 'GBP', symbol: '£', name: 'British Pound'),
+//     CurrencyOption(code: 'JMD', symbol: 'J\$', name: 'Jamaican Dollar'),
+//     CurrencyOption(code: 'JPY', symbol: '¥', name: 'Japanese Yen'),
+//     CurrencyOption(code: 'KES', symbol: 'KSh.', name: 'Kenyan Shilling'),
+//     CurrencyOption(code: 'LKR', symbol: 'රු', name: 'Sri Lankan Rupee'),
+//     CurrencyOption(code: 'MWK', symbol: 'MK', name: 'Malawian Kwacha'),
+//     CurrencyOption(code: 'MYR', symbol: 'RM.', name: 'Malaysian Ringgit'),
+//     CurrencyOption(code: 'NGN', symbol: '₦', name: 'Nigerian Naira'),
+//     CurrencyOption(code: 'NPR', symbol: 'Rs.', name: 'Nepalese Rupee'),
+//     CurrencyOption(code: 'NZD', symbol: 'NZ\$', name: 'New Zealand Dollar'),
+//     CurrencyOption(code: 'OMR', symbol: 'OMR.', name: 'Omani Rial'),
+//     CurrencyOption(code: 'PKR', symbol: 'Rs.', name: 'Pakistani Rupee'),
+//     CurrencyOption(code: 'QAR', symbol: 'QAR.', name: 'Qatari Riyal'),
+//     CurrencyOption(code: 'SAR', symbol: 'SAR.', name: 'Saudi Riyal'),
+//     CurrencyOption(code: 'SGD', symbol: 'S\$', name: 'Singapore Dollar'),
+//     CurrencyOption(code: 'USD', symbol: '\$', name: 'US Dollar'),
+//     CurrencyOption(code: 'XOF', symbol: 'CFA', name: 'West African CFA Franc'),
+//     CurrencyOption(code: 'ZAR', symbol: 'R.', name: 'South African Rand'),
+//   ];
+//
+//   static CurrencyOption fromCode(String code) {
+//     return all.firstWhere(
+//       (c) => c.code == code,
+//       orElse: () => all.first,
+//     );
+//   }
+// }
 
 enum TaxMode {
   none,

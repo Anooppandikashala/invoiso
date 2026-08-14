@@ -1,4 +1,4 @@
-import 'package:invoiso/common.dart';
+import 'package:invoiso/common/common.dart';
 
 // Price glossary — which "price" to use where:
 //

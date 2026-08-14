@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 import 'package:invoiso/database/database_helper.dart';
-import 'package:invoiso/common.dart';
+import 'package:invoiso/common/common.dart';
 import 'package:invoiso/domain/customer_identity.dart';
 import 'package:invoiso/domain/invoice_calculator.dart';
 import 'package:invoiso/domain/invoice_totals_calculator.dart';
@@ -12,7 +12,7 @@ import 'package:invoiso/services/pdf_font_service.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
-import 'package:invoiso/constants.dart';
+import 'package:invoiso/common/constants.dart';
 export 'package:invoiso/models/report_models.dart';
 
 // ─── Internal row ─────────────────────────────────────────────────────────────

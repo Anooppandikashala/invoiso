@@ -2,7 +2,8 @@ import 'dart:convert';
 
 import 'package:sqflite/sqflite.dart';
 
-import 'package:invoiso/common.dart';
+import 'package:invoiso/common/common.dart';
+import '../common/supported_currency.dart';
 import 'database_helper.dart';
 
 class SettingsService {
