@@ -6,12 +6,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image/image.dart' as img;
-import 'package:invoiso/common.dart';
-import 'package:invoiso/constants.dart';
-import 'package:invoiso/invoiso_colors.dart';
-import 'package:invoiso/models/company_info.dart';
+import 'package:invoiso/common/common.dart';
+import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/providers/theme_provider.dart';
+import 'package:invoiso/common/invoiso_colors.dart';
+import 'package:invoiso/models/company_info.dart';
+
+import 'package:invoiso/common/app_countries.dart';
 
 class CompanyInfoScreen extends ConsumerStatefulWidget {
   const CompanyInfoScreen({super.key});
@@ -47,6 +49,14 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
   CompanyInfo? _companyInfo;
   bool _showUpiQr = false;
   bool _showBankDetails = false;
+  bool _showPhone = true;
+  bool _showEmail = true;
+  bool _showCompanyName = true;
+  bool _showPan = true;
+  bool _showFssai = true;
+  bool _showWebsite = true;
+  bool _showAddress = true;
+  bool _showLogo = true;
   BusinessType _businessType = BusinessType.both;
 
   File? _selectedLogoFile;
@@ -70,6 +80,14 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
       settingsRepo.getSetting(SettingKey.showUpiQr),
       settingsRepo.getShowBankDetails(),
       settingsRepo.getBusinessType(),
+      settingsRepo.getShowPhone(),
+      settingsRepo.getShowEmail(),
+      settingsRepo.getShowCompanyName(),
+      settingsRepo.getShowPan(),
+      settingsRepo.getShowFssai(),
+      settingsRepo.getShowWebsite(),
+      settingsRepo.getShowAddress(),
+      settingsRepo.getShowLogo(),
     ]);
 
     if (!mounted) return;
@@ -81,6 +99,14 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
     final showQrStr = results[4] as String?;
     final showBankDetails = results[5] as bool;
     final businessType = results[6] as BusinessType;
+    final showPhone = results[7] as bool;
+    final showEmail = results[8] as bool;
+    final showCompanyName = results[9] as bool;
+    final showPan = results[10] as bool;
+    final showFssai = results[11] as bool;
+    final showWebsite = results[12] as bool;
+    final showAddress = results[13] as bool;
+    final showLogo = results[14] as bool;
 
     if (info == null) return;
 
@@ -102,6 +128,14 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
       _showUpiQr = showQrStr == 'true';
       _showBankDetails = showBankDetails;
       _businessType = businessType;
+      _showPhone = showPhone;
+      _showEmail = showEmail;
+      _showCompanyName = showCompanyName;
+      _showPan = showPan;
+      _showFssai = showFssai;
+      _showWebsite = showWebsite;
+      _showAddress = showAddress;
+      _showLogo = showLogo;
 
       if (base64Logo != null && base64Logo.isNotEmpty) {
         _base64Logo = base64Logo;
@@ -209,6 +243,14 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
       settingsRepo.setBankAccounts(bankAccounts),
       settingsRepo.setShowBankDetails(_showBankDetails),
       settingsRepo.setBusinessType(_businessType),
+      settingsRepo.setShowPhone(_showPhone),
+      settingsRepo.setShowEmail(_showEmail),
+      settingsRepo.setShowCompanyName(_showCompanyName),
+      settingsRepo.setShowPan(_showPan),
+      settingsRepo.setShowFssai(_showFssai),
+      settingsRepo.setShowWebsite(_showWebsite),
+      settingsRepo.setShowAddress(_showAddress),
+      settingsRepo.setShowLogo(_showLogo),
     ]);
 
     if (!mounted) return;
@@ -437,6 +479,18 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                                   style: TextStyle(color: Colors.red, fontSize: 13)),
                             ),
                           ],
+                          const SizedBox(height: 4),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text('Show on PDF',
+                                  style: TextStyle(
+                                      fontSize: AppFontSize.xsmall,
+                                      color: CompanyInfoScreenColors.sectionHeadingColor)),
+                              _pdfVisibilityToggle(
+                                  _showLogo, (val) => setState(() => _showLogo = val)),
+                            ],
+                          ),
                           const SizedBox(height: 16),
                           // Live company name preview
                           ValueListenableBuilder(
@@ -522,6 +576,8 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                           label: 'Company Name',
                           icon: Icons.business_rounded,
                           maxLength: 50,
+                          trailing: _pdfVisibilityToggle(_showCompanyName,
+                              (val) => setState(() => _showCompanyName = val)),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -551,6 +607,8 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                           hint: (_selectedCountry == 'India' || _selectedCountry.isEmpty)
                               ? 'ABCDE1234F'
                               : null,
+                          trailing: _pdfVisibilityToggle(
+                              _showPan, (val) => setState(() => _showPan = val)),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -561,6 +619,8 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                           icon: Icons.verified_rounded,
                           maxLength: 14,
                           hint: '12345678901234',
+                          trailing: _pdfVisibilityToggle(_showFssai,
+                              (val) => setState(() => _showFssai = val)),
                         ),
                       ),
                     ],
@@ -584,6 +644,8 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                             FilteringTextInputFormatter.allow(
                                 RegExp(r'[0-9+\s\-()\,]')),
                           ],
+                          trailing: _pdfVisibilityToggle(_showPhone,
+                              (val) => setState(() => _showPhone = val)),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -598,6 +660,8 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                             FilteringTextInputFormatter.allow(
                                 RegExp(r'[a-zA-Z0-9@._\-]')),
                           ],
+                          trailing: _pdfVisibilityToggle(_showEmail,
+                              (val) => setState(() => _showEmail = val)),
                         ),
                       ),
                     ],
@@ -613,6 +677,8 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                       FilteringTextInputFormatter.allow(
                           RegExp(r'[a-zA-Z0-9:/.%-]')),
                     ],
+                    trailing: _pdfVisibilityToggle(_showWebsite,
+                        (val) => setState(() => _showWebsite = val)),
                   ),
                   const SizedBox(height: 16),
                   _buildField(
@@ -621,6 +687,8 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                     icon: Icons.location_on_rounded,
                     maxLength: 100,
                     maxLines: 3,
+                    trailing: _pdfVisibilityToggle(_showAddress,
+                        (val) => setState(() => _showAddress = val)),
                   ),
                   const SizedBox(height: 32),
                   _sectionLabel('BUSINESS TYPE'),
@@ -1023,6 +1091,7 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
     String? helper,
     TextInputType? keyboardType,
     List<TextInputFormatter>? inputFormatters,
+    Widget? trailing,
   }) {
     final primaryColor = Theme.of(context).primaryColor;
     return TextField(
@@ -1038,6 +1107,7 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
         helperText: helper,
         helperMaxLines: 2,
         prefixIcon: Icon(icon, size: 20),
+        suffixIcon: trailing,
         alignLabelWithHint: maxLines > 1,
         border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
@@ -1052,6 +1122,21 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
         filled: true,
         fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
         counterText: '',
+      ),
+    );
+  }
+
+  /// Compact "show on invoice PDF" toggle used as a field's trailing icon.
+  Widget _pdfVisibilityToggle(bool value, ValueChanged<bool> onChanged) {
+    return Tooltip(
+      message: 'Show on invoice PDF',
+      child: Transform.scale(
+        scale: 0.75,
+        child: Switch(
+          value: value,
+          onChanged: onChanged,
+          activeColor: Theme.of(context).primaryColor,
+        ),
       ),
     );
   }

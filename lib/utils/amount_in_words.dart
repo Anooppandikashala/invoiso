@@ -44,10 +44,30 @@ class AmountInWords {
     return parts.join(' ');
   }
 
+  /// Whole-number to words, international grouping (billion/million/thousand).
+  static String numberInternational(int n) {
+    if (n == 0) return 'Zero';
+    if (n < 0) return 'Minus ${numberInternational(-n)}';
+
+    final billion = n ~/ 1000000000;
+    final million = (n ~/ 1000000) % 1000;
+    final thousand = (n ~/ 1000) % 1000;
+    final hundred = n % 1000;
+
+    final parts = <String>[];
+    if (billion > 0) parts.add('${_threeDigits(billion)} Billion');
+    if (million > 0) parts.add('${_threeDigits(million)} Million');
+    if (thousand > 0) parts.add('${_threeDigits(thousand)} Thousand');
+    if (hundred > 0) parts.add(_threeDigits(hundred));
+    return parts.join(' ');
+  }
+
   /// Rounds [value] to the nearest whole unit and renders it in words,
   /// e.g. 1110.0 -> "One Thousand One Hundred and Ten Only".
-  static String amount(double value, {String suffix = 'Only'}) {
-    final words = number(value.round());
+  /// Uses Indian grouping (lakh/crore) when [indian] is true, else
+  /// international grouping (million/billion).
+  static String amount(double value, {String suffix = 'Only', bool indian = true}) {
+    final words = indian ? number(value.round()) : numberInternational(value.round());
     return suffix.isEmpty ? words : '$words $suffix';
   }
 }

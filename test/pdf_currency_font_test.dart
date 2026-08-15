@@ -1,7 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:invoiso/common.dart';
+import 'package:invoiso/common/common.dart';
+import 'package:invoiso/common/supported_currencies.dart';
 import 'package:invoiso/services/pdf/pdf_font_assets.dart';
 
 import '../test_support/ttf_glyph_coverage.dart';

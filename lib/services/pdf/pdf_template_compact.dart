@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:invoiso/common.dart';
-import 'package:invoiso/constants.dart';
+import 'package:invoiso/common/common.dart';
+import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'pdf_widgets.dart';
@@ -39,6 +39,12 @@ pw.MultiPage buildCompactTemplate(
   double watermarkOpacity = 0.12,
   bool showCgstSgst = false,
   bool showRoundOff = false,
+  bool showPhone = true,
+  bool showCompanyName = true,
+  bool showPan = true,
+  bool showFssai = true,
+  bool showAddress = true,
+  bool showLogo = true,
 }) {
   final accentColor = themeColor ?? PdfColors.black;
   final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
@@ -83,8 +89,8 @@ pw.MultiPage buildCompactTemplate(
   final fssaiCode = company?.fssaiCode ?? '';
   final companyIdLine = [
     if (showGst && gstin.isNotEmpty) '$gstLabel: $gstin',
-    if (panNumber.isNotEmpty) '${panLabel(company?.country)}: $panNumber',
-    if (fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
+    if (showPan && panNumber.isNotEmpty) '${panLabel(company?.country)}: $panNumber',
+    if (showFssai && fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
   ].join('   ');
 
   return pw.MultiPage(
@@ -109,7 +115,7 @@ pw.MultiPage buildCompactTemplate(
       pw.Row(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          if (logoImage != null && logoPosition == LogoPosition.left) ...[
+          if (showLogo && logoImage != null && logoPosition == LogoPosition.left) ...[
             buildCompanyLogo(logoImage, size: compactLogoSize),
             pw.SizedBox(width: compactPdfLayoutStyle.headerGap),
           ],
@@ -133,17 +139,17 @@ pw.MultiPage buildCompactTemplate(
                         crossAxisAlignment: pw.CrossAxisAlignment.start,
                         children: [
                           pw.Text(
-                            company?.name ?? '',
+                            showCompanyName ? (company?.name ?? '') : '',
                             style: pw.TextStyle(
                                 fontSize: headerFont,
                                 fontWeight: pw.FontWeight.bold),
                           ),
-                          if ((company?.address ?? '').isNotEmpty)
+                          if (showAddress && (company?.address ?? '').isNotEmpty)
                             pw.Text(company!.address,
                                 style: pw.TextStyle(
                                     fontSize: addressFont,
                                     color: PdfColors.grey700)),
-                          if ((company?.phone ?? '').isNotEmpty)
+                          if (showPhone && (company?.phone ?? '').isNotEmpty)
                             pw.Text('Phone: ${company!.phone}',
                                 style: pw.TextStyle(
                                     fontSize: addressFont,

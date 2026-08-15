@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:invoiso/common.dart';
-import 'package:invoiso/constants.dart';
+import 'package:invoiso/common/common.dart';
+import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'pdf_widgets.dart';
@@ -38,6 +38,14 @@ pw.MultiPage buildMinimalTemplate(
   double watermarkOpacity = 0.12,
   bool showCgstSgst = false,
   bool showRoundOff = false,
+  bool showPhone = true,
+  bool showEmail = true,
+  bool showCompanyName = true,
+  bool showPan = true,
+  bool showFssai = true,
+  bool showWebsite = true,
+  bool showAddress = true,
+  bool showLogo = true,
 }) {
   final accentColor = themeColor ?? PdfColors.grey700;
   final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
@@ -55,8 +63,8 @@ pw.MultiPage buildMinimalTemplate(
   final fssaiCode = company?.fssaiCode ?? '';
   final companyIdLine = [
     if (showGst && gstin.isNotEmpty) '$gstLabel: $gstin',
-    if (panNumber.isNotEmpty) '${panLabel(company?.country)}: $panNumber',
-    if (fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
+    if (showPan && panNumber.isNotEmpty) '${panLabel(company?.country)}: $panNumber',
+    if (showFssai && fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
   ].join('   ');
 
   return pw.MultiPage(
@@ -74,7 +82,7 @@ pw.MultiPage buildMinimalTemplate(
       ),
     ),
     build: (context) => [
-      if(logoImage == null)
+      if(logoImage == null || !showLogo)
         pw.Row(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -111,7 +119,7 @@ pw.MultiPage buildMinimalTemplate(
             ),
           ],
       ),
-      if(logoImage != null)
+      if(showLogo && logoImage != null)
         pw.Row(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -151,17 +159,17 @@ pw.MultiPage buildMinimalTemplate(
       pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceEvenly,
           children: [
-        if((company?.phone ?? '').isNotEmpty)
+        if(showPhone && (company?.phone ?? '').isNotEmpty)
           pw.Text(
             company?.phone != null && company!.phone!.isNotEmpty
                 ? 'Ph: ${company.phone}'
                 : '',
             style: pw.TextStyle(fontSize: minimalPdfStyle.bodyFontSize),
           ),
-        if((company?.email ?? '').isNotEmpty)
+        if(showEmail && (company?.email ?? '').isNotEmpty)
           pw.Text(company?.email ?? '',
             style: pw.TextStyle(fontSize: minimalPdfStyle.bodyFontSize)),
-        if ((company?.website ?? '').isNotEmpty)
+        if (showWebsite && (company?.website ?? '').isNotEmpty)
           pw.Text(company!.website,
               style: pw.TextStyle(fontSize: minimalPdfStyle.bodyFontSize)),
       ]),
@@ -185,11 +193,12 @@ pw.MultiPage buildMinimalTemplate(
                       fontSize: minimalPdfStyle.labelFontSize,
                       color: accentColor)),
               pw.SizedBox(height: minimalPdfStyle.headerGap),
-              pw.Text(company?.name ?? '',
+              pw.Text(showCompanyName ? (company?.name ?? '') : '',
                   style: pw.TextStyle(
                       fontWeight: pw.FontWeight.bold, fontSize: minimalPdfStyle.titleFontSize)),
-              pw.Text(company?.address ?? '',
-                  style: pw.TextStyle(fontSize: minimalPdfStyle.bodyFontSize)),
+              if (showAddress)
+                pw.Text(company?.address ?? '',
+                    style: pw.TextStyle(fontSize: minimalPdfStyle.bodyFontSize)),
               if (companyIdLine.isNotEmpty)
                 pw.Text(companyIdLine,
                     style: pw.TextStyle(

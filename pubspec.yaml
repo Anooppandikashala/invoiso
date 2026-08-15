@@ -1,7 +1,7 @@
 name: invoiso
 description: "Invoice generating desktop app built with Flutter"
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
-version: 4.3.4
+version: 4.3.5
 environment:
   sdk: '>=3.3.3 <4.0.0'
 
@@ -56,24 +56,7 @@ flutter:
    - assets/images/logo.svg
    - assets/images/logo_v.png
    - assets/images/logo_v_dark.png
-   - assets/templates/classic.png
-   - assets/templates/modern.png
-   - assets/templates/minimal.png
-   - assets/fonts/DejaVuSans.ttf
-   - assets/fonts/DejaVuSans-Bold.ttf
-   - assets/fonts/DejaVuSans-Oblique.ttf
-   - assets/fonts/DejaVuSans-BoldOblique.ttf
-   - assets/fonts/lklug.ttf
-   - assets/fonts/NotoSansDevanagari-Bold.ttf
-   - assets/fonts/NotoSansDevanagari-Regular.ttf
-   - assets/fonts/NotoSansMalayalam-Bold.ttf
-   - assets/fonts/NotoSansMalayalam-Regular.ttf
-   - assets/fonts/NotoSansTamil-Regular.ttf
-   - assets/fonts/NotoSansTamil-Bold.ttf
-   - assets/fonts/NotoSansKannada-Regular.ttf
-   - assets/fonts/NotoSansKannada-Bold.ttf
-   - assets/fonts/NotoSansTelugu-Regular.ttf
-   - assets/fonts/NotoSansTelugu-Bold.ttf
+   - assets/fonts/
 
 flutter_launcher_icons:
   macos:

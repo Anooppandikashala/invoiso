@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:invoiso/database/database_helper.dart';
 import 'package:invoiso/screens/auth/login_screen.dart';
-import 'package:invoiso/constants.dart';
+import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/utils/app_logger.dart';
 
 const _tag = 'SplashScreen';

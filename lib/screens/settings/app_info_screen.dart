@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:invoiso/constants.dart';
+import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/providers/app_config_provider.dart';
 import 'package:invoiso/services/update_service.dart';
 

@@ -10,13 +10,13 @@ import 'package:flutter_thermal_printer/flutter_thermal_printer.dart';
 import 'package:flutter_thermal_printer/network/network_print_result.dart';
 import 'package:flutter_thermal_printer/utils/printer.dart';
 import 'package:intl/intl.dart';
-import 'package:invoiso/common.dart';
+import 'package:invoiso/common/common.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/services/pdf/pdf_service.dart';
 import 'package:invoiso/services/pdf/pdf_settings.dart';
 import 'package:invoiso/services/pdf/pdf_widgets.dart' show invoiceTaxLabel, roundNetTotal;
 import 'package:invoiso/utils/amount_in_words.dart';
-import 'package:invoiso/constants.dart';
+import 'package:invoiso/common/constants.dart';
 
 /// Prints receipts by rendering a real Flutter widget tree to a bitmap and
 /// sending it as an ESC/POS raster image, instead of building ESC/POS text

@@ -1,16 +1,16 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:invoiso/common.dart';
+import 'package:invoiso/common/common.dart';
 import 'package:invoiso/services/pdf/pdf_font_assets.dart';
+import 'package:invoiso/common/supported_currencies.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../test_support/ttf_glyph_coverage.dart';
 
-Future<void> main(List<String> args) async {
-  final outputPath =
-      args.isEmpty ? 'output/invoiso_currency_render_check.pdf' : args.first;
+Future<void> main() async {
+  const outputPath = 'output/invoiso_currency_render_check.pdf';
 
   final fontBytes = _loadFontBytes();
   final missingRunes = _findMissingCurrencyRunes(fontBytes);
@@ -30,25 +30,51 @@ Future<void> main(List<String> args) async {
     title: 'Invoiso Currency Font Check',
     creator: 'Invoiso PDF currency render check',
   );
+  // Fonts read directly from disk (not via PdfFontService.loadTheme(),
+  // which uses rootBundle) since rootBundle needs a Flutter asset-bundle
+  // binding this standalone script doesn't have.
+  pw.Font font(String assetPath) =>
+      pw.Font.ttf(ByteData.sublistView(fontBytes[assetPath]!));
+
   final theme = pw.ThemeData.withFont(
-    base: pw.Font.ttf(ByteData.sublistView(fontBytes[PdfFontAssets.regular]!)),
-    bold: pw.Font.ttf(ByteData.sublistView(fontBytes[PdfFontAssets.bold]!)),
-    italic: pw.Font.ttf(ByteData.sublistView(fontBytes[PdfFontAssets.italic]!)),
-    boldItalic: pw.Font.ttf(
-      ByteData.sublistView(fontBytes[PdfFontAssets.boldItalic]!),
-    ),
+    base: font(PdfFontAssets.regular),
+    bold: font(PdfFontAssets.bold),
+    italic: font(PdfFontAssets.italic),
+    boldItalic: font(PdfFontAssets.boldItalic),
     fontFallback: [
-      pw.Font.ttf(ByteData.sublistView(
-        fontBytes[PdfFontAssets.sinhalaFallback]!,
-      )),
+      font(PdfFontAssets.symbolsFallback),
+      font(PdfFontAssets.interRegular),
+      font(PdfFontAssets.arabicFallback),
+      font(PdfFontAssets.arabicFallbackBold),
+      font(PdfFontAssets.sinhalaFallback),
+      font(PdfFontAssets.bengaliFallback),
+      font(PdfFontAssets.bengaliFallbackBold),
+      font(PdfFontAssets.malayalamFallback),
+      font(PdfFontAssets.malayalamFallbackBold),
+      font(PdfFontAssets.devanagariFallback),
+      font(PdfFontAssets.devanagariFallbackBold),
+      font(PdfFontAssets.tamilFallback),
+      font(PdfFontAssets.tamilFallbackBold),
+      font(PdfFontAssets.kannadaFallback),
+      font(PdfFontAssets.kannadaFallbackBold),
+      font(PdfFontAssets.teluguFallback),
+      font(PdfFontAssets.teluguFallbackBold),
+      font(PdfFontAssets.thaiFallback),
+      font(PdfFontAssets.thaiFallbackBold),
+      font(PdfFontAssets.khmerFallback),
+      font(PdfFontAssets.khmerFallbackBold),
+      font(PdfFontAssets.georgianFallback),
+      font(PdfFontAssets.georgianFallbackBold),
+      font(PdfFontAssets.armenianFallback),
+      font(PdfFontAssets.armenianFallbackBold),
+      font(PdfFontAssets.myanmarFallback),
+      font(PdfFontAssets.myanmarFallbackBold),
     ],
   );
 
   pdf.addPage(
     pw.MultiPage(
-      pageFormat: PdfPageFormat.a4,
       theme: theme,
-      margin: const pw.EdgeInsets.all(32),
       build: (context) => [
         pw.Text(
           'Invoiso Currency Symbol Render Check',
@@ -88,11 +114,53 @@ Future<void> main(List<String> args) async {
 
 Map<String, Uint8List> _loadFontBytes() {
   const fontAssets = [
+    // Primary fonts
     PdfFontAssets.regular,
     PdfFontAssets.bold,
     PdfFontAssets.italic,
     PdfFontAssets.boldItalic,
+    // Sinhala
     PdfFontAssets.sinhalaFallback,
+    // Arabic
+    PdfFontAssets.arabicFallback,
+    PdfFontAssets.arabicFallbackBold,
+    // Bengali
+    PdfFontAssets.bengaliFallback,
+    PdfFontAssets.bengaliFallbackBold,
+    // Devanagari
+    PdfFontAssets.devanagariFallback,
+    PdfFontAssets.devanagariFallbackBold,
+    // Malayalam
+    PdfFontAssets.malayalamFallback,
+    PdfFontAssets.malayalamFallbackBold,
+    // Tamil
+    PdfFontAssets.tamilFallback,
+    PdfFontAssets.tamilFallbackBold,
+    // Kannada
+    PdfFontAssets.kannadaFallback,
+    PdfFontAssets.kannadaFallbackBold,
+    // Telugu
+    PdfFontAssets.teluguFallback,
+    PdfFontAssets.teluguFallbackBold,
+    // Thai
+    PdfFontAssets.thaiFallback,
+    PdfFontAssets.thaiFallbackBold,
+    // Khmer
+    PdfFontAssets.khmerFallback,
+    PdfFontAssets.khmerFallbackBold,
+    // Georgian
+    PdfFontAssets.georgianFallback,
+    PdfFontAssets.georgianFallbackBold,
+    // Armenian
+    PdfFontAssets.armenianFallback,
+    PdfFontAssets.armenianFallbackBold,
+    // Myanmar
+    PdfFontAssets.myanmarFallback,
+    PdfFontAssets.myanmarFallbackBold,
+    // Unicode symbols
+    PdfFontAssets.symbolsFallback,
+    // Inter
+    PdfFontAssets.interRegular,
   ];
 
   return {

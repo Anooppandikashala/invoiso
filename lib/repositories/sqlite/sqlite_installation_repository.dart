@@ -1,4 +1,4 @@
-import 'package:invoiso/common.dart';
+import 'package:invoiso/common/common.dart';
 import 'package:invoiso/database/settings_service.dart';
 import 'package:invoiso/repositories/installation_repository.dart';
 import 'package:uuid/uuid.dart';

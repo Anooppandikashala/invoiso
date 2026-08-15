@@ -1,4 +1,4 @@
-import 'package:invoiso/common.dart';
+import 'package:invoiso/common/common.dart';
 import 'package:invoiso/database/settings_service.dart';
 import 'package:invoiso/repositories/settings_repository.dart';
 
@@ -47,6 +47,38 @@ class SqliteSettingsRepository implements SettingsRepository {
   Future<bool> getShowBankDetails() => SettingsService.getShowBankDetails();
   @override
   Future<void> setShowBankDetails(bool show) => SettingsService.setShowBankDetails(show);
+  @override
+  Future<bool> getShowPhone() => SettingsService.getShowPhone();
+  @override
+  Future<void> setShowPhone(bool show) => SettingsService.setShowPhone(show);
+  @override
+  Future<bool> getShowEmail() => SettingsService.getShowEmail();
+  @override
+  Future<void> setShowEmail(bool show) => SettingsService.setShowEmail(show);
+  @override
+  Future<bool> getShowCompanyName() => SettingsService.getShowCompanyName();
+  @override
+  Future<void> setShowCompanyName(bool show) => SettingsService.setShowCompanyName(show);
+  @override
+  Future<bool> getShowPan() => SettingsService.getShowPan();
+  @override
+  Future<void> setShowPan(bool show) => SettingsService.setShowPan(show);
+  @override
+  Future<bool> getShowFssai() => SettingsService.getShowFssai();
+  @override
+  Future<void> setShowFssai(bool show) => SettingsService.setShowFssai(show);
+  @override
+  Future<bool> getShowWebsite() => SettingsService.getShowWebsite();
+  @override
+  Future<void> setShowWebsite(bool show) => SettingsService.setShowWebsite(show);
+  @override
+  Future<bool> getShowAddress() => SettingsService.getShowAddress();
+  @override
+  Future<void> setShowAddress(bool show) => SettingsService.setShowAddress(show);
+  @override
+  Future<bool> getShowLogo() => SettingsService.getShowLogo();
+  @override
+  Future<void> setShowLogo(bool show) => SettingsService.setShowLogo(show);
   @override
   Future<bool> getShowGstFields() => SettingsService.getShowGstFields();
   @override

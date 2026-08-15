@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:invoiso/constants.dart';
+import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/utils/password_utils.dart';
