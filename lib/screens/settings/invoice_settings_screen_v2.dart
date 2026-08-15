@@ -417,23 +417,7 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
                   ],
                 ),
               ),
-        DropdownButtonFormField<String>(
-          isExpanded: true,
-          value: _selectedCurrencyCode,
-          decoration:
-              _fieldDecorationV2(context, label: 'Currency', prefixIcon: const Icon(Icons.attach_money)),
-          items: SupportedCurrencies.all.map((c) {
-            return DropdownMenuItem<String>(
-              value: c.code,
-              child: Text('${c.symbol}  ${c.name} (${c.code})',
-                  maxLines: 1, overflow: TextOverflow.ellipsis),
-            );
-          }).toList(),
-          onChanged: (value) {
-            if (!mounted) return;
-            setState(() => _selectedCurrencyCode = value!);
-          },
-        ),
+        _buildCurrencyField(),
         DropdownButtonFormField<DateFormatOption>(
           isExpanded: true,
           value: _selectedDateFormat,
@@ -1185,6 +1169,84 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
           ],
         );
       }),
+    );
+  }
+
+  Widget _buildCurrencyField() {
+    final primaryColor = Theme.of(context).primaryColor;
+    final current = SupportedCurrencies.fromCode(_selectedCurrencyCode);
+    return Autocomplete<CurrencyOption>(
+      key: ValueKey(_selectedCurrencyCode),
+      initialValue: TextEditingValue(
+          text: '${current.symbol}  ${current.name} (${current.code})'),
+      displayStringForOption: (c) => '${c.symbol}  ${c.name} (${c.code})',
+      optionsBuilder: (TextEditingValue value) {
+        if (value.text.isEmpty) return SupportedCurrencies.all;
+        final query = value.text.toLowerCase();
+        return SupportedCurrencies.all.where((c) =>
+        c.name.toLowerCase().contains(query) ||
+            c.code.toLowerCase().contains(query) ||
+            c.symbol.toLowerCase().contains(query));
+      },
+      onSelected: (CurrencyOption c) {
+        if (!mounted) return;
+        setState(() => _selectedCurrencyCode = c.code);
+      },
+      fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
+        return TextField(
+          controller: controller,
+          focusNode: focusNode,
+          style: const TextStyle(fontSize: AppFontSize.medium),
+          decoration: InputDecoration(
+            labelText: 'Currency',
+            prefixIcon: const Icon(Icons.attach_money),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+              borderSide:
+              BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+              borderSide: BorderSide(color: primaryColor, width: 2),
+            ),
+            filled: true,
+            fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+          ),
+        );
+      },
+      optionsViewBuilder: (context, onSelected, options) {
+        return Align(
+          alignment: Alignment.topLeft,
+          child: Material(
+            elevation: 4,
+            color: Theme.of(context).colorScheme.surfaceContainer,
+            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 240, maxWidth: 320),
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                shrinkWrap: true,
+                itemCount: options.length,
+                itemBuilder: (context, index) {
+                  final c = options.elementAt(index);
+                  return ListTile(
+                    dense: true,
+                    title: Text('${c.symbol}  ${c.name}',
+                        style: const TextStyle(fontSize: AppFontSize.medium)),
+                    trailing: Text(c.code,
+                        style: TextStyle(
+                            fontSize: AppFontSize.xsmall,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                    onTap: () => onSelected(c),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
