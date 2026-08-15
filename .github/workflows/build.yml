@@ -78,7 +78,7 @@ jobs:
           find dist -name "invoiso-*-windows-setup.exe"
 
       - name: Upload Windows Installer
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Invoiso-Windows-Installer
           path: dist/*/invoiso-*-windows-setup.exe
@@ -139,7 +139,7 @@ jobs:
           mv "$DEB_FILE" Invoiso-$VERSION-ubuntu22.deb
 
       - name: Upload .deb
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Invoiso-Ubuntu22.deb
           path: Invoiso-*-ubuntu22.deb
@@ -237,7 +237,7 @@ jobs:
           mv "$DEB_FILE" Invoiso-$VERSION-ubuntu24.deb
 
       - name: Upload .deb
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Invoiso-Ubuntu24.deb
           path: Invoiso-*-ubuntu24.deb
@@ -314,7 +314,7 @@ jobs:
           appimage-builder --recipe AppImageBuilder.yml --skip-test
 
       - name: Upload AppImage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Invoiso-AppImage
           path: "*.AppImage"
@@ -432,7 +432,7 @@ jobs:
             "Invoiso-${VERSION}-ubuntu24-x86_64.AppImage"
 
       - name: Upload AppImage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Invoiso-AppImage-Ubuntu24
           path: "Invoiso-*-ubuntu24-x86_64.AppImage"
@@ -517,7 +517,7 @@ jobs:
           echo "Renamed to: $FINAL_DMG"
 
       - name: Upload macOS DMG
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Invoiso-macOS
           path: dist/invoiso-*-macos.dmg
