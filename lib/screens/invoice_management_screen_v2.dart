@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:invoiso/common.dart';
-import 'package:invoiso/constants.dart';
+import 'package:invoiso/common/common.dart';
+import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/domain/invoice_calculator.dart';
-import 'package:invoiso/invoiso_colors.dart';
+import 'package:invoiso/common/invoiso_colors.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/providers/invoice_provider.dart';
 import 'package:invoiso/providers/repositories.dart';

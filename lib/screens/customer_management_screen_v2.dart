@@ -5,7 +5,7 @@ import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/utils/formatters.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:invoiso/constants.dart';
+import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/models/customer.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:uuid/uuid.dart';

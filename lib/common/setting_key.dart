@@ -63,6 +63,7 @@ enum SettingKey {
   lastUsedThermalPrinter, // JSON-encoded Printer of the last device successfully printed to, used to skip a full rescan on next open
   productColumnsConfig, // JSON ProductColumnsConfig — which optional product fields (and invoice extra cost) are visible/editable
   shortcutsBannerDismissed, // '1' once user dismisses the keyboard-shortcuts discovery banner
+  createInvoiceLayout, // which create-invoice screen layout to use: 'v1' | 'v2'
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -196,6 +197,8 @@ extension SettingKeyExtension on SettingKey {
         return 'product_columns_config';
       case SettingKey.shortcutsBannerDismissed:
         return 'shortcuts_banner_dismissed';
+      case SettingKey.createInvoiceLayout:
+        return 'create_invoice_layout';
 
     }
   }
