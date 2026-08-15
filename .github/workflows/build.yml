@@ -533,7 +533,7 @@ jobs:
 
     steps:
       - name: Download Windows artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: Invoiso-Windows-Installer
           path: release-assets/
@@ -541,35 +541,35 @@ jobs:
 
 
       - name: Download Ubuntu22 .deb
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: Invoiso-Ubuntu22.deb
           path: release-assets/
         continue-on-error: true
 
       - name: Download AppImage
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: Invoiso-AppImage
           path: release-assets/
         continue-on-error: true
 
       - name: Download Ubuntu24 .deb
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: Invoiso-Ubuntu24.deb
           path: release-assets/
         continue-on-error: true
 
       - name: Download Ubuntu24 AppImage
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: Invoiso-AppImage-Ubuntu24
           path: release-assets/
         continue-on-error: true
 
       - name: Download macOS DMG
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: Invoiso-macOS
           path: release-assets/
