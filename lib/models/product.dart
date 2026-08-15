@@ -14,6 +14,7 @@ class Product {
   String unit;
   bool unlimitedStock;
   bool priceIncludesTax;
+  DateTime? lastPurchaseDate;
 
   Product({
     required this.id,
@@ -31,6 +32,7 @@ class Product {
     this.unit = '',
     this.unlimitedStock = false,
     this.priceIncludesTax = false,
+    this.lastPurchaseDate,
   });
 
   // Convert a Map into a Product object
@@ -52,6 +54,9 @@ class Product {
       unit: map['unit'] as String? ?? '',
       unlimitedStock: (map['unlimited_stock'] ?? 0) == 1,
       priceIncludesTax: (map['price_includes_tax'] ?? 0) == 1,
+      lastPurchaseDate: map['last_purchase_date'] != null
+          ? DateTime.tryParse(map['last_purchase_date'] as String)
+          : null,
     );
   }
 
@@ -92,6 +97,7 @@ class Product {
       'unit': unit,
       'unlimited_stock': unlimitedStock ? 1 : 0,
       'price_includes_tax': priceIncludesTax ? 1 : 0,
+      'last_purchase_date': lastPurchaseDate?.toIso8601String(),
     };
   }
 

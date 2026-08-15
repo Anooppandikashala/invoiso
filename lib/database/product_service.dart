@@ -221,6 +221,23 @@ class ProductService {
         where: 'id = ?', whereArgs: [id]);
   }
 
+  static Future<void> updatePurchaseInfo(
+    String id, {
+    required double purchasePrice,
+    required DateTime lastPurchaseDate,
+  }) async {
+    final db = await dbHelper.database;
+    await db.update(
+      'products',
+      {
+        'purchase_price': purchasePrice,
+        'last_purchase_date': lastPurchaseDate.toIso8601String(),
+      },
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
   static Future<bool> hasSufficientStock(String productId, int quantity) async {
     final product = await getProductById(productId);
     if (product == null) return false;

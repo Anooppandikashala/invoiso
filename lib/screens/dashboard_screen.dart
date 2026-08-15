@@ -29,6 +29,8 @@ import 'package:invoiso/screens/product_management_screen.dart';
 import 'package:invoiso/screens/invoice_management_screen.dart';
 import 'package:invoiso/screens/login_screen.dart';
 import 'package:invoiso/screens/reports_screen.dart';
+import 'package:invoiso/screens/purchase_bill_management_screen.dart';
+import 'package:invoiso/screens/supplier_management_screen.dart';
 
 // Dashboard Screen
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -165,6 +167,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         return const ReportsScreen();
       case 8:
         return SettingsScreen(currentUser: _currentUser);
+      case 9:
+        return PurchaseBillManagementScreen(user: _currentUser);
+      case 10:
+        return SupplierManagementScreen(user: _currentUser);
       default:
         return const Center(child: Text('Unknown tab'));
     }
@@ -350,6 +356,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         Icons.inventory_2, 'Products'),
                     _buildNavItem(7, Icons.bar_chart_outlined, Icons.bar_chart,
                         'Reports'),
+                    _buildNavItem(9, Icons.shopping_cart_outlined,
+                        Icons.shopping_cart, 'Purchase Bills'),
+                    _buildNavItem(10, Icons.local_shipping_outlined,
+                        Icons.local_shipping, 'Suppliers'),
                     _buildNavItem(
                         8, Icons.settings_outlined, Icons.settings, 'Settings',
                         showDot: _hasUpdate),
