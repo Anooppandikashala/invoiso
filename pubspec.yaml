@@ -21,7 +21,7 @@ dependencies:
   share_plus: ^11.0.0
   crypto: ^3.0.3
   uuid: ^4.0.0
-  csv: ^6.0.0
+  csv: ^8.0.0
   archive: ^4.0.0
   flutter_riverpod: ^2.5.1
   open_file: ^3.3.2
