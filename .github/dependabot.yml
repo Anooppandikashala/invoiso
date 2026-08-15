@@ -5,7 +5,29 @@
 
 version: 2
 updates:
-  - package-ecosystem: "pip" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  # Dart / pub packages
+  - package-ecosystem: "pub"
+    directory: "/"                 # location of pubspec.yaml
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 5
+    # optional: ignore specific packages or specify versioning-strategy
+    # versioning-strategy: increase
+
+  # GitHub Actions workflow updates
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  # Uncomment if you actually use Python/pip in the repo
+  #- package-ecosystem: "pip"
+  #  directory: "/"
+  #  schedule:
+  #    interval: "weekly"
+
+  # Uncomment if you have npm packages (frontend JS) to monitor
+  #- package-ecosystem: "npm"
+  #  directory: "/"   # adjust if package.json is elsewhere
+  #  schedule:
+  #    interval: "weekly"
