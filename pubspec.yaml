@@ -9,7 +9,7 @@ dependencies:
   flutter:
     sdk: flutter
 
-  intl: ^0.20.2
+  intl: ^0.20.3
   pdf: ^3.11.3
   printing: ^5.11.0
   sqflite: ^2.3.0
