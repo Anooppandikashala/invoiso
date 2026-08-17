@@ -30,6 +30,12 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Impeller refuses to run on software-rendered GL (SwiftShader fallback,
+             common on emulators without host GPU passthrough). Force Skia so debug
+             builds run regardless of host GPU availability. -->
+        <meta-data
+            android:name="io.flutter.embedding.android.EnableImpeller"
+            android:value="false" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
