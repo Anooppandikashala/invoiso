@@ -52,18 +52,35 @@ jobs:
         - language: javascript-typescript
           build-mode: none
         - language: swift
-          build-mode: autobuild
+          build-mode: manual
         # CodeQL supports the following values keywords for 'language': 'actions', 'c-cpp', 'csharp', 'go', 'java-kotlin', 'javascript-typescript', 'python', 'ruby', 'rust', 'swift'
         # Use `c-cpp` to analyze code written in C, C++ or both
         # Use 'java-kotlin' to analyze code written in Java, Kotlin or both
         # Use 'javascript-typescript' to analyze code written in JavaScript, TypeScript or both
         # To learn more about changing the languages that are analyzed or customizing the build mode for your analysis,
-        # see https://docs.github.com/en/code-security/code-scanning/creating-an-advanced-setup-for-code-scanning/customizing-your-advanced-setup-for-code-scanning.
+        # see https://docs.github.com/en/code-security/code-scanning/creating-an-advanced-setup-for-code-scanning/customizing-your-advanced-setup-for-code-scanning
         # If you are analyzing a compiled language, you can modify the 'build-mode' for that language to customize how
         # your codebase is analyzed, see https://docs.github.com/en/code-security/code-scanning/creating-an-advanced-setup-for-code-scanning/codeql-code-scanning-for-compiled-languages
     steps:
     - name: Checkout repository
       uses: actions/checkout@v7
+
+    - name: Set up Flutter (Swift builds only)
+      if: matrix.language == 'swift'
+      uses: subosito/flutter-action@v2
+      with:
+        channel: stable
+        cache: true
+
+    - name: Get Flutter dependencies (Swift builds only)
+      if: matrix.language == 'swift'
+      run: flutter pub get
+
+    - name: Generate Flutter ephemeral files for macOS (Swift builds only)
+      if: matrix.language == 'swift'
+      run: |
+        cd macos
+        flutter pub get
 
     # Add any setup steps before running the `github/codeql-action/init` action.
     # This includes steps like installing compilers or runtimes (`actions/setup-node`
@@ -90,8 +107,21 @@ jobs:
     # to build your code.
     # ℹ️ Command-line programs to run using the OS shell.
     # 📚 See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsrun
-    - name: Run manual build steps
-      if: matrix.build-mode == 'manual'
+    - name: Build Swift/macOS (manual build)
+      if: matrix.language == 'swift'
+      run: |
+        cd macos
+        xcodebuild build \
+          -workspace Runner.xcworkspace \
+          -scheme Runner \
+          -configuration Debug \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO \
+          COMPILATION_CACHE_ENABLE_CACHING=NO \
+          SWIFT_ENABLE_COMPILE_CACHE=NO
+
+    - name: Run manual build steps (other languages)
+      if: matrix.build-mode == 'manual' && matrix.language != 'swift'
       shell: bash
       run: |
         echo 'If you are using a "manual" build mode for one or more of the' \
