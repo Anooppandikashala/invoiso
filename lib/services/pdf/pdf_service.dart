@@ -523,11 +523,13 @@ class PDFService {
       fileName: filename,
       type: FileType.custom,
       allowedExtensions: ['pdf'],
+      bytes: Platform.isAndroid ? pdfBytes : null,
     );
     if (savePath == null) return;
-    final file = File(savePath);
-    await file.writeAsBytes(pdfBytes);
-    await OpenFile.open(file.path);
+    if (!Platform.isAndroid) {
+      await File(savePath).writeAsBytes(pdfBytes);
+    }
+    await OpenFile.open(savePath);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
