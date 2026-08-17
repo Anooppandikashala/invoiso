@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -577,6 +578,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   Future<void> _saveCsv(String csv, String filename) async {
+    final csvBytes = utf8.encode('﻿$csv'); // BOM for Excel
     String? savePath;
     try {
       savePath = await FilePicker.platform.saveFile(
@@ -584,6 +586,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         fileName: filename,
         type: FileType.custom,
         allowedExtensions: ['csv'],
+        bytes: Platform.isAndroid ? csvBytes : null,
       );
     } catch (_) {
       // FilePicker not supported on this platform, fall back to Documents dir
@@ -591,7 +594,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       savePath = '${dir.path}/$filename';
     }
     if (savePath == null) return; // user cancelled
-    await File(savePath).writeAsString('﻿$csv'); // BOM for Excel
+    if (!Platform.isAndroid) {
+      await File(savePath).writeAsBytes(csvBytes);
+    }
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -610,13 +615,16 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         fileName: filename,
         type: FileType.custom,
         allowedExtensions: ['pdf'],
+        bytes: Platform.isAndroid ? bytes : null,
       );
     } catch (_) {
       final dir = await getApplicationDocumentsDirectory();
       savePath = '${dir.path}/$filename';
     }
     if (savePath == null) return; // user cancelled
-    await File(savePath).writeAsBytes(bytes);
+    if (!Platform.isAndroid) {
+      await File(savePath).writeAsBytes(bytes);
+    }
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

@@ -960,16 +960,20 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
         '"USB Hub","84734000","4-port USB 3.0 hub","299.00","18","100","product","0","180.00","","pcs","0","0","","CNT-1023","","","","","",""\n'
         '"Annual Support","998314","Annual technical support plan","4999.00","18","0","service","10.00","0","","unit","1","1","","","","","","","",""\n';
 
+    final sampleBytes = utf8.encode('\uFEFF$sample');
     final savePath = await FilePicker.platform.saveFile(
       dialogTitle: 'Save Sample CSV',
       fileName: 'products_sample.csv',
       type: FileType.custom,
       allowedExtensions: ['csv'],
+      bytes: Platform.isAndroid ? sampleBytes : null,
     );
     if (savePath == null) return;
 
     try {
-      await File(savePath).writeAsBytes(utf8.encode('\uFEFF$sample'));
+      if (!Platform.isAndroid) {
+        await File(savePath).writeAsBytes(sampleBytes);
+      }
       _showSnackBar('Sample CSV saved successfully!');
     } catch (e) {
       _showSnackBar('Error saving sample: $e', isError: true);
@@ -1536,14 +1540,18 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
         }),
       ];
       final csvData = buildQuotedCsv(rows);
+      final csvBytes = utf8.encode('\uFEFF$csvData');
       final savePath = await FilePicker.platform.saveFile(
         dialogTitle: 'Save Products CSV',
         fileName: 'products.csv',
         type: FileType.custom,
         allowedExtensions: ['csv'],
+        bytes: Platform.isAndroid ? csvBytes : null,
       );
       if (savePath == null) return;
-      await File(savePath).writeAsBytes(utf8.encode('\uFEFF$csvData'));
+      if (!Platform.isAndroid) {
+        await File(savePath).writeAsBytes(csvBytes);
+      }
       _showSnackBar('CSV exported successfully!');
     } catch (e) {
       _showSnackBar('Error exporting CSV: $e', isError: true);
@@ -1633,14 +1641,18 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
         ),
       );
 
+      final pdfBytes = await pdf.save();
       final savePath = await FilePicker.platform.saveFile(
         dialogTitle: 'Save Products PDF',
         fileName: 'products.pdf',
         type: FileType.custom,
         allowedExtensions: ['pdf'],
+        bytes: Platform.isAndroid ? pdfBytes : null,
       );
       if (savePath == null) return;
-      await File(savePath).writeAsBytes(await pdf.save());
+      if (!Platform.isAndroid) {
+        await File(savePath).writeAsBytes(pdfBytes);
+      }
       _showSnackBar('PDF exported successfully!');
     } catch (e) {
       _showSnackBar('Error exporting PDF: $e', isError: true);

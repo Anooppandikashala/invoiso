@@ -57,8 +57,10 @@ Future<void> main() async {
     );
   };
 
-  sqfliteFfiInit();
-  databaseFactory = databaseFactoryFfi;
+  if (!Platform.isAndroid) {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  }
   WidgetsFlutterBinding.ensureInitialized();
   BackendServices.configure(
     settings: SqliteSettingsRepository(),
@@ -67,9 +69,10 @@ Future<void> main() async {
     payments: SqlitePaymentRepository(),
     installation: SqliteInstallationRepository()
   );
-  await windowManager.ensureInitialized();
 
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    await windowManager.ensureInitialized();
+
     const WindowOptions options = WindowOptions(
       minimumSize: Size(600, 400),
       center: true,
