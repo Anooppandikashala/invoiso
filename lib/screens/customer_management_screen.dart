@@ -367,16 +367,20 @@ class _CustomerManagementScreenState extends ConsumerState<CustomerManagementScr
         '"John Smith","john@example.com","+27821234567","123 Main St, Cape Town","Acme (Pty) Ltd","ZA123456789"\n'
         '"Jane Doe","jane@example.com","+27831234567","456 Oak Ave, Johannesburg","",""\n';
 
+    final sampleBytes = utf8.encode('\uFEFF$sample');
     final savePath = await FilePicker.platform.saveFile(
       dialogTitle: 'Save Sample CSV',
       fileName: 'customers_sample.csv',
       type: FileType.custom,
       allowedExtensions: ['csv'],
+      bytes: Platform.isAndroid ? sampleBytes : null,
     );
     if (savePath == null) return;
 
     try {
-      await File(savePath).writeAsBytes(utf8.encode('\uFEFF$sample'));
+      if (!Platform.isAndroid) {
+        await File(savePath).writeAsBytes(sampleBytes);
+      }
       _showSnackBar('Sample CSV saved successfully!');
     } catch (e) {
       _showSnackBar('Error saving sample: $e', isError: true);
@@ -830,14 +834,18 @@ class _CustomerManagementScreenState extends ConsumerState<CustomerManagementScr
       ];
 
       final csv = buildQuotedCsv(csvData);
+      final csvBytes = utf8.encode('\uFEFF$csv');
       final savePath = await FilePicker.platform.saveFile(
         dialogTitle: 'Save Customer CSV',
         fileName: 'customers.csv',
         type: FileType.custom,
         allowedExtensions: ['csv'],
+        bytes: Platform.isAndroid ? csvBytes : null,
       );
       if (savePath == null) return;
-      await File(savePath).writeAsBytes(utf8.encode('\uFEFF$csv'));
+      if (!Platform.isAndroid) {
+        await File(savePath).writeAsBytes(csvBytes);
+      }
       _showSnackBar('CSV exported successfully!');
     } catch (e) {
       _showSnackBar('Error exporting CSV: $e', isError: true);
@@ -895,14 +903,18 @@ class _CustomerManagementScreenState extends ConsumerState<CustomerManagementScr
         ),
       );
 
+      final pdfBytes = await pdf.save();
       final savePath = await FilePicker.platform.saveFile(
         dialogTitle: 'Save Customer PDF',
         fileName: 'customers.pdf',
         type: FileType.custom,
         allowedExtensions: ['pdf'],
+        bytes: Platform.isAndroid ? pdfBytes : null,
       );
       if (savePath == null) return;
-      await File(savePath).writeAsBytes(await pdf.save());
+      if (!Platform.isAndroid) {
+        await File(savePath).writeAsBytes(pdfBytes);
+      }
       _showSnackBar('PDF exported successfully!');
     } catch (e) {
       _showSnackBar('Error exporting PDF: $e', isError: true);
