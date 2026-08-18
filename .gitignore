@@ -76,3 +76,6 @@ landing*
 .mcp.json
 .claude/
 .cursor/
+
+lib/screens/old_screens/
+android/build/
