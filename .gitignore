@@ -79,4 +79,10 @@ landing*
 .mcp.json
 .claude/
 .cursor/
+<<<<<<< HEAD
+>>>>>>> origin/main
+=======
+
+lib/screens/old_screens/
+android/build/
 >>>>>>> origin/main

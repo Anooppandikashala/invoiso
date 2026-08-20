@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/providers/repositories.dart';
+import 'package:invoiso/screens/forgot_password_screen.dart';
 import 'package:invoiso/screens/auth/change_password_screen.dart';
 import 'package:invoiso/screens/test_gate_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -265,6 +266,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         : const Text('Login'),
                   ),
                 ),
+                AppSpacing.hSmall,
+                if (!cfg.isCloud)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
+                      ),
+                      child: const Text('Forgot password?'),
+                    ),
+                  ),
                 AppSpacing.hLarge,
                 MouseRegion(
                   cursor: SystemMouseCursors.click,

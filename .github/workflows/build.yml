@@ -44,9 +44,9 @@ jobs:
           VERSION="${VERSION#v}"
           sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
           echo "Building version: $VERSION (test build: $IS_TEST_BUILD)"
-          sed -i "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/constants.dart
-          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/constants.dart
-          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/constants.dart
+          sed -i "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/common/constants.dart
+          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/common/constants.dart
+          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/common/constants.dart
           echo "HEARTBEAT_URL changed"
 
       - name: Install FastForge
@@ -129,9 +129,9 @@ jobs:
           VERSION="${VERSION#v}"
           sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
           echo "Building version: $VERSION (test build: $IS_TEST_BUILD)"
-          sed -i "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/constants.dart
-          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/constants.dart
-          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/constants.dart
+          sed -i "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/common/constants.dart
+          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/common/constants.dart
+          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/common/constants.dart
           echo "HEARTBEAT_URL changed"
 
       - name: Install FastForge
@@ -192,9 +192,9 @@ jobs:
           VERSION="${VERSION#v}"
           sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
           echo "Building version: $VERSION (test build: $IS_TEST_BUILD)"
-          sed -i "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/constants.dart
-          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/constants.dart
-          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/constants.dart
+          sed -i "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/common/constants.dart
+          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/common/constants.dart
+          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/common/constants.dart
           echo "HEARTBEAT_URL changed"
 
       - name: Install FastForge
@@ -288,9 +288,9 @@ jobs:
           VERSION="${VERSION#v}"
           sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
           echo "Building version: $VERSION (test build: $IS_TEST_BUILD)"
-          sed -i "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/constants.dart
-          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/constants.dart
-          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/constants.dart
+          sed -i "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/common/constants.dart
+          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/common/constants.dart
+          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/common/constants.dart
           echo "HEARTBEAT_URL changed"
 
       - name: Flutter Pub Get
@@ -371,9 +371,9 @@ jobs:
           VERSION="${VERSION#v}"
           sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
           echo "Building version: $VERSION (test build: $IS_TEST_BUILD)"
-          sed -i "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/constants.dart
-          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/constants.dart
-          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/constants.dart
+          sed -i "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/common/constants.dart
+          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/common/constants.dart
+          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/common/constants.dart
           echo "HEARTBEAT_URL changed"
 
       - name: Flutter Pub Get
@@ -479,9 +479,9 @@ jobs:
           VERSION="${VERSION#v}"
           sed -i '' "s/^version: .*/version: $VERSION/" pubspec.yaml
           echo "Building version: $VERSION (test build: $IS_TEST_BUILD)"
-          sed -i '' "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/constants.dart
-          sed -i '' "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/constants.dart
-          sed -i '' "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/constants.dart
+          sed -i '' "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/common/constants.dart
+          sed -i '' "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/common/constants.dart
+          sed -i '' "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/common/constants.dart
           echo "HEARTBEAT_URL changed"
 
       - name: Install FastForge
