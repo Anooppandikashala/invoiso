@@ -18,6 +18,7 @@ import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/services/pdf/pdf_font_service.dart';
 import 'package:invoiso/services/thermal_printer_service.dart';
 
+import '../thermal_printer_service_v1.dart';
 import 'pdf_settings.dart';
 import 'pdf_widgets.dart';
 import 'pdf_template_classic.dart';

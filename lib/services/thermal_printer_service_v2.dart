@@ -26,7 +26,7 @@ import 'package:invoiso/common/constants.dart';
 /// printers); 2) character encoding — Flutter renders any Unicode script
 /// the app's fonts support, so there's no ESC/POS codepage limitation to
 /// work around for non-Latin1 text.
-class ThermalPrinterService {
+class ThermalPrinterServiceV2 {
   // Populated by _deviceCacheSub as scans complete, so re-opening the print
   // dialog can show known devices instantly instead of forcing a fresh scan
   // every time.
