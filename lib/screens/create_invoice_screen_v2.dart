@@ -1888,7 +1888,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     });
   }
 
-  void _filterCustomers(String query) {
+  void _filterCustomers(String query, {VoidCallback? onResults}) {
     if (!mounted) return;
     _customerSearchDebounce?.cancel();
     _customerSearchDebounce = Timer(const Duration(milliseconds: 400), () async {
@@ -1899,6 +1899,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       setState(() {
         filteredCustomers = results;
       });
+      onResults?.call();
     });
   }
 
@@ -3677,71 +3678,78 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           height: 520,
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Text('Choose a customer',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold)),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.of(dialogContext).pop(),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: customerSearchController,
-                  autofocus: true,
-                  onChanged: _filterCustomers,
-                  decoration: _flatFieldDecorationV2('Search customer',
-                      prefixIcon: const Icon(Icons.search, size: 18)),
-                ),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: filteredCustomers.isEmpty
-                      ? Center(
-                          child: Text('No customers found',
-                              style: TextStyle(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant)))
-                      : ListView.builder(
-                          controller: _customerScrollController,
-                          itemCount: filteredCustomers.length,
-                          itemBuilder: (context, index) {
-                            final customer = filteredCustomers[index];
-                            final isSelected =
-                                selectedCustomer?.id == customer.id;
-                            return ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor:
-                                    Theme.of(context).primaryColor,
-                                child: Text(
-                                  customer.name.isNotEmpty
-                                      ? customer.name[0].toUpperCase()
-                                      : '?',
-                                  style: const TextStyle(color: Colors.white),
+            child: StatefulBuilder(
+              builder: (context, setDialogState) => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Text('Choose a customer',
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold)),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.of(dialogContext).pop(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: customerSearchController,
+                    autofocus: true,
+                    onChanged: (query) {
+                      _filterCustomers(query, onResults: () {
+                        setDialogState(() {});
+                      });
+                    },
+                    decoration: _flatFieldDecorationV2('Search customer',
+                        prefixIcon: const Icon(Icons.search, size: 18)),
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: filteredCustomers.isEmpty
+                        ? Center(
+                            child: Text('No customers found',
+                                style: TextStyle(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant)))
+                        : ListView.builder(
+                            controller: _customerScrollController,
+                            itemCount: filteredCustomers.length,
+                            itemBuilder: (context, index) {
+                              final customer = filteredCustomers[index];
+                              final isSelected =
+                                  selectedCustomer?.id == customer.id;
+                              return ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor:
+                                      Theme.of(context).primaryColor,
+                                  child: Text(
+                                    customer.name.isNotEmpty
+                                        ? customer.name[0].toUpperCase()
+                                        : '?',
+                                    style:
+                                        const TextStyle(color: Colors.white),
+                                  ),
                                 ),
-                              ),
-                              title: Text(customer.name),
-                              subtitle: Text(customer.phone),
-                              trailing: isSelected
-                                  ? const Icon(Icons.check_circle,
-                                      color: Colors.green)
-                                  : null,
-                              onTap: () {
-                                _selectCustomer(customer);
-                                Navigator.of(dialogContext).pop();
-                              },
-                            );
-                          },
-                        ),
-                ),
-              ],
+                                title: Text(customer.name),
+                                subtitle: Text(customer.phone),
+                                trailing: isSelected
+                                    ? const Icon(Icons.check_circle,
+                                        color: Colors.green)
+                                    : null,
+                                onTap: () {
+                                  _selectCustomer(customer);
+                                  Navigator.of(dialogContext).pop();
+                                },
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

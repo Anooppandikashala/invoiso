@@ -3,10 +3,12 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/utils/formatters.dart';
+import 'package:invoiso/common/common.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/models/customer.dart';
+import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:uuid/uuid.dart';
 import 'package:csv/csv.dart';
@@ -32,6 +34,8 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
   int _pageSize = 10;
   int _currentPage = 0;
   bool _isLoading = false;
+  String? _companyCountry;
+  String get _taxWord => isIndiaCountry(_companyCountry) ? 'GST' : 'Tax';
   final FocusNode _searchFocusNode = FocusNode();
   final ScrollController _horizontalScrollController = ScrollController();
 
@@ -80,13 +84,17 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
     try {
       if(!mounted) return;
       final customerRepo = ref.read(customerRepositoryProvider);
+      final companyRepo = ref.read(companyInfoRepositoryProvider);
       final results = await Future.wait([
         customerRepo.getAllCustomers(),
+        companyRepo.getCompanyInfo(),
       ]);
-      final data = results[0];
+      final data = results[0] as List<Customer>;
+      final company = results[1] as CompanyInfo?;
       if(!mounted) return;
       setState(() {
         _customers = data;
+        _companyCountry = company?.country;
         _filterAndSort();
       });
     } catch (e) {
@@ -244,7 +252,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                       keyboardType: TextInputType.phone,
                       maxLength: 12),
                   const SizedBox(height: 16),
-                  _buildDialogTextField(gstinCtrl, 'Tax/VAT Number (GSTIN)', Icons.receipt_long,
+                  _buildDialogTextField(gstinCtrl, '$_taxWord / VAT Number', Icons.receipt_long,
                       readOnly: !isEdit, maxLength: 50),
                   const SizedBox(height: 16),
                   _buildDialogTextField(addressCtrl, 'Address', Icons.location_on,
@@ -1112,9 +1120,9 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
         accent: Colors.deepPurple,
       ),
       _statCardV2(
-        label: 'GST Registered',
+        label: '$_taxWord Registered',
         value: '$_gstRegisteredCountV2',
-        subtitle: 'With GST number',
+        subtitle: 'With $_taxWord number',
         icon: Icons.receipt_long_outlined,
         accent: Colors.orange,
       ),
@@ -1261,7 +1269,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
             focusNode: _searchFocusNode,
             onChanged: _onSearchChangedV2,
             decoration: InputDecoration(
-              hintText: 'Search customers by name, business, phone, GST, email…',
+              hintText: 'Search customers by name, business, phone, $_taxWord, email…',
               prefixIcon: const Icon(Icons.search, size: 20),
               isDense: true,
               contentPadding:
@@ -1299,10 +1307,10 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                     _applyFilterV2();
                   });
                 },
-                itemBuilder: (ctx) => const [
-                  PopupMenuItem(value: 'all', child: Text('All GST statuses')),
-                  PopupMenuItem(value: 'gst', child: Text('GST registered')),
-                  PopupMenuItem(value: 'no_gst', child: Text('Without GST')),
+                itemBuilder: (ctx) => [
+                  PopupMenuItem(value: 'all', child: Text('All $_taxWord statuses')),
+                  PopupMenuItem(value: 'gst', child: Text('$_taxWord registered')),
+                  PopupMenuItem(value: 'no_gst', child: Text('Without $_taxWord')),
                 ],
                 child: _menuButtonLookV2(Icons.filter_list, 'Filter'),
               ),
@@ -1325,7 +1333,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                 itemBuilder: (ctx) => [
                   _columnMenuItemV2('phone', 'Phone'),
                   _columnMenuItemV2('email', 'Email'),
-                  _columnMenuItemV2('gstin', 'GST / VAT No'),
+                  _columnMenuItemV2('gstin', '$_taxWord / VAT No'),
                   _columnMenuItemV2('address', 'Address'),
                 ],
                 child: _menuButtonLookV2(Icons.view_column_outlined, 'Columns'),
@@ -1382,8 +1390,8 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
           _tabChipV2('All', _customers.length, 0),
           _tabChipV2('Businesses', _businessesCountV2, 1),
           _tabChipV2('Individuals', _individualsCountV2, 2),
-          _tabChipV2('GST Registered', _gstRegisteredCountV2, 3),
-          _tabChipV2('Without GST', _withoutGstCountV2, 4),
+          _tabChipV2('$_taxWord Registered', _gstRegisteredCountV2, 3),
+          _tabChipV2('Without $_taxWord', _withoutGstCountV2, 4),
         ],
       ),
     );
@@ -1545,7 +1553,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
           if (_visibleColumnsV2['email'] ?? true)
             Expanded(flex: 3, child: Text('EMAIL', style: style)),
           if (_visibleColumnsV2['gstin'] ?? true)
-            Expanded(flex: 2, child: Text('GST / VAT NO', style: style)),
+            Expanded(flex: 2, child: Text('${_taxWord.toUpperCase()} / VAT NO', style: style)),
           if (_visibleColumnsV2['address'] ?? true)
             Expanded(flex: 3, child: Text('ADDRESS', style: style)),
           SizedBox(width: 120, child: Text('ACTIONS', style: style)),
@@ -1727,7 +1735,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                       _buildFormField(_emailController, 'Email', Icons.email, false,
                           maxLength: 100, keyboardType: TextInputType.emailAddress),
                       const SizedBox(height: 16),
-                      _buildFormField(_gstinController, 'GST / VAT Number',
+                      _buildFormField(_gstinController, '$_taxWord / VAT Number',
                           Icons.receipt_long, false,
                           maxLength: 50),
                       const SizedBox(height: 16),
