@@ -3,13 +3,12 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-  flutter_thermal_printer
   permission_handler_windows
   printing
   screen_retriever_windows
   share_plus
   syncfusion_pdfviewer_windows
-  universal_ble
+  thermal_printer
   url_launcher_windows
   window_manager
 )
