@@ -92,6 +92,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
   bool _showAddPanelV2 = false;
   int _addPanelTabV2 = 0; // 0 Basic Information, 1 Advanced
   bool _addAnotherAfterSavingV2 = false;
+  bool _showStatsCardsV2 = true;
 
   static const _csvMaxRows = 500;
   static const _csvHeaders = [
@@ -128,6 +129,23 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     _loadCurrency();
     _loadDateFormat();
     _loadStatsV2();
+    _loadStatsCardsVisibilityV2();
+  }
+
+  Future<void> _loadStatsCardsVisibilityV2() async {
+    final v = await ref
+        .read(settingsRepositoryProvider)
+        .getSetting(SettingKey.showProductStatsCards);
+    if (!mounted) return;
+    setState(() => _showStatsCardsV2 = v != 'false');
+  }
+
+  Future<void> _toggleStatsCardsV2() async {
+    final next = !_showStatsCardsV2;
+    setState(() => _showStatsCardsV2 = next);
+    await ref
+        .read(settingsRepositoryProvider)
+        .setSetting(SettingKey.showProductStatsCards, next.toString());
   }
 
   Future<void> _loadDateFormat() async {
@@ -1885,6 +1903,14 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                 icon: const Icon(Icons.view_column_outlined, size: 16),
                 label: const Text('Columns'),
               ),
+              IconButton(
+                tooltip: _showStatsCardsV2 ? 'Hide stat cards' : 'Show stat cards',
+                onPressed: _toggleStatsCardsV2,
+                icon: Icon(
+                  _showStatsCardsV2 ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                  size: 20,
+                ),
+              ),
             ],
           ),
         ),
@@ -3109,8 +3135,10 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                             _buildColumnsDiscoveryBanner(),
                             _headerBarV2(),
                             const SizedBox(height: 12),
-                            _statCardsRowV2(),
-                            const SizedBox(height: 12),
+                            if (_showStatsCardsV2) ...[
+                              _statCardsRowV2(),
+                              const SizedBox(height: 12),
+                            ],
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: _flatCardDecorationV2(context),

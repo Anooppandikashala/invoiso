@@ -52,6 +52,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
   int _activeTabV2 = 0; // 0 all, 1 businesses, 2 individuals, 3 gst reg, 4 without gst
   bool _showAddPanelV2 = false;
   bool _addAnotherAfterSavingV2 = false;
+  bool _showStatsCardsV2 = true;
   final Map<String, bool> _visibleColumnsV2 = {
     'phone': true,
     'email': true,
@@ -63,6 +64,23 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
   void initState() {
     super.initState();
     _loadCustomers();
+    _loadStatsCardsVisibilityV2();
+  }
+
+  Future<void> _loadStatsCardsVisibilityV2() async {
+    final v = await ref
+        .read(settingsRepositoryProvider)
+        .getSetting(SettingKey.showCustomerStatsCards);
+    if (!mounted) return;
+    setState(() => _showStatsCardsV2 = v != 'false');
+  }
+
+  Future<void> _toggleStatsCardsV2() async {
+    final next = !_showStatsCardsV2;
+    setState(() => _showStatsCardsV2 = next);
+    await ref
+        .read(settingsRepositoryProvider)
+        .setSetting(SettingKey.showCustomerStatsCards, next.toString());
   }
 
   @override
@@ -1338,6 +1356,14 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                 ],
                 child: _menuButtonLookV2(Icons.view_column_outlined, 'Columns'),
               ),
+              IconButton(
+                tooltip: _showStatsCardsV2 ? 'Hide stat cards' : 'Show stat cards',
+                onPressed: _toggleStatsCardsV2,
+                icon: Icon(
+                  _showStatsCardsV2 ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                  size: 20,
+                ),
+              ),
             ],
           ),
         ),
@@ -1843,8 +1869,10 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                           children: [
                             _headerBarV2(),
                             const SizedBox(height: 12),
-                            _statCardsRowV2(),
-                            const SizedBox(height: 12),
+                            if (_showStatsCardsV2) ...[
+                              _statCardsRowV2(),
+                              const SizedBox(height: 12),
+                            ],
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: _flatCardDecorationV2(context),
