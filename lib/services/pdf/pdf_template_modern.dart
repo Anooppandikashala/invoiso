@@ -38,6 +38,7 @@ pw.MultiPage buildModernTemplate(
   double watermarkOpacity = 0.12,
   bool showCgstSgst = false,
   bool showRoundOff = false,
+  bool showLeadingZeros = true,
   bool showPhone = true,
   bool showEmail = true,
   bool showCompanyName = true,
@@ -203,7 +204,8 @@ pw.MultiPage buildModernTemplate(
             pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.end,
               children: [
-                pw.Text("#: $invoicePrefix${invoice.invoiceNumber ?? invoice.id}",
+                pw.Text(
+                    "#: $invoicePrefix${formatInvoiceNumberForDisplay(invoice.invoiceNumber ?? invoice.id, showLeadingZeros)}",
                     style: pw.TextStyle(
                         fontWeight: pw.FontWeight.bold, fontSize: modernPdfStyle.bodyFontSize)),
                 pw.Text("Date: ${formatPdfDate(invoice.date, datePattern)}",

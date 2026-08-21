@@ -36,6 +36,7 @@ enum SettingKey {
   showTotalQuantity, // show total quantity row in compact template footer
   supportBannerDismissed, // milestone at which support banner was last dismissed: '10' | '50' | '100'
   invoiceStartingNumber, // starting invoice number (only editable when invoice count is zero)
+  invoiceLeadingZeros, // whether generated invoice numbers are zero-padded to 8 digits (default true; locked once invoices exist)
   defaultTaxRate, // default invoice tax rate percentage (e.g. '18')
   thermalWidthMargin, // chars trimmed off the thermal printer's textbook width to avoid edge clipping on real hardware; default '1'
   thermalItemLayout, // 'table' | 'detailed' — how items print on thermal receipts; default 'table'
@@ -145,6 +146,8 @@ extension SettingKeyExtension on SettingKey {
         return 'support_banner_dismissed';
       case SettingKey.invoiceStartingNumber:
         return 'invoice_starting_number';
+      case SettingKey.invoiceLeadingZeros:
+        return 'invoice_leading_zeros';
       case SettingKey.defaultTaxRate:
         return 'default_tax_rate';
       case SettingKey.thermalWidthMargin:

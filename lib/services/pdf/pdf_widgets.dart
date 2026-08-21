@@ -953,3 +953,9 @@ pw.Widget buildAdditionalNotes(Invoice invoice,
 String formatPdfDate(DateTime date, String pattern) {
   return DateFormat(pattern).format(date);
 }
+
+String formatInvoiceNumberForDisplay(String number, bool showLeadingZeros) {
+  if (showLeadingZeros) return number;
+  final stripped = number.replaceFirst(RegExp(r'^0+'), '');
+  return stripped.isEmpty ? '0' : stripped;
+}

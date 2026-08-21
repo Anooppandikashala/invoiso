@@ -116,6 +116,7 @@ class PDFService {
       BackendServices.settings.getShowAddress(), // 36
       BackendServices.settings.getShowLogo(), // 37
       BackendServices.settings.getSetting(SettingKey.thermalCompanyNameSize), // 38
+      BackendServices.settings.getSetting(SettingKey.invoiceLeadingZeros), // 39
     ]);
 
     final rawPrefix = (results[2] as String?) ?? 'INV';
@@ -176,6 +177,7 @@ class PDFService {
       showAddress: results[36] as bool,
       showLogo: results[37] as bool,
       thermalCompanyNameSize: (results[38] as String?) ?? 'medium',
+      showLeadingZeros: (results[39] as String?) != 'false',
     );
   }
 
@@ -248,6 +250,7 @@ class PDFService {
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
           showRoundOff: s.showRoundOff,
+          showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
           showEmail: s.showEmail,
           showCompanyName: s.showCompanyName,
@@ -289,6 +292,7 @@ class PDFService {
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
           showRoundOff: s.showRoundOff,
+          showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
           showEmail: s.showEmail,
           showCompanyName: s.showCompanyName,
@@ -330,6 +334,7 @@ class PDFService {
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
           showRoundOff: s.showRoundOff,
+          showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
           showEmail: s.showEmail,
           showCompanyName: s.showCompanyName,
@@ -371,6 +376,7 @@ class PDFService {
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
           showRoundOff: s.showRoundOff,
+          showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
           showEmail: s.showEmail,
           showCompanyName: s.showCompanyName,
@@ -413,6 +419,7 @@ class PDFService {
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
           showRoundOff: s.showRoundOff,
+          showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
           showCompanyName: s.showCompanyName,
           showPan: s.showPan,
@@ -440,6 +447,7 @@ class PDFService {
           pdfTheme: pdfTheme,
           itemLayout: s.thermalItemLayout,
           showRoundOff: s.showRoundOff,
+          showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
           showCompanyName: s.showCompanyName,
           showAddress: s.showAddress,
@@ -477,6 +485,7 @@ class PDFService {
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
           showRoundOff: s.showRoundOff,
+          showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
           showCompanyName: s.showCompanyName,
           showPan: s.showPan,

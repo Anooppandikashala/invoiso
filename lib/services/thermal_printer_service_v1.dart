@@ -6,7 +6,8 @@ import 'package:intl/intl.dart';
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/services/pdf/pdf_service.dart';
-import 'package:invoiso/services/pdf/pdf_widgets.dart' show invoiceTaxLabel;
+import 'package:invoiso/services/pdf/pdf_widgets.dart'
+    show invoiceTaxLabel, formatInvoiceNumberForDisplay;
 import 'package:thermal_printer/thermal_printer.dart';
 
 /// Prints receipts as raw ESC/POS commands sent directly to the printer,
@@ -187,7 +188,8 @@ class ThermalPrinterService {
     // ── Invoice meta ──
     final dateFormatter = DateFormat(dateFmt.key);
     final dateStr = dateFormatter.format(invoice.date);
-    twoCol('Inv No: ${settings.invoicePrefix}${invoice.invoiceNumber ?? invoice.id}',
+    twoCol(
+        'Inv No: ${settings.invoicePrefix}${formatInvoiceNumberForDisplay(invoice.invoiceNumber ?? invoice.id, settings.showLeadingZeros)}',
         'Date: $dateStr');
     if (invoice.dueDate != null) {
       twoCol('Due:', dateFormatter.format(invoice.dueDate!));

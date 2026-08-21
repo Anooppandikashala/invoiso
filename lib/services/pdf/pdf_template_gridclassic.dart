@@ -47,6 +47,7 @@ pw.MultiPage buildGridClassicTemplate(
   double watermarkOpacity = 0.12,
   bool showCgstSgst = false,
   bool showRoundOff = false,
+  bool showLeadingZeros = true,
   bool showPhone = true,
   bool showCompanyName = true,
   bool showPan = true,
@@ -246,7 +247,7 @@ pw.MultiPage buildGridClassicTemplate(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
                       infoRow('${invoice.invoiceTitle ?? invoice.type} No',
-                          '$invoicePrefix${invoice.invoiceNumber ?? invoice.id}'),
+                          '$invoicePrefix${formatInvoiceNumberForDisplay(invoice.invoiceNumber ?? invoice.id, showLeadingZeros)}'),
                       infoRow('Date', formatPdfDate(invoice.date, datePattern)),
                       infoRow('Time', DateFormat('HH:mm:ss').format(invoice.date)),
                       if (invoice.dueDate != null)

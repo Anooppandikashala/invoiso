@@ -49,6 +49,7 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
   double _watermarkOpacity = 0.12;
   String? _defaultInvoiceTitle;
   bool _allowDuplicateInvoiceItems = false;
+  bool _invoiceLeadingZeros = true;
   int _invoiceCount = 0;
   bool _isLoading = true;
   bool _isSaving = false;
@@ -96,6 +97,7 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
       settingsRepo.getSetting(SettingKey.showCgstSgst),
       settingsRepo.getSetting(SettingKey.defaultTaxMode),
       settingsRepo.getSetting(SettingKey.showRoundOff),
+      settingsRepo.getSetting(SettingKey.invoiceLeadingZeros),
     ]);
 
     if (!mounted) return;
@@ -133,6 +135,7 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
       _showCgstSgst = (results[26] as String?) == 'true';
       _defaultTaxMode = (results[27] as String?) ?? 'global';
       _showRoundOff = (results[28] as String?) == 'true';
+      _invoiceLeadingZeros = (results[29] as String?) != 'false';
       _isLoading = false;
     });
   }
@@ -154,6 +157,8 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
             (int.tryParse(invoiceStartingNumberController.text.trim()) ?? 1)
                 .clamp(1, 99999999)
                 .toString()),
+      settingsRepo.setSetting(
+          SettingKey.invoiceLeadingZeros, _invoiceLeadingZeros.toString()),
       settingsRepo.setSetting(SettingKey.additionalInfo, additionalInfoController.text),
       settingsRepo.setSetting(SettingKey.thankYouNote, thankYouController.text),
       settingsRepo.setCurrency(_selectedCurrencyCode),
@@ -417,6 +422,13 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
                   ],
                 ),
               ),
+        _toggleCardV2(
+          title: 'Leading Zeros',
+          subtitle: 'Pad invoice numbers to 8 digits (e.g. 00000007)',
+          icon: Icons.pin_outlined,
+          value: _invoiceLeadingZeros,
+          onChanged: (val) => setState(() => _invoiceLeadingZeros = val),
+        ),
         _buildCurrencyField(),
         DropdownButtonFormField<DateFormatOption>(
           isExpanded: true,
