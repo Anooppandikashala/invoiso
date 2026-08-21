@@ -451,6 +451,9 @@ pw.Page buildThermalTemplate(
       if ((invoice.notes ?? '').isNotEmpty) ...[
         pw.SizedBox(height: 4),
         dashedSep(),
+        pw.Text('NOTES',
+            style: pw.TextStyle(
+                fontSize: smallFs, fontWeight: pw.FontWeight.bold)),
         pw.Text(invoice.notes!,
             style: pw.TextStyle(
                 fontSize: smallFs, fontStyle: pw.FontStyle.italic)),

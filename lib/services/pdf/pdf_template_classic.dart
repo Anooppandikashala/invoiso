@@ -217,7 +217,7 @@ pw.MultiPage buildClassicTemplate(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
-          pw.Expanded(child: buildAdditionalNotes(invoice)),
+          pw.Expanded(child: buildAdditionalNotes(invoice, accentColor: accentColor)),
           pw.SizedBox(width: 20),
           buildEnhancedTotals(
             invoice,

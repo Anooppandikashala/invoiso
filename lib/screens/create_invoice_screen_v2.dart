@@ -4531,8 +4531,89 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       maxLength: DefaultValues.additionalNotesLength,
       maxLines: 3,
       decoration: _flatFieldDecorationV2('Notes (optional)',
-          hint: 'Payment terms, thank-you note…'),
+          hint: 'Payment terms, thank-you note…',
+          suffixIcon: IconButton(
+            icon: const Icon(Icons.open_in_full, size: 18),
+            tooltip: 'Edit in larger view',
+            onPressed: _editNotesDialogV2,
+          )),
     );
+  }
+
+  static const double _notesDialogMinWidth = 320;
+  static const double _notesDialogMaxWidth = 800;
+  static const double _notesDialogMinHeight = 200;
+  static const double _notesDialogMaxHeight = 600;
+
+  Future<void> _editNotesDialogV2() async {
+    final controller = TextEditingController(text: notesController.text);
+    double dialogWidth = 480;
+    double dialogHeight = 320;
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Notes'),
+          content: SizedBox(
+            width: dialogWidth,
+            height: dialogHeight,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: TextField(
+                    controller: controller,
+                    maxLength: DefaultValues.additionalNotesLength,
+                    expands: true,
+                    maxLines: null,
+                    autofocus: true,
+                    textAlignVertical: TextAlignVertical.top,
+                    decoration: const InputDecoration(
+                      hintText: 'Payment terms, thank-you note…',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.resizeDownRight,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onPanUpdate: (details) {
+                        setDialogState(() {
+                          dialogWidth = (dialogWidth + details.delta.dx)
+                              .clamp(_notesDialogMinWidth, _notesDialogMaxWidth);
+                          dialogHeight = (dialogHeight + details.delta.dy)
+                              .clamp(_notesDialogMinHeight, _notesDialogMaxHeight);
+                        });
+                      },
+                      child: const Padding(
+                        padding: EdgeInsets.all(4),
+                        child: Icon(Icons.south_east, size: 16),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, controller.text),
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (result != null) {
+      notesController.text = result;
+    }
   }
 
   Widget _taxSettingsSectionV2() {
