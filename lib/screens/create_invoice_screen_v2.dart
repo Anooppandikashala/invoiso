@@ -938,10 +938,6 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                       (val) => setDialogState(() => discountPerUnit = val)),
                   const SizedBox(height: 16),
                 ],
-                const SizedBox(height: 8),
-                _buildDiscountPerUnitToggle(discountPerUnit,
-                    (val) => setDialogState(() => discountPerUnit = val)),
-                const SizedBox(height: 16),
                 TextField(
                   controller: unitPriceController,
                   autofocus: !_showQuantity,
