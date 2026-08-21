@@ -52,6 +52,10 @@ class _InvoiceManagementScreenV2State
   String _dueDateFilter =
       'all'; // 'all' | 'overdue' | 'due_today' | 'due_week' | 'due_month'
   String _paymentStatusFilterV2 = 'all'; // 'all' | 'paid' | 'partial' | 'unpaid'
+  DateTime? _invoiceDateFrom;
+  DateTime? _invoiceDateTo;
+  int? _idRangeFrom;
+  int? _idRangeTo;
   String _datePattern = 'dd/MM/yyyy';
   int _totalCount = 0;
   List<Invoice> _pageInvoices = [];
@@ -164,6 +168,30 @@ class _InvoiceManagementScreenV2State
               default:
                 return true;
             }
+          }).toList();
+        }
+        if (_invoiceDateFrom != null || _invoiceDateTo != null) {
+          pageInvoices = pageInvoices.where((inv) {
+            final d = InvoiceCalculator.dateOnly(inv.date);
+            if (_invoiceDateFrom != null &&
+                d.isBefore(InvoiceCalculator.dateOnly(_invoiceDateFrom!))) {
+              return false;
+            }
+            if (_invoiceDateTo != null &&
+                d.isAfter(InvoiceCalculator.dateOnly(_invoiceDateTo!))) {
+              return false;
+            }
+            return true;
+          }).toList();
+        }
+        if (_idRangeFrom != null || _idRangeTo != null) {
+          pageInvoices = pageInvoices.where((inv) {
+            final n = int.tryParse(
+                (inv.invoiceNumber ?? inv.id).replaceAll(RegExp(r'\D'), ''));
+            if (n == null) return false;
+            if (_idRangeFrom != null && n < _idRangeFrom!) return false;
+            if (_idRangeTo != null && n > _idRangeTo!) return false;
+            return true;
           }).toList();
         }
         setState(() {
@@ -1023,13 +1051,21 @@ class _InvoiceManagementScreenV2State
   int get _activeFilterCountV2 =>
       (_hidePaid ? 1 : 0) +
       (_dueDateFilter != 'all' ? 1 : 0) +
-      (_paymentStatusFilterV2 != 'all' ? 1 : 0);
+      (_paymentStatusFilterV2 != 'all' ? 1 : 0) +
+      (_invoiceDateFrom != null || _invoiceDateTo != null ? 1 : 0) +
+      (_idRangeFrom != null || _idRangeTo != null ? 1 : 0);
 
 
   Future<void> _showFilterDialogV2() async {
     bool tempHidePaid = _hidePaid;
     String tempDue = _dueDateFilter;
     String tempStatus = _paymentStatusFilterV2;
+    DateTime? tempDateFrom = _invoiceDateFrom;
+    DateTime? tempDateTo = _invoiceDateTo;
+    final idFromCtrl =
+        TextEditingController(text: _idRangeFrom?.toString() ?? '');
+    final idToCtrl =
+        TextEditingController(text: _idRangeTo?.toString() ?? '');
 
     await showDialog(
       context: context,
@@ -1102,10 +1138,61 @@ class _InvoiceManagementScreenV2State
                         );
                       }).toList(),
                     ),
+                    const SizedBox(height: 20),
+                    Text('Invoice date range',
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Theme.of(dialogContext).colorScheme.onSurfaceVariant)),
+                    const SizedBox(height: 8),
+                    Row(children: [
+                      Expanded(
+                          child: _DatePickerField(
+                        label: 'From date',
+                        value: tempDateFrom,
+                        formatter: DateFormat(_datePattern),
+                        onPicked: (d) => setDialogState(() => tempDateFrom = d),
+                        onCleared: () => setDialogState(() => tempDateFrom = null),
+                      )),
+                      const SizedBox(width: 12),
+                      Expanded(
+                          child: _DatePickerField(
+                        label: 'To date',
+                        value: tempDateTo,
+                        formatter: DateFormat(_datePattern),
+                        onPicked: (d) => setDialogState(() => tempDateTo = d),
+                        onCleared: () => setDialogState(() => tempDateTo = null),
+                      )),
+                    ]),
+                    const SizedBox(height: 20),
+                    Text('Invoice # range',
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Theme.of(dialogContext).colorScheme.onSurfaceVariant)),
+                    const SizedBox(height: 8),
+                    Row(children: [
+                      Expanded(
+                          child: TextField(
+                        controller: idFromCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                            labelText: 'From #', border: OutlineInputBorder()),
+                      )),
+                      const SizedBox(width: 12),
+                      Expanded(
+                          child: TextField(
+                        controller: idToCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                            labelText: 'To #', border: OutlineInputBorder()),
+                      )),
+                    ]),
                   ],
                 ),
               ),
             ),
+            actionsAlignment: MainAxisAlignment.spaceBetween,
             actions: [
               TextButton(
                 onPressed: () {
@@ -1113,31 +1200,43 @@ class _InvoiceManagementScreenV2State
                     tempHidePaid = false;
                     tempDue = 'all';
                     tempStatus = 'all';
+                    tempDateFrom = null;
+                    tempDateTo = null;
+                    idFromCtrl.clear();
+                    idToCtrl.clear();
                   });
                 },
                 child: const Text('Reset'),
               ),
-              const Spacer(),
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(dialogContext);
-                  setState(() {
-                    _hidePaid = tempHidePaid;
-                    _dueDateFilter = tempDue;
-                    _paymentStatusFilterV2 = tempStatus;
-                    _currentPage = 0;
-                  });
-                  _loadPage();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).primaryColor,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text('Apply'),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    child: const Text('Cancel'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(dialogContext);
+                      setState(() {
+                        _hidePaid = tempHidePaid;
+                        _dueDateFilter = tempDue;
+                        _paymentStatusFilterV2 = tempStatus;
+                        _invoiceDateFrom = tempDateFrom;
+                        _invoiceDateTo = tempDateTo;
+                        _idRangeFrom = int.tryParse(idFromCtrl.text);
+                        _idRangeTo = int.tryParse(idToCtrl.text);
+                        _currentPage = 0;
+                      });
+                      _loadPage();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).primaryColor,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('Apply'),
+                  ),
+                ],
               ),
             ],
           );

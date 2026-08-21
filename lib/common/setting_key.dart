@@ -64,6 +64,8 @@ enum SettingKey {
   productColumnsConfig, // JSON ProductColumnsConfig — which optional product fields (and invoice extra cost) are visible/editable
   shortcutsBannerDismissed, // '1' once user dismisses the keyboard-shortcuts discovery banner
   createInvoiceLayout, // which create-invoice screen layout to use: 'v1' | 'v2'
+  showCustomerStatsCards, // whether the stat cards row is shown on customer management v2 (default true)
+  showProductStatsCards, // whether the stat cards row is shown on product management v2 (default true)
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -199,6 +201,10 @@ extension SettingKeyExtension on SettingKey {
         return 'shortcuts_banner_dismissed';
       case SettingKey.createInvoiceLayout:
         return 'create_invoice_layout';
+      case SettingKey.showCustomerStatsCards:
+        return 'show_customer_stats_cards';
+      case SettingKey.showProductStatsCards:
+        return 'show_product_stats_cards';
 
     }
   }
