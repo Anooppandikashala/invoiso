@@ -204,6 +204,18 @@ class SettingsService {
     await setSetting(SettingKey.bankAccounts, encoded);
   }
 
+  static Future<ProductColumnsConfig> getProductColumnsConfig() async {
+    final json = await getSetting(SettingKey.productColumnsConfig);
+    if (json != null && json.isNotEmpty) {
+      return ProductColumnsConfig.fromJson(jsonDecode(json) as Map<String, dynamic>);
+    }
+    return const ProductColumnsConfig();
+  }
+
+  static Future<void> setProductColumnsConfig(ProductColumnsConfig config) async {
+    await setSetting(SettingKey.productColumnsConfig, jsonEncode(config.toJson()));
+  }
+
   static Future<bool> getShowBankDetails() async {
     final val = await getSetting(SettingKey.showBankDetails);
     return val == 'true';

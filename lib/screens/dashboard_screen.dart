@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show LogicalKeyboardKey;
+import 'package:invoiso/widgets/discovery_banner.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
@@ -12,8 +14,8 @@ import 'package:invoiso/domain/invoice_calculator.dart';
 import 'package:invoiso/common/invoiso_colors.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/product.dart';
-import 'package:invoiso/screens/settings_screen.dart';
 import 'package:invoiso/common/common.dart';
+import 'package:invoiso/screens/settings/settings_screen.dart';
 import 'package:invoiso/services/invoice_pdf_services.dart';
 import 'package:invoiso/services/pdf_service.dart';
 import 'package:invoiso/utils/formatters.dart';
@@ -22,12 +24,16 @@ import 'package:invoiso/widgets/customer_info_button.dart';
 import 'package:invoiso/utils/session_manager.dart';
 
 import 'package:invoiso/models/user.dart';
-import 'package:invoiso/screens/customer_management_screen.dart';
+// import 'package:invoiso/screens/customer_management_screen.dart';
+import 'package:invoiso/screens/customer_management_screen_v2.dart';
 import 'package:invoiso/database/database_helper.dart';
-import 'package:invoiso/screens/create_invoice_screen.dart';
-import 'package:invoiso/screens/product_management_screen.dart';
-import 'package:invoiso/screens/invoice_management_screen.dart';
-import 'package:invoiso/screens/login_screen.dart';
+import 'package:invoiso/screens/create_invoice_screen.dart' as v1;
+import 'package:invoiso/screens/create_invoice_screen_v2.dart';
+// import 'package:invoiso/screens/product_management_screen.dart';
+import 'package:invoiso/screens/product_management_screen_v2.dart';
+// import 'package:invoiso/screens/invoice_management_screen.dart';
+import 'package:invoiso/screens/invoice_management_screen_v2.dart';
+import 'package:invoiso/screens/auth/login_screen.dart';
 import 'package:invoiso/screens/reports_screen.dart';
 
 // Dashboard Screen
@@ -49,17 +55,34 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Invoice? _invoiceToClone;
   String _cloneType = 'Invoice';
   bool _hasUpdate = false;
+  String _createInvoiceLayout = 'v2';
+  int? _accessibilityJumpToken;
   final InvoiceFormGuard _invoiceFormGuard = InvoiceFormGuard();
+  final v1.InvoiceFormGuard _invoiceFormGuardV1 = v1.InvoiceFormGuard();
+  final FocusNode _shortcutsFocusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
     _currentUser = widget.loggedInUser;
+    _loadCreateInvoiceLayout();
     SessionManager.initialize(_onSessionTimeout);
     if (ref.read(appEditionConfigProvider).enableUpdateCheck)
     {
       WidgetsBinding.instance.addPostFrameCallback((_) => _checkForUpdates());
     }
+    // Tab 1 (Create Invoice) owns its own autofocus/shortcuts — only claim
+    // focus here for the other tabs, so it doesn't get stolen away and
+    // block the Create Invoice screen's own Ctrl shortcuts from working.
+    if (_selectedIndex != 1) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _shortcutsFocusNode.requestFocus());
+    }
+  }
+
+  Future<void> _loadCreateInvoiceLayout() async {
+    final layout = await ref.read(settingsRepositoryProvider).getSetting(SettingKey.createInvoiceLayout);
+    if (!mounted) return;
+    setState(() => _createInvoiceLayout = layout ?? 'v2');
   }
 
   Future<void> _checkForUpdates() async {
@@ -74,6 +97,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   void dispose() {
     SessionManager.dispose();
+    _shortcutsFocusNode.dispose();
     super.dispose();
   }
 
@@ -118,23 +142,34 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             onCloneInvoice: cloneInvoice,
             user: _currentUser);
       case 1:
-        return CreateInvoiceScreen(
-          key: ValueKey(
-              'create_invoice_${invoiceToEdit?.id ?? 'new'}_${_invoiceToClone?.id ?? ''}'),
-          invoiceToEdit: invoiceToEdit,
-          cloneFrom: _invoiceToClone,
-          cloneType: _invoiceToClone != null ? _cloneType : null,
-          guard: _invoiceFormGuard,
-          onCreateNewInvoice: () {
-            if(!mounted) return;
-            setState(() {
-              invoiceToEdit = null;
-              _invoiceToClone = null;
-            });
-          },
-        );
+        final createInvoiceKey = ValueKey(
+            'create_invoice_${invoiceToEdit?.id ?? 'new'}_${_invoiceToClone?.id ?? ''}');
+        void onCreateNewInvoice() {
+          if(!mounted) return;
+          setState(() {
+            invoiceToEdit = null;
+            _invoiceToClone = null;
+          });
+        }
+        return _createInvoiceLayout == 'v1'
+            ? v1.CreateInvoiceScreen(
+                key: createInvoiceKey,
+                invoiceToEdit: invoiceToEdit,
+                cloneFrom: _invoiceToClone,
+                cloneType: _invoiceToClone != null ? _cloneType : null,
+                guard: _invoiceFormGuardV1,
+                onCreateNewInvoice: onCreateNewInvoice,
+              )
+            : CreateInvoiceScreenV2(
+                key: createInvoiceKey,
+                invoiceToEdit: invoiceToEdit,
+                cloneFrom: _invoiceToClone,
+                cloneType: _invoiceToClone != null ? _cloneType : null,
+                guard: _invoiceFormGuard,
+                onCreateNewInvoice: onCreateNewInvoice,
+              );
       case 2:
-        return InvoiceManagementScreen(
+        return InvoiceManagementScreenV2(
           key: const ValueKey('invoice_list'),
           onEditInvoice: editInvoice,
           onCloneInvoice: cloneInvoice,
@@ -142,7 +177,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           filterType: 'Invoice',
         );
       case 3:
-        return InvoiceManagementScreen(
+        return InvoiceManagementScreenV2(
           key: const ValueKey('quotation_list'),
           onEditInvoice: editInvoice,
           onCloneInvoice: cloneInvoice,
@@ -150,7 +185,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           filterType: 'Quotation',
         );
       case 4:
-        return InvoiceManagementScreen(
+        return InvoiceManagementScreenV2(
           key: const ValueKey('receipt_list'),
           onEditInvoice: editInvoice,
           onCloneInvoice: cloneInvoice,
@@ -158,16 +193,63 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           filterType: 'Receipt',
         );
       case 5:
-        return CustomerManagementScreen(user: _currentUser);
+        return CustomerManagementScreenV2(user: _currentUser);
       case 6:
-        return ProductManagementScreen(user: _currentUser);
+        return ProductManagementScreenV2(user: _currentUser);
       case 7:
         return const ReportsScreen();
       case 8:
-        return SettingsScreen(currentUser: _currentUser);
+        return SettingsScreen(
+          currentUser: _currentUser,
+          openAccessibilityToken: _accessibilityJumpToken,
+        );
       default:
         return const Center(child: Text('Unknown tab'));
     }
+  }
+
+  Widget _buildCreateInvoiceLayoutToggle() {
+    final isV2 = _createInvoiceLayout == 'v2';
+    return Material(
+      color: Theme.of(context).colorScheme.surface,
+      shape: CircleBorder(
+          side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
+      elevation: 2,
+      child: IconButton(
+        icon: Icon(isV2 ? Icons.auto_awesome : Icons.history, size: 20),
+        tooltip: 'Invoice layout: ${isV2 ? 'New' : 'Classic'} — tap for info',
+        onPressed: _showCreateInvoiceLayoutInfo,
+      ),
+    );
+  }
+
+  void _showCreateInvoiceLayoutInfo() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Invoice layout'),
+        content: Text(
+            'You\'re using the ${_createInvoiceLayout == 'v1' ? 'classic' : 'new'} "New Invoice" layout. '
+            'You can switch it from Settings > Accessibility. '
+            'Note: switching mid-edit discards any unsaved changes on this form.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          FilledButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              if (!await _canLeaveInvoiceForm()) return;
+              if (!mounted) return;
+              setState(() {
+                _selectedIndex = 8;
+                _accessibilityJumpToken = (_accessibilityJumpToken ?? 0) + 1;
+              });
+            },
+            child: const Text('Open Settings'),
+          ),
+        ],
+      ),
+    );
   }
 
   void editInvoice(Invoice invoice) {
@@ -182,6 +264,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       invoiceToEdit = invoice;
       _invoiceToClone = null;
     });
+    _shortcutsFocusNode.unfocus();
   }
 
   void cloneInvoice(Invoice invoice, String type) {
@@ -197,9 +280,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       _invoiceToClone = invoice;
       _cloneType = type;
     });
+    _shortcutsFocusNode.unfocus();
   }
 
   Future<bool> _canLeaveInvoiceForm() async {
+    if (_createInvoiceLayout == 'v1') {
+      return await _invoiceFormGuardV1.canLeave?.call() ?? true;
+    }
     return await _invoiceFormGuard.canLeave?.call() ?? true;
   }
 
@@ -207,6 +294,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     if (_selectedIndex == index) return;
     if (_selectedIndex == 1 && !await _canLeaveInvoiceForm()) return;
     if (_selectedIndex == 7 && index != 7) await _refreshUser();
+    if (index == 1) await _loadCreateInvoiceLayout();
     if (!mounted) return;
     setState(() {
       _selectedIndex = index;
@@ -215,6 +303,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         _invoiceToClone = null;
       }
     });
+    // See initState: only hold shortcuts focus for non-create-invoice tabs.
+    // Autofocus is a no-op while this scope already has a focused node, so
+    // on the way IN to tab 1 we must explicitly unfocus — otherwise Create
+    // Invoice's own `Focus(autofocus: true)` never actually takes focus and
+    // its Ctrl+S/N/M/O/P shortcuts silently stop firing.
+    if (index == 1) {
+      _shortcutsFocusNode.unfocus();
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _shortcutsFocusNode.requestFocus());
+    }
   }
 
   @override
@@ -223,12 +321,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       onTap: SessionManager.onUserActivity,
       onPanDown: (_) => SessionManager.onUserActivity(),
       behavior: HitTestBehavior.translucent,
-      child: Scaffold(
-        body: Row(
-          children: [
-            _buildSidebar(),
-            Expanded(child: buildScreen()),
-          ],
+      child: CallbackShortcuts(
+        bindings: {
+          const SingleActivator(LogicalKeyboardKey.keyQ, control: true): () =>
+              _selectTab(1),
+        },
+        child: Focus(
+          focusNode: _shortcutsFocusNode,
+          child: Scaffold(
+            body: Row(
+              children: [
+                _buildSidebar(),
+                Expanded(
+                  child: Stack(
+                    children: [
+                      buildScreen(),
+                      if (_selectedIndex == 1)
+                        Positioned(
+                            bottom: 16,
+                            right: 16,
+                            child: _buildCreateInvoiceLayoutToggle()),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -814,6 +932,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
   String _dashboardLayout = 'default';
   bool _showLayoutBanner = false;
   bool _showThemeBanner = false;
+  bool _showShortcutsBanner = false;
   bool _showSupportBanner = false;
   String _supportMilestone = '';
   List<Map<String, dynamic>> _monthlyRevenue = [];
@@ -847,6 +966,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
       ref.read(settingsRepositoryProvider).getSetting(SettingKey.supportBannerDismissed), // 12
       ref.read(productRepositoryProvider).getOutOfStockProducts(), // 13
       ref.read(settingsRepositoryProvider).getSetting(SettingKey.themeBannerDismissed), // 14
+      ref.read(settingsRepositoryProvider).getSetting(SettingKey.shortcutsBannerDismissed), // 15
     ]);
 
     final customerCount = results[0] as int;
@@ -865,6 +985,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     final supportDismissed = results[12] as String?;
     final outOfStock = results[13] as List<Product>;
     final themeBannerDismissed = results[14] as String?;
+    final shortcutsBannerDismissed = results[15] as String?;
     final String milestone = financials.count >= 100
         ? '100'
         : financials.count >= 50
@@ -890,6 +1011,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
       _topProducts = topProd;
       _showLayoutBanner = bannerDismissed != '1';
       _showThemeBanner = themeBannerDismissed != '1';
+      _showShortcutsBanner = shortcutsBannerDismissed != '1';
       _supportMilestone = milestone;
       _showSupportBanner = milestone.isNotEmpty && supportDismissed != milestone;
       isLoading = false;
@@ -912,227 +1034,172 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     if (mounted) setState(() => _showThemeBanner = false);
   }
 
-  Widget _buildLayoutDiscoveryBanner() {
-    return AnimatedSize(
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeOut,
-      child: _showLayoutBanner
-          ? Container(
-              margin: const EdgeInsets.only(bottom: 20),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFEFF6FF),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFBFDBFE)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.dashboard_customize_outlined,
-                      color: Color(0xFF2563EB), size: 20),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'New: Multiple dashboard layouts',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                            color: Color(0xFF1E40AF),
+  Future<void> _dismissShortcutsBanner() async {
+    await ref.read(settingsRepositoryProvider).setSetting(SettingKey.shortcutsBannerDismissed, '1');
+    if (mounted) setState(() => _showShortcutsBanner = false);
+  }
+
+  void _showShortcutsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.keyboard_outlined),
+            SizedBox(width: 12),
+            Text('Keyboard Shortcuts'),
+          ],
+        ),
+        content: SizedBox(
+          width: 380,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: AppShortcuts.all
+                .map((s) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                  color: Theme.of(context).colorScheme.outlineVariant),
+                            ),
+                            child: Text(s.$1,
+                                style: const TextStyle(
+                                    fontSize: 12, fontWeight: FontWeight.w600)),
                           ),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          'Switch between Default, Classic, Bento, and Simple Feed using the grid icon in the top-right.',
-                          style:
-                              TextStyle(fontSize: 12, color: Color(0xFF3B82F6)),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  TextButton(
-                    onPressed: _dismissLayoutBanner,
-                    style: TextButton.styleFrom(
-                      foregroundColor: const Color(0xFF2563EB),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: const Text('Got it',
-                        style: TextStyle(fontWeight: FontWeight.w600)),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 16),
-                    color: const Color(0xFF93C5FD),
-                    onPressed: _dismissLayoutBanner,
-                    tooltip: 'Dismiss',
-                    padding: EdgeInsets.zero,
-                    constraints:
-                        const BoxConstraints(minWidth: 28, minHeight: 28),
-                  ),
-                ],
-              ),
-            )
-          : const SizedBox.shrink(),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(s.$2, style: const TextStyle(fontSize: 13)),
+                          ),
+                        ],
+                      ),
+                    ))
+                .toList(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShortcutsDiscoveryBanner() {
+    return DiscoveryBanner(
+      visible: _showShortcutsBanner,
+      icon: Icons.keyboard_outlined,
+      iconColor: const Color(0xFF059669),
+      backgroundColor: const Color(0xFFECFDF5),
+      borderColor: const Color(0xFFA7F3D0),
+      title: const Text(
+        'New: Keyboard shortcuts',
+        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF065F46)),
+      ),
+      subtitle: const Text(
+        'Ctrl+Q for a new invoice, Ctrl+S to save, and more.',
+        style: TextStyle(fontSize: 12, color: Color(0xFF059669)),
+      ),
+      actionLabel: 'View all',
+      onAction: _showShortcutsDialog,
+      actionColor: const Color(0xFF059669),
+      onDismiss: _dismissShortcutsBanner,
+      dismissIconColor: const Color(0xFF6EE7B7),
+    );
+  }
+
+  Widget _buildLayoutDiscoveryBanner() {
+    return DiscoveryBanner(
+      visible: _showLayoutBanner,
+      icon: Icons.dashboard_customize_outlined,
+      iconColor: const Color(0xFF2563EB),
+      backgroundColor: const Color(0xFFEFF6FF),
+      borderColor: const Color(0xFFBFDBFE),
+      title: const Text(
+        'New: Multiple dashboard layouts',
+        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF1E40AF)),
+      ),
+      subtitle: const Text(
+        'Switch between Default, Classic, Bento, and Simple Feed using the grid icon in the top-right.',
+        style: TextStyle(fontSize: 12, color: Color(0xFF3B82F6)),
+      ),
+      actionLabel: 'Got it',
+      onAction: _dismissLayoutBanner,
+      actionColor: const Color(0xFF2563EB),
+      onDismiss: _dismissLayoutBanner,
+      dismissIconColor: const Color(0xFF93C5FD),
     );
   }
 
   Widget _buildThemeDiscoveryBanner() {
-    return AnimatedSize(
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeOut,
-      child: _showThemeBanner
-          ? Container(
-              margin: const EdgeInsets.only(bottom: 20),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5F3FF),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFDDD6FE)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.dark_mode_outlined,
-                      color: Color(0xFF7C3AED), size: 20),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              'New: Dark mode',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                                color: Color(0xFF5B21B6),
-                              ),
-                            ),
-                            SizedBox(width: 6),
-                            _BetaTag(),
-                          ],
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          'We\'re still polishing it — switch it on from Settings > Company Info and let us know what looks off.',
-                          style:
-                              TextStyle(fontSize: 12, color: Color(0xFF7C3AED)),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  TextButton(
-                    onPressed: _dismissThemeBanner,
-                    style: TextButton.styleFrom(
-                      foregroundColor: const Color(0xFF7C3AED),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: const Text('Got it',
-                        style: TextStyle(fontWeight: FontWeight.w600)),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 16),
-                    color: const Color(0xFFC4B5FD),
-                    onPressed: _dismissThemeBanner,
-                    tooltip: 'Dismiss',
-                    padding: EdgeInsets.zero,
-                    constraints:
-                        const BoxConstraints(minWidth: 28, minHeight: 28),
-                  ),
-                ],
-              ),
-            )
-          : const SizedBox.shrink(),
+    return DiscoveryBanner(
+      visible: _showThemeBanner,
+      icon: Icons.dark_mode_outlined,
+      iconColor: const Color(0xFF7C3AED),
+      backgroundColor: const Color(0xFFF5F3FF),
+      borderColor: const Color(0xFFDDD6FE),
+      title: const Row(
+        children: [
+          Text(
+            'New: Dark mode',
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF5B21B6)),
+          ),
+          SizedBox(width: 6),
+          _BetaTag(),
+        ],
+      ),
+      subtitle: const Text(
+        'We\'re still polishing it — switch it on from Settings > Company Info and let us know what looks off.',
+        style: TextStyle(fontSize: 12, color: Color(0xFF7C3AED)),
+      ),
+      actionLabel: 'Got it',
+      onAction: _dismissThemeBanner,
+      actionColor: const Color(0xFF7C3AED),
+      onDismiss: _dismissThemeBanner,
+      dismissIconColor: const Color(0xFFC4B5FD),
     );
   }
 
   Widget _buildSupportBanner() {
     final bool isReviewMilestone = _supportMilestone == '10';
-    return AnimatedSize(
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeOut,
-      child: _showSupportBanner
-          ? Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFFBEB),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFFDE68A)),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                      isReviewMilestone
-                          ? Icons.star_outline
-                          : Icons.celebration_outlined,
-                      color: const Color(0xFFD97706), size: 22),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'You\'ve created $_supportMilestone invoices!',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                            color: Color(0xFF92400E),
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          isReviewMilestone
-                              ? 'Enjoying Invoiso? A quick review helps a lot.'
-                              : 'Looks like Invoiso is part of your workflow. If it\'s been helpful, consider supporting the project — whenever it feels right.',
-                          style: const TextStyle(
-                              fontSize: 12, color: Color(0xFFB45309)),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  TextButton(
-                    onPressed: () async {
-                      final uri = Uri.parse(isReviewMilestone
-                          ? 'https://invoiso.co.in/review.html'
-                          : 'https://buymeacoffee.com/anoopp');
-                      if (await canLaunchUrl(uri)) await launchUrl(uri);
-                    },
-                    style: TextButton.styleFrom(
-                      foregroundColor: const Color(0xFF92400E),
-                      backgroundColor: const Color(0xFFFDE68A),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: Text(isReviewMilestone ? 'Review' : 'Support',
-                        style: const TextStyle(fontWeight: FontWeight.w600)),
-                  ),
-                  const SizedBox(width: 4),
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 16),
-                    color: const Color(0xFFD97706),
-                    onPressed: _dismissSupportBanner,
-                    tooltip: 'Dismiss',
-                    padding: EdgeInsets.zero,
-                    constraints:
-                        const BoxConstraints(minWidth: 28, minHeight: 28),
-                  ),
-                ],
-              ),
-            )
-          : const SizedBox.shrink(),
+    return DiscoveryBanner(
+      visible: _showSupportBanner,
+      margin: const EdgeInsets.only(bottom: 16),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      icon: isReviewMilestone ? Icons.star_outline : Icons.celebration_outlined,
+      iconSize: 22,
+      iconColor: const Color(0xFFD97706),
+      backgroundColor: const Color(0xFFFFFBEB),
+      borderColor: const Color(0xFFFDE68A),
+      title: Text(
+        'You\'ve created $_supportMilestone invoices!',
+        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF92400E)),
+      ),
+      subtitle: Text(
+        isReviewMilestone
+            ? 'Enjoying Invoiso? A quick review helps a lot.'
+            : 'Looks like Invoiso is part of your workflow. If it\'s been helpful, consider supporting the project — whenever it feels right.',
+        style: const TextStyle(fontSize: 12, color: Color(0xFFB45309)),
+      ),
+      actionLabel: isReviewMilestone ? 'Review' : 'Support',
+      onAction: () async {
+        final uri = Uri.parse(isReviewMilestone
+            ? 'https://invoiso.co.in/review.html'
+            : 'https://buymeacoffee.com/anoopp');
+        if (await canLaunchUrl(uri)) await launchUrl(uri);
+      },
+      actionColor: const Color(0xFF92400E),
+      actionBackgroundColor: const Color(0xFFFDE68A),
+      onDismiss: _dismissSupportBanner,
+      dismissIconColor: const Color(0xFFD97706),
     );
   }
 
@@ -1188,6 +1255,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
             children: [
               _buildLayoutDiscoveryBanner(),
               _buildThemeDiscoveryBanner(),
+              _buildShortcutsDiscoveryBanner(),
               _buildSupportBanner(),
               // ── Greeting Banner ──────────────────────────────
               _buildGreetingBanner(),
@@ -2533,6 +2601,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
             children: [
               _buildLayoutDiscoveryBanner(),
               _buildThemeDiscoveryBanner(),
+              _buildShortcutsDiscoveryBanner(),
               _buildSupportBanner(),
               _buildGreetingBanner(),
               const SizedBox(height: 20),
@@ -2630,6 +2699,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
             children: [
               _buildLayoutDiscoveryBanner(),
               _buildThemeDiscoveryBanner(),
+              _buildShortcutsDiscoveryBanner(),
               _buildSupportBanner(),
               _buildGreetingBanner(),
               const SizedBox(height: 20),
@@ -3601,6 +3671,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
             children: [
               _buildLayoutDiscoveryBanner(),
               _buildThemeDiscoveryBanner(),
+              _buildShortcutsDiscoveryBanner(),
               _buildSupportBanner(),
               _buildGreetingBanner(),
               const SizedBox(height: 20),

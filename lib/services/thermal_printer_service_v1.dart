@@ -36,20 +36,20 @@ class ThermalPrinterService {
                 const Text('No USB printers found.')
               else
                 ...discovered.map((p) => ListTile(
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(p.name),
-                      onTap: () async {
-                        Navigator.pop(dialogContext);
-                        final input = UsbPrinterInput(
-                          name: p.detail.name,
-                          vendorId: p.detail.vendorId,
-                          productId: p.detail.productId,
-                        );
-                        await _printToDevice(
-                            type: PrinterType.usb, model: input, invoice: invoice);
-                      },
-                    )),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(p.name),
+                  onTap: () async {
+                    Navigator.pop(dialogContext);
+                    final input = UsbPrinterInput(
+                      name: p.detail.name,
+                      vendorId: p.detail.vendorId,
+                      productId: p.detail.productId,
+                    );
+                    await _printToDevice(
+                        type: PrinterType.usb, model: input, invoice: invoice);
+                  },
+                )),
               if (kDebugMode) ...[
                 const Divider(height: 24),
                 const Text('Test via network (e.g. local ESC/POS listener)',
@@ -95,7 +95,7 @@ class ThermalPrinterService {
         ? await BackendServices.invoices.getPreviousBalanceDueForInvoice(invoice)
         : 0.0;
     final effectivePreviousBalance =
-        settings.showPreviousBalance ? previousBalanceDue : 0.0;
+    settings.showPreviousBalance ? previousBalanceDue : 0.0;
 
     final is58 = settings.pageSize == PageSize.thermal58;
 
@@ -421,9 +421,9 @@ class _NetworkPrintRowState extends State<_NetworkPrintRow> {
         IconButton(
           icon: _sending
               ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2))
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2))
               : const Icon(Icons.send),
           onPressed: _sending ? null : _send,
         ),

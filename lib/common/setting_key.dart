@@ -58,6 +58,14 @@ enum SettingKey {
   showWebsite, // whether to show company website on PDF (default true)
   showAddress, // whether to show company address on PDF (default true)
   showLogo, // whether to show company logo on PDF (default true)
+  productColumnsBannerDismissed, // '1' once user dismisses the product-columns discovery banner
+  thermalCompanyNameSize, // 'xsmall' | 'small' | 'medium' | 'large' — company name font size on thermal receipts; default 'medium'
+  lastUsedThermalPrinter, // JSON-encoded Printer of the last device successfully printed to, used to skip a full rescan on next open
+  productColumnsConfig, // JSON ProductColumnsConfig — which optional product fields (and invoice extra cost) are visible/editable
+  shortcutsBannerDismissed, // '1' once user dismisses the keyboard-shortcuts discovery banner
+  createInvoiceLayout, // which create-invoice screen layout to use: 'v1' | 'v2'
+  showCustomerStatsCards, // whether the stat cards row is shown on customer management v2 (default true)
+  showProductStatsCards, // whether the stat cards row is shown on product management v2 (default true)
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -181,6 +189,23 @@ extension SettingKeyExtension on SettingKey {
         return 'show_address';
       case SettingKey.showLogo:
         return 'show_logo';
+      case SettingKey.productColumnsBannerDismissed:
+        return 'product_columns_banner_dismissed';
+      case SettingKey.thermalCompanyNameSize:
+        return 'thermal_company_name_size';
+      case SettingKey.lastUsedThermalPrinter:
+        return 'last_used_thermal_printer';
+      case SettingKey.productColumnsConfig:
+        return 'product_columns_config';
+      case SettingKey.shortcutsBannerDismissed:
+        return 'shortcuts_banner_dismissed';
+      case SettingKey.createInvoiceLayout:
+        return 'create_invoice_layout';
+      case SettingKey.showCustomerStatsCards:
+        return 'show_customer_stats_cards';
+      case SettingKey.showProductStatsCards:
+        return 'show_product_stats_cards';
+
     }
   }
 }

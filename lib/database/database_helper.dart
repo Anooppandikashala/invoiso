@@ -15,7 +15,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 38;
+  final dbVersion = 39;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -113,6 +113,8 @@ class DatabaseHelper {
         additional_costs TEXT,
         previous_balance REAL DEFAULT 0.0,
         invoice_number TEXT,
+        invoice_discount_type TEXT DEFAULT 'percent',
+        invoice_discount_value REAL DEFAULT 0.0,
         invoice_title TEXT
       )
     ''');
@@ -548,16 +550,13 @@ class DatabaseHelper {
       });
     }
 
-    if (oldVersion < 33) {
-      await _runMigrationStep(db, 33, 'add_invoice_title_to_invoices',
+    if (oldVersion < 34) {
+      await _runMigrationStep(db, 34, 'add_invoice_title_to_invoices',
           () async {
         await db.execute(
           'ALTER TABLE invoices ADD COLUMN invoice_title TEXT',
         );
       });
-    }
-
-    if (oldVersion < 34) {
       await _runMigrationStep(db, 34, 'add_unlimited_stock_to_products',
           () async {
         await db.execute(
@@ -585,11 +584,11 @@ class DatabaseHelper {
       });
     }
 
-    if (oldVersion < 36) {
+    if (oldVersion < 37) {
       // invoice_items had PRIMARY KEY (invoice_id, product_id), which blocked
       // adding the same product twice to one invoice (allow_duplicate_invoice_items
       // setting). SQLite can't drop a PK via ALTER, so rebuild the table.
-      await _runMigrationStep(db, 36, 'add_id_pk_to_invoice_items',
+      await _runMigrationStep(db, 37, 'add_id_pk_to_invoice_items',
           () async {
         await db.execute('ALTER TABLE invoice_items RENAME TO invoice_items_old');
         await db.execute('''
@@ -630,8 +629,8 @@ class DatabaseHelper {
       });
     }
 
-    if (oldVersion < 37) {
-      await _runMigrationStep(db, 37, 'add_fssai_code_to_company_info', () async {
+    if (oldVersion < 38) {
+      await _runMigrationStep(db, 38, 'add_fssai_code_to_company_info', () async {
         await db.execute(
           "ALTER TABLE company_info ADD COLUMN fssai_code TEXT DEFAULT ''",
         );
@@ -648,6 +647,19 @@ class DatabaseHelper {
           db, 38, 'add_product_price_includes_tax_to_invoice_items', () async {
         await db.execute(
           "ALTER TABLE invoice_items ADD COLUMN product_price_includes_tax INTEGER DEFAULT 0",
+        );
+      });
+    }
+
+    if(oldVersion < 39)
+    {
+      await _runMigrationStep(
+          db, 39, 'add_invoice_discount_to_invoices', () async {
+        await db.execute(
+          "ALTER TABLE invoices ADD COLUMN invoice_discount_type TEXT DEFAULT 'percent'",
+        );
+        await db.execute(
+          'ALTER TABLE invoices ADD COLUMN invoice_discount_value REAL DEFAULT 0.0',
         );
       });
     }

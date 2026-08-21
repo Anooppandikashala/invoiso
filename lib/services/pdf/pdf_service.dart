@@ -15,9 +15,8 @@ import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/invoice.dart';
-import 'package:invoiso/services/pdf_font_service.dart';
-import 'package:invoiso/services/thermal_printer_service.dart';
-
+import 'package:invoiso/services/pdf/pdf_font_service.dart';
+import 'package:invoiso/services/thermal_printer_service_v1.dart';
 import 'pdf_settings.dart';
 import 'pdf_widgets.dart';
 import 'pdf_template_classic.dart';
@@ -116,6 +115,7 @@ class PDFService {
       BackendServices.settings.getShowWebsite(), // 35
       BackendServices.settings.getShowAddress(), // 36
       BackendServices.settings.getShowLogo(), // 37
+      BackendServices.settings.getSetting(SettingKey.thermalCompanyNameSize), // 38
     ]);
 
     final rawPrefix = (results[2] as String?) ?? 'INV';
@@ -175,6 +175,7 @@ class PDFService {
       showWebsite: results[35] as bool,
       showAddress: results[36] as bool,
       showLogo: results[37] as bool,
+      thermalCompanyNameSize: (results[38] as String?) ?? 'medium',
     );
   }
 
@@ -542,7 +543,8 @@ class PDFService {
 
   static Future<void> downloadPDF(BuildContext context, Invoice invoice) async {
     try {
-      final pdf = await generateInvoicePDF(invoice);
+      final dateFmt = await BackendServices.settings.getDateFormat();
+      final pdf = await generateInvoicePDF(invoice, datePattern: dateFmt.key);
       final bytes = await pdf.save();
       if (context.mounted) {
         await _downloadWithPicker(context, bytes, invoice);

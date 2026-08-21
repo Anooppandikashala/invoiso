@@ -19,6 +19,8 @@ abstract class SettingsRepository {
   Future<void> setUpiIds(List<UpiEntry> entries);
   Future<List<BankAccount>> getBankAccounts();
   Future<void> setBankAccounts(List<BankAccount> accounts);
+  Future<ProductColumnsConfig> getProductColumnsConfig();
+  Future<void> setProductColumnsConfig(ProductColumnsConfig config);
   Future<bool> getShowBankDetails();
   Future<void> setShowBankDetails(bool show);
   Future<bool> getShowPhone();

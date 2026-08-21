@@ -1,38 +1,28 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image/image.dart' as img;
+import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/constants.dart';
-import 'package:invoiso/providers/app_config_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/providers/theme_provider.dart';
-import 'package:invoiso/services/update_service.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:invoiso/common/common.dart';
-import 'package:invoiso/screens/backup_management_screen.dart';
-import 'package:invoiso/screens/invoice_settings_screen.dart';
-import 'package:invoiso/screens/pdf_settings_screen.dart';
-import 'package:invoiso/screens/user_management_screen.dart';
 import 'package:invoiso/common/invoiso_colors.dart';
 import 'package:invoiso/models/company_info.dart';
-import 'package:invoiso/models/user.dart';
-import 'dart:convert';
-import 'dart:io';
-import 'package:image/image.dart' as img;
 
-import '../common/app_countries.dart';
+import 'package:invoiso/common/app_countries.dart';
 
-class SettingsScreen extends ConsumerStatefulWidget {
-  final User currentUser;
-  const SettingsScreen({super.key, required this.currentUser});
+class CompanyInfoScreen extends ConsumerStatefulWidget {
+  const CompanyInfoScreen({super.key});
 
   @override
-  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<CompanyInfoScreen> createState() => _CompanyInfoScreenState();
 }
 
-class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  int _selectedIndex = 0;
-
+class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
   final nameController = TextEditingController();
   final addressController = TextEditingController();
   final phoneController = TextEditingController();
@@ -69,13 +59,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _showLogo = true;
   BusinessType _businessType = BusinessType.both;
 
-  int? _highlightCustomIndex;
-
-  // Update check state
-  UpdateInfo? _updateInfo;
-  bool _isCheckingUpdate = false;
-  bool _updateCheckFailed = false;
-
   File? _selectedLogoFile;
   String? _base64Logo;
 
@@ -83,38 +66,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void initState() {
     super.initState();
     _loadCompanyInfo();
-    if (ref.read(appEditionConfigProvider).enableUpdateCheck)
-    {
-      _loadCachedUpdateInfo();
-    }
-  }
-
-  Future<void> _loadCachedUpdateInfo() async {
-    final cached = await ref.read(settingsRepositoryProvider).getSetting(SettingKey.lastKnownLatestVersion);
-    if (cached != null && cached.isNotEmpty && mounted) {
-      setState(() {
-        _updateInfo = UpdateInfo(latestVersion: cached, currentVersion: ref.read(appEditionConfigProvider).version);
-      });
-    }
-  }
-
-  Future<void> _checkForUpdatesNow() async {
-    if (_isCheckingUpdate) return;
-    setState(() {
-      _isCheckingUpdate = true;
-      _updateCheckFailed = false;
-    });
-    final info = await UpdateService.checkForUpdate(force: true);
-    if (!mounted) return;
-    setState(() {
-      _isCheckingUpdate = false;
-      if (info != null) {
-        _updateInfo = info;
-        _updateCheckFailed = false;
-      } else {
-        _updateCheckFailed = true;
-      }
-    });
   }
 
   Future<void> _loadCompanyInfo() async {
@@ -394,7 +345,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     });
   }
 
-  Widget _buildCompanyInfoForm() {
+
+  @override
+  Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).primaryColor;
 
     final logoContent = _selectedLogoFile != null
@@ -929,84 +882,88 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     final isDefault = index == _defaultBankIndex;
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 10),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Default star
-                          Tooltip(
-                            message: isDefault ? 'Default' : 'Set as Default',
-                            child: IconButton(
-                              icon: Icon(
-                                isDefault ? Icons.star_rounded : Icons.star_outline_rounded,
-                                color: isDefault ? Colors.amber[700] : Theme.of(context).colorScheme.onSurfaceVariant,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Default star
+                            Tooltip(
+                              message: isDefault ? 'Default' : 'Set as Default',
+                              child: IconButton(
+                                icon: Icon(
+                                  isDefault ? Icons.star_rounded : Icons.star_outline_rounded,
+                                  color: isDefault ? Colors.amber[700] : Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                                onPressed: () => setState(() => _defaultBankIndex = index),
                               ),
-                              onPressed: () => setState(() => _defaultBankIndex = index),
                             ),
-                          ),
-                          SizedBox(
-                            width: 130,
-                            child: _buildField(
-                              controller: row.label,
-                              label: 'Label',
-                              icon: Icons.label_outline_rounded,
-                              hint: 'e.g. Main Account',
-                              maxLength: 40,
+                            SizedBox(
+                              width: 130,
+                              child: _buildField(
+                                controller: row.label,
+                                label: 'Label',
+                                icon: Icons.label_outline_rounded,
+                                hint: 'e.g. Main Account',
+                                maxLength: 40,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          SizedBox(
-                            width: 140,
-                            child: _buildField(
-                              controller: row.bankName,
-                              label: 'Bank Name',
-                              icon: Icons.account_balance_outlined,
-                              hint: 'e.g. HDFC Bank',
-                              maxLength: 60,
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              width: 140,
+                              child: _buildField(
+                                controller: row.bankName,
+                                label: 'Bank Name',
+                                icon: Icons.account_balance_outlined,
+                                hint: 'e.g. HDFC Bank',
+                                maxLength: 60,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildField(
-                              controller: row.accountNumber,
-                              label: 'Account Number',
-                              icon: Icons.numbers_outlined,
-                              hint: '123456789012',
-                              maxLength: 20,
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              width: 180,
+                              child: _buildField(
+                                controller: row.accountNumber,
+                                label: 'Account Number',
+                                icon: Icons.numbers_outlined,
+                                hint: '123456789012',
+                                maxLength: 20,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          SizedBox(
-                            width: 130,
-                            child: _buildField(
-                              controller: row.ifscCode,
-                              label: 'IFSC Code',
-                              icon: Icons.code_outlined,
-                              hint: 'HDFC0001234',
-                              maxLength: 11,
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              width: 130,
+                              child: _buildField(
+                                controller: row.ifscCode,
+                                label: 'IFSC Code',
+                                icon: Icons.code_outlined,
+                                hint: 'HDFC0001234',
+                                maxLength: 11,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          IconButton(
-                            tooltip: 'Remove',
-                            icon: const Icon(Icons.remove_circle_outline,
-                                color: Colors.redAccent),
-                            onPressed: () {
-                              setState(() {
-                                _bankControllers[index].label.dispose();
-                                _bankControllers[index].bankName.dispose();
-                                _bankControllers[index].accountNumber.dispose();
-                                _bankControllers[index].ifscCode.dispose();
-                                _bankControllers.removeAt(index);
-                                if (_defaultBankIndex == index) {
-                                  _defaultBankIndex = null;
-                                } else if (_defaultBankIndex != null &&
-                                    _defaultBankIndex! > index) {
-                                  _defaultBankIndex = _defaultBankIndex! - 1;
-                                }
-                              });
-                            },
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            IconButton(
+                              tooltip: 'Remove',
+                              icon: const Icon(Icons.remove_circle_outline,
+                                  color: Colors.redAccent),
+                              onPressed: () {
+                                setState(() {
+                                  _bankControllers[index].label.dispose();
+                                  _bankControllers[index].bankName.dispose();
+                                  _bankControllers[index].accountNumber.dispose();
+                                  _bankControllers[index].ifscCode.dispose();
+                                  _bankControllers.removeAt(index);
+                                  if (_defaultBankIndex == index) {
+                                    _defaultBankIndex = null;
+                                  } else if (_defaultBankIndex != null &&
+                                      _defaultBankIndex! > index) {
+                                    _defaultBankIndex = _defaultBankIndex! - 1;
+                                  }
+                                });
+                              },
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   }),
@@ -1043,643 +1000,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _buildCustomizationScreen() {
-    final primaryColor = Theme.of(context).primaryColor;
-
-    const formUrl = 'https://forms.gle/LyX6Z2kBNR2BpwVu7';
-
-    final options = [
-      _CustomOption(
-        icon: Icons.picture_as_pdf_rounded,
-        title: 'Custom PDF Template',
-        description:
-            'Get an invoice template designed to match your brand — your colors, fonts, logo placement, and layout.',
-        price: '\$30 – \$50',
-        delivery: '2–5 days',
-      ),
-      _CustomOption(
-        icon: Icons.tune_rounded,
-        title: 'Custom Fields',
-        description:
-            'Need extra fields on your invoices? (PO number, project code, department, etc.) We\'ll add them for you.',
-        price: '\$25 – \$100',
-        delivery: '1–3 days',
-      ),
-      _CustomOption(
-        icon: Icons.branding_watermark_rounded,
-        title: 'White-label / Remove Branding',
-        description:
-            'Remove all Invoiso branding from the app and PDF outputs, and replace it with your own company identity.',
-        price: '\$100 – \$150',
-        delivery: '3–6 days',
-      ),
-      _CustomOption(
-        icon: Icons.category_rounded,
-        title: 'Industry-specific Build',
-        description:
-            'Need a version tailored to your industry? (construction, consulting, retail, etc.) We\'ll customise the workflow to fit your needs.',
-        price: '\$175 – \$200',
-        delivery: '5–10 days',
-      ),
-    ];
-
-    return Scaffold(
-      backgroundColor: Theme.of(context).brightness == Brightness.dark
-          ? null
-          : Colors.grey[50],
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'CUSTOMIZATION',
-              style: TextStyle(
-                fontSize: AppFontSize.xsmall,
-                fontWeight: FontWeight.w700,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                letterSpacing: 1.2,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Tailored just for your business',
-              style: TextStyle(
-                fontSize: AppFontSize.xlarge,
-                fontWeight: FontWeight.w700,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Pick what you need and send a request. We\'ll get back to you within 24 hours.',
-              style: TextStyle(fontSize: AppFontSize.small, color: Theme.of(context).colorScheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: 32),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 380,
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 16,
-                childAspectRatio: 1.35,
-              ),
-              itemCount: options.length,
-              itemBuilder: (context, index) {
-                final opt = options[index];
-                final isHighlighted = _highlightCustomIndex == index;
-                return Card(
-                  elevation: isHighlighted ? 4 : 0,
-                  shadowColor: isHighlighted ? primaryColor.withValues(alpha: 0.3) : Colors.transparent,
-                  color: isHighlighted
-                      ? primaryColor.withValues(alpha: 0.04)
-                      : Theme.of(context).colorScheme.surfaceContainer,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppBorderRadius.medium),
-                    side: BorderSide(
-                      color: isHighlighted ? primaryColor : Theme.of(context).colorScheme.outlineVariant,
-                      width: isHighlighted ? 2 : 1,
-                    ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: primaryColor.withValues(alpha: isHighlighted ? 0.15 : 0.08),
-                                borderRadius: BorderRadius.circular(AppBorderRadius.small),
-                              ),
-                              child: Icon(opt.icon, size: 20, color: primaryColor),
-                            ),
-                            if (isHighlighted) ...[
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: primaryColor,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: const Text(
-                                  'Recommended',
-                                  style: TextStyle(
-                                    fontSize: AppFontSize.xsmall,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ],
-                            const Spacer(),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: primaryColor.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                opt.price,
-                                style: TextStyle(
-                                  fontSize: AppFontSize.xsmall,
-                                  fontWeight: FontWeight.w700,
-                                  color: primaryColor,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-                        Text(
-                          opt.title,
-                          style: TextStyle(
-                            fontSize: AppFontSize.medium,
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Expanded(
-                          child: Text(
-                            opt.description,
-                            style: TextStyle(
-                              fontSize: AppFontSize.xsmall,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              height: 1.5,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Icon(Icons.schedule_rounded, size: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                'Delivery: ${opt.delivery}',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(fontSize: AppFontSize.xsmall, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            FilledButton(
-                              style: FilledButton.styleFrom(
-                                backgroundColor: primaryColor,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                minimumSize: Size.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              onPressed: () async {
-                                if (_highlightCustomIndex != null) {
-                                  setState(() => _highlightCustomIndex = null);
-                                }
-                                final uri = Uri.parse(formUrl);
-                                if (await canLaunchUrl(uri)) {
-                                  await launchUrl(uri, mode: LaunchMode.externalApplication);
-                                } else {
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Could not open the form. Please visit forms.gle/LyX6Z2kBNR2BpwVu7 in your browser.')),
-                                    );
-                                  }
-                                }
-                              },
-                              child: Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Text(
-                                  'Request',
-                                  style: TextStyle(fontSize: AppFontSize.xsmall, fontWeight: FontWeight.w600),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.amber.shade50,
-                borderRadius: BorderRadius.circular(AppBorderRadius.medium),
-                border: Border.all(color: Colors.amber.shade200),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline_rounded, size: 18, color: Colors.amber.shade700),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Prices are indicative. Final quote may vary based on complexity. Payment is collected after scope agreement.',
-                      style: TextStyle(fontSize: AppFontSize.xsmall, color: Colors.amber.shade800),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppInfoScreen() {
-    final primaryColor = Theme.of(context).primaryColor;
-    final cfg = ref.watch(appEditionConfigProvider);
-
-    return Scaffold(
-      backgroundColor: Theme.of(context).brightness == Brightness.dark
-          ? null
-          : Colors.grey[50],
-      appBar: AppBar(
-        title: const Text('Software Information'),
-        backgroundColor: Theme.of(context).appBarTheme.backgroundColor ??
-            primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: false,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(32),
-        child: Center(
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 820),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // ── Hero card ────────────────────────────────────────────
-                Card(
-                  elevation: 0,
-                  color: Theme.of(context).colorScheme.surfaceContainer,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppBorderRadius.medium),
-                    side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 32, vertical: 28),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Image.asset(
-                          Theme.of(context).brightness == Brightness.dark ? 'assets/images/logo_dark.png' : 'assets/images/logo.png',
-                          width: 130,
-                          height: 52,
-                          fit: BoxFit.contain,
-                        ),
-                        const SizedBox(width: 24),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                cfg.name.toUpperCase(),
-                                style: const TextStyle(
-                                  fontSize: AppFontSize.xxlarge,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                cfg.description,
-                                style: TextStyle(
-                                  fontSize: AppFontSize.small,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                  height: 1.5,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 24),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: primaryColor.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                                color: primaryColor.withValues(alpha: 0.3)),
-                          ),
-                          child: Text(
-                            cfg.version,
-                            style: TextStyle(
-                              fontSize: AppFontSize.medium,
-                              fontWeight: FontWeight.bold,
-                              color: primaryColor,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                // ── Two info cards ───────────────────────────────────────
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: _infoCard('APP DETAILS', [
-                        _infoRow(Icons.apps_rounded, 'App Name',
-                            cfg.name.toUpperCase()),
-                        _infoRow(Icons.tag_rounded, 'Version',
-                            cfg.version),
-                        _infoRow(Icons.gavel_rounded, 'License',
-                            cfg.license.toUpperCase()),
-                      ]),
-                    ),
-                    const SizedBox(width: 20),
-                    Expanded(
-                      flex: 3,
-                      child: _infoCard('DEVELOPER', [
-                        _infoRow(Icons.person_rounded, 'Developer',
-                            cfg.developer.toUpperCase()),
-                        _infoRow(Icons.email_rounded, 'Support Email',
-                            cfg.supportEmail),
-                        _infoRow(Icons.language_rounded, 'Website',
-                            cfg.website),
-                      ]),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 20),
-
-                // ── Update card ──────────────────────────────────────────
-                if (cfg.enableUpdateCheck)
-                  _buildUpdateCard(),
-
-                const SizedBox(height: 32),
-
-                // ── Footer ───────────────────────────────────────────────
-                Text(
-                  '© ${DateTime.now().year} ${cfg.developer}  |  Released under the ${cfg.license} License',
-                  style: TextStyle(
-                    fontSize: AppFontSize.small,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildUpdateCard() {
-    final primaryColor = Theme.of(context).primaryColor;
-    final cfg = ref.watch(appEditionConfigProvider);
-    final info = _updateInfo;
-    final hasUpdate = info != null && info.hasUpdate;
-    final isUpToDate = info != null && !info.hasUpdate;
-
-    Widget statusBadge;
-    if (_isCheckingUpdate) {
-      statusBadge = Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 12,
-            height: 12,
-            child: CircularProgressIndicator(strokeWidth: 2, color: primaryColor),
-          ),
-          const SizedBox(width: 8),
-          Text('Checking...', style: TextStyle(fontSize: AppFontSize.xsmall, color: primaryColor)),
-        ],
-      );
-    } else if (hasUpdate) {
-      statusBadge = Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.orange.shade50,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.orange.shade300),
-        ),
-        child: Text(
-          'Update Available',
-          style: TextStyle(fontSize: AppFontSize.xsmall, color: Colors.orange.shade800, fontWeight: FontWeight.w600),
-        ),
-      );
-    } else if (isUpToDate) {
-      statusBadge = Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.green.shade50,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.green.shade300),
-        ),
-        child: Text(
-          'Up to date',
-          style: TextStyle(fontSize: AppFontSize.xsmall, color: Colors.green.shade700, fontWeight: FontWeight.w600),
-        ),
-      );
-    } else if (_updateCheckFailed) {
-      statusBadge = Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.red.shade50,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.red.shade200),
-        ),
-        child: Text(
-          'Check failed',
-          style: TextStyle(fontSize: AppFontSize.xsmall, color: Colors.red.shade600, fontWeight: FontWeight.w600),
-        ),
-      );
-    } else {
-      statusBadge = const SizedBox.shrink();
-    }
-
-    return Card(
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainer,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppBorderRadius.medium),
-        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  'UPDATES',
-                  style: TextStyle(
-                    fontSize: AppFontSize.xsmall,
-                    fontWeight: FontWeight.w700,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    letterSpacing: 1.0,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                statusBadge,
-              ],
-            ),
-            const SizedBox(height: 16),
-            const Divider(height: 1, color: Color(0xFFF5F5F5)),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      Icon(Icons.tag_rounded, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                      const SizedBox(width: 14),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Current Version',
-                              style: TextStyle(fontSize: AppFontSize.xsmall, color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500)),
-                          const SizedBox(height: 3),
-                          Text(cfg.version,
-                              style: const TextStyle(fontSize: AppFontSize.medium, fontWeight: FontWeight.w500)),
-                        ],
-                      ),
-                      if (info != null) ...[
-                        const SizedBox(width: 32),
-                        Icon(Icons.new_releases_outlined, size: 18, color: hasUpdate ? Colors.orange.shade400 : Theme.of(context).colorScheme.onSurfaceVariant),
-                        const SizedBox(width: 14),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Latest Version',
-                                style: TextStyle(fontSize: AppFontSize.xsmall, color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500)),
-                            const SizedBox(height: 3),
-                            Text(
-                              info.latestVersion,
-                              style: TextStyle(
-                                fontSize: AppFontSize.medium,
-                                fontWeight: FontWeight.w600,
-                                color: hasUpdate ? Colors.orange.shade700 : Colors.green.shade700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                Row(
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: _isCheckingUpdate ? null : _checkForUpdatesNow,
-                      icon: const Icon(Icons.refresh_rounded, size: 16),
-                      label: const Text('Check Now'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: primaryColor,
-                        side: BorderSide(color: primaryColor.withValues(alpha: 0.4)),
-                      ),
-                    ),
-                    if (hasUpdate) ...[
-                      const SizedBox(width: 10),
-                      FilledButton.icon(
-                        style: FilledButton.styleFrom(backgroundColor: primaryColor),
-                        icon: const Icon(Icons.download_rounded, size: 16),
-                        label: const Text('Download'),
-                        onPressed: () => launchUrl(
-                          Uri.parse('https://invoiso.co.in/download.html'),
-                          mode: LaunchMode.externalApplication,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _infoCard(String title, List<Widget> rows) {
-    return Card(
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainer,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppBorderRadius.medium),
-        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: AppFontSize.xsmall,
-                fontWeight: FontWeight.w700,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                letterSpacing: 1.0,
-              ),
-            ),
-            const SizedBox(height: 16),
-            ...rows.expand((row) => [
-                  row,
-                  Divider(height: 1, color: Theme.of(context).colorScheme.surfaceContainerHighest),
-                ]).toList()
-              ..removeLast(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _infoRow(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: AppFontSize.xsmall,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                SelectableText(
-                  value,
-                  style: const TextStyle(
-                    fontSize: AppFontSize.medium,
-                    fontWeight: FontWeight.w500,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _sectionLabel(String title) {
     return Text(
@@ -1692,6 +1012,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
     );
   }
+
 
   Widget _buildCountryField() {
     final primaryColor = Theme.of(context).primaryColor;
@@ -1759,6 +1080,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+
   Widget _buildField({
     required TextEditingController controller,
     required String label,
@@ -1819,182 +1141,4 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _buildDummySection(String title) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        backgroundColor: Theme.of(context).appBarTheme.backgroundColor ??
-            Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: const [
-              Icon(Icons.add_circle_outline, size: 64, color: Colors.blueGrey),
-              AppSpacing.hMedium,
-              Text("Options coming soon...", style: TextStyle(fontSize: 18)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildContent(AppEditionConfig cfg) {
-    final bool hasExtraTab = cfg.extraSettingsTab != null;
-    final int customizeIndex =
-        cfg.isCloud ? (hasExtraTab ? 5 : 4) : 6;
-    // When kIsCloud, Backup (1) and Users (2) tabs are hidden. If the edition
-    // also supplies an extraSettingsTab (e.g. cloud's Team Management), it
-    // takes rail slot 1 and maps to canonical case 7; everything after it
-    // shifts down by 1 instead of 2. Offset back to match canonical case
-    // numbers used below.
-    final int idx;
-    if (!cfg.isCloud) {
-      idx = _selectedIndex;
-    } else if (hasExtraTab && _selectedIndex == 1) {
-      idx = 7;
-    } else if (_selectedIndex == 0) {
-      idx = 0;
-    } else {
-      idx = _selectedIndex + (hasExtraTab ? 1 : 2);
-    }
-    switch (idx) {
-      case 0:
-        return _buildCompanyInfoForm();
-      case 1:
-        return BackupManagementScreen();
-      case 2:
-        return UserManagementScreen(
-          currentUser: widget.currentUser,
-        );
-      case 7:
-        return cfg.extraSettingsTab!(context);
-      case 3:
-        return PdfSettingsScreen(
-          onNavigateToCustomization: () {
-            setState(() {
-              _selectedIndex = customizeIndex;
-              _highlightCustomIndex = 0;
-            });
-          },
-        );
-      case 4:
-        return InvoiceSettingsScreen(
-          onNavigateToCustomization: () {
-            setState(() {
-              _selectedIndex = customizeIndex;
-              _highlightCustomIndex = 1;
-            });
-          },
-        );
-      case 5:
-        return _buildAppInfoScreen();
-      case 6:
-        return _buildCustomizationScreen();
-      default:
-        return _buildDummySection("Invoice Settings");
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final cfg = ref.watch(appEditionConfigProvider);
-    if (!widget.currentUser.isAdmin()) {
-      return _buildAppInfoScreen();
-    }
-
-    return Scaffold(
-      body: Row(
-        children: [
-          NavigationRail(
-            selectedIndex: _selectedIndex,
-            labelType: NavigationRailLabelType.all,
-            onDestinationSelected: (int index) {
-              setState(() {
-                _selectedIndex = index;
-              });
-            },
-            destinations: [
-              const NavigationRailDestination(
-                icon: Icon(Icons.business),
-                label: Text('Company Info'),
-              ),
-              if (cfg.extraSettingsTab != null)
-                NavigationRailDestination(
-                  icon: Icon(cfg.extraSettingsTabIcon ?? Icons.group),
-                  label: Text(cfg.extraSettingsTabLabel ?? 'Team'),
-                ),
-              if (!cfg.isCloud)
-                const NavigationRailDestination(
-                  icon: Icon(Icons.backup),
-                  label: Text('Backup'),
-                ),
-              if (!cfg.isCloud)
-                const NavigationRailDestination(
-                  icon: Icon(Icons.people),
-                  label: Text('Users'),
-                ),
-              const NavigationRailDestination(
-                icon: Icon(Icons.settings),
-                label: Text('PDF Settings'),
-              ),
-              const NavigationRailDestination(
-                icon: Icon(Icons.file_present),
-                label: Text('Invoice Settings'),
-              ),
-              NavigationRailDestination(
-                icon: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    const Icon(Icons.info_outline),
-                    if (cfg.enableUpdateCheck && _updateInfo?.hasUpdate == true)
-                      Positioned(
-                        right: -4,
-                        top: -4,
-                        child: Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Colors.orange,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                label: const Text('Software Info'),
-              ),
-              const NavigationRailDestination(
-                icon: Icon(Icons.tune_rounded),
-                label: Text('Customize'),
-              ),
-            ],
-          ),
-          const VerticalDivider(thickness: 1, width: 1),
-          Expanded(child: _buildContent(cfg)),
-        ],
-      ),
-    );
-  }
-}
-
-class _CustomOption {
-  final IconData icon;
-  final String title;
-  final String description;
-  final String price;
-  final String delivery;
-
-  const _CustomOption({
-    required this.icon,
-    required this.title,
-    required this.description,
-    required this.price,
-    required this.delivery,
-  });
 }

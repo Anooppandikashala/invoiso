@@ -94,12 +94,25 @@ class DefaultValues
   static const int additionalNotesLength = 1000;
 }
 
+class AppShortcuts {
+  static const List<(String, String)> all = [
+    ('Ctrl + Q', 'New Invoice (from Dashboard) / Reset form (in Create Invoice)'),
+    ('Ctrl + S', 'Save / create the invoice'),
+    ('Ctrl + F', 'Add product to invoice'),
+    ('Ctrl + M', 'Add custom (ad-hoc) item'),
+    ('Ctrl + O', 'Preview invoice PDF'),
+    ('Ctrl + P', 'Generate / print invoice PDF'),
+  ];
+}
+
 class PdfLayout
 {
   static double defaultHMargin = 20;
   static double defaultVMargin = 12;
   static double thankYouNoteFontSize = 10;
   static double footerBrandingFontSize = 8;
+  static const double thermalPrinterItemFontSize = 28;
+  static const double thermalPrinterHeadFontSize = 38;
 }
 
 class UpdateConfig

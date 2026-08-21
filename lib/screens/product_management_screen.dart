@@ -18,6 +18,7 @@ import 'package:invoiso/common/common.dart';
 import 'package:invoiso/models/product.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/utils/formatters.dart';
+import 'package:invoiso/screens/settings/product_columns_settings_screen.dart';
 
 class ProductManagementScreen extends ConsumerStatefulWidget {
   final User user;
@@ -54,7 +55,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
   final _descriptionController = TextEditingController();
   final _priceController = TextEditingController();
   final _purchasePriceController = TextEditingController();
-  final _stockController = TextEditingController();
+  final _stockController = TextEditingController(text: '0');
   final _hsnCodeController = TextEditingController();
   final _taxRateController = TextEditingController();
   final _customUnitController = TextEditingController();
@@ -120,6 +121,102 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     final fmt = await ref.read(settingsRepositoryProvider).getDateFormat();
     if (!mounted) return;
     setState(() => _datePattern = fmt.key);
+    _loadColumnsConfig();
+    _loadColumnsBannerDismissed();
+  }
+
+  ProductColumnsConfig _columnsConfig = const ProductColumnsConfig();
+  bool _showColumnsBanner = false;
+
+  Future<void> _loadColumnsConfig() async {
+    final config = await ref.read(settingsRepositoryProvider).getProductColumnsConfig();
+    if (!mounted) return;
+    setState(() {
+      _columnsConfig = config;
+      if (!config.stock) _unlimitedStock = true;
+    });
+  }
+
+  Future<void> _loadColumnsBannerDismissed() async {
+    final dismissed = await ref
+        .read(settingsRepositoryProvider)
+        .getSetting(SettingKey.productColumnsBannerDismissed);
+    if (!mounted) return;
+    setState(() => _showColumnsBanner = dismissed != '1');
+  }
+
+  Future<void> _dismissColumnsBanner() async {
+    await ref
+        .read(settingsRepositoryProvider)
+        .setSetting(SettingKey.productColumnsBannerDismissed, '1');
+    if (mounted) setState(() => _showColumnsBanner = false);
+  }
+
+  Widget _buildColumnsDiscoveryBanner() {
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+      child: _showColumnsBanner
+          ? Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEFF6FF),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFBFDBFE)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.tune, color: Color(0xFF2563EB), size: 20),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'New: Customize product fields',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: Color(0xFF1E40AF),
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Choose which fields show for a simpler catalog. Settings > Customize Product Details.',
+                          style: TextStyle(fontSize: 12, color: Color(0xFF3B82F6)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () async {
+                      await Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => const ProductColumnsSettingsScreen()));
+                      _loadColumnsConfig();
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFF2563EB),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text('Configure',
+                        style: TextStyle(fontWeight: FontWeight.w600)),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 16),
+                    color: const Color(0xFF93C5FD),
+                    onPressed: _dismissColumnsBanner,
+                    tooltip: 'Dismiss',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                  ),
+                ],
+              ),
+            )
+          : const SizedBox.shrink(),
+    );
   }
 
   Future<void> _loadBusinessType() async {
@@ -271,13 +368,15 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     _supplierNameController.clear();
     _skuCodeController.clear();
     _notesController.clear();
-    if (mounted) setState(() {
+    if (mounted) {
+      setState(() {
       _selectedUnit = '';
-      _unlimitedStock = false;
+      _unlimitedStock = !_columnsConfig.stock;
       _priceIncludesTax = false;
       _expiryDate = null;
       _manufactureDate = null;
     });
+    }
   }
 
   static String _isoDate(DateTime? d) =>
@@ -363,7 +462,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     final purchasePriceCtrl = TextEditingController(
         text: product.purchasePrice > 0
             ? product.purchasePrice.toString()
-            : '');
+            : '0.0');
     final stockCtrl = TextEditingController(text: product.stock.toString());
     final hsnCodeCtrl = TextEditingController(text: product.hsncode);
     final taxRateCtrl =
@@ -371,14 +470,15 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     final defaultDiscountCtrl = TextEditingController(
         text: product.defaultDiscount > 0
             ? product.defaultDiscount.toString()
-            : '');
+            : '0.0');
     final customUnitCtrl = TextEditingController(
         text: ProductUnits.presets.contains(product.unit) ? '' : product.unit);
     final dialogFormKey = GlobalKey<FormState>();
     String dialogItemType = product.type;
     String dialogUnit = product.unit;
-    bool dialogUnlimitedStock = product.unlimitedStock;
     bool dialogPriceIncludesTax = product.priceIncludesTax;
+    bool dialogUnlimitedStock =
+        !_columnsConfig.stock ? true : product.unlimitedStock;
 
     showDialog(
       context: context,
@@ -386,6 +486,60 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
         bool isSaving = false;
         return StatefulBuilder(
         builder: (context, setDialogState) {
+          Future<void> submitEdit() async {
+            if (isSaving) return;
+            if (!dialogFormKey.currentState!.validate()) return;
+            final dialogPrice = double.parse(priceCtrl.text.trim());
+            final dialogPurchasePrice =
+                double.tryParse(purchasePriceCtrl.text.trim()) ?? 0.0;
+            if (!await _confirmIfSellingAtLoss(
+                dialogPrice, dialogPurchasePrice)) {
+              return;
+            }
+            setDialogState(() => isSaving = true);
+            try {
+              final updatedProduct = Product(
+                  id: product.id,
+                  name: nameCtrl.text.trim(),
+                  description: descriptionCtrl.text.trim(),
+                  price: dialogPrice,
+                  stock: dialogUnlimitedStock ? 0 : int.parse(stockCtrl.text.trim()),
+                  hsncode: hsnCodeCtrl.text.trim(),
+                  tax_rate: int.parse(taxRateCtrl.text.trim()),
+                  type: dialogItemType,
+                  defaultDiscount:
+                  double.tryParse(defaultDiscountCtrl.text.trim()) ?? 0.0,
+                  purchasePrice: dialogPurchasePrice,
+                  aliasName: aliasNameCtrl.text.trim().isEmpty
+                      ? null
+                      : aliasNameCtrl.text.trim(),
+                  unit: dialogUnit.trim(),
+                  unlimitedStock: dialogUnlimitedStock,
+                  priceIncludesTax: dialogPriceIncludesTax,
+              );
+
+              await ref.read(productRepositoryProvider).updateProduct(updatedProduct);
+              await ref.read(productRepositoryProvider).upsertProductMetadata(
+                ProductMetadata(
+                  productId: product.id,
+                  storageLocation: storageLocationCtrl.text.trim(),
+                  containerNumber: containerNumberCtrl.text.trim(),
+                  batchNumber: batchNumberCtrl.text.trim(),
+                  expiryDate: _isoDate(dialogExpiryDate),
+                  manufactureDate: _isoDate(dialogManufactureDate),
+                  supplierName: supplierNameCtrl.text.trim(),
+                  skuCode: skuCodeCtrl.text.trim(),
+                  notes: notesCtrl.text.trim(),
+                ),
+              );
+              await _loadProducts();
+              if (context.mounted) Navigator.pop(context);
+              _showSnackBar('Product/Service updated successfully!');
+            } finally {
+              setDialogState(() => isSaving = false);
+            }
+          }
+
           return AlertDialog(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -407,7 +561,9 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (_businessType == BusinessType.both && isEdit) ...[
+                    if (_businessType == BusinessType.both &&
+                        _columnsConfig.type &&
+                        isEdit) ...[
                       SegmentedButton<String>(
                         segments: const [
                           ButtonSegment(
@@ -425,7 +581,8 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                             setDialogState(() => dialogItemType = val.first),
                       ),
                       const SizedBox(height: 16),
-                    ] else if (_businessType == BusinessType.both) ...[
+                    ] else if (_businessType == BusinessType.both &&
+                        _columnsConfig.type) ...[
                       Chip(
                         avatar: Icon(
                             dialogItemType == 'service'
@@ -439,80 +596,97 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                       const SizedBox(height: 16),
                     ],
                     _buildDialogTextField(nameCtrl, 'Name (In English)', Icons.inventory_2,
-                        readOnly: !isEdit, maxLength: 100),
-                    const SizedBox(height: 16),
-                    _buildDialogTextField(aliasNameCtrl,
-                        'Alias Name (for invoice PDF)', Icons.translate,
                         readOnly: !isEdit, maxLength: 100,
-                        helperText : "Alias Name is an optional local-language display name used only on PDF invoices.(You can enable this in InvoiceSettings Page)"
-                            "\n You can enter the alias in any supported language, \n"
-                            "such as Malayalam, Tamil, Kannada, Hindi, Telugu, Marathi, or others, to generate customer-friendly invoices."
-                    ),
+                        onSubmitted: isEdit ? submitEdit : null),
                     const SizedBox(height: 16),
-                    _buildDialogTextField(
-                        hsnCodeCtrl, 'HSN/SAC', Icons.qr_code,
-                        readOnly: !isEdit, maxLength: 100),
-                    const SizedBox(height: 16),
-                    _buildDialogTextField(
-                        descriptionCtrl, 'Description', Icons.description,
-                        readOnly: !isEdit, maxLines: 3, maxLength: 100),
-                    const SizedBox(height: 16),
+                    if (_columnsConfig.aliasName) ...[
+                      _buildDialogTextField(aliasNameCtrl,
+                          'Alias Name (for invoice PDF)', Icons.translate,
+                          readOnly: !isEdit, maxLength: 100,
+                          helperText : "Alias Name is an optional local-language display name used only on PDF invoices.(You can enable this in InvoiceSettings Page)"
+                              "\n You can enter the alias in any supported language, \n"
+                              "such as Malayalam, Tamil, Kannada, Hindi, Telugu, Marathi, or others, to generate customer-friendly invoices."
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_columnsConfig.hsncode) ...[
+                      _buildDialogTextField(
+                          hsnCodeCtrl, 'HSN/SAC', Icons.qr_code,
+                          readOnly: !isEdit, maxLength: 100),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_columnsConfig.description) ...[
+                      _buildDialogTextField(
+                          descriptionCtrl, 'Description', Icons.description,
+                          readOnly: !isEdit, maxLines: 3, maxLength: 100),
+                      const SizedBox(height: 16),
+                    ],
                     _buildDialogTextField(
                         priceCtrl, 'Price', Icons.attach_money,
                         readOnly: !isEdit,
                         keyboardType: const TextInputType.numberWithOptions(
                             decimal: true),
                         isPrice: true,
-                        prefixText: '$_currencySymbol '),
+                        prefixText: '$_currencySymbol ',
+                        onSubmitted: isEdit ? submitEdit : null),
                     const SizedBox(height: 16),
-                    _buildDialogTextField(
-                        purchasePriceCtrl, 'Purchase Price', Icons.shopping_cart_outlined,
-                        readOnly: !isEdit,
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        isPrice: true,
-                        prefixText: '$_currencySymbol '),
-                    const SizedBox(height: 16),
-                    _buildDialogTextField(
-                        defaultDiscountCtrl, 'Default Discount', Icons.discount,
-                        readOnly: !isEdit,
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        isPrice: true,
-                        prefixText: '$_currencySymbol '),
-                    const SizedBox(height: 16),
-                    _buildDialogTextField(
-                        taxRateCtrl, 'Tax Rate (%)', Icons.percent,
-                        readOnly: !isEdit,
-                        keyboardType: TextInputType.number,
-                        isTaxRate: true),
-                    CheckboxListTile(
-                      contentPadding: EdgeInsets.zero,
-                      controlAffinity: ListTileControlAffinity.leading,
-                      value: dialogPriceIncludesTax,
-                      onChanged: !isEdit
-                          ? null
-                          : (v) => setDialogState(
-                              () => dialogPriceIncludesTax = v ?? false),
-                      title: const Text('Price Includes Tax'),
-                      subtitle: const Text(
-                          'Product price already includes tax (per-item tax mode only)'),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildDialogTextField(stockCtrl, 'Stock', Icons.inventory,
-                        readOnly: !isEdit || dialogUnlimitedStock,
-                        keyboardType: TextInputType.number,
-                        isStock: !dialogUnlimitedStock),
-                    if (isEdit)
+                    if (_columnsConfig.purchasePrice) ...[
+                      _buildDialogTextField(
+                          purchasePriceCtrl, 'Purchase Price', Icons.shopping_cart_outlined,
+                          readOnly: !isEdit,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          isPrice: true,
+                          prefixText: '$_currencySymbol '),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_columnsConfig.defaultDiscount) ...[
+                      _buildDialogTextField(
+                          defaultDiscountCtrl, 'Default Discount', Icons.discount,
+                          readOnly: !isEdit,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          isPrice: true,
+                          prefixText: '$_currencySymbol '),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_columnsConfig.taxRate) ...[
+                      _buildDialogTextField(
+                          taxRateCtrl, 'Tax Rate (%)', Icons.percent,
+                          readOnly: !isEdit,
+                          keyboardType: TextInputType.number,
+                          isTaxRate: true),
                       CheckboxListTile(
                         contentPadding: EdgeInsets.zero,
                         controlAffinity: ListTileControlAffinity.leading,
-                        value: dialogUnlimitedStock,
-                        onChanged: (v) => setDialogState(
-                            () => dialogUnlimitedStock = v ?? false),
-                        title: const Text('Unlimited stock'),
+                        value: dialogPriceIncludesTax,
+                        onChanged: !isEdit
+                            ? null
+                            : (v) => setDialogState(
+                                () => dialogPriceIncludesTax = v ?? false),
+                        title: const Text('Price Includes Tax'),
+                        subtitle: const Text(
+                            'Product price already includes tax (per-item tax mode only)'),
                       ),
-                    const SizedBox(height: 16),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_columnsConfig.stock) ...[
+                      _buildDialogTextField(stockCtrl, 'Stock', Icons.inventory,
+                          readOnly: !isEdit || dialogUnlimitedStock,
+                          keyboardType: TextInputType.number,
+                          isStock: !dialogUnlimitedStock),
+                      if (isEdit)
+                        CheckboxListTile(
+                          contentPadding: EdgeInsets.zero,
+                          controlAffinity: ListTileControlAffinity.leading,
+                          value: dialogUnlimitedStock,
+                          onChanged: (v) => setDialogState(
+                              () => dialogUnlimitedStock = v ?? false),
+                          title: const Text('Unlimited stock'),
+                        ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_columnsConfig.unit)
                     _buildUnitField(
                       selectedUnit: dialogUnit,
                       customController: customUnitCtrl,
@@ -521,6 +695,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                       readOnly: !isEdit,
                     ),
                     const SizedBox(height: 16),
+                    if (_columnsConfig.productMetadata)
                     _buildMetadataSection(
                       storageLocationCtrl: storageLocationCtrl,
                       containerNumberCtrl: containerNumberCtrl,
@@ -549,58 +724,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
             ),
             if (isEdit)
               FilledButton.icon(
-                onPressed: isSaving ? null : () async {
-                  if (!dialogFormKey.currentState!.validate()) return;
-                  final dialogPrice = double.parse(priceCtrl.text.trim());
-                  final dialogPurchasePrice =
-                      double.tryParse(purchasePriceCtrl.text.trim()) ?? 0.0;
-                  if (!await _confirmIfSellingAtLoss(
-                      dialogPrice, dialogPurchasePrice)) {
-                    return;
-                  }
-                  setDialogState(() => isSaving = true);
-                  try {
-                    final updatedProduct = Product(
-                      id: product.id,
-                      name: nameCtrl.text.trim(),
-                      description: descriptionCtrl.text.trim(),
-                      price: dialogPrice,
-                      stock: dialogUnlimitedStock ? 0 : int.parse(stockCtrl.text.trim()),
-                      hsncode: hsnCodeCtrl.text.trim(),
-                      tax_rate: int.parse(taxRateCtrl.text.trim()),
-                      type: dialogItemType,
-                      defaultDiscount:
-                          double.tryParse(defaultDiscountCtrl.text.trim()) ?? 0.0,
-                      purchasePrice: dialogPurchasePrice,
-                      aliasName: aliasNameCtrl.text.trim().isEmpty
-                          ? null
-                          : aliasNameCtrl.text.trim(),
-                      unit: dialogUnit.trim(),
-                      unlimitedStock: dialogUnlimitedStock,
-                      priceIncludesTax: dialogPriceIncludesTax,
-                    );
-
-                    await ref.read(productRepositoryProvider).updateProduct(updatedProduct);
-                    await ref.read(productRepositoryProvider).upsertProductMetadata(
-                          ProductMetadata(
-                            productId: product.id,
-                            storageLocation: storageLocationCtrl.text.trim(),
-                            containerNumber: containerNumberCtrl.text.trim(),
-                            batchNumber: batchNumberCtrl.text.trim(),
-                            expiryDate: _isoDate(dialogExpiryDate),
-                            manufactureDate: _isoDate(dialogManufactureDate),
-                            supplierName: supplierNameCtrl.text.trim(),
-                            skuCode: skuCodeCtrl.text.trim(),
-                            notes: notesCtrl.text.trim(),
-                          ),
-                        );
-                    await _loadProducts();
-                    if (context.mounted) Navigator.pop(context);
-                    _showSnackBar('Product/Service updated successfully!');
-                  } finally {
-                    setDialogState(() => isSaving = false);
-                  }
-                },
+                onPressed: isSaving ? null : submitEdit,
                 icon: isSaving
                     ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                     : const Icon(Icons.save),
@@ -694,14 +818,22 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
         leading: const Icon(Icons.more_horiz),
         childrenPadding: const EdgeInsets.only(top: 8),
         children: [
-          field(storageLocationCtrl, 'Storage Location', Icons.place_outlined),
-          field(containerNumberCtrl, 'Container Number', Icons.inventory_2_outlined),
-          field(batchNumberCtrl, 'Batch Number', Icons.tag),
-          dateField('Expiry Date', expiryDate, onExpiryChanged),
-          dateField('Manufacture Date', manufactureDate, onManufactureChanged),
-          field(supplierNameCtrl, 'Supplier Name', Icons.local_shipping_outlined),
-          field(skuCodeCtrl, 'SKU Code', Icons.qr_code_2),
-          field(notesCtrl, 'Notes', Icons.notes, maxLines: 3),
+          if (_columnsConfig.metaStorageLocation)
+            field(storageLocationCtrl, 'Storage Location', Icons.place_outlined),
+          if (_columnsConfig.metaContainerNumber)
+            field(containerNumberCtrl, 'Container Number', Icons.inventory_2_outlined),
+          if (_columnsConfig.metaBatchNumber)
+            field(batchNumberCtrl, 'Batch Number', Icons.tag),
+          if (_columnsConfig.metaExpiryDate)
+            dateField('Expiry Date', expiryDate, onExpiryChanged),
+          if (_columnsConfig.metaManufactureDate)
+            dateField('Manufacture Date', manufactureDate, onManufactureChanged),
+          if (_columnsConfig.metaSupplierName)
+            field(supplierNameCtrl, 'Supplier Name', Icons.local_shipping_outlined),
+          if (_columnsConfig.metaSkuCode)
+            field(skuCodeCtrl, 'SKU Code', Icons.qr_code_2),
+          if (_columnsConfig.metaNotes)
+            field(notesCtrl, 'Notes', Icons.notes, maxLines: 3),
         ],
       ),
     );
@@ -719,7 +851,8 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     bool isStock = false,
     bool isTaxRate = false,
     String? prefixText,
-    String? helperText
+    String? helperText,
+    VoidCallback? onSubmitted,
   }) {
     return TextFormField(
       controller: controller,
@@ -727,6 +860,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
       maxLines: maxLines,
       maxLength: maxLength,
       keyboardType: keyboardType,
+      onFieldSubmitted: onSubmitted == null ? null : (_) => onSubmitted(),
       inputFormatters: isPrice
           ? [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}$'))]
           : (isStock || isTaxRate)
@@ -1580,15 +1714,22 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Column(
           children: [
-            SizedBox(
-              width: 320,
-              child: SingleChildScrollView(child: _buildAddProductCard()),
+            _buildColumnsDiscoveryBanner(),
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 320,
+                    child: SingleChildScrollView(child: _buildAddProductCard()),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(child: _buildProductTable(totalPages)),
+                ],
+              ),
             ),
-            const SizedBox(width: 16),
-            Expanded(child: _buildProductTable(totalPages)),
           ],
         ),
       ),
@@ -1631,172 +1772,192 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
           ),
           Padding(
             padding: const EdgeInsets.all(20),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  if (_businessType == BusinessType.both) ...[
-                    SegmentedButton<String>(
-                      segments: const [
-                        ButtonSegment(
-                            value: 'product',
-                            label: Text('Product'),
-                            icon: Icon(Icons.inventory_2_outlined, size: 16)),
-                        ButtonSegment(
-                            value: 'service',
-                            label: Text('Service'),
-                            icon:
-                                Icon(Icons.design_services_outlined, size: 16)),
-                      ],
-                      selected: {_newItemType},
-                      onSelectionChanged: (val) {
-                        if(!mounted) return;
-                        setState(()
-                        {
-                          _newItemType = val.first;
-                          if(_newItemType == 'service')
+            child: FocusTraversalGroup(
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    if (_businessType == BusinessType.both && _columnsConfig.type) ...[
+                      SegmentedButton<String>(
+                        segments: const [
+                          ButtonSegment(
+                              value: 'product',
+                              label: Text('Product'),
+                              icon: Icon(Icons.inventory_2_outlined, size: 16)),
+                          ButtonSegment(
+                              value: 'service',
+                              label: Text('Service'),
+                              icon:
+                                  Icon(Icons.design_services_outlined, size: 16)),
+                        ],
+                        selected: {_newItemType},
+                        onSelectionChanged: (val) {
+                          if(!mounted) return;
+                          setState(()
                           {
-                            _unlimitedStock = true;
-                          }
-                          else
-                          {
-                            _unlimitedStock = false;
-                          }
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                  _buildFormField(_nameController, 'Name (In English)', Icons.inventory_2,
-                      maxLength: 100),
-                  const SizedBox(height: 16),
-                  _buildFormField(_aliasNameController,
-                      'Alias Name (for invoice PDF)', Icons.translate,
-                      maxLength: 100,
-                      required: false,
-                      helperText : "Alias Name is an optional local-language display name used only on PDF invoices.(You can enable this in InvoiceSettings Page)"
-                          "\n You can enter the alias in any supported language, \n"
-                          "such as Malayalam, Tamil, Kannada, Hindi, Telugu, Marathi, or others, to generate customer-friendly invoices."),
-                  const SizedBox(height: 16),
-                  _buildFormField(_hsnCodeController, 'HSN/SAC', Icons.qr_code,
-                      maxLength: 100, required: false),
-                  const SizedBox(height: 16),
-                  _buildFormField(
-                      _descriptionController, 'Description', Icons.description,
-                      maxLines: 3, maxLength: 100, required: false),
-                  const SizedBox(height: 16),
-                  _buildFormField(_priceController, 'Price', Icons.attach_money,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      isPrice: true,
-                      prefixText: '$_currencySymbol '),
-                  const SizedBox(height: 16),
-                  _buildFormField(_purchasePriceController,
-                      'Purchase Price', Icons.shopping_cart_outlined,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      isPrice: true,
-                      prefixText: '$_currencySymbol '),
-                  const SizedBox(height: 16),
-                  _buildFormField(
-                      _defaultDiscountController,
-                      'Default Discount', Icons.discount,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      isPrice: true,
-                      required: false,
-                      prefixText: '$_currencySymbol '),
-                  const SizedBox(height: 16),
-                  _buildFormField(
-                      _taxRateController, 'Tax Rate (%)', Icons.percent,
-                      keyboardType: TextInputType.number, isTaxRate: true),
-                  CheckboxListTile(
-                    contentPadding: EdgeInsets.zero,
-                    controlAffinity: ListTileControlAffinity.leading,
-                    value: _priceIncludesTax,
-                    onChanged: (v) {
-                      if (!mounted) return;
-                      setState(() => _priceIncludesTax = v ?? false);
-                    },
-                    title: const Text('Price Includes Tax'),
-                    subtitle: const Text(
-                        'Product price already includes tax (per-item tax mode only)'),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildFormField(_stockController, 'Stock', Icons.inventory,
-                      keyboardType: TextInputType.number,
-                      isStock: true,
-                      required: !_unlimitedStock,
-                      enabled: !_unlimitedStock),
-                  CheckboxListTile(
-                    contentPadding: EdgeInsets.zero,
-                    controlAffinity: ListTileControlAffinity.leading,
-                    value: _unlimitedStock,
-                    onChanged: (v) {
-                      if (!mounted) return;
-                      setState(() => _unlimitedStock = v ?? false);
-                    },
-                    title: const Text('Unlimited stock'),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildUnitField(
-                    selectedUnit: _selectedUnit,
-                    customController: _customUnitController,
-                    onUnitChanged: (v) {
-                      if (!mounted) return;
-                      setState(() => _selectedUnit = v);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _buildMetadataSection(
-                    storageLocationCtrl: _storageLocationController,
-                    containerNumberCtrl: _containerNumberController,
-                    batchNumberCtrl: _batchNumberController,
-                    supplierNameCtrl: _supplierNameController,
-                    skuCodeCtrl: _skuCodeController,
-                    notesCtrl: _notesController,
-                    expiryDate: _expiryDate,
-                    manufactureDate: _manufactureDate,
-                    datePattern: _datePattern,
-                    onExpiryChanged: (d) {
-                      if (!mounted) return;
-                      setState(() => _expiryDate = d);
-                    },
-                    onManufactureChanged: (d) {
-                      if (!mounted) return;
-                      setState(() => _manufactureDate = d);
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _clearForm,
-                          icon: const Icon(Icons.clear),
-                          label: const Text('Clear'),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
-                        ),
+                            _newItemType = val.first;
+                            if(_newItemType == 'service' || !_columnsConfig.stock)
+                            {
+                              _unlimitedStock = true;
+                            }
+                            else
+                            {
+                              _unlimitedStock = false;
+                            }
+                          });
+                        },
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        flex: 2,
-                        child: FilledButton.icon(
-                          onPressed: _addProduct,
-                          icon: const Icon(Icons.add),
-                          label: Text(_newItemType == 'service'
-                              ? 'Add Service'
-                              : 'Add Product'),
-                          style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
-                        ),
-                      ),
+                      const SizedBox(height: 16),
                     ],
-                  ),
-                ],
+                    _buildFormField(_nameController, 'Name (In English)', Icons.inventory_2,
+                        maxLength: 100, onSubmitted: _addProduct),
+                    const SizedBox(height: 16),
+                    if (_columnsConfig.aliasName) ...[
+                      _buildFormField(_aliasNameController,
+                          'Alias Name (for invoice PDF)', Icons.translate,
+                          maxLength: 100,
+                          required: false,
+                          helperText : "Alias Name is an optional local-language display name used only on PDF invoices.(You can enable this in InvoiceSettings Page)"
+                              "\n You can enter the alias in any supported language, \n"
+                              "such as Malayalam, Tamil, Kannada, Hindi, Telugu, Marathi, or others, to generate customer-friendly invoices."),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_columnsConfig.hsncode) ...[
+                      _buildFormField(_hsnCodeController, 'HSN/SAC', Icons.qr_code,
+                          maxLength: 100, required: false),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_columnsConfig.description) ...[
+                      _buildFormField(
+                          _descriptionController, 'Description', Icons.description,
+                          maxLines: 3, maxLength: 100, required: false),
+                      const SizedBox(height: 16),
+                    ],
+                    _buildFormField(_priceController, 'Price', Icons.attach_money,
+                        keyboardType:
+                            const TextInputType.numberWithOptions(decimal: true),
+                        isPrice: true,
+                        prefixText: '$_currencySymbol ',
+                        onSubmitted: _addProduct),
+                    const SizedBox(height: 16),
+                    if (_columnsConfig.purchasePrice) ...[
+                      _buildFormField(_purchasePriceController,
+                          'Purchase Price', Icons.shopping_cart_outlined,
+                          keyboardType:
+                              const TextInputType.numberWithOptions(decimal: true),
+                          isPrice: true,
+                          required: _newItemType == 'service' ? false : true,
+                          prefixText: '$_currencySymbol '),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_columnsConfig.defaultDiscount) ...[
+                      _buildFormField(
+                          _defaultDiscountController,
+                          'Default Discount', Icons.discount,
+                          keyboardType:
+                              const TextInputType.numberWithOptions(decimal: true),
+                          isPrice: true,
+                          required: false,
+                          prefixText: '$_currencySymbol '),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_columnsConfig.taxRate) ...[
+                      _buildFormField(
+                          _taxRateController, 'Tax Rate (%)', Icons.percent,
+                          keyboardType: TextInputType.number, isTaxRate: true),
+                      CheckboxListTile(
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                        value: _priceIncludesTax,
+                        onChanged: (v) {
+                          if (!mounted) return;
+                          setState(() => _priceIncludesTax = v ?? false);
+                        },
+                        title: const Text('Price Includes Tax'),
+                        subtitle: const Text(
+                            'Product price already includes tax (per-item tax mode only)'),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_columnsConfig.stock) ...[
+                      _buildFormField(_stockController, 'Stock', Icons.inventory,
+                          keyboardType: TextInputType.number,
+                          isStock: true,
+                          required: !_unlimitedStock,
+                          enabled: !_unlimitedStock),
+                      CheckboxListTile(
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                        value: _unlimitedStock,
+                        onChanged: (v) {
+                          if (!mounted) return;
+                          setState(() => _unlimitedStock = v ?? false);
+                        },
+                        title: const Text('Unlimited stock'),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_columnsConfig.unit) ...[
+                      _buildUnitField(
+                        selectedUnit: _selectedUnit,
+                        customController: _customUnitController,
+                        onUnitChanged: (v) {
+                          if (!mounted) return;
+                          setState(() => _selectedUnit = v);
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_columnsConfig.productMetadata)
+                      _buildMetadataSection(
+                        storageLocationCtrl: _storageLocationController,
+                        containerNumberCtrl: _containerNumberController,
+                        batchNumberCtrl: _batchNumberController,
+                        supplierNameCtrl: _supplierNameController,
+                        skuCodeCtrl: _skuCodeController,
+                        notesCtrl: _notesController,
+                        expiryDate: _expiryDate,
+                        manufactureDate: _manufactureDate,
+                        datePattern: _datePattern,
+                        onExpiryChanged: (d) {
+                          if (!mounted) return;
+                          setState(() => _expiryDate = d);
+                        },
+                        onManufactureChanged: (d) {
+                          if (!mounted) return;
+                          setState(() => _manufactureDate = d);
+                        },
+                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _clearForm,
+                            icon: const Icon(Icons.clear),
+                            label: const Text('Clear'),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 2,
+                          child: FilledButton.icon(
+                            onPressed: _addProduct,
+                            icon: const Icon(Icons.add),
+                            label: Text(_newItemType == 'service'
+                                ? 'Add Service'
+                                : 'Add Product'),
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -1833,6 +1994,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
     String? prefixText,
     String? helperText,
     bool enabled = true,
+    VoidCallback? onSubmitted,
   }) {
     return TextFormField(
       controller: controller,
@@ -1840,6 +2002,13 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
       maxLines: maxLines,
       maxLength: maxLength,
       keyboardType: keyboardType,
+      onFieldSubmitted: (value) {
+        if (onSubmitted != null) {
+          onSubmitted();
+        } else {
+          FocusScope.of(context).nextFocus();
+        }
+      },
       inputFormatters: isPrice
           ? [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}$'))]
           : (isStock || isTaxRate)
@@ -2143,36 +2312,44 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                 Text('Sl. No', style: TextStyle(fontWeight: FontWeight.bold))),
         const DataColumn(
             label: Text('Name', style: TextStyle(fontWeight: FontWeight.bold))),
-        const DataColumn(
-            label:
-                Text('Alias', style: TextStyle(fontWeight: FontWeight.bold))),
-        if (_businessType == BusinessType.both)
+        if (_columnsConfig.aliasName)
+          const DataColumn(
+              label:
+                  Text('Alias', style: TextStyle(fontWeight: FontWeight.bold))),
+        if (_businessType == BusinessType.both && _columnsConfig.type)
           const DataColumn(
               label:Text('Type', style: TextStyle(fontWeight: FontWeight.bold))),
-        const DataColumn(
-            label: Text('HSN/SAC',
-                style: TextStyle(fontWeight: FontWeight.bold))),
-        const DataColumn(
-            label: Text('Description',
-                style: TextStyle(fontWeight: FontWeight.bold))),
+        if (_columnsConfig.hsncode)
+          const DataColumn(
+              label: Text('HSN/SAC',
+                  style: TextStyle(fontWeight: FontWeight.bold))),
+        if (_columnsConfig.description)
+          const DataColumn(
+              label: Text('Description',
+                  style: TextStyle(fontWeight: FontWeight.bold))),
         const DataColumn(
             label:
                 Text('Price', style: TextStyle(fontWeight: FontWeight.bold))),
-        const DataColumn(
-            label: Text('Purchase Price',
-                style: TextStyle(fontWeight: FontWeight.bold))),
-        const DataColumn(
-            label:
-            Text('Discount', style: TextStyle(fontWeight: FontWeight.bold))),
-        const DataColumn(
-            label: Text('Tax Rate',
-                style: TextStyle(fontWeight: FontWeight.bold))),
-        const DataColumn(
-            label:
-                Text('Stock', style: TextStyle(fontWeight: FontWeight.bold))),
-        const DataColumn(
-            label:
-                Text('Unit', style: TextStyle(fontWeight: FontWeight.bold))),
+        if (_columnsConfig.purchasePrice)
+          const DataColumn(
+              label: Text('Purchase Price',
+                  style: TextStyle(fontWeight: FontWeight.bold))),
+        if (_columnsConfig.defaultDiscount)
+          const DataColumn(
+              label:
+              Text('Discount', style: TextStyle(fontWeight: FontWeight.bold))),
+        if (_columnsConfig.taxRate)
+          const DataColumn(
+              label: Text('Tax Rate',
+                  style: TextStyle(fontWeight: FontWeight.bold))),
+        if (_columnsConfig.stock)
+          const DataColumn(
+              label:
+                  Text('Stock', style: TextStyle(fontWeight: FontWeight.bold))),
+        if (_columnsConfig.unit)
+          const DataColumn(
+              label:
+                  Text('Unit', style: TextStyle(fontWeight: FontWeight.bold))),
         const DataColumn(
             label:
                 Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
@@ -2190,8 +2367,8 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                 p.name.length > 30 ? '${p.name.substring(0, 30)}...' : p.name,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontWeight: FontWeight.w500))),
-            DataCell(Text(p.aliasName ?? '—')),
-            if (_businessType == BusinessType.both)
+            if (_columnsConfig.aliasName) DataCell(Text(p.aliasName ?? '—')),
+            if (_businessType == BusinessType.both && _columnsConfig.type)
               DataCell(Tooltip(
                 message: p.type == 'service' ? 'Service' : 'Product',
                 child: Chip(
@@ -2207,18 +2384,19 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                   visualDensity: VisualDensity.compact,
                 ),
               )),
-            DataCell(Text(p.hsncode)),
-            DataCell(
-              Tooltip(
-                message: p.description,
-                child: Text(
-                  p.description.length > 30
-                      ? '${p.description.substring(0, 30)}...'
-                      : p.description,
-                  overflow: TextOverflow.ellipsis,
+            if (_columnsConfig.hsncode) DataCell(Text(p.hsncode)),
+            if (_columnsConfig.description)
+              DataCell(
+                Tooltip(
+                  message: p.description,
+                  child: Text(
+                    p.description.length > 30
+                        ? '${p.description.substring(0, 30)}...'
+                        : p.description,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ),
-            ),
             DataCell(
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -2235,6 +2413,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                 ),
               ),
             ),
+            if (_columnsConfig.purchasePrice)
             DataCell(
               p.purchasePrice > 0
                   ? Container(
@@ -2258,6 +2437,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                     )
                   : Text('—', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
             ),
+            if (_columnsConfig.defaultDiscount)
             DataCell(
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -2274,6 +2454,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                 ),
               ),
             ),
+            if (_columnsConfig.taxRate)
             DataCell(
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -2290,6 +2471,7 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                 ),
               ),
             ),
+            if (_columnsConfig.stock)
             DataCell(
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -2318,7 +2500,8 @@ class _ProductManagementScreenState extends ConsumerState<ProductManagementScree
                 ),
               ),
             ),
-            DataCell(Text(p.unit.isEmpty ? '—' : p.unit.toUpperCase())),
+            if (_columnsConfig.unit)
+              DataCell(Text(p.unit.isEmpty ? '—' : p.unit.toUpperCase())),
             DataCell(
               Row(
                 mainAxisSize: MainAxisSize.min,

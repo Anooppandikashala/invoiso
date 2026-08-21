@@ -2,8 +2,8 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:invoiso/common/common.dart';
+import 'package:invoiso/services/pdf/pdf_font_assets.dart';
 import 'package:invoiso/common/supported_currencies.dart';
-import 'package:invoiso/services/pdf_font_assets.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 

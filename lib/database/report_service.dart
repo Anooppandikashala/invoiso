@@ -8,7 +8,7 @@ import 'package:invoiso/models/additional_cost.dart';
 import 'package:invoiso/utils/app_date.dart';
 import 'package:invoiso/utils/formatters.dart';
 import 'package:invoiso/models/report_models.dart';
-import 'package:invoiso/services/pdf_font_service.dart';
+import 'package:invoiso/services/pdf/pdf_font_service.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
@@ -127,6 +127,8 @@ class ReportService {
         'tax_rate',
         'tax_mode',
         'additional_costs',
+        'invoice_discount_type',
+        'invoice_discount_value',
         'currency_code',
         'currency_symbol',
       ],
@@ -180,6 +182,10 @@ class ReportService {
         globalTaxRate: taxRate,
         globalTaxRateFormat: TaxRateFormat.fraction,
         additionalCostsTotal: addCosts,
+        invoiceDiscountType: InvoiceDiscountTypeExtension.fromKey(
+            inv['invoice_discount_type'] as String?),
+        invoiceDiscountValue:
+            (inv['invoice_discount_value'] as num?)?.toDouble() ?? 0.0,
       );
       final total = totals.total;
       final outstanding =

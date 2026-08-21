@@ -6,8 +6,8 @@ import 'package:http/http.dart' as http;
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/providers/repositories.dart';
-import 'package:invoiso/screens/change_password_screen.dart';
 import 'package:invoiso/screens/forgot_password_screen.dart';
+import 'package:invoiso/screens/auth/change_password_screen.dart';
 import 'package:invoiso/screens/test_gate_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -304,9 +304,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       children: [
                         Icon(Icons.support_agent_outlined, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         const SizedBox(width: 4),
-                        Text(
-                          'Need help? Contact Support',
-                          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant, decoration: TextDecoration.underline),
+                        Flexible(
+                          child: Text(
+                            'Need help? Contact Support',
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant, decoration: TextDecoration.underline),
+                          ),
                         ),
                       ],
                     ),
