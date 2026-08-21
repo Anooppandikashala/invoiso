@@ -245,8 +245,9 @@ pw.MultiPage buildGridClassicTemplate(
                   child: pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      infoRow('${invoice.invoiceTitle ?? invoice.type} No',
-                          '$invoicePrefix${invoice.invoiceNumber ?? invoice.id}'),
+                      if (invoice.pdfNumberText(invoicePrefix) != null)
+                        infoRow('${invoice.invoiceTitle ?? invoice.type} No',
+                            invoice.pdfNumberText(invoicePrefix)!),
                       infoRow('Date', formatPdfDate(invoice.date, datePattern)),
                       infoRow('Time', DateFormat('HH:mm:ss').format(invoice.date)),
                       if (invoice.dueDate != null)

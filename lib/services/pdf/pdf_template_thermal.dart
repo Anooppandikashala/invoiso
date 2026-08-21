@@ -262,8 +262,9 @@ pw.Page buildThermalTemplate(
       pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
-          pw.Text('Inv No: $invoicePrefix${invoice.invoiceNumber ?? invoice.id}',
-              style: const pw.TextStyle(fontSize: bodyFs)),
+          if (invoice.pdfNumberText(invoicePrefix) != null)
+            pw.Text('Inv No: ${invoice.pdfNumberText(invoicePrefix)}',
+                style: const pw.TextStyle(fontSize: bodyFs)),
           pw.Text('Date: $dateStr',
               style: const pw.TextStyle(fontSize: bodyFs)),
         ],

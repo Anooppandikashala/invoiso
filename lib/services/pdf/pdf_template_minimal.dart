@@ -90,8 +90,9 @@ pw.MultiPage buildMinimalTemplate(
             pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text("$invoicePrefix${invoice.invoiceNumber ?? invoice.id}",
-                    style: pw.TextStyle(fontSize: minimalPdfStyle.bodyFontSize)),
+                if (invoice.pdfNumberText(invoicePrefix) != null)
+                  pw.Text(invoice.pdfNumberText(invoicePrefix)!,
+                      style: pw.TextStyle(fontSize: minimalPdfStyle.bodyFontSize)),
                 pw.SizedBox(height: minimalPdfStyle.headerGap)
               ],
             ),
@@ -129,8 +130,9 @@ pw.MultiPage buildMinimalTemplate(
             pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text("$invoicePrefix${invoice.invoiceNumber ?? invoice.id}",
-                    style: pw.TextStyle(fontSize: minimalPdfStyle.bodyFontSize)),
+                if (invoice.pdfNumberText(invoicePrefix) != null)
+                  pw.Text(invoice.pdfNumberText(invoicePrefix)!,
+                      style: pw.TextStyle(fontSize: minimalPdfStyle.bodyFontSize)),
                 pw.SizedBox(height: minimalPdfStyle.headerGap),
                 pw.Text("DATE",
                     style: pw.TextStyle(

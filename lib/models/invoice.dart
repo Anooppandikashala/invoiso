@@ -30,6 +30,8 @@ class Invoice {
   double previousBalance;
   InvoiceDiscountType invoiceDiscountType; // invoice-level discount, applied after tax
   double invoiceDiscountValue;
+  bool hideInvoiceNumber; // hide real invoice number in PDF output only
+  String? customInvoiceNumber; // shown instead of invoiceNumber in PDF when hideInvoiceNumber is true
 
   Invoice({
     required this.id,
@@ -53,7 +55,18 @@ class Invoice {
     this.previousBalance = 0.0,
     this.invoiceDiscountType = InvoiceDiscountType.percent,
     this.invoiceDiscountValue = 0.0,
+    this.hideInvoiceNumber = false,
+    this.customInvoiceNumber,
   });
+
+  /// Text to render for the invoice number in PDF/receipt output, or null to omit the line entirely.
+  String? pdfNumberText(String invoicePrefix) {
+    if (hideInvoiceNumber) {
+      final c = customInvoiceNumber?.trim();
+      return (c != null && c.isNotEmpty) ? c : null;
+    }
+    return '$invoicePrefix${invoiceNumber ?? id}';
+  }
 
   InvoiceTotals get _totals => InvoiceTotalsCalculator.totals(
         lines: items.map((item) => item._amountsForInvoice(

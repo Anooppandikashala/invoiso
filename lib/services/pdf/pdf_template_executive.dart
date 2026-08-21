@@ -160,9 +160,10 @@ pw.MultiPage buildExecutiveTemplate(
               if (showLogo && logoImage != null && logoPosition == LogoPosition.right)
                 buildCompanyLogo(logoImage, size: logoSizePx),
               pw.SizedBox(height: executivePdfStyle.headerGap),
-              pw.Text('# $invoicePrefix${invoice.invoiceNumber ?? invoice.id}',
-                  style: pw.TextStyle(
-                      fontSize: executivePdfStyle.bodyFontSize, fontWeight: pw.FontWeight.bold)),
+              if (invoice.pdfNumberText(invoicePrefix) != null)
+                pw.Text('# ${invoice.pdfNumberText(invoicePrefix)}',
+                    style: pw.TextStyle(
+                        fontSize: executivePdfStyle.bodyFontSize, fontWeight: pw.FontWeight.bold)),
               pw.Text('Date: ${formatPdfDate(invoice.date, datePattern)}',
                   style: pw.TextStyle(fontSize: executivePdfStyle.bodyFontSize)),
               if (invoice.dueDate != null)

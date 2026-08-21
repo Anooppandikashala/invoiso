@@ -187,8 +187,8 @@ class ThermalPrinterService {
     // ── Invoice meta ──
     final dateFormatter = DateFormat(dateFmt.key);
     final dateStr = dateFormatter.format(invoice.date);
-    twoCol('Inv No: ${settings.invoicePrefix}${invoice.invoiceNumber ?? invoice.id}',
-        'Date: $dateStr');
+    final numberText = invoice.pdfNumberText(settings.invoicePrefix);
+    twoCol(numberText != null ? 'Inv No: $numberText' : '', 'Date: $dateStr');
     if (invoice.dueDate != null) {
       twoCol('Due:', dateFormatter.format(invoice.dueDate!));
     }
