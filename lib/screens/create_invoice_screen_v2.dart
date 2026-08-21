@@ -215,7 +215,18 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       // isEditing stays false → _createInvoice() will be called on save.
       final src = widget.cloneFrom!;
       selectedCustomer = src.customer;
-      invoiceItems = List.from(src.items);
+      invoiceItems = src.items
+          .map((i) => InvoiceItem(
+                product: i.product,
+                quantity: i.quantity,
+                discount: i.discount,
+                unitPrice: i.unitPrice,
+                extraCost: i.extraCost,
+                unit: i.unit,
+                discountPerUnit: i.discountPerUnit,
+                isProductSaved: i.isProductSaved,
+              ))
+          .toList();
       nameController.text = src.customer.name;
       emailController.text = src.customer.email;
       phoneController.text = src.customer.phone;
@@ -1227,6 +1238,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     } catch (e) {
       if (!mounted) return false;
       setState(() => isLoading = false);
+      if (kDebugMode)  print(e);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error creating invoice: $e'),showCloseIcon: true,),
       );

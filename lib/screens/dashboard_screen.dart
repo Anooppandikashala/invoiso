@@ -27,7 +27,7 @@ import 'package:invoiso/models/user.dart';
 // import 'package:invoiso/screens/customer_management_screen.dart';
 import 'package:invoiso/screens/customer_management_screen_v2.dart';
 import 'package:invoiso/database/database_helper.dart';
-import 'package:invoiso/screens/create_invoice_screen.dart' as v1;
+import 'package:invoiso/screens/screens_v1/create_invoice_screen.dart' as v1;
 import 'package:invoiso/screens/create_invoice_screen_v2.dart';
 // import 'package:invoiso/screens/product_management_screen.dart';
 import 'package:invoiso/screens/product_management_screen_v2.dart';

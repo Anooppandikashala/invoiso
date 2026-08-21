@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/providers/repositories.dart';
-import 'package:invoiso/screens/forgot_password_screen.dart';
+import 'package:invoiso/screens/auth/forgot_password_screen.dart';
 import 'package:invoiso/screens/auth/change_password_screen.dart';
 import 'package:invoiso/screens/test_gate_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
