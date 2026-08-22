@@ -19,7 +19,8 @@ import 'dart:io';
 
 class CustomerManagementScreenV2 extends ConsumerStatefulWidget {
   final User user;
-  const CustomerManagementScreenV2({super.key, required this.user});
+  final void Function(Customer customer)? onViewCustomerStatement;
+  const CustomerManagementScreenV2({super.key, required this.user, this.onViewCustomerStatement});
 
   @override
   ConsumerState<CustomerManagementScreenV2> createState() =>
@@ -1563,7 +1564,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                   style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
             ),
           SizedBox(
-            width: 120,
+            width: 160,
             child: Row(
               children: [
                 IconButton(
@@ -1572,6 +1573,13 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                   onPressed: () => _viewCustomerV2(c),
                   tooltip: 'View',
                 ),
+                if (widget.onViewCustomerStatement != null)
+                  IconButton(
+                    icon: const Icon(Icons.receipt_long_outlined, size: 18),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => widget.onViewCustomerStatement!(c),
+                    tooltip: 'View Statement (in Reports)',
+                  ),
                 IconButton(
                   icon: const Icon(Icons.edit_outlined, size: 18),
                   visualDensity: VisualDensity.compact,

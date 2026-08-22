@@ -14,6 +14,7 @@ import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/services/update_service.dart';
 import 'package:invoiso/widgets/update_dialog.dart';
 import 'package:invoiso/domain/invoice_calculator.dart';
+import 'package:invoiso/domain/customer_identity.dart';
 import 'package:invoiso/common/invoiso_colors.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/product.dart';
@@ -53,6 +54,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   int _selectedIndex = 0;
   bool _sidebarExpanded = true;
   late User _currentUser;
+  String? _pendingReportsStatementCustomerKey;
 
   Invoice? invoiceToEdit;
   Invoice? _invoiceToClone;
@@ -196,11 +198,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           filterType: 'Receipt',
         );
       case 5:
-        return CustomerManagementScreenV2(user: _currentUser);
+        return CustomerManagementScreenV2(
+          user: _currentUser,
+          onViewCustomerStatement: (c) {
+            setState(() {
+              _pendingReportsStatementCustomerKey =
+                  CustomerIdentity.key(id: c.id, name: c.name);
+              _selectedIndex = 7;
+            });
+          },
+        );
       case 6:
         return ProductManagementScreenV2(user: _currentUser);
       case 7:
-        return const ReportsScreen();
+        final statementCustomerKey = _pendingReportsStatementCustomerKey;
+        _pendingReportsStatementCustomerKey = null;
+        return ReportsScreen(initialStatementCustomerKey: statementCustomerKey);
       case 8:
         return SettingsScreen(
           currentUser: _currentUser,
