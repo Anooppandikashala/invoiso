@@ -687,8 +687,22 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                     icon: Icons.location_on_rounded,
                     maxLength: 100,
                     maxLines: 3,
-                    trailing: _pdfVisibilityToggle(_showAddress,
-                        (val) => setState(() => _showAddress = val)),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.open_in_full, size: 18),
+                          tooltip: 'Edit in larger view',
+                          onPressed: () => _editLongTextDialog(
+                            title: 'Address',
+                            controller: addressController,
+                            maxLength: 100,
+                          ),
+                        ),
+                        _pdfVisibilityToggle(_showAddress,
+                            (val) => setState(() => _showAddress = val)),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 32),
                   _sectionLabel('BUSINESS TYPE'),
@@ -1124,6 +1138,87 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
         counterText: '',
       ),
     );
+  }
+
+  static const double _longTextDialogMinWidth = 320;
+  static const double _longTextDialogMaxWidth = 800;
+  static const double _longTextDialogMinHeight = 200;
+  static const double _longTextDialogMaxHeight = 600;
+
+  // Same resizable large-editor dialog as the "expand" button on the Notes
+  // field in create_invoice_screen_v2.dart / invoice_settings_screen_v2.dart.
+  Future<void> _editLongTextDialog({
+    required String title,
+    required TextEditingController controller,
+    required int maxLength,
+  }) async {
+    final dialogController = TextEditingController(text: controller.text);
+    double dialogWidth = 480;
+    double dialogHeight = 320;
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Text(title),
+          content: SizedBox(
+            width: dialogWidth,
+            height: dialogHeight,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: TextField(
+                    controller: dialogController,
+                    maxLength: maxLength,
+                    expands: true,
+                    maxLines: null,
+                    autofocus: true,
+                    textAlignVertical: TextAlignVertical.top,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.resizeDownRight,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onPanUpdate: (details) {
+                        setDialogState(() {
+                          dialogWidth = (dialogWidth + details.delta.dx)
+                              .clamp(_longTextDialogMinWidth, _longTextDialogMaxWidth);
+                          dialogHeight = (dialogHeight + details.delta.dy)
+                              .clamp(_longTextDialogMinHeight, _longTextDialogMaxHeight);
+                        });
+                      },
+                      child: const Padding(
+                        padding: EdgeInsets.all(4),
+                        child: Icon(Icons.south_east, size: 16),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, dialogController.text),
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (result != null && mounted) {
+      setState(() => controller.text = result);
+    }
   }
 
   /// Compact "show on invoice PDF" toggle used as a field's trailing icon.

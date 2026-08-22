@@ -501,6 +501,8 @@ class InvoiceService {
     int pageSize = 50,
     String searchQuery = '',
     String? filterType,
+    String orderBy = 'id',
+    bool orderAscending = false,
   }) async {
     final db = await dbHelper.database;
 
@@ -517,11 +519,15 @@ class InvoiceService {
     }
 
     final where = whereParts.join(' AND ');
+    final order = orderAscending ? 'ASC' : 'DESC';
+    final orderClause = orderBy == 'customer_name'
+        ? 'customer_name COLLATE NOCASE $order'
+        : '$orderBy $order';
     final invoiceMaps = await db.query(
       'invoices',
       where: where,
       whereArgs: whereArgs.isEmpty ? null : whereArgs,
-      orderBy: 'id DESC',
+      orderBy: orderClause,
       limit: pageSize,
       offset: page * pageSize,
     );

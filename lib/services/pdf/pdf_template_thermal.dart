@@ -28,6 +28,7 @@ pw.Page buildThermalTemplate(
   pw.ThemeData? pdfTheme,
   String itemLayout = 'table',
   bool showRoundOff = false,
+  bool showLeadingZeros = true,
   bool showPhone = true,
   bool showCompanyName = true,
   bool showAddress = true,
@@ -262,8 +263,9 @@ pw.Page buildThermalTemplate(
       pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
-          if (invoice.pdfNumberText(invoicePrefix) != null)
-            pw.Text('Inv No: ${invoice.pdfNumberText(invoicePrefix)}',
+          if (invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros) != null)
+            pw.Text(
+                'Inv No: ${invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros)}',
                 style: const pw.TextStyle(fontSize: bodyFs)),
           pw.Text('Date: $dateStr',
               style: const pw.TextStyle(fontSize: bodyFs)),
@@ -452,6 +454,9 @@ pw.Page buildThermalTemplate(
       if ((invoice.notes ?? '').isNotEmpty) ...[
         pw.SizedBox(height: 4),
         dashedSep(),
+        pw.Text('NOTES',
+            style: pw.TextStyle(
+                fontSize: smallFs, fontWeight: pw.FontWeight.bold)),
         pw.Text(invoice.notes!,
             style: pw.TextStyle(
                 fontSize: smallFs, fontStyle: pw.FontStyle.italic)),

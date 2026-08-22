@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -71,10 +72,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   Map<String, ProductMetadata> _productMetadata = {};
   Timer? _productSearchDebounce;
   int _productSearchRequestId = 0;
-  static const int _productFetchLimit = 10;
+  static const int _productFetchLimit = 30;
   Timer? _customerSearchDebounce;
   int _customerSearchRequestId = 0;
-  static const int _customerFetchLimit = 5;
+  static const int _customerFetchLimit = 30;
   List<InvoiceItem> invoiceItems = [];
   final Set<String> _savedAdHocIds =
       {}; // tracks custom item IDs already saved to products
@@ -219,7 +220,18 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       // isEditing stays false → _createInvoice() will be called on save.
       final src = widget.cloneFrom!;
       selectedCustomer = src.customer;
-      invoiceItems = List.from(src.items);
+      invoiceItems = src.items
+          .map((i) => InvoiceItem(
+                product: i.product,
+                quantity: i.quantity,
+                discount: i.discount,
+                unitPrice: i.unitPrice,
+                extraCost: i.extraCost,
+                unit: i.unit,
+                discountPerUnit: i.discountPerUnit,
+                isProductSaved: i.isProductSaved,
+              ))
+          .toList();
       nameController.text = src.customer.name;
       emailController.text = src.customer.email;
       phoneController.text = src.customer.phone;
@@ -778,10 +790,11 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           ),
           content: SizedBox(
             width: MediaQuery.of(context).size.width * 0.3,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (product.unlimitedStock)
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (product.unlimitedStock)
                   Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     padding:
@@ -1031,6 +1044,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                 ],
               ],
             ),
+            ),
           ),
           actions: [
             TextButton(
@@ -1242,6 +1256,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     } catch (e) {
       if (!mounted) return false;
       setState(() => isLoading = false);
+      if (kDebugMode)  print(e);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error creating invoice: $e'),showCloseIcon: true,),
       );
@@ -1626,12 +1641,13 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           ),
           content: SizedBox(
             width: MediaQuery.of(context).size.width * 0.3,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (_businessType == BusinessType.both &&
-                    _columnsConfig.type) ...[
-                  SegmentedButton<String>(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_businessType == BusinessType.both &&
+                      _columnsConfig.type) ...[
+                    SegmentedButton<String>(
                     segments: const [
                       ButtonSegment(
                           value: 'product',
@@ -1844,6 +1860,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   ),
                 ],
               ],
+            ),
             ),
           ),
           actions: [
@@ -3672,7 +3689,15 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                 child: TextField(
                   controller: addressController,
                   onChanged: (_) => setState(() {}),
-                  decoration: _flatFieldDecorationV2('Address'),
+                  decoration: _flatFieldDecorationV2('Address',
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.open_in_full, size: 18),
+                        tooltip: 'Edit in larger view',
+                        onPressed: () => _editLongTextDialogV2(
+                          title: 'Address',
+                          controller: addressController,
+                        ),
+                      )),
                 ),
               ),
             ],
@@ -3750,7 +3775,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                                   ),
                                 ),
                                 title: Text(customer.name),
-                                subtitle: Text(customer.phone),
+                                subtitle: Text(customer.businessName.trim().isNotEmpty
+                                    ? '${customer.businessName}  •  ${customer.phone}'
+                                    : customer.phone),
                                 trailing: isSelected
                                     ? const Icon(Icons.check_circle,
                                         color: Colors.green)
@@ -4540,8 +4567,167 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       maxLength: DefaultValues.additionalNotesLength,
       maxLines: 3,
       decoration: _flatFieldDecorationV2('Notes (optional)',
-          hint: 'Payment terms, thank-you note…'),
+          hint: 'Payment terms, thank-you note…',
+          suffixIcon: IconButton(
+            icon: const Icon(Icons.open_in_full, size: 18),
+            tooltip: 'Edit in larger view',
+            onPressed: _editNotesDialogV2,
+          )),
     );
+  }
+
+  static const double _notesDialogMinWidth = 320;
+  static const double _notesDialogMaxWidth = 800;
+  static const double _notesDialogMinHeight = 200;
+  static const double _notesDialogMaxHeight = 600;
+
+  Future<void> _editNotesDialogV2() async {
+    final controller = TextEditingController(text: notesController.text);
+    double dialogWidth = 480;
+    double dialogHeight = 320;
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Notes'),
+          content: SizedBox(
+            width: dialogWidth,
+            height: dialogHeight,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: TextField(
+                    controller: controller,
+                    maxLength: DefaultValues.additionalNotesLength,
+                    expands: true,
+                    maxLines: null,
+                    autofocus: true,
+                    textAlignVertical: TextAlignVertical.top,
+                    decoration: const InputDecoration(
+                      hintText: 'Payment terms, thank-you note…',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.resizeDownRight,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onPanUpdate: (details) {
+                        setDialogState(() {
+                          dialogWidth = (dialogWidth + details.delta.dx)
+                              .clamp(_notesDialogMinWidth, _notesDialogMaxWidth);
+                          dialogHeight = (dialogHeight + details.delta.dy)
+                              .clamp(_notesDialogMinHeight, _notesDialogMaxHeight);
+                        });
+                      },
+                      child: const Padding(
+                        padding: EdgeInsets.all(4),
+                        child: Icon(Icons.south_east, size: 16),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, controller.text),
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (result != null) {
+      notesController.text = result;
+    }
+  }
+
+  // Generalized version of _editNotesDialogV2 above, for other single-line
+  // fields (e.g. customer address) that also want the resizable large-editor
+  // "expand" affordance. maxLength is optional since not every field this
+  // is used on restricts length.
+  Future<void> _editLongTextDialogV2({
+    required String title,
+    required TextEditingController controller,
+    int? maxLength,
+  }) async {
+    final dialogController = TextEditingController(text: controller.text);
+    double dialogWidth = 480;
+    double dialogHeight = 320;
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Text(title),
+          content: SizedBox(
+            width: dialogWidth,
+            height: dialogHeight,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: TextField(
+                    controller: dialogController,
+                    maxLength: maxLength,
+                    expands: true,
+                    maxLines: null,
+                    autofocus: true,
+                    textAlignVertical: TextAlignVertical.top,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.resizeDownRight,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onPanUpdate: (details) {
+                        setDialogState(() {
+                          dialogWidth = (dialogWidth + details.delta.dx)
+                              .clamp(_notesDialogMinWidth, _notesDialogMaxWidth);
+                          dialogHeight = (dialogHeight + details.delta.dy)
+                              .clamp(_notesDialogMinHeight, _notesDialogMaxHeight);
+                        });
+                      },
+                      child: const Padding(
+                        padding: EdgeInsets.all(4),
+                        child: Icon(Icons.south_east, size: 16),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, dialogController.text),
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (result != null && mounted) {
+      setState(() => controller.text = result);
+    }
   }
 
   Widget _pdfNumberOverrideFieldV2() {
@@ -4960,7 +5146,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         ),
         AppSpacing.wSmall,
         SizedBox(
-          width: 360,
+          width: Platform.isAndroid ? 300 : 360,
           child: _rightPanelV2(tax, subtotal, total, grossSubtotal,
               totalDiscount, invoiceDiscountAmount),
         ),

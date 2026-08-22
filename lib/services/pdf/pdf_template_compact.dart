@@ -39,6 +39,7 @@ pw.MultiPage buildCompactTemplate(
   double watermarkOpacity = 0.12,
   bool showCgstSgst = false,
   bool showRoundOff = false,
+  bool showLeadingZeros = true,
   bool showPhone = true,
   bool showCompanyName = true,
   bool showPan = true,
@@ -226,8 +227,9 @@ pw.MultiPage buildCompactTemplate(
                                       fontSize: sectionHeaderFont,
                                       fontWeight: pw.FontWeight.bold)),
                               pw.SizedBox(height: 1),
-                              if (invoice.pdfNumberText(invoicePrefix) != null)
-                                pw.Text('No: ${invoice.pdfNumberText(invoicePrefix)}',
+                              if (invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros) != null)
+                                pw.Text(
+                                    'No: ${invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros)}',
                                     style: pw.TextStyle(fontSize: addressFont)),
                               pw.Text(
                                   'Date: ${formatPdfDate(invoice.date, datePattern)}',

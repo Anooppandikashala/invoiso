@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:invoiso/widgets/discovery_banner.dart';
@@ -5,12 +7,14 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:invoiso/common/app_config.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/providers/app_config_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/services/update_service.dart';
 import 'package:invoiso/widgets/update_dialog.dart';
 import 'package:invoiso/domain/invoice_calculator.dart';
+import 'package:invoiso/domain/customer_identity.dart';
 import 'package:invoiso/common/invoiso_colors.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/product.dart';
@@ -27,7 +31,7 @@ import 'package:invoiso/models/user.dart';
 // import 'package:invoiso/screens/customer_management_screen.dart';
 import 'package:invoiso/screens/customer_management_screen_v2.dart';
 import 'package:invoiso/database/database_helper.dart';
-import 'package:invoiso/screens/create_invoice_screen.dart' as v1;
+import 'package:invoiso/screens/screens_v1/create_invoice_screen.dart' as v1;
 import 'package:invoiso/screens/create_invoice_screen_v2.dart';
 // import 'package:invoiso/screens/product_management_screen.dart';
 import 'package:invoiso/screens/product_management_screen_v2.dart';
@@ -50,6 +54,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   int _selectedIndex = 0;
   bool _sidebarExpanded = true;
   late User _currentUser;
+  String? _pendingReportsStatementCustomerKey;
 
   Invoice? invoiceToEdit;
   Invoice? _invoiceToClone;
@@ -193,11 +198,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           filterType: 'Receipt',
         );
       case 5:
-        return CustomerManagementScreenV2(user: _currentUser);
+        return CustomerManagementScreenV2(
+          user: _currentUser,
+          onViewCustomerStatement: (c) {
+            setState(() {
+              _pendingReportsStatementCustomerKey =
+                  CustomerIdentity.key(id: c.id, name: c.name);
+              _selectedIndex = 7;
+            });
+          },
+        );
       case 6:
         return ProductManagementScreenV2(user: _currentUser);
       case 7:
-        return const ReportsScreen();
+        final statementCustomerKey = _pendingReportsStatementCustomerKey;
+        _pendingReportsStatementCustomerKey = null;
+        return ReportsScreen(initialStatementCustomerKey: statementCustomerKey);
       case 8:
         return SettingsScreen(
           currentUser: _currentUser,
@@ -985,7 +1001,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     final supportDismissed = results[12] as String?;
     final outOfStock = results[13] as List<Product>;
     final themeBannerDismissed = results[14] as String?;
-    final shortcutsBannerDismissed = results[15] as String?;
+    final shortcutsBannerDismissed = Platform.isAndroid ? '1' : results[15] as String?;
     final String milestone = financials.count >= 100
         ? '100'
         : financials.count >= 50

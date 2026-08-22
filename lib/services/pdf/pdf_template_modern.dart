@@ -38,6 +38,7 @@ pw.MultiPage buildModernTemplate(
   double watermarkOpacity = 0.12,
   bool showCgstSgst = false,
   bool showRoundOff = false,
+  bool showLeadingZeros = true,
   bool showPhone = true,
   bool showEmail = true,
   bool showCompanyName = true,
@@ -203,8 +204,9 @@ pw.MultiPage buildModernTemplate(
             pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.end,
               children: [
-                if (invoice.pdfNumberText(invoicePrefix) != null)
-                  pw.Text("#: ${invoice.pdfNumberText(invoicePrefix)}",
+                if (invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros) != null)
+                  pw.Text(
+                      "#: ${invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros)}",
                       style: pw.TextStyle(
                           fontWeight: pw.FontWeight.bold, fontSize: modernPdfStyle.bodyFontSize)),
                 pw.Text("Date: ${formatPdfDate(invoice.date, datePattern)}",
@@ -249,7 +251,7 @@ pw.MultiPage buildModernTemplate(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
-            pw.Expanded(child: buildAdditionalNotes(invoice)),
+            pw.Expanded(child: buildAdditionalNotes(invoice, accentColor: accentColor)),
             pw.SizedBox(width: 20),
             buildEnhancedTotals(
               invoice,

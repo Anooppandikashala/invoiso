@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,7 +19,8 @@ import 'dart:io';
 
 class CustomerManagementScreenV2 extends ConsumerStatefulWidget {
   final User user;
-  const CustomerManagementScreenV2({super.key, required this.user});
+  final void Function(Customer customer)? onViewCustomerStatement;
+  const CustomerManagementScreenV2({super.key, required this.user, this.onViewCustomerStatement});
 
   @override
   ConsumerState<CustomerManagementScreenV2> createState() =>
@@ -544,6 +546,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
 
     setState(() => _isLoading = true);
 
+    var progressDialogShown = false;
     try {
       final bytes = await File(result.files.single.path!).readAsBytes();
       // Strip UTF-8 BOM if present
@@ -598,8 +601,40 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
       final List<Customer> duplicates = [];
       final List<String> errors = [];
 
+      final progress = ValueNotifier<int>(0);
+      if (!mounted) return;
+      progressDialogShown = true;
+      unawaited(showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Importing Customers'),
+          content: ValueListenableBuilder<int>(
+            valueListenable: progress,
+            builder: (_, done, __) => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Checking for duplicates and validating ${dataRows.length} row${dataRows.length == 1 ? '' : 's'}...'),
+                const SizedBox(height: 16),
+                LinearProgressIndicator(
+                  value: dataRows.isEmpty ? null : done / dataRows.length,
+                  backgroundColor: Theme.of(context).colorScheme.outlineVariant,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '$done / ${dataRows.length}',
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ));
+
       for (int i = 0; i < dataRows.length; i++) {
         final row = dataRows[i];
+        progress.value = i + 1;
         final name = getField(row, 'name');
         if (name.isEmpty) {
           errors.add('Row ${i + 2}: missing name — skipped');
@@ -623,12 +658,18 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
           valid.add(customer);
         }
       }
+      if (progressDialogShown && mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
       if(!mounted) return;
       setState(() => _isLoading = false);
 
       if (!mounted) return;
       await _showImportPreviewDialog(valid, duplicates, errors);
     } catch (e) {
+      if (progressDialogShown && mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
       if(!mounted) return;
       setState(() => _isLoading = false);
       _showSnackBar('Error reading CSV: $e', isError: true);
@@ -1523,7 +1564,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                   style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
             ),
           SizedBox(
-            width: 120,
+            width: 160,
             child: Row(
               children: [
                 IconButton(
@@ -1532,6 +1573,13 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                   onPressed: () => _viewCustomerV2(c),
                   tooltip: 'View',
                 ),
+                if (widget.onViewCustomerStatement != null)
+                  IconButton(
+                    icon: const Icon(Icons.receipt_long_outlined, size: 18),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => widget.onViewCustomerStatement!(c),
+                    tooltip: 'View Statement (in Reports)',
+                  ),
                 IconButton(
                   icon: const Icon(Icons.edit_outlined, size: 18),
                   visualDensity: VisualDensity.compact,

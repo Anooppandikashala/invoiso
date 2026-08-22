@@ -47,6 +47,7 @@ pw.MultiPage buildGridClassicTemplate(
   double watermarkOpacity = 0.12,
   bool showCgstSgst = false,
   bool showRoundOff = false,
+  bool showLeadingZeros = true,
   bool showPhone = true,
   bool showCompanyName = true,
   bool showPan = true,
@@ -245,9 +246,9 @@ pw.MultiPage buildGridClassicTemplate(
                   child: pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      if (invoice.pdfNumberText(invoicePrefix) != null)
+                      if (invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros) != null)
                         infoRow('${invoice.invoiceTitle ?? invoice.type} No',
-                            invoice.pdfNumberText(invoicePrefix)!),
+                            invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros)!),
                       infoRow('Date', formatPdfDate(invoice.date, datePattern)),
                       infoRow('Time', DateFormat('HH:mm:ss').format(invoice.date)),
                       if (invoice.dueDate != null)
@@ -281,7 +282,7 @@ pw.MultiPage buildGridClassicTemplate(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              pw.Expanded(child: buildAdditionalNotes(invoice,fontSize: gridClassicPdfStyle.bodyFontSize*fontScale)),
+              pw.Expanded(child: buildAdditionalNotes(invoice,fontSize: gridClassicPdfStyle.bodyFontSize*fontScale, accentColor: accentColor)),
               pw.SizedBox(width: 5 * fontScale),
               pw.SizedBox(
                 width: 200 * fontScale,

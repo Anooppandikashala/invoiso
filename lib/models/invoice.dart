@@ -60,12 +60,15 @@ class Invoice {
   });
 
   /// Text to render for the invoice number in PDF/receipt output, or null to omit the line entirely.
-  String? pdfNumberText(String invoicePrefix) {
+  String? pdfNumberText(String invoicePrefix, {bool showLeadingZeros = true}) {
     if (hideInvoiceNumber) {
       final c = customInvoiceNumber?.trim();
       return (c != null && c.isNotEmpty) ? c : null;
     }
-    return '$invoicePrefix${invoiceNumber ?? id}';
+    final number = invoiceNumber ?? id;
+    if (showLeadingZeros) return '$invoicePrefix$number';
+    final stripped = number.replaceFirst(RegExp(r'^0+'), '');
+    return '$invoicePrefix${stripped.isEmpty ? '0' : stripped}';
   }
 
   InvoiceTotals get _totals => InvoiceTotalsCalculator.totals(

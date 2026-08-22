@@ -50,6 +50,7 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
   double _watermarkOpacity = 0.12;
   String? _defaultInvoiceTitle;
   bool _allowDuplicateInvoiceItems = false;
+  bool _invoiceLeadingZeros = true;
   int _invoiceCount = 0;
   bool _isLoading = true;
   bool _isSaving = false;
@@ -97,6 +98,7 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
       settingsRepo.getSetting(SettingKey.showCgstSgst),
       settingsRepo.getSetting(SettingKey.defaultTaxMode),
       settingsRepo.getSetting(SettingKey.showRoundOff),
+      settingsRepo.getSetting(SettingKey.invoiceLeadingZeros),
       settingsRepo.getHideInvoiceNumberByDefault(),
     ]);
 
@@ -135,7 +137,8 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
       _showCgstSgst = (results[26] as String?) == 'true';
       _defaultTaxMode = (results[27] as String?) ?? 'global';
       _showRoundOff = (results[28] as String?) == 'true';
-      _hideInvoiceNumberByDefault = results[29] as bool;
+      _invoiceLeadingZeros = (results[29] as String?) != 'false';
+      _hideInvoiceNumberByDefault = results[30] as bool;
       _isLoading = false;
     });
   }
@@ -157,6 +160,8 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
             (int.tryParse(invoiceStartingNumberController.text.trim()) ?? 1)
                 .clamp(1, 99999999)
                 .toString()),
+      settingsRepo.setSetting(
+          SettingKey.invoiceLeadingZeros, _invoiceLeadingZeros.toString()),
       settingsRepo.setSetting(SettingKey.additionalInfo, additionalInfoController.text),
       settingsRepo.setSetting(SettingKey.thankYouNote, thankYouController.text),
       settingsRepo.setCurrency(_selectedCurrencyCode),
@@ -327,6 +332,88 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
     );
   }
 
+  static const double _longTextDialogMinWidth = 320;
+  static const double _longTextDialogMaxWidth = 800;
+  static const double _longTextDialogMinHeight = 200;
+  static const double _longTextDialogMaxHeight = 600;
+
+  // Same resizable large-editor dialog as the "expand" button on the Notes
+  // field in create_invoice_screen_v2.dart, generalized for any long-text
+  // settings field (title/controller/maxLength instead of hardcoded Notes).
+  Future<void> _editLongTextDialogV2({
+    required String title,
+    required TextEditingController controller,
+    required int maxLength,
+  }) async {
+    final dialogController = TextEditingController(text: controller.text);
+    double dialogWidth = 480;
+    double dialogHeight = 320;
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Text(title),
+          content: SizedBox(
+            width: dialogWidth,
+            height: dialogHeight,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: TextField(
+                    controller: dialogController,
+                    maxLength: maxLength,
+                    expands: true,
+                    maxLines: null,
+                    autofocus: true,
+                    textAlignVertical: TextAlignVertical.top,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.resizeDownRight,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onPanUpdate: (details) {
+                        setDialogState(() {
+                          dialogWidth = (dialogWidth + details.delta.dx)
+                              .clamp(_longTextDialogMinWidth, _longTextDialogMaxWidth);
+                          dialogHeight = (dialogHeight + details.delta.dy)
+                              .clamp(_longTextDialogMinHeight, _longTextDialogMaxHeight);
+                        });
+                      },
+                      child: const Padding(
+                        padding: EdgeInsets.all(4),
+                        child: Icon(Icons.south_east, size: 16),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, dialogController.text),
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (result != null && mounted) {
+      setState(() => controller.text = result);
+    }
+  }
+
   Widget _toggleCardV2({
     required String title,
     required String subtitle,
@@ -385,7 +472,7 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
       [
         TextField(
           controller: invoicePrefixController,
-          maxLength: 10,
+          maxLength: 25,
           decoration: _fieldDecorationV2(context,
               label: 'Invoice Prefix',
               prefixIcon: const Icon(Icons.confirmation_number)),
@@ -422,6 +509,13 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
                   ],
                 ),
               ),
+        _toggleCardV2(
+          title: 'Leading Zeros',
+          subtitle: 'Pad invoice numbers to 8 digits (e.g. 00000007)',
+          icon: Icons.pin_outlined,
+          value: _invoiceLeadingZeros,
+          onChanged: (val) => setState(() => _invoiceLeadingZeros = val),
+        ),
         _buildCurrencyField(),
         DropdownButtonFormField<DateFormatOption>(
           isExpanded: true,
@@ -461,7 +555,17 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
           maxLines: 3,
           decoration: _fieldDecorationV2(context,
               label: 'Additional Information', prefixIcon: const Icon(Icons.info_outline))
-              .copyWith(alignLabelWithHint: true),
+              .copyWith(
+                  alignLabelWithHint: true,
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.open_in_full, size: 18),
+                    tooltip: 'Edit in larger view',
+                    onPressed: () => _editLongTextDialogV2(
+                      title: 'Additional Information',
+                      controller: additionalInfoController,
+                      maxLength: DefaultValues.additionalNotesLength,
+                    ),
+                  )),
         ),
         TextField(
           controller: thankYouController,
@@ -469,7 +573,17 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
           maxLines: 3,
           decoration: _fieldDecorationV2(context,
               label: 'Thank You Note', prefixIcon: const Icon(Icons.favorite_outline))
-              .copyWith(alignLabelWithHint: true),
+              .copyWith(
+                  alignLabelWithHint: true,
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.open_in_full, size: 18),
+                    tooltip: 'Edit in larger view',
+                    onPressed: () => _editLongTextDialogV2(
+                      title: 'Thank You Note',
+                      controller: thankYouController,
+                      maxLength: 300,
+                    ),
+                  )),
         ),
         _toggleCardV2(
           title: 'Hide Invoice Number by Default',
