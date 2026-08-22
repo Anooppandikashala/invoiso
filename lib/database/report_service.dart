@@ -472,6 +472,32 @@ class ReportService {
     return result;
   }
 
+  /// Total outstanding (all-time, not date-bound) per customer, keyed by
+  /// customer_id — for a customer-list "Outstanding" column/filter/sort.
+  static Future<Map<String, double>> getOutstandingByCustomer(
+      {String? currencyCode}) async {
+    final rows = await _loadRows(currencyCode: currencyCode);
+    final result = <String, double>{};
+    for (final r in rows) {
+      if (r.outstanding <= InvoiceCalculator.moneyEpsilon) continue;
+      result[r.customerKey] = (result[r.customerKey] ?? 0) + r.outstanding;
+    }
+    return result;
+  }
+
+  /// Distinct currency codes actually used across (non-deleted) invoices —
+  /// for a currency picker, e.g. next to the Outstanding column.
+  static Future<List<String>> getInvoiceCurrencies() async {
+    final db = await _db.database;
+    final rows = await db.rawQuery(
+      "SELECT DISTINCT currency_code FROM invoices "
+      "WHERE deleted_at IS NULL AND type = 'Invoice' AND currency_code IS NOT NULL",
+    );
+    final codes = rows.map((r) => r['currency_code'] as String).toList();
+    codes.sort();
+    return codes;
+  }
+
   // ── 5. Tax collected by rate ───────────────────────────────────────────────
 
   static Future<List<TaxBucket>> getTaxByRate(DateTime from, DateTime to,
