@@ -67,6 +67,7 @@ enum SettingKey {
   createInvoiceLayout, // which create-invoice screen layout to use: 'v1' | 'v2'
   showCustomerStatsCards, // whether the stat cards row is shown on customer management v2 (default true)
   showProductStatsCards, // whether the stat cards row is shown on product management v2 (default true)
+  showDescriptionInPdf, // whether to print a product's description as a full-width row under each invoice item on A4 PDFs (default false)
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -208,6 +209,8 @@ extension SettingKeyExtension on SettingKey {
         return 'show_customer_stats_cards';
       case SettingKey.showProductStatsCards:
         return 'show_product_stats_cards';
+      case SettingKey.showDescriptionInPdf:
+        return 'show_description_in_pdf';
 
     }
   }

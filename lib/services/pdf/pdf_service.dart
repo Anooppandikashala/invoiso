@@ -117,6 +117,7 @@ class PDFService {
       BackendServices.settings.getShowLogo(), // 37
       BackendServices.settings.getSetting(SettingKey.thermalCompanyNameSize), // 38
       BackendServices.settings.getSetting(SettingKey.invoiceLeadingZeros), // 39
+      BackendServices.settings.getSetting(SettingKey.showDescriptionInPdf), // 40
     ]);
 
     final rawPrefix = (results[2] as String?) ?? 'INV';
@@ -178,6 +179,7 @@ class PDFService {
       showLogo: results[37] as bool,
       thermalCompanyNameSize: (results[38] as String?) ?? 'medium',
       showLeadingZeros: (results[39] as String?) != 'false',
+      showDescription: (results[40] as String?) == 'true',
     );
   }
 
@@ -231,6 +233,7 @@ class PDFService {
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
           showAliasName: s.showAliasName,
+          showDescription: s.showDescription,
           businessType: s.businessType,
           bankAccount: effectiveBank,
           datePattern: s.datePattern,
@@ -273,6 +276,7 @@ class PDFService {
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
           showAliasName: s.showAliasName,
+          showDescription: s.showDescription,
           businessType: s.businessType,
           bankAccount: effectiveBank,
           datePattern: s.datePattern,
@@ -315,6 +319,7 @@ class PDFService {
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
           showAliasName: s.showAliasName,
+          showDescription: s.showDescription,
           businessType: s.businessType,
           bankAccount: effectiveBank,
           datePattern: s.datePattern,
@@ -357,6 +362,7 @@ class PDFService {
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
           showAliasName: s.showAliasName,
+          showDescription: s.showDescription,
           businessType: s.businessType,
           bankAccount: effectiveBank,
           datePattern: s.datePattern,
@@ -399,6 +405,7 @@ class PDFService {
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
           showAliasName: s.showAliasName,
+          showDescription: s.showDescription,
           businessType: s.businessType,
           bankAccount: effectiveBank,
           datePattern: s.datePattern,

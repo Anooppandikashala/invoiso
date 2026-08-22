@@ -38,6 +38,7 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
   bool _showTypeTag = true;
   bool _showPreviousBalance = false;
   bool _showAliasNameInPdf = false;
+  bool _showDescriptionInPdf = false;
   bool _showTaxButtonInInvoicePage = true;
   bool _showCgstSgst = false;
   bool _showRoundOff = false;
@@ -98,6 +99,7 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
       settingsRepo.getSetting(SettingKey.defaultTaxMode),
       settingsRepo.getSetting(SettingKey.showRoundOff),
       settingsRepo.getSetting(SettingKey.invoiceLeadingZeros),
+      settingsRepo.getSetting(SettingKey.showDescriptionInPdf),
     ]);
 
     if (!mounted) return;
@@ -136,6 +138,7 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
       _defaultTaxMode = (results[27] as String?) ?? 'global';
       _showRoundOff = (results[28] as String?) == 'true';
       _invoiceLeadingZeros = (results[29] as String?) != 'false';
+      _showDescriptionInPdf = (results[30] as String?) == 'true';
       _isLoading = false;
     });
   }
@@ -182,6 +185,8 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
       settingsRepo.setSetting(SettingKey.showCgstSgst, _showCgstSgst.toString()),
       settingsRepo.setSetting(SettingKey.defaultTaxMode, _defaultTaxMode),
       settingsRepo.setSetting(SettingKey.showRoundOff, _showRoundOff.toString()),
+      settingsRepo.setSetting(
+          SettingKey.showDescriptionInPdf, _showDescriptionInPdf.toString()),
     ]);
 
     if (!mounted) return;
@@ -612,6 +617,14 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
           icon: Icons.translate_outlined,
           value: _showAliasNameInPdf,
           onChanged: (val) => setState(() => _showAliasNameInPdf = val),
+        ),
+        _toggleCardV2(
+          title: 'Show Product Description',
+          subtitle:
+          "Print each item's description as a row under it on A4 PDFs (not on thermal receipts or the Grid Classic template)",
+          icon: Icons.notes_outlined,
+          value: _showDescriptionInPdf,
+          onChanged: (val) => setState(() => _showDescriptionInPdf = val),
         ),
         _toggleCardV2(
           title: 'Allow Fractional Quantities',
