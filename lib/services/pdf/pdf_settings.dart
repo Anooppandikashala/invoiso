@@ -49,6 +49,7 @@ class PdfGenerationSettings {
   final double watermarkOpacity;
   final bool showCgstSgst;
   final bool showRoundOff;
+  final bool showLeadingZeros;
 
   const PdfGenerationSettings({
     required this.company,
@@ -93,5 +94,6 @@ class PdfGenerationSettings {
     this.showWebsite = true,
     this.showAddress = true,
     this.showLogo = true,
+    this.showLeadingZeros = true,
   });
 }

@@ -28,6 +28,7 @@ pw.Page buildThermalTemplate(
   pw.ThemeData? pdfTheme,
   String itemLayout = 'table',
   bool showRoundOff = false,
+  bool showLeadingZeros = true,
   bool showPhone = true,
   bool showCompanyName = true,
   bool showAddress = true,
@@ -262,7 +263,8 @@ pw.Page buildThermalTemplate(
       pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
-          pw.Text('Inv No: $invoicePrefix${invoice.invoiceNumber ?? invoice.id}',
+          pw.Text(
+              'Inv No: $invoicePrefix${formatInvoiceNumberForDisplay(invoice.invoiceNumber ?? invoice.id, showLeadingZeros)}',
               style: const pw.TextStyle(fontSize: bodyFs)),
           pw.Text('Date: $dateStr',
               style: const pw.TextStyle(fontSize: bodyFs)),

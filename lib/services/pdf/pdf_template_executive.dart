@@ -38,6 +38,7 @@ pw.MultiPage buildExecutiveTemplate(
   double watermarkOpacity = 0.12,
   bool showCgstSgst = false,
   bool showRoundOff = false,
+  bool showLeadingZeros = true,
   bool showPhone = true,
   bool showEmail = true,
   bool showCompanyName = true,
@@ -160,7 +161,8 @@ pw.MultiPage buildExecutiveTemplate(
               if (showLogo && logoImage != null && logoPosition == LogoPosition.right)
                 buildCompanyLogo(logoImage, size: logoSizePx),
               pw.SizedBox(height: executivePdfStyle.headerGap),
-              pw.Text('# $invoicePrefix${invoice.invoiceNumber ?? invoice.id}',
+              pw.Text(
+                  '# $invoicePrefix${formatInvoiceNumberForDisplay(invoice.invoiceNumber ?? invoice.id, showLeadingZeros)}',
                   style: pw.TextStyle(
                       fontSize: executivePdfStyle.bodyFontSize, fontWeight: pw.FontWeight.bold)),
               pw.Text('Date: ${formatPdfDate(invoice.date, datePattern)}',
