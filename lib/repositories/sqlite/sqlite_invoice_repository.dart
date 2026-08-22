@@ -63,12 +63,16 @@ class SqliteInvoiceRepository implements InvoiceRepository {
     int pageSize = 50,
     String searchQuery = '',
     String? filterType,
+    String orderBy = 'id',
+    bool orderAscending = false,
   }) =>
       InvoiceService.getInvoicesPaginated(
         page: page,
         pageSize: pageSize,
         searchQuery: searchQuery,
         filterType: filterType,
+        orderBy: orderBy,
+        orderAscending: orderAscending,
       );
   @override
   Future<int> getInvoiceCount({String searchQuery = '', String? filterType}) =>

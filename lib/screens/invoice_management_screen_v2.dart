@@ -56,6 +56,8 @@ class _InvoiceManagementScreenV2State
   DateTime? _invoiceDateTo;
   int? _idRangeFrom;
   int? _idRangeTo;
+  String _sortField = 'id'; // 'id' | 'date' | 'customer_name'
+  bool _sortAscending = false;
   String _datePattern = 'dd/MM/yyyy';
   int _totalCount = 0;
   List<Invoice> _pageInvoices = [];
@@ -112,6 +114,8 @@ class _InvoiceManagementScreenV2State
           pageSize: _pageSize,
           searchQuery: _searchQuery,
           filterType: widget.filterType,
+          orderBy: _sortField,
+          orderAscending: _sortAscending,
         ),
         ref.read(invoiceRepositoryProvider).getInvoiceCount(
           searchQuery: _searchQuery,
@@ -1245,6 +1249,67 @@ class _InvoiceManagementScreenV2State
     );
   }
 
+  // Sort is a separate button/dialog from Filter — different concern
+  // (ordering vs narrowing the result set), and applies to both Invoices
+  // and Quotations alike (unlike Filter, which is Invoice-only).
+  static const List<(String, bool, String, IconData)> _sortOptionsV2 = [
+    ('id', false, 'Recently Added', Icons.fiber_new_outlined),
+    ('id', true, 'Oldest Added', Icons.history_outlined),
+    ('date', false, 'Invoice Date (Newest First)', Icons.calendar_today_outlined),
+    ('date', true, 'Invoice Date (Oldest First)', Icons.calendar_today_outlined),
+    ('customer_name', true, 'Customer Name (A–Z)', Icons.sort_by_alpha_outlined),
+    ('customer_name', false, 'Customer Name (Z–A)', Icons.sort_by_alpha_outlined),
+  ];
+
+  Future<void> _showSortDialogV2() async {
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Sort By'),
+          content: SizedBox(
+            width: 340,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: _sortOptionsV2.map((opt) {
+                final (field, asc, label, icon) = opt;
+                final selected = _sortField == field && _sortAscending == asc;
+                final primaryColor = Theme.of(context).primaryColor;
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(icon, size: 20, color: selected ? primaryColor : null),
+                  title: Text(label,
+                      style: TextStyle(
+                          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                          color: selected ? primaryColor : null)),
+                  trailing:
+                      selected ? Icon(Icons.check_circle, color: primaryColor, size: 20) : null,
+                  onTap: () {
+                    Navigator.pop(dialogContext);
+                    if (_sortField == field && _sortAscending == asc) return;
+                    setState(() {
+                      _sortField = field;
+                      _sortAscending = asc;
+                      _currentPage = 0;
+                    });
+                    _loadPage();
+                  },
+                );
+              }).toList(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _searchFilterRowV2(bool isWide) {
     final searchField = TextField(
       controller: _searchController,
@@ -1316,6 +1381,12 @@ class _InvoiceManagementScreenV2State
             ],
           );
 
+    final sortButton = OutlinedButton.icon(
+      onPressed: _showSortDialogV2,
+      icon: const Icon(Icons.sort, size: 18),
+      label: const Text('Sort'),
+    );
+
     final statText = Text(
       'Total: $_totalCount   ·   Page ${_currentPage + 1}/${_totalPages > 0 ? _totalPages : 1}',
       style: TextStyle(
@@ -1330,6 +1401,8 @@ class _InvoiceManagementScreenV2State
           Expanded(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 480), child: searchField)),
           const SizedBox(width: 12),
           filterButton,
+          if (widget.filterType == 'Invoice') const SizedBox(width: 8),
+          sortButton,
           const Spacer(),
           statText,
         ],
@@ -1343,6 +1416,8 @@ class _InvoiceManagementScreenV2State
         Row(
           children: [
             filterButton,
+            if (widget.filterType == 'Invoice') const SizedBox(width: 8),
+            sortButton,
             const Spacer(),
             statText,
           ],

@@ -72,10 +72,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   Map<String, ProductMetadata> _productMetadata = {};
   Timer? _productSearchDebounce;
   int _productSearchRequestId = 0;
-  static const int _productFetchLimit = 10;
+  static const int _productFetchLimit = 30;
   Timer? _customerSearchDebounce;
   int _customerSearchRequestId = 0;
-  static const int _customerFetchLimit = 5;
+  static const int _customerFetchLimit = 30;
   List<InvoiceItem> invoiceItems = [];
   final Set<String> _savedAdHocIds =
       {}; // tracks custom item IDs already saved to products
@@ -3670,7 +3670,15 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                 child: TextField(
                   controller: addressController,
                   onChanged: (_) => setState(() {}),
-                  decoration: _flatFieldDecorationV2('Address'),
+                  decoration: _flatFieldDecorationV2('Address',
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.open_in_full, size: 18),
+                        tooltip: 'Edit in larger view',
+                        onPressed: () => _editLongTextDialogV2(
+                          title: 'Address',
+                          controller: addressController,
+                        ),
+                      )),
                 ),
               ),
             ],
@@ -3748,7 +3756,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                                   ),
                                 ),
                                 title: Text(customer.name),
-                                subtitle: Text(customer.phone),
+                                subtitle: Text(customer.businessName.trim().isNotEmpty
+                                    ? '${customer.businessName}  •  ${customer.phone}'
+                                    : customer.phone),
                                 trailing: isSelected
                                     ? const Icon(Icons.check_circle,
                                         color: Colors.green)
@@ -4618,6 +4628,84 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     );
     if (result != null) {
       notesController.text = result;
+    }
+  }
+
+  // Generalized version of _editNotesDialogV2 above, for other single-line
+  // fields (e.g. customer address) that also want the resizable large-editor
+  // "expand" affordance. maxLength is optional since not every field this
+  // is used on restricts length.
+  Future<void> _editLongTextDialogV2({
+    required String title,
+    required TextEditingController controller,
+    int? maxLength,
+  }) async {
+    final dialogController = TextEditingController(text: controller.text);
+    double dialogWidth = 480;
+    double dialogHeight = 320;
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Text(title),
+          content: SizedBox(
+            width: dialogWidth,
+            height: dialogHeight,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: TextField(
+                    controller: dialogController,
+                    maxLength: maxLength,
+                    expands: true,
+                    maxLines: null,
+                    autofocus: true,
+                    textAlignVertical: TextAlignVertical.top,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.resizeDownRight,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onPanUpdate: (details) {
+                        setDialogState(() {
+                          dialogWidth = (dialogWidth + details.delta.dx)
+                              .clamp(_notesDialogMinWidth, _notesDialogMaxWidth);
+                          dialogHeight = (dialogHeight + details.delta.dy)
+                              .clamp(_notesDialogMinHeight, _notesDialogMaxHeight);
+                        });
+                      },
+                      child: const Padding(
+                        padding: EdgeInsets.all(4),
+                        child: Icon(Icons.south_east, size: 16),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, dialogController.text),
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (result != null && mounted) {
+      setState(() => controller.text = result);
     }
   }
 
