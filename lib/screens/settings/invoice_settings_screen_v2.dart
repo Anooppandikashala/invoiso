@@ -380,7 +380,7 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
       [
         TextField(
           controller: invoicePrefixController,
-          maxLength: 10,
+          maxLength: 25,
           decoration: _fieldDecorationV2(context,
               label: 'Invoice Prefix',
               prefixIcon: const Icon(Icons.confirmation_number)),

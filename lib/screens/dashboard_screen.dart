@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:invoiso/widgets/discovery_banner.dart';
@@ -985,7 +987,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     final supportDismissed = results[12] as String?;
     final outOfStock = results[13] as List<Product>;
     final themeBannerDismissed = results[14] as String?;
-    final shortcutsBannerDismissed = results[15] as String?;
+    final shortcutsBannerDismissed = Platform.isAndroid ? '1' : results[15] as String?;
     final String milestone = financials.count >= 100
         ? '100'
         : financials.count >= 50

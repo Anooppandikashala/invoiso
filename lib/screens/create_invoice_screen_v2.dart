@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -778,10 +779,11 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           ),
           content: SizedBox(
             width: MediaQuery.of(context).size.width * 0.3,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (product.unlimitedStock)
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (product.unlimitedStock)
                   Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     padding:
@@ -1030,6 +1032,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   ),
                 ],
               ],
+            ),
             ),
           ),
           actions: [
@@ -1623,12 +1626,13 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           ),
           content: SizedBox(
             width: MediaQuery.of(context).size.width * 0.3,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (_businessType == BusinessType.both &&
-                    _columnsConfig.type) ...[
-                  SegmentedButton<String>(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_businessType == BusinessType.both &&
+                      _columnsConfig.type) ...[
+                    SegmentedButton<String>(
                     segments: const [
                       ButtonSegment(
                           value: 'product',
@@ -1841,6 +1845,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   ),
                 ],
               ],
+            ),
             ),
           ),
           actions: [
@@ -4998,7 +5003,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         ),
         AppSpacing.wSmall,
         SizedBox(
-          width: 360,
+          width: Platform.isAndroid ? 300 : 360,
           child: _rightPanelV2(tax, subtotal, total, grossSubtotal,
               totalDiscount, invoiceDiscountAmount),
         ),
