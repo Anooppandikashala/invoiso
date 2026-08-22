@@ -497,6 +497,7 @@ class InvoiceService {
     String? filterType,
     String orderBy = 'id',
     bool orderAscending = false,
+    String? customerId,
   }) async {
     final db = await dbHelper.database;
 
@@ -510,6 +511,10 @@ class InvoiceService {
     if (filterType != null && filterType.isNotEmpty) {
       whereParts.add('type = ?');
       whereArgs.add(filterType);
+    }
+    if (customerId != null && customerId.isNotEmpty) {
+      whereParts.add('customer_id = ?');
+      whereArgs.add(customerId);
     }
 
     final where = whereParts.join(' AND ');
@@ -532,6 +537,7 @@ class InvoiceService {
   static Future<int> getInvoiceCount({
     String searchQuery = '',
     String? filterType,
+    String? customerId,
   }) async {
     final db = await dbHelper.database;
 
@@ -545,6 +551,10 @@ class InvoiceService {
     if (filterType != null && filterType.isNotEmpty) {
       whereParts.add('type = ?');
       whereArgs.add(filterType);
+    }
+    if (customerId != null && customerId.isNotEmpty) {
+      whereParts.add('customer_id = ?');
+      whereArgs.add(customerId);
     }
 
     final where = whereParts.join(' AND ');
@@ -875,6 +885,29 @@ class InvoiceService {
     return invoices
         .where((inv) => inv.outstandingBalance > InvoiceCalculator.moneyEpsilon)
         .toList();
+  }
+
+  /// Distinct customer_id values that have at least one non-deleted invoice
+  /// of [filterType] (or any type, if null) — for narrowing a customer
+  /// picker to only customers actually present in the invoice list.
+  static Future<List<({String id, String name})>> getCustomersWithInvoices(
+      {String? filterType}) async {
+    final db = await dbHelper.database;
+    final whereParts = ["deleted_at IS NULL", "customer_id IS NOT NULL", "customer_id != ''"];
+    final args = <Object?>[];
+    if (filterType != null && filterType.isNotEmpty) {
+      whereParts.add('type = ?');
+      args.add(filterType);
+    }
+    final rows = await db.rawQuery(
+      'SELECT DISTINCT customer_id, customer_name FROM invoices WHERE ${whereParts.join(' AND ')}',
+      args,
+    );
+    final byId = <String, String>{};
+    for (final r in rows) {
+      byId[r['customer_id'] as String] = (r['customer_name'] as String?) ?? '';
+    }
+    return byId.entries.map((e) => (id: e.key, name: e.value)).toList();
   }
 
   /// Revenue grouped by month for the last [months] calendar months.
