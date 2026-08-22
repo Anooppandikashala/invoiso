@@ -862,6 +862,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     if (result == null || result.files.single.path == null || !mounted) return;
     setState(() => _isLoading = true);
 
+    var progressDialogShown = false;
     try {
       final bytes = await File(result.files.single.path!).readAsBytes();
       // Strip UTF-8 BOM if present
@@ -930,8 +931,40 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
       final List<String> errors = [];
       final Map<String, ProductMetadata> metadataById = {};
 
+      final progress = ValueNotifier<int>(0);
+      if (!mounted) return;
+      progressDialogShown = true;
+      unawaited(showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Importing Products'),
+          content: ValueListenableBuilder<int>(
+            valueListenable: progress,
+            builder: (_, done, __) => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Checking for duplicates and validating ${dataRows.length} row${dataRows.length == 1 ? '' : 's'}...'),
+                const SizedBox(height: 16),
+                LinearProgressIndicator(
+                  value: dataRows.isEmpty ? null : done / dataRows.length,
+                  backgroundColor: Theme.of(context).colorScheme.outlineVariant,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '$done / ${dataRows.length}',
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ));
+
       for (int i = 0; i < dataRows.length; i++) {
         final row = dataRows[i];
+        progress.value = i + 1;
         final name = getField(row, 'name');
         final priceStr = getField(row, 'price');
 
@@ -998,11 +1031,17 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
           valid.add(product);
         }
       }
+      if (progressDialogShown && mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
       if(!mounted) return;
       setState(() => _isLoading = false);
       if (!mounted) return;
       await _showImportPreviewDialog(valid, duplicates, errors, metadataById);
     } catch (e) {
+      if (progressDialogShown && mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
       setState(() => _isLoading = false);
       _showSnackBar('Error reading CSV: $e', isError: true);
     }

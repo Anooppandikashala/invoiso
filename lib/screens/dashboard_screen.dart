@@ -7,6 +7,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:invoiso/common/app_config.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/providers/app_config_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
