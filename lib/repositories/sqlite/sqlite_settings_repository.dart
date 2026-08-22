@@ -148,6 +148,8 @@ class SqliteSettingsRepository implements SettingsRepository {
   @override
   Future<bool> getShowTaxButtonInInvoicePage() => SettingsService.getShowTaxButtonInInvoicePage();
   @override
+  Future<bool> getHideInvoiceNumberByDefault() => SettingsService.getHideInvoiceNumberByDefault();
+  @override
   Future<String> getThemeMode() => SettingsService.getThemeMode();
   @override
   Future<void> setThemeMode(String mode) => SettingsService.setThemeMode(mode);

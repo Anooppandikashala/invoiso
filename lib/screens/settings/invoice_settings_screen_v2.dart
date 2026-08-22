@@ -39,6 +39,7 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
   bool _showPreviousBalance = false;
   bool _showAliasNameInPdf = false;
   bool _showTaxButtonInInvoicePage = true;
+  bool _hideInvoiceNumberByDefault = false;
   bool _showCgstSgst = false;
   bool _showRoundOff = false;
   String _defaultTaxMode = 'global';
@@ -96,6 +97,7 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
       settingsRepo.getSetting(SettingKey.showCgstSgst),
       settingsRepo.getSetting(SettingKey.defaultTaxMode),
       settingsRepo.getSetting(SettingKey.showRoundOff),
+      settingsRepo.getHideInvoiceNumberByDefault(),
     ]);
 
     if (!mounted) return;
@@ -133,6 +135,7 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
       _showCgstSgst = (results[26] as String?) == 'true';
       _defaultTaxMode = (results[27] as String?) ?? 'global';
       _showRoundOff = (results[28] as String?) == 'true';
+      _hideInvoiceNumberByDefault = results[29] as bool;
       _isLoading = false;
     });
   }
@@ -177,6 +180,8 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
       settingsRepo.setSetting(SettingKey.showCgstSgst, _showCgstSgst.toString()),
       settingsRepo.setSetting(SettingKey.defaultTaxMode, _defaultTaxMode),
       settingsRepo.setSetting(SettingKey.showRoundOff, _showRoundOff.toString()),
+      settingsRepo.setSetting(
+          SettingKey.hideInvoiceNumberByDefault, _hideInvoiceNumberByDefault.toString()),
     ]);
 
     if (!mounted) return;
@@ -465,7 +470,14 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
           decoration: _fieldDecorationV2(context,
               label: 'Thank You Note', prefixIcon: const Icon(Icons.favorite_outline))
               .copyWith(alignLabelWithHint: true),
-        )
+        ),
+        _toggleCardV2(
+          title: 'Hide Invoice Number by Default',
+          subtitle: 'Enable "Hide invoice number in PDF" by default when creating new invoices.',
+          icon: Icons.confirmation_number_outlined,
+          value: _hideInvoiceNumberByDefault,
+          onChanged: (val) => setState(() => _hideInvoiceNumberByDefault = val),
+        ),
       ],
     );
   }

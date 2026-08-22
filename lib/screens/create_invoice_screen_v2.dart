@@ -465,6 +465,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         settingsRepo.getDefaultInvoiceTitle(), // 15
         settingsRepo.getAllowDuplicateInvoiceItems(), // 16
         settingsRepo.getDefaultTaxMode(), // 17
+        settingsRepo.getHideInvoiceNumberByDefault(), // 18
       ]);
 
       final c = results[0] as List<Customer>;
@@ -508,6 +509,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       final defaultInvoiceTitle = results[15] as String?;
       final allowDuplicateInvoiceItems = results[16] as bool;
       final defaultTaxMode = results[17] as String;
+      final hideInvoiceNumberByDefault = results[18] as bool;
 
       // Determine which UPI to pre-select.
       String? existingUpiId;
@@ -574,6 +576,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         if (!isEditing && widget.cloneFrom == null) {
           _isTaxEnabled = showTaxButtonInInvoicePage;
           _isPerItem = defaultTaxMode == 'perItem';
+          _hideInvoiceNumber = hideInvoiceNumberByDefault;
         }
         _businessType = businessType;
         _adHocItemType =
