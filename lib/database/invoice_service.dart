@@ -861,6 +861,22 @@ class InvoiceService {
     return overdue.length > limit ? overdue.sublist(0, limit) : overdue;
   }
 
+  /// This customer's not-fully-paid invoices, oldest first, across all
+  /// currencies — for applying one payment across several open invoices.
+  static Future<List<Invoice>> getOpenInvoicesForCustomer(String customerId) async {
+    final db = await dbHelper.database;
+    final rows = await db.query(
+      'invoices',
+      where: 'deleted_at IS NULL AND type = ? AND customer_id = ?',
+      whereArgs: ['Invoice', customerId],
+      orderBy: 'date ASC',
+    );
+    final invoices = await _buildInvoiceList(rows);
+    return invoices
+        .where((inv) => inv.outstandingBalance > InvoiceCalculator.moneyEpsilon)
+        .toList();
+  }
+
   /// Revenue grouped by month for the last [months] calendar months.
   /// Returns rows with keys 'month' (YYYY-MM string) and 'revenue' (double).
   static Future<List<Map<String, dynamic>>> getMonthlyRevenue(

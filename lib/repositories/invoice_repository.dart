@@ -57,6 +57,9 @@ abstract class InvoiceRepository {
   Future<List<Invoice>> getRecentInvoices({int limit = 5});
   Future<List<Invoice>> getDueSoonInvoices();
   Future<List<Invoice>> getOverdueInvoices({int limit = 10});
+  /// This customer's not-fully-paid invoices, oldest first, across all
+  /// currencies — for applying one payment across several open invoices.
+  Future<List<Invoice>> getOpenInvoicesForCustomer(String customerId);
   Future<List<Map<String, dynamic>>> getMonthlyRevenue();
   Future<List<Map<String, dynamic>>> getTopCustomers();
   Future<List<Map<String, dynamic>>> getTopProducts();

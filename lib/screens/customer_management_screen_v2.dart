@@ -5,12 +5,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/utils/formatters.dart';
 import 'package:invoiso/common/common.dart';
+import 'package:invoiso/common/supported_currencies.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/models/customer.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/user.dart';
+import 'package:invoiso/widgets/apply_customer_payment_dialog.dart';
 import 'package:uuid/uuid.dart';
 import 'package:csv/csv.dart';
 import 'package:pdf/pdf.dart';
@@ -38,6 +40,10 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
   bool _isLoading = false;
   String? _companyCountry;
   String get _taxWord => isIndiaCountry(_companyCountry) ? 'GST' : 'Tax';
+  Map<String, double> _outstandingByCustomer = {};
+  String _outstandingCurrencySymbol = '';
+  List<String> _outstandingCurrencies = [];
+  String? _selectedOutstandingCurrency;
   final FocusNode _searchFocusNode = FocusNode();
   final ScrollController _horizontalScrollController = ScrollController();
 
@@ -60,6 +66,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
     'email': true,
     'gstin': true,
     'address': true,
+    'outstanding': true,
   };
 
   @override
@@ -105,16 +112,37 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
       if(!mounted) return;
       final customerRepo = ref.read(customerRepositoryProvider);
       final companyRepo = ref.read(companyInfoRepositoryProvider);
+      final settingsRepo = ref.read(settingsRepositoryProvider);
+      final reportRepo = ref.read(reportRepositoryProvider);
       final results = await Future.wait([
         customerRepo.getAllCustomers(),
         companyRepo.getCompanyInfo(),
+        settingsRepo.getCurrency(),
+        reportRepo.getInvoiceCurrencies(),
       ]);
       final data = results[0] as List<Customer>;
       final company = results[1] as CompanyInfo?;
+      final defaultCurrency = results[2] as CurrencyOption;
+      final currencies = results[3] as List<String>;
+
+      // Keep the user's chosen currency across a refresh; otherwise default
+      // to the shop's currency if it has invoices, else the first one that does.
+      final prevSelected = _selectedOutstandingCurrency;
+      final String selected = prevSelected != null && currencies.contains(prevSelected)
+          ? prevSelected
+          : (currencies.contains(defaultCurrency.code)
+              ? defaultCurrency.code
+              : (currencies.isNotEmpty ? currencies.first : defaultCurrency.code));
+      final outstanding = await reportRepo.getOutstandingByCustomer(currencyCode: selected);
+
       if(!mounted) return;
       setState(() {
         _customers = data;
         _companyCountry = company?.country;
+        _outstandingCurrencies = currencies;
+        _selectedOutstandingCurrency = selected;
+        _outstandingByCustomer = outstanding;
+        _outstandingCurrencySymbol = SupportedCurrencies.fromCode(selected).symbol;
         _filterAndSort();
       });
     } catch (e) {
@@ -122,6 +150,19 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _onOutstandingCurrencyChangedV2(String code) async {
+    if (!mounted || code == _selectedOutstandingCurrency) return;
+    setState(() => _selectedOutstandingCurrency = code);
+    final outstanding =
+        await ref.read(reportRepositoryProvider).getOutstandingByCustomer(currencyCode: code);
+    if (!mounted) return;
+    setState(() {
+      _outstandingByCustomer = outstanding;
+      _outstandingCurrencySymbol = SupportedCurrencies.fromCode(code).symbol;
+      _applyFilterV2();
+    });
   }
 
   void _filterAndSort() {
@@ -143,6 +184,10 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
           break;
         case 'id':
           result = a.id.compareTo(b.id);
+          break;
+        case 'outstanding':
+          result = (_outstandingByCustomer[a.id] ?? 0)
+              .compareTo(_outstandingByCustomer[b.id] ?? 0);
           break;
         default:
           result = 0;
@@ -993,6 +1038,8 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
   int get _gstRegisteredCountV2 =>
       _customers.where((c) => c.gstin.trim().isNotEmpty).length;
   int get _withoutGstCountV2 => _customers.length - _gstRegisteredCountV2;
+  int get _withOutstandingCountV2 =>
+      _customers.where((c) => (_outstandingByCustomer[c.id] ?? 0) > 0.005).length;
 
   // Runs the existing search+sort (_filterAndSort) then layers the active
   // tab's business/individual/GST filter on top of its result.
@@ -1011,6 +1058,9 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
         break;
       case 4:
         list = list.where((c) => c.gstin.trim().isEmpty);
+        break;
+      case 5:
+        list = list.where((c) => (_outstandingByCustomer[c.id] ?? 0) > 0.005);
         break;
     }
     _filteredCustomers = list.toList();
@@ -1072,6 +1122,16 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
     await _confirmDelete(c);
     if (!mounted) return;
     setState(_applyFilterV2);
+  }
+
+  Future<void> _receivePayment(Customer c) async {
+    await showDialog(
+      context: context,
+      builder: (_) => ApplyCustomerPaymentDialog(
+        customer: c,
+        onPaymentApplied: _loadCustomers,
+      ),
+    );
   }
 
   BoxDecoration _flatCardDecorationV2(BuildContext context) => BoxDecoration(
@@ -1315,6 +1375,8 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
       {'label': 'Name Z-A', 'field': 'name', 'asc': false},
       {'label': 'ID (oldest first)', 'field': 'id', 'asc': true},
       {'label': 'ID (newest first)', 'field': 'id', 'asc': false},
+      {'label': 'Outstanding (high-low)', 'field': 'outstanding', 'asc': false},
+      {'label': 'Outstanding (low-high)', 'field': 'outstanding', 'asc': true},
     ];
     final currentLabel = sortOptions.firstWhere(
       (o) => o['field'] == _sortBy && o['asc'] == _isAscending,
@@ -1373,6 +1435,16 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                 ],
                 child: _menuButtonLookV2(Icons.filter_list, 'Filter'),
               ),
+              if (_outstandingCurrencies.length > 1)
+                PopupMenuButton<String>(
+                  tooltip: 'Outstanding currency',
+                  onSelected: _onOutstandingCurrencyChangedV2,
+                  itemBuilder: (ctx) => _outstandingCurrencies
+                      .map((code) => PopupMenuItem(value: code, child: Text(code)))
+                      .toList(),
+                  child: _menuButtonLookV2(Icons.currency_exchange,
+                      'Currency: ${_selectedOutstandingCurrency ?? ''}'),
+                ),
               PopupMenuButton<Map<String, Object>>(
                 tooltip: 'Sort',
                 onSelected: (opt) =>
@@ -1394,6 +1466,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                   _columnMenuItemV2('email', 'Email'),
                   _columnMenuItemV2('gstin', '$_taxWord / VAT No'),
                   _columnMenuItemV2('address', 'Address'),
+                  _columnMenuItemV2('outstanding', 'Outstanding'),
                 ],
                 child: _menuButtonLookV2(Icons.view_column_outlined, 'Columns'),
               ),
@@ -1458,6 +1531,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
           _tabChipV2('Businesses', _businessesCountV2, 1),
           _tabChipV2('Individuals', _individualsCountV2, 2),
           _tabChipV2('$_taxWord Registered', _gstRegisteredCountV2, 3),
+          _tabChipV2('With Outstanding', _withOutstandingCountV2, 5),
           _tabChipV2('Without $_taxWord', _withoutGstCountV2, 4),
         ],
       ),
@@ -1495,6 +1569,8 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
 
   Widget _tableRowV2(Customer c, int index) {
     final serial = _currentPage * _pageSize + index + 1;
+    final outstanding = _outstandingByCustomer[c.id] ?? 0;
+    final hasOutstanding = outstanding > 0.005;
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
       decoration: BoxDecoration(
@@ -1563,8 +1639,23 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                   maxLines: 1,
                   style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
             ),
+          if (_visibleColumnsV2['outstanding'] ?? true)
+            Expanded(
+              flex: 2,
+              child: Text(
+                hasOutstanding
+                    ? '$_outstandingCurrencySymbol ${outstanding.toStringAsFixed(2)}'
+                    : '—',
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    fontWeight: hasOutstanding ? FontWeight.w600 : FontWeight.normal,
+                    color: hasOutstanding
+                        ? Colors.orange.shade800
+                        : Theme.of(context).colorScheme.onSurfaceVariant),
+              ),
+            ),
           SizedBox(
-            width: 160,
+            width: 200,
             child: Row(
               children: [
                 IconButton(
@@ -1580,6 +1671,12 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                     onPressed: () => widget.onViewCustomerStatement!(c),
                     tooltip: 'View Statement (in Reports)',
                   ),
+                IconButton(
+                  icon: const Icon(Icons.payments_outlined, size: 18),
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => _receivePayment(c),
+                  tooltip: 'Receive Payment',
+                ),
                 IconButton(
                   icon: const Icon(Icons.edit_outlined, size: 18),
                   visualDensity: VisualDensity.compact,
@@ -1630,7 +1727,9 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
             Expanded(flex: 2, child: Text('${_taxWord.toUpperCase()} / VAT NO', style: style)),
           if (_visibleColumnsV2['address'] ?? true)
             Expanded(flex: 3, child: Text('ADDRESS', style: style)),
-          SizedBox(width: 120, child: Text('ACTIONS', style: style)),
+          if (_visibleColumnsV2['outstanding'] ?? true)
+            Expanded(flex: 2, child: Text('OUTSTANDING', style: style)),
+          SizedBox(width: 200, child: Text('ACTIONS', style: style)),
         ],
       ),
     );

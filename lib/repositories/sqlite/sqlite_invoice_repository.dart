@@ -100,6 +100,9 @@ class SqliteInvoiceRepository implements InvoiceRepository {
   @override
   Future<List<Invoice>> getOverdueInvoices({int limit = 10}) => InvoiceService.getOverdueInvoices(limit: limit);
   @override
+  Future<List<Invoice>> getOpenInvoicesForCustomer(String customerId) =>
+      InvoiceService.getOpenInvoicesForCustomer(customerId);
+  @override
   Future<List<Map<String, dynamic>>> getMonthlyRevenue() => InvoiceService.getMonthlyRevenue();
   @override
   Future<List<Map<String, dynamic>>> getTopCustomers() => InvoiceService.getTopCustomers();
