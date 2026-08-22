@@ -418,6 +418,11 @@ class SettingsService {
     return val != 'false';
   }
 
+  static Future<bool> getHideInvoiceNumberByDefault() async {
+    final val = await getSetting(SettingKey.hideInvoiceNumberByDefault);
+    return val == 'true';
+  }
+
   static Future<String> getThemeMode() async {
     final val = await getSetting(SettingKey.themeMode);
     return val ?? 'system';
