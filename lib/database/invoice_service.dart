@@ -76,6 +76,7 @@ class InvoiceService {
           'product_alias_name': item.product.aliasName,
           'product_unit': item.product.unit,
           'unit': item.unit,
+          'description': item.description,
         });
       }
     });
@@ -161,6 +162,7 @@ class InvoiceService {
           'product_alias_name': item.product.aliasName,
           'product_unit': item.product.unit,
           'unit': item.unit,
+          'description': item.description,
         });
       }
     });
@@ -357,6 +359,7 @@ class InvoiceService {
           unitPrice: unitPrice,
           extraCost: extraCost,
           unit: row['unit'] as String?,
+          description: row['description'] as String?,
         ));
       } catch (e, stackTrace) {
         AppLogger.e(_tag, 'Error parsing invoice item row', e, stackTrace);

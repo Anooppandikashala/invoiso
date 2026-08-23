@@ -15,7 +15,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 40;
+  final dbVersion = 41;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -142,7 +142,8 @@ class DatabaseHelper {
         product_alias_name TEXT,
         product_unit TEXT DEFAULT '',
         unit TEXT,
-        product_price_includes_tax INTEGER DEFAULT 0
+        product_price_includes_tax INTEGER DEFAULT 0,
+        description TEXT
       )
     ''');
 
@@ -674,6 +675,20 @@ class DatabaseHelper {
         );
         await db.execute(
           'ALTER TABLE invoices ADD COLUMN custom_invoice_number TEXT',
+        );
+      });
+    }
+
+    if (oldVersion < 41) {
+      // Per-line description entered while building the invoice. Kept separate
+      // from product_description (the product's own text, snapshotted at
+      // invoice time) so editing a line never touches the product catalogue.
+      // NULL on every pre-v41 row, which reads back as "no description" and
+      // prints exactly as those invoices always did.
+      await _runMigrationStep(
+          db, 41, 'add_description_to_invoice_items', () async {
+        await db.execute(
+          'ALTER TABLE invoice_items ADD COLUMN description TEXT',
         );
       });
     }

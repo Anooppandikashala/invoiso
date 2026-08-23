@@ -761,7 +761,7 @@ pw.Widget buildInvoiceTable(Invoice invoice,
                 horizontal: cellPaddingH,
                 vertical: (showTypeTag && businessType == BusinessType.both || showDiscount &&
                     item.discountPerUnit &&
-                    item.discount > 0) ? cellPaddingV * 0.5 : cellPaddingV,
+                    item.discount > 0 || item.effectiveDescription.isNotEmpty) ? cellPaddingV * 0.5 : cellPaddingV,
               ),
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -769,6 +769,14 @@ pw.Widget buildInvoiceTable(Invoice invoice,
                 children: [
                   pw.Text(item.product.displayName(showAliasName),
                       style: pw.TextStyle(fontSize: tableFontSize * 0.9)),
+                  if (item.effectiveDescription.isNotEmpty)
+                    pw.Text(
+                      item.effectiveDescription,
+                      style: pw.TextStyle(
+                        fontSize: tableFontSize * 0.75,
+                        color: PdfColors.grey700,
+                      ),
+                    ),
                   if (showTypeTag && businessType == BusinessType.both)
                     pw.Text(
                       item.product.type == 'service' ? 'Service' : 'Product',
