@@ -39,6 +39,7 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
   bool _showPreviousBalance = false;
   bool _showAliasNameInPdf = false;
   bool _showTaxButtonInInvoicePage = true;
+  bool _hideInvoiceNumberByDefault = false;
   bool _showCgstSgst = false;
   bool _showRoundOff = false;
   String _defaultTaxMode = 'global';
@@ -98,6 +99,7 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
       settingsRepo.getSetting(SettingKey.defaultTaxMode),
       settingsRepo.getSetting(SettingKey.showRoundOff),
       settingsRepo.getSetting(SettingKey.invoiceLeadingZeros),
+      settingsRepo.getHideInvoiceNumberByDefault(),
     ]);
 
     if (!mounted) return;
@@ -136,6 +138,7 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
       _defaultTaxMode = (results[27] as String?) ?? 'global';
       _showRoundOff = (results[28] as String?) == 'true';
       _invoiceLeadingZeros = (results[29] as String?) != 'false';
+      _hideInvoiceNumberByDefault = results[30] as bool;
       _isLoading = false;
     });
   }
@@ -182,6 +185,8 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
       settingsRepo.setSetting(SettingKey.showCgstSgst, _showCgstSgst.toString()),
       settingsRepo.setSetting(SettingKey.defaultTaxMode, _defaultTaxMode),
       settingsRepo.setSetting(SettingKey.showRoundOff, _showRoundOff.toString()),
+      settingsRepo.setSetting(
+          SettingKey.hideInvoiceNumberByDefault, _hideInvoiceNumberByDefault.toString()),
     ]);
 
     if (!mounted) return;
@@ -579,7 +584,14 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
                       maxLength: 300,
                     ),
                   )),
-        )
+        ),
+        _toggleCardV2(
+          title: 'Hide Invoice Number by Default',
+          subtitle: 'Enable "Hide invoice number in PDF" by default when creating new invoices.',
+          icon: Icons.confirmation_number_outlined,
+          value: _hideInvoiceNumberByDefault,
+          onChanged: (val) => setState(() => _hideInvoiceNumberByDefault = val),
+        ),
       ],
     );
   }
