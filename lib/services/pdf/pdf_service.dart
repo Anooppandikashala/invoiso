@@ -595,7 +595,9 @@ class PDFService {
             children: [
               AppBar(
                 automaticallyImplyLeading: false,
-                title: Text('${invoice.invoiceTitle ?? invoice.type} #${invoice.invoiceNumber ?? invoice.id}'),
+                title: Text(invoice.pdfNumberText('') != null
+                    ? '${invoice.invoiceTitle ?? invoice.type} #${invoice.pdfNumberText('')}'
+                    : invoice.invoiceTitle ?? invoice.type),
                 actions: [
                   IconButton(
                     icon: const Icon(Icons.print_outlined),

@@ -86,6 +86,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   final _invoiceDiscountController = TextEditingController();
 
   final notesController = TextEditingController();
+  final customInvoiceNumberController = TextEditingController();
+  bool _hideInvoiceNumber = false;
   final searchController = TextEditingController();
   final customerSearchController = TextEditingController();
   final nameController = TextEditingController();
@@ -199,6 +201,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
             DateFormat(_datePattern).format(_invoice!.dueDate!);
       }
       _quantityLabel = _invoice!.quantityLabel ?? '';
+      _hideInvoiceNumber = _invoice!.hideInvoiceNumber;
+      customInvoiceNumberController.text = _invoice!.customInvoiceNumber ?? '';
       for (final c in _invoice!.additionalCosts) {
         _additionalCostControllers.add((
           label: TextEditingController(text: c.label),
@@ -241,6 +245,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       invoiceType = widget.cloneType ?? src.type;
       invoiceTitle = invoiceType == src.type ? src.invoiceTitle : null;
       _quantityLabel = src.quantityLabel ?? '';
+      // Custom PDF number is invoice-specific; don't carry it into a clone.
       for (final c in src.additionalCosts) {
         _additionalCostControllers.add((
           label: TextEditingController(text: c.label),
@@ -304,6 +309,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       widget.guard?.canLeave = null;
     }
     notesController.dispose();
+    customInvoiceNumberController.dispose();
     searchController.dispose();
     customerSearchController.dispose();
     nameController.dispose();
@@ -396,6 +402,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       'upiId': _selectedUpi?.id ?? '',
       'bankAccount': _selectedBankAccount?.accountNumber ?? '',
       'quantityLabel': _quantityLabel.trim(),
+      'hideInvoiceNumber': _hideInvoiceNumber,
+      'customInvoiceNumber': customInvoiceNumberController.text.trim(),
     });
   }
 
@@ -469,6 +477,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         settingsRepo.getDefaultInvoiceTitle(), // 15
         settingsRepo.getAllowDuplicateInvoiceItems(), // 16
         settingsRepo.getDefaultTaxMode(), // 17
+        settingsRepo.getHideInvoiceNumberByDefault(), // 18
       ]);
 
       final c = results[0] as List<Customer>;
@@ -512,6 +521,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       final defaultInvoiceTitle = results[15] as String?;
       final allowDuplicateInvoiceItems = results[16] as bool;
       final defaultTaxMode = results[17] as String;
+      final hideInvoiceNumberByDefault = results[18] as bool;
 
       // Determine which UPI to pre-select.
       String? existingUpiId;
@@ -578,6 +588,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         if (!isEditing && widget.cloneFrom == null) {
           _isTaxEnabled = showTaxButtonInInvoicePage;
           _isPerItem = defaultTaxMode == 'perItem';
+          _hideInvoiceNumber = hideInvoiceNumberByDefault;
         }
         _businessType = businessType;
         _adHocItemType =
@@ -1209,6 +1220,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         additionalCosts: _buildAdditionalCosts(),
         invoiceDiscountType: _invoiceDiscountType,
         invoiceDiscountValue: _invoiceDiscountValue,
+        hideInvoiceNumber: _hideInvoiceNumber,
+        customInvoiceNumber: customInvoiceNumberController.text.trim().isEmpty
+            ? null
+            : customInvoiceNumberController.text.trim(),
       );
 
       await ref.read(invoiceRepositoryProvider).insertInvoice(invoice);
@@ -2888,6 +2903,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         additionalCosts: _buildAdditionalCosts(),
         invoiceDiscountType: _invoiceDiscountType,
         invoiceDiscountValue: _invoiceDiscountValue,
+        hideInvoiceNumber: _hideInvoiceNumber,
+        customInvoiceNumber: customInvoiceNumberController.text.trim().isEmpty
+            ? null
+            : customInvoiceNumberController.text.trim(),
       );
 
       await ref.read(invoiceRepositoryProvider).updateInvoice(updatedInvoice);
@@ -3896,6 +3915,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               onChanged: (value) => setState(() => invoiceTitle = value),
             ),
           ],
+          const SizedBox(height: 12),
+          _pdfNumberOverrideFieldV2(),
         ],
       ),
     );
@@ -4707,6 +4728,40 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     if (result != null && mounted) {
       setState(() => controller.text = result);
     }
+  }
+
+  Widget _pdfNumberOverrideFieldV2() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Expanded(
+              child: Text('Hide invoice number in PDF',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
+            ),
+            Transform.scale(
+              scale: 0.8,
+              child: Switch(
+                value: _hideInvoiceNumber,
+                onChanged: (value) {
+                  if (!mounted) return;
+                  setState(() => _hideInvoiceNumber = value);
+                },
+              ),
+            ),
+          ],
+        ),
+        if (_hideInvoiceNumber) ...[
+          const SizedBox(height: 10),
+          TextField(
+            controller: customInvoiceNumberController,
+            decoration: _flatFieldDecorationV2('Custom number (optional)',
+                hint: 'e.g. QUO-2026-014 — shown in PDF instead'),
+          ),
+        ],
+      ],
+    );
   }
 
   Widget _taxSettingsSectionV2() {
