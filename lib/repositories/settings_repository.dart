@@ -72,6 +72,7 @@ abstract class SettingsRepository {
   Future<void> setPageSize(PageSize size);
   Future<bool> getShowAliasNameInPdf();
   Future<bool> getShowTaxButtonInInvoicePage();
+  Future<bool> getHideInvoiceNumberByDefault();
   Future<String> getThemeMode();
   Future<void> setThemeMode(String mode);
   Future<bool> getAllowDuplicateInvoiceItems();

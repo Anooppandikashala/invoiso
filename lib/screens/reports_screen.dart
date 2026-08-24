@@ -10,6 +10,7 @@ import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/database/report_service.dart';
+import 'package:invoiso/services/customer_statement_pdf_service.dart';
 import 'package:invoiso/providers/repositories.dart';
 
 import '../common/supported_currencies.dart';
@@ -36,12 +37,13 @@ enum _CurrencyScope { selected, all }
 
 enum _CustomerReportMode { overview, statements }
 
-enum _DailyMode { last30, monthYear }
+enum _DailyMode { today, last30, monthYear, custom }
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 class ReportsScreen extends ConsumerStatefulWidget {
-  const ReportsScreen({super.key});
+  final String? initialStatementCustomerKey;
+  const ReportsScreen({super.key, this.initialStatementCustomerKey});
 
   @override
   ConsumerState<ReportsScreen> createState() => _ReportsScreenState();
@@ -66,9 +68,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   List<DailyPoint> _dailyReport = [];
   int _dailyPage = 0;
   int _dailyPageSize = 25;
-  _DailyMode _dailyMode = _DailyMode.last30;
+  _DailyMode _dailyMode = _DailyMode.today;
   int _dailyYear = DateTime.now().year;
   int _dailyMonth = DateTime.now().month;
+  DateTime? _dailyCustomFrom;
+  DateTime? _dailyCustomTo;
   _DailyMode _invoiceDateMode = _DailyMode.last30;
   int _invoiceYear = DateTime.now().year;
   int _invoiceMonth = DateTime.now().month;
@@ -181,8 +185,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   (DateTime, DateTime) get _dailyRange {
     final now = DateTime.now();
+    if (_dailyMode == _DailyMode.today) {
+      return (DateTime(now.year, now.month, now.day), now);
+    }
     if (_dailyMode == _DailyMode.last30) {
       return (now.subtract(const Duration(days: 30)), now);
+    }
+    if (_dailyMode == _DailyMode.custom) {
+      return (_dailyCustomFrom ?? now, _dailyCustomTo ?? now);
     }
     final start = DateTime(_dailyYear, _dailyMonth, 1);
     final end = DateTime(_dailyYear, _dailyMonth + 1, 1)
@@ -206,12 +216,18 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   @override
   void initState() {
     super.initState();
+    final initialKey = widget.initialStatementCustomerKey;
+    if (initialKey != null) {
+      _selectedIndex = 3;
+      _customerMode = _CustomerReportMode.statements;
+      _statementCustomerKey = initialKey;
+    }
     _init();
   }
 
   Future<void> _init() async {
     await _loadReportSettings();
-    _loadTab(0);
+    _loadTab(_selectedIndex);
   }
 
   @override
@@ -526,7 +542,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   Future<void> _pickCustomRange() async {
-    final now = DateTime.now();
+    final rawNow = DateTime.now();
+    final now = DateTime(rawNow.year, rawNow.month, rawNow.day);
     final initialRange = DateTimeRange(
       start: _customFrom ?? now.subtract(const Duration(days: 30)),
       end: _customTo ?? now,
@@ -541,7 +558,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
           colorScheme:
-              ColorScheme.light(primary: Theme.of(context).primaryColor),
+              Theme.of(context).colorScheme.copyWith(primary: Theme.of(context).primaryColor),
         ),
         child: Center(
           child: ConstrainedBox(
@@ -575,6 +592,55 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       _tabLoading.clear();
     });
     _loadTab(_selectedIndex);
+  }
+
+  Future<void> _pickDailyCustomRange() async {
+    final rawNow = DateTime.now();
+    final now = DateTime(rawNow.year, rawNow.month, rawNow.day);
+    final initialRange = DateTimeRange(
+      start: _dailyCustomFrom ?? now.subtract(const Duration(days: 30)),
+      end: _dailyCustomTo ?? now,
+    );
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: now,
+      initialDateRange: initialRange,
+      helpText: 'Select date or date range (max 31 days)',
+      saveText: 'Apply',
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme:
+              Theme.of(context).colorScheme.copyWith(primary: Theme.of(context).primaryColor),
+        ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560, maxHeight: 620),
+            child: child!,
+          ),
+        ),
+      ),
+    );
+    if (picked == null) return;
+
+    final days = picked.end.difference(picked.start).inDays;
+    if (days > 31) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Maximum range is 31 days. End date clamped.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      _dailyCustomFrom = picked.start;
+      _dailyCustomTo = picked.start.add(const Duration(days: 31));
+    } else {
+      _dailyCustomFrom = picked.start;
+      _dailyCustomTo = picked.end;
+    }
+    if (!mounted) return;
+    setState(() => _dailyMode = _DailyMode.custom);
+    _loadTab(7);
   }
 
   Future<void> _saveCsv(String csv, String filename) async {
@@ -2003,11 +2069,25 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 ],
                 Align(
                   alignment: Alignment.topCenter,
-                  child: _exportBtn('Export CSV', () async {
-                    final csv = ReportService.exportCustomerStatementsCsv(
-                        visibleStatements);
-                    await _saveCsv(csv, 'customer_statement_$ts.csv');
-                  }),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _exportBtn('Export CSV', () async {
+                        final csv = ReportService.exportCustomerStatementsCsv(
+                            visibleStatements);
+                        await _saveCsv(csv, 'customer_statement_$ts.csv');
+                      }),
+                      const SizedBox(width: 4),
+                      _exportBtn('Export PDF', () async {
+                        if (visibleStatements.isEmpty) return;
+                        final bytes = await CustomerStatementPdfService.export(
+                          visibleStatements,
+                          showFooterBranding: _showFooterBranding,
+                        );
+                        await _savePdf(bytes, 'customer_statement_$ts.pdf');
+                      }),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -2579,6 +2659,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                             mode: _dailyMode,
                             year: _dailyYear,
                             month: _dailyMonth,
+                            showToday: true,
+                            onCustomTap: _pickDailyCustomRange,
+                            customRangeLabel: _dailyCustomFrom != null && _dailyCustomTo != null
+                                ? _dailyCustomFrom!.isAtSameMomentAs(_dailyCustomTo!) ||
+                                        _formatDate(_dailyCustomFrom!) == _formatDate(_dailyCustomTo!)
+                                    ? _formatDate(_dailyCustomFrom!)
+                                    : '${_formatDate(_dailyCustomFrom!)} – ${_formatDate(_dailyCustomTo!)}'
+                                : null,
                             onModeChanged: (m) {
                               if (!mounted) return;
                               setState(() => _dailyMode = m);
@@ -2657,6 +2745,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     required ValueChanged<_DailyMode> onModeChanged,
     required ValueChanged<int> onMonthChanged,
     required ValueChanged<int> onYearChanged,
+    bool showToday = false,
+    VoidCallback? onCustomTap,
+    String? customRangeLabel,
   }) {
     final now = DateTime.now();
     final years = [for (int y = now.year; y >= now.year - 5; y--) y];
@@ -2667,10 +2758,19 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         runSpacing: 8,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
+          if (showToday)
+            _rangeModeChip('Today', mode == _DailyMode.today,
+                () => onModeChanged(_DailyMode.today)),
           _rangeModeChip('Last 30 days', mode == _DailyMode.last30,
               () => onModeChanged(_DailyMode.last30)),
           _rangeModeChip('Month & Year', mode == _DailyMode.monthYear,
               () => onModeChanged(_DailyMode.monthYear)),
+          if (onCustomTap != null)
+            _rangeModeChip('Custom Range', mode == _DailyMode.custom, onCustomTap),
+          if (mode == _DailyMode.custom && customRangeLabel != null)
+            Text(customRangeLabel,
+                style: TextStyle(
+                    fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
           if (mode == _DailyMode.monthYear) ...[
             DropdownButton<int>(
               value: month,

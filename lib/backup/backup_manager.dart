@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'dart:convert';
-import 'package:invoiso/common/constants.dart';
+import 'package:invoiso/common/app_config.dart';
 import 'package:invoiso/database/database_helper.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';

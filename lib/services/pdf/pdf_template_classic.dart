@@ -184,9 +184,10 @@ pw.MultiPage buildClassicTemplate(
           pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.end,
             children: [
-              pw.Text(
-                  "#: $invoicePrefix${formatInvoiceNumberForDisplay(invoice.invoiceNumber ?? invoice.id, showLeadingZeros)}",
-                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: classicPdfStyle.subtitleFontSize)),
+              if (invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros) != null)
+                pw.Text(
+                    "#: ${invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros)}",
+                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: classicPdfStyle.subtitleFontSize)),
               pw.Text("Date: ${formatPdfDate(invoice.date, datePattern)}",
                   style: pw.TextStyle(fontSize: classicPdfStyle.bodyFontSize)),
               if (invoice.dueDate != null)

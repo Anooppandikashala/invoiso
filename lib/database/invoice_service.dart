@@ -50,6 +50,8 @@ class InvoiceService {
         'additional_costs': AdditionalCost.listToJson(invoice.additionalCosts),
         'invoice_discount_type': invoice.invoiceDiscountType.key,
         'invoice_discount_value': invoice.invoiceDiscountValue,
+        'hide_invoice_number': invoice.hideInvoiceNumber ? 1 : 0,
+        'custom_invoice_number': invoice.customInvoiceNumber,
       });
 
       for (var item in invoice.items) {
@@ -122,6 +124,8 @@ class InvoiceService {
               AdditionalCost.listToJson(invoice.additionalCosts),
           'invoice_discount_type': invoice.invoiceDiscountType.key,
           'invoice_discount_value': invoice.invoiceDiscountValue,
+          'hide_invoice_number': invoice.hideInvoiceNumber ? 1 : 0,
+          'custom_invoice_number': invoice.customInvoiceNumber,
         },
         where: 'id = ?',
         whereArgs: [invoice.id],
@@ -390,6 +394,8 @@ class InvoiceService {
           InvoiceDiscountTypeExtension.fromKey(i['invoice_discount_type'] as String?),
       invoiceDiscountValue:
           (i['invoice_discount_value'] as num?)?.toDouble() ?? 0.0,
+      hideInvoiceNumber: (i['hide_invoice_number'] as int?) == 1,
+      customInvoiceNumber: i['custom_invoice_number'] as String?,
       payments: payments,
     );
   }
@@ -495,6 +501,8 @@ class InvoiceService {
     int pageSize = 50,
     String searchQuery = '',
     String? filterType,
+    String orderBy = 'id',
+    bool orderAscending = false,
   }) async {
     final db = await dbHelper.database;
 
@@ -511,11 +519,15 @@ class InvoiceService {
     }
 
     final where = whereParts.join(' AND ');
+    final order = orderAscending ? 'ASC' : 'DESC';
+    final orderClause = orderBy == 'customer_name'
+        ? 'customer_name COLLATE NOCASE $order'
+        : '$orderBy $order';
     final invoiceMaps = await db.query(
       'invoices',
       where: where,
       whereArgs: whereArgs.isEmpty ? null : whereArgs,
-      orderBy: 'id DESC',
+      orderBy: orderClause,
       limit: pageSize,
       offset: page * pageSize,
     );
@@ -662,6 +674,8 @@ class InvoiceService {
               map['invoice_discount_type'] as String?),
           invoiceDiscountValue:
               (map['invoice_discount_value'] as num?)?.toDouble() ?? 0.0,
+          hideInvoiceNumber: (map['hide_invoice_number'] as int?) == 1,
+          customInvoiceNumber: map['custom_invoice_number'] as String?,
         ),
       );
     }
