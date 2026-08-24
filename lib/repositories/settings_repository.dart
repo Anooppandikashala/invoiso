@@ -19,6 +19,8 @@ abstract class SettingsRepository {
   Future<void> setUpiIds(List<UpiEntry> entries);
   Future<List<BankAccount>> getBankAccounts();
   Future<void> setBankAccounts(List<BankAccount> accounts);
+  Future<ProductColumnsConfig> getProductColumnsConfig();
+  Future<void> setProductColumnsConfig(ProductColumnsConfig config);
   Future<bool> getShowBankDetails();
   Future<void> setShowBankDetails(bool show);
   Future<bool> getShowPhone();
@@ -70,6 +72,7 @@ abstract class SettingsRepository {
   Future<void> setPageSize(PageSize size);
   Future<bool> getShowAliasNameInPdf();
   Future<bool> getShowTaxButtonInInvoicePage();
+  Future<bool> getHideInvoiceNumberByDefault();
   Future<String> getThemeMode();
   Future<void> setThemeMode(String mode);
   Future<bool> getAllowDuplicateInvoiceItems();

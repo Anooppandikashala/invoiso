@@ -8,7 +8,7 @@ import 'package:invoiso/common/common.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/common/constants.dart';
 
-import '../common/supported_currencies.dart';
+import 'package:invoiso/common/supported_currencies.dart';
 
 class InvoiceSettingsScreen extends ConsumerStatefulWidget {
   final VoidCallback? onNavigateToCustomization;

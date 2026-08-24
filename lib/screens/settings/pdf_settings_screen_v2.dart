@@ -8,16 +8,16 @@ import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/constants.dart';
 
-class PdfSettingsScreen extends ConsumerStatefulWidget {
+class PdfSettingsScreenV2 extends ConsumerStatefulWidget {
   final VoidCallback? onNavigateToCustomization;
 
-  const PdfSettingsScreen({super.key, this.onNavigateToCustomization});
+  const PdfSettingsScreenV2({super.key, this.onNavigateToCustomization});
 
   @override
-  ConsumerState<PdfSettingsScreen> createState() => _PdfSettingsScreenState();
+  ConsumerState<PdfSettingsScreenV2> createState() => _PdfSettingsScreenV2State();
 }
 
-class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
+class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
   InvoiceTemplate _savedTemplate = InvoiceTemplate.classic;
   InvoiceTemplate _previewedTemplate = InvoiceTemplate.classic;
   String? _savedThemeColorHex;
@@ -33,6 +33,8 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
   String _previewedThermalWidthMargin = '1';
   String _savedThermalItemLayout = 'table';
   String _previewedThermalItemLayout = 'table';
+  String _savedThermalCompanyNameSize = 'medium';
+  String _previewedThermalCompanyNameSize = 'medium';
   bool _isSaving = false;
 
   static const _presetThemeColors = [
@@ -97,6 +99,7 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
       ref.read(settingsRepositoryProvider).getShowTotalQuantity(),
       ref.read(settingsRepositoryProvider).getSetting(SettingKey.thermalWidthMargin),
       ref.read(settingsRepositoryProvider).getSetting(SettingKey.thermalItemLayout),
+      ref.read(settingsRepositoryProvider).getSetting(SettingKey.thermalCompanyNameSize),
     ]);
     final saved = results[0] as InvoiceTemplate;
     final savedThemeColor = results[1] as String?;
@@ -104,6 +107,7 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
     final savedShowTotalQty = results[3] as bool;
     final savedThermalWidthMargin = results[4] as String?;
     final savedThermalItemLayout = results[5] as String?;
+    final savedThermalCompanyNameSize = results[6] as String?;
     final previewedTemplate =
         effectiveInvoiceTemplateForPageSize(saved, savedPageSize);
     setState(() {
@@ -121,6 +125,8 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
       _thermalWidthMarginController.text = _savedThermalWidthMargin;
       _savedThermalItemLayout = savedThermalItemLayout ?? 'table';
       _previewedThermalItemLayout = _savedThermalItemLayout;
+      _savedThermalCompanyNameSize = savedThermalCompanyNameSize ?? 'medium';
+      _previewedThermalCompanyNameSize = _savedThermalCompanyNameSize;
     });
   }
 
@@ -142,6 +148,8 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
               .toString()),
       ref.read(settingsRepositoryProvider).setSetting(
           SettingKey.thermalItemLayout, _previewedThermalItemLayout),
+      ref.read(settingsRepositoryProvider).setSetting(
+          SettingKey.thermalCompanyNameSize, _previewedThermalCompanyNameSize),
     ]);
     setState(() {
       _savedTemplate = _previewedTemplate;
@@ -150,6 +158,7 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
       _savedShowTotalQuantity = _previewedShowTotalQuantity;
       _savedThermalWidthMargin = _previewedThermalWidthMargin;
       _savedThermalItemLayout = _previewedThermalItemLayout;
+      _savedThermalCompanyNameSize = _previewedThermalCompanyNameSize;
     });
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -259,172 +268,413 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
       _defaultThemeColor(_previewedTemplate);
 
   @override
-  Widget build(BuildContext context) {
-    final hasUnsavedChange = _themeColorInputValid &&
-        (_previewedTemplate != _savedTemplate ||
-            _previewedThemeColorHex != _savedThemeColorHex ||
-            _previewedPageSize != _savedPageSize ||
-            _previewedShowTotalQuantity != _savedShowTotalQuantity ||
-            _previewedThermalWidthMargin != _savedThermalWidthMargin ||
-            _previewedThermalItemLayout != _savedThermalItemLayout);
+  Widget build(BuildContext context) => _buildV2(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("PDF Settings"),
-        backgroundColor: Theme.of(context).appBarTheme.backgroundColor ??
-            Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: false,
+  // ============================================================
+  // V2 — flat / modern layout. Reuses all v1 state, controllers,
+  // validation and repository calls untouched (_setPreviewedTemplate,
+  // _setPreviewedPageSize, _setPreviewedThemeColor, _saveTemplate,
+  // _TemplateListTile, _ThemeColorCard, _PreviewPanel are all reused
+  // as-is). New pieces: a 3-column layout (templates | settings |
+  // preview) instead of 2, a persistent top header with Save/Reset,
+  // pill-style page size buttons, and a real preview zoom control.
+  //
+  // Honest scope note: the mockup's "Display Options" section shows six
+  // toggles (logo, address, items header, total-in-words, signature, QR
+  // code) that aren't backed by any setting in this codebase — only
+  // "Show total quantity row" (and the thermal-only fields) are real.
+  // Rather than fabricate the other five, this only shows what's real.
+  // The mockup's "Data Example" preview tab also has no equivalent
+  // functionality here, so it isn't included either.
+  // ============================================================
+
+  bool get _hasUnsavedChangeV2 =>
+      _themeColorInputValid &&
+      (_previewedTemplate != _savedTemplate ||
+          _previewedThemeColorHex != _savedThemeColorHex ||
+          _previewedPageSize != _savedPageSize ||
+          _previewedShowTotalQuantity != _savedShowTotalQuantity ||
+          _previewedThermalWidthMargin != _savedThermalWidthMargin ||
+          _previewedThermalItemLayout != _savedThermalItemLayout ||
+          _previewedThermalCompanyNameSize != _savedThermalCompanyNameSize);
+
+  void _resetToDefaultV2() {
+    setState(() {
+      _previewedTemplate = InvoiceTemplate.classic;
+      _previewedPageSize = PageSize.a4;
+      _previewedThemeColorHex = null;
+      _themeColorController.clear();
+      _themeColorInputValid = true;
+      _previewedShowTotalQuantity = false;
+      _previewedThermalWidthMargin = '1';
+      _thermalWidthMarginController.text = '1';
+      _previewedThermalItemLayout = 'table';
+      _previewedThermalCompanyNameSize = 'medium';
+    });
+  }
+
+  BoxDecoration _flatCardDecorationV2(BuildContext context) => BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(12),
+        border:
+            Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      );
+
+  Widget _headerBarV2() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(
+          bottom: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+        ),
       ),
-      backgroundColor: Theme.of(context).brightness == Brightness.dark
-          ? null
-          : Colors.grey[50],
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final isNarrow = constraints.maxWidth < 760;
-          final panelWidth =
-              (constraints.maxWidth * 0.34).clamp(240.0, 300.0).toDouble();
-          final previewPanel = _PreviewPanel(
-            templates: _templates,
-            previewedTemplate: _previewedTemplate,
-            savedTemplate: _savedTemplate,
-            themeColor: _activePreviewColor,
-            thermalDetailedTemplate: _previewedThermalItemLayout != "table",
-          );
-
-          if (isNarrow) {
-            return Column(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(
-                  height: (constraints.maxHeight * 0.56)
-                      .clamp(340.0, 520.0)
-                      .toDouble(),
-                  child: _buildSettingsPanel(hasUnsavedChange),
-                ),
-                Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
-                Expanded(child: previewPanel),
+                Text('PDF Settings',
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: Theme.of(context).colorScheme.onSurface)),
+                const SizedBox(height: 2),
+                Text('Customize invoice, quotation and receipt PDF templates',
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        fontSize: 12.5,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant)),
               ],
-            );
-          }
-
-          return Row(
-            children: [
-              SizedBox(
-                width: panelWidth,
-                child: _buildSettingsPanel(hasUnsavedChange),
-              ),
-              VerticalDivider(width: 1, color: Theme.of(context).colorScheme.outlineVariant),
-              Expanded(child: previewPanel),
-            ],
-          );
-        },
+            ),
+          ),
+          Flexible(
+            child: Wrap(
+              alignment: WrapAlignment.end,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                OutlinedButton(
+                  onPressed: _isSaving ? null : _resetToDefaultV2,
+                  child: const Text('Reset to Default'),
+                ),
+                FilledButton.icon(
+                  onPressed:
+                      (_hasUnsavedChangeV2 && !_isSaving) ? _saveTemplate : null,
+                  icon: _isSaving
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.save_rounded, size: 16),
+                  label: Text(_isSaving ? 'Saving...' : 'Save Settings'),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildSettingsPanel(bool hasUnsavedChange) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            child: Column(
+  Widget _templatesColumnV2() {
+    return Container(
+      width: 260,
+      padding: const EdgeInsets.all(12),
+      decoration: _flatCardDecorationV2(context),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionLabel('Page Size'),
+          const SizedBox(height: 8),
+          _pageSizeDropdownV2(),
+          const SizedBox(height: 16),
+          _sectionLabel('Templates'),
+          const SizedBox(height: 10),
+          Expanded(
+            child: Builder(builder: (context) {
+              // Only templates that actually support the selected page
+              // size are shown — nothing greyed-out to browse past.
+              final visibleTemplates = _templates
+                  .where((e) => (e["template"] as InvoiceTemplate)
+                      .supportsPageSize(_previewedPageSize))
+                  .toList();
+              if (visibleTemplates.isEmpty) {
+                return Center(
+                  child: Text('No templates for ${_previewedPageSize.label}',
+                      style: TextStyle(
+                          fontSize: 12.5,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                );
+              }
+              return SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: visibleTemplates.asMap().entries.map((e) {
+                    final index = e.key;
+                    final entry = e.value;
+                    final template = entry["template"] as InvoiceTemplate;
+                    final name = entry["name"] as String;
+                    final description = entry["description"] as String;
+                    return Padding(
+                      padding: EdgeInsets.only(
+                          bottom: index < visibleTemplates.length - 1 ? 8 : 0),
+                      child: _TemplateListTile(
+                        template: template,
+                        name: name,
+                        description: description,
+                        themeColor: _activePreviewColor,
+                        isPreviewed: _previewedTemplate == template,
+                        isSaved: _savedTemplate == template,
+                        thermalDetailedTemplate: _previewedThermalItemLayout != "table",
+                        isDefault: template == InvoiceTemplate.classic,
+                        onTap: () => _setPreviewedTemplate(template),
+                        isDisabled: false,
+                        disabledLabel:null
+                      ),
+                    );
+                  }).toList(),
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _pageSizeDropdownV2() {
+    return DropdownButtonFormField<PageSize>(
+      value: _previewedPageSize,
+      isExpanded: true,
+      decoration: InputDecoration(
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+        ),
+      ),
+      items: PageSize.values
+          .map((s) => DropdownMenuItem<PageSize>(value: s, child: Text(s.label)))
+          .toList(),
+      onChanged: (val) {
+        if (val != null) _setPreviewedPageSize(val);
+      },
+    );
+  }
+
+  Widget _settingsColumnV2() {
+    final entry =
+        _templates.firstWhere((t) => t["template"] == _previewedTemplate);
+    final name = entry["name"] as String;
+    final description = entry["description"] as String;
+    final isActive = _savedTemplate == _previewedTemplate;
+
+    return Container(
+      width: 320,
+      padding: const EdgeInsets.all(16),
+      decoration: _flatCardDecorationV2(context),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _sectionLabel("Settings"),
-                const SizedBox(height: 8),
-                _buildPageSizeSection(),
-                if (_previewedTemplate == InvoiceTemplate.compact ||
-                    _previewedTemplate == InvoiceTemplate.thermal ||
-                    _previewedTemplate == InvoiceTemplate.gridClassic) ...[
-                  const SizedBox(height: 6),
-                  if (_previewedTemplate == InvoiceTemplate.compact || _previewedTemplate == InvoiceTemplate.gridClassic)
-                    _buildTotalQuantityToggle(),
-                  if (_previewedTemplate == InvoiceTemplate.thermal) ...[
-                    _buildThermalItemLayoutField(),
-                    const SizedBox(height: 6),
-                    _buildThermalWidthMarginField(),
-                  ],
-                ],
-                const SizedBox(height: 14),
-                _sectionLabel("Templates"),
-                const SizedBox(height: 8),
-                ..._templates.asMap().entries.map((e) {
-                  final index = e.key;
-                  final entry = e.value;
-                  final template = entry["template"] as InvoiceTemplate;
-                  final name = entry["name"] as String;
-                  final description = entry["description"] as String;
-                  final isDisabled =
-                      !template.supportsPageSize(_previewedPageSize);
-                  return Padding(
-                    padding: EdgeInsets.only(
-                        bottom: index < _templates.length - 1 ? 6 : 0),
-                    child: _TemplateListTile(
-                      template: template,
-                      name: name,
-                      description: description,
-                      themeColor: _activePreviewColor,
-                      isPreviewed: _previewedTemplate == template,
-                      isSaved: _savedTemplate == template,
-                      thermalDetailedTemplate: _previewedThermalItemLayout != "table",
-                      isDefault: index == 0,
-                      isDisabled: isDisabled,
-                      disabledLabel: template == InvoiceTemplate.compact
-                          ? "A6 only"
-                          : template == InvoiceTemplate.thermal
-                              ? "Thermal only"
-                              : template == InvoiceTemplate.gridClassic
-                                  ? "A4, A5 or A6 only"
-                                  : "Not for thermal/A6",
-                      onTap: () => _setPreviewedTemplate(template),
-                    ),
-                  );
-                }),
-                const SizedBox(height: 6),
-                _ThemeColorCard(
-                  controller: _themeColorController,
-                  presetColors: _presetThemeColors,
-                  selectedHex: _previewedThemeColorHex,
-                  isValid: _themeColorInputValid,
-                  onPresetSelected: (color) =>
-                      _setPreviewedThemeColor(_colorToHex(color)),
-                  onCustomChanged: _handleCustomThemeColor,
-                  onUseTemplateDefault: () => _setPreviewedThemeColor(null),
-                  onPickColor: _openColorPicker,
+                Expanded(
+                  child: Text(name,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 ),
-                const SizedBox(height: 6),
-                _buildCustomTemplatePromo(),
+                if (isActive)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.check_circle_rounded,
+                            color: Theme.of(context).primaryColor, size: 13),
+                        const SizedBox(width: 4),
+                        Text('Active',
+                            style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                color: Theme.of(context).primaryColor)),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(description,
+                style: TextStyle(
+                    fontSize: 12.5,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            if (_previewedTemplate == InvoiceTemplate.compact ||
+                _previewedTemplate == InvoiceTemplate.thermal ||
+                _previewedTemplate == InvoiceTemplate.gridClassic) ...[
+              const SizedBox(height: 18),
+              _sectionLabel('Display Options'),
+              const SizedBox(height: 8),
+              if (_previewedTemplate == InvoiceTemplate.compact ||
+                  _previewedTemplate == InvoiceTemplate.gridClassic)
+                _buildTotalQuantityToggle(),
+              if (_previewedTemplate == InvoiceTemplate.thermal) ...[
+                _buildThermalItemLayoutField(),
+                const SizedBox(height: 8),
+                _buildThermalCompanyNameSizeField(),
+              ],
+            ],
+            const SizedBox(height: 18),
+            _sectionLabel('Theme Color'),
+            const SizedBox(height: 8),
+            _ThemeColorCard(
+              controller: _themeColorController,
+              presetColors: _presetThemeColors,
+              selectedHex: _previewedThemeColorHex,
+              isValid: _themeColorInputValid,
+              onPresetSelected: (color) =>
+                  _setPreviewedThemeColor(_colorToHex(color)),
+              onCustomChanged: _handleCustomThemeColor,
+              onUseTemplateDefault: () => _setPreviewedThemeColor(null),
+              onPickColor: _openColorPicker,
+            ),
+            const SizedBox(height: 12),
+            _buildCustomTemplatePromo(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _previewColumnV2() {
+    final previewPanel = _PreviewPanel(
+      templates: _templates,
+      previewedTemplate: _previewedTemplate,
+      savedTemplate: _savedTemplate,
+      themeColor: _activePreviewColor,
+      thermalDetailedTemplate: _previewedThermalItemLayout != "table",
+    );
+
+    return Container(
+      decoration: _flatCardDecorationV2(context),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.visibility_outlined,
+                    size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                const SizedBox(width: 6),
+                Text('Preview',
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface)),
               ],
             ),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-          child: SizedBox(
+          Expanded(child: previewPanel),
+          Container(
             width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: (hasUnsavedChange && !_isSaving) ? _saveTemplate : null,
-              icon: _isSaving
-                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : const Icon(Icons.save_rounded, size: 16),
-              label: Text(_isSaving ? 'Saving...' : 'Save'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).primaryColor,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: Theme.of(context).colorScheme.outlineVariant,
-                disabledForegroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppBorderRadius.small),
-                ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              border: Border(
+                top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
               ),
             ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline,
+                    size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text('Preview may slightly differ in the final PDF.',
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                ),
+              ],
+            ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildV2(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          children: [
+            _headerBarV2(),
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isNarrow = constraints.maxWidth < 900;
+                  if (isNarrow) {
+                    // Below the 3-column breakpoint, stack templates+settings
+                    // above the preview and let the whole thing scroll,
+                    // rather than force three squeezed columns.
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        children: [
+                          SizedBox(height: 400, child: _templatesColumnV2()),
+                          const SizedBox(height: 12),
+                          SizedBox(height: 520, child: _settingsColumnV2()),
+                          const SizedBox(height: 12),
+                          SizedBox(height: 520, child: _previewColumnV2()),
+                        ],
+                      ),
+                    );
+                  }
+                  return Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _templatesColumnV2(),
+                        const SizedBox(width: 12),
+                        _settingsColumnV2(),
+                        const SizedBox(width: 12),
+                        Expanded(child: _previewColumnV2()),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -436,58 +686,6 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
         fontWeight: FontWeight.w700,
         color: Theme.of(context).colorScheme.onSurfaceVariant,
         letterSpacing: 0.9,
-      ),
-    );
-  }
-
-  Widget _buildPageSizeSection() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(AppBorderRadius.small),
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Page size',
-            style: TextStyle(
-              fontSize: AppFontSize.small,
-              fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 8),
-          DropdownButtonFormField<PageSize>(
-            value: _previewedPageSize,
-            decoration: InputDecoration(
-              isDense: true,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
-              ),
-            ),
-            items: PageSize.values
-                .map((s) => DropdownMenuItem<PageSize>(
-                      value: s,
-                      child: Text(s.label,
-                          style:
-                              const TextStyle(fontSize: AppFontSize.small)),
-                    ))
-                .toList(),
-            onChanged: (val) {
-              if (val != null) _setPreviewedPageSize(val);
-            },
-          ),
-        ],
       ),
     );
   }
@@ -569,7 +767,7 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
     );
   }
 
-  Widget _buildThermalWidthMarginField() {
+  Widget _buildThermalCompanyNameSizeField() {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -577,55 +775,35 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
         borderRadius: BorderRadius.circular(AppBorderRadius.small),
         border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Thermal print width margin',
-                  style: TextStyle(
-                    fontSize: AppFontSize.small,
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Characters trimmed from each line to avoid edge clipping. '
-                  'Increase if text runs off the paper edge on your printer.',
-                  style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                ),
-              ],
+          Text(
+            'Company name size',
+            style: TextStyle(
+              fontSize: AppFontSize.small,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
-          const SizedBox(width: 12),
-          SizedBox(
-            width: 56,
-            child: TextField(
-              controller: _thermalWidthMarginController,
-              keyboardType: const TextInputType.numberWithOptions(signed: true),
-              inputFormatters: [
-                TextInputFormatter.withFunction((oldValue, newValue) {
-                  return RegExp(r'^-?\d*$').hasMatch(newValue.text)
-                      ? newValue
-                      : oldValue;
-                }),
-              ],
-              textAlign: TextAlign.center,
-              decoration: InputDecoration(
-                isDense: true,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                  borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
-                ),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            value: _previewedThermalCompanyNameSize,
+            isExpanded: true,
+            decoration: InputDecoration(
+              isDense: true,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
               ),
-              onChanged: (val) =>
-                  setState(() => _previewedThermalWidthMargin = val),
             ),
+            items: [
+              for (final size in ThermalCompanyNameSize.values)
+                DropdownMenuItem(value: size.key, child: Text(size.label)),
+            ],
+            onChanged: (value) =>
+                setState(() => _previewedThermalCompanyNameSize = value!),
           ),
         ],
       ),

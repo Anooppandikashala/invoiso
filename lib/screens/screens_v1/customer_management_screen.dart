@@ -996,53 +996,55 @@ class _CustomerManagementScreenState extends ConsumerState<CustomerManagementScr
           ),
           Padding(
             padding: const EdgeInsets.all(20),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  _buildFormField(_nameController, 'Name', Icons.person, true, maxLength: 50),
-                  const SizedBox(height: 16),
-                  _buildFormField(_businessNameController, 'Business Name', Icons.business_center, false, maxLength: 100),
-                  const SizedBox(height: 16),
-                  _buildFormField(_emailController, 'Email', Icons.email, false, maxLength: 100,
-                      keyboardType: TextInputType.emailAddress),
-                  const SizedBox(height: 16),
-                  _buildFormField(_phoneController, 'Phone', Icons.phone, false,
-                      keyboardType: TextInputType.phone, maxLength: 12),
-                  const SizedBox(height: 16),
-                  _buildFormField(_gstinController, 'Tax/VAT Number (GSTIN)', Icons.receipt_long, false,
-                      maxLength: 50),
-                  const SizedBox(height: 16),
-                  _buildFormField(_addressController, 'Address', Icons.location_on, false,
-                      maxLines: 3, maxLength: 100),
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _clearForm,
-                          icon: const Icon(Icons.clear),
-                          label: const Text('Clear'),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: FocusTraversalGroup(
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    _buildFormField(_nameController, 'Name', Icons.person, true, maxLength: 50),
+                    const SizedBox(height: 16),
+                    _buildFormField(_businessNameController, 'Business Name', Icons.business_center, false, maxLength: 100),
+                    const SizedBox(height: 16),
+                    _buildFormField(_emailController, 'Email', Icons.email, false, maxLength: 100,
+                        keyboardType: TextInputType.emailAddress),
+                    const SizedBox(height: 16),
+                    _buildFormField(_phoneController, 'Phone', Icons.phone, false,
+                        keyboardType: TextInputType.phone, maxLength: 12),
+                    const SizedBox(height: 16),
+                    _buildFormField(_gstinController, 'Tax/VAT Number (GSTIN)', Icons.receipt_long, false,
+                        maxLength: 50),
+                    const SizedBox(height: 16),
+                    _buildFormField(_addressController, 'Address', Icons.location_on, false,
+                        maxLines: 3, maxLength: 100),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _clearForm,
+                            icon: const Icon(Icons.clear),
+                            label: const Text('Clear'),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        flex: 2,
-                        child: FilledButton.icon(
-                          onPressed: () => _handleAddOrUpdateCustomer(),
-                          icon: const Icon(Icons.add),
-                          label: const Text('Add Customer'),
-                          style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 2,
+                          child: FilledButton.icon(
+                            onPressed: () => _handleAddOrUpdateCustomer(),
+                            icon: const Icon(Icons.add),
+                            label: const Text('Add Customer'),
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

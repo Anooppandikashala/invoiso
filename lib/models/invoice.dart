@@ -28,6 +28,10 @@ class Invoice {
   List<AdditionalCost>
       additionalCosts; // e.g. Shipping, Packaging (zero tax, added after tax)
   double previousBalance;
+  InvoiceDiscountType invoiceDiscountType; // invoice-level discount, applied after tax
+  double invoiceDiscountValue;
+  bool hideInvoiceNumber; // hide real invoice number in PDF output only
+  String? customInvoiceNumber; // shown instead of invoiceNumber in PDF when hideInvoiceNumber is true
 
   Invoice({
     required this.id,
@@ -49,7 +53,23 @@ class Invoice {
     this.quantityLabel,
     this.additionalCosts = const [],
     this.previousBalance = 0.0,
+    this.invoiceDiscountType = InvoiceDiscountType.percent,
+    this.invoiceDiscountValue = 0.0,
+    this.hideInvoiceNumber = false,
+    this.customInvoiceNumber,
   });
+
+  /// Text to render for the invoice number in PDF/receipt output, or null to omit the line entirely.
+  String? pdfNumberText(String invoicePrefix, {bool showLeadingZeros = true}) {
+    if (hideInvoiceNumber) {
+      final c = customInvoiceNumber?.trim();
+      return (c != null && c.isNotEmpty) ? c : null;
+    }
+    final number = invoiceNumber ?? id;
+    if (showLeadingZeros) return '$invoicePrefix$number';
+    final stripped = number.replaceFirst(RegExp(r'^0+'), '');
+    return '$invoicePrefix${stripped.isEmpty ? '0' : stripped}';
+  }
 
   InvoiceTotals get _totals => InvoiceTotalsCalculator.totals(
         lines: items.map((item) => item._amountsForInvoice(
@@ -58,6 +78,8 @@ class Invoice {
         globalTaxRate: taxRate,
         globalTaxRateFormat: TaxRateFormat.fraction,
         additionalCostsTotal: additionalCostsTotal,
+        invoiceDiscountType: invoiceDiscountType,
+        invoiceDiscountValue: invoiceDiscountValue,
       );
 
   double get subtotal => _totals.subtotal;
@@ -70,6 +92,8 @@ class Invoice {
 
   double get additionalCostsTotal =>
       additionalCosts.fold(0.0, (sum, c) => sum + c.amount);
+
+  double get invoiceDiscountAmount => _totals.invoiceDiscountAmount;
 
   double get total => _totals.total;
 

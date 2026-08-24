@@ -28,6 +28,7 @@ pw.Page buildThermalTemplate(
   pw.ThemeData? pdfTheme,
   String itemLayout = 'table',
   bool showRoundOff = false,
+  bool showLeadingZeros = true,
   bool showPhone = true,
   bool showCompanyName = true,
   bool showAddress = true,
@@ -70,15 +71,15 @@ pw.Page buildThermalTemplate(
     );
   }
 
-  pw.Widget labelValue(String label, String value, {double fontSize = bodyFs}) {
+  pw.Widget labelValue(String label, String value, {double fontSize = bodyFs,bool valueIsBold = false}) {
     return pw.Row(
       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
       children: [
         pw.Text(label,
-            style: pw.TextStyle(fontSize: fontSize, color: PdfColors.grey700)),
+            style: pw.TextStyle(fontSize: fontSize, color: PdfColors.grey800)),
         pw.Text(value,
             style: pw.TextStyle(
-                fontSize: fontSize, fontWeight: pw.FontWeight.bold)),
+                fontSize: fontSize, fontWeight: valueIsBold ? pw.FontWeight.bold : pw.FontWeight.normal)),
       ],
     );
   }
@@ -262,8 +263,10 @@ pw.Page buildThermalTemplate(
       pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
-          pw.Text('Inv No: $invoicePrefix${invoice.invoiceNumber ?? invoice.id}',
-              style: const pw.TextStyle(fontSize: bodyFs)),
+          if (invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros) != null)
+            pw.Text(
+                'Inv No: ${invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros)}',
+                style: const pw.TextStyle(fontSize: bodyFs)),
           pw.Text('Date: $dateStr',
               style: const pw.TextStyle(fontSize: bodyFs)),
         ],
@@ -371,6 +374,11 @@ pw.Page buildThermalTemplate(
       for (final c in invoice.additionalCosts)
         labelValue(c.label.isEmpty ? 'Extra Cost' : c.label,
             '$currencySymbol ${c.amount.toStringAsFixed(2)}'),
+      if (invoice.invoiceDiscountAmount > 0)
+        labelValue(invoice.invoiceDiscountType == InvoiceDiscountType.percent
+            ? "Extra Discount (${invoice.invoiceDiscountValue.toStringAsFixed(1)}%)"
+            : "Extra Discount ",
+          "-$currencySymbol ${invoice.invoiceDiscountAmount.toStringAsFixed(2)}",),
       if (previousBalanceDue > 0)
         labelValue('Prev Balance:',
             '$currencySymbol ${previousBalanceDue.toStringAsFixed(2)}'),
@@ -446,6 +454,9 @@ pw.Page buildThermalTemplate(
       if ((invoice.notes ?? '').isNotEmpty) ...[
         pw.SizedBox(height: 4),
         dashedSep(),
+        pw.Text('NOTES',
+            style: pw.TextStyle(
+                fontSize: smallFs, fontWeight: pw.FontWeight.bold)),
         pw.Text(invoice.notes!,
             style: pw.TextStyle(
                 fontSize: smallFs, fontStyle: pw.FontStyle.italic)),

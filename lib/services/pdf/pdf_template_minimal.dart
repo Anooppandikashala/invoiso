@@ -38,6 +38,7 @@ pw.MultiPage buildMinimalTemplate(
   double watermarkOpacity = 0.12,
   bool showCgstSgst = false,
   bool showRoundOff = false,
+  bool showLeadingZeros = true,
   bool showPhone = true,
   bool showEmail = true,
   bool showCompanyName = true,
@@ -90,8 +91,9 @@ pw.MultiPage buildMinimalTemplate(
             pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text("$invoicePrefix${invoice.invoiceNumber ?? invoice.id}",
-                    style: pw.TextStyle(fontSize: minimalPdfStyle.bodyFontSize)),
+                if (invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros) != null)
+                  pw.Text(invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros)!,
+                      style: pw.TextStyle(fontSize: minimalPdfStyle.bodyFontSize)),
                 pw.SizedBox(height: minimalPdfStyle.headerGap)
               ],
             ),
@@ -129,8 +131,9 @@ pw.MultiPage buildMinimalTemplate(
             pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text("$invoicePrefix${invoice.invoiceNumber ?? invoice.id}",
-                    style: pw.TextStyle(fontSize: minimalPdfStyle.bodyFontSize)),
+                if (invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros) != null)
+                  pw.Text(invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros)!,
+                      style: pw.TextStyle(fontSize: minimalPdfStyle.bodyFontSize)),
                 pw.SizedBox(height: minimalPdfStyle.headerGap),
                 pw.Text("DATE",
                     style: pw.TextStyle(
@@ -259,7 +262,7 @@ pw.MultiPage buildMinimalTemplate(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
-          pw.Expanded(child: buildAdditionalNotes(invoice)),
+          pw.Expanded(child: buildAdditionalNotes(invoice, accentColor: accentColor)),
           pw.SizedBox(width: 20),
           buildEnhancedTotals(
             invoice,

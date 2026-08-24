@@ -36,7 +36,7 @@ class ProductService {
       'products',
       where: 'stock <= ? AND unlimited_stock = 0',
       whereArgs: [0],
-      orderBy: 'name ASC',
+      orderBy: 'name COLLATE NOCASE ASC',
     );
 
     return maps.map((p) => Product.fromMap(p)).toList();
@@ -125,7 +125,7 @@ class ProductService {
       'products',
       where: where,
       whereArgs: whereArgs,
-      orderBy: '$orderBy $order',
+      orderBy: '$orderBy COLLATE NOCASE $order',
       limit: limit,
       offset: offset,
     );

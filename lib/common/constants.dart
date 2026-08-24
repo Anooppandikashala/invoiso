@@ -61,19 +61,6 @@ class AppBorderRadius
   static const large = 16.0;
 }
 
-class AppConfig
-{
-  static const kIsCloud = false;
-  static const name = "invoiso";
-  static const version = "v4.3.6";
-  static const developer = "ANOOP P";
-  static const supportEmail = "anooppkrishnan96@gmail.com";
-  static const supportForm = "https://forms.gle/k2Pk7CHr4fAewE7VA";
-  static const website = "https://invoiso.co.in/";
-  static const license = "MIT";
-  static const description = "Invoiso is a modern invoice and quotation management app for freelancers and small businesses.";
-}
-
 class Tax
 {
   static const defaultTaxRate = 0.18;
@@ -94,12 +81,25 @@ class DefaultValues
   static const int additionalNotesLength = 1000;
 }
 
+class AppShortcuts {
+  static const List<(String, String)> all = [
+    ('Ctrl + Q', 'New Invoice (from Dashboard) / Reset form (in Create Invoice)'),
+    ('Ctrl + S', 'Save / create the invoice'),
+    ('Ctrl + F', 'Add product to invoice'),
+    ('Ctrl + M', 'Add custom (ad-hoc) item'),
+    ('Ctrl + O', 'Preview invoice PDF'),
+    ('Ctrl + P', 'Generate / print invoice PDF'),
+  ];
+}
+
 class PdfLayout
 {
   static double defaultHMargin = 20;
   static double defaultVMargin = 12;
   static double thankYouNoteFontSize = 10;
   static double footerBrandingFontSize = 8;
+  static const double thermalPrinterItemFontSize = 28;
+  static const double thermalPrinterHeadFontSize = 38;
 }
 
 class UpdateConfig

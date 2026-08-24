@@ -47,6 +47,7 @@ pw.MultiPage buildGridClassicTemplate(
   double watermarkOpacity = 0.12,
   bool showCgstSgst = false,
   bool showRoundOff = false,
+  bool showLeadingZeros = true,
   bool showPhone = true,
   bool showCompanyName = true,
   bool showPan = true,
@@ -96,8 +97,8 @@ pw.MultiPage buildGridClassicTemplate(
   final totalQty = showTotalQuantity
       ? invoice.items.fold<double>(0, (s, i) => s + i.quantity)
       : 0.0;
-  final qtyLabel =
-      (invoice.quantityLabel?.isNotEmpty == true) ? invoice.quantityLabel! : 'Qty';
+  //final qtyLabel =
+  //    (invoice.quantityLabel?.isNotEmpty == true) ? invoice.quantityLabel! : 'Qty';
 
   pw.Widget infoRow(String k, String v) => pw.Padding(
         padding: pw.EdgeInsets.symmetric(vertical: 1.5 * fontScale),
@@ -245,8 +246,9 @@ pw.MultiPage buildGridClassicTemplate(
                   child: pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      infoRow('${invoice.invoiceTitle ?? invoice.type} No',
-                          '$invoicePrefix${invoice.invoiceNumber ?? invoice.id}'),
+                      if (invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros) != null)
+                        infoRow('${invoice.invoiceTitle ?? invoice.type} No',
+                            invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros)!),
                       infoRow('Date', formatPdfDate(invoice.date, datePattern)),
                       infoRow('Time', DateFormat('HH:mm:ss').format(invoice.date)),
                       if (invoice.dueDate != null)
@@ -280,7 +282,7 @@ pw.MultiPage buildGridClassicTemplate(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              pw.Expanded(child: buildAdditionalNotes(invoice,fontSize: gridClassicPdfStyle.bodyFontSize*fontScale)),
+              pw.Expanded(child: buildAdditionalNotes(invoice,fontSize: gridClassicPdfStyle.bodyFontSize*fontScale, accentColor: accentColor)),
               pw.SizedBox(width: 5 * fontScale),
               pw.SizedBox(
                 width: 200 * fontScale,
@@ -305,6 +307,12 @@ pw.MultiPage buildGridClassicTemplate(
                     ...invoice.additionalCosts.map((c) => totalsRow(
                         c.label.isEmpty ? 'Extra Cost' : c.label,
                         '$currencySymbol ${c.amount.toStringAsFixed(2)}')),
+                    if (invoice.invoiceDiscountAmount > 0)
+                      totalsRow(invoice.invoiceDiscountType == InvoiceDiscountType.percent
+                          ? "Extra Discount (${invoice.invoiceDiscountValue.toStringAsFixed(1)}%)"
+                          : "Extra Discount ",
+                          "-$currencySymbol ${invoice.invoiceDiscountAmount.toStringAsFixed(2)}"
+                      ),
                     pw.Divider(thickness: 0.5, color: borderColor,height: 5),
                     totalsRow('Total',
                         '$currencySymbol ${invoice.total.toStringAsFixed(2)}',
