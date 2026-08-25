@@ -3140,7 +3140,10 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         });
       },
     );
-    disposeAll();
+    // showDialog's future completes on Navigator.pop, before the dialog's
+    // close (exit) animation finishes rebuilding the still-mounted subtree.
+    // Delay disposal past that or the fields get used-after-dispose.
+    Future.delayed(const Duration(milliseconds: 300), disposeAll);
   }
 
 
