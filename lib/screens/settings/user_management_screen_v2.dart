@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/common/constants.dart';
+import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/utils/password_utils.dart';
 
@@ -48,6 +49,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
   }
 
   Future<void> _loadUsers() async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() => _isLoading = true);
 
     try {
@@ -71,7 +73,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
       _animationController.forward();
     } catch (e) {
       setState(() => _isLoading = false);
-      _showSnackBar('Error loading users: $e', Colors.red);
+      _showSnackBar(l10n.userMgmtLoadErrorMessage(e.toString()), Colors.red);
     }
   }
 
@@ -92,6 +94,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
 
   Future<void> _saveUser() async {
     if (_formKey.currentState!.validate()) {
+      final l10n = AppLocalizations.of(context)!;
       setState(() => _isLoading = true);
 
       try {
@@ -105,19 +108,18 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
         if (_editingUserId == null) {
           await ref.read(authRepositoryProvider).insertUser(user);
           if (!mounted) return;
-          _showSnackBar('User added successfully', Colors.green);
+          _showSnackBar(l10n.userMgmtAddedMessage, Colors.green);
         } else {
           await ref.read(authRepositoryProvider).updateUser(user);
           if (!mounted) return;
-          _showSnackBar(
-              'User updated successfully', Theme.of(context).primaryColor);
+          _showSnackBar(l10n.userMgmtUpdatedMessage, Theme.of(context).primaryColor);
         }
 
         _resetForm();
         await _loadUsers();
       } catch (e) {
         setState(() => _isLoading = false);
-        _showSnackBar('Error saving user: $e', Colors.red);
+        _showSnackBar(l10n.userMgmtSaveErrorMessage(e.toString()), Colors.red);
       }
     }
   }
@@ -147,6 +149,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
     bool obscureOldPassword = true;
     bool obscureNewPassword = true;
     bool obscureConfirmPassword = true;
+    final l10n = AppLocalizations.of(context)!;
 
     return showDialog<void>(
       context: context,
@@ -176,10 +179,10 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                           color: Colors.white, size: 24),
                     ),
                     const SizedBox(width: 12),
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Change Password',
-                        style: TextStyle(fontSize: 20),
+                        l10n.userMgmtChangePasswordTitle,
+                        style: const TextStyle(fontSize: 20),
                       ),
                     ),
                   ],
@@ -206,7 +209,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                               Icon(Icons.person, color: Colors.blue.shade700),
                               const SizedBox(width: 8),
                               Text(
-                                'User: $username',
+                                l10n.userMgmtUserColonLabel(username),
                                 style: TextStyle(
                                   fontWeight: FontWeight.w600,
                                   color: Colors.blue.shade700,
@@ -221,7 +224,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                           controller: oldPasswordController,
                           obscureText: obscureOldPassword,
                           decoration: InputDecoration(
-                            labelText: 'Current Password',
+                            labelText: l10n.userMgmtCurrentPasswordLabel,
                             prefixIcon: const Icon(Icons.lock_outline),
                             suffixIcon: IconButton(
                               icon: Icon(
@@ -243,7 +246,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Current password is required';
+                              return l10n.userMgmtCurrentPasswordRequiredMessage;
                             }
                             return null;
                           },
@@ -253,7 +256,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                           controller: newPasswordController,
                           obscureText: obscureNewPassword,
                           decoration: InputDecoration(
-                            labelText: 'New Password',
+                            labelText: l10n.userMgmtNewPasswordLabel,
                             prefixIcon: const Icon(Icons.lock),
                             suffixIcon: IconButton(
                               icon: Icon(
@@ -275,10 +278,10 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'New password is required';
+                              return l10n.userMgmtNewPasswordRequiredMessage;
                             }
                             if (value.length < 6) {
-                              return 'Password must be at least 6 characters';
+                              return l10n.userMgmtPasswordMinLengthMessage;
                             }
                             return null;
                           },
@@ -288,7 +291,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                           controller: confirmPasswordController,
                           obscureText: obscureConfirmPassword,
                           decoration: InputDecoration(
-                            labelText: 'Confirm New Password',
+                            labelText: l10n.userMgmtConfirmNewPasswordLabel,
                             prefixIcon: const Icon(Icons.lock_clock),
                             suffixIcon: IconButton(
                               icon: Icon(
@@ -311,10 +314,10 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please confirm your password';
+                              return l10n.userMgmtConfirmPasswordRequiredMessage;
                             }
                             if (value != newPasswordController.text) {
-                              return 'Passwords do not match';
+                              return l10n.userMgmtPasswordsDoNotMatchMessage;
                             }
                             return null;
                           },
@@ -330,7 +333,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                     padding: const EdgeInsets.symmetric(
                         horizontal: 24, vertical: 12),
                   ),
-                  child: const Text('Cancel', style: TextStyle(fontSize: 15)),
+                  child: Text(l10n.actionCancel, style: const TextStyle(fontSize: 15)),
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
@@ -346,8 +349,8 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                     ),
                   ),
                   icon: const Icon(Icons.check_circle_outline),
-                  label: const Text('Change Password',
-                      style: TextStyle(fontSize: 15)),
+                  label: Text(l10n.userMgmtChangePasswordTitle,
+                      style: const TextStyle(fontSize: 15)),
                   onPressed: () async {
                     if (formKey.currentState!.validate()) {
                       final user = _users.firstWhere((u) => u.id == userId);
@@ -357,12 +360,12 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                         if (!context.mounted) return;
                         Navigator.of(context).pop();
                         _showSnackBar(
-                            'Password changed successfully', Colors.green);
+                            l10n.userMgmtPasswordChangedMessage, Colors.green);
                         _loadUsers();
                       } else {
                         if (!context.mounted) return;
                         _showSnackBar(
-                            'Current password is incorrect', Colors.red);
+                            l10n.userMgmtCurrentPasswordIncorrectMessage, Colors.red);
                       }
                     }
                   },
@@ -376,6 +379,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
   }
 
   Future<void> _confirmDeleteUser(User user) async {
+    final l10n = AppLocalizations.of(context)!;
     return showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -402,7 +406,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                   const Icon(Icons.warning, color: Colors.white, size: 24),
                 ),
                 const SizedBox(width: 12),
-                const Text('Delete User', style: TextStyle(fontSize: 20)),
+                Text(l10n.userMgmtDeleteUserTitle, style: const TextStyle(fontSize: 20)),
               ],
             ),
           ),
@@ -410,7 +414,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Are you sure you want to delete user:',
+                l10n.userMgmtDeleteUserConfirmLabel,
                 style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
               ),
               const SizedBox(height: 8),
@@ -437,7 +441,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
               ),
               const SizedBox(height: 12),
               Text(
-                'This action cannot be undone.',
+                l10n.userMgmtActionCannotBeUndoneMessage,
                 style: TextStyle(
                   color: Colors.red[700],
                   fontSize: 13,
@@ -452,7 +456,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                 padding:
                 const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
-              child: const Text('Cancel', style: TextStyle(fontSize: 15)),
+              child: Text(l10n.actionCancel, style: const TextStyle(fontSize: 15)),
               onPressed: () {
                 Navigator.of(context).pop();
               },
@@ -468,12 +472,12 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                 ),
               ),
               icon: const Icon(Icons.delete_forever),
-              label: const Text('Delete', style: TextStyle(fontSize: 15)),
+              label: Text(l10n.actionDelete, style: const TextStyle(fontSize: 15)),
               onPressed: () async {
                 await ref.read(authRepositoryProvider).deleteUserSafely(user.id);
                 if (!context.mounted) return;
                 Navigator.of(context).pop();
-                _showSnackBar('User deleted successfully', Colors.orange);
+                _showSnackBar(l10n.userMgmtDeletedMessage, Colors.orange);
                 _loadUsers();
               },
             ),
@@ -530,7 +534,9 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
           ),
           const SizedBox(width: 4),
           Text(
-            isAdmin ? 'Admin' : 'User',
+            isAdmin
+                ? AppLocalizations.of(context)!.dashboardRoleAdmin
+                : AppLocalizations.of(context)!.dashboardRoleUser,
             style: TextStyle(
               color: color,
               fontSize: 12,
@@ -669,7 +675,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
             _buildUserTypeChip(user.userType),
             if (user.id == widget.currentUser.id) ...[
               const SizedBox(height: 10),
-              Text('This is your account',
+              Text(AppLocalizations.of(context)!.userMgmtThisIsYourAccountMessage,
                   style: TextStyle(
                       fontSize: 12.5,
                       color: Theme.of(context).colorScheme.onSurfaceVariant)),
@@ -679,7 +685,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Close'),
+            child: Text(AppLocalizations.of(context)!.actionClose),
           ),
         ],
       ),
@@ -687,11 +693,12 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
   }
 
   Future<void> _bulkDeleteSelectedV2() async {
+    final l10n = AppLocalizations.of(context)!;
     final includesSelf = _selectedIdsV2.contains(widget.currentUser.id);
     final ids = _selectedIdsV2.where((id) => id != widget.currentUser.id).toList();
     if (ids.isEmpty) {
       if (includesSelf) {
-        _showSnackBar("You can't delete your own account", Colors.red);
+        _showSnackBar(l10n.userMgmtCantDeleteOwnAccountMessage, Colors.red);
       }
       return;
     }
@@ -699,17 +706,15 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Delete selected users?'),
+        title: Text(l10n.userMgmtDeleteSelectedTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-                'This will permanently delete ${ids.length} user${ids.length == 1 ? '' : 's'}. '
-                'This action cannot be undone.'),
+            Text(l10n.userMgmtBulkDeleteBody(ids.length)),
             if (includesSelf) ...[
               const SizedBox(height: 8),
-              Text('Your own account was in the selection but will be skipped.',
+              Text(l10n.userMgmtOwnAccountSkippedMessage,
                   style: TextStyle(
                       fontSize: 12.5,
                       fontStyle: FontStyle.italic,
@@ -720,13 +725,13 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
         actions: [
           TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Cancel')),
+              child: Text(l10n.actionCancel)),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red, foregroundColor: Colors.white),
             onPressed: () => Navigator.of(ctx).pop(true),
             icon: const Icon(Icons.delete_forever, size: 18),
-            label: const Text('Delete'),
+            label: Text(l10n.actionDelete),
           ),
         ],
       ),
@@ -737,12 +742,12 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
       for (final id in ids) {
         await ref.read(authRepositoryProvider).deleteUserSafely(id);
       }
-      _showSnackBar('${ids.length} user${ids.length == 1 ? '' : 's'} deleted', Colors.orange);
+      _showSnackBar(l10n.userMgmtBulkDeletedMessage(ids.length), Colors.orange);
       _selectedIdsV2.clear();
       await _loadUsers();
     } catch (e) {
       setState(() => _isLoading = false);
-      _showSnackBar('Error deleting users: $e', Colors.red);
+      _showSnackBar(l10n.userMgmtBulkDeleteErrorMessage(e.toString()), Colors.red);
     }
   }
 
@@ -856,6 +861,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
   }
 
   Widget _headerBarV2() {
+    final l10n = AppLocalizations.of(context)!;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -863,14 +869,14 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('User Management',
+              Text(l10n.userMgmtTitle,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
                       color: Theme.of(context).colorScheme.onSurface)),
               const SizedBox(height: 2),
-              Text('Manage application users and access permissions',
+              Text(l10n.userMgmtSubtitle,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                       fontSize: 13,
@@ -893,13 +899,13 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                         height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2))
                     : const Icon(Icons.refresh),
-                tooltip: 'Refresh',
+                tooltip: l10n.actionRefresh,
               ),
               if (widget.currentUser.isAdmin())
                 FilledButton.icon(
                   onPressed: _openAddPanelV2,
                   icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Add User'),
+                  label: Text(l10n.userMgmtAddUserButton),
                   style: FilledButton.styleFrom(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
@@ -915,13 +921,14 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
   }
 
   Widget _searchFilterRowV2() {
+    final l10n = AppLocalizations.of(context)!;
     return Row(
       children: [
         Expanded(
           child: TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: 'Search users by name or role…',
+              hintText: l10n.userMgmtSearchHint,
               prefixIcon: const Icon(Icons.search, size: 20),
               isDense: true,
               contentPadding:
@@ -945,7 +952,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
         ),
         const SizedBox(width: 10),
         PopupMenuButton<String>(
-          tooltip: 'Filter by role',
+          tooltip: l10n.userMgmtFilterByRoleTooltip,
           onSelected: (value) {
             if (!mounted) return;
             setState(() {
@@ -953,13 +960,16 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
               _currentPageV2 = 0;
             });
           },
-          itemBuilder: (ctx) => const [
-            PopupMenuItem(value: 'all', child: Text('All roles')),
-            PopupMenuItem(value: 'admin', child: Text('Admin')),
-            PopupMenuItem(value: 'user', child: Text('User')),
+          itemBuilder: (ctx) => [
+            PopupMenuItem(value: 'all', child: Text(l10n.userMgmtAllRolesLabel)),
+            PopupMenuItem(value: 'admin', child: Text(l10n.dashboardRoleAdmin)),
+            PopupMenuItem(value: 'user', child: Text(l10n.dashboardRoleUser)),
           ],
-          child: _menuButtonLookV2(Icons.filter_list,
-              'Role: ${_roleFilterV2 == 'all' ? 'All' : (_roleFilterV2 == 'admin' ? 'Admin' : 'User')}'),
+          child: _menuButtonLookV2(
+              Icons.filter_list,
+              l10n.userMgmtRoleColonLabel(_roleFilterV2 == 'all'
+                  ? l10n.userMgmtAllLabel
+                  : (_roleFilterV2 == 'admin' ? l10n.dashboardRoleAdmin : l10n.dashboardRoleUser))),
         ),
       ],
     );
@@ -1000,9 +1010,11 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                 },
               ),
             ),
-          Expanded(flex: 3, child: Text('USER', style: style)),
-          Expanded(flex: 2, child: Text('ROLE', style: style)),
-          SizedBox(width: 164, child: Text('ACTIONS', style: style)),
+          Expanded(flex: 3, child: Text(AppLocalizations.of(context)!.userMgmtColUser, style: style)),
+          Expanded(flex: 2, child: Text(AppLocalizations.of(context)!.userMgmtColRole, style: style)),
+          SizedBox(
+              width: 164,
+              child: Text(AppLocalizations.of(context)!.customerMgmtColActions, style: style)),
         ],
       ),
     );
@@ -1068,7 +1080,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                             color: Theme.of(context).primaryColor.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: Text('You',
+                          child: Text(AppLocalizations.of(context)!.userMgmtYouBadgeLabel,
                               style: TextStyle(
                                   fontSize: 10.5,
                                   fontWeight: FontWeight.w700,
@@ -1089,21 +1101,21 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                 _buildActionButton(
                   icon: Icons.visibility_outlined,
                   color: Colors.green,
-                  tooltip: 'View',
+                  tooltip: AppLocalizations.of(context)!.actionView,
                   onPressed: () => _showViewUserDialogV2(user),
                 ),
                 const SizedBox(width: 6),
                 _buildActionButton(
                   icon: Icons.edit_outlined,
                   color: Colors.blue,
-                  tooltip: 'Edit',
+                  tooltip: AppLocalizations.of(context)!.actionEdit,
                   onPressed: () => _editUserV2(user),
                 ),
                 const SizedBox(width: 6),
                 _buildActionButton(
                   icon: Icons.lock_reset,
                   color: Colors.orange,
-                  tooltip: 'Change Password',
+                  tooltip: AppLocalizations.of(context)!.userMgmtChangePasswordTitle,
                   onPressed: () =>
                       _showChangePasswordDialog(user.id, user.username),
                 ),
@@ -1112,7 +1124,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                   _buildActionButton(
                     icon: Icons.delete_outline,
                     color: Colors.red,
-                    tooltip: 'Delete',
+                    tooltip: AppLocalizations.of(context)!.actionDelete,
                     onPressed: () => _deleteUserV2(user),
                   ),
                 ],
@@ -1132,6 +1144,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
   }
 
   Widget _paginationV2() {
+    final l10n = AppLocalizations.of(context)!;
     final total = _roleFilteredUsersV2.length;
     final totalPages = total == 0 ? 1 : ((total - 1) ~/ _pageSizeV2) + 1;
     return Container(
@@ -1149,7 +1162,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
               if (widget.currentUser.isAdmin())
                 PopupMenuButton<String>(
                   enabled: _selectedIdsV2.isNotEmpty,
-                  tooltip: 'Bulk actions',
+                  tooltip: l10n.userMgmtBulkActionsTooltip,
                   onSelected: (value) {
                     if (value == 'delete') _bulkDeleteSelectedV2();
                   },
@@ -1157,21 +1170,27 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                     PopupMenuItem(
                       value: 'delete',
                       enabled: _selectedIdsV2.isNotEmpty,
-                      child: const Row(
+                      child: Row(
                         children: [
-                          Icon(Icons.delete_outline, color: Colors.red, size: 18),
-                          SizedBox(width: 8),
-                          Text('Delete selected', style: TextStyle(color: Colors.red)),
+                          const Icon(Icons.delete_outline, color: Colors.red, size: 18),
+                          const SizedBox(width: 8),
+                          Text(l10n.userMgmtDeleteSelectedMenuLabel,
+                              style: const TextStyle(color: Colors.red)),
                         ],
                       ),
                     ),
                   ],
-                  child: _menuButtonLookV2(Icons.checklist,
-                      'Bulk Actions${_selectedIdsV2.isNotEmpty ? ' (${_selectedIdsV2.length})' : ''}'),
+                  child: _menuButtonLookV2(
+                      Icons.checklist,
+                      '${l10n.userMgmtBulkActionsLabel}'
+                      '${_selectedIdsV2.isNotEmpty ? ' (${_selectedIdsV2.length})' : ''}'),
                 ),
               const SizedBox(width: 12),
-              Text('Showing ${total == 0 ? 0 : _currentPageV2 * _pageSizeV2 + 1} to '
-                  '${(_currentPageV2 * _pageSizeV2 + _pageSizeV2).clamp(0, total)} of $total users',
+              Text(
+                  l10n.userMgmtShowingRangeLabel(
+                      total == 0 ? 0 : _currentPageV2 * _pageSizeV2 + 1,
+                      (_currentPageV2 * _pageSizeV2 + _pageSizeV2).clamp(0, total),
+                      total),
                   style: TextStyle(
                       fontSize: 12.5, color: Theme.of(context).colorScheme.onSurfaceVariant)),
             ],
@@ -1198,7 +1217,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               ),
               const SizedBox(width: 4),
-              Text('of $totalPages',
+              Text(l10n.customerMgmtOfTotalPagesLabel(totalPages),
                   style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
               IconButton(
                 onPressed: _currentPageV2 < totalPages - 1
@@ -1238,7 +1257,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                                   size: 48,
                                   color: Theme.of(context).colorScheme.outlineVariant),
                               const SizedBox(height: 12),
-                              Text('No users found',
+                              Text(AppLocalizations.of(context)!.userMgmtNoUsersFoundMessage,
                                   style: TextStyle(
                                       color: Theme.of(context).colorScheme.onSurfaceVariant)),
                             ],
@@ -1261,6 +1280,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
   // full name / email / status — the User model doesn't have them.
 
   Widget _addPanelV2() {
+    final l10n = AppLocalizations.of(context)!;
     final isAdding = _editingUserId == null;
     final primaryColor = Theme.of(context).primaryColor;
     return Container(
@@ -1274,7 +1294,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
             padding: const EdgeInsets.fromLTRB(18, 16, 10, 16),
             child: Row(
               children: [
-                Text(isAdding ? 'Add New User' : 'Edit User',
+                Text(isAdding ? l10n.userMgmtAddNewUserTitle : l10n.userMgmtEditUserTitle,
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
                 const Spacer(),
                 IconButton(
@@ -1298,17 +1318,17 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                     TextFormField(
                       controller: _usernameController,
                       decoration: InputDecoration(
-                        labelText: 'Username *',
-                        hintText: 'Enter username',
+                        labelText: l10n.userMgmtUsernameRequiredLabel,
+                        hintText: l10n.userMgmtEnterUsernameHint,
                         border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Username is required';
+                          return l10n.userMgmtUsernameRequiredMessage;
                         }
                         if (value.trim().length < 3) {
-                          return 'Username must be at least 3 characters';
+                          return l10n.userMgmtUsernameMinLengthMessage;
                         }
                         return null;
                       },
@@ -1319,8 +1339,8 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                         controller: _passwordController,
                         obscureText: _obscurePassword,
                         decoration: InputDecoration(
-                          labelText: 'Password *',
-                          hintText: 'Enter password',
+                          labelText: l10n.userMgmtPasswordRequiredLabel,
+                          hintText: l10n.userMgmtEnterPasswordHint,
                           border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
                           suffixIcon: IconButton(
@@ -1332,8 +1352,10 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                           ),
                         ),
                         validator: (value) {
-                          if (value == null || value.isEmpty) return 'Password is required';
-                          if (value.length < 6) return 'Minimum 6 characters';
+                          if (value == null || value.isEmpty) {
+                            return l10n.userMgmtPasswordRequiredMessage;
+                          }
+                          if (value.length < 6) return l10n.userMgmtMinimum6CharsMessage;
                           return null;
                         },
                       ),
@@ -1344,16 +1366,17 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                           ? _userTypeController.text
                           : null,
                       decoration: InputDecoration(
-                        labelText: 'Role *',
+                        labelText: l10n.userMgmtRoleRequiredLabel,
                         border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
                       ),
-                      items: const [
-                        DropdownMenuItem(value: 'admin', child: Text('Admin')),
-                        DropdownMenuItem(value: 'user', child: Text('User')),
+                      items: [
+                        DropdownMenuItem(value: 'admin', child: Text(l10n.dashboardRoleAdmin)),
+                        DropdownMenuItem(value: 'user', child: Text(l10n.dashboardRoleUser)),
                       ],
                       onChanged: (value) => _userTypeController.text = value!,
-                      validator: (value) => value == null ? 'Role is required' : null,
+                      validator: (value) =>
+                          value == null ? l10n.userMgmtRoleRequiredMessage : null,
                     ),
                   ],
                 ),
@@ -1375,7 +1398,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                       _resetForm();
                       setState(() => _showAddPanelV2 = false);
                     },
-                    child: const Text('Cancel'),
+                    child: Text(l10n.actionCancel),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -1391,7 +1414,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                             child: CircularProgressIndicator(
                                 strokeWidth: 2, color: Colors.white))
                         : Icon(isAdding ? Icons.add : Icons.check, size: 18),
-                    label: Text(isAdding ? 'Save User' : 'Save Changes'),
+                    label: Text(isAdding ? l10n.userMgmtSaveUserButton : l10n.productMgmtSaveChangesButton),
                   ),
                 ),
               ],
@@ -1406,6 +1429,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
   // _loadUsers behaviour) — a full management table doesn't make sense
   // for them, so this is a simple "my account" panel instead.
   Widget _selfAccountViewV2() {
+    final l10n = AppLocalizations.of(context)!;
     final user = _users.isNotEmpty ? _users.first : widget.currentUser;
     return Center(
       child: ConstrainedBox(
@@ -1448,13 +1472,17 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                 child: TextFormField(
                   controller: _usernameController,
                   decoration: InputDecoration(
-                    labelText: 'Username *',
+                    labelText: l10n.userMgmtUsernameRequiredLabel,
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
                   ),
                   validator: (value) {
-                    if (value == null || value.trim().isEmpty) return 'Username is required';
-                    if (value.trim().length < 3) return 'Username must be at least 3 characters';
+                    if (value == null || value.trim().isEmpty) {
+                      return l10n.userMgmtUsernameRequiredMessage;
+                    }
+                    if (value.trim().length < 3) {
+                      return l10n.userMgmtUsernameMinLengthMessage;
+                    }
                     return null;
                   },
                 ),
@@ -1467,7 +1495,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                       onPressed: () =>
                           _showChangePasswordDialog(user.id, user.username),
                       icon: const Icon(Icons.lock_reset, size: 18),
-                      label: const Text('Change Password'),
+                      label: Text(l10n.userMgmtChangePasswordTitle),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1481,7 +1509,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                               child: CircularProgressIndicator(
                                   strokeWidth: 2, color: Colors.white))
                           : const Icon(Icons.check, size: 18),
-                      label: const Text('Save'),
+                      label: Text(l10n.actionSave),
                     ),
                   ),
                 ],

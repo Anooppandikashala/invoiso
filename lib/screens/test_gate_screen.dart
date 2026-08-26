@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:invoiso/common/app_config.dart';
 import 'package:invoiso/common/constants.dart';
+import 'package:invoiso/l10n/app_localizations.dart';
 
 enum TestGateReason { noInternet, expired }
 
@@ -13,6 +14,7 @@ class TestGateScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isNoInternet = reason == TestGateReason.noInternet;
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       body: Center(
         child: Padding(
@@ -23,22 +25,20 @@ class TestGateScreen extends StatelessWidget {
               Icon(isNoInternet ? Icons.wifi_off : Icons.timer_off, size: 64),
               AppSpacing.hLarge,
               Text(
-                isNoInternet
-                    ? 'Test installer needs internet access to verify.'
-                    : 'This test build has expired.',
+                isNoInternet ? l10n.testGateNoInternetTitle : l10n.testGateExpiredTitle,
                 style: const TextStyle(fontSize: AppFontSize.xlarge),
                 textAlign: TextAlign.center,
               ),
               AppSpacing.hMedium,
               Text(
                 isNoInternet
-                    ? 'Connect to the internet and retry.'
-                    : 'Contact support: ${AppConfig.supportEmail}',
+                    ? l10n.testGateNoInternetSubtitle
+                    : l10n.testGateExpiredSubtitle(AppConfig.supportEmail),
                 textAlign: TextAlign.center,
               ),
               AppSpacing.hLarge,
               if (isNoInternet && onRetry != null)
-                ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
+                ElevatedButton(onPressed: onRetry, child: Text(l10n.actionRetry)),
             ],
           ),
         ),

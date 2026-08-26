@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:invoiso/backup/backup_manager.dart';
 import 'package:invoiso/common/common.dart';
+import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/models/backup_info.dart';
 
 class BackupManagementScreen extends StatefulWidget {
@@ -24,44 +25,46 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
   }
 
   Future<void> _loadBackups() async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() => _isLoading = true);
 
     try {
       final backups = await _backupManager.getBackupList();
       setState(() => _backups = backups);
     } catch (e) {
-      _showErrorDialog('Failed to load backups: ${e.toString()}');
+      _showErrorDialog(l10n.backupLoadErrorMessage(e.toString()));
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
   Future<void> _createBackup(BackupType type) async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() => _isLoading = true);
 
     try {
-
       final result = await _backupManager.createBackup(
         type: type,
       );
 
       if (result.success) {
-        _showSuccessDialog('Backup created successfully!');
+        _showSuccessDialog(l10n.backupCreatedSuccessMessage);
         _loadBackups();
       } else {
         _showErrorDialog(result.message);
       }
     } catch (e) {
-      _showErrorDialog('Failed to create backup: ${e.toString()}');
+      _showErrorDialog(l10n.backupCreateErrorMessage(e.toString()));
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
   Future<void> _restoreBackup(BackupInfo backup) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await _showConfirmDialog(
-      'Restore Backup',
-      'This will replace all current data with the backup. Are you sure?',
+      l10n.backupRestoreConfirmTitle,
+      l10n.backupRestoreConfirmBody,
     );
 
     if (!confirmed) return;
@@ -79,16 +82,17 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
         _showErrorDialog(result.message);
       }
     } catch (e) {
-      _showErrorDialog('Failed to restore backup: ${e.toString()}');
+      _showErrorDialog(l10n.backupRestoreErrorMessage(e.toString()));
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
   Future<void> _deleteBackup(BackupInfo backup) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await _showConfirmDialog(
-      'Delete Backup',
-      'Are you sure you want to delete this backup?',
+      l10n.backupDeleteConfirmTitle,
+      l10n.backupDeleteConfirmBody,
     );
 
     if (!confirmed) return;
@@ -99,43 +103,46 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
       final success = await _backupManager.deleteBackup(backup.filePath);
 
       if (success) {
-        _showSuccessDialog('Backup deleted successfully!');
+        _showSuccessDialog(l10n.backupDeletedSuccessMessage);
         _loadBackups();
       } else {
-        _showErrorDialog('Failed to delete backup');
+        _showErrorDialog(l10n.backupDeleteFailedMessage);
       }
     } catch (e) {
-      _showErrorDialog('Failed to delete backup: ${e.toString()}');
+      _showErrorDialog(l10n.backupDeleteErrorMessage(e.toString()));
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
   Future<void> _downloadBackup(BackupInfo backup) async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() => _isLoading = true);
     try {
       final result = await _backupManager.downloadBackup(backup.filePath);
       if (result.success) {
-        _showSuccessDialog('Backup saved to Downloads folder.');
+        _showSuccessDialog(l10n.backupSavedToDownloadsMessage);
       } else {
         _showErrorDialog(result.message);
       }
     } catch (e) {
-      _showErrorDialog('Failed to download backup: ${e.toString()}');
+      _showErrorDialog(l10n.backupDownloadErrorMessage(e.toString()));
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
   Future<void> _shareBackup(BackupInfo backup) async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       await _backupManager.shareBackup(backup.filePath);
     } catch (e) {
-      _showErrorDialog('Failed to share backup: ${e.toString()}');
+      _showErrorDialog(l10n.backupShareErrorMessage(e.toString()));
     }
   }
 
   Future<void> _importBackup() async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() => _isLoading = true);
 
     try {
@@ -147,7 +154,7 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
         _showErrorDialog(result.message);
       }
     } catch (e) {
-      _showErrorDialog('Failed to import backup: ${e.toString()}');
+      _showErrorDialog(l10n.backupImportErrorMessage(e.toString()));
     } finally {
       setState(() => _isLoading = false);
     }
@@ -155,9 +162,10 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Backup Management'),
+        title: Text(l10n.backupManagementTitle),
         backgroundColor: Theme.of(context).appBarTheme.backgroundColor ??
             Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
@@ -178,29 +186,31 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 900),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 32, vertical: 16),
                       child: Row(
                         spacing: 16,
                         children: [
                           Expanded(
                             child: ElevatedButton.icon(
-                              onPressed: () => _createBackup(BackupType.database),
+                              onPressed: () =>
+                                  _createBackup(BackupType.database),
                               icon: const Icon(Icons.backup),
-                              label: const Text('Create DB Backup'),
+                              label: Text(l10n.backupCreateDbButton),
                             ),
                           ),
                           Expanded(
                             child: ElevatedButton.icon(
                               onPressed: () => _createBackup(BackupType.json),
                               icon: const Icon(Icons.download),
-                              label: const Text('Export JSON'),
+                              label: Text(l10n.backupExportJsonButton),
                             ),
                           ),
                           Expanded(
                             child: ElevatedButton.icon(
                               onPressed: _importBackup,
                               icon: const Icon(Icons.upload),
-                              label: const Text('Import Backup'),
+                              label: Text(l10n.backupImportButton),
                             ),
                           ),
                         ],
@@ -214,10 +224,10 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
                 // Backup list
                 Expanded(
                   child: _backups.isEmpty
-                      ? const Center(
+                      ? Center(
                           child: Text(
-                            'No backups found',
-                            style: TextStyle(fontSize: 16),
+                            l10n.backupNoBackupsFoundMessage,
+                            style: const TextStyle(fontSize: 16),
                           ),
                         )
                       : Center(
@@ -239,19 +249,17 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
   }
 
   Widget _buildBackupTile(BackupInfo backup) {
+    final l10n = AppLocalizations.of(context)!;
     final dateFormat = DateFormat('MMM dd, yyyy HH:mm');
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: backup.type == BackupType.database
-              ? Colors.blue
-              : Colors.green,
+          backgroundColor:
+              backup.type == BackupType.database ? Colors.blue : Colors.green,
           child: Icon(
-            backup.type == BackupType.database
-                ? Icons.storage
-                : Icons.code,
+            backup.type == BackupType.database ? Icons.storage : Icons.code,
             color: Colors.white,
           ),
         ),
@@ -259,8 +267,8 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Size: ${backup.formattedSize}'),
-            Text('Created: ${dateFormat.format(backup.createdAt)}'),
+            Text(l10n.backupSizeLabel(backup.formattedSize)),
+            Text(l10n.backupCreatedLabel(dateFormat.format(backup.createdAt))),
           ],
         ),
         trailing: PopupMenuButton<String>(
@@ -281,32 +289,32 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
             }
           },
           itemBuilder: (context) => [
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'restore',
               child: ListTile(
-                leading: Icon(Icons.restore),
-                title: Text('Restore'),
+                leading: const Icon(Icons.restore),
+                title: Text(l10n.actionRestore),
               ),
             ),
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'download',
               child: ListTile(
-                leading: Icon(Icons.download),
-                title: Text('Download'),
+                leading: const Icon(Icons.download),
+                title: Text(l10n.createInvoiceDownloadLabel),
               ),
             ),
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'share',
               child: ListTile(
-                leading: Icon(Icons.share),
-                title: Text('Share'),
+                leading: const Icon(Icons.share),
+                title: Text(l10n.actionShare),
               ),
             ),
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'delete',
               child: ListTile(
-                leading: Icon(Icons.delete),
-                title: Text('Delete'),
+                leading: const Icon(Icons.delete),
+                title: Text(l10n.actionDelete),
               ),
             ),
           ],
@@ -316,44 +324,43 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
   }
 
   Future<bool> _showConfirmDialog(String title, String message) async {
+    final l10n = AppLocalizations.of(context)!;
     return await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(title),
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(l10n.actionCancel),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text(l10n.actionConfirm),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Confirm'),
-          ),
-        ],
-      ),
-    ) ?? false;
+        ) ??
+        false;
   }
 
   void _showRestartDialog() {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Restore Successful'),
-        content: const Text(
-          'The database has been restored successfully.\n\n'
-          'The app needs to restart to apply the changes. '
-          'Please close and reopen the application.',
-        ),
+        title: Text(l10n.backupRestoreSuccessTitle),
+        content: Text(l10n.backupRestoreSuccessBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close Later'),
+            child: Text(l10n.backupCloseLaterButton),
           ),
           TextButton(
             onPressed: () => exit(0),
-            child: const Text('Close App Now'),
+            child: Text(l10n.backupCloseAppNowButton),
           ),
         ],
       ),
@@ -361,15 +368,16 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
   }
 
   void _showSuccessDialog(String message) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Success'),
+        title: Text(l10n.commonSuccessTitle),
         content: Text(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
+            child: Text(l10n.actionOk),
           ),
         ],
       ),
@@ -377,15 +385,16 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
   }
 
   void _showErrorDialog(String message) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Error'),
+        title: Text(l10n.commonErrorTitle),
         content: Text(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
+            child: Text(l10n.actionOk),
           ),
         ],
       ),

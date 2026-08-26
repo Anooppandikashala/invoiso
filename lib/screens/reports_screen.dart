@@ -10,6 +10,7 @@ import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/database/report_service.dart';
+import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/services/customer_statement_pdf_service.dart';
 import 'package:invoiso/providers/repositories.dart';
 
@@ -18,17 +19,14 @@ import '../common/supported_currencies.dart';
 // ─── Date preset enum ─────────────────────────────────────────────────────────
 
 enum _DatePreset {
-  last30('Last 30 days'),
-  last3m('Last 3 months'),
-  last6m('Last 6 months'),
-  thisYear('This year'),
-  thisFY('This FY'),
-  lastFY('Last FY'),
-  //allTime('All time'),
-  custom('Custom');
-
-  final String label;
-  const _DatePreset(this.label);
+  last30,
+  last3m,
+  last6m,
+  thisYear,
+  thisFY,
+  lastFY,
+  //allTime,
+  custom,
 }
 
 enum _InvoiceFilter { all, paid, partial, unpaid, overdue }
@@ -114,7 +112,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   String get _currencyScopeLabel => switch (_currencyScope) {
         _CurrencyScope.selected => _currencyCode,
-        _CurrencyScope.all => 'All currencies',
+        _CurrencyScope.all =>
+          AppLocalizations.of(context)!.reportsAllCurrenciesLabel,
       };
 
   String _money(num value) {
@@ -237,7 +236,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   Future<void> _loadReportSettings() async {
     final settingsRepo = ref.read(settingsRepositoryProvider);
-    final showFooterBranding = await settingsRepo.getShowInvoiceFooterBranding();
+    final showFooterBranding =
+        await settingsRepo.getShowInvoiceFooterBranding();
     final results = await Future.wait([
       settingsRepo.getSetting(SettingKey.currency),
       settingsRepo.getDateFormat(),
@@ -252,7 +252,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         _currencyCode = currency.code;
         _currencyName = currency.name;
         _datePattern = dateFormat.key;
-        _showFooterBranding  = showFooterBranding;
+        _showFooterBranding = showFooterBranding;
       });
     }
   }
@@ -472,8 +472,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     return customer.name.toLowerCase().contains(normalized) ||
                         customer.key.toLowerCase().contains(normalized);
                   }).toList();
+            final l10n = AppLocalizations.of(context)!;
             return AlertDialog(
-              title: const Text('Select customer'),
+              title: Text(l10n.reportsSelectCustomerTitle),
               content: SizedBox(
                 width: 520,
                 height: 460,
@@ -481,11 +482,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   children: [
                     TextField(
                       autofocus: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Search customer',
+                      decoration: InputDecoration(
+                        labelText: l10n.createInvoiceSearchCustomerLabel,
                         isDense: true,
-                        prefixIcon: Icon(Icons.search, size: 18),
-                        border: OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.search, size: 18),
+                        border: const OutlineInputBorder(),
                       ),
                       onChanged: (value) => setDialogState(() => query = value),
                     ),
@@ -493,15 +494,21 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     Expanded(
                       child: customers.isEmpty
                           ? Center(
-                              child: Text('No customers match this search',
+                              child: Text(
+                                  l10n.reportsNoCustomersMatchSearchMessage,
                                   style: TextStyle(
                                       fontSize: 13,
-                                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant)),
                             )
                           : ListView.separated(
                               itemCount: customers.length,
                               separatorBuilder: (_, __) => Divider(
-                                  height: 1, color: Theme.of(context).colorScheme.outlineVariant),
+                                  height: 1,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .outlineVariant),
                               itemBuilder: (context, index) {
                                 final customer = customers[index];
                                 final selected =
@@ -511,7 +518,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                                   title: Text(customer.name,
                                       overflow: TextOverflow.ellipsis),
                                   subtitle: Text(
-                                      '${customer.invoiceCount} invoice${customer.invoiceCount == 1 ? '' : 's'}'),
+                                      l10n.dashboardInvoiceCountLabel(
+                                          customer.invoiceCount)),
                                   trailing: selected
                                       ? const Icon(Icons.check,
                                           color: Color(0xFF16A34A))
@@ -528,7 +536,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
+                  child: Text(l10n.actionCancel),
                 ),
               ],
             );
@@ -553,12 +561,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       firstDate: DateTime(2000),
       lastDate: now,
       initialDateRange: initialRange,
-      helpText: 'Select date range (max 1 year)',
-      saveText: 'Apply',
+      helpText:
+          AppLocalizations.of(context)!.reportsSelectDateRangeMaxYearHelpText,
+      saveText: AppLocalizations.of(context)!.actionApply,
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
-          colorScheme:
-              Theme.of(context).colorScheme.copyWith(primary: Theme.of(context).primaryColor),
+          colorScheme: Theme.of(context)
+              .colorScheme
+              .copyWith(primary: Theme.of(context).primaryColor),
         ),
         child: Center(
           child: ConstrainedBox(
@@ -574,9 +584,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     if (days > 366) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Maximum range is 1 year. End date clamped.'),
-          duration: Duration(seconds: 3),
+        SnackBar(
+          content:
+              Text(AppLocalizations.of(context)!.reportsMaxRangeOneYearMessage),
+          duration: const Duration(seconds: 3),
         ),
       );
       _customFrom = picked.start;
@@ -606,12 +617,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       firstDate: DateTime(2000),
       lastDate: now,
       initialDateRange: initialRange,
-      helpText: 'Select date or date range (max 31 days)',
-      saveText: 'Apply',
+      helpText:
+          AppLocalizations.of(context)!.reportsSelectDailyRangeMaxDaysHelpText,
+      saveText: AppLocalizations.of(context)!.actionApply,
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
-          colorScheme:
-              Theme.of(context).colorScheme.copyWith(primary: Theme.of(context).primaryColor),
+          colorScheme: Theme.of(context)
+              .colorScheme
+              .copyWith(primary: Theme.of(context).primaryColor),
         ),
         child: Center(
           child: ConstrainedBox(
@@ -627,9 +640,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     if (days > 31) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Maximum range is 31 days. End date clamped.'),
-          duration: Duration(seconds: 3),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!
+              .reportsMaxRangeThirtyOneDaysMessage),
+          duration: const Duration(seconds: 3),
         ),
       );
       _dailyCustomFrom = picked.start;
@@ -644,11 +658,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   Future<void> _saveCsv(String csv, String filename) async {
+    final l10n = AppLocalizations.of(context)!;
     final csvBytes = utf8.encode('﻿$csv'); // BOM for Excel
     String? savePath;
     try {
       savePath = await FilePicker.platform.saveFile(
-        dialogTitle: 'Save CSV Report',
+        dialogTitle: l10n.reportsSaveCsvReportTitle,
         fileName: filename,
         type: FileType.custom,
         allowedExtensions: ['csv'],
@@ -666,18 +681,19 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Saved: $savePath'),
-        action: SnackBarAction(label: 'OK', onPressed: () {}),
+        content: Text(l10n.reportsSavedAtMessage(savePath)),
+        action: SnackBarAction(label: l10n.actionOk, onPressed: () {}),
         duration: const Duration(seconds: 4),
       ),
     );
   }
 
   Future<void> _savePdf(Uint8List bytes, String filename) async {
+    final l10n = AppLocalizations.of(context)!;
     String? savePath;
     try {
       savePath = await FilePicker.platform.saveFile(
-        dialogTitle: 'Save PDF Report',
+        dialogTitle: l10n.reportsSavePdfReportTitle,
         fileName: filename,
         type: FileType.custom,
         allowedExtensions: ['pdf'],
@@ -694,8 +710,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Saved: $savePath'),
-        action: SnackBarAction(label: 'OK', onPressed: () {}),
+        content: Text(l10n.reportsSavedAtMessage(savePath)),
+        action: SnackBarAction(label: l10n.actionOk, onPressed: () {}),
         duration: const Duration(seconds: 4),
       ),
     );
@@ -703,20 +719,46 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   // ─── Build ──────────────────────────────────────────────────────────────────
 
-  static const _navItems = [
-    (Icons.bar_chart_outlined, Icons.bar_chart, 'Revenue'),
-    (
-      Icons.account_balance_wallet_outlined,
-      Icons.account_balance_wallet,
-      'Receivables'
-    ),
-    (Icons.receipt_long_outlined, Icons.receipt_long, 'Tax'),
-    (Icons.people_outline, Icons.people, 'Customers'),
-    (Icons.inventory_2_outlined, Icons.inventory_2, 'Products'),
-    (Icons.request_quote_outlined, Icons.request_quote, 'Quotations'),
-    (Icons.list_alt_outlined, Icons.list_alt, 'Invoice Status'),
-    (Icons.calendar_today_outlined, Icons.calendar_today, 'Daily Report'),
+  // Icons only — labels are locale-dependent, see _navLabel(), since a
+  // static const list can't hold a BuildContext-dependent AppLocalizations
+  // string.
+  static const _navIcons = [
+    (Icons.bar_chart_outlined, Icons.bar_chart),
+    (Icons.account_balance_wallet_outlined, Icons.account_balance_wallet),
+    (Icons.receipt_long_outlined, Icons.receipt_long),
+    (Icons.people_outline, Icons.people),
+    (Icons.inventory_2_outlined, Icons.inventory_2),
+    (Icons.request_quote_outlined, Icons.request_quote),
+    (Icons.list_alt_outlined, Icons.list_alt),
+    (Icons.calendar_today_outlined, Icons.calendar_today),
   ];
+
+  String _presetLabel(_DatePreset preset) {
+    final l10n = AppLocalizations.of(context)!;
+    return switch (preset) {
+      _DatePreset.last30 => l10n.reportsPresetLast30DaysLabel,
+      _DatePreset.last3m => l10n.reportsPresetLast3MonthsLabel,
+      _DatePreset.last6m => l10n.reportsPresetLast6MonthsLabel,
+      _DatePreset.thisYear => l10n.reportsPresetThisYearLabel,
+      _DatePreset.thisFY => l10n.reportsPresetThisFYLabel,
+      _DatePreset.lastFY => l10n.reportsPresetLastFYLabel,
+      _DatePreset.custom => l10n.commonCustomEllipsisLabel,
+    };
+  }
+
+  String _navLabel(int index) {
+    final l10n = AppLocalizations.of(context)!;
+    return switch (index) {
+      0 => l10n.reportsNavRevenueLabel,
+      1 => l10n.reportsNavReceivablesLabel,
+      2 => l10n.reportsNavTaxLabel,
+      3 => l10n.navCustomers,
+      4 => l10n.navProducts,
+      5 => l10n.navQuotations,
+      6 => l10n.reportsNavInvoiceStatusLabel,
+      _ => l10n.reportsNavDailyReportLabel,
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -728,8 +770,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             Theme.of(context).appBarTheme.backgroundColor ?? primary,
         foregroundColor: Colors.white,
         elevation: 0,
-        title: const Text('Reports',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(AppLocalizations.of(context)!.navReports,
+            style: const TextStyle(fontWeight: FontWeight.bold)),
         actions: [
           if (isCurrentTabLoading)
             const Padding(
@@ -744,7 +786,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           else
             IconButton(
               icon: const Icon(Icons.refresh),
-              tooltip: 'Refresh',
+              tooltip: AppLocalizations.of(context)!.actionRefresh,
               onPressed: _invalidateAndReload,
             ),
         ],
@@ -781,15 +823,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         children: [
           const SizedBox(height: 8),
           // ── Nav items ──
-          for (int i = 0; i < _navItems.length; i++) _navItem(i, primary),
+          for (int i = 0; i < _navIcons.length; i++) _navItem(i, primary),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
+            child: Divider(
+                height: 1, color: Theme.of(context).colorScheme.outlineVariant),
           ),
           // ── Currency scope ──
           Padding(
             padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Text('CURRENCY',
+            child: Text(
+                AppLocalizations.of(context)!.reportsCurrencySectionLabel,
                 style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
@@ -801,12 +845,15 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           if (_selectedIndex != 6 && _selectedIndex != 7) ...[
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
+              child: Divider(
+                  height: 1,
+                  color: Theme.of(context).colorScheme.outlineVariant),
             ),
             // ── Period filter ──
             Padding(
               padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Text('PERIOD',
+              child: Text(
+                  AppLocalizations.of(context)!.reportsPeriodSectionLabel,
                   style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
@@ -828,7 +875,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           '${_formatDate(_customFrom!)} –\n${_formatDate(_customTo!)}',
                           style: TextStyle(
                               fontSize: 11,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
                               height: 1.5),
                         ),
                       ),
@@ -844,9 +893,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   Widget _currencyScopeItem(_CurrencyScope scope, Color primary) {
     final sel = _currencyScope == scope;
+    final l10n = AppLocalizations.of(context)!;
     final label = switch (scope) {
-      _CurrencyScope.selected => 'Current selected currency ($_currencyName)',
-      _CurrencyScope.all => 'All currencies',
+      _CurrencyScope.selected =>
+        l10n.reportsCurrentSelectedCurrencyLabel(_currencyName),
+      _CurrencyScope.all => l10n.reportsAllCurrenciesLabel,
     };
     return InkWell(
       onTap: () => _onCurrencyScopeChange(scope),
@@ -857,7 +908,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             Icon(
               sel ? Icons.radio_button_checked : Icons.radio_button_unchecked,
               size: 15,
-              color: sel ? primary : Theme.of(context).colorScheme.outlineVariant,
+              color:
+                  sel ? primary : Theme.of(context).colorScheme.outlineVariant,
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -876,7 +928,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   Widget _navItem(int index, Color primary) {
-    final (iconOut, iconFilled, label) = _navItems[index];
+    final (iconOut, iconFilled) = _navIcons[index];
+    final label = _navLabel(index);
     final sel = _selectedIndex == index;
     return InkWell(
       onTap: () {
@@ -896,13 +949,18 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         child: Row(
           children: [
             Icon(sel ? iconFilled : iconOut,
-                size: 18, color: sel ? primary : Theme.of(context).colorScheme.onSurfaceVariant),
+                size: 18,
+                color: sel
+                    ? primary
+                    : Theme.of(context).colorScheme.onSurfaceVariant),
             const SizedBox(width: 10),
             Text(label,
                 style: TextStyle(
                     fontSize: 13,
                     fontWeight: sel ? FontWeight.w600 : FontWeight.normal,
-                    color: sel ? primary : Theme.of(context).colorScheme.onSurfaceVariant)),
+                    color: sel
+                        ? primary
+                        : Theme.of(context).colorScheme.onSurfaceVariant)),
           ],
         ),
       ),
@@ -921,14 +979,19 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             Icon(
               sel ? Icons.radio_button_checked : Icons.radio_button_unchecked,
               size: 15,
-              color: sel ? primary : Theme.of(context).colorScheme.outlineVariant,
+              color:
+                  sel ? primary : Theme.of(context).colorScheme.outlineVariant,
             ),
             const SizedBox(width: 8),
-            Text(isCustom ? 'Custom…' : p.label,
+            Text(
+                isCustom
+                    ? AppLocalizations.of(context)!.commonCustomEllipsisLabel
+                    : _presetLabel(p),
                 style: TextStyle(
                     fontSize: 13,
-                    color:
-                        sel ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurfaceVariant,
+                    color: sel
+                        ? Theme.of(context).colorScheme.onSurface
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
                     fontWeight: sel ? FontWeight.w600 : FontWeight.normal)),
           ],
         ),
@@ -1001,7 +1064,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 Expanded(
                   child: Text(label,
                       style: TextStyle(
-                          fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                          fontSize: 12,
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant)),
                 ),
               ],
             ),
@@ -1036,19 +1101,24 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     final totalPages = (total / pageSize).ceil().clamp(1, 999999);
     final start = currentPage * pageSize + 1;
     final end = ((currentPage + 1) * pageSize).clamp(0, total);
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
+        border: Border(
+            top: BorderSide(
+                color: Theme.of(context).colorScheme.outlineVariant)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(
             children: [
-              Text('Rows per page:',
-                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 13)),
+              Text(l10n.invoiceMgmtRowsPerPageLabel,
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontSize: 13)),
               const SizedBox(width: 8),
               DropdownButton<int>(
                 value: pageSize,
@@ -1061,8 +1131,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 },
               ),
               const SizedBox(width: 16),
-              Text('$start – $end of $total',
-                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 13)),
+              Text(l10n.reportsShowingRangeLabel(start, end, total),
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontSize: 13)),
             ],
           ),
           Row(
@@ -1072,9 +1144,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 onPressed: currentPage > 0
                     ? () => onPageChange(currentPage - 1)
                     : null,
-                tooltip: 'Previous',
+                tooltip: l10n.actionPrevious,
               ),
-              Text('Page ${currentPage + 1} of $totalPages',
+              Text(l10n.invoiceMgmtPageOfLabel(currentPage + 1, totalPages),
                   style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
@@ -1084,7 +1156,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 onPressed: currentPage < totalPages - 1
                     ? () => onPageChange(currentPage + 1)
                     : null,
-                tooltip: 'Next',
+                tooltip: l10n.actionNext,
               ),
             ],
           ),
@@ -1121,10 +1193,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              '$_missingCostItemCount item${_missingCostItemCount == 1 ? '' : 's'} '
-              'sold in this period have no purchase price set — profit/margin '
-              'is understated for those items until a purchase price is added '
-              'to the product.',
+              AppLocalizations.of(context)!
+                  .reportsMissingCostBannerMessage(_missingCostItemCount),
               style: const TextStyle(fontSize: 12, color: Color(0xFF92400E)),
             ),
           ),
@@ -1144,7 +1214,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 size: 48, color: Theme.of(context).colorScheme.outlineVariant),
             const SizedBox(height: 12),
             Text(msg,
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 14)),
+                style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 14)),
           ],
         ),
       ),
@@ -1155,6 +1227,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   Widget _buildRevenue() {
     final ts = DateTime.now().millisecondsSinceEpoch;
+    final l10n = AppLocalizations.of(context)!;
     return SingleChildScrollView(
       padding: const EdgeInsets.only(bottom: 24),
       child: Align(
@@ -1172,33 +1245,36 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Expanded(
-                          child: _kpiCard('Total Billed', _money(_kpi.billed),
-                              const Color(0xFF002E78), Icons.receipt_long)),
+                          child: _kpiCard(
+                              l10n.reportsTotalBilledLabel,
+                              _money(_kpi.billed),
+                              const Color(0xFF002E78),
+                              Icons.receipt_long)),
                       const SizedBox(width: 12),
                       Expanded(
                           child: _kpiCard(
-                              'Total Collected',
+                              l10n.reportsTotalCollectedLabel,
                               _money(_kpi.collected),
                               const Color(0xFF16A34A),
                               Icons.check_circle_outline)),
                       const SizedBox(width: 12),
                       Expanded(
                           child: _kpiCard(
-                              'Outstanding',
+                              l10n.dashboardOutstandingLabel,
                               _money(_kpi.outstanding),
                               const Color(0xFFDC2626),
                               Icons.schedule)),
                       const SizedBox(width: 12),
                       Expanded(
                           child: _kpiCard(
-                              'Avg Invoice Value',
+                              l10n.reportsAvgInvoiceValueLabel,
                               _money(_kpi.avgInvoiceValue),
                               const Color(0xFF7C3AED),
                               Icons.trending_up)),
                       const SizedBox(width: 12),
                       Expanded(
                           child: _kpiCard(
-                              'Total Profit',
+                              l10n.reportsTotalProfitLabel,
                               _money(_kpi.profit),
                               _kpi.profit < 0
                                   ? const Color(0xFFDC2626)
@@ -1220,21 +1296,25 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _cardTitle(
-                      'Monthly Revenue Trend',
-                      trailing: _exportBtn('Export CSV', () async {
+                      l10n.reportsMonthlyRevenueTrendTitle,
+                      trailing:
+                          _exportBtn(l10n.reportsExportCsvLabel, () async {
                         final csv = ReportService.exportTrendCsv(_trend);
                         await _saveCsv(csv, 'revenue_trend_$ts.csv');
                       }),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${_fmtInt.format(_kpi.invoiceCount)} invoice${_kpi.invoiceCount == 1 ? '' : 's'} in period · $_currencyScopeLabel',
+                      l10n.reportsInvoiceCountInPeriodLabel(
+                          _kpi.invoiceCount, _currencyScopeLabel),
                       style: TextStyle(
-                          fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          fontSize: 12,
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
                     const SizedBox(height: 20),
                     if (_trend.isEmpty)
-                      _emptyState('No invoice data in this period')
+                      _emptyState(l10n.reportsNoInvoiceDataMessage)
                     else
                       SizedBox(
                         height: 240,
@@ -1245,11 +1325,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          _legend(const Color(0xFF3B82F6), 'Billed'),
+                          _legend(
+                              const Color(0xFF3B82F6), l10n.reportsBilledLabel),
                           const SizedBox(width: 24),
-                          _legend(const Color(0xFF22C55E), 'Collected'),
+                          _legend(const Color(0xFF22C55E),
+                              l10n.dashboardCollectedLabel),
                           const SizedBox(width: 24),
-                          _legend(const Color(0xFF7C3AED), 'Profit'),
+                          _legend(
+                              const Color(0xFF7C3AED), l10n.reportsProfitLabel),
                         ],
                       ),
                     ],
@@ -1274,7 +1357,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 color: color, borderRadius: BorderRadius.circular(3))),
         const SizedBox(width: 6),
         Text(label,
-            style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant)),
       ],
     );
   }
@@ -1350,7 +1435,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               reservedSize: 56,
               getTitlesWidget: (value, _) => Text(
                 _abbreviateNum(value),
-                style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                style: TextStyle(
+                    fontSize: 10,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
             ),
           ),
@@ -1371,7 +1458,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     child: Text(
                       DateFormat('MMM yy').format(dt),
                       style: TextStyle(
-                          fontSize: 10, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          fontSize: 10,
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
                   );
                 } catch (_) {
@@ -1384,7 +1473,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         barTouchData: BarTouchData(
           touchTooltipData: BarTouchTooltipData(
             getTooltipItem: (group, groupIndex, rod, rodIndex) {
-              final label = rodIndex == 0 ? 'Billed' : 'Collected';
+              final l10n = AppLocalizations.of(context)!;
+              final label = rodIndex == 0
+                  ? l10n.reportsBilledLabel
+                  : l10n.dashboardCollectedLabel;
               return BarTooltipItem(
                 '$label\n${_money(rod.toY)}',
                 const TextStyle(color: Colors.white, fontSize: 12),
@@ -1400,6 +1492,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   Widget _buildReceivables() {
     final ts = DateTime.now().millisecondsSinceEpoch;
+    final l10n = AppLocalizations.of(context)!;
     return SingleChildScrollView(
       padding: const EdgeInsets.only(bottom: 24),
       child: Align(
@@ -1414,10 +1507,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _cardTitle('Payment Status Breakdown'),
+                    _cardTitle(l10n.reportsPaymentStatusBreakdownTitle),
                     const SizedBox(height: 20),
                     if (_status.total == 0)
-                      _emptyState('No invoices in this period')
+                      _emptyState(l10n.reportsNoInvoicesInPeriodMessage)
                     else
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -1431,19 +1524,32 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _statusLegendRow(const Color(0xFF22C55E), 'Paid',
-                                  _status.paid, _status.total),
+                              _statusLegendRow(
+                                  const Color(0xFF22C55E),
+                                  l10n.paymentStatusPaid,
+                                  _status.paid,
+                                  _status.total),
                               const SizedBox(height: 12),
-                              _statusLegendRow(const Color(0xFFF59E0B),
-                                  'Partial', _status.partial, _status.total),
+                              _statusLegendRow(
+                                  const Color(0xFFF59E0B),
+                                  l10n.paymentStatusPartial,
+                                  _status.partial,
+                                  _status.total),
                               const SizedBox(height: 12),
-                              _statusLegendRow(const Color(0xFFEF4444),
-                                  'Unpaid', _status.unpaid, _status.total),
+                              _statusLegendRow(
+                                  const Color(0xFFEF4444),
+                                  l10n.paymentStatusUnpaid,
+                                  _status.unpaid,
+                                  _status.total),
                               const SizedBox(height: 16),
                               Text(
-                                '${_fmtInt.format(_status.total)} total invoices',
+                                l10n.reportsTotalInvoicesCountLabel(
+                                    _status.total),
                                 style: TextStyle(
-                                    fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                    fontSize: 12,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant),
                               ),
                             ],
                           ),
@@ -1462,8 +1568,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
                       child: _cardTitle(
-                        'Aged Receivables (${_aged.length})',
-                        trailing: _exportBtn('Export CSV', () async {
+                        l10n.reportsAgedReceivablesTitle(_aged.length),
+                        trailing:
+                            _exportBtn(l10n.reportsExportCsvLabel, () async {
                           final csv =
                               ReportService.exportAgedReceivablesCsv(_aged);
                           await _saveCsv(csv, 'aged_receivables_$ts.csv');
@@ -1473,7 +1580,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     if (_aged.isEmpty)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 20),
-                        child: _emptyState('No outstanding invoices'),
+                        child: _emptyState(
+                            l10n.reportsNoOutstandingInvoicesMessage),
                       )
                     else ...[
                       _agedHeader(),
@@ -1564,7 +1672,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 color: color, borderRadius: BorderRadius.circular(4))),
         const SizedBox(width: 8),
         Text('$label  ',
-            style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurface)),
+            style: TextStyle(
+                fontSize: 13, color: Theme.of(context).colorScheme.onSurface)),
         Text('$count  ($pct%)',
             style: TextStyle(
                 fontSize: 13,
@@ -1575,36 +1684,51 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   Widget _agedHeader() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Row(
-        children: const [
-          Expanded(flex: 3, child: _TableHead('Customer')),
-          Expanded(flex: 3, child: _TableHead('Invoice ID')),
-          Expanded(flex: 2, child: _TableHead('Outstanding', right: true)),
-          Expanded(flex: 2, child: _TableHead('Days Overdue', right: true)),
-          Expanded(flex: 2, child: _TableHead('Bucket', right: true)),
+        children: [
+          Expanded(flex: 3, child: _TableHead(l10n.labelCustomer)),
+          Expanded(flex: 3, child: _TableHead(l10n.reportsInvoiceIdLabel)),
+          Expanded(
+              flex: 2,
+              child: _TableHead(l10n.dashboardOutstandingLabel, right: true)),
+          Expanded(
+              flex: 2,
+              child: _TableHead(l10n.reportsDaysOverdueLabel, right: true)),
+          Expanded(
+              flex: 2, child: _TableHead(l10n.reportsBucketLabel, right: true)),
         ],
       ),
     );
   }
 
   Widget _agedRow(AgedReceivable r) {
+    final l10n = AppLocalizations.of(context)!;
     final d = r.daysOverdue;
     final (bucketLabel, bucketColor) = r.hasNoDueDate
-        ? ('No Due Date', Theme.of(context).colorScheme.onSurfaceVariant)
+        ? (
+            l10n.reportsNoDueDateLabel,
+            Theme.of(context).colorScheme.onSurfaceVariant
+          )
         : switch (d) {
-            0 => ('Current', Theme.of(context).colorScheme.onSurfaceVariant),
-            <= 30 => ('0–30 days', const Color(0xFF22C55E)),
-            <= 60 => ('31–60 days', const Color(0xFFF59E0B)),
-            <= 90 => ('61–90 days', const Color(0xFFEF4444)),
-            _ => ('90+ days', const Color(0xFF991B1B)),
+            0 => (
+                l10n.reportsCurrentBucketLabel,
+                Theme.of(context).colorScheme.onSurfaceVariant
+              ),
+            <= 30 => (l10n.reportsBucket0to30Label, const Color(0xFF22C55E)),
+            <= 60 => (l10n.reportsBucket31to60Label, const Color(0xFFF59E0B)),
+            <= 90 => (l10n.reportsBucket61to90Label, const Color(0xFFEF4444)),
+            _ => (l10n.reportsBucket90PlusLabel, const Color(0xFF991B1B)),
           };
 
     return Container(
       decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
+        border: Border(
+            top: BorderSide(
+                color: Theme.of(context).colorScheme.outlineVariant)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
@@ -1612,8 +1736,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           Expanded(
               flex: 3,
               child: Text(r.customerName,
-                  style:
-                      TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurface),
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurface),
                   overflow: TextOverflow.ellipsis)),
           Expanded(
               flex: 3,
@@ -1633,10 +1758,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                       color: Color(0xFFDC2626)))),
           Expanded(
               flex: 2,
-              child: Text(r.hasNoDueDate ? '—' : '$d days',
+              child: Text(r.hasNoDueDate ? '—' : l10n.reportsDaysCountLabel(d),
                   textAlign: TextAlign.right,
-                  style:
-                      TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant))),
           Expanded(
             flex: 2,
             child: Align(
@@ -1665,6 +1791,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   Widget _buildTax() {
     final totalTax = _taxBuckets.fold(0.0, (s, b) => s + b.taxCollected);
     final ts = DateTime.now().millisecondsSinceEpoch;
+    final l10n = AppLocalizations.of(context)!;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.only(bottom: 24),
@@ -1684,7 +1811,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     children: [
                       Expanded(
                         child: _kpiCard(
-                            'Total Tax Collected',
+                            l10n.reportsTotalTaxCollectedLabel,
                             _money(totalTax),
                             const Color(0xFF7C3AED),
                             Icons.account_balance_outlined),
@@ -1692,7 +1819,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: _kpiCard(
-                            'Tax Rate Buckets',
+                            l10n.reportsTaxRateBucketsLabel,
                             _taxBuckets.length.toString(),
                             const Color(0xFF0284C7),
                             Icons.pie_chart_outline),
@@ -1713,8 +1840,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
                       child: _cardTitle(
-                        'Tax Collected by Rate',
-                        trailing: _exportBtn('Export CSV', () async {
+                        l10n.reportsTaxCollectedByRateTitle,
+                        trailing:
+                            _exportBtn(l10n.reportsExportCsvLabel, () async {
                           final csv = ReportService.exportTaxCsv(_taxBuckets);
                           await _saveCsv(csv, 'tax_report_$ts.csv');
                         }),
@@ -1723,7 +1851,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     if (_taxBuckets.isEmpty)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 20),
-                        child: _emptyState('No taxable items in this period'),
+                        child: _emptyState(l10n.reportsNoTaxableItemsMessage),
                       )
                     else ...[
                       _taxTableHeader(),
@@ -1741,14 +1869,18 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   Widget _taxTableHeader() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: const Row(
+      child: Row(
         children: [
-          Expanded(flex: 2, child: _TableHead('Tax Rate (%)')),
-          Expanded(flex: 3, child: _TableHead('Tax Collected', right: true)),
-          Expanded(flex: 2, child: _TableHead('Share', right: true)),
+          Expanded(flex: 2, child: _TableHead(l10n.fieldTaxRateLabel)),
+          Expanded(
+              flex: 3,
+              child: _TableHead(l10n.reportsTaxCollectedLabel, right: true)),
+          Expanded(
+              flex: 2, child: _TableHead(l10n.reportsShareLabel, right: true)),
         ],
       ),
     );
@@ -1759,7 +1891,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         total == 0 ? '0' : (b.taxCollected / total * 100).toStringAsFixed(1);
     return Container(
       decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
+        border: Border(
+            top: BorderSide(
+                color: Theme.of(context).colorScheme.outlineVariant)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
@@ -1775,14 +1909,16 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               flex: 3,
               child: Text(_money(b.taxCollected),
                   textAlign: TextAlign.right,
-                  style:
-                      TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurface))),
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).colorScheme.onSurface))),
           Expanded(
               flex: 2,
               child: Text('$share%',
                   textAlign: TextAlign.right,
-                  style:
-                      TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant))),
         ],
       ),
     );
@@ -1791,7 +1927,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   Widget _taxTotalRow(double total) {
     return Container(
       decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant, width: 1.5)),
+        border: Border(
+            top: BorderSide(
+                color: Theme.of(context).colorScheme.outlineVariant,
+                width: 1.5)),
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -1799,7 +1938,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         children: [
           Expanded(
               flex: 2,
-              child: Text('Total',
+              child: Text(AppLocalizations.of(context)!.fieldTotalLabel,
                   style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
@@ -1849,9 +1988,13 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                         spacing: 8,
                         children: [
                           _customerModeChip(
-                              _CustomerReportMode.overview, 'Overview'),
+                              _CustomerReportMode.overview,
+                              AppLocalizations.of(context)!
+                                  .reportsOverviewLabel),
                           _customerModeChip(
-                              _CustomerReportMode.statements, 'Statements'),
+                              _CustomerReportMode.statements,
+                              AppLocalizations.of(context)!
+                                  .reportsStatementsLabel),
                         ],
                       ),
                     ),
@@ -1872,10 +2015,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       labelStyle: TextStyle(
         fontSize: 12,
         fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-        color: selected ? const Color(0xFF002E78) : Theme.of(context).colorScheme.onSurfaceVariant,
+        color: selected
+            ? const Color(0xFF002E78)
+            : Theme.of(context).colorScheme.onSurfaceVariant,
       ),
       side: BorderSide(
-          color: selected ? const Color(0xFF002E78) : Theme.of(context).colorScheme.outlineVariant),
+          color: selected
+              ? const Color(0xFF002E78)
+              : Theme.of(context).colorScheme.outlineVariant),
       onSelected: (_) {
         if (!mounted) return;
         setState(() => _customerMode = mode);
@@ -1892,8 +2039,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
             child: _cardTitle(
-              'Top ${_topCustomers.length} Customers by Revenue',
-              trailing: _exportBtn('Export CSV', () async {
+              AppLocalizations.of(context)!
+                  .reportsTopCustomersByRevenueTitle(_topCustomers.length),
+              trailing: _exportBtn(
+                  AppLocalizations.of(context)!.reportsExportCsvLabel,
+                  () async {
                 final csv = ReportService.exportTopCustomersCsv(_topCustomers);
                 await _saveCsv(csv, 'top_customers_$ts.csv');
               }),
@@ -1902,7 +2052,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           if (_topCustomers.isEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 20),
-              child: _emptyState('No customer data in this period'),
+              child: _emptyState(
+                  AppLocalizations.of(context)!.reportsNoCustomerDataMessage),
             )
           else ...[
             Padding(
@@ -1918,7 +2069,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           width: 140,
                           child: Text(c.name,
                               style: TextStyle(
-                                  fontSize: 13, color: Theme.of(context).colorScheme.onSurface),
+                                  fontSize: 13,
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface),
                               overflow: TextOverflow.ellipsis),
                         ),
                         const SizedBox(width: 12),
@@ -1928,7 +2081,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                               Container(
                                 height: 20,
                                 decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .surfaceContainerHighest,
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                               ),
@@ -1997,6 +2152,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   Widget _buildCustomerStatementsCard(int ts) {
     final selectedCustomer = _selectedStatementCustomer;
     final visibleStatements = _visibleCustomerStatements;
+    final l10n = AppLocalizations.of(context)!;
     return _sectionCard(
       padding: EdgeInsets.zero,
       child: Column(
@@ -2013,16 +2169,16 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                         : _pickStatementCustomer,
                     borderRadius: BorderRadius.circular(4),
                     child: InputDecorator(
-                      decoration: const InputDecoration(
-                        labelText: 'Customer',
+                      decoration: InputDecoration(
+                        labelText: l10n.labelCustomer,
                         isDense: true,
-                        prefixIcon: Icon(Icons.search, size: 18),
-                        suffixIcon: Icon(Icons.arrow_drop_down),
-                        border: OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.search, size: 18),
+                        suffixIcon: const Icon(Icons.arrow_drop_down),
+                        border: const OutlineInputBorder(),
                       ),
                       child: Text(
                         selectedCustomer == null
-                            ? 'Select customer'
+                            ? l10n.reportsSelectCustomerTitle
                             : '${selectedCustomer.name} (${selectedCustomer.invoiceCount})',
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -2044,10 +2200,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                       value: _statementCurrencyCode ??
                           _customerStatements.first.currencyCode,
                       isExpanded: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Currency',
+                      decoration: InputDecoration(
+                        labelText: l10n.onboardingCurrencyLabel,
                         isDense: true,
-                        border: OutlineInputBorder(),
+                        border: const OutlineInputBorder(),
                       ),
                       items: _customerStatements
                           .map((statement) => DropdownMenuItem(
@@ -2072,13 +2228,13 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _exportBtn('Export CSV', () async {
+                      _exportBtn(l10n.reportsExportCsvLabel, () async {
                         final csv = ReportService.exportCustomerStatementsCsv(
                             visibleStatements);
                         await _saveCsv(csv, 'customer_statement_$ts.csv');
                       }),
                       const SizedBox(width: 4),
-                      _exportBtn('Export PDF', () async {
+                      _exportBtn(l10n.customerMgmtExportPdfMenuLabel, () async {
                         if (visibleStatements.isEmpty) return;
                         final bytes = await CustomerStatementPdfService.export(
                           visibleStatements,
@@ -2095,12 +2251,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           if (_statementCustomers.isEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 20),
-              child: _emptyState('No customers with invoices'),
+              child: _emptyState(l10n.reportsNoCustomersWithInvoicesMessage),
             )
           else if (visibleStatements.isEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 20),
-              child: _emptyState('No statement activity for this customer'),
+              child: _emptyState(l10n.reportsNoStatementActivityMessage),
             )
           else
             ...visibleStatements.map(_customerStatementSection),
@@ -2146,7 +2302,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         if (statement.lines.isEmpty)
           Padding(
             padding: const EdgeInsets.only(bottom: 20),
-            child: _emptyState('No transactions in this period'),
+            child: _emptyState(
+                AppLocalizations.of(context)!.reportsNoTransactionsMessage),
           )
         else
           ...statement.lines.asMap().entries.map(
@@ -2156,17 +2313,33 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   Widget _statementSummaryCards(CustomerStatement statement) {
+    final l10n = AppLocalizations.of(context)!;
     final cards = [
-      _kpiCard('Opening', _statementMoney(statement, statement.openingBalance),
-          Theme.of(context).colorScheme.onSurfaceVariant, Icons.account_balance_wallet),
-      _kpiCard('Invoiced', _statementMoney(statement, statement.invoiced),
-          const Color(0xFF002E78), Icons.receipt_long_outlined),
-      _kpiCard('Paid', _statementMoney(statement, statement.paid),
-          const Color(0xFF16A34A), Icons.payments_outlined),
-      _kpiCard('Closing', _statementMoney(statement, statement.closingBalance),
-          const Color(0xFF7C3AED), Icons.summarize_outlined),
-      _kpiCard('Overdue', _statementMoney(statement, statement.overdueBalance),
-          const Color(0xFFDC2626), Icons.warning_amber_outlined),
+      _kpiCard(
+          l10n.reportsOpeningLabel,
+          _statementMoney(statement, statement.openingBalance),
+          Theme.of(context).colorScheme.onSurfaceVariant,
+          Icons.account_balance_wallet),
+      _kpiCard(
+          l10n.reportsInvoicedLabel,
+          _statementMoney(statement, statement.invoiced),
+          const Color(0xFF002E78),
+          Icons.receipt_long_outlined),
+      _kpiCard(
+          l10n.paymentStatusPaid,
+          _statementMoney(statement, statement.paid),
+          const Color(0xFF16A34A),
+          Icons.payments_outlined),
+      _kpiCard(
+          l10n.reportsClosingLabel,
+          _statementMoney(statement, statement.closingBalance),
+          const Color(0xFF7C3AED),
+          Icons.summarize_outlined),
+      _kpiCard(
+          l10n.dashboardOverdueSectionTitle,
+          _statementMoney(statement, statement.overdueBalance),
+          const Color(0xFFDC2626),
+          Icons.warning_amber_outlined),
     ];
 
     return LayoutBuilder(
@@ -2194,19 +2367,29 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   Widget _statementTableHeader() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: const Row(
+      child: Row(
         children: [
-          SizedBox(width: 48, child: _TableHead('SL')),
-          Expanded(flex: 2, child: _TableHead('Date')),
-          Expanded(flex: 2, child: _TableHead('Type')),
-          Expanded(flex: 3, child: _TableHead('Reference')),
-          Expanded(flex: 4, child: _TableHead('Description')),
-          Expanded(flex: 2, child: _TableHead('Debit', right: true)),
-          Expanded(flex: 2, child: _TableHead('Credit', right: true)),
-          Expanded(flex: 2, child: _TableHead('Balance', right: true)),
+          SizedBox(width: 48, child: _TableHead(l10n.reportsSlColumnLabel)),
+          Expanded(flex: 2, child: _TableHead(l10n.invoiceMgmtColDate)),
+          Expanded(flex: 2, child: _TableHead(l10n.reportsTypeColumnLabel)),
+          Expanded(
+              flex: 3, child: _TableHead(l10n.reportsReferenceColumnLabel)),
+          Expanded(
+              flex: 4,
+              child: _TableHead(l10n.customerMgmtCsvColDescriptionHeader)),
+          Expanded(
+              flex: 2,
+              child: _TableHead(l10n.reportsDebitColumnLabel, right: true)),
+          Expanded(
+              flex: 2,
+              child: _TableHead(l10n.reportsCreditColumnLabel, right: true)),
+          Expanded(
+              flex: 2,
+              child: _TableHead(l10n.reportsBalanceColumnLabel, right: true)),
         ],
       ),
     );
@@ -2216,20 +2399,24 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       CustomerStatement statement, int rank, CustomerStatementLine line) {
     return Container(
       decoration: BoxDecoration(
-          border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant))),
+          border: Border(
+              top: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant))),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
       child: Row(
         children: [
           SizedBox(
               width: 48,
               child: Text('$rank',
-                  style:
-                      TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant))),
           Expanded(
               flex: 2,
               child: Text(_formatStoredDate(line.date),
-                  style:
-                      TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant))),
           Expanded(
               flex: 2,
               child: Text(line.type,
@@ -2250,16 +2437,18 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           Expanded(
               flex: 4,
               child: Text(line.description,
-                  style:
-                      TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant),
                   overflow: TextOverflow.ellipsis)),
           Expanded(
               flex: 2,
               child: Text(
                   line.debit > 0 ? _statementMoney(statement, line.debit) : '-',
                   textAlign: TextAlign.right,
-                  style:
-                      TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant))),
           Expanded(
               flex: 2,
               child: Text(
@@ -2273,25 +2462,34 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               flex: 2,
               child: Text(_statementMoney(statement, line.balance),
                   textAlign: TextAlign.right,
-                  style:
-                      TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface))),
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurface))),
         ],
       ),
     );
   }
 
   Widget _customerTableHeader() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: const Row(
+      child: Row(
         children: [
-          SizedBox(width: 48, child: _TableHead('SL')),
-          Expanded(flex: 4, child: _TableHead('Customer')),
-          Expanded(flex: 1, child: _TableHead('Invoices', right: true)),
-          Expanded(flex: 2, child: _TableHead('Billed', right: true)),
-          Expanded(flex: 2, child: _TableHead('Collected', right: true)),
-          Expanded(flex: 2, child: _TableHead('Outstanding', right: true)),
+          SizedBox(width: 48, child: _TableHead(l10n.reportsSlColumnLabel)),
+          Expanded(flex: 4, child: _TableHead(l10n.labelCustomer)),
+          Expanded(
+              flex: 1,
+              child: _TableHead(l10n.reportsInvoicesColumnLabel, right: true)),
+          Expanded(
+              flex: 2, child: _TableHead(l10n.reportsBilledLabel, right: true)),
+          Expanded(
+              flex: 2,
+              child: _TableHead(l10n.dashboardCollectedLabel, right: true)),
+          Expanded(
+              flex: 2,
+              child: _TableHead(l10n.dashboardOutstandingLabel, right: true)),
         ],
       ),
     );
@@ -2300,33 +2498,39 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   Widget _customerRow(int rank, TopCustomer c) {
     return Container(
       decoration: BoxDecoration(
-          border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant))),
+          border: Border(
+              top: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant))),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
         children: [
           SizedBox(
               width: 48,
               child: Text('$rank',
-                  style:
-                      TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant))),
           Expanded(
               flex: 4,
               child: Text(c.name,
-                  style:
-                      TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurface),
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurface),
                   overflow: TextOverflow.ellipsis)),
           Expanded(
               flex: 1,
               child: Text('${c.invoiceCount}',
                   textAlign: TextAlign.right,
-                  style:
-                      TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant))),
           Expanded(
               flex: 2,
               child: Text(_money(c.billed),
                   textAlign: TextAlign.right,
-                  style:
-                      TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant))),
           Expanded(
               flex: 2,
               child: Text(_money(c.collected),
@@ -2375,7 +2579,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           Padding(
                             padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
                             child: _cardTitle(
-                              'Top ${_topProducts.length} Products / Services by ${_rankProductsByProfit ? 'Profit' : 'Revenue'}',
+                              AppLocalizations.of(context)!
+                                  .reportsTopProductsByMetricTitle(
+                                      _topProducts.length,
+                                      _rankProductsByProfit
+                                          ? AppLocalizations.of(context)!
+                                              .reportsProfitLabel
+                                          : AppLocalizations.of(context)!
+                                              .reportsNavRevenueLabel),
                               trailing: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -2393,16 +2604,22 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                                         size: 16),
                                     label: Text(
                                         _rankProductsByProfit
-                                            ? 'Rank: Profit'
-                                            : 'Rank: Revenue',
+                                            ? AppLocalizations.of(context)!
+                                                .reportsRankByProfitLabel
+                                            : AppLocalizations.of(context)!
+                                                .reportsRankByRevenueLabel,
                                         style: const TextStyle(fontSize: 12)),
                                     style: TextButton.styleFrom(
-                                      foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                                      foregroundColor: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 10, vertical: 6),
                                     ),
                                   ),
-                                  _exportBtn('Export CSV', () async {
+                                  _exportBtn(
+                                      AppLocalizations.of(context)!
+                                          .reportsExportCsvLabel, () async {
                                     final csv =
                                         ReportService.exportTopProductsCsv(
                                             _topProducts);
@@ -2420,8 +2637,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           if (_topProducts.isEmpty)
                             Padding(
                               padding: const EdgeInsets.only(bottom: 20),
-                              child:
-                                  _emptyState('No product data in this period'),
+                              child: _emptyState(AppLocalizations.of(context)!
+                                  .reportsNoProductDataMessage),
                             )
                           else ...[
                             // Horizontal bars
@@ -2440,7 +2657,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                                           child: Text(p.name,
                                               style: TextStyle(
                                                   fontSize: 13,
-                                                  color: Theme.of(context).colorScheme.onSurface),
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurface),
                                               overflow: TextOverflow.ellipsis),
                                         ),
                                         const SizedBox(width: 12),
@@ -2450,8 +2669,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                                               Container(
                                                 height: 20,
                                                 decoration: BoxDecoration(
-                                                  color:
-                                                      Theme.of(context).colorScheme.surfaceContainerHighest,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .surfaceContainerHighest,
                                                   borderRadius:
                                                       BorderRadius.circular(4),
                                                 ),
@@ -2529,18 +2749,31 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   Widget _productTableHeader() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: const Row(
+      child: Row(
         children: [
-          SizedBox(width: 48, child: _TableHead('SL')),
-          Expanded(flex: 4, child: _TableHead('Product / Service')),
-          Expanded(flex: 2, child: _TableHead('Units Sold', right: true)),
-          Expanded(flex: 2, child: _TableHead('Revenue', right: true)),
-          Expanded(flex: 2, child: _TableHead('Discount Given', right: true)),
-          Expanded(flex: 2, child: _TableHead('Profit', right: true)),
-          Expanded(flex: 1, child: _TableHead('Margin', right: true)),
+          SizedBox(width: 48, child: _TableHead(l10n.reportsSlColumnLabel)),
+          Expanded(
+              flex: 4,
+              child: _TableHead(l10n.reportsProductServiceColumnLabel)),
+          Expanded(
+              flex: 2,
+              child: _TableHead(l10n.reportsUnitsSoldColumnLabel, right: true)),
+          Expanded(
+              flex: 2,
+              child: _TableHead(l10n.reportsNavRevenueLabel, right: true)),
+          Expanded(
+              flex: 2,
+              child: _TableHead(l10n.reportsDiscountGivenColumnLabel,
+                  right: true)),
+          Expanded(
+              flex: 2, child: _TableHead(l10n.reportsProfitLabel, right: true)),
+          Expanded(
+              flex: 1,
+              child: _TableHead(l10n.reportsMarginColumnLabel, right: true)),
         ],
       ),
     );
@@ -2549,27 +2782,32 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   Widget _productRow(int rank, TopProduct p) {
     return Container(
       decoration: BoxDecoration(
-          border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant))),
+          border: Border(
+              top: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant))),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
         children: [
           SizedBox(
               width: 48,
               child: Text('$rank',
-                  style:
-                      TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant))),
           Expanded(
               flex: 4,
               child: Text(p.name,
-                  style:
-                      TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurface),
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurface),
                   overflow: TextOverflow.ellipsis)),
           Expanded(
               flex: 2,
               child: Text(_fmtInt.format(p.unitsSold),
                   textAlign: TextAlign.right,
-                  style:
-                      TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant))),
           Expanded(
               flex: 2,
               child: Text(_money(p.revenue),
@@ -2582,8 +2820,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               flex: 2,
               child: Text(p.discountGiven > 0 ? _money(p.discountGiven) : '—',
                   textAlign: TextAlign.right,
-                  style:
-                      TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant))),
           Expanded(
               flex: 2,
               child: Text(_money(p.profit),
@@ -2598,8 +2837,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               flex: 1,
               child: Text('${p.marginPercent.toStringAsFixed(0)}%',
                   textAlign: TextAlign.right,
-                  style:
-                      TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant))),
         ],
       ),
     );
@@ -2609,6 +2849,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   Widget _buildDailyReport() {
     final ts = DateTime.now().millisecondsSinceEpoch;
+    final l10n = AppLocalizations.of(context)!;
     return SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 24),
         child: Align(
@@ -2627,18 +2868,21 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           Padding(
                             padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
                             child: _cardTitle(
-                              'Daily Sales & Profit',
+                              l10n.reportsDailySalesProfitTitle,
                               trailing: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  _exportBtn('Export CSV', () async {
+                                  _exportBtn(l10n.reportsExportCsvLabel,
+                                      () async {
                                     final csv =
                                         ReportService.exportDailyReportCsv(
                                             _dailyReport);
                                     await _saveCsv(csv, 'daily_report_$ts.csv');
                                   }),
                                   const SizedBox(width: 4),
-                                  _exportBtn('Export PDF', () async {
+                                  _exportBtn(
+                                      l10n.customerMgmtExportPdfMenuLabel,
+                                      () async {
                                     final (from, to) = _dailyRange;
                                     final bytes = await ReportService
                                         .exportDailyReportPdf(
@@ -2661,9 +2905,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                             month: _dailyMonth,
                             showToday: true,
                             onCustomTap: _pickDailyCustomRange,
-                            customRangeLabel: _dailyCustomFrom != null && _dailyCustomTo != null
-                                ? _dailyCustomFrom!.isAtSameMomentAs(_dailyCustomTo!) ||
-                                        _formatDate(_dailyCustomFrom!) == _formatDate(_dailyCustomTo!)
+                            customRangeLabel: _dailyCustomFrom != null &&
+                                    _dailyCustomTo != null
+                                ? _dailyCustomFrom!.isAtSameMomentAs(
+                                            _dailyCustomTo!) ||
+                                        _formatDate(_dailyCustomFrom!) ==
+                                            _formatDate(_dailyCustomTo!)
                                     ? _formatDate(_dailyCustomFrom!)
                                     : '${_formatDate(_dailyCustomFrom!)} – ${_formatDate(_dailyCustomTo!)}'
                                 : null,
@@ -2691,7 +2938,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           if (_dailyReport.isEmpty)
                             Padding(
                               padding: const EdgeInsets.only(bottom: 20),
-                              child: _emptyState('No sales in this period'),
+                              child: _emptyState(
+                                  l10n.reportsNoSalesInPeriodMessage),
                             )
                           else ...[
                             _dailyTableHeader(),
@@ -2723,20 +2971,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 ))));
   }
 
-  static const _monthNames = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-  ];
+  // Locale-correct month name (follows the active app language via
+  // Intl.defaultLocale) rather than a hardcoded English list.
+  static String _monthName(int month) =>
+      DateFormat.MMMM().format(DateTime(2000, month));
 
   Widget _rangeModeSelector({
     required _DailyMode mode,
@@ -2751,6 +2989,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }) {
     final now = DateTime.now();
     final years = [for (int y = now.year; y >= now.year - 5; y--) y];
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
       child: Wrap(
@@ -2759,25 +2998,31 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           if (showToday)
-            _rangeModeChip('Today', mode == _DailyMode.today,
+            _rangeModeChip(l10n.reportsTodayLabel, mode == _DailyMode.today,
                 () => onModeChanged(_DailyMode.today)),
-          _rangeModeChip('Last 30 days', mode == _DailyMode.last30,
+          _rangeModeChip(
+              l10n.reportsPresetLast30DaysLabel,
+              mode == _DailyMode.last30,
               () => onModeChanged(_DailyMode.last30)),
-          _rangeModeChip('Month & Year', mode == _DailyMode.monthYear,
+          _rangeModeChip(
+              l10n.reportsMonthYearLabel,
+              mode == _DailyMode.monthYear,
               () => onModeChanged(_DailyMode.monthYear)),
           if (onCustomTap != null)
-            _rangeModeChip('Custom Range', mode == _DailyMode.custom, onCustomTap),
+            _rangeModeChip(l10n.reportsCustomRangeLabel,
+                mode == _DailyMode.custom, onCustomTap),
           if (mode == _DailyMode.custom && customRangeLabel != null)
             Text(customRangeLabel,
                 style: TextStyle(
-                    fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
           if (mode == _DailyMode.monthYear) ...[
             DropdownButton<int>(
               value: month,
               underline: const SizedBox(),
               items: [
                 for (int m = 1; m <= 12; m++)
-                  DropdownMenuItem(value: m, child: Text(_monthNames[m - 1])),
+                  DropdownMenuItem(value: m, child: Text(_monthName(m))),
               ],
               onChanged: (m) {
                 if (m != null) onMonthChanged(m);
@@ -2811,31 +3056,42 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               ? const Color(0xFF1D4ED8).withValues(alpha: 0.12)
               : Colors.transparent,
           border: Border.all(
-              color: sel ? const Color(0xFF1D4ED8) : Theme.of(context).colorScheme.outlineVariant),
+              color: sel
+                  ? const Color(0xFF1D4ED8)
+                  : Theme.of(context).colorScheme.outlineVariant),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(label,
             style: TextStyle(
                 fontSize: 12,
                 fontWeight: sel ? FontWeight.w600 : FontWeight.normal,
-                color:
-                    sel ? const Color(0xFF1D4ED8) : Theme.of(context).colorScheme.onSurfaceVariant)),
+                color: sel
+                    ? const Color(0xFF1D4ED8)
+                    : Theme.of(context).colorScheme.onSurfaceVariant)),
       ),
     );
   }
 
   Widget _dailyTableHeader() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: const Row(
+      child: Row(
         children: [
-          Expanded(flex: 2, child: _TableHead('Date')),
-          Expanded(flex: 1, child: _TableHead('Invoices', right: true)),
-          Expanded(flex: 2, child: _TableHead('Sales', right: true)),
-          Expanded(flex: 2, child: _TableHead('COGS', right: true)),
-          Expanded(flex: 2, child: _TableHead('Profit', right: true)),
-          Expanded(flex: 1, child: _TableHead('Margin', right: true)),
+          Expanded(flex: 2, child: _TableHead(l10n.invoiceMgmtColDate)),
+          Expanded(flex: 1, child: _TableHead(l10n.navInvoices, right: true)),
+          Expanded(
+              flex: 2,
+              child: _TableHead(l10n.reportsSalesColumnLabel, right: true)),
+          Expanded(
+              flex: 2,
+              child: _TableHead(l10n.reportsCogsColumnLabel, right: true)),
+          Expanded(
+              flex: 2, child: _TableHead(l10n.reportsProfitLabel, right: true)),
+          Expanded(
+              flex: 1,
+              child: _TableHead(l10n.reportsMarginColumnLabel, right: true)),
         ],
       ),
     );
@@ -2858,7 +3114,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       onTap: () => _openDayInInvoiceStatus(d.date),
       child: Container(
         decoration: BoxDecoration(
-            border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant))),
+            border: Border(
+                top: BorderSide(
+                    color: Theme.of(context).colorScheme.outlineVariant))),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Row(
           children: [
@@ -2866,13 +3124,16 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 flex: 2,
                 child: Text(_formatStoredDate(d.date),
                     style: TextStyle(
-                        fontSize: 13, color: Theme.of(context).colorScheme.onSurface))),
+                        fontSize: 13,
+                        color: Theme.of(context).colorScheme.onSurface))),
             Expanded(
                 flex: 1,
                 child: Text(_fmtInt.format(d.invoiceCount),
                     textAlign: TextAlign.right,
                     style: TextStyle(
-                        fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                        fontSize: 13,
+                        color:
+                            Theme.of(context).colorScheme.onSurfaceVariant))),
             Expanded(
                 flex: 2,
                 child: Text(_money(d.billed),
@@ -2886,7 +3147,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 child: Text(_money(d.cogs),
                     textAlign: TextAlign.right,
                     style: TextStyle(
-                        fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                        fontSize: 13,
+                        color:
+                            Theme.of(context).colorScheme.onSurfaceVariant))),
             Expanded(
                 flex: 2,
                 child: Text(_money(d.profit),
@@ -2902,7 +3165,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 child: Text('${d.marginPercent.toStringAsFixed(0)}%',
                     textAlign: TextAlign.right,
                     style: TextStyle(
-                        fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                        fontSize: 13,
+                        color:
+                            Theme.of(context).colorScheme.onSurfaceVariant))),
           ],
         ),
       ),
@@ -2913,6 +3178,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   Widget _buildQuotations() {
     final q = _quotStats;
+    final l10n = AppLocalizations.of(context)!;
     return SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 24),
         child: Align(
@@ -2931,7 +3197,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           children: [
                             Expanded(
                               child: _kpiCard(
-                                  'Quotations Issued',
+                                  l10n.reportsQuotationsIssuedLabel,
                                   _fmtInt.format(q.quotationsIssued),
                                   const Color(0xFF0284C7),
                                   Icons.request_quote_outlined),
@@ -2939,7 +3205,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: _kpiCard(
-                                  'Invoices in Period',
+                                  l10n.reportsInvoicesInPeriodLabel,
                                   _fmtInt.format(q.invoicesInPeriod),
                                   const Color(0xFF16A34A),
                                   Icons.receipt_outlined),
@@ -2947,7 +3213,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: _kpiCard(
-                                  'Conversion Rate',
+                                  l10n.reportsConversionRateLabel,
                                   '${q.conversionRate.toStringAsFixed(1)}%',
                                   const Color(0xFF7C3AED),
                                   Icons.trending_up),
@@ -2960,16 +3226,15 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _cardTitle('About Conversion Rate'),
+                          _cardTitle(l10n.reportsAboutConversionRateTitle),
                           const SizedBox(height: 12),
                           Text(
-                            'Conversion rate = Invoices created ÷ Quotations issued × 100.\n'
-                            'A rate above 100% means more invoices were raised than quotations in the selected period '
-                            '(common when invoices are created directly without a prior quotation).\n\n'
-                            'Note: this is a period-level ratio, not individual quote-to-invoice tracking.',
+                            l10n.reportsConversionRateExplanationBody,
                             style: TextStyle(
                                 fontSize: 13,
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
                                 height: 1.6),
                           ),
                         ],
@@ -3015,6 +3280,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     final filtered = _filteredInvoices;
     final pageStart = _invoicePage * _invoicePageSize;
     final pageRows = filtered.skip(pageStart).take(_invoicePageSize).toList();
+    final l10n = AppLocalizations.of(context)!;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.only(bottom: 24),
@@ -3030,11 +3296,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 child: Row(
                   children: [
                     Icon(Icons.info_outline,
-                        size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        size: 14,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
                     const SizedBox(width: 6),
-                    Text('Showing invoices dated $_invoiceStatusRangeLabel',
+                    Text(
+                        l10n.reportsShowingInvoicesDatedLabel(
+                            _invoiceStatusRangeLabel),
                         style: TextStyle(
-                            fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                            fontSize: 12,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant)),
                   ],
                 ),
               ),
@@ -3043,9 +3315,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                   child: Row(
                     children: [
-                      const Icon(Icons.event, size: 16, color: Color(0xFF1D4ED8)),
+                      const Icon(Icons.event,
+                          size: 16, color: Color(0xFF1D4ED8)),
                       const SizedBox(width: 6),
-                      Text('Filtered to ${_formatDate(_invoiceExactDay!)}',
+                      Text(
+                          l10n.reportsFilteredToDateLabel(
+                              _formatDate(_invoiceExactDay!)),
                           style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -3056,7 +3331,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           setState(() => _invoiceExactDay = null);
                           _loadTab(6);
                         },
-                        child: const Text('Clear', style: TextStyle(fontSize: 12)),
+                        child: Text(l10n.actionClear,
+                            style: const TextStyle(fontSize: 12)),
                       ),
                     ],
                   ),
@@ -3091,35 +3367,35 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     children: [
                       Expanded(
                           child: _kpiCard(
-                              'Total Invoices',
+                              l10n.reportsTotalInvoicesLabel,
                               _fmtInt.format(_invoiceList.length),
                               const Color(0xFF002E78),
                               Icons.receipt_long_outlined)),
                       const SizedBox(width: 12),
                       Expanded(
                           child: _kpiCard(
-                              'Paid',
+                              l10n.paymentStatusPaid,
                               _fmtInt.format(_invoiceCount('Paid')),
                               const Color(0xFF16A34A),
                               Icons.check_circle_outline)),
                       const SizedBox(width: 12),
                       Expanded(
                           child: _kpiCard(
-                              'Partial',
+                              l10n.paymentStatusPartial,
                               _fmtInt.format(_invoiceCount('Partial')),
                               const Color(0xFFF59E0B),
                               Icons.timelapse_outlined)),
                       const SizedBox(width: 12),
                       Expanded(
                           child: _kpiCard(
-                              'Unpaid',
+                              l10n.paymentStatusUnpaid,
                               _fmtInt.format(_invoiceCount('Unpaid')),
                               Theme.of(context).colorScheme.onSurfaceVariant,
                               Icons.remove_circle_outline)),
                       const SizedBox(width: 12),
                       Expanded(
                           child: _kpiCard(
-                              'Overdue',
+                              l10n.dashboardOverdueSectionTitle,
                               _fmtInt.format(_overdueCount),
                               const Color(0xFFDC2626),
                               Icons.warning_amber_outlined)),
@@ -3147,7 +3423,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                               ],
                             ),
                           ),
-                          _exportBtn('Export CSV', () async {
+                          _exportBtn(l10n.reportsExportCsvLabel, () async {
                             final csv =
                                 ReportService.exportInvoiceStatusCsv(filtered);
                             await _saveCsv(csv, 'invoice_status_$ts.csv');
@@ -3161,7 +3437,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     if (filtered.isEmpty)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 20),
-                        child: _emptyState('No invoices match this filter'),
+                        child: _emptyState(
+                            l10n.reportsNoInvoicesMatchFilterMessage),
                       )
                     else ...[
                       ...pageRows.asMap().entries.map((e) =>
@@ -3195,12 +3472,18 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   Widget _filterChip(_InvoiceFilter f) {
     final sel = _invoiceFilter == f;
+    final l10n = AppLocalizations.of(context)!;
     final label = switch (f) {
-      _InvoiceFilter.all => 'All (${_invoiceList.length})',
-      _InvoiceFilter.paid => 'Paid (${_invoiceCount('Paid')})',
-      _InvoiceFilter.partial => 'Partial (${_invoiceCount('Partial')})',
-      _InvoiceFilter.unpaid => 'Unpaid (${_invoiceCount('Unpaid')})',
-      _InvoiceFilter.overdue => 'Overdue ($_overdueCount)',
+      _InvoiceFilter.all => l10n.reportsLabelWithCountLabel(
+          l10n.invoiceMgmtStatusAllLabel, _invoiceList.length),
+      _InvoiceFilter.paid => l10n.reportsLabelWithCountLabel(
+          l10n.paymentStatusPaid, _invoiceCount('Paid')),
+      _InvoiceFilter.partial => l10n.reportsLabelWithCountLabel(
+          l10n.paymentStatusPartial, _invoiceCount('Partial')),
+      _InvoiceFilter.unpaid => l10n.reportsLabelWithCountLabel(
+          l10n.paymentStatusUnpaid, _invoiceCount('Unpaid')),
+      _InvoiceFilter.overdue => l10n.reportsLabelWithCountLabel(
+          l10n.dashboardOverdueSectionTitle, _overdueCount),
     };
     final color = switch (f) {
       _InvoiceFilter.paid => const Color(0xFF16A34A),
@@ -3218,7 +3501,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
         color: sel ? color : Theme.of(context).colorScheme.onSurfaceVariant,
       ),
-      side: BorderSide(color: sel ? color : Theme.of(context).colorScheme.outlineVariant),
+      side: BorderSide(
+          color: sel ? color : Theme.of(context).colorScheme.outlineVariant),
       onSelected: (_) {
         if (!mounted) return;
         setState(() {
@@ -3230,42 +3514,67 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   Widget _invoiceStatusHeader() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: const Row(
+      child: Row(
         children: [
-          SizedBox(width: 32, child: _TableHead('#')),
-          Expanded(flex: 2, child: _TableHead('Date')),
-          Expanded(flex: 3, child: _TableHead('Invoice ID')),
-          Expanded(flex: 4, child: _TableHead('Customer')),
-          Expanded(flex: 2, child: _TableHead('Total', right: true)),
-          Expanded(flex: 2, child: _TableHead('Paid', right: true)),
-          Expanded(flex: 2, child: _TableHead('Outstanding', right: true)),
-          Expanded(flex: 2, child: _TableHead('Status', right: true)),
+          const SizedBox(width: 32, child: _TableHead('#')),
+          Expanded(flex: 2, child: _TableHead(l10n.invoiceMgmtColDate)),
+          Expanded(flex: 3, child: _TableHead(l10n.reportsInvoiceIdLabel)),
+          Expanded(flex: 4, child: _TableHead(l10n.labelCustomer)),
+          Expanded(
+              flex: 2, child: _TableHead(l10n.fieldTotalLabel, right: true)),
+          Expanded(
+              flex: 2, child: _TableHead(l10n.paymentStatusPaid, right: true)),
+          Expanded(
+              flex: 2,
+              child: _TableHead(l10n.dashboardOutstandingLabel, right: true)),
+          Expanded(
+              flex: 2,
+              child: _TableHead(l10n.invoiceMgmtColStatus, right: true)),
         ],
       ),
     );
   }
 
+  // r.status is an internal data code ('Paid'/'Partial'/'Unpaid') used for
+  // color/filter lookups elsewhere — only the displayed text is translated,
+  // the underlying value must stay untouched so those lookups keep working.
+  String _statusDisplayLabel(String status) {
+    final l10n = AppLocalizations.of(context)!;
+    return switch (status) {
+      'Paid' => l10n.paymentStatusPaid,
+      'Partial' => l10n.paymentStatusPartial,
+      'Unpaid' => l10n.paymentStatusUnpaid,
+      _ => status,
+    };
+  }
+
   Widget _invoiceStatusRow(int rank, InvoiceStatusRow r) {
-    final statusColor = _statusColors[r.status] ?? Theme.of(context).colorScheme.onSurfaceVariant;
+    final statusColor = _statusColors[r.status] ??
+        Theme.of(context).colorScheme.onSurfaceVariant;
     return Container(
       decoration: BoxDecoration(
-          border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant))),
+          border: Border(
+              top: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant))),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
       child: Row(
         children: [
           SizedBox(
               width: 32,
               child: Text('$rank',
-                  style:
-                      TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant))),
           Expanded(
               flex: 2,
               child: Text(_formatStoredDate(r.date),
-                  style:
-                      TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant))),
           Expanded(
               flex: 3,
               child: Text(r.id,
@@ -3277,15 +3586,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           Expanded(
               flex: 4,
               child: Text(r.customerName,
-                  style:
-                      TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurface),
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurface),
                   overflow: TextOverflow.ellipsis)),
           Expanded(
               flex: 2,
               child: Text(_money(r.total),
                   textAlign: TextAlign.right,
-                  style:
-                      TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant))),
           Expanded(
               flex: 2,
               child: Text(_money(r.paid),
@@ -3316,7 +3627,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                         color: statusColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: Text(r.status,
+                      child: Text(_statusDisplayLabel(r.status),
                           style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
@@ -3332,7 +3643,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                               const Color(0xFFDC2626).withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: const Text('Overdue',
+                        child: Text(
+                            AppLocalizations.of(context)!
+                                .dashboardOverdueSectionTitle,
                             style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,

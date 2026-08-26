@@ -6,6 +6,7 @@ import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/domain/invoice_calculator.dart';
 import 'package:invoiso/common/invoiso_colors.dart';
+import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/providers/invoice_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
@@ -69,13 +70,23 @@ class _InvoiceManagementScreenV2State
 
   /// Shared column widths used by both the header table and every row table so
   /// they always align pixel-perfectly.
-  static const List<(String, String, Color)> _dueDateFilterOptions = [
-    ('all', 'All Dues', Colors.grey),
-    ('overdue', 'Overdue', Colors.red),
-    ('due_today', 'Due Today', Colors.orange),
-    ('due_week', 'Due This Week', Colors.blue),
-    ('due_month', 'Due This Month', Colors.teal),
+  static const List<(String, Color)> _dueDateFilterOptions = [
+    ('all', Colors.grey),
+    ('overdue', Colors.red),
+    ('due_today', Colors.orange),
+    ('due_week', Colors.blue),
+    ('due_month', Colors.teal),
   ];
+
+  static String _dueDateFilterLabel(AppLocalizations l10n, String key) {
+    return switch (key) {
+      'overdue' => l10n.invoiceMgmtOverdueBadge,
+      'due_today' => l10n.invoiceMgmtDueTodayLabel,
+      'due_week' => l10n.invoiceMgmtDueWeekLabel,
+      'due_month' => l10n.invoiceMgmtDueMonthLabel,
+      _ => l10n.invoiceMgmtDueAllLabel,
+    };
+  }
 
   // ─── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -207,7 +218,8 @@ class _InvoiceManagementScreenV2State
     } catch (e) {
       if (mounted) {
         setState(() => _isLoadingPage = false);
-        AppError.show(context, 'Failed to load invoices: $e',
+        AppError.show(
+            context, AppLocalizations.of(context)!.invoiceMgmtFailedToLoadMessage(e.toString()),
             onRetry: _loadPage);
       }
     }
@@ -253,25 +265,26 @@ class _InvoiceManagementScreenV2State
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.copy_all, color: Colors.teal),
-            SizedBox(width: 12),
-            Text('Duplicate Invoice'),
+            const Icon(Icons.copy_all, color: Colors.teal),
+            const SizedBox(width: 12),
+            Text(AppLocalizations.of(context)!.dashboardDuplicateInvoiceTitle),
           ],
         ),
         content: Text(
-          'Create a copy of Invoice #${invoice.invoiceNumber ?? invoice.id}\n(${invoice.customer.name}) as:',
+          AppLocalizations.of(context)!.dashboardDuplicateInvoiceBody(
+              invoice.invoiceNumber ?? invoice.id, invoice.customer.name),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.actionCancel),
           ),
           OutlinedButton.icon(
             onPressed: () => Navigator.pop(ctx, 'Quotation'),
             icon: const Icon(Icons.request_quote_outlined),
-            label: const Text('Quotation'),
+            label: Text(AppLocalizations.of(context)!.labelQuotation),
           ),
           ElevatedButton.icon(
             onPressed: () => Navigator.pop(ctx, 'Invoice'),
@@ -280,7 +293,7 @@ class _InvoiceManagementScreenV2State
               foregroundColor: Colors.white,
             ),
             icon: const Icon(Icons.receipt),
-            label: const Text('Invoice'),
+            label: Text(AppLocalizations.of(context)!.labelInvoice),
           ),
         ],
       ),
@@ -291,11 +304,12 @@ class _InvoiceManagementScreenV2State
   }
 
   Future<void> _softDelete(Invoice invoice) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await AppError.confirm(
       context,
-      title: 'Move to Trash',
-      message: 'Move Invoice #${invoice.invoiceNumber ?? invoice.id} to trash?',
-      confirmLabel: 'Move to Trash',
+      title: l10n.invoiceMgmtMoveToTrashTitle,
+      message: l10n.invoiceMgmtMoveToTrashBody(invoice.invoiceNumber ?? invoice.id),
+      confirmLabel: l10n.invoiceMgmtMoveToTrashTitle,
       confirmColor: Colors.orange,
     );
     if (!confirmed) return;
@@ -303,7 +317,9 @@ class _InvoiceManagementScreenV2State
     await ref.read(invoiceRepositoryProvider).softDeleteInvoice(invoice.id);
     ref.read(invoicesProvider.notifier).refresh();
     await _loadPage();
-    if (mounted) AppError.showSuccess(context, 'Invoice moved to trash.');
+    if (mounted) {
+      AppError.showSuccess(context, AppLocalizations.of(context)!.invoiceMgmtMovedToTrashMessage);
+    }
   }
 
   // ─── Toolbar actions ───────────────────────────────────────────────────────
@@ -323,7 +339,8 @@ class _InvoiceManagementScreenV2State
               Icon(Icons.file_download_outlined,
                   color: Theme.of(context).primaryColor),
               const SizedBox(width: 10),
-              Text('Export ${widget.filterType}s to CSV'),
+              Text(AppLocalizations.of(context)!
+                  .invoiceMgmtExportToCsvTitle('${widget.filterType}s')),
             ],
           ),
           content: SizedBox(
@@ -357,8 +374,8 @@ class _InvoiceManagementScreenV2State
                           }),
                         ),
                         const SizedBox(width: 4),
-                        const Text('Export All Records',
-                            style: TextStyle(
+                        Text(AppLocalizations.of(context)!.invoiceMgmtExportAllRecordsLabel,
+                            style: const TextStyle(
                                 fontSize: 14, fontWeight: FontWeight.w500)),
                       ],
                     ),
@@ -374,7 +391,7 @@ class _InvoiceManagementScreenV2State
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Or filter by date range:',
+                          AppLocalizations.of(context)!.invoiceMgmtFilterByDateRangeLabel,
                           style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                         const SizedBox(height: 12),
@@ -382,7 +399,7 @@ class _InvoiceManagementScreenV2State
                           children: [
                             Expanded(
                               child: _DatePickerField(
-                                label: 'From Date',
+                                label: AppLocalizations.of(context)!.invoiceMgmtFromDateLabel,
                                 value: fromDate,
                                 formatter: fmt,
                                 onPicked: (d) => setS(() => fromDate = d),
@@ -392,7 +409,7 @@ class _InvoiceManagementScreenV2State
                             const SizedBox(width: 12),
                             Expanded(
                               child: _DatePickerField(
-                                label: 'To Date',
+                                label: AppLocalizations.of(context)!.invoiceMgmtToDateLabel,
                                 value: toDate,
                                 formatter: fmt,
                                 onPicked: (d) => setS(() => toDate = d),
@@ -405,9 +422,9 @@ class _InvoiceManagementScreenV2State
                             toDate != null &&
                             toDate!.isBefore(fromDate!)) ...[
                           const SizedBox(height: 8),
-                          const Text(
-                            'To date must be after From date.',
-                            style: TextStyle(fontSize: 12, color: Colors.red),
+                          Text(
+                            AppLocalizations.of(context)!.invoiceMgmtDateRangeInvalidMessage,
+                            style: const TextStyle(fontSize: 12, color: Colors.red),
                           ),
                         ],
                       ],
@@ -420,7 +437,7 @@ class _InvoiceManagementScreenV2State
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
+              child: Text(AppLocalizations.of(context)!.actionCancel),
             ),
             ElevatedButton.icon(
               onPressed: (!exportAll &&
@@ -430,7 +447,7 @@ class _InvoiceManagementScreenV2State
                   ? null
                   : () => Navigator.pop(ctx, true),
               icon: const Icon(Icons.download, size: 18),
-              label: const Text('Export'),
+              label: Text(AppLocalizations.of(context)!.actionExport),
             ),
           ],
         ),
@@ -449,11 +466,13 @@ class _InvoiceManagementScreenV2State
           type: widget.filterType);
       if (mounted) {
         AppError.showSuccess(context,
-            'Exported ${invoices.length} record${invoices.length == 1 ? '' : 's'} to: $path');
+            AppLocalizations.of(context)!.invoiceMgmtExportedRecordsMessage(invoices.length, path));
         await OpenFile.open(path);
       }
     } catch (e) {
-      if (mounted) AppError.show(context, 'Export failed: $e');
+      if (mounted) {
+        AppError.show(context, AppLocalizations.of(context)!.invoiceMgmtExportFailedMessage(e.toString()));
+      }
     }
   }
 
@@ -476,12 +495,13 @@ class _InvoiceManagementScreenV2State
   // ─── Bulk actions ──────────────────────────────────────────────────────────
 
   Future<void> _bulkSoftDelete() async {
+    final l10n = AppLocalizations.of(context)!;
     final count = _selectedIds.length;
     final confirmed = await AppError.confirm(
       context,
-      title: 'Move to Trash',
-      message: 'Move $count invoice${count == 1 ? '' : 's'} to trash?',
-      confirmLabel: 'Move to Trash',
+      title: l10n.invoiceMgmtMoveToTrashTitle,
+      message: l10n.invoiceMgmtBulkMoveToTrashBody(count),
+      confirmLabel: l10n.invoiceMgmtMoveToTrashTitle,
       confirmColor: Colors.orange,
     );
     if (!confirmed) return;
@@ -495,10 +515,12 @@ class _InvoiceManagementScreenV2State
       await _loadPage(); // also clears _selectedIds
       if (mounted) {
         AppError.showSuccess(
-            context, '$count invoice${count == 1 ? '' : 's'} moved to trash.');
+            context, AppLocalizations.of(context)!.invoiceMgmtBulkMovedToTrashMessage(count));
       }
     } catch (e) {
-      if (mounted) AppError.show(context, 'Bulk delete failed: $e');
+      if (mounted) {
+        AppError.show(context, AppLocalizations.of(context)!.invoiceMgmtBulkDeleteFailedMessage(e.toString()));
+      }
     } finally {
       if (mounted) setState(() => _isBulkLoading = false);
     }
@@ -514,11 +536,13 @@ class _InvoiceManagementScreenV2State
       final path = await ExportService.exportInvoicesToCsv(selected);
       if (mounted) {
         AppError.showSuccess(context,
-            'Exported ${selected.length} invoice${selected.length == 1 ? '' : 's'} to CSV');
+            AppLocalizations.of(context)!.invoiceMgmtBulkExportedCsvMessage(selected.length));
         await OpenFile.open(path);
       }
     } catch (e) {
-      if (mounted) AppError.show(context, 'CSV export failed: $e');
+      if (mounted) {
+        AppError.show(context, AppLocalizations.of(context)!.invoiceMgmtCsvExportFailedMessage(e.toString()));
+      }
     } finally {
       if (mounted) setState(() => _isBulkLoading = false);
     }
@@ -538,25 +562,25 @@ class _InvoiceManagementScreenV2State
           children: [
             Icon(Icons.picture_as_pdf, color: Theme.of(ctx).primaryColor),
             const SizedBox(width: 12),
-            const Text('Download PDFs'),
+            Text(AppLocalizations.of(context)!.invoiceMgmtDownloadPdfsTitle),
           ],
         ),
         content: Text(
-          'How would you like to save ${selected.length} PDF${selected.length == 1 ? '' : 's'}?',
+          AppLocalizations.of(context)!.invoiceMgmtSavePdfsPromptMessage(selected.length),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.actionCancel),
           ),
           OutlinedButton.icon(
             icon: const Icon(Icons.folder_outlined),
-            label: const Text('Save to Folder'),
+            label: Text(AppLocalizations.of(context)!.invoiceMgmtSaveToFolderLabel),
             onPressed: () => Navigator.pop(ctx, 'folder'),
           ),
           FilledButton.icon(
             icon: const Icon(Icons.folder_zip_outlined),
-            label: const Text('Save as ZIP'),
+            label: Text(AppLocalizations.of(context)!.invoiceMgmtSaveAsZipLabel),
             onPressed: () => Navigator.pop(ctx, 'zip'),
           ),
         ],
@@ -569,12 +593,12 @@ class _InvoiceManagementScreenV2State
 
     if (saveMode == 'folder') {
       outputDir = await FilePicker.platform.getDirectoryPath(
-        dialogTitle: 'Choose folder to save PDFs',
+        dialogTitle: AppLocalizations.of(context)!.invoiceMgmtChooseFolderDialogTitle,
       );
       if (outputDir == null || !mounted) return;
     } else {
       zipSavePath = await FilePicker.platform.saveFile(
-        dialogTitle: 'Save ZIP file',
+        dialogTitle: AppLocalizations.of(context)!.invoiceMgmtSaveZipDialogTitle,
         fileName:
             'invoices_${DateFormat('yyyyMMdd').format(DateTime.now())}.zip',
         type: FileType.custom,
@@ -601,7 +625,9 @@ class _InvoiceManagementScreenV2State
               color: Colors.orange,
             ),
             const SizedBox(width: 12),
-            Text(saveMode == 'zip' ? 'Creating ZIP' : 'Generating PDFs'),
+            Text(saveMode == 'zip'
+                ? AppLocalizations.of(context)!.invoiceMgmtCreatingZipLabel
+                : AppLocalizations.of(context)!.invoiceMgmtGeneratingPdfsLabel),
           ],
         ),
         content: ValueListenableBuilder<int>(
@@ -610,7 +636,7 @@ class _InvoiceManagementScreenV2State
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Processing ${selected.length} PDF${selected.length == 1 ? '' : 's'}...',
+                AppLocalizations.of(context)!.invoiceMgmtProcessingPdfsMessage(selected.length),
               ),
               const SizedBox(height: 16),
               LinearProgressIndicator(
@@ -649,13 +675,13 @@ class _InvoiceManagementScreenV2State
       }
       if (mounted) {
         Navigator.of(context, rootNavigator: true).pop();
-        AppError.showSuccess(context, 'Saved to: $path');
+        AppError.showSuccess(context, AppLocalizations.of(context)!.invoiceMgmtSavedToMessage(path));
         await OpenFile.open(path);
       }
     } catch (e) {
       if (mounted) {
         Navigator.of(context, rootNavigator: true).pop();
-        AppError.show(context, 'PDF export failed: $e');
+        AppError.show(context, AppLocalizations.of(context)!.invoiceMgmtPdfExportFailedMessage(e.toString()));
       }
     } finally {
       progress.dispose();
@@ -695,11 +721,11 @@ class _InvoiceManagementScreenV2State
         builder: (ctx, setS) => AlertDialog(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.filter_alt_outlined),
-              SizedBox(width: 10),
-              Text('Download PDFs by Filter'),
+              const Icon(Icons.filter_alt_outlined),
+              const SizedBox(width: 10),
+              Text(AppLocalizations.of(context)!.invoiceMgmtDownloadByFilterTitle),
             ],
           ),
           content: SizedBox(
@@ -709,15 +735,15 @@ class _InvoiceManagementScreenV2State
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SegmentedButton<int>(
-                  segments: const [
+                  segments: [
                     ButtonSegment(
                         value: 0,
-                        label: Text('By Date'),
-                        icon: Icon(Icons.calendar_today_outlined, size: 16)),
+                        label: Text(AppLocalizations.of(context)!.invoiceMgmtByDateLabel),
+                        icon: const Icon(Icons.calendar_today_outlined, size: 16)),
                     ButtonSegment(
                         value: 1,
-                        label: Text('By Invoice Number'),
-                        icon: Icon(Icons.tag_outlined, size: 16)),
+                        label: Text(AppLocalizations.of(context)!.invoiceMgmtByInvoiceNumberLabel),
+                        icon: const Icon(Icons.tag_outlined, size: 16)),
                   ],
                   selected: {filterMode},
                   onSelectionChanged: (v) async {
@@ -732,7 +758,7 @@ class _InvoiceManagementScreenV2State
                   Row(children: [
                     Expanded(
                         child: _DatePickerField(
-                      label: 'From date',
+                      label: AppLocalizations.of(context)!.invoiceMgmtFromDateLabel,
                       value: fromDate,
                       formatter: DateFormat('dd/MM/yyyy'),
                       onPicked: (d) {
@@ -749,7 +775,7 @@ class _InvoiceManagementScreenV2State
                     const SizedBox(width: 12),
                     Expanded(
                         child: _DatePickerField(
-                      label: 'To date',
+                      label: AppLocalizations.of(context)!.invoiceMgmtToDateLabel,
                       value: toDate,
                       formatter: DateFormat('dd/MM/yyyy'),
                       onPicked: (d) {
@@ -770,9 +796,9 @@ class _InvoiceManagementScreenV2State
                         child: TextField(
                       controller: fromIdCtrl,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                          labelText: 'From invoice #',
-                          border: OutlineInputBorder()),
+                      decoration: InputDecoration(
+                          labelText: AppLocalizations.of(context)!.invoiceMgmtFromInvoiceNumberLabel,
+                          border: const OutlineInputBorder()),
                       onChanged: (_) => setS(() => matchCount = 0),
                     )),
                     const SizedBox(width: 12),
@@ -780,9 +806,9 @@ class _InvoiceManagementScreenV2State
                         child: TextField(
                       controller: toIdCtrl,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                          labelText: 'To invoice #',
-                          border: OutlineInputBorder()),
+                      decoration: InputDecoration(
+                          labelText: AppLocalizations.of(context)!.invoiceMgmtToInvoiceNumberLabel,
+                          border: const OutlineInputBorder()),
                       onChanged: (_) => setS(() => matchCount = 0),
                     )),
                   ]),
@@ -801,14 +827,15 @@ class _InvoiceManagementScreenV2State
                             width: 14,
                             height: 14,
                             child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Text('Check count'),
+                        : Text(AppLocalizations.of(context)!.invoiceMgmtCheckCountLabel),
                   ),
                   const SizedBox(width: 12),
                   if (matchCount > 0)
                     Text(
                       matchCount > _maxBulkPdfExport
-                          ? '$matchCount invoices — exceeds limit of $_maxBulkPdfExport'
-                          : '$matchCount invoice${matchCount == 1 ? '' : 's'} match',
+                          ? AppLocalizations.of(context)!.invoiceMgmtInvoicesExceedLimitMessage(
+                              matchCount, _maxBulkPdfExport)
+                          : AppLocalizations.of(context)!.invoiceMgmtInvoicesMatchMessage(matchCount),
                       style: TextStyle(
                         color: matchCount > _maxBulkPdfExport
                             ? Colors.red
@@ -821,7 +848,8 @@ class _InvoiceManagementScreenV2State
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
-                      'Max $_maxBulkPdfExport PDFs per download. Narrow your filter.',
+                      AppLocalizations.of(context)!
+                          .invoiceMgmtMaxPdfsPerDownloadMessage(_maxBulkPdfExport),
                       style: const TextStyle(color: Colors.red, fontSize: 12),
                     ),
                   ),
@@ -831,17 +859,17 @@ class _InvoiceManagementScreenV2State
           actions: [
             TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel')),
+                child: Text(AppLocalizations.of(context)!.actionCancel)),
             OutlinedButton.icon(
               icon: const Icon(Icons.folder_outlined),
-              label: const Text('Save to Folder'),
+              label: Text(AppLocalizations.of(context)!.invoiceMgmtSaveToFolderLabel),
               onPressed: matchCount > 0 && matchCount <= _maxBulkPdfExport
                   ? () => Navigator.pop(ctx, 'folder')
                   : null,
             ),
             FilledButton.icon(
               icon: const Icon(Icons.folder_zip_outlined),
-              label: const Text('Save as ZIP'),
+              label: Text(AppLocalizations.of(context)!.invoiceMgmtSaveAsZipLabel),
               onPressed: matchCount > 0 && matchCount <= _maxBulkPdfExport
                   ? () => Navigator.pop(ctx, 'zip')
                   : null,
@@ -851,6 +879,7 @@ class _InvoiceManagementScreenV2State
       ),
     ).then((saveMode) async {
       if (saveMode == null || !mounted) return;
+      final l10n = AppLocalizations.of(context)!;
 
       final invoices = await ref.read(invoiceRepositoryProvider).getInvoicesForExport(
         fromDate: filterMode == 0 ? fromDate : null,
@@ -862,14 +891,14 @@ class _InvoiceManagementScreenV2State
 
       if (invoices.isEmpty) {
         if (mounted) {
-          AppError.show(context, 'No invoices found for the selected filter.');
+          AppError.show(context, l10n.invoiceMgmtNoInvoicesForFilterMessage);
         }
         return;
       }
       if (invoices.length > _maxBulkPdfExport) {
         if (mounted) {
-          AppError.show(context,
-              'Filter returned ${invoices.length} invoices — max is $_maxBulkPdfExport.');
+          AppError.show(
+              context, l10n.invoiceMgmtFilterExceedsLimitMessage(invoices.length, _maxBulkPdfExport));
         }
         return;
       }
@@ -877,12 +906,12 @@ class _InvoiceManagementScreenV2State
       String? outputDir;
       String? zipSavePath;
       if (saveMode == 'folder') {
-        outputDir = await FilePicker.platform
-            .getDirectoryPath(dialogTitle: 'Choose folder to save PDFs');
+        outputDir = await FilePicker.platform.getDirectoryPath(
+            dialogTitle: l10n.invoiceMgmtChooseFolderDialogTitle);
         if (outputDir == null || !mounted) return;
       } else {
         zipSavePath = await FilePicker.platform.saveFile(
-          dialogTitle: 'Save ZIP file',
+          dialogTitle: l10n.invoiceMgmtSaveZipDialogTitle,
           fileName:
               'invoices_${DateFormat('yyyyMMdd').format(DateTime.now())}.zip',
           type: FileType.custom,
@@ -907,15 +936,16 @@ class _InvoiceManagementScreenV2State
                     : Icons.picture_as_pdf,
                 color: Colors.orange),
             const SizedBox(width: 12),
-            Text(saveMode == 'zip' ? 'Creating ZIP' : 'Generating PDFs'),
+            Text(saveMode == 'zip'
+                ? l10n.invoiceMgmtCreatingZipLabel
+                : l10n.invoiceMgmtGeneratingPdfsLabel),
           ]),
           content: ValueListenableBuilder<int>(
             valueListenable: progress,
             builder: (_, done, __) => Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                    'Processing ${invoices.length} PDF${invoices.length == 1 ? '' : 's'}...'),
+                Text(l10n.invoiceMgmtProcessingPdfsMessage(invoices.length)),
                 const SizedBox(height: 16),
                 LinearProgressIndicator(
                     value: done / invoices.length,
@@ -953,13 +983,13 @@ class _InvoiceManagementScreenV2State
         }
         if (mounted) {
           Navigator.of(context, rootNavigator: true).pop();
-          AppError.showSuccess(context, 'Saved to: $path');
+          AppError.showSuccess(context, l10n.invoiceMgmtSavedToMessage(path));
           await OpenFile.open(path);
         }
       } catch (e) {
         if (mounted) {
           Navigator.of(context, rootNavigator: true).pop();
-          AppError.show(context, 'Export failed: $e');
+          AppError.show(context, l10n.invoiceMgmtExportFailedMessage(e.toString()));
         }
       } finally {
         progress.dispose();
@@ -978,19 +1008,19 @@ class _InvoiceManagementScreenV2State
             inv.outstandingBalance > InvoiceCalculator.moneyEpsilon)
         .toList();
     final alreadyPaid = _selectedIds.length - unpaid.length;
+    final l10n = AppLocalizations.of(context)!;
 
     if (unpaid.isEmpty) {
-      AppError.show(context, 'All selected invoices are already fully paid.');
+      AppError.show(context, l10n.invoiceMgmtAllAlreadyPaidMessage);
       return;
     }
 
     final confirmed = await AppError.confirm(
       context,
-      title: 'Mark as Paid',
-      message:
-          'Mark ${unpaid.length} invoice${unpaid.length == 1 ? '' : 's'} as fully paid?'
-          '${alreadyPaid > 0 ? '\n($alreadyPaid already paid — will be skipped)' : ''}',
-      confirmLabel: 'Mark as Paid',
+      title: l10n.invoiceMgmtMarkAsPaidTitle,
+      message: l10n.invoiceMgmtMarkAsPaidBody(unpaid.length) +
+          (alreadyPaid > 0 ? l10n.invoiceMgmtAlreadyPaidNoteMessage(alreadyPaid) : ''),
+      confirmLabel: l10n.invoiceMgmtMarkAsPaidTitle,
       confirmColor: Colors.green,
     );
     if (!confirmed || !mounted) return;
@@ -1005,10 +1035,12 @@ class _InvoiceManagementScreenV2State
       await _loadPage();
       if (mounted) {
         AppError.showSuccess(
-            context, '$count invoice${count == 1 ? '' : 's'} marked as paid.');
+            context, AppLocalizations.of(context)!.invoiceMgmtMarkedAsPaidMessage(count));
       }
     } catch (e) {
-      if (mounted) AppError.show(context, 'Failed to mark as paid: $e');
+      if (mounted) {
+        AppError.show(context, AppLocalizations.of(context)!.invoiceMgmtMarkAsPaidFailedMessage(e.toString()));
+      }
     } finally {
       if (mounted) setState(() => _isBulkLoading = false);
     }
@@ -1046,11 +1078,20 @@ class _InvoiceManagementScreenV2State
   // ============================================================
 
   static const List<Map<String, dynamic>> _paymentStatusFilterOptionsV2 = [
-    {'value': 'all', 'label': 'All', 'color': Colors.grey},
-    {'value': 'paid', 'label': 'Paid', 'color': Colors.green},
-    {'value': 'partial', 'label': 'Partial', 'color': Colors.orange},
-    {'value': 'unpaid', 'label': 'Unpaid', 'color': Colors.red},
+    {'value': 'all', 'color': Colors.grey},
+    {'value': 'paid', 'color': Colors.green},
+    {'value': 'partial', 'color': Colors.orange},
+    {'value': 'unpaid', 'color': Colors.red},
   ];
+
+  static String _paymentStatusFilterLabel(AppLocalizations l10n, String value) {
+    return switch (value) {
+      'paid' => l10n.paymentStatusPaid,
+      'partial' => l10n.paymentStatusPartial,
+      'unpaid' => l10n.paymentStatusUnpaid,
+      _ => l10n.invoiceMgmtStatusAllLabel,
+    };
+  }
 
   int get _activeFilterCountV2 =>
       (_hidePaid ? 1 : 0) +
@@ -1077,7 +1118,7 @@ class _InvoiceManagementScreenV2State
         return StatefulBuilder(builder: (dialogContext, setDialogState) {
           return AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: const Text('Filter Invoices'),
+            title: Text(AppLocalizations.of(context)!.invoiceMgmtFilterInvoicesTitle),
             content: SizedBox(
               width: 380,
               child: SingleChildScrollView(
@@ -1087,13 +1128,13 @@ class _InvoiceManagementScreenV2State
                   children: [
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('Hide fully paid invoices'),
+                      title: Text(AppLocalizations.of(context)!.invoiceMgmtHideFullyPaidLabel),
                       value: tempHidePaid,
                       onChanged: (v) => setDialogState(() => tempHidePaid = v),
                       activeColor: Theme.of(dialogContext).primaryColor,
                     ),
                     const SizedBox(height: 8),
-                    Text('Payment status',
+                    Text(AppLocalizations.of(context)!.invoiceMgmtPaymentStatusLabel,
                         style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
@@ -1106,7 +1147,8 @@ class _InvoiceManagementScreenV2State
                         final selected = tempStatus == opt['value'];
                         final color = opt['color'] as Color;
                         return ChoiceChip(
-                          label: Text(opt['label'] as String),
+                          label: Text(_paymentStatusFilterLabel(
+                              AppLocalizations.of(context)!, opt['value'] as String)),
                           selected: selected,
                           onSelected: (_) =>
                               setDialogState(() => tempStatus = opt['value'] as String),
@@ -1119,7 +1161,7 @@ class _InvoiceManagementScreenV2State
                       }).toList(),
                     ),
                     const SizedBox(height: 20),
-                    Text('Due date',
+                    Text(AppLocalizations.of(context)!.invoiceMgmtDueDateLabel,
                         style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
@@ -1131,19 +1173,19 @@ class _InvoiceManagementScreenV2State
                       children: _dueDateFilterOptions.map((option) {
                         final selected = tempDue == option.$1;
                         return ChoiceChip(
-                          label: Text(option.$2),
+                          label: Text(_dueDateFilterLabel(AppLocalizations.of(context)!, option.$1)),
                           selected: selected,
                           onSelected: (_) => setDialogState(() => tempDue = option.$1),
-                          selectedColor: option.$3.withValues(alpha: 0.18),
+                          selectedColor: option.$2.withValues(alpha: 0.18),
                           labelStyle: TextStyle(
-                            color: selected ? option.$3.withValues(alpha: 0.9) : null,
+                            color: selected ? option.$2.withValues(alpha: 0.9) : null,
                             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                           ),
                         );
                       }).toList(),
                     ),
                     const SizedBox(height: 20),
-                    Text('Invoice date range',
+                    Text(AppLocalizations.of(context)!.invoiceMgmtInvoiceDateRangeLabel,
                         style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
@@ -1152,7 +1194,7 @@ class _InvoiceManagementScreenV2State
                     Row(children: [
                       Expanded(
                           child: _DatePickerField(
-                        label: 'From date',
+                        label: AppLocalizations.of(context)!.invoiceMgmtFromDateLabel,
                         value: tempDateFrom,
                         formatter: DateFormat(_datePattern),
                         onPicked: (d) => setDialogState(() => tempDateFrom = d),
@@ -1161,7 +1203,7 @@ class _InvoiceManagementScreenV2State
                       const SizedBox(width: 12),
                       Expanded(
                           child: _DatePickerField(
-                        label: 'To date',
+                        label: AppLocalizations.of(context)!.invoiceMgmtToDateLabel,
                         value: tempDateTo,
                         formatter: DateFormat(_datePattern),
                         onPicked: (d) => setDialogState(() => tempDateTo = d),
@@ -1169,7 +1211,7 @@ class _InvoiceManagementScreenV2State
                       )),
                     ]),
                     const SizedBox(height: 20),
-                    Text('Invoice # range',
+                    Text(AppLocalizations.of(context)!.invoiceMgmtInvoiceNumberRangeLabel,
                         style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
@@ -1180,16 +1222,18 @@ class _InvoiceManagementScreenV2State
                           child: TextField(
                         controller: idFromCtrl,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                            labelText: 'From #', border: OutlineInputBorder()),
+                        decoration: InputDecoration(
+                            labelText: AppLocalizations.of(context)!.invoiceMgmtFromHashLabel,
+                            border: const OutlineInputBorder()),
                       )),
                       const SizedBox(width: 12),
                       Expanded(
                           child: TextField(
                         controller: idToCtrl,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                            labelText: 'To #', border: OutlineInputBorder()),
+                        decoration: InputDecoration(
+                            labelText: AppLocalizations.of(context)!.invoiceMgmtToHashLabel,
+                            border: const OutlineInputBorder()),
                       )),
                     ]),
                   ],
@@ -1210,14 +1254,14 @@ class _InvoiceManagementScreenV2State
                     idToCtrl.clear();
                   });
                 },
-                child: const Text('Reset'),
+                child: Text(AppLocalizations.of(context)!.actionReset),
               ),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(dialogContext),
-                    child: const Text('Cancel'),
+                    child: Text(AppLocalizations.of(context)!.actionCancel),
                   ),
                   ElevatedButton(
                     onPressed: () {
@@ -1238,7 +1282,7 @@ class _InvoiceManagementScreenV2State
                       backgroundColor: Theme.of(context).primaryColor,
                       foregroundColor: Colors.white,
                     ),
-                    child: const Text('Apply'),
+                    child: Text(AppLocalizations.of(context)!.actionApply),
                   ),
                 ],
               ),
@@ -1252,14 +1296,25 @@ class _InvoiceManagementScreenV2State
   // Sort is a separate button/dialog from Filter — different concern
   // (ordering vs narrowing the result set), and applies to both Invoices
   // and Quotations alike (unlike Filter, which is Invoice-only).
-  static const List<(String, bool, String, IconData)> _sortOptionsV2 = [
-    ('id', false, 'Recently Added', Icons.fiber_new_outlined),
-    ('id', true, 'Oldest Added', Icons.history_outlined),
-    ('date', false, 'Invoice Date (Newest First)', Icons.calendar_today_outlined),
-    ('date', true, 'Invoice Date (Oldest First)', Icons.calendar_today_outlined),
-    ('customer_name', true, 'Customer Name (A–Z)', Icons.sort_by_alpha_outlined),
-    ('customer_name', false, 'Customer Name (Z–A)', Icons.sort_by_alpha_outlined),
+  static const List<(String, bool, IconData)> _sortOptionsV2 = [
+    ('id', false, Icons.fiber_new_outlined),
+    ('id', true, Icons.history_outlined),
+    ('date', false, Icons.calendar_today_outlined),
+    ('date', true, Icons.calendar_today_outlined),
+    ('customer_name', true, Icons.sort_by_alpha_outlined),
+    ('customer_name', false, Icons.sort_by_alpha_outlined),
   ];
+
+  static String _sortOptionLabel(AppLocalizations l10n, String field, bool asc) {
+    return switch ((field, asc)) {
+      ('id', false) => l10n.invoiceMgmtSortRecentlyAdded,
+      ('id', true) => l10n.invoiceMgmtSortOldestAdded,
+      ('date', false) => l10n.invoiceMgmtSortDateNewest,
+      ('date', true) => l10n.invoiceMgmtSortDateOldest,
+      ('customer_name', true) => l10n.invoiceMgmtSortCustomerAZ,
+      _ => l10n.invoiceMgmtSortCustomerZA,
+    };
+  }
 
   Future<void> _showSortDialogV2() async {
     await showDialog(
@@ -1267,19 +1322,19 @@ class _InvoiceManagementScreenV2State
       builder: (dialogContext) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Sort By'),
+          title: Text(AppLocalizations.of(context)!.invoiceMgmtSortByTitle),
           content: SizedBox(
             width: 340,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: _sortOptionsV2.map((opt) {
-                final (field, asc, label, icon) = opt;
+                final (field, asc, icon) = opt;
                 final selected = _sortField == field && _sortAscending == asc;
                 final primaryColor = Theme.of(context).primaryColor;
                 return ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: Icon(icon, size: 20, color: selected ? primaryColor : null),
-                  title: Text(label,
+                  title: Text(_sortOptionLabel(AppLocalizations.of(context)!, field, asc),
                       style: TextStyle(
                           fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                           color: selected ? primaryColor : null)),
@@ -1302,7 +1357,7 @@ class _InvoiceManagementScreenV2State
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Close'),
+              child: Text(AppLocalizations.of(context)!.actionClose),
             ),
           ],
         );
@@ -1315,7 +1370,7 @@ class _InvoiceManagementScreenV2State
       controller: _searchController,
       focusNode: _searchFocusNode,
       decoration: InputDecoration(
-        hintText: 'Search by Invoice ID or Customer Name…',
+        hintText: AppLocalizations.of(context)!.invoiceMgmtSearchHintMessage,
         prefixIcon: const Icon(Icons.search, size: 20),
         isDense: true,
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
@@ -1361,7 +1416,7 @@ class _InvoiceManagementScreenV2State
               OutlinedButton.icon(
                 onPressed: _showFilterDialogV2,
                 icon: const Icon(Icons.filter_list, size: 18),
-                label: const Text('Filter'),
+                label: Text(AppLocalizations.of(context)!.invoiceMgmtFilterLabel),
               ),
               if (_activeFilterCountV2 > 0)
                 Positioned(
@@ -1384,11 +1439,12 @@ class _InvoiceManagementScreenV2State
     final sortButton = OutlinedButton.icon(
       onPressed: _showSortDialogV2,
       icon: const Icon(Icons.sort, size: 18),
-      label: const Text('Sort'),
+      label: Text(AppLocalizations.of(context)!.invoiceMgmtSortLabel),
     );
 
     final statText = Text(
-      'Total: $_totalCount   ·   Page ${_currentPage + 1}/${_totalPages > 0 ? _totalPages : 1}',
+      AppLocalizations.of(context)!.invoiceMgmtTotalPageStatusLabel(
+          _totalCount, _currentPage + 1, _totalPages > 0 ? _totalPages : 1),
       style: TextStyle(
           fontSize: 12.5,
           fontWeight: FontWeight.w600,
@@ -1443,18 +1499,18 @@ class _InvoiceManagementScreenV2State
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
-            child: Text('$count selected',
+            child: Text(AppLocalizations.of(context)!.invoiceMgmtSelectedCountLabel(count),
                 style: TextStyle(
                     color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold, fontSize: 13)),
           ),
           _buildBulkButton(
             icon: Icons.deselect,
-            label: 'Deselect',
+            label: AppLocalizations.of(context)!.invoiceMgmtDeselectLabel,
             onPressed: () => setState(() => _selectedIds.clear()),
           ),
           _buildBulkButton(
             icon: Icons.select_all,
-            label: 'Select Page',
+            label: AppLocalizations.of(context)!.invoiceMgmtSelectPageLabel,
             onPressed: _isAllPageSelected
                 ? null
                 : () => setState(() {
@@ -1465,24 +1521,24 @@ class _InvoiceManagementScreenV2State
           ),
           _buildBulkButton(
             icon: Icons.payments_outlined,
-            label: 'Mark Paid',
+            label: AppLocalizations.of(context)!.invoiceMgmtMarkPaidLabel,
             color: Colors.green[300]!,
             onPressed: _isBulkLoading ? null : _bulkMarkAsPaid,
           ),
           _buildBulkButton(
             icon: Icons.table_chart_outlined,
-            label: 'CSV',
+            label: AppLocalizations.of(context)!.invoiceMgmtCsvLabel,
             onPressed: _isBulkLoading ? null : _bulkExportCsv,
           ),
           _buildBulkButton(
             icon: Icons.picture_as_pdf_outlined,
-            label: 'PDFs',
+            label: AppLocalizations.of(context)!.invoiceMgmtPdfsLabel,
             onPressed: _isBulkLoading ? null : _bulkExportPdfs,
           ),
           if (widget.user.isAdmin())
             _buildBulkButton(
               icon: Icons.delete_outline,
-              label: 'Trash',
+              label: AppLocalizations.of(context)!.invoiceMgmtTrashLabel,
               color: Colors.red[300]!,
               onPressed: _isBulkLoading ? null : _bulkSoftDelete,
             ),
@@ -1498,28 +1554,29 @@ class _InvoiceManagementScreenV2State
   // only needs to carry Duplicate + Delete. On narrow screens, none of
   // those are visible, so the menu carries all of them.
   List<PopupMenuEntry<String>> _rowActionMenuItemsV2(Invoice invoice, bool isWide) {
+    final l10n = AppLocalizations.of(context)!;
     return [
       if (!isWide) ...[
-        const PopupMenuItem(value: 'view', child: _MenuRow(Icons.visibility_outlined, 'View', Colors.green)),
-        const PopupMenuItem(value: 'edit', child: _MenuRow(Icons.edit_outlined, 'Edit', Colors.blue)),
+        PopupMenuItem(value: 'view', child: _MenuRow(Icons.visibility_outlined, l10n.actionView, Colors.green)),
+        PopupMenuItem(value: 'edit', child: _MenuRow(Icons.edit_outlined, l10n.actionEdit, Colors.blue)),
         if (widget.filterType == 'Invoice')
           PopupMenuItem(
             value: 'pay',
-            child: _MenuRow(Icons.payments_outlined, 'Apply Payment',
+            child: _MenuRow(Icons.payments_outlined, l10n.actionApplyPayment,
                 invoice.paymentStatus == PaymentStatus.paid ? Colors.green : Colors.purple),
           ),
       ],
-      const PopupMenuItem(value: 'duplicate', child: _MenuRow(Icons.copy_all_outlined, 'Duplicate', Colors.teal)),
+      PopupMenuItem(value: 'duplicate', child: _MenuRow(Icons.copy_all_outlined, l10n.actionDuplicate, Colors.teal)),
       if (!isWide) ...[
-        const PopupMenuItem(
-            value: 'preview', child: _MenuRow(Icons.picture_as_pdf_outlined, 'PDF Preview', Colors.orange)),
-        const PopupMenuItem(
-            value: 'download', child: _MenuRow(Icons.download_outlined, 'Download PDF', Colors.deepPurple)),
-        const PopupMenuItem(value: 'print', child: _MenuRow(Icons.print_outlined, 'Print', Colors.blueGrey)),
+        PopupMenuItem(
+            value: 'preview', child: _MenuRow(Icons.picture_as_pdf_outlined, l10n.actionPdfPreview, Colors.orange)),
+        PopupMenuItem(
+            value: 'download', child: _MenuRow(Icons.download_outlined, l10n.actionDownloadPdf, Colors.deepPurple)),
+        PopupMenuItem(value: 'print', child: _MenuRow(Icons.print_outlined, l10n.actionPrint, Colors.blueGrey)),
       ],
       if (widget.user.isAdmin())
-        const PopupMenuItem(
-            value: 'delete', child: _MenuRow(Icons.delete_outline, 'Move to Trash', Colors.red)),
+        PopupMenuItem(
+            value: 'delete', child: _MenuRow(Icons.delete_outline, l10n.invoiceMgmtMoveToTrashTitle, Colors.red)),
     ];
   }
 
@@ -1545,9 +1602,10 @@ class _InvoiceManagementScreenV2State
   }
 
   Widget _rowActionsV2(Invoice invoice, bool isWide) {
+    final l10n = AppLocalizations.of(context)!;
     final menu = PopupMenuButton<String>(
       icon: const Icon(Icons.more_vert, size: 20),
-      tooltip: 'More actions',
+      tooltip: l10n.invoiceMgmtMoreActionsTooltip,
       padding: EdgeInsets.zero,
       onSelected: (action) => _handleRowActionV2(action, invoice),
       itemBuilder: (ctx) => _rowActionMenuItemsV2(invoice, isWide),
@@ -1558,22 +1616,22 @@ class _InvoiceManagementScreenV2State
       runSpacing: 4,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        _buildActionButton(Icons.visibility_outlined, Colors.green, 'View',
+        _buildActionButton(Icons.visibility_outlined, Colors.green, l10n.actionView,
             () => InvoicePdfServices.showInvoiceDetails(context, invoice)),
         _buildActionButton(
-            Icons.edit_outlined, Colors.blue, 'Edit', () => widget.onEditInvoice(invoice)),
+            Icons.edit_outlined, Colors.blue, l10n.actionEdit, () => widget.onEditInvoice(invoice)),
         if (widget.filterType == 'Invoice')
           _buildActionButton(
             Icons.payments_outlined,
             invoice.paymentStatus == PaymentStatus.paid ? Colors.green : Colors.purple,
-            'Apply Payment',
+            l10n.actionApplyPayment,
             () => _showApplyPaymentDialog(invoice),
           ),
-        _buildActionButton(Icons.picture_as_pdf_outlined, Colors.orange, 'PDF Preview',
+        _buildActionButton(Icons.picture_as_pdf_outlined, Colors.orange, l10n.actionPdfPreview,
             () => InvoicePdfServices.previewPDF(context, invoice)),
-        _buildActionButton(Icons.download_outlined, Colors.deepPurple, 'Download PDF',
+        _buildActionButton(Icons.download_outlined, Colors.deepPurple, l10n.actionDownloadPdf,
             () => PDFService.downloadPDF(context, invoice)),
-        _buildActionButton(Icons.print_outlined, Colors.blueGrey, 'Print',
+        _buildActionButton(Icons.print_outlined, Colors.blueGrey, l10n.actionPrint,
             () => InvoicePdfServices.generatePDF(context, invoice)),
         menu,
       ],
@@ -1581,6 +1639,7 @@ class _InvoiceManagementScreenV2State
   }
 
   Widget _tableHeaderRowV2(bool isWide) {
+    final l10n = AppLocalizations.of(context)!;
     TextStyle style = const TextStyle(
         color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700, letterSpacing: 0.4);
     return Container(
@@ -1602,18 +1661,18 @@ class _InvoiceManagementScreenV2State
               side: const BorderSide(color: Colors.white70, width: 2),
             ),
           ),
-          SizedBox(width: 60, child: Text('Sl No', style: style)),
-          Expanded(flex: 3, child: Padding(padding: const EdgeInsets.symmetric(vertical: 16), child: Text('Invoice / Customer', style: style))),
+          SizedBox(width: 60, child: Text(l10n.invoiceMgmtColSlNo, style: style)),
+          Expanded(flex: 3, child: Padding(padding: const EdgeInsets.symmetric(vertical: 16), child: Text(l10n.invoiceMgmtColInvoiceCustomer, style: style))),
           if (widget.filterType == 'Invoice' && isWide)
-            Expanded(child: Text('Title', style: style)),
-          SizedBox(width: 110, child: Text('Date', style: style)),
-          if (isWide) SizedBox(width: 56, child: Text('Items', style: style)),
-          Expanded(child: Text('Total', style: style)),
+            Expanded(child: Text(l10n.invoiceMgmtColTitle, style: style)),
+          SizedBox(width: 110, child: Text(l10n.invoiceMgmtColDate, style: style)),
+          if (isWide) SizedBox(width: 56, child: Text(l10n.invoiceMgmtColItems, style: style)),
+          Expanded(child: Text(l10n.fieldTotalLabel, style: style)),
           if (widget.filterType == 'Invoice') ...[
-            SizedBox(width: 76, child: Text('Status', style: style)),
-            Expanded(child: Text('Outstanding', style: style)),
+            SizedBox(width: 76, child: Text(l10n.invoiceMgmtColStatus, style: style)),
+            Expanded(child: Text(l10n.invoiceMgmtColOutstanding, style: style)),
           ],
-          SizedBox(width: isWide ? 300 : 48, child: Text('Actions', style: style)),
+          SizedBox(width: isWide ? 300 : 48, child: Text(l10n.invoiceMgmtColActions, style: style)),
         ],
       ),
     );
@@ -1759,10 +1818,11 @@ class _InvoiceManagementScreenV2State
   }
 
   Widget _paginationV2(bool isWide) {
+    final l10n = AppLocalizations.of(context)!;
     final left = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('Rows per page:',
+        Text(l10n.invoiceMgmtRowsPerPageLabel,
             style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 13)),
         const SizedBox(width: 8),
         DropdownButton<int>(
@@ -1792,7 +1852,7 @@ class _InvoiceManagementScreenV2State
                 }
               : null,
           icon: const Icon(Icons.chevron_left, size: 18),
-          label: const Text('Previous'),
+          label: Text(l10n.actionPrevious),
         ),
         const SizedBox(width: 12),
         Container(
@@ -1802,7 +1862,7 @@ class _InvoiceManagementScreenV2State
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Theme.of(context).primaryColor.withValues(alpha: 0.3)),
           ),
-          child: Text('Page ${_currentPage + 1} of ${_totalPages > 0 ? _totalPages : 1}',
+          child: Text(l10n.invoiceMgmtPageOfLabel(_currentPage + 1, _totalPages > 0 ? _totalPages : 1),
               style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Theme.of(context).primaryColor)),
         ),
         const SizedBox(width: 12),
@@ -1814,7 +1874,7 @@ class _InvoiceManagementScreenV2State
                 }
               : null,
           icon: const Icon(Icons.chevron_right, size: 18),
-          label: const Text('Next'),
+          label: Text(l10n.actionNext),
         ),
       ],
     );
@@ -1832,6 +1892,7 @@ class _InvoiceManagementScreenV2State
   }
 
   Widget _emptyStateV2() {
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1840,16 +1901,16 @@ class _InvoiceManagementScreenV2State
           const SizedBox(height: 16),
           Text(
             _searchQuery.isEmpty
-                ? 'No ${widget.filterType.toLowerCase()}s found'
-                : 'No results for "$_searchQuery"',
+                ? l10n.invoiceMgmtNoFilteredTypeFoundMessage('${widget.filterType.toLowerCase()}s')
+                : l10n.invoiceMgmtNoResultsForQueryMessage(_searchQuery),
             style: TextStyle(
                 fontSize: 17, color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 6),
           Text(
             _searchQuery.isEmpty
-                ? 'Create your first ${widget.filterType.toLowerCase()} to see it here'
-                : 'Try adjusting your search or filters',
+                ? l10n.invoiceMgmtCreateFirstTypeMessage(widget.filterType.toLowerCase())
+                : l10n.invoiceMgmtTryAdjustingFiltersMessage,
             style: TextStyle(fontSize: 13.5, color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ],
@@ -1858,6 +1919,7 @@ class _InvoiceManagementScreenV2State
   }
 
   List<Widget> _headerBarV2(bool isWide) {
+    final l10n = AppLocalizations.of(context)!;
     if (isWide) {
       return [
         if (_isBulkLoading)
@@ -1869,18 +1931,18 @@ class _InvoiceManagementScreenV2State
         IconButton(
           icon: const Icon(Icons.download_for_offline_outlined),
           onPressed: _showFilteredDownloadDialog,
-          tooltip: 'Download PDFs by date or invoice range',
+          tooltip: l10n.invoiceMgmtDownloadByRangeTooltip,
         ),
         IconButton(
           icon: const Icon(Icons.file_download_outlined),
           onPressed: _exportCsv,
-          tooltip: 'Export all to CSV',
+          tooltip: l10n.invoiceMgmtExportAllCsvTooltip,
         ),
         if (widget.user.isAdmin())
           IconButton(
             icon: const Icon(Icons.delete_sweep_outlined),
             onPressed: _showTrashDialog,
-            tooltip: 'Trash',
+            tooltip: l10n.invoiceMgmtTrashLabel,
           ),
         IconButton(
           icon: const Icon(Icons.refresh),
@@ -1888,7 +1950,7 @@ class _InvoiceManagementScreenV2State
             _currentPage = 0;
             _loadPage();
           },
-          tooltip: 'Refresh',
+          tooltip: l10n.actionRefresh,
         ),
       ];
     }
@@ -1919,14 +1981,17 @@ class _InvoiceManagementScreenV2State
           }
         },
         itemBuilder: (ctx) => [
-          const PopupMenuItem(
+          PopupMenuItem(
               value: 'download',
-              child: _MenuRow(Icons.download_for_offline_outlined, 'Download PDFs by range', Colors.blueGrey)),
-          const PopupMenuItem(
-              value: 'csv', child: _MenuRow(Icons.file_download_outlined, 'Export all to CSV', Colors.blueGrey)),
+              child: _MenuRow(Icons.download_for_offline_outlined, l10n.invoiceMgmtDownloadByRangeMenuLabel,
+                  Colors.blueGrey)),
+          PopupMenuItem(
+              value: 'csv',
+              child: _MenuRow(Icons.file_download_outlined, l10n.invoiceMgmtExportAllCsvTooltip, Colors.blueGrey)),
           if (widget.user.isAdmin())
-            const PopupMenuItem(value: 'trash', child: _MenuRow(Icons.delete_sweep_outlined, 'Trash', Colors.red)),
-          const PopupMenuItem(value: 'refresh', child: _MenuRow(Icons.refresh, 'Refresh', Colors.blueGrey)),
+            PopupMenuItem(
+                value: 'trash', child: _MenuRow(Icons.delete_sweep_outlined, l10n.invoiceMgmtTrashLabel, Colors.red)),
+          PopupMenuItem(value: 'refresh', child: _MenuRow(Icons.refresh, l10n.actionRefresh, Colors.blueGrey)),
         ],
       ),
     ];
@@ -1939,7 +2004,7 @@ class _InvoiceManagementScreenV2State
       return Scaffold(
         backgroundColor: Theme.of(context).brightness == Brightness.dark ? null : Colors.grey[50],
         appBar: AppBar(
-          title: Text('${widget.filterType} Management'),
+          title: Text(AppLocalizations.of(context)!.invoiceMgmtManagementTitle(widget.filterType)),
           backgroundColor: Theme.of(context).appBarTheme.backgroundColor ?? Theme.of(context).primaryColor,
           foregroundColor: Colors.white,
           elevation: 0,
@@ -2083,7 +2148,9 @@ class _InvoiceManagementScreenV2State
                   border: Border.all(color: dueColor.withValues(alpha: 0.3)),
                 ),
                 child: Text(
-                  isOverdue ? 'Overdue' : 'Today',
+                  isOverdue
+                      ? AppLocalizations.of(context)!.invoiceMgmtOverdueBadge
+                      : AppLocalizations.of(context)!.invoiceMgmtTodayBadge,
                   style: TextStyle(
                       fontSize: 9,
                       fontWeight: FontWeight.w600,
@@ -2119,18 +2186,19 @@ class _InvoiceManagementScreenV2State
   }
 
   Widget _buildPaymentStatusChip(PaymentStatus status) {
+    final l10n = AppLocalizations.of(context)!;
     final Color color;
     final String label;
     switch (status) {
       case PaymentStatus.paid:
         color = Colors.green;
-        label = 'Paid';
+        label = l10n.paymentStatusPaid;
       case PaymentStatus.partial:
         color = Colors.orange;
-        label = 'Partial';
+        label = l10n.paymentStatusPartial;
       case PaymentStatus.unpaid:
         color = Colors.red;
-        label = 'Unpaid';
+        label = l10n.paymentStatusUnpaid;
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
@@ -2218,18 +2286,19 @@ class _TrashDialogState extends ConsumerState<_TrashDialog> {
     widget.onRestored();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Invoice restored.'), backgroundColor: Colors.green),
+        SnackBar(
+            content: Text(AppLocalizations.of(context)!.invoiceMgmtInvoiceRestoredMessage),
+            backgroundColor: Colors.green),
       );
     }
   }
 
   Future<void> _permanentDelete(Invoice invoice) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await AppError.confirm(
       context,
-      title: 'Permanently Delete',
-      message:
-          'Permanently delete Invoice #${invoice.invoiceNumber ?? invoice.id}? This cannot be undone.',
+      title: l10n.invoiceMgmtPermanentlyDeleteTitle,
+      message: l10n.invoiceMgmtPermanentlyDeleteBody(invoice.invoiceNumber ?? invoice.id),
     );
     if (!confirmed) return;
     await ref.read(invoiceRepositoryProvider).permanentDeleteInvoice(invoice.id);
@@ -2259,9 +2328,9 @@ class _TrashDialogState extends ConsumerState<_TrashDialog> {
                   child: const Icon(Icons.delete_sweep, color: Colors.red),
                 ),
                 const SizedBox(width: 12),
-                const Text('Trash',
+                Text(AppLocalizations.of(context)!.invoiceMgmtTrashLabel,
                     style:
-                        TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                        const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                 const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.close),
@@ -2274,7 +2343,7 @@ class _TrashDialogState extends ConsumerState<_TrashDialog> {
               Padding(
                 padding: const EdgeInsets.all(32),
                 child: Center(
-                  child: Text('Trash is empty',
+                  child: Text(AppLocalizations.of(context)!.invoiceMgmtTrashIsEmptyLabel,
                       style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 16)),
                 ),
               )
@@ -2321,7 +2390,9 @@ class _TrashDialogState extends ConsumerState<_TrashDialog> {
                               ),
                             ),
                             child: Text(
-                              inv.type,
+                              inv.type == 'Invoice'
+                                  ? AppLocalizations.of(context)!.labelInvoice
+                                  : AppLocalizations.of(context)!.labelQuotation,
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
@@ -2341,7 +2412,7 @@ class _TrashDialogState extends ConsumerState<_TrashDialog> {
                           TextButton.icon(
                             onPressed: () => _restore(inv),
                             icon: const Icon(Icons.restore, size: 16),
-                            label: const Text('Restore'),
+                            label: Text(AppLocalizations.of(context)!.actionRestore),
                             style: TextButton.styleFrom(
                                 foregroundColor: Colors.green),
                           ),
@@ -2349,7 +2420,7 @@ class _TrashDialogState extends ConsumerState<_TrashDialog> {
                           TextButton.icon(
                             onPressed: () => _permanentDelete(inv),
                             icon: const Icon(Icons.delete_forever, size: 16),
-                            label: const Text('Delete'),
+                            label: Text(AppLocalizations.of(context)!.actionDelete),
                             style: TextButton.styleFrom(
                                 foregroundColor: Colors.red),
                           ),
@@ -2364,7 +2435,7 @@ class _TrashDialogState extends ConsumerState<_TrashDialog> {
               width: double.infinity,
               child: TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Close'),
+                child: Text(AppLocalizations.of(context)!.actionClose),
               ),
             ),
           ],
@@ -2417,7 +2488,7 @@ class _DatePickerField extends StatelessWidget {
               : const Icon(Icons.calendar_today, size: 16),
         ),
         child: Text(
-          value != null ? formatter.format(value!) : 'Any',
+          value != null ? formatter.format(value!) : AppLocalizations.of(context)!.invoiceMgmtAnyDateLabel,
           style: TextStyle(
             fontSize: 13,
             color: value != null ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurfaceVariant,

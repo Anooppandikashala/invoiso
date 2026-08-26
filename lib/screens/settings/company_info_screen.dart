@@ -8,8 +8,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image/image.dart' as img;
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/constants.dart';
+import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/providers/theme_provider.dart';
+import 'package:invoiso/widgets/language_picker.dart';
 import 'package:invoiso/common/invoiso_colors.dart';
 import 'package:invoiso/models/company_info.dart';
 
@@ -33,17 +35,19 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
   final fssaiController = TextEditingController();
   bool _isSaving = false;
   String _selectedCountry = 'India';
-  int _companyInfoLoadCount = 0; // incremented once when DB data arrives; forces Autocomplete reinit
+  int _companyInfoLoadCount =
+      0; // incremented once when DB data arrives; forces Autocomplete reinit
   final List<({TextEditingController label, TextEditingController id})>
       _upiControllers = [];
   int? _defaultUpiIndex;
 
-  final List<({
-    TextEditingController label,
-    TextEditingController bankName,
-    TextEditingController accountNumber,
-    TextEditingController ifscCode,
-  })> _bankControllers = [];
+  final List<
+      ({
+        TextEditingController label,
+        TextEditingController bankName,
+        TextEditingController accountNumber,
+        TextEditingController ifscCode,
+      })> _bankControllers = [];
   int? _defaultBankIndex;
 
   CompanyInfo? _companyInfo;
@@ -154,8 +158,8 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
         final entry = upiEntries[i];
 
         _upiControllers.add((
-        label: TextEditingController(text: entry.label),
-        id: TextEditingController(text: entry.id),
+          label: TextEditingController(text: entry.label),
+          id: TextEditingController(text: entry.id),
         ));
 
         if (entry.isDefault) {
@@ -178,10 +182,10 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
         final entry = bankEntries[i];
 
         _bankControllers.add((
-        label: TextEditingController(text: entry.label),
-        bankName: TextEditingController(text: entry.bankName),
-        accountNumber: TextEditingController(text: entry.accountNumber),
-        ifscCode: TextEditingController(text: entry.ifscCode),
+          label: TextEditingController(text: entry.label),
+          bankName: TextEditingController(text: entry.bankName),
+          accountNumber: TextEditingController(text: entry.accountNumber),
+          ifscCode: TextEditingController(text: entry.ifscCode),
         ));
 
         if (entry.isDefault) {
@@ -193,74 +197,75 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
 
   Future<void> _saveCompanyInfo() async {
     if (_isSaving) return;
+    final l10n = AppLocalizations.of(context)!;
     setState(() => _isSaving = true);
     try {
-    final newInfo = CompanyInfo(
-        id: _companyInfo?.id,
-        name: nameController.text,
-        address: addressController.text,
-        phone: phoneController.text,
-        email: emailController.text,
-        website: websiteController.text,
-        gstin: gstinController.text,
-        panNumber: panController.text,
-        fssaiCode: fssaiController.text,
-        country: _selectedCountry);
+      final newInfo = CompanyInfo(
+          id: _companyInfo?.id,
+          name: nameController.text,
+          address: addressController.text,
+          phone: phoneController.text,
+          email: emailController.text,
+          website: websiteController.text,
+          gstin: gstinController.text,
+          panNumber: panController.text,
+          fssaiCode: fssaiController.text,
+          country: _selectedCountry);
 
-    final upiEntries = <UpiEntry>[];
-    for (int i = 0; i < _upiControllers.length; i++) {
-      final id = _upiControllers[i].id.text.trim();
-      if (id.isEmpty) continue;
-      upiEntries.add(UpiEntry(
-        label: _upiControllers[i].label.text.trim(),
-        id: id,
-        isDefault: i == _defaultUpiIndex,
-      ));
-    }
+      final upiEntries = <UpiEntry>[];
+      for (int i = 0; i < _upiControllers.length; i++) {
+        final id = _upiControllers[i].id.text.trim();
+        if (id.isEmpty) continue;
+        upiEntries.add(UpiEntry(
+          label: _upiControllers[i].label.text.trim(),
+          id: id,
+          isDefault: i == _defaultUpiIndex,
+        ));
+      }
 
-    final bankAccounts = <BankAccount>[];
-    for (int i = 0; i < _bankControllers.length; i++) {
-      final accountNum = _bankControllers[i].accountNumber.text.trim();
-      if (accountNum.isEmpty) continue;
-      bankAccounts.add(BankAccount(
-        label: _bankControllers[i].label.text.trim(),
-        bankName: _bankControllers[i].bankName.text.trim(),
-        accountNumber: accountNum,
-        ifscCode: _bankControllers[i].ifscCode.text.trim(),
-        isDefault: i == _defaultBankIndex,
-      ));
-    }
+      final bankAccounts = <BankAccount>[];
+      for (int i = 0; i < _bankControllers.length; i++) {
+        final accountNum = _bankControllers[i].accountNumber.text.trim();
+        if (accountNum.isEmpty) continue;
+        bankAccounts.add(BankAccount(
+          label: _bankControllers[i].label.text.trim(),
+          bankName: _bankControllers[i].bankName.text.trim(),
+          accountNumber: accountNum,
+          ifscCode: _bankControllers[i].ifscCode.text.trim(),
+          isDefault: i == _defaultBankIndex,
+        ));
+      }
 
-    final companyInfoRepo = ref.read(companyInfoRepositoryProvider);
-    final settingsRepo = ref.read(settingsRepositoryProvider);
-    await Future.wait([
-      _companyInfo == null
-          ? companyInfoRepo.insertCompanyInfo(newInfo)
-          : companyInfoRepo.updateCompanyInfo(newInfo),
-      if (_base64Logo != null) settingsRepo.setCompanyLogo(_base64Logo!),
-      settingsRepo.setUpiIds(upiEntries),
-      settingsRepo.setSetting(SettingKey.showUpiQr, _showUpiQr.toString()),
-      settingsRepo.setBankAccounts(bankAccounts),
-      settingsRepo.setShowBankDetails(_showBankDetails),
-      settingsRepo.setBusinessType(_businessType),
-      settingsRepo.setShowPhone(_showPhone),
-      settingsRepo.setShowEmail(_showEmail),
-      settingsRepo.setShowCompanyName(_showCompanyName),
-      settingsRepo.setShowPan(_showPan),
-      settingsRepo.setShowFssai(_showFssai),
-      settingsRepo.setShowWebsite(_showWebsite),
-      settingsRepo.setShowAddress(_showAddress),
-      settingsRepo.setShowLogo(_showLogo),
-    ]);
+      final companyInfoRepo = ref.read(companyInfoRepositoryProvider);
+      final settingsRepo = ref.read(settingsRepositoryProvider);
+      await Future.wait([
+        _companyInfo == null
+            ? companyInfoRepo.insertCompanyInfo(newInfo)
+            : companyInfoRepo.updateCompanyInfo(newInfo),
+        if (_base64Logo != null) settingsRepo.setCompanyLogo(_base64Logo!),
+        settingsRepo.setUpiIds(upiEntries),
+        settingsRepo.setSetting(SettingKey.showUpiQr, _showUpiQr.toString()),
+        settingsRepo.setBankAccounts(bankAccounts),
+        settingsRepo.setShowBankDetails(_showBankDetails),
+        settingsRepo.setBusinessType(_businessType),
+        settingsRepo.setShowPhone(_showPhone),
+        settingsRepo.setShowEmail(_showEmail),
+        settingsRepo.setShowCompanyName(_showCompanyName),
+        settingsRepo.setShowPan(_showPan),
+        settingsRepo.setShowFssai(_showFssai),
+        settingsRepo.setShowWebsite(_showWebsite),
+        settingsRepo.setShowAddress(_showAddress),
+        settingsRepo.setShowLogo(_showLogo),
+      ]);
 
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Company info saved successfully')),
-    );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.companyInfoSavedSuccessMessage)),
+      );
 
-    setState(() {
-      _companyInfo = newInfo;
-    });
+      setState(() {
+        _companyInfo = newInfo;
+      });
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -298,6 +303,7 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
   }
 
   Future<void> _pickLogo() async {
+    final l10n = AppLocalizations.of(context)!;
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['png', 'jpg', 'jpeg'],
@@ -312,7 +318,7 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
     if (bytes.length > 2 * 1024 * 1024) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Image file must be less than 2 MB.')),
+          SnackBar(content: Text(l10n.companyInfoImageTooLargeMessage)),
         );
       }
       return;
@@ -323,7 +329,7 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
     if (decodedImage == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invalid image file.')),
+        SnackBar(content: Text(l10n.companyInfoInvalidImageMessage)),
       );
       return;
     }
@@ -332,8 +338,8 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
     if (decodedImage.width > 1080 || decodedImage.height > 1080) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Image must be max 1080x1080 pixels.'),
+        SnackBar(
+          content: Text(l10n.companyInfoImageDimensionsMessage),
         ),
       );
       return;
@@ -345,10 +351,10 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
     });
   }
 
-
   @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).primaryColor;
+    final l10n = AppLocalizations.of(context)!;
 
     final logoContent = _selectedLogoFile != null
         ? ClipRRect(
@@ -374,13 +380,13 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                         size: 36, color: primaryColor),
                   ),
                   const SizedBox(height: 10),
-                  Text('Upload Logo',
+                  Text(l10n.companyInfoUploadLogoLabel,
                       style: TextStyle(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontSize: AppFontSize.small,
                           fontWeight: FontWeight.w500)),
                   const SizedBox(height: 2),
-                  Text('Click to browse',
+                  Text(l10n.companyInfoClickToBrowseLabel,
                       style: TextStyle(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontSize: AppFontSize.xsmall)),
@@ -392,29 +398,33 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
           ? null
           : Theme.of(context).colorScheme.surfaceContainerHighest,
       appBar: AppBar(
-        title: const Text('Company Information'),
-        backgroundColor: Theme.of(context).appBarTheme.backgroundColor ??
-            primaryColor,
+        title: Text(l10n.companyInfoAppBarTitle),
+        backgroundColor:
+            Theme.of(context).appBarTheme.backgroundColor ?? primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
         actions: [
+          const Padding(
+            padding: EdgeInsets.only(right: 8),
+            child: LanguagePicker(compact: true),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: SegmentedButton<ThemeMode>(
-              segments: const [
+              segments: [
                 ButtonSegment(
                     value: ThemeMode.light,
-                    icon: Icon(Icons.light_mode_outlined),
-                    tooltip: 'Light'),
+                    icon: const Icon(Icons.light_mode_outlined),
+                    tooltip: l10n.themeLight),
                 ButtonSegment(
                     value: ThemeMode.dark,
-                    icon: Icon(Icons.dark_mode_outlined),
-                    tooltip: 'Dark'),
+                    icon: const Icon(Icons.dark_mode_outlined),
+                    tooltip: l10n.themeDark),
                 ButtonSegment(
                     value: ThemeMode.system,
-                    icon: Icon(Icons.brightness_auto_outlined),
-                    tooltip: 'System'),
+                    icon: const Icon(Icons.brightness_auto_outlined),
+                    tooltip: l10n.themeSystem),
               ],
               selected: {ref.watch(themeModeProvider)},
               showSelectedIcon: false,
@@ -427,7 +437,9 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
               onSelectionChanged: (selection) {
                 final mode = selection.first;
                 ref.read(themeModeProvider.notifier).state = mode;
-                ref.read(settingsRepositoryProvider).setThemeMode(themeModeToKey(mode));
+                ref
+                    .read(settingsRepositoryProvider)
+                    .setThemeMode(themeModeToKey(mode));
               },
             ),
           ),
@@ -449,7 +461,7 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                       child: Column(
                         children: [
                           const SizedBox(height: 8),
-                          _sectionLabel('COMPANY LOGO'),
+                          _sectionLabel(l10n.companyInfoLogoSectionLabel),
                           const SizedBox(height: 16),
                           GestureDetector(
                             onTap: _pickLogo,
@@ -460,9 +472,14 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                                 width: 180,
                                 height: 180,
                                 decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .surfaceContainerHighest,
                                   border: Border.all(
-                                      color: Theme.of(context).colorScheme.outlineVariant, width: 2),
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .outlineVariant,
+                                      width: 2),
                                   borderRadius: BorderRadius.circular(
                                       AppBorderRadius.xsmall),
                                 ),
@@ -470,25 +487,29 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                               ),
                             ),
                           ),
-                          if (_selectedLogoFile != null || _base64Logo != null) ...[
+                          if (_selectedLogoFile != null ||
+                              _base64Logo != null) ...[
                             const SizedBox(height: 8),
                             TextButton.icon(
                               onPressed: _clearLogo,
-                              icon: const Icon(Icons.delete_outline, size: 16, color: Colors.red),
-                              label: const Text('Remove Logo',
-                                  style: TextStyle(color: Colors.red, fontSize: 13)),
+                              icon: const Icon(Icons.delete_outline,
+                                  size: 16, color: Colors.red),
+                              label: Text(l10n.companyInfoRemoveLogoButton,
+                                  style: const TextStyle(
+                                      color: Colors.red, fontSize: 13)),
                             ),
                           ],
                           const SizedBox(height: 4),
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text('Show on PDF',
+                              Text(l10n.companyInfoShowOnPdfLabel,
                                   style: TextStyle(
                                       fontSize: AppFontSize.xsmall,
-                                      color: CompanyInfoScreenColors.sectionHeadingColor)),
-                              _pdfVisibilityToggle(
-                                  _showLogo, (val) => setState(() => _showLogo = val)),
+                                      color: CompanyInfoScreenColors
+                                          .sectionHeadingColor)),
+                              _pdfVisibilityToggle(_showLogo,
+                                  (val) => setState(() => _showLogo = val)),
                             ],
                           ),
                           const SizedBox(height: 16),
@@ -512,10 +533,11 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            'Max 1080×1080 px · 2 MB\nPNG or JPG only',
+                            l10n.companyInfoLogoRequirementsHint,
                             style: TextStyle(
                               fontSize: AppFontSize.xsmall,
-                              color: CompanyInfoScreenColors.sectionHeadingColor,
+                              color:
+                                  CompanyInfoScreenColors.sectionHeadingColor,
                               height: 1.6,
                             ),
                             textAlign: TextAlign.center,
@@ -532,9 +554,15 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                       child: ElevatedButton.icon(
                         onPressed: _isSaving ? null : _saveCompanyInfo,
                         icon: _isSaving
-                            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white))
                             : const Icon(Icons.save_rounded),
-                        label: Text(_isSaving ? 'Saving...' : 'Save'),
+                        label: Text(_isSaving
+                            ? l10n.createInvoiceSavingEllipsisLabel
+                            : l10n.actionSave),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: primaryColor,
                           foregroundColor: Colors.white,
@@ -552,7 +580,8 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
             ),
           ),
 
-          VerticalDivider(width: 1, color: Theme.of(context).colorScheme.outlineVariant),
+          VerticalDivider(
+              width: 1, color: Theme.of(context).colorScheme.outlineVariant),
 
           // ── Right: scrollable form ───────────────────────────────────
           Expanded(
@@ -566,442 +595,513 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                  _sectionLabel('COMPANY DETAILS'),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildField(
-                          controller: nameController,
-                          label: 'Company Name',
-                          icon: Icons.business_rounded,
-                          maxLength: 50,
-                          trailing: _pdfVisibilityToggle(_showCompanyName,
-                              (val) => setState(() => _showCompanyName = val)),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildField(
-                          controller: gstinController,
-                          label: _selectedCountry == 'India' || _selectedCountry.isEmpty
-                              ? 'GSTIN'
-                              : 'Tax/VAT No',
-                          icon: Icons.receipt_long_rounded,
-                          maxLength: 50,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildField(
-                          controller: panController,
-                          label: (_selectedCountry == 'India' || _selectedCountry.isEmpty)
-                              ? 'PAN'
-                              : 'TIN',
-                          icon: Icons.credit_card_rounded,
-                          maxLength: 20,
-                          hint: (_selectedCountry == 'India' || _selectedCountry.isEmpty)
-                              ? 'ABCDE1234F'
-                              : null,
-                          trailing: _pdfVisibilityToggle(
-                              _showPan, (val) => setState(() => _showPan = val)),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildField(
-                          controller: fssaiController,
-                          label: 'FSSAI Code',
-                          icon: Icons.verified_rounded,
-                          maxLength: 14,
-                          hint: '12345678901234',
-                          trailing: _pdfVisibilityToggle(_showFssai,
-                              (val) => setState(() => _showFssai = val)),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(child: _buildCountryField()),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildField(
-                          controller: phoneController,
-                          label: 'Phone',
-                          icon: Icons.phone_rounded,
-                          maxLength: 60,
-                          keyboardType: TextInputType.phone,
-                          hint: '+91 9876543210',
-                          helper: 'Multiple numbers: separate with comma',
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(
-                                RegExp(r'[0-9+\s\-()\,]')),
-                          ],
-                          trailing: _pdfVisibilityToggle(_showPhone,
-                              (val) => setState(() => _showPhone = val)),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildField(
-                          controller: emailController,
-                          label: 'Email',
-                          icon: Icons.email_rounded,
-                          maxLength: 100,
-                          keyboardType: TextInputType.emailAddress,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(
-                                RegExp(r'[a-zA-Z0-9@._\-]')),
-                          ],
-                          trailing: _pdfVisibilityToggle(_showEmail,
-                              (val) => setState(() => _showEmail = val)),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  _buildField(
-                    controller: websiteController,
-                    label: 'Website',
-                    icon: Icons.language_rounded,
-                    maxLength: 100,
-                    keyboardType: TextInputType.url,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(
-                          RegExp(r'[a-zA-Z0-9:/.%-]')),
-                    ],
-                    trailing: _pdfVisibilityToggle(_showWebsite,
-                        (val) => setState(() => _showWebsite = val)),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildField(
-                    controller: addressController,
-                    label: 'Address',
-                    icon: Icons.location_on_rounded,
-                    maxLength: 100,
-                    maxLines: 3,
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.open_in_full, size: 18),
-                          tooltip: 'Edit in larger view',
-                          onPressed: () => _editLongTextDialog(
-                            title: 'Address',
-                            controller: addressController,
-                            maxLength: 100,
-                          ),
-                        ),
-                        _pdfVisibilityToggle(_showAddress,
-                            (val) => setState(() => _showAddress = val)),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  _sectionLabel('BUSINESS TYPE'),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainer,
-                      borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                      border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                        _sectionLabel(l10n.companyInfoDetailsSectionLabel),
+                        const SizedBox(height: 16),
                         Row(
                           children: [
-                            Icon(Icons.category_outlined, color: Theme.of(context).primaryColor),
-                            const SizedBox(width: 12),
-                            const Text('Business Type', style: TextStyle(fontSize: 16)),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Controls item type options in the product list and invoices',
-                          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                        ),
-                        const SizedBox(height: 12),
-                        SegmentedButton<BusinessType>(
-                          segments: const [
-                            ButtonSegment(
-                              value: BusinessType.product,
-                              label: Text('Product'),
-                              icon: Icon(Icons.inventory_2_outlined, size: 16),
-                            ),
-                            ButtonSegment(
-                              value: BusinessType.service,
-                              label: Text('Service'),
-                              icon: Icon(Icons.design_services_outlined, size: 16),
-                            ),
-                            ButtonSegment(
-                              value: BusinessType.both,
-                              label: Text('Both'),
-                              icon: Icon(Icons.all_inclusive, size: 16),
-                            ),
-                          ],
-                          selected: {_businessType},
-                          onSelectionChanged: (val) =>
-                              setState(() => _businessType = val.first),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  _sectionLabel('PAYMENT SETTINGS'),
-                  const SizedBox(height: 16),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainer,
-                      borderRadius:
-                          BorderRadius.circular(AppBorderRadius.xsmall),
-                      border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-                    ),
-                    child: SwitchListTile(
-                      title: const Text('Show QR Code on Invoices'),
-                      subtitle: const Text(
-                        'Adds scannable UPI payment QR codes to generated PDFs',
-                        style: TextStyle(fontSize: AppFontSize.small),
-                      ),
-                      value: _showUpiQr,
-                      onChanged: (val) => setState(() => _showUpiQr = val),
-                      activeColor: primaryColor,
-                      secondary: Icon(
-                        Icons.payment_rounded,
-                        color: _showUpiQr ? primaryColor : Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  _sectionLabel('UPI ACCOUNTS'),
-                  const SizedBox(height: 10),
-                  ..._upiControllers.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final row = entry.value;
-                    final isDefault = index == _defaultUpiIndex;
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: Row(
-                        children: [
-                          // Default star
-                          Tooltip(
-                            message: isDefault ? 'Default' : 'Set as Default',
-                            child: IconButton(
-                              icon: Icon(
-                                isDefault ? Icons.star_rounded : Icons.star_outline_rounded,
-                                color: isDefault ? Colors.amber[700] : Theme.of(context).colorScheme.onSurfaceVariant,
+                            Expanded(
+                              child: _buildField(
+                                controller: nameController,
+                                label: l10n.onboardingCompanyNameLabel,
+                                icon: Icons.business_rounded,
+                                maxLength: 50,
+                                trailing: _pdfVisibilityToggle(
+                                    _showCompanyName,
+                                    (val) =>
+                                        setState(() => _showCompanyName = val)),
                               ),
-                              onPressed: () => setState(() => _defaultUpiIndex = index),
                             ),
-                          ),
-                          SizedBox(
-                            width: 160,
-                            child: _buildField(
-                              controller: row.label,
-                              label: 'Label',
-                              icon: Icons.label_outline_rounded,
-                              hint: 'e.g. HDFC Bank',
-                              maxLength: 40,
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _buildField(
+                                controller: gstinController,
+                                label: _selectedCountry == 'India' ||
+                                        _selectedCountry.isEmpty
+                                    ? l10n.fieldGstinLabel
+                                    : l10n.fieldTaxVatNoLabel,
+                                icon: Icons.receipt_long_rounded,
+                                maxLength: 50,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _buildField(
-                              controller: row.id,
-                              label: 'UPI ID',
-                              icon: Icons.qr_code_rounded,
-                              hint: 'yourname@bankname',
-                              maxLength: 100,
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildField(
+                                controller: panController,
+                                label: (_selectedCountry == 'India' ||
+                                        _selectedCountry.isEmpty)
+                                    ? l10n.fieldPanLabel
+                                    : l10n.fieldTinLabel,
+                                icon: Icons.credit_card_rounded,
+                                maxLength: 20,
+                                hint: (_selectedCountry == 'India' ||
+                                        _selectedCountry.isEmpty)
+                                    ? 'ABCDE1234F'
+                                    : null,
+                                trailing: _pdfVisibilityToggle(_showPan,
+                                    (val) => setState(() => _showPan = val)),
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          IconButton(
-                            tooltip: 'Remove',
-                            icon: const Icon(Icons.remove_circle_outline,
-                                color: Colors.redAccent),
-                            onPressed: () {
-                              setState(() {
-                                _upiControllers[index].label.dispose();
-                                _upiControllers[index].id.dispose();
-                                _upiControllers.removeAt(index);
-                                if (_defaultUpiIndex == index) {
-                                  _defaultUpiIndex = null;
-                                } else if (_defaultUpiIndex != null &&
-                                    _defaultUpiIndex! > index) {
-                                  _defaultUpiIndex = _defaultUpiIndex! - 1;
-                                }
-                              });
-                            },
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
-                  const SizedBox(height: 4),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
-                      onPressed: () {
-                        setState(() {
-                          _upiControllers.add((
-                            label: TextEditingController(),
-                            id: TextEditingController(),
-                          ));
-                        });
-                      },
-                      icon: Icon(Icons.add_circle_outline,
-                          color: primaryColor, size: 18),
-                      label: Text('Add UPI Account',
-                          style: TextStyle(color: primaryColor)),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // ── Bank Details ─────────────────────────────────────────
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainer,
-                      borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                      border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-                    ),
-                    child: SwitchListTile(
-                      title: const Text('Show Bank Details on Invoices'),
-                      subtitle: const Text(
-                        'Prints bank account details on generated PDFs',
-                        style: TextStyle(fontSize: AppFontSize.small),
-                      ),
-                      value: _showBankDetails,
-                      onChanged: (val) => setState(() => _showBankDetails = val),
-                      activeColor: primaryColor,
-                      secondary: Icon(
-                        Icons.account_balance_outlined,
-                        color: _showBankDetails ? primaryColor : Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  _sectionLabel('BANK ACCOUNTS'),
-                  const SizedBox(height: 10),
-                  ..._bankControllers.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final row = entry.value;
-                    final isDefault = index == _defaultBankIndex;
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _buildField(
+                                controller: fssaiController,
+                                label: l10n.companyInfoFssaiCodeLabel,
+                                icon: Icons.verified_rounded,
+                                maxLength: 14,
+                                hint: '12345678901234',
+                                trailing: _pdfVisibilityToggle(_showFssai,
+                                    (val) => setState(() => _showFssai = val)),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Default star
-                            Tooltip(
-                              message: isDefault ? 'Default' : 'Set as Default',
-                              child: IconButton(
-                                icon: Icon(
-                                  isDefault ? Icons.star_rounded : Icons.star_outline_rounded,
-                                  color: isDefault ? Colors.amber[700] : Theme.of(context).colorScheme.onSurfaceVariant,
-                                ),
-                                onPressed: () => setState(() => _defaultBankIndex = index),
-                              ),
-                            ),
-                            SizedBox(
-                              width: 130,
+                            Expanded(child: _buildCountryField()),
+                            const SizedBox(width: 16),
+                            Expanded(
                               child: _buildField(
-                                controller: row.label,
-                                label: 'Label',
-                                icon: Icons.label_outline_rounded,
-                                hint: 'e.g. Main Account',
-                                maxLength: 40,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            SizedBox(
-                              width: 140,
-                              child: _buildField(
-                                controller: row.bankName,
-                                label: 'Bank Name',
-                                icon: Icons.account_balance_outlined,
-                                hint: 'e.g. HDFC Bank',
+                                controller: phoneController,
+                                label: l10n.fieldPhoneLabel,
+                                icon: Icons.phone_rounded,
                                 maxLength: 60,
+                                keyboardType: TextInputType.phone,
+                                hint: '+91 9876543210',
+                                helper: l10n.companyInfoPhoneHelperText,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(
+                                      RegExp(r'[0-9+\s\-()\,]')),
+                                ],
+                                trailing: _pdfVisibilityToggle(_showPhone,
+                                    (val) => setState(() => _showPhone = val)),
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            SizedBox(
-                              width: 180,
+                            const SizedBox(width: 16),
+                            Expanded(
                               child: _buildField(
-                                controller: row.accountNumber,
-                                label: 'Account Number',
-                                icon: Icons.numbers_outlined,
-                                hint: '123456789012',
-                                maxLength: 20,
+                                controller: emailController,
+                                label: l10n.fieldEmailLabel,
+                                icon: Icons.email_rounded,
+                                maxLength: 100,
+                                keyboardType: TextInputType.emailAddress,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(
+                                      RegExp(r'[a-zA-Z0-9@._\-]')),
+                                ],
+                                trailing: _pdfVisibilityToggle(_showEmail,
+                                    (val) => setState(() => _showEmail = val)),
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            SizedBox(
-                              width: 130,
-                              child: _buildField(
-                                controller: row.ifscCode,
-                                label: 'IFSC Code',
-                                icon: Icons.code_outlined,
-                                hint: 'HDFC0001234',
-                                maxLength: 11,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            IconButton(
-                              tooltip: 'Remove',
-                              icon: const Icon(Icons.remove_circle_outline,
-                                  color: Colors.redAccent),
-                              onPressed: () {
-                                setState(() {
-                                  _bankControllers[index].label.dispose();
-                                  _bankControllers[index].bankName.dispose();
-                                  _bankControllers[index].accountNumber.dispose();
-                                  _bankControllers[index].ifscCode.dispose();
-                                  _bankControllers.removeAt(index);
-                                  if (_defaultBankIndex == index) {
-                                    _defaultBankIndex = null;
-                                  } else if (_defaultBankIndex != null &&
-                                      _defaultBankIndex! > index) {
-                                    _defaultBankIndex = _defaultBankIndex! - 1;
-                                  }
-                                });
-                              },
                             ),
                           ],
                         ),
-                      ),
-                    );
-                  }),
-                  const SizedBox(height: 4),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
-                      onPressed: () {
-                        setState(() {
-                          _bankControllers.add((
-                            label: TextEditingController(),
-                            bankName: TextEditingController(),
-                            accountNumber: TextEditingController(),
-                            ifscCode: TextEditingController(),
-                          ));
-                        });
-                      },
-                      icon: Icon(Icons.add_circle_outline,
-                          color: primaryColor, size: 18),
-                      label: Text('Add Bank Account',
-                          style: TextStyle(color: primaryColor)),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
+                        const SizedBox(height: 16),
+                        _buildField(
+                          controller: websiteController,
+                          label: l10n.fieldWebsiteLabel,
+                          icon: Icons.language_rounded,
+                          maxLength: 100,
+                          keyboardType: TextInputType.url,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                                RegExp(r'[a-zA-Z0-9:/.%-]')),
+                          ],
+                          trailing: _pdfVisibilityToggle(_showWebsite,
+                              (val) => setState(() => _showWebsite = val)),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildField(
+                          controller: addressController,
+                          label: l10n.fieldAddressLabel,
+                          icon: Icons.location_on_rounded,
+                          maxLength: 100,
+                          maxLines: 3,
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.open_in_full, size: 18),
+                                tooltip: l10n.tooltipEditInLargerView,
+                                onPressed: () => _editLongTextDialog(
+                                  title: l10n.fieldAddressLabel,
+                                  controller: addressController,
+                                  maxLength: 100,
+                                ),
+                              ),
+                              _pdfVisibilityToggle(_showAddress,
+                                  (val) => setState(() => _showAddress = val)),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+                        _sectionLabel(l10n.companyInfoBusinessTypeSectionLabel),
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color:
+                                Theme.of(context).colorScheme.surfaceContainer,
+                            borderRadius:
+                                BorderRadius.circular(AppBorderRadius.xsmall),
+                            border: Border.all(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .outlineVariant),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.category_outlined,
+                                      color: Theme.of(context).primaryColor),
+                                  const SizedBox(width: 12),
+                                  Text(l10n.companyInfoBusinessTypeTitle,
+                                      style: const TextStyle(fontSize: 16)),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                l10n.companyInfoBusinessTypeSubtitle,
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant),
+                              ),
+                              const SizedBox(height: 12),
+                              SegmentedButton<BusinessType>(
+                                segments: [
+                                  ButtonSegment(
+                                    value: BusinessType.product,
+                                    label: Text(l10n.labelProduct),
+                                    icon: const Icon(Icons.inventory_2_outlined,
+                                        size: 16),
+                                  ),
+                                  ButtonSegment(
+                                    value: BusinessType.service,
+                                    label: Text(l10n.labelService),
+                                    icon: const Icon(
+                                        Icons.design_services_outlined,
+                                        size: 16),
+                                  ),
+                                  ButtonSegment(
+                                    value: BusinessType.both,
+                                    label: Text(l10n.labelBoth),
+                                    icon: const Icon(Icons.all_inclusive,
+                                        size: 16),
+                                  ),
+                                ],
+                                selected: {_businessType},
+                                onSelectionChanged: (val) =>
+                                    setState(() => _businessType = val.first),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+                        _sectionLabel(
+                            l10n.companyInfoPaymentSettingsSectionLabel),
+                        const SizedBox(height: 16),
+                        Container(
+                          decoration: BoxDecoration(
+                            color:
+                                Theme.of(context).colorScheme.surfaceContainer,
+                            borderRadius:
+                                BorderRadius.circular(AppBorderRadius.xsmall),
+                            border: Border.all(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .outlineVariant),
+                          ),
+                          child: SwitchListTile(
+                            title: Text(l10n.companyInfoShowQrToggleTitle),
+                            subtitle: Text(
+                              l10n.companyInfoShowQrToggleSubtitle,
+                              style:
+                                  const TextStyle(fontSize: AppFontSize.small),
+                            ),
+                            value: _showUpiQr,
+                            onChanged: (val) =>
+                                setState(() => _showUpiQr = val),
+                            activeColor: primaryColor,
+                            secondary: Icon(
+                              Icons.payment_rounded,
+                              color: _showUpiQr
+                                  ? primaryColor
+                                  : Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        _sectionLabel(l10n.companyInfoUpiAccountsSectionLabel),
+                        const SizedBox(height: 10),
+                        ..._upiControllers.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final row = entry.value;
+                          final isDefault = index == _defaultUpiIndex;
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: Row(
+                              children: [
+                                // Default star
+                                Tooltip(
+                                  message: isDefault
+                                      ? l10n.dashboardLayoutDefaultTitle
+                                      : l10n.companyInfoSetAsDefaultTooltip,
+                                  child: IconButton(
+                                    icon: Icon(
+                                      isDefault
+                                          ? Icons.star_rounded
+                                          : Icons.star_outline_rounded,
+                                      color: isDefault
+                                          ? Colors.amber[700]
+                                          : Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                    ),
+                                    onPressed: () => setState(
+                                        () => _defaultUpiIndex = index),
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 160,
+                                  child: _buildField(
+                                    controller: row.label,
+                                    label: l10n.fieldLabelLabel,
+                                    icon: Icons.label_outline_rounded,
+                                    hint: l10n.companyInfoHintExampleBankName,
+                                    maxLength: 40,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildField(
+                                    controller: row.id,
+                                    label: l10n.companyInfoUpiIdLabel,
+                                    icon: Icons.qr_code_rounded,
+                                    hint: 'yourname@bankname',
+                                    maxLength: 100,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                IconButton(
+                                  tooltip: l10n.tooltipRemove,
+                                  icon: const Icon(Icons.remove_circle_outline,
+                                      color: Colors.redAccent),
+                                  onPressed: () {
+                                    setState(() {
+                                      _upiControllers[index].label.dispose();
+                                      _upiControllers[index].id.dispose();
+                                      _upiControllers.removeAt(index);
+                                      if (_defaultUpiIndex == index) {
+                                        _defaultUpiIndex = null;
+                                      } else if (_defaultUpiIndex != null &&
+                                          _defaultUpiIndex! > index) {
+                                        _defaultUpiIndex =
+                                            _defaultUpiIndex! - 1;
+                                      }
+                                    });
+                                  },
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+                        const SizedBox(height: 4),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                _upiControllers.add((
+                                  label: TextEditingController(),
+                                  id: TextEditingController(),
+                                ));
+                              });
+                            },
+                            icon: Icon(Icons.add_circle_outline,
+                                color: primaryColor, size: 18),
+                            label: Text(l10n.companyInfoAddUpiAccountButton,
+                                style: TextStyle(color: primaryColor)),
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+
+                        // ── Bank Details ─────────────────────────────────────────
+                        Container(
+                          decoration: BoxDecoration(
+                            color:
+                                Theme.of(context).colorScheme.surfaceContainer,
+                            borderRadius:
+                                BorderRadius.circular(AppBorderRadius.xsmall),
+                            border: Border.all(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .outlineVariant),
+                          ),
+                          child: SwitchListTile(
+                            title: Text(
+                                l10n.companyInfoShowBankDetailsToggleTitle),
+                            subtitle: Text(
+                              l10n.companyInfoShowBankDetailsToggleSubtitle,
+                              style:
+                                  const TextStyle(fontSize: AppFontSize.small),
+                            ),
+                            value: _showBankDetails,
+                            onChanged: (val) =>
+                                setState(() => _showBankDetails = val),
+                            activeColor: primaryColor,
+                            secondary: Icon(
+                              Icons.account_balance_outlined,
+                              color: _showBankDetails
+                                  ? primaryColor
+                                  : Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        _sectionLabel(l10n.companyInfoBankAccountsSectionLabel),
+                        const SizedBox(height: 10),
+                        ..._bankControllers.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final row = entry.value;
+                          final isDefault = index == _defaultBankIndex;
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Default star
+                                  Tooltip(
+                                    message: isDefault
+                                        ? l10n.dashboardLayoutDefaultTitle
+                                        : l10n.companyInfoSetAsDefaultTooltip,
+                                    child: IconButton(
+                                      icon: Icon(
+                                        isDefault
+                                            ? Icons.star_rounded
+                                            : Icons.star_outline_rounded,
+                                        color: isDefault
+                                            ? Colors.amber[700]
+                                            : Theme.of(context)
+                                                .colorScheme
+                                                .onSurfaceVariant,
+                                      ),
+                                      onPressed: () => setState(
+                                          () => _defaultBankIndex = index),
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: 130,
+                                    child: _buildField(
+                                      controller: row.label,
+                                      label: l10n.fieldLabelLabel,
+                                      icon: Icons.label_outline_rounded,
+                                      hint: l10n
+                                          .companyInfoHintExampleAccountLabel,
+                                      maxLength: 40,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  SizedBox(
+                                    width: 140,
+                                    child: _buildField(
+                                      controller: row.bankName,
+                                      label: l10n.fieldBankNameLabel,
+                                      icon: Icons.account_balance_outlined,
+                                      hint: l10n.companyInfoHintExampleBankName,
+                                      maxLength: 60,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  SizedBox(
+                                    width: 180,
+                                    child: _buildField(
+                                      controller: row.accountNumber,
+                                      label: l10n.fieldAccountNumberLabel,
+                                      icon: Icons.numbers_outlined,
+                                      hint: '123456789012',
+                                      maxLength: 20,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  SizedBox(
+                                    width: 130,
+                                    child: _buildField(
+                                      controller: row.ifscCode,
+                                      label: l10n.fieldIfscCodeLabel,
+                                      icon: Icons.code_outlined,
+                                      hint: 'HDFC0001234',
+                                      maxLength: 11,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  IconButton(
+                                    tooltip: l10n.tooltipRemove,
+                                    icon: const Icon(
+                                        Icons.remove_circle_outline,
+                                        color: Colors.redAccent),
+                                    onPressed: () {
+                                      setState(() {
+                                        _bankControllers[index].label.dispose();
+                                        _bankControllers[index]
+                                            .bankName
+                                            .dispose();
+                                        _bankControllers[index]
+                                            .accountNumber
+                                            .dispose();
+                                        _bankControllers[index]
+                                            .ifscCode
+                                            .dispose();
+                                        _bankControllers.removeAt(index);
+                                        if (_defaultBankIndex == index) {
+                                          _defaultBankIndex = null;
+                                        } else if (_defaultBankIndex != null &&
+                                            _defaultBankIndex! > index) {
+                                          _defaultBankIndex =
+                                              _defaultBankIndex! - 1;
+                                        }
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }),
+                        const SizedBox(height: 4),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                _bankControllers.add((
+                                  label: TextEditingController(),
+                                  bankName: TextEditingController(),
+                                  accountNumber: TextEditingController(),
+                                  ifscCode: TextEditingController(),
+                                ));
+                              });
+                            },
+                            icon: Icon(Icons.add_circle_outline,
+                                color: primaryColor, size: 18),
+                            label: Text(l10n.companyInfoAddBankAccountButton,
+                                style: TextStyle(color: primaryColor)),
+                          ),
+                        ),
+                        const SizedBox(height: 32),
                       ],
                     ),
                   ),
@@ -1014,7 +1114,6 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
     );
   }
 
-
   Widget _sectionLabel(String title) {
     return Text(
       title,
@@ -1026,7 +1125,6 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
       ),
     );
   }
-
 
   Widget _buildCountryField() {
     final primaryColor = Theme.of(context).primaryColor;
@@ -1048,13 +1146,14 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
           focusNode: focusNode,
           style: const TextStyle(fontSize: AppFontSize.medium),
           decoration: InputDecoration(
-            labelText: 'Country',
+            labelText: AppLocalizations.of(context)!.onboardingCountryLabel,
             prefixIcon: const Icon(Icons.public_rounded, size: 20),
             border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-              borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+              borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
@@ -1082,7 +1181,8 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                   final country = options.elementAt(index);
                   return ListTile(
                     dense: true,
-                    title: Text(country, style: const TextStyle(fontSize: AppFontSize.medium)),
+                    title: Text(country,
+                        style: const TextStyle(fontSize: AppFontSize.medium)),
                     onTap: () => onSelected(country),
                   );
                 },
@@ -1093,7 +1193,6 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
       },
     );
   }
-
 
   Widget _buildField({
     required TextEditingController controller,
@@ -1127,7 +1226,8 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
             borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-          borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+          borderSide:
+              BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
@@ -1187,10 +1287,11 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                       behavior: HitTestBehavior.opaque,
                       onPanUpdate: (details) {
                         setDialogState(() {
-                          dialogWidth = (dialogWidth + details.delta.dx)
-                              .clamp(_longTextDialogMinWidth, _longTextDialogMaxWidth);
+                          dialogWidth = (dialogWidth + details.delta.dx).clamp(
+                              _longTextDialogMinWidth, _longTextDialogMaxWidth);
                           dialogHeight = (dialogHeight + details.delta.dy)
-                              .clamp(_longTextDialogMinHeight, _longTextDialogMaxHeight);
+                              .clamp(_longTextDialogMinHeight,
+                                  _longTextDialogMaxHeight);
                         });
                       },
                       child: const Padding(
@@ -1206,11 +1307,11 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
+              child: Text(AppLocalizations.of(context)!.actionCancel),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(ctx, dialogController.text),
-              child: const Text('Save'),
+              child: Text(AppLocalizations.of(context)!.actionSave),
             ),
           ],
         ),
@@ -1224,7 +1325,7 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
   /// Compact "show on invoice PDF" toggle used as a field's trailing icon.
   Widget _pdfVisibilityToggle(bool value, ValueChanged<bool> onChanged) {
     return Tooltip(
-      message: 'Show on invoice PDF',
+      message: AppLocalizations.of(context)!.tooltipShowOnInvoicePdf,
       child: Transform.scale(
         scale: 0.75,
         child: Switch(
@@ -1235,5 +1336,4 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
       ),
     );
   }
-
 }
