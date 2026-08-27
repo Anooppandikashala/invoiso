@@ -15,9 +15,8 @@ import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/invoice.dart';
-import 'package:invoiso/services/pdf_font_service.dart';
-import 'package:invoiso/services/thermal_printer_service.dart';
-
+import 'package:invoiso/services/pdf/pdf_font_service.dart';
+import 'package:invoiso/services/thermal_printer_service_v1.dart';
 import 'pdf_settings.dart';
 import 'pdf_widgets.dart';
 import 'pdf_template_classic.dart';
@@ -116,6 +115,8 @@ class PDFService {
       BackendServices.settings.getShowWebsite(), // 35
       BackendServices.settings.getShowAddress(), // 36
       BackendServices.settings.getShowLogo(), // 37
+      BackendServices.settings.getSetting(SettingKey.thermalCompanyNameSize), // 38
+      BackendServices.settings.getSetting(SettingKey.invoiceLeadingZeros), // 39
     ]);
 
     final rawPrefix = (results[2] as String?) ?? 'INV';
@@ -175,6 +176,8 @@ class PDFService {
       showWebsite: results[35] as bool,
       showAddress: results[36] as bool,
       showLogo: results[37] as bool,
+      thermalCompanyNameSize: (results[38] as String?) ?? 'medium',
+      showLeadingZeros: (results[39] as String?) != 'false',
     );
   }
 
@@ -247,6 +250,7 @@ class PDFService {
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
           showRoundOff: s.showRoundOff,
+          showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
           showEmail: s.showEmail,
           showCompanyName: s.showCompanyName,
@@ -288,6 +292,7 @@ class PDFService {
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
           showRoundOff: s.showRoundOff,
+          showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
           showEmail: s.showEmail,
           showCompanyName: s.showCompanyName,
@@ -329,6 +334,7 @@ class PDFService {
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
           showRoundOff: s.showRoundOff,
+          showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
           showEmail: s.showEmail,
           showCompanyName: s.showCompanyName,
@@ -370,6 +376,7 @@ class PDFService {
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
           showRoundOff: s.showRoundOff,
+          showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
           showEmail: s.showEmail,
           showCompanyName: s.showCompanyName,
@@ -412,6 +419,7 @@ class PDFService {
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
           showRoundOff: s.showRoundOff,
+          showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
           showCompanyName: s.showCompanyName,
           showPan: s.showPan,
@@ -439,6 +447,7 @@ class PDFService {
           pdfTheme: pdfTheme,
           itemLayout: s.thermalItemLayout,
           showRoundOff: s.showRoundOff,
+          showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
           showCompanyName: s.showCompanyName,
           showAddress: s.showAddress,
@@ -476,6 +485,7 @@ class PDFService {
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
           showRoundOff: s.showRoundOff,
+          showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
           showCompanyName: s.showCompanyName,
           showPan: s.showPan,
@@ -523,11 +533,13 @@ class PDFService {
       fileName: filename,
       type: FileType.custom,
       allowedExtensions: ['pdf'],
+      bytes: Platform.isAndroid ? pdfBytes : null,
     );
     if (savePath == null) return;
-    final file = File(savePath);
-    await file.writeAsBytes(pdfBytes);
-    await OpenFile.open(file.path);
+    if (!Platform.isAndroid) {
+      await File(savePath).writeAsBytes(pdfBytes);
+    }
+    await OpenFile.open(savePath);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -540,7 +552,8 @@ class PDFService {
 
   static Future<void> downloadPDF(BuildContext context, Invoice invoice) async {
     try {
-      final pdf = await generateInvoicePDF(invoice);
+      final dateFmt = await BackendServices.settings.getDateFormat();
+      final pdf = await generateInvoicePDF(invoice, datePattern: dateFmt.key);
       final bytes = await pdf.save();
       if (context.mounted) {
         await _downloadWithPicker(context, bytes, invoice);
@@ -563,7 +576,7 @@ class PDFService {
         .toLowerCase()
         .replaceAll(RegExp(r'\s+'), '_')
         .replaceAll(RegExp(r'[^a-z0-9_]'), '');
-    final date = DateFormat('yyyyMMdd').format(invoice.date);
+    final date = DateFormat('yyyyMMdd', 'en_US').format(invoice.date);
     return 'inv-$invoiceNumber-$fullName-$date.pdf';
   }
 
@@ -582,7 +595,9 @@ class PDFService {
             children: [
               AppBar(
                 automaticallyImplyLeading: false,
-                title: Text('${invoice.invoiceTitle ?? invoice.type} #${invoice.invoiceNumber ?? invoice.id}'),
+                title: Text(invoice.pdfNumberText('') != null
+                    ? '${invoice.invoiceTitle ?? invoice.type} #${invoice.pdfNumberText('')}'
+                    : invoice.invoiceTitle ?? invoice.type),
                 actions: [
                   IconButton(
                     icon: const Icon(Icons.print_outlined),

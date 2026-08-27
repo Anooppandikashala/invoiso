@@ -385,6 +385,17 @@ pw.Widget buildEnhancedTotals(
               horizontalPadding: rowHorizontalPadding,
               verticalPadding: rowVerticalPadding,
             )),
+        if (invoice.invoiceDiscountAmount > 0)
+          pdfTotalRow(
+            invoice.invoiceDiscountType == InvoiceDiscountType.percent
+                ? "Extra Discount (${invoice.invoiceDiscountValue.toStringAsFixed(1)}%)"
+                : "Extra Discount ",
+            "-$currencySymbol ${invoice.invoiceDiscountAmount.toStringAsFixed(2)}",
+            color: PdfColors.orange800,
+            fontSize: rowFontSize,
+            horizontalPadding: rowHorizontalPadding,
+            verticalPadding: rowVerticalPadding,
+          ),
         pw.Container(
           padding: pw.EdgeInsets.symmetric(
             horizontal: highlightHorizontalPadding,
@@ -579,8 +590,8 @@ pw.Widget pdfTotalRow(String label, String value,
     child: pw.Row(
       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
       children: [
-        pw.Text(label, style: style),
-        pw.Text(value, style: style),
+        pw.Flexible(child: pw.Text(label, style: style)),
+        pw.Flexible(child: pw.Text(value, style: style)),
       ],
     ),
   );
@@ -905,20 +916,50 @@ pw.Widget buildTableCell(String text,
   );
 }
 
-pw.Widget buildAdditionalNotes(Invoice invoice, {double fontSize = 10}) {
-  return pw.Align(
-    alignment: pw.Alignment.centerLeft,
-    child: pw.Text(
-      invoice.notes ?? '',
-      style: pw.TextStyle(
-          fontStyle: pw.FontStyle.italic,
-          fontWeight: pw.FontWeight.normal,
-          fontSize: fontSize,
-          color: PdfColors.grey700),
+pw.Widget buildAdditionalNotes(Invoice invoice,
+    {double fontSize = 10, PdfColor accentColor = PdfColors.grey700}) {
+  final notes = invoice.notes ?? '';
+  if (notes.isEmpty) return pw.SizedBox();
+  return pw.Container(
+    padding: const pw.EdgeInsets.all(8),
+    decoration: pw.BoxDecoration(
+      color: PdfColors.grey100,
+      border: pw.Border(left: pw.BorderSide(color: accentColor, width: 2.5)),
+    ),
+    child: pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      mainAxisSize: pw.MainAxisSize.min,
+      children: [
+        pw.Text('NOTES',
+            style: pw.TextStyle(
+                fontWeight: pw.FontWeight.bold,
+                fontSize: fontSize - 1,
+                letterSpacing: 0.8,
+                color: accentColor)),
+        pw.SizedBox(height: 3),
+        pw.Text(
+          notes,
+          style: pw.TextStyle(
+              fontStyle: pw.FontStyle.italic,
+              fontWeight: pw.FontWeight.normal,
+              fontSize: fontSize,
+              color: PdfColors.grey700),
+        ),
+      ],
     ),
   );
 }
 
+// Locale pinned to 'en_US' regardless of the app's UI language: PDF dates
+// must stay stable for the recipient, and DateFormat with no explicit
+// locale follows Intl.defaultLocale (set to the app language, e.g. 'bo' for
+// Tibetan) — 'bo' has no intl locale data at all, so that throws.
 String formatPdfDate(DateTime date, String pattern) {
-  return DateFormat(pattern).format(date);
+  return DateFormat(pattern, 'en_US').format(date);
+}
+
+String formatInvoiceNumberForDisplay(String number, bool showLeadingZeros) {
+  if (showLeadingZeros) return number;
+  final stripped = number.replaceFirst(RegExp(r'^0+'), '');
+  return stripped.isEmpty ? '0' : stripped;
 }

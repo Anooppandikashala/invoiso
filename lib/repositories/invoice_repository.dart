@@ -31,6 +31,8 @@ abstract class InvoiceRepository {
     int pageSize = 50,
     String searchQuery = '',
     String? filterType,
+    String orderBy = 'id',
+    bool orderAscending = false,
   });
   Future<int> getInvoiceCount({
     String searchQuery = '',

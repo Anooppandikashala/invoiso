@@ -66,7 +66,7 @@ Invoice _sampleInvoice() {
     type: 'Invoice',
     taxRate: 0.18,
     taxMode: TaxMode.perItem,
-    notes: 'Handle with care',
+    notes: 'Here is a short sample of structured \nstudy notes based on a basic topic,\nplant photosynthesis. You can use this clean layout for school or work',
   );
 }
 

@@ -59,6 +59,7 @@ appimage-build/
 graphify-out/
 
 *landing/*
+windows/packaging/exe/vc_redist.x64.exe
 
 output/
 email_builder/
@@ -76,3 +77,8 @@ landing*
 .mcp.json
 .claude/
 .cursor/
+
+lib/screens/test_old_screens/
+android/build/
+
+gh_actions_cleanup.py

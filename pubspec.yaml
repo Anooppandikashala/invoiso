@@ -1,12 +1,14 @@
 name: invoiso
 description: "Invoice generating desktop app built with Flutter"
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
-version: 4.3.5
+version: 4.3.8
 environment:
   sdk: '>=3.3.3 <4.0.0'
 
 dependencies:
   flutter:
+    sdk: flutter
+  flutter_localizations:
     sdk: flutter
 
   intl: ^0.20.2
@@ -20,6 +22,7 @@ dependencies:
   permission_handler: ^12.0.1
   share_plus: ^11.0.0
   crypto: ^3.0.3
+  cryptography: ^2.7.0
   uuid: ^4.0.0
   csv: ^6.0.0
   archive: ^4.0.0
@@ -28,7 +31,6 @@ dependencies:
   url_launcher: ^6.2.6
   http: ^1.2.0
   fl_chart: ^0.69.0
-  downloads_path_provider_28: any
   syncfusion_flutter_pdfviewer: ^30.1.40
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -51,6 +53,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true
   assets:
    - assets/images/logo.png
    - assets/images/logo_dark.png
@@ -58,6 +61,17 @@ flutter:
    - assets/images/logo_v.png
    - assets/images/logo_v_dark.png
    - assets/fonts/
+  fonts:
+    - family: NotoSansDevanagari
+      fonts:
+        - asset: assets/fonts/NotoSansDevanagari-Regular.ttf
+        - asset: assets/fonts/NotoSansDevanagari-Bold.ttf
+          weight: 700
+    - family: NotoSerifTibetan
+      fonts:
+        - asset: assets/fonts/NotoSerifTibetan-Regular.ttf
+        - asset: assets/fonts/NotoSerifTibetan-Bold.ttf
+          weight: 700
 
 flutter_launcher_icons:
   macos:

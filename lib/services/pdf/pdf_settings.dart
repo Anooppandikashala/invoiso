@@ -44,10 +44,12 @@ class PdfGenerationSettings {
   final pw.ThemeData pdfTheme;
   final PageSize pageSize;
   final String thermalItemLayout;
+  final String thermalCompanyNameSize;
   final Uint8List? watermarkBytes;
   final double watermarkOpacity;
   final bool showCgstSgst;
   final bool showRoundOff;
+  final bool showLeadingZeros;
 
   const PdfGenerationSettings({
     required this.company,
@@ -76,6 +78,7 @@ class PdfGenerationSettings {
     required this.pdfTheme,
     required this.showCgstSgst,
     this.thermalItemLayout = 'table',
+    this.thermalCompanyNameSize = 'medium',
     this.signatureBytes,
     this.signaturePosition = 'left',
     this.signatureSizePx = 50,
@@ -91,5 +94,6 @@ class PdfGenerationSettings {
     this.showWebsite = true,
     this.showAddress = true,
     this.showLogo = true,
+    this.showLeadingZeros = true,
   });
 }

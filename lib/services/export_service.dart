@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:invoiso/common/common.dart';
 import 'package:invoiso/services/backend_services.dart';
 import 'dart:io';
 import 'dart:typed_data';
@@ -90,12 +91,12 @@ class ExportService {
       exportDir = Directory(outputDirectory);
     } else {
       final docsDir = await getApplicationDocumentsDirectory();
-      final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      final timestamp = DateFormat('yyyyMMdd_HHmmss', 'en_US').format(DateTime.now());
       exportDir = Directory('${docsDir.path}/invoice_pdfs_$timestamp');
     }
     await exportDir.create(recursive: true);
 
-    final s = settings ?? await PDFService.fetchPdfSettings();
+    final s = settings ?? await PDFService.fetchPdfSettings(datePattern: (await BackendServices.settings.getDateFormat()).key);
     for (int i = 0; i < invoices.length; i++) {
       final invoice = invoices[i];
       final previousBalanceDue = s.showPreviousBalance
@@ -124,7 +125,7 @@ class ExportService {
     void Function(int completed, int total)? onProgress,
     PdfGenerationSettings? settings,
   }) async {
-    final s = settings ?? await PDFService.fetchPdfSettings();
+    final s = settings ?? await PDFService.fetchPdfSettings(datePattern: (await BackendServices.settings.getDateFormat()).key);
     final output = OutputFileStream(savePath);
     final encoder = ZipEncoder()..startEncode(output);
 

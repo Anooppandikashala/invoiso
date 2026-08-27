@@ -122,15 +122,21 @@ class CustomerService
     if (query.isNotEmpty) {
       final queryLower = query.toLowerCase();
       where =
-          'LOWER(name) LIKE ? OR LOWER(email) LIKE ? OR LOWER(phone) LIKE ? OR LOWER(gstin) LIKE ?';
-      whereArgs = ['%$queryLower%', '%$queryLower%', '%$queryLower%', '%$queryLower%'];
+          'LOWER(name) LIKE ? OR LOWER(email) LIKE ? OR LOWER(phone) LIKE ? OR LOWER(gstin) LIKE ? OR LOWER(business_name) LIKE ?';
+      whereArgs = [
+        '%$queryLower%',
+        '%$queryLower%',
+        '%$queryLower%',
+        '%$queryLower%',
+        '%$queryLower%'
+      ];
     }
 
     final maps = await db.query(
       'customers',
       where: where,
       whereArgs: whereArgs,
-      orderBy: '$orderBy $order',
+      orderBy: '$orderBy COLLATE NOCASE $order',
       limit: limit,
       offset: offset,
     );

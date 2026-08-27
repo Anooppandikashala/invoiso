@@ -1,16 +1,28 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
+  // Non-Latin app-UI text (Nepali/Hindi Devanagari, Tibetan) falls back to
+  // these bundled fonts instead of rendering as tofu boxes.
+  static const _scriptFontFallback = ['NotoSansDevanagari', 'NotoSerifTibetan'];
+
   static ThemeData get light {
     final base = ThemeData(
       primarySwatch: Colors.blue,
       primaryColor: const Color(0xFF002E78),
       visualDensity: VisualDensity.adaptivePlatformDensity,
+      fontFamilyFallback: _scriptFontFallback,
     );
     return base.copyWith(
+      // Explicit split between the page canvas and card surfaces — cards
+      // are pure white, the page sits on a very light grey behind them,
+      // so cards actually stand out instead of blending into the page.
+      scaffoldBackgroundColor: Colors.white,
+      //cardColor: Colors.grey[50],
+      cardTheme: const CardThemeData(surfaceTintColor: Colors.transparent),
       colorScheme: base.colorScheme.copyWith(
-        surfaceContainer: Colors.white,
-        surfaceContainerHighest: Colors.grey[50]!,
+        surfaceContainer: Colors.grey[50]!,
+        surface: Colors.grey[50]!,
+        surfaceContainerHighest: Colors.white,
         outline: Colors.grey[400]!,
         outlineVariant: Colors.grey[300]!,
         onSurface: Colors.black,
@@ -23,6 +35,7 @@ class AppTheme {
         brightness: Brightness.dark,
         primarySwatch: Colors.blue,
         primaryColor: const Color(0xFF6B9BFF),
+        fontFamilyFallback: _scriptFontFallback,
         scaffoldBackgroundColor: const Color(0xFF121212),
         appBarTheme: const AppBarTheme(
           backgroundColor: Color(0xFF1E3A5F),

@@ -15,7 +15,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 40;
+  final dbVersion = 41;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -114,7 +114,11 @@ class DatabaseHelper {
         additional_costs TEXT,
         previous_balance REAL DEFAULT 0.0,
         invoice_number TEXT,
-        invoice_title TEXT
+        invoice_discount_type TEXT DEFAULT 'percent',
+        invoice_discount_value REAL DEFAULT 0.0,
+        invoice_title TEXT,
+        hide_invoice_number INTEGER DEFAULT 0,
+        custom_invoice_number TEXT
       )
     ''');
 
@@ -635,16 +639,13 @@ class DatabaseHelper {
       });
     }
 
-    if (oldVersion < 33) {
-      await _runMigrationStep(db, 33, 'add_invoice_title_to_invoices',
+    if (oldVersion < 34) {
+      await _runMigrationStep(db, 34, 'add_invoice_title_to_invoices',
           () async {
         await db.execute(
           'ALTER TABLE invoices ADD COLUMN invoice_title TEXT',
         );
       });
-    }
-
-    if (oldVersion < 34) {
       await _runMigrationStep(db, 34, 'add_unlimited_stock_to_products',
           () async {
         await db.execute(
@@ -672,11 +673,11 @@ class DatabaseHelper {
       });
     }
 
-    if (oldVersion < 36) {
+    if (oldVersion < 37) {
       // invoice_items had PRIMARY KEY (invoice_id, product_id), which blocked
       // adding the same product twice to one invoice (allow_duplicate_invoice_items
       // setting). SQLite can't drop a PK via ALTER, so rebuild the table.
-      await _runMigrationStep(db, 36, 'add_id_pk_to_invoice_items',
+      await _runMigrationStep(db, 37, 'add_id_pk_to_invoice_items',
           () async {
         await db.execute('ALTER TABLE invoice_items RENAME TO invoice_items_old');
         await db.execute('''
@@ -717,8 +718,8 @@ class DatabaseHelper {
       });
     }
 
-    if (oldVersion < 37) {
-      await _runMigrationStep(db, 37, 'add_fssai_code_to_company_info', () async {
+    if (oldVersion < 38) {
+      await _runMigrationStep(db, 38, 'add_fssai_code_to_company_info', () async {
         await db.execute(
           "ALTER TABLE company_info ADD COLUMN fssai_code TEXT DEFAULT ''",
         );
@@ -739,9 +740,34 @@ class DatabaseHelper {
       });
     }
 
+    if(oldVersion < 39)
+    {
+      await _runMigrationStep(
+          db, 39, 'add_invoice_discount_to_invoices', () async {
+        await db.execute(
+          "ALTER TABLE invoices ADD COLUMN invoice_discount_type TEXT DEFAULT 'percent'",
+        );
+        await db.execute(
+          'ALTER TABLE invoices ADD COLUMN invoice_discount_value REAL DEFAULT 0.0',
+        );
+      });
+    }
+
     if (oldVersion < 40) {
       await _runMigrationStep(
-          db, 40, 'create_purchase_bills_suppliers_tables', () async {
+          db, 40, 'add_custom_invoice_number_to_invoices', () async {
+        await db.execute(
+          'ALTER TABLE invoices ADD COLUMN hide_invoice_number INTEGER DEFAULT 0',
+        );
+        await db.execute(
+          'ALTER TABLE invoices ADD COLUMN custom_invoice_number TEXT',
+        );
+      });
+    }
+
+    if (oldVersion < 41) {
+      await _runMigrationStep(
+          db, 41, 'create_purchase_bills_suppliers_tables', () async {
         // product_metadata.supplier_name is a pre-existing free-text field,
         // intentionally not reconciled with this new normalized table.
         await db.execute('''
@@ -834,7 +860,7 @@ class DatabaseHelper {
       // D2: products.stock stays INTEGER (rounds) while purchase_bill_items
       // .quantity / stock_transactions.quantity_change stay REAL, preserving
       // full precision in the audit trail even though the stock counter rounds.
-      await _runMigrationStep(db, 40, 'add_last_purchase_date_to_products',
+      await _runMigrationStep(db, 41, 'add_last_purchase_date_to_products',
           () async {
         await db.execute(
           'ALTER TABLE products ADD COLUMN last_purchase_date TEXT',

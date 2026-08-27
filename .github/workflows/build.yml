@@ -28,8 +28,8 @@ jobs:
           flutter-version: '3.32.8'
           cache: true
 
-#      - name: Setup Visual Studio Build Tools
-#        uses: microsoft/setup-msbuild@v1
+      #      - name: Setup Visual Studio Build Tools
+      #        uses: microsoft/setup-msbuild@v1
 
       - name: Setup MSVC Development Environment
         uses: ilammy/msvc-dev-cmd@v1
@@ -44,9 +44,9 @@ jobs:
           VERSION="${VERSION#v}"
           sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
           echo "Building version: $VERSION (test build: $IS_TEST_BUILD)"
-          sed -i "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/constants.dart
-          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/constants.dart
-          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/constants.dart
+          sed -i "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/common/constants.dart
+          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/common/constants.dart
+          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/common/constants.dart
           echo "HEARTBEAT_URL changed"
 
       - name: Install FastForge
@@ -55,10 +55,10 @@ jobs:
       - name: Flutter Pub Get
         run: flutter pub get
 
-#      - name: Build Flutter Windows Release
-#        run: flutter build windows --release
-#        env:
-#          CMAKE_GENERATOR: "Visual Studio 17 2022"
+      #      - name: Build Flutter Windows Release
+      #        run: flutter build windows --release
+      #        env:
+      #          CMAKE_GENERATOR: "Visual Studio 17 2022"
 
       - name: Build Windows Installer with FastForge
         run: fastforge package --platform windows --targets exe
@@ -114,9 +114,9 @@ jobs:
           VERSION="${VERSION#v}"
           sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
           echo "Building version: $VERSION (test build: $IS_TEST_BUILD)"
-          sed -i "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/constants.dart
-          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/constants.dart
-          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/constants.dart
+          sed -i "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/common/constants.dart
+          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/common/constants.dart
+          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/common/constants.dart
           echo "HEARTBEAT_URL changed"
 
       - name: Install FastForge
@@ -125,8 +125,8 @@ jobs:
       - name: Flutter Pub Get
         run: flutter pub get
 
-#      - name: Build Flutter Linux Release
-#        run: flutter build linux --release
+      #      - name: Build Flutter Linux Release
+      #        run: flutter build linux --release
 
       - name: Build .deb Package
         run: |
@@ -177,9 +177,9 @@ jobs:
           VERSION="${VERSION#v}"
           sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
           echo "Building version: $VERSION (test build: $IS_TEST_BUILD)"
-          sed -i "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/constants.dart
-          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/constants.dart
-          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/constants.dart
+          sed -i "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/common/constants.dart
+          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/common/constants.dart
+          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/common/constants.dart
           echo "HEARTBEAT_URL changed"
 
       - name: Install FastForge
@@ -188,8 +188,8 @@ jobs:
       - name: Flutter Pub Get
         run: flutter pub get
 
-#      - name: Build Flutter Linux Release
-#        run: flutter build linux --release
+      #      - name: Build Flutter Linux Release
+      #        run: flutter build linux --release
 
       - name: Build .deb Package
         run: |
@@ -273,9 +273,9 @@ jobs:
           VERSION="${VERSION#v}"
           sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
           echo "Building version: $VERSION (test build: $IS_TEST_BUILD)"
-          sed -i "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/constants.dart
-          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/constants.dart
-          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/constants.dart
+          sed -i "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/common/constants.dart
+          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/common/constants.dart
+          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/common/constants.dart
           echo "HEARTBEAT_URL changed"
 
       - name: Flutter Pub Get
@@ -356,9 +356,9 @@ jobs:
           VERSION="${VERSION#v}"
           sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
           echo "Building version: $VERSION (test build: $IS_TEST_BUILD)"
-          sed -i "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/constants.dart
-          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/constants.dart
-          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/constants.dart
+          sed -i "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/common/constants.dart
+          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/common/constants.dart
+          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/common/constants.dart
           echo "HEARTBEAT_URL changed"
 
       - name: Flutter Pub Get
@@ -464,9 +464,9 @@ jobs:
           VERSION="${VERSION#v}"
           sed -i '' "s/^version: .*/version: $VERSION/" pubspec.yaml
           echo "Building version: $VERSION (test build: $IS_TEST_BUILD)"
-          sed -i '' "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/constants.dart
-          sed -i '' "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/constants.dart
-          sed -i '' "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/constants.dart
+          sed -i '' "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/common/constants.dart
+          sed -i '' "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/common/constants.dart
+          sed -i '' "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/common/constants.dart
           echo "HEARTBEAT_URL changed"
 
       - name: Install FastForge
@@ -475,8 +475,8 @@ jobs:
       - name: Flutter Pub Get
         run: flutter pub get
 
-#      - name: Build Flutter macOS Release
-#        run: flutter build macos --release
+      #      - name: Build Flutter macOS Release
+      #        run: flutter build macos --release
 
       - name: Install appdmg
         run: npm install -g appdmg
