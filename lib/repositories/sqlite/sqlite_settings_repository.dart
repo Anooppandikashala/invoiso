@@ -154,6 +154,10 @@ class SqliteSettingsRepository implements SettingsRepository {
   @override
   Future<void> setThemeMode(String mode) => SettingsService.setThemeMode(mode);
   @override
+  Future<String?> getAppLocale() => SettingsService.getAppLocale();
+  @override
+  Future<void> setAppLocale(String? languageCode) => SettingsService.setAppLocale(languageCode);
+  @override
   Future<bool> getAllowDuplicateInvoiceItems() => SettingsService.getAllowDuplicateInvoiceItems();
   @override
   Future<void> setAllowDuplicateInvoiceItems(bool allow) => SettingsService.setAllowDuplicateInvoiceItems(allow);

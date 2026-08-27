@@ -576,7 +576,7 @@ class PDFService {
         .toLowerCase()
         .replaceAll(RegExp(r'\s+'), '_')
         .replaceAll(RegExp(r'[^a-z0-9_]'), '');
-    final date = DateFormat('yyyyMMdd').format(invoice.date);
+    final date = DateFormat('yyyyMMdd', 'en_US').format(invoice.date);
     return 'inv-$invoiceNumber-$fullName-$date.pdf';
   }
 
