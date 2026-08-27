@@ -1778,6 +1778,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get customerMgmtSortIdNewest => 'ID（最新优先）';
 
   @override
+  String get customerMgmtSortOutstandingHighLow => '未结余额（从高到低）';
+
+  @override
+  String get customerMgmtSortOutstandingLowHigh => '未结余额（从低到高）';
+
+  @override
+  String get customerMgmtWithOutstandingLabel => '有未结余额';
+
+  @override
   String customerMgmtSearchHint(String taxWord) {
     return '按姓名、企业、电话、$taxWord、邮箱搜索客户…';
   }

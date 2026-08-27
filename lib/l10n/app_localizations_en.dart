@@ -1838,6 +1838,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get customerMgmtSortIdNewest => 'ID (newest first)';
 
   @override
+  String get customerMgmtSortOutstandingHighLow => 'Outstanding (high-low)';
+
+  @override
+  String get customerMgmtSortOutstandingLowHigh => 'Outstanding (low-high)';
+
+  @override
+  String get customerMgmtWithOutstandingLabel => 'With Outstanding';
+
+  @override
   String customerMgmtSearchHint(String taxWord) {
     return 'Search customers by name, business, phone, $taxWord, email…';
   }

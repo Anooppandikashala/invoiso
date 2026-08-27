@@ -1837,6 +1837,15 @@ class AppLocalizationsBo extends AppLocalizations {
   String get customerMgmtSortIdNewest => 'ID (གསར་ཤོས་ཐོག་མར)';
 
   @override
+  String get customerMgmtSortOutstandingHighLow => 'ལྷག་ལུས། (མང་ཤོས་ཐོག་མར)';
+
+  @override
+  String get customerMgmtSortOutstandingLowHigh => 'ལྷག་ལུས། (ཉུང་ཤོས་ཐོག་མར)';
+
+  @override
+  String get customerMgmtWithOutstandingLabel => 'ལྷག་ལུས་ཡོད་པ';
+
+  @override
   String customerMgmtSearchHint(String taxWord) {
     return 'མིང་, ཚོང་ལས་, ཁ་པར་, $taxWord, གློག་འཕྲིན་ཐོག་ནས་མཉོགས་མི་འཚོལ...';
   }

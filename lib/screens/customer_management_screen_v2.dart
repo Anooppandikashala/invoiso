@@ -1392,8 +1392,8 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
       {'label': l10n.customerMgmtSortNameZA, 'field': 'name', 'asc': false},
       {'label': l10n.customerMgmtSortIdOldest, 'field': 'id', 'asc': true},
       {'label': l10n.customerMgmtSortIdNewest, 'field': 'id', 'asc': false},
-      {'label': 'Outstanding (high-low)', 'field': 'outstanding', 'asc': false},
-      {'label': 'Outstanding (low-high)', 'field': 'outstanding', 'asc': true},
+      {'label': l10n.customerMgmtSortOutstandingHighLow, 'field': 'outstanding', 'asc': false},
+      {'label': l10n.customerMgmtSortOutstandingLowHigh, 'field': 'outstanding', 'asc': true},
     ];
     final currentLabel = sortOptions.firstWhere(
       (o) => o['field'] == _sortBy && o['asc'] == _isAscending,
@@ -1548,7 +1548,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
           _tabChipV2(AppLocalizations.of(context)!.customerMgmtBusinessesLabel, _businessesCountV2, 1),
           _tabChipV2(AppLocalizations.of(context)!.customerMgmtIndividualsLabel, _individualsCountV2, 2),
           _tabChipV2(AppLocalizations.of(context)!.customerMgmtTaxRegisteredLabel(_taxWord), _gstRegisteredCountV2, 3),
-          _tabChipV2('With Outstanding', _withOutstandingCountV2, 5),
+          _tabChipV2(AppLocalizations.of(context)!.customerMgmtWithOutstandingLabel, _withOutstandingCountV2, 5),
           _tabChipV2(AppLocalizations.of(context)!.customerMgmtWithoutTaxLabel(_taxWord), _withoutGstCountV2, 4),
         ],
       ),
