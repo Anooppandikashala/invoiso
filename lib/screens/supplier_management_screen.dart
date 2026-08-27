@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/common/constants.dart';
+import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/models/supplier.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/providers/repositories.dart';
@@ -95,7 +96,9 @@ class _SupplierManagementScreenState
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        AppError.show(context, 'Failed to load suppliers: $e', onRetry: _loadPage);
+        AppError.show(context,
+            AppLocalizations.of(context)!.supplierMgmtLoadErrorMessage(e.toString()),
+            onRetry: _loadPage);
       }
     }
   }
@@ -141,6 +144,7 @@ class _SupplierManagementScreenState
 
   Future<void> _saveSupplierV2() async {
     if (!_formKey.currentState!.validate() || !mounted) return;
+    final l10n = AppLocalizations.of(context)!;
     setState(() => _isLoading = true);
     final wasAdding = _editingSupplierId == null;
     try {
@@ -166,16 +170,19 @@ class _SupplierManagementScreenState
       await _loadPage();
       if (mounted) {
         AppError.showSuccess(context,
-            wasAdding ? 'Supplier added successfully!' : 'Supplier updated successfully!');
+            wasAdding ? l10n.supplierMgmtAddedMessage : l10n.supplierMgmtUpdatedMessage);
       }
     } catch (e) {
-      if (mounted) AppError.show(context, 'Error saving supplier: $e');
+      if (mounted) {
+        AppError.show(context, l10n.supplierMgmtSaveErrorMessage(e.toString()));
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
   void _showViewSupplierDialogV2(Supplier supplier) {
+    final l10n = AppLocalizations.of(context)!;
     final balance = _balances[supplier.id] ?? 0.0;
     showDialog(
       context: context,
@@ -217,7 +224,7 @@ class _SupplierManagementScreenState
               const SizedBox(height: 8),
               _infoRowV2(
                 Icons.account_balance_wallet_outlined,
-                'Outstanding: ${balance.toStringAsFixed(2)}',
+                l10n.supplierMgmtOutstandingLabel(balance.toStringAsFixed(2)),
                 color: balance > 0 ? Colors.red[700] : Colors.green[700],
               ),
             ],
@@ -226,7 +233,7 @@ class _SupplierManagementScreenState
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Close'),
+            child: Text(l10n.actionClose),
           ),
         ],
       ),
@@ -269,7 +276,9 @@ class _SupplierManagementScreenState
       ),
       validator: required
           ? (value) {
-              if (value == null || value.trim().isEmpty) return 'Please enter $label';
+              if (value == null || value.trim().isEmpty) {
+                return AppLocalizations.of(context)!.fieldRequiredMessage(label);
+              }
               return null;
             }
           : null,
@@ -277,12 +286,12 @@ class _SupplierManagementScreenState
   }
 
   Future<void> _confirmSoftDelete(Supplier supplier) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await AppError.confirm(
       context,
-      title: 'Move to Trash',
-      message:
-          'Move "${supplier.name}" to trash? Existing purchase bills keep showing their snapshotted supplier name.',
-      confirmLabel: 'Move to Trash',
+      title: l10n.invoiceMgmtMoveToTrashTitle,
+      message: l10n.supplierMgmtMoveToTrashBody(supplier.name),
+      confirmLabel: l10n.invoiceMgmtMoveToTrashTitle,
       confirmColor: Colors.orange,
     );
     if (!confirmed) return;
@@ -290,7 +299,7 @@ class _SupplierManagementScreenState
     await ref.read(supplierRepositoryProvider).softDeleteSupplier(supplier.id);
     ref.read(suppliersProvider.notifier).refresh();
     await _loadPage();
-    if (mounted) AppError.showSuccess(context, 'Supplier moved to trash.');
+    if (mounted) AppError.showSuccess(context, l10n.supplierMgmtMovedToTrashMessage);
   }
 
   void _showTrashDialog() async {
@@ -347,6 +356,7 @@ class _SupplierManagementScreenState
   }
 
   Widget _headerBarV2() {
+    final l10n = AppLocalizations.of(context)!;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -356,7 +366,7 @@ class _SupplierManagementScreenState
             children: [
               Row(
                 children: [
-                  Text('Suppliers',
+                  Text(l10n.supplierMgmtTitle,
                       style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
@@ -377,7 +387,7 @@ class _SupplierManagementScreenState
                 ],
               ),
               const SizedBox(height: 2),
-              Text('Manage the suppliers you purchase stock from',
+              Text(l10n.supplierMgmtSubtitle,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                       fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant)),
@@ -394,7 +404,7 @@ class _SupplierManagementScreenState
               IconButton(
                 onPressed: _showTrashDialog,
                 icon: const Icon(Icons.delete_sweep_outlined),
-                tooltip: 'Trash',
+                tooltip: l10n.invoiceMgmtTrashLabel,
               ),
               IconButton(
                 onPressed: _isLoading ? null : _loadPage,
@@ -402,12 +412,12 @@ class _SupplierManagementScreenState
                     ? const SizedBox(
                         width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
                     : const Icon(Icons.refresh),
-                tooltip: 'Refresh',
+                tooltip: l10n.actionRefresh,
               ),
               FilledButton.icon(
                 onPressed: _openAddPanelV2,
                 icon: const Icon(Icons.add, size: 18),
-                label: const Text('Add Supplier'),
+                label: Text(l10n.supplierMgmtAddSupplierButton),
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
                   shape: RoundedRectangleBorder(
@@ -425,7 +435,7 @@ class _SupplierManagementScreenState
     return TextField(
       controller: _searchController,
       decoration: InputDecoration(
-        hintText: 'Search suppliers by name, phone, or GSTIN...',
+        hintText: AppLocalizations.of(context)!.supplierMgmtSearchHint,
         prefixIcon: const Icon(Icons.search, size: 20),
         isDense: true,
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
@@ -461,6 +471,7 @@ class _SupplierManagementScreenState
   }
 
   Widget _tableHeaderRowV2() {
+    final l10n = AppLocalizations.of(context)!;
     final style = TextStyle(
         fontSize: 11,
         fontWeight: FontWeight.w700,
@@ -475,10 +486,10 @@ class _SupplierManagementScreenState
       ),
       child: Row(
         children: [
-          Expanded(flex: 3, child: Text('Supplier', style: style)),
-          Expanded(flex: 2, child: Text('Phone', style: style)),
-          Expanded(flex: 2, child: Text('GSTIN', style: style)),
-          Expanded(flex: 2, child: Text('Outstanding', style: style)),
+          Expanded(flex: 3, child: Text(l10n.supplierMgmtColSupplier, style: style)),
+          Expanded(flex: 2, child: Text(l10n.fieldPhoneLabel, style: style)),
+          Expanded(flex: 2, child: Text(l10n.supplierMgmtColGstin, style: style)),
+          Expanded(flex: 2, child: Text(l10n.invoiceMgmtColOutstanding, style: style)),
           const SizedBox(width: 136, child: Text('')),
         ],
       ),
@@ -486,6 +497,7 @@ class _SupplierManagementScreenState
   }
 
   Widget _tableRowV2(Supplier supplier) {
+    final l10n = AppLocalizations.of(context)!;
     final balance = _balances[supplier.id] ?? 0.0;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -551,14 +563,14 @@ class _SupplierManagementScreenState
                 _actionButtonV2(
                   icon: Icons.visibility_outlined,
                   color: Colors.green,
-                  tooltip: 'View',
+                  tooltip: l10n.actionView,
                   onPressed: () => _showViewSupplierDialogV2(supplier),
                 ),
                 const SizedBox(width: 6),
                 _actionButtonV2(
                   icon: Icons.edit_outlined,
                   color: Colors.blue,
-                  tooltip: 'Edit',
+                  tooltip: l10n.actionEdit,
                   onPressed: () => _editSupplierV2(supplier),
                 ),
                 if (widget.user.isAdmin()) ...[
@@ -566,7 +578,7 @@ class _SupplierManagementScreenState
                   _actionButtonV2(
                     icon: Icons.delete_outline,
                     color: Colors.red,
-                    tooltip: 'Delete',
+                    tooltip: l10n.actionDelete,
                     onPressed: () => _confirmSoftDelete(supplier),
                   ),
                 ],
@@ -582,6 +594,7 @@ class _SupplierManagementScreenState
   // narrow window. A horizontally-scrolling Row keeps this bar's height
   // constant and never overflows regardless of how narrow it gets.
   Widget _paginationV2() {
+    final l10n = AppLocalizations.of(context)!;
     final totalPages = _totalPages == 0 ? 1 : _totalPages;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -594,7 +607,7 @@ class _SupplierManagementScreenState
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text('Rows per page:',
+            Text(l10n.invoiceMgmtRowsPerPageLabel,
                 style: TextStyle(
                     fontSize: 12.5, color: Theme.of(context).colorScheme.onSurfaceVariant)),
             const SizedBox(width: 8),
@@ -614,7 +627,7 @@ class _SupplierManagementScreenState
               },
             ),
             const SizedBox(width: 16),
-            Text('Total: $_totalCount',
+            Text(l10n.supplierMgmtTotalCountLabel(_totalCount),
                 style: TextStyle(
                     fontSize: 12.5, color: Theme.of(context).colorScheme.onSurfaceVariant)),
             const SizedBox(width: 24),
@@ -636,7 +649,7 @@ class _SupplierManagementScreenState
                   style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(width: 4),
-            Text('of $totalPages',
+            Text(l10n.customerMgmtOfTotalPagesLabel(totalPages),
                 style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
             IconButton(
               onPressed:
@@ -659,6 +672,7 @@ class _SupplierManagementScreenState
   // (its own scrolling disabled) and the page just scrolls further if the
   // natural content (header + rows + pagination) doesn't fit the viewport.
   Widget _tableSectionV2() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       decoration: _flatCardDecorationV2(context),
       clipBehavior: Clip.antiAlias,
@@ -681,8 +695,8 @@ class _SupplierManagementScreenState
                             const SizedBox(height: 12),
                             Text(
                               _searchQuery.isEmpty
-                                  ? 'No suppliers yet'
-                                  : 'No suppliers match your search',
+                                  ? l10n.supplierMgmtNoSuppliersYetMessage
+                                  : l10n.supplierMgmtNoSuppliersMatchMessage,
                               style: TextStyle(
                                   color: Theme.of(context).colorScheme.onSurfaceVariant),
                             ),
@@ -703,6 +717,7 @@ class _SupplierManagementScreenState
   }
 
   Widget _addPanelV2() {
+    final l10n = AppLocalizations.of(context)!;
     final isAdding = _editingSupplierId == null;
     final primaryColor = Theme.of(context).primaryColor;
     return Container(
@@ -715,7 +730,7 @@ class _SupplierManagementScreenState
             padding: const EdgeInsets.fromLTRB(18, 16, 10, 16),
             child: Row(
               children: [
-                Text(isAdding ? 'Add New Supplier' : 'Edit Supplier',
+                Text(isAdding ? l10n.supplierMgmtAddNewTitle : l10n.supplierMgmtEditTitle,
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
                 const Spacer(),
                 IconButton(
@@ -736,25 +751,26 @@ class _SupplierManagementScreenState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildFormField(_nameController, 'Name', Icons.person, true, maxLength: 50),
+                    _buildFormField(
+                        _nameController, l10n.fieldNameLabel, Icons.person, true, maxLength: 50),
                     const SizedBox(height: 16),
-                    _buildFormField(_businessNameController, 'Business Name',
+                    _buildFormField(_businessNameController, l10n.fieldBusinessNameLabel,
                         Icons.business_center, false, maxLength: 100),
                     const SizedBox(height: 16),
-                    _buildFormField(_phoneController, 'Phone', Icons.phone, false,
+                    _buildFormField(_phoneController, l10n.fieldPhoneLabel, Icons.phone, false,
                         keyboardType: TextInputType.phone, maxLength: 15),
                     const SizedBox(height: 16),
-                    _buildFormField(_emailController, 'Email', Icons.email, false,
+                    _buildFormField(_emailController, l10n.fieldEmailLabel, Icons.email, false,
                         maxLength: 100, keyboardType: TextInputType.emailAddress),
                     const SizedBox(height: 16),
-                    _buildFormField(_gstinController, 'Tax/VAT Number (GSTIN)',
+                    _buildFormField(_gstinController, l10n.supplierMgmtTaxVatNumberLabel,
                         Icons.receipt_long, false, maxLength: 50),
                     const SizedBox(height: 16),
-                    _buildFormField(_addressController, 'Address', Icons.location_on, false,
-                        maxLines: 3, maxLength: 150),
+                    _buildFormField(_addressController, l10n.fieldAddressLabel,
+                        Icons.location_on, false, maxLines: 3, maxLength: 150),
                     const SizedBox(height: 16),
-                    _buildFormField(_notesController, 'Notes', Icons.notes, false,
-                        maxLines: 3, maxLength: 200),
+                    _buildFormField(_notesController, l10n.createInvoiceNotesOptionalLabel,
+                        Icons.notes, false, maxLines: 3, maxLength: 200),
                   ],
                 ),
               ),
@@ -773,7 +789,7 @@ class _SupplierManagementScreenState
                       _clearForm();
                       setState(() => _showAddPanelV2 = false);
                     },
-                    child: const Text('Cancel'),
+                    child: Text(l10n.actionCancel),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -788,7 +804,9 @@ class _SupplierManagementScreenState
                             height: 16,
                             child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                         : Icon(isAdding ? Icons.add : Icons.check, size: 18),
-                    label: Text(isAdding ? 'Add Supplier' : 'Save Changes'),
+                    label: Text(isAdding
+                        ? l10n.supplierMgmtAddSupplierButton
+                        : l10n.supplierMgmtSaveChangesButton),
                   ),
                 ),
               ],
@@ -883,18 +901,20 @@ class _SupplierTrashDialogState extends ConsumerState<_SupplierTrashDialog> {
   }
 
   Future<void> _restore(Supplier supplier) async {
+    final l10n = AppLocalizations.of(context)!;
     await ref.read(supplierRepositoryProvider).restoreSupplier(supplier.id);
     setState(() => _suppliers.removeWhere((s) => s.id == supplier.id));
     widget.onRestored();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Supplier restored.'), backgroundColor: Colors.green),
+        SnackBar(content: Text(l10n.supplierMgmtRestoredMessage), backgroundColor: Colors.green),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
@@ -915,7 +935,8 @@ class _SupplierTrashDialogState extends ConsumerState<_SupplierTrashDialog> {
                   child: const Icon(Icons.delete_sweep, color: Colors.red),
                 ),
                 const SizedBox(width: 12),
-                const Text('Trash', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                Text(l10n.invoiceMgmtTrashLabel,
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                 const Spacer(),
                 IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
               ],
@@ -925,7 +946,7 @@ class _SupplierTrashDialogState extends ConsumerState<_SupplierTrashDialog> {
               Padding(
                 padding: const EdgeInsets.all(32),
                 child: Center(
-                  child: Text('Trash is empty',
+                  child: Text(l10n.invoiceMgmtTrashIsEmptyLabel,
                       style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 16)),
                 ),
               )
@@ -946,7 +967,7 @@ class _SupplierTrashDialogState extends ConsumerState<_SupplierTrashDialog> {
                       trailing: TextButton.icon(
                         onPressed: () => _restore(s),
                         icon: const Icon(Icons.restore, size: 16),
-                        label: const Text('Restore'),
+                        label: Text(l10n.actionRestore),
                         style: TextButton.styleFrom(foregroundColor: Colors.green),
                       ),
                     );
@@ -956,7 +977,8 @@ class _SupplierTrashDialogState extends ConsumerState<_SupplierTrashDialog> {
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
-              child: TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+              child: TextButton(
+                  onPressed: () => Navigator.pop(context), child: Text(l10n.actionClose)),
             ),
           ],
         ),

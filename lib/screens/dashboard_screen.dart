@@ -553,9 +553,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         AppLocalizations.of(context)!.navReports),
                     if (showPurchaseBillsAndSuppliers) ...[
                       _buildNavItem(9, Icons.shopping_cart_outlined,
-                          Icons.shopping_cart, 'Purchase Bills'),
+                          Icons.shopping_cart, AppLocalizations.of(context)!.navPurchaseBills),
                       _buildNavItem(10, Icons.local_shipping_outlined,
-                          Icons.local_shipping, 'Suppliers'),
+                          Icons.local_shipping, AppLocalizations.of(context)!.navSuppliers),
                     ],
                     _buildNavItem(8, Icons.settings_outlined, Icons.settings,
                         AppLocalizations.of(context)!.navSettings,

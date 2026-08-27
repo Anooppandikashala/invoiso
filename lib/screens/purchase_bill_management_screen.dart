@@ -136,14 +136,14 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
     ('total_amount', true, Icons.trending_up_outlined),
   ];
 
-  static String _sortOptionLabel(String field, bool asc) {
+  static String _sortOptionLabel(AppLocalizations l10n, String field, bool asc) {
     return switch ((field, asc)) {
-      ('bill_date', false) => 'Date (Newest First)',
-      ('bill_date', true) => 'Date (Oldest First)',
-      ('supplier_name', true) => 'Supplier (A-Z)',
-      ('supplier_name', false) => 'Supplier (Z-A)',
-      ('total_amount', false) => 'Amount (Highest First)',
-      _ => 'Amount (Lowest First)',
+      ('bill_date', false) => l10n.purchaseBillMgmtSortDateNewest,
+      ('bill_date', true) => l10n.purchaseBillMgmtSortDateOldest,
+      ('supplier_name', true) => l10n.purchaseBillMgmtSortSupplierAZ,
+      ('supplier_name', false) => l10n.purchaseBillMgmtSortSupplierZA,
+      ('total_amount', false) => l10n.purchaseBillMgmtSortAmountHighest,
+      _ => l10n.purchaseBillMgmtSortAmountLowest,
     };
   }
 
@@ -152,7 +152,7 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
       'paid' => l10n.paymentStatusPaid,
       'partial' => l10n.paymentStatusPartial,
       'unpaid' => l10n.paymentStatusUnpaid,
-      _ => 'All',
+      _ => l10n.invoiceMgmtStatusAllLabel,
     };
   }
 
@@ -231,7 +231,9 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        AppError.show(context, 'Failed to load purchase bills: $e', onRetry: _loadPage);
+        AppError.show(context,
+            AppLocalizations.of(context)!.purchaseBillMgmtLoadErrorMessage(e.toString()),
+            onRetry: _loadPage);
       }
     }
   }
@@ -271,7 +273,9 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
     if (!mounted) return;
     final outstanding = PurchaseBillCalculator.outstanding(total: full.total, paid: paid);
     if (outstanding <= 0) {
-      AppError.show(context, 'This bill is already fully paid.', isError: false);
+      AppError.show(context,
+          AppLocalizations.of(context)!.purchaseBillMgmtAlreadyFullyPaidMessage,
+          isError: false);
       return;
     }
     await showDialog(
@@ -287,18 +291,19 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
   }
 
   Future<void> _softDelete(PurchaseBill bill) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await AppError.confirm(
       context,
-      title: 'Move to Trash',
-      message: 'Move bill "${bill.billNumber ?? bill.id}" to trash? Stock will be reversed.',
-      confirmLabel: 'Move to Trash',
+      title: l10n.invoiceMgmtMoveToTrashTitle,
+      message: l10n.purchaseBillMgmtMoveToTrashBody(bill.billNumber ?? bill.id),
+      confirmLabel: l10n.invoiceMgmtMoveToTrashTitle,
       confirmColor: Colors.orange,
     );
     if (!confirmed) return;
 
     await ref.read(purchaseBillRepositoryProvider).softDeletePurchaseBill(bill.id);
     await _loadPage();
-    if (mounted) AppError.showSuccess(context, 'Purchase bill moved to trash.');
+    if (mounted) AppError.showSuccess(context, l10n.purchaseBillMgmtMovedToTrashMessage);
   }
 
   void _showTrashDialog() async {
@@ -327,12 +332,13 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
   }
 
   List<PopupMenuEntry<String>> _rowActionMenuItemsV2(PurchaseBill bill) {
+    final l10n = AppLocalizations.of(context)!;
     return [
-      PopupMenuItem(value: 'view', child: _MenuRow(Icons.visibility_outlined, 'View', Colors.green)),
-      PopupMenuItem(value: 'edit', child: _MenuRow(Icons.edit_outlined, 'Edit', Colors.blue)),
-      PopupMenuItem(value: 'pay', child: _MenuRow(Icons.payments_outlined, 'Apply Payment', Colors.purple)),
+      PopupMenuItem(value: 'view', child: _MenuRow(Icons.visibility_outlined, l10n.actionView, Colors.green)),
+      PopupMenuItem(value: 'edit', child: _MenuRow(Icons.edit_outlined, l10n.actionEdit, Colors.blue)),
+      PopupMenuItem(value: 'pay', child: _MenuRow(Icons.payments_outlined, l10n.actionApplyPayment, Colors.purple)),
       if (widget.user.isAdmin())
-        PopupMenuItem(value: 'delete', child: _MenuRow(Icons.delete_outline, 'Move to Trash', Colors.red)),
+        PopupMenuItem(value: 'delete', child: _MenuRow(Icons.delete_outline, l10n.invoiceMgmtMoveToTrashTitle, Colors.red)),
     ];
   }
 
@@ -357,9 +363,10 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
   }
 
   Widget _rowActionsV2(PurchaseBill bill, PaymentStatus status, bool isWide) {
+    final l10n = AppLocalizations.of(context)!;
     final menu = PopupMenuButton<String>(
       icon: const Icon(Icons.more_vert, size: 20),
-      tooltip: 'More actions',
+      tooltip: l10n.invoiceMgmtMoreActionsTooltip,
       padding: EdgeInsets.zero,
       onSelected: (action) => _handleRowActionV2(action, bill),
       itemBuilder: (ctx) => _rowActionMenuItemsV2(bill),
@@ -370,13 +377,13 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
       runSpacing: 4,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        _buildActionButton(Icons.visibility_outlined, Colors.green, 'View', () => _viewBill(bill)),
-        _buildActionButton(Icons.edit_outlined, Colors.blue, 'Edit', () => _editBill(bill)),
+        _buildActionButton(Icons.visibility_outlined, Colors.green, l10n.actionView, () => _viewBill(bill)),
+        _buildActionButton(Icons.edit_outlined, Colors.blue, l10n.actionEdit, () => _editBill(bill)),
         _buildActionButton(Icons.payments_outlined,
             status == PaymentStatus.paid ? Colors.green : Colors.purple,
-            'Apply Payment', () => _showApplyPaymentDialog(bill)),
+            l10n.actionApplyPayment, () => _showApplyPaymentDialog(bill)),
         if (widget.user.isAdmin())
-          _buildActionButton(Icons.delete_outline, Colors.red, 'Delete', () => _softDelete(bill)),
+          _buildActionButton(Icons.delete_outline, Colors.red, l10n.actionDelete, () => _softDelete(bill)),
       ],
     );
   }
@@ -408,12 +415,13 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
   }
 
   Future<void> _showSortDialogV2() async {
+    final l10n = AppLocalizations.of(context)!;
     await showDialog(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Sort By'),
+          title: Text(l10n.purchaseBillMgmtSortByTitle),
           content: SizedBox(
             width: 340,
             child: Column(
@@ -425,7 +433,7 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
                 return ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: Icon(icon, size: 20, color: selected ? primaryColor : null),
-                  title: Text(_sortOptionLabel(field, asc),
+                  title: Text(_sortOptionLabel(l10n, field, asc),
                       style: TextStyle(
                           fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                           color: selected ? primaryColor : null)),
@@ -445,7 +453,7 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Close')),
+            TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(l10n.actionClose)),
           ],
         );
       },
@@ -453,6 +461,7 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
   }
 
   Future<void> _showFilterDialogV2() async {
+    final l10n = AppLocalizations.of(context)!;
     String tempStatus = _statusFilter;
     await showDialog(
       context: context,
@@ -460,14 +469,14 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
         return StatefulBuilder(builder: (dialogContext, setDialogState) {
           return AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: const Text('Filter Purchase Bills'),
+            title: Text(l10n.purchaseBillMgmtFilterTitle),
             content: SizedBox(
               width: 340,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Payment Status',
+                  Text(l10n.purchaseBillMgmtPaymentStatusLabel,
                       style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
@@ -498,14 +507,14 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
             actions: [
               TextButton(
                 onPressed: () => setDialogState(() => tempStatus = 'all'),
-                child: const Text('Reset'),
+                child: Text(l10n.actionReset),
               ),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(dialogContext),
-                    child: const Text('Cancel'),
+                    child: Text(l10n.actionCancel),
                   ),
                   ElevatedButton(
                     onPressed: () {
@@ -518,7 +527,7 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
                     },
                     style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).primaryColor, foregroundColor: Colors.white),
-                    child: const Text('Apply'),
+                    child: Text(l10n.actionApply),
                   ),
                 ],
               ),
@@ -530,11 +539,12 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
   }
 
   List<Widget> _headerBarV2() {
+    final l10n = AppLocalizations.of(context)!;
     return [
       IconButton(
         icon: const Icon(Icons.delete_sweep_outlined),
         onPressed: _showTrashDialog,
-        tooltip: 'Trash',
+        tooltip: l10n.invoiceMgmtTrashLabel,
       ),
       IconButton(
         onPressed: _isLoading ? null : _loadPage,
@@ -542,16 +552,17 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
             ? const SizedBox(
                 width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
             : const Icon(Icons.refresh),
-        tooltip: 'Refresh',
+        tooltip: l10n.actionRefresh,
       ),
     ];
   }
 
   Widget _searchFilterRowV2(bool isWide) {
+    final l10n = AppLocalizations.of(context)!;
     final searchField = TextField(
       controller: _searchController,
       decoration: InputDecoration(
-        hintText: 'Search by bill number or supplier...',
+        hintText: l10n.purchaseBillMgmtSearchHint,
         prefixIcon: const Icon(Icons.search, size: 20),
         isDense: true,
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
@@ -594,7 +605,7 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
         OutlinedButton.icon(
           onPressed: _showFilterDialogV2,
           icon: const Icon(Icons.filter_list, size: 18),
-          label: const Text('Filter'),
+          label: Text(l10n.invoiceMgmtFilterLabel),
         ),
         if (_activeFilterCountV2 > 0)
           Positioned(
@@ -613,13 +624,13 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
     final sortButton = OutlinedButton.icon(
       onPressed: _showSortDialogV2,
       icon: const Icon(Icons.sort, size: 18),
-      label: const Text('Sort'),
+      label: Text(l10n.invoiceMgmtSortLabel),
     );
 
     final newBillButton = FilledButton.icon(
       onPressed: widget.onNew,
       icon: const Icon(Icons.add, size: 18),
-      label: const Text('New Purchase Bill'),
+      label: Text(l10n.purchaseBillMgmtNewBillButton),
     );
 
     if (isWide) {
@@ -648,6 +659,7 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
   }
 
   Widget _tableHeaderRowV2(bool isWide) {
+    final l10n = AppLocalizations.of(context)!;
     const style = TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700, letterSpacing: 0.4);
     return Container(
       decoration: BoxDecoration(
@@ -657,15 +669,15 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       child: Row(
         children: [
-          const SizedBox(width: 36, child: Text('#', style: style)),
-          const Expanded(flex: 3, child: Text('Bill', style: style)),
+          SizedBox(width: 36, child: Text('#', style: style)),
+          Expanded(flex: 3, child: Text(l10n.purchaseBillMgmtColBill, style: style)),
           if (isWide) ...[
-            const Expanded(flex: 2, child: Text('Supplier', style: style)),
-            const SizedBox(width: 100, child: Text('Date', style: style)),
+            Expanded(flex: 2, child: Text(l10n.supplierMgmtColSupplier, style: style)),
+            SizedBox(width: 100, child: Text(l10n.invoiceMgmtColDate, style: style)),
           ],
-          const Expanded(child: Text('Total', style: style)),
-          const SizedBox(width: 76, child: Text('Status', style: style)),
-          if (isWide) const Expanded(child: Text('Balance', style: style)),
+          Expanded(child: Text(l10n.fieldTotalLabel, style: style)),
+          SizedBox(width: 76, child: Text(l10n.invoiceMgmtColStatus, style: style)),
+          if (isWide) Expanded(child: Text(l10n.purchaseBillMgmtColBalance, style: style)),
           SizedBox(width: isWide ? 180 : 48, child: const SizedBox()),
         ],
       ),
@@ -757,11 +769,12 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
   }
 
   Widget _paginationV2(bool isWide) {
+    final l10n = AppLocalizations.of(context)!;
     final totalPages = _totalPages == 0 ? 1 : _totalPages;
     final left = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('Rows per page:', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 13)),
+        Text(l10n.invoiceMgmtRowsPerPageLabel, style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 13)),
         const SizedBox(width: 8),
         DropdownButton<int>(
           value: _pageSize,
@@ -777,7 +790,7 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
           },
         ),
         const SizedBox(width: 16),
-        Text('Total: $_totalCount', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+        Text(l10n.purchaseBillMgmtTotalCountLabel(_totalCount), style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
       ],
     );
 
@@ -792,7 +805,7 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
         IconButton(
           onPressed: _currentPage > 0 ? () => _changePage(_currentPage - 1) : null,
           icon: const Icon(Icons.chevron_left),
-          tooltip: 'Previous',
+          tooltip: l10n.actionPrevious,
           iconSize: 20,
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
@@ -806,14 +819,14 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Theme.of(context).primaryColor.withValues(alpha: 0.3)),
           ),
-          child: Text('Page ${_currentPage + 1} of $totalPages',
+          child: Text(l10n.invoiceMgmtPageOfLabel(_currentPage + 1, totalPages),
               style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Theme.of(context).primaryColor)),
         ),
         const SizedBox(width: 8),
         IconButton(
           onPressed: _currentPage < totalPages - 1 ? () => _changePage(_currentPage + 1) : null,
           icon: const Icon(Icons.chevron_right),
-          tooltip: 'Next',
+          tooltip: l10n.actionNext,
           iconSize: 20,
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
@@ -842,6 +855,7 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
   // overflow. Scrolling instead of overflowing, but still centered
   // when there's enough room via the minHeight constraint.
   Widget _buildEmptyState() {
+    final l10n = AppLocalizations.of(context)!;
     return LayoutBuilder(builder: (context, constraints) {
       return SingleChildScrollView(
         child: ConstrainedBox(
@@ -853,13 +867,13 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
                 Icon(Icons.receipt_long_outlined,
                     size: 72, color: Theme.of(context).colorScheme.outlineVariant),
                 const SizedBox(height: 16),
-                Text('No purchase bills found',
+                Text(l10n.purchaseBillMgmtNoBillsFoundTitle,
                     style: TextStyle(fontSize: 18, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                 const SizedBox(height: 8),
                 Text(
                   _searchQuery.isEmpty && _statusFilter == 'all'
-                      ? 'Create your first purchase bill to get started'
-                      : 'Try adjusting your search or filters',
+                      ? l10n.purchaseBillMgmtCreateFirstMessage
+                      : l10n.purchaseBillMgmtTryAdjustingMessage,
                   style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ],
@@ -877,7 +891,7 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
       return Scaffold(
         backgroundColor: Theme.of(context).brightness == Brightness.dark ? null : Colors.grey[50],
         appBar: AppBar(
-          title: const Text('Purchase Bills'),
+          title: Text(AppLocalizations.of(context)!.purchaseBillMgmtTitle),
           backgroundColor:
               Theme.of(context).appBarTheme.backgroundColor ?? Theme.of(context).primaryColor,
           foregroundColor: Colors.white,
@@ -979,18 +993,20 @@ class _PurchaseBillTrashDialogState extends ConsumerState<_PurchaseBillTrashDial
   }
 
   Future<void> _restore(PurchaseBill bill) async {
+    final l10n = AppLocalizations.of(context)!;
     await ref.read(purchaseBillRepositoryProvider).restorePurchaseBill(bill.id);
     setState(() => _bills.removeWhere((b) => b.id == bill.id));
     widget.onRestored();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Purchase bill restored.'), backgroundColor: Colors.green),
+        SnackBar(content: Text(l10n.purchaseBillMgmtRestoredMessage), backgroundColor: Colors.green),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
@@ -1011,7 +1027,7 @@ class _PurchaseBillTrashDialogState extends ConsumerState<_PurchaseBillTrashDial
                   child: const Icon(Icons.delete_sweep, color: Colors.red),
                 ),
                 const SizedBox(width: 12),
-                const Text('Trash', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                Text(l10n.invoiceMgmtTrashLabel, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                 const Spacer(),
                 IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
               ],
@@ -1021,7 +1037,7 @@ class _PurchaseBillTrashDialogState extends ConsumerState<_PurchaseBillTrashDial
               Padding(
                 padding: const EdgeInsets.all(32),
                 child: Center(
-                  child: Text('Trash is empty',
+                  child: Text(l10n.invoiceMgmtTrashIsEmptyLabel,
                       style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 16)),
                 ),
               )
@@ -1036,12 +1052,12 @@ class _PurchaseBillTrashDialogState extends ConsumerState<_PurchaseBillTrashDial
                     final b = _bills[index];
                     return ListTile(
                       leading: Icon(Icons.receipt_long, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                      title: Text('#${b.billNumber ?? b.id} — ${b.supplierName.isEmpty ? 'Unknown supplier' : b.supplierName}'),
+                      title: Text('#${b.billNumber ?? b.id} — ${b.supplierName.isEmpty ? l10n.purchaseBillMgmtUnknownSupplierLabel : b.supplierName}'),
                       subtitle: Text(AppDate.format(b.billDate)),
                       trailing: TextButton.icon(
                         onPressed: () => _restore(b),
                         icon: const Icon(Icons.restore, size: 16),
-                        label: const Text('Restore'),
+                        label: Text(l10n.actionRestore),
                         style: TextButton.styleFrom(foregroundColor: Colors.green),
                       ),
                     );
@@ -1051,7 +1067,7 @@ class _PurchaseBillTrashDialogState extends ConsumerState<_PurchaseBillTrashDial
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
-              child: TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+              child: TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.actionClose)),
             ),
           ],
         ),
@@ -1122,6 +1138,7 @@ class _BillDetailDialogState extends ConsumerState<_BillDetailDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final bill = widget.bill;
     final sym = widget.currencySymbol;
     return Dialog(
@@ -1148,7 +1165,7 @@ class _BillDetailDialogState extends ConsumerState<_BillDetailDialog> {
                         Text('#${bill.billNumber ?? bill.id}',
                             style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                         Text(
-                          '${bill.supplierName.isEmpty ? 'Unknown supplier' : bill.supplierName} · ${AppDate.format(bill.billDate)}',
+                          '${bill.supplierName.isEmpty ? l10n.purchaseBillMgmtUnknownSupplierLabel : bill.supplierName} · ${AppDate.format(bill.billDate)}',
                           style: const TextStyle(color: Colors.white70, fontSize: 13),
                         ),
                       ],
@@ -1156,7 +1173,7 @@ class _BillDetailDialogState extends ConsumerState<_BillDetailDialog> {
                   ),
                   IconButton(
                     icon: const Icon(Icons.edit, color: Colors.white),
-                    tooltip: 'Edit',
+                    tooltip: l10n.actionEdit,
                     onPressed: widget.onEdit,
                   ),
                   IconButton(
@@ -1173,12 +1190,12 @@ class _BillDetailDialogState extends ConsumerState<_BillDetailDialog> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (bill.notes != null && bill.notes!.trim().isNotEmpty) ...[
-                      Text('Notes', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                      Text(l10n.purchaseBillMgmtNotesSectionLabel, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                       const SizedBox(height: 4),
                       Text(bill.notes!.trim()),
                       const SizedBox(height: 16),
                     ],
-                    Text('Items', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                    Text(l10n.purchaseBillMgmtItemsSectionLabel, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                     const SizedBox(height: 8),
                     _buildItemsTable(bill, sym),
                     const SizedBox(height: 12),
@@ -1187,9 +1204,9 @@ class _BillDetailDialogState extends ConsumerState<_BillDetailDialog> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Text('Subtotal: $sym ${bill.subtotal.toStringAsFixed(2)}'),
-                          Text('Tax: $sym ${bill.tax.toStringAsFixed(2)}'),
-                          Text('Total: $sym ${bill.total.toStringAsFixed(2)}',
+                          Text('${l10n.fieldSubtotalLabel}: $sym ${bill.subtotal.toStringAsFixed(2)}'),
+                          Text('${l10n.fieldTaxLabel}: $sym ${bill.tax.toStringAsFixed(2)}'),
+                          Text('${l10n.fieldTotalLabel}: $sym ${bill.total.toStringAsFixed(2)}',
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                         ],
                       ),
@@ -1197,19 +1214,19 @@ class _BillDetailDialogState extends ConsumerState<_BillDetailDialog> {
                     const SizedBox(height: 20),
                     Row(
                       children: [
-                        PaymentSummaryTile(label: 'Total', value: '$sym ${bill.total.toStringAsFixed(2)}', color: Colors.blue),
+                        PaymentSummaryTile(label: l10n.fieldTotalLabel, value: '$sym ${bill.total.toStringAsFixed(2)}', color: Colors.blue),
                         const SizedBox(width: 12),
-                        PaymentSummaryTile(label: 'Paid', value: '$sym ${_totalPaid.toStringAsFixed(2)}', color: Colors.green),
+                        PaymentSummaryTile(label: l10n.paymentDialogAmountPaidLabel, value: '$sym ${_totalPaid.toStringAsFixed(2)}', color: Colors.green),
                         const SizedBox(width: 12),
                         PaymentSummaryTile(
-                          label: 'Outstanding',
+                          label: l10n.invoiceMgmtColOutstanding,
                           value: '$sym ${_outstanding.toStringAsFixed(2)}',
                           color: _outstanding <= 0 ? Colors.green : Colors.orange,
                         ),
                       ],
                     ),
                     const SizedBox(height: 16),
-                    Text('Payment History', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                    Text(l10n.paymentDialogHistoryTitle, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                     const SizedBox(height: 8),
                     if (_isLoadingPayments)
                       const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator(strokeWidth: 2)))
@@ -1222,7 +1239,7 @@ class _BillDetailDialogState extends ConsumerState<_BillDetailDialog> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Center(
-                          child: Text('No payments recorded yet',
+                          child: Text(l10n.paymentDialogNoPaymentsMessage,
                               style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                         ),
                       )
@@ -1237,7 +1254,7 @@ class _BillDetailDialogState extends ConsumerState<_BillDetailDialog> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+                  TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.actionClose)),
                   if (!_isLoadingPayments && _outstanding > 0) ...[
                     const SizedBox(width: 12),
                     ElevatedButton.icon(
@@ -1249,7 +1266,7 @@ class _BillDetailDialogState extends ConsumerState<_BillDetailDialog> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
                       icon: const Icon(Icons.payments_outlined, size: 18),
-                      label: const Text('Record Payment'),
+                      label: Text(l10n.actionRecordPayment),
                     ),
                   ],
                 ],
@@ -1262,6 +1279,8 @@ class _BillDetailDialogState extends ConsumerState<_BillDetailDialog> {
   }
 
   Widget _buildItemsTable(PurchaseBill bill, String sym) {
+    final l10n = AppLocalizations.of(context)!;
+    const headerStyle = TextStyle(fontSize: 12, fontWeight: FontWeight.w600);
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
@@ -1275,13 +1294,13 @@ class _BillDetailDialogState extends ConsumerState<_BillDetailDialog> {
               color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: const BorderRadius.only(topLeft: Radius.circular(8), topRight: Radius.circular(8)),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Expanded(flex: 3, child: Text('Item', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600))),
-                Expanded(child: Text('Qty', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600))),
-                Expanded(child: Text('Cost', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600))),
-                Expanded(child: Text('Tax %', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600))),
-                Expanded(child: Text('Total', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600))),
+                Expanded(flex: 3, child: Text(l10n.purchaseBillMgmtColItem, style: headerStyle)),
+                Expanded(child: Text(l10n.purchaseBillMgmtQtyDetailLabel, style: headerStyle)),
+                Expanded(child: Text(l10n.purchaseBillMgmtColCost, style: headerStyle)),
+                Expanded(child: Text(l10n.purchaseBillMgmtColTaxPercent, style: headerStyle)),
+                Expanded(child: Text(l10n.fieldTotalLabel, style: headerStyle)),
               ],
             ),
           ),
@@ -1360,6 +1379,24 @@ class PaymentSummaryTile extends StatelessWidget {
   }
 }
 
+// Canonical values persisted to SupplierPayment.paymentMethod stay in
+// English (matches ApplyPaymentDialog's own _paymentMethodLabel pattern) —
+// only the dropdown's displayed label is localized.
+String _paymentMethodLabel(AppLocalizations l10n, String method) {
+  switch (method) {
+    case 'Cash':
+      return l10n.paymentMethodCash;
+    case 'Bank Transfer':
+      return l10n.paymentMethodBankTransfer;
+    case 'Check':
+      return l10n.paymentMethodCheck;
+    case 'Online':
+      return l10n.paymentMethodOnline;
+    default:
+      return l10n.paymentMethodOther;
+  }
+}
+
 // ─────────────────────────────────────────────
 // Record Payment dialog.
 class _RecordPaymentDialog extends ConsumerStatefulWidget {
@@ -1425,19 +1462,22 @@ class _RecordPaymentDialogState extends ConsumerState<_RecordPaymentDialog> {
           );
       widget.onPaymentRecorded();
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         Navigator.pop(context);
-        AppError.showSuccess(context, 'Payment recorded.');
+        AppError.showSuccess(context, l10n.purchaseBillMgmtPaymentRecordedMessage);
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isSaving = false);
-        AppError.show(context, 'Failed to record payment: $e');
+        AppError.show(context,
+            AppLocalizations.of(context)!.paymentDialogRecordFailedMessage(e.toString()));
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final sym = widget.currencySymbol;
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -1445,7 +1485,7 @@ class _RecordPaymentDialogState extends ConsumerState<_RecordPaymentDialog> {
         children: [
           Icon(Icons.payments_outlined, color: Theme.of(context).primaryColor),
           const SizedBox(width: 12),
-          const Text('Record Payment'),
+          Text(l10n.actionRecordPayment),
         ],
       ),
       content: SizedBox(
@@ -1458,17 +1498,17 @@ class _RecordPaymentDialogState extends ConsumerState<_RecordPaymentDialog> {
               TextFormField(
                 controller: _amountController,
                 decoration: InputDecoration(
-                  labelText: 'Amount ($sym)',
+                  labelText: l10n.paymentDialogAmountFieldLabel(sym),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  helperText: 'Max: $sym ${widget.outstanding.toStringAsFixed(2)}',
+                  helperText: l10n.paymentDialogMaxHelperText(sym, widget.outstanding.toStringAsFixed(2)),
                 ),
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
                 validator: (v) {
                   final n = double.tryParse(v?.trim() ?? '');
-                  if (n == null || n <= 0) return 'Enter a valid amount';
+                  if (n == null || n <= 0) return l10n.paymentDialogInvalidAmountError;
                   if (n > widget.outstanding + InvoiceCalculator.moneyEpsilon) {
-                    return 'Exceeds outstanding balance';
+                    return l10n.paymentDialogExceedsOutstandingError;
                   }
                   return null;
                 },
@@ -1478,7 +1518,7 @@ class _RecordPaymentDialogState extends ConsumerState<_RecordPaymentDialog> {
                 onTap: _pickDate,
                 child: InputDecorator(
                   decoration: InputDecoration(
-                    labelText: 'Date',
+                    labelText: l10n.invoiceMgmtColDate,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                     suffixIcon: const Icon(Icons.calendar_today, size: 18),
                   ),
@@ -1489,18 +1529,20 @@ class _RecordPaymentDialogState extends ConsumerState<_RecordPaymentDialog> {
               DropdownButtonFormField<String>(
                 value: _selectedMethod,
                 decoration: InputDecoration(
-                  labelText: 'Payment Method',
+                  labelText: l10n.paymentDialogMethodFieldLabel,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 ),
-                hint: const Text('Select method'),
-                items: _methods.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
+                hint: Text(l10n.paymentDialogSelectMethodHint),
+                items: _methods
+                    .map((m) => DropdownMenuItem(value: m, child: Text(_paymentMethodLabel(l10n, m))))
+                    .toList(),
                 onChanged: (v) => setState(() => _selectedMethod = v),
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _notesController,
                 decoration: InputDecoration(
-                  labelText: 'Notes (optional)',
+                  labelText: l10n.createInvoiceNotesOptionalLabel,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 ),
                 maxLines: 2,
@@ -1510,13 +1552,13 @@ class _RecordPaymentDialogState extends ConsumerState<_RecordPaymentDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.actionCancel)),
         FilledButton.icon(
           onPressed: _isSaving ? null : _save,
           icon: _isSaving
               ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
               : const Icon(Icons.check),
-          label: Text(_isSaving ? 'Saving...' : 'Record Payment'),
+          label: Text(_isSaving ? l10n.createInvoiceSavingEllipsisLabel : l10n.actionRecordPayment),
         ),
       ],
     );
@@ -1622,6 +1664,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
   }
 
   void _editItemDialog(int index, PurchaseBillItem item) {
+    final l10n = AppLocalizations.of(context)!;
     final nameController = TextEditingController(text: item.productName);
     final descController = TextEditingController(text: item.productDescription);
     final quantityController = TextEditingController(text: item.quantity.toString());
@@ -1636,7 +1679,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
       builder: (ctx) => StatefulBuilder(builder: (ctx, setDialogState) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Edit Item'),
+          title: Text(l10n.purchaseBillMgmtEditItemTitle),
           content: SizedBox(
             width: 380,
             child: Form(
@@ -1647,13 +1690,13 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
                   if (isCustom) ...[
                     TextFormField(
                       controller: nameController,
-                      decoration: InputDecoration(labelText: 'Item Name', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
-                      validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter an item name' : null,
+                      decoration: InputDecoration(labelText: l10n.fieldItemNameLabel, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                      validator: (v) => (v == null || v.trim().isEmpty) ? l10n.purchaseBillMgmtEnterItemNameMessage : null,
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: descController,
-                      decoration: InputDecoration(labelText: 'Description (optional)', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                      decoration: InputDecoration(labelText: l10n.purchaseBillMgmtDescriptionOptionalLabel, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
                     ),
                     const SizedBox(height: 12),
                   ],
@@ -1662,20 +1705,20 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
                       Expanded(
                         child: TextFormField(
                           controller: quantityController,
-                          decoration: InputDecoration(labelText: 'Quantity', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                          decoration: InputDecoration(labelText: l10n.purchaseBillMgmtQuantityLabel, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
-                          validator: (v) => (double.tryParse(v ?? '') ?? 0) <= 0 ? 'Invalid' : null,
+                          validator: (v) => (double.tryParse(v ?? '') ?? 0) <= 0 ? l10n.purchaseBillMgmtInvalidValueMessage : null,
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: TextFormField(
                           controller: costController,
-                          decoration: InputDecoration(labelText: 'Cost/unit', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                          decoration: InputDecoration(labelText: l10n.purchaseBillMgmtCostPerUnitLabel, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
-                          validator: (v) => double.tryParse(v ?? '') == null ? 'Invalid' : null,
+                          validator: (v) => double.tryParse(v ?? '') == null ? l10n.purchaseBillMgmtInvalidValueMessage : null,
                         ),
                       ),
                     ],
@@ -1683,14 +1726,14 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: taxController,
-                    decoration: InputDecoration(labelText: 'Tax Rate (%)', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                    decoration: InputDecoration(labelText: l10n.fieldTaxRateLabel, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
                   ),
                   CheckboxListTile(
                     contentPadding: EdgeInsets.zero,
                     controlAffinity: ListTileControlAffinity.leading,
-                    title: const Text('Cost/unit includes tax'),
+                    title: Text(l10n.purchaseBillMgmtCostIncludesTaxLabel),
                     value: costIncludesTax,
                     onChanged: (v) => setDialogState(() => costIncludesTax = v ?? false),
                   ),
@@ -1699,7 +1742,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.actionCancel)),
             ElevatedButton(
               onPressed: () {
                 if (!formKey.currentState!.validate()) return;
@@ -1715,7 +1758,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
                 });
                 Navigator.pop(ctx);
               },
-              child: const Text('Save'),
+              child: Text(l10n.actionSave),
             ),
           ],
         );
@@ -1724,16 +1767,17 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
   }
 
   Future<void> _save() async {
+    final l10n = AppLocalizations.of(context)!;
     if (_useExistingSupplier && _supplierId == null) {
-      AppError.show(context, 'Please select a supplier or switch to walk-in.');
+      AppError.show(context, l10n.purchaseBillMgmtSelectSupplierMessage);
       return;
     }
     if (!_useExistingSupplier && _supplierNameController.text.trim().isEmpty) {
-      AppError.show(context, 'Please enter a supplier name.');
+      AppError.show(context, l10n.purchaseBillMgmtEnterSupplierNameMessage);
       return;
     }
     if (_items.isEmpty) {
-      AppError.show(context, 'Add at least one item.');
+      AppError.show(context, l10n.purchaseBillMgmtAddAtLeastOneItemMessage);
       return;
     }
 
@@ -1760,18 +1804,20 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
       }
 
       if (mounted) {
-        AppError.showSuccess(context, _isEditing ? 'Purchase bill updated!' : 'Purchase bill created!');
+        AppError.showSuccess(context,
+            _isEditing ? l10n.purchaseBillMgmtUpdatedMessage : l10n.purchaseBillMgmtCreatedMessage);
         widget.onDone();
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isSaving = false);
-        AppError.show(context, 'Error saving purchase bill: $e');
+        AppError.show(context, l10n.purchaseBillMgmtSaveErrorMessage(e.toString()));
       }
     }
   }
 
   Future<void> _showAddSupplierDialog() async {
+    final l10n = AppLocalizations.of(context)!;
     final nameCtrl = TextEditingController();
     final businessNameCtrl = TextEditingController();
     final phoneCtrl = TextEditingController();
@@ -1781,7 +1827,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Add Supplier'),
+        title: Text(l10n.supplierMgmtAddSupplierButton),
         content: SizedBox(
           width: 380,
           child: Form(
@@ -1791,18 +1837,18 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
               children: [
                 TextFormField(
                   controller: nameCtrl,
-                  decoration: InputDecoration(labelText: 'Name', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter a name' : null,
+                  decoration: InputDecoration(labelText: l10n.fieldNameLabel, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                  validator: (v) => (v == null || v.trim().isEmpty) ? l10n.purchaseBillMgmtEnterNameMessage : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: businessNameCtrl,
-                  decoration: InputDecoration(labelText: 'Business Name', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                  decoration: InputDecoration(labelText: l10n.fieldBusinessNameLabel, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: phoneCtrl,
-                  decoration: InputDecoration(labelText: 'Phone', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                  decoration: InputDecoration(labelText: l10n.fieldPhoneLabel, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
                   keyboardType: TextInputType.phone,
                 ),
               ],
@@ -1810,7 +1856,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.actionCancel)),
           FilledButton(
             onPressed: () async {
               if (!formKey.currentState!.validate()) return;
@@ -1824,7 +1870,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
               ref.read(suppliersProvider.notifier).refresh();
               if (ctx.mounted) Navigator.pop(ctx, supplier);
             },
-            child: const Text('Add'),
+            child: Text(l10n.actionAdd),
           ),
         ],
       ),
@@ -1840,6 +1886,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
   }
 
   void _addAdHocItemDialog() {
+    final l10n = AppLocalizations.of(context)!;
     final nameController = TextEditingController();
     final descController = TextEditingController();
     final quantityController = TextEditingController(text: '1');
@@ -1853,11 +1900,11 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
       builder: (ctx) => StatefulBuilder(builder: (ctx, setDialogState) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.add_box, color: Colors.deepPurple),
-              SizedBox(width: 12),
-              Text('Add Custom Item'),
+              const Icon(Icons.add_box, color: Colors.deepPurple),
+              const SizedBox(width: 12),
+              Text(l10n.purchaseBillMgmtAddCustomItemTitle),
             ],
           ),
           content: SizedBox(
@@ -1869,13 +1916,13 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
                 children: [
                   TextFormField(
                     controller: nameController,
-                    decoration: InputDecoration(labelText: 'Item Name', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
-                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter an item name' : null,
+                    decoration: InputDecoration(labelText: l10n.fieldItemNameLabel, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                    validator: (v) => (v == null || v.trim().isEmpty) ? l10n.purchaseBillMgmtEnterItemNameMessage : null,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: descController,
-                    decoration: InputDecoration(labelText: 'Description (optional)', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                    decoration: InputDecoration(labelText: l10n.purchaseBillMgmtDescriptionOptionalLabel, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -1883,20 +1930,20 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
                       Expanded(
                         child: TextFormField(
                           controller: quantityController,
-                          decoration: InputDecoration(labelText: 'Quantity', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                          decoration: InputDecoration(labelText: l10n.purchaseBillMgmtQuantityLabel, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
-                          validator: (v) => (double.tryParse(v ?? '') ?? 0) <= 0 ? 'Invalid' : null,
+                          validator: (v) => (double.tryParse(v ?? '') ?? 0) <= 0 ? l10n.purchaseBillMgmtInvalidValueMessage : null,
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: TextFormField(
                           controller: costController,
-                          decoration: InputDecoration(labelText: 'Cost/unit', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                          decoration: InputDecoration(labelText: l10n.purchaseBillMgmtCostPerUnitLabel, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
-                          validator: (v) => double.tryParse(v ?? '') == null ? 'Invalid' : null,
+                          validator: (v) => double.tryParse(v ?? '') == null ? l10n.purchaseBillMgmtInvalidValueMessage : null,
                         ),
                       ),
                     ],
@@ -1904,14 +1951,14 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: taxController,
-                    decoration: InputDecoration(labelText: 'Tax Rate (%)', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                    decoration: InputDecoration(labelText: l10n.fieldTaxRateLabel, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
                   ),
                   CheckboxListTile(
                     contentPadding: EdgeInsets.zero,
                     controlAffinity: ListTileControlAffinity.leading,
-                    title: const Text('Cost/unit includes tax'),
+                    title: Text(l10n.purchaseBillMgmtCostIncludesTaxLabel),
                     value: costIncludesTax,
                     onChanged: (v) => setDialogState(() => costIncludesTax = v ?? false),
                   ),
@@ -1920,7 +1967,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.actionCancel)),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
               onPressed: () {
@@ -1936,7 +1983,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
                 ));
                 Navigator.pop(ctx);
               },
-              child: const Text('Add', style: TextStyle(color: Colors.white)),
+              child: Text(l10n.actionAdd, style: const TextStyle(color: Colors.white)),
             ),
           ],
         );
@@ -1945,6 +1992,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
   }
 
   void _addProductItemDialog(Product product) {
+    final l10n = AppLocalizations.of(context)!;
     final quantityController = TextEditingController(text: '1');
     final costController = TextEditingController(
         text: (product.purchasePrice > 0 ? product.purchasePrice : product.price).toStringAsFixed(2));
@@ -1970,20 +2018,20 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
                       Expanded(
                         child: TextFormField(
                           controller: quantityController,
-                          decoration: InputDecoration(labelText: 'Quantity', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                          decoration: InputDecoration(labelText: l10n.purchaseBillMgmtQuantityLabel, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
-                          validator: (v) => (double.tryParse(v ?? '') ?? 0) <= 0 ? 'Invalid' : null,
+                          validator: (v) => (double.tryParse(v ?? '') ?? 0) <= 0 ? l10n.purchaseBillMgmtInvalidValueMessage : null,
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: TextFormField(
                           controller: costController,
-                          decoration: InputDecoration(labelText: 'Cost/unit', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                          decoration: InputDecoration(labelText: l10n.purchaseBillMgmtCostPerUnitLabel, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
-                          validator: (v) => double.tryParse(v ?? '') == null ? 'Invalid' : null,
+                          validator: (v) => double.tryParse(v ?? '') == null ? l10n.purchaseBillMgmtInvalidValueMessage : null,
                         ),
                       ),
                     ],
@@ -1991,14 +2039,14 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: taxController,
-                    decoration: InputDecoration(labelText: 'Tax Rate (%)', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                    decoration: InputDecoration(labelText: l10n.fieldTaxRateLabel, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
                   ),
                   CheckboxListTile(
                     contentPadding: EdgeInsets.zero,
                     controlAffinity: ListTileControlAffinity.leading,
-                    title: const Text('Cost/unit includes tax'),
+                    title: Text(l10n.purchaseBillMgmtCostIncludesTaxLabel),
                     value: costIncludesTax,
                     onChanged: (v) => setDialogState(() => costIncludesTax = v ?? false),
                   ),
@@ -2007,7 +2055,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.actionCancel)),
             ElevatedButton(
               onPressed: () {
                 if (!formKey.currentState!.validate()) return;
@@ -2022,7 +2070,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
                 ));
                 Navigator.pop(ctx);
               },
-              child: const Text('Add'),
+              child: Text(l10n.actionAdd),
             ),
           ],
         );
@@ -2066,6 +2114,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
   }
 
   PreferredSizeWidget _buildFormAppBar(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AppBar(
       backgroundColor: Theme.of(context).appBarTheme.backgroundColor ?? Theme.of(context).primaryColor,
       foregroundColor: Colors.white,
@@ -2088,10 +2137,10 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(_isEditing ? 'Edit Purchase Bill' : 'New Purchase Bill',
+          Text(_isEditing ? l10n.purchaseBillMgmtEditPurchaseBillTitle : l10n.purchaseBillMgmtNewBillButton,
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
           Text(
-            _isEditing ? 'Update this purchase bill' : 'Create a new purchase bill for your supplier',
+            _isEditing ? l10n.purchaseBillMgmtUpdateSubtitle : l10n.purchaseBillMgmtCreateSubtitle,
             style: const TextStyle(fontSize: 12, color: Colors.white70),
           ),
         ],
@@ -2100,7 +2149,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
         OutlinedButton.icon(
           onPressed: _isSaving ? null : _save,
           icon: const Icon(Icons.save_outlined, size: 16),
-          label: const Text('Save Draft'),
+          label: Text(l10n.purchaseBillMgmtSaveDraftButton),
           style: OutlinedButton.styleFrom(
             foregroundColor: Colors.white,
             side: const BorderSide(color: Colors.white54),
@@ -2121,7 +2170,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
                 icon: _isSaving
                     ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                     : const Icon(Icons.save, size: 16, color: Colors.white),
-                label: Text(_isSaving ? 'Saving...' : 'Save Purchase Bill', style: const TextStyle(color: Colors.white)),
+                label: Text(_isSaving ? l10n.createInvoiceSavingEllipsisLabel : l10n.purchaseBillMgmtSavePurchaseBillButton, style: const TextStyle(color: Colors.white)),
               ),
             ],
           ),
@@ -2146,6 +2195,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
       );
 
   Widget _buildDetailsCard() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       decoration: _flatCardDecorationV2(),
       padding: const EdgeInsets.all(20),
@@ -2156,7 +2206,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
             children: [
               Icon(Icons.description_outlined, size: 20, color: Theme.of(context).primaryColor),
               const SizedBox(width: 8),
-              const Text('Bill Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(l10n.purchaseBillMgmtBillDetailsTitle, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ],
           ),
           const SizedBox(height: 16),
@@ -2170,7 +2220,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
                 const SizedBox(width: 8),
                 IconButton(
                   icon: const Icon(Icons.add_circle),
-                  tooltip: 'Add Supplier',
+                  tooltip: l10n.supplierMgmtAddSupplierButton,
                   onPressed: _showAddSupplierDialog,
                   style: IconButton.styleFrom(
                     backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
@@ -2184,7 +2234,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
             TextFormField(
               controller: _supplierNameController,
               decoration: InputDecoration(
-                labelText: 'Supplier *',
+                labelText: l10n.purchaseBillMgmtSupplierRequiredLabel,
                 prefixIcon: const Icon(Icons.person_outline),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
               ),
@@ -2193,8 +2243,8 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
           TextFormField(
             controller: _billNumberController,
             decoration: InputDecoration(
-              labelText: 'Bill Number (optional)',
-              hintText: 'Auto generate',
+              labelText: l10n.purchaseBillMgmtBillNumberOptionalLabel,
+              hintText: l10n.purchaseBillMgmtAutoGenerateHint,
               prefixIcon: const Icon(Icons.tag),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
             ),
@@ -2204,11 +2254,11 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
             onTap: _pickBillDate,
             child: InputDecorator(
               decoration: InputDecoration(
-                labelText: 'Bill Date *',
+                labelText: l10n.purchaseBillMgmtBillDateRequiredLabel,
                 prefixIcon: const Icon(Icons.calendar_today),
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.calendar_month),
-                  tooltip: 'Pick date',
+                  tooltip: l10n.purchaseBillMgmtPickDateTooltip,
                   onPressed: _pickBillDate,
                 ),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
@@ -2220,8 +2270,8 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
           TextFormField(
             controller: _notesController,
             decoration: InputDecoration(
-              labelText: 'Notes (optional)',
-              hintText: 'Add any notes',
+              labelText: l10n.createInvoiceNotesOptionalLabel,
+              hintText: l10n.purchaseBillMgmtAddAnyNotesHint,
               prefixIcon: const Icon(Icons.notes),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
             ),
@@ -2235,8 +2285,8 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
                 child: TextFormField(
                   controller: _attachmentPathController,
                   decoration: InputDecoration(
-                    labelText: 'Attachment (optional)',
-                    hintText: 'Attach file',
+                    labelText: l10n.purchaseBillMgmtAttachmentOptionalLabel,
+                    hintText: l10n.purchaseBillMgmtAttachFileHint,
                     prefixIcon: const Icon(Icons.attach_file),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
                   ),
@@ -2245,7 +2295,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
               const SizedBox(width: 8),
               IconButton(
                 icon: const Icon(Icons.folder_open),
-                tooltip: 'Browse',
+                tooltip: l10n.purchaseBillMgmtBrowseTooltip,
                 onPressed: _pickAttachment,
               ),
             ],
@@ -2260,6 +2310,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
   }
 
   Widget _buildSupplierTypeToggle() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
@@ -2272,7 +2323,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
             child: _buildSupplierTypeSegment(
               selected: _useExistingSupplier,
               icon: Icons.check_circle,
-              label: 'Existing Supplier',
+              label: l10n.purchaseBillMgmtExistingSupplierLabel,
               onTap: () => setState(() => _useExistingSupplier = true),
             ),
           ),
@@ -2281,7 +2332,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
             child: _buildSupplierTypeSegment(
               selected: !_useExistingSupplier,
               icon: Icons.person,
-              label: 'Walk-in Supplier',
+              label: l10n.purchaseBillMgmtWalkInSupplierLabel,
               onTap: () => setState(() {
                 _useExistingSupplier = false;
                 _supplierId = null;
@@ -2350,12 +2401,13 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
           });
         },
         fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+          final l10n = AppLocalizations.of(context)!;
           return TextFormField(
             controller: controller,
             focusNode: focusNode,
             decoration: InputDecoration(
-              labelText: 'Supplier *',
-              hintText: 'Search supplier',
+              labelText: l10n.purchaseBillMgmtSupplierRequiredLabel,
+              hintText: l10n.purchaseBillMgmtSearchSupplierHint,
               prefixIcon: const Icon(Icons.business),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
             ),
@@ -2366,7 +2418,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
               }
             },
             validator: (v) {
-              if (_supplierId == null) return 'Select a supplier from the list';
+              if (_supplierId == null) return l10n.purchaseBillMgmtSelectSupplierFromListMessage;
               return null;
             },
           );
@@ -2398,18 +2450,19 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
         },
       ),
       loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-      error: (e, _) => Text('Failed to load suppliers: $e'),
+      error: (e, _) => Text(AppLocalizations.of(context)!.supplierMgmtLoadErrorMessage(e.toString())),
     );
   }
 
   Widget _buildTotalsFooter() {
+    final l10n = AppLocalizations.of(context)!;
     final totals = _totals;
     return Column(
       children: [
-        _buildTotalRow('Subtotal', totals.subtotal),
-        _buildTotalRow('Tax', totals.tax),
+        _buildTotalRow(l10n.fieldSubtotalLabel, totals.subtotal),
+        _buildTotalRow(l10n.fieldTaxLabel, totals.tax),
         const SizedBox(height: 4),
-        _buildTotalRow('Grand Total', totals.total, isGrand: true),
+        _buildTotalRow(l10n.purchaseBillMgmtGrandTotalLabel, totals.total, isGrand: true),
       ],
     );
   }
@@ -2439,6 +2492,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
   }
 
   Widget _buildItemsCard(bool isWide) {
+    final l10n = AppLocalizations.of(context)!;
     final products = ref.watch(productsProvider);
     final filteredProducts = products.maybeWhen(
       data: (list) => list
@@ -2457,8 +2511,8 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
         children: [
           Row(
             children: [
-              const Text('ITEMS',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.6)),
+              Text(l10n.purchaseBillMgmtItemsSectionLabel.toUpperCase(),
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.6)),
               const SizedBox(width: 10),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -2476,7 +2530,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
               TextButton.icon(
                 onPressed: _addAdHocItemDialog,
                 icon: const Icon(Icons.add, size: 16),
-                label: const Text('Add Custom Item'),
+                label: Text(l10n.purchaseBillMgmtAddCustomItemTitle),
                 style: TextButton.styleFrom(foregroundColor: Theme.of(context).primaryColor),
               ),
             ],
@@ -2485,7 +2539,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
           if (_items.isEmpty && isWide)
             Expanded(
               child: Center(
-                child: Text('No items added yet',
+                child: Text(l10n.purchaseBillMgmtNoItemsAddedMessage,
                     style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
               ),
             )
@@ -2493,7 +2547,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 24),
               child: Center(
-                child: Text('No items added yet',
+                child: Text(l10n.purchaseBillMgmtNoItemsAddedMessage,
                     style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
               ),
             )
@@ -2525,7 +2579,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
                 child: filteredProducts.isEmpty
                     ? Padding(
                         padding: const EdgeInsets.all(16),
-                        child: Text('No products found',
+                        child: Text(l10n.createInvoiceNoProductsFoundMessage,
                             style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                       )
                     : ListView.builder(
@@ -2538,7 +2592,8 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
                             dense: true,
                             leading: const Icon(Icons.inventory_2_outlined),
                             title: Text(product.name),
-                            subtitle: Text('Last cost: $_currencySymbol${product.purchasePrice.toStringAsFixed(2)}'),
+                            subtitle: Text(l10n.purchaseBillMgmtLastCostLabel(
+                                '$_currencySymbol${product.purchasePrice.toStringAsFixed(2)}')),
                             trailing: const Icon(Icons.add_circle, color: Colors.green),
                             onTap: () => _addProductItemDialog(product),
                           );
@@ -2552,7 +2607,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
             controller: _productSearchController,
             focusNode: _productSearchFocus,
             decoration: InputDecoration(
-              hintText: 'Search products to add...',
+              hintText: l10n.purchaseBillMgmtSearchProductsHint,
               prefixIcon: const Icon(Icons.search),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
               filled: true,
@@ -2569,6 +2624,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
   // matching CreateInvoiceScreenV2's item rows exactly — no more
   // fixed-width table columns to keep aligned with a header row.
   Widget _buildItemRow(int index, PurchaseBillItem item) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14),
       decoration: BoxDecoration(
@@ -2611,7 +2667,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
                           color: Theme.of(context).colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: Text('Custom',
+                        child: Text(l10n.purchaseBillMgmtCustomBadgeLabel,
                             style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
@@ -2627,21 +2683,23 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
                     spacing: 16,
                     runSpacing: 4,
                     children: [
-                      _buildItemDetail('Qty',
+                      _buildItemDetail(l10n.purchaseBillMgmtQtyDetailLabel,
                           item.quantity == item.quantity.roundToDouble()
                               ? item.quantity.toInt().toString()
                               : item.quantity.toString()),
-                      _buildItemDetail(
-                          'Unit Cost', '$_currencySymbol${item.costPerUnit.toStringAsFixed(2)}'),
+                      _buildItemDetail(l10n.purchaseBillMgmtUnitCostDetailLabel,
+                          '$_currencySymbol${item.costPerUnit.toStringAsFixed(2)}'),
                       if (item.taxRate > 0) ...[
                         item.costIncludesTax
                             ? _buildItemDetail(
-                                'Tax', '${item.taxRate.toStringAsFixed(item.taxRate == item.taxRate.roundToDouble() ? 0 : 1)}% Inclusive',
+                                l10n.fieldTaxLabel,
+                                l10n.purchaseBillMgmtTaxInclusiveLabel(item.taxRate
+                                    .toStringAsFixed(item.taxRate == item.taxRate.roundToDouble() ? 0 : 1)),
                                 color: Colors.teal[700])
-                            : _buildItemDetail('Tax',
+                            : _buildItemDetail(l10n.fieldTaxLabel,
                                 '${item.taxRate.toStringAsFixed(item.taxRate == item.taxRate.roundToDouble() ? 0 : 1)}%'),
                         if (item.costIncludesTax)
-                          _buildItemDetail('Net Cost',
+                          _buildItemDetail(l10n.purchaseBillMgmtNetCostDetailLabel,
                               '$_currencySymbol${item.netCostPerUnit.toStringAsFixed(2)}',
                               color: Colors.teal[700]),
                       ],
@@ -2656,13 +2714,13 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
               style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
           IconButton(
             icon: const Icon(Icons.edit_outlined, size: 18),
-            tooltip: 'Edit item',
+            tooltip: l10n.purchaseBillMgmtEditItemTooltip,
             visualDensity: VisualDensity.compact,
             onPressed: () => _editItemDialog(index, item),
           ),
           IconButton(
             icon: const Icon(Icons.delete_outline, size: 18),
-            tooltip: 'Remove item',
+            tooltip: l10n.purchaseBillMgmtRemoveItemTooltip,
             visualDensity: VisualDensity.compact,
             color: Theme.of(context).colorScheme.error,
             onPressed: () => _removeItem(index),

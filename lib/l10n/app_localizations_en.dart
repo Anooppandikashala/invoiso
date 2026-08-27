@@ -220,6 +220,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navReports => 'Reports';
 
   @override
+  String get navPurchaseBills => 'Purchase Bills';
+
+  @override
+  String get navSuppliers => 'Suppliers';
+
+  @override
   String get navSettings => 'Settings';
 
   @override
@@ -4062,4 +4068,329 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shortcutPrintPdfDescription => 'Generate / print invoice PDF';
+
+  @override
+  String supplierMgmtLoadErrorMessage(String error) {
+    return 'Failed to load suppliers: $error';
+  }
+
+  @override
+  String get supplierMgmtAddedMessage => 'Supplier added successfully!';
+
+  @override
+  String get supplierMgmtUpdatedMessage => 'Supplier updated successfully!';
+
+  @override
+  String supplierMgmtSaveErrorMessage(String error) {
+    return 'Error saving supplier: $error';
+  }
+
+  @override
+  String supplierMgmtOutstandingLabel(String amount) {
+    return 'Outstanding: $amount';
+  }
+
+  @override
+  String supplierMgmtMoveToTrashBody(String name) {
+    return 'Move \"$name\" to trash? Existing purchase bills keep showing their snapshotted supplier name.';
+  }
+
+  @override
+  String get supplierMgmtMovedToTrashMessage => 'Supplier moved to trash.';
+
+  @override
+  String get supplierMgmtRestoredMessage => 'Supplier restored.';
+
+  @override
+  String get supplierMgmtAddSupplierButton => 'Add Supplier';
+
+  @override
+  String get supplierMgmtTitle => 'Suppliers';
+
+  @override
+  String get supplierMgmtSubtitle =>
+      'Manage the suppliers you purchase stock from';
+
+  @override
+  String get supplierMgmtSearchHint =>
+      'Search suppliers by name, phone, or GSTIN...';
+
+  @override
+  String get supplierMgmtColSupplier => 'Supplier';
+
+  @override
+  String get supplierMgmtColGstin => 'GSTIN';
+
+  @override
+  String supplierMgmtTotalCountLabel(int count) {
+    return 'Total: $count';
+  }
+
+  @override
+  String get supplierMgmtNoSuppliersYetMessage => 'No suppliers yet';
+
+  @override
+  String get supplierMgmtNoSuppliersMatchMessage =>
+      'No suppliers match your search';
+
+  @override
+  String get supplierMgmtAddNewTitle => 'Add New Supplier';
+
+  @override
+  String get supplierMgmtEditTitle => 'Edit Supplier';
+
+  @override
+  String get supplierMgmtSaveChangesButton => 'Save Changes';
+
+  @override
+  String get supplierMgmtTaxVatNumberLabel => 'Tax/VAT Number (GSTIN)';
+
+  @override
+  String purchaseBillMgmtLoadErrorMessage(String error) {
+    return 'Failed to load purchase bills: $error';
+  }
+
+  @override
+  String get purchaseBillMgmtAlreadyFullyPaidMessage =>
+      'This bill is already fully paid.';
+
+  @override
+  String purchaseBillMgmtMoveToTrashBody(String billNumber) {
+    return 'Move bill \"$billNumber\" to trash? Stock will be reversed.';
+  }
+
+  @override
+  String get purchaseBillMgmtMovedToTrashMessage =>
+      'Purchase bill moved to trash.';
+
+  @override
+  String get purchaseBillMgmtRestoredMessage => 'Purchase bill restored.';
+
+  @override
+  String get purchaseBillMgmtSortByTitle => 'Sort By';
+
+  @override
+  String get purchaseBillMgmtSortDateNewest => 'Date (Newest First)';
+
+  @override
+  String get purchaseBillMgmtSortDateOldest => 'Date (Oldest First)';
+
+  @override
+  String get purchaseBillMgmtSortSupplierAZ => 'Supplier (A-Z)';
+
+  @override
+  String get purchaseBillMgmtSortSupplierZA => 'Supplier (Z-A)';
+
+  @override
+  String get purchaseBillMgmtSortAmountHighest => 'Amount (Highest First)';
+
+  @override
+  String get purchaseBillMgmtSortAmountLowest => 'Amount (Lowest First)';
+
+  @override
+  String get purchaseBillMgmtFilterTitle => 'Filter Purchase Bills';
+
+  @override
+  String get purchaseBillMgmtPaymentStatusLabel => 'Payment Status';
+
+  @override
+  String get purchaseBillMgmtSearchHint =>
+      'Search by bill number or supplier...';
+
+  @override
+  String get purchaseBillMgmtNewBillButton => 'New Purchase Bill';
+
+  @override
+  String get purchaseBillMgmtColBill => 'Bill';
+
+  @override
+  String get purchaseBillMgmtColBalance => 'Balance';
+
+  @override
+  String purchaseBillMgmtTotalCountLabel(int count) {
+    return 'Total: $count';
+  }
+
+  @override
+  String get purchaseBillMgmtNoBillsFoundTitle => 'No purchase bills found';
+
+  @override
+  String get purchaseBillMgmtCreateFirstMessage =>
+      'Create your first purchase bill to get started';
+
+  @override
+  String get purchaseBillMgmtTryAdjustingMessage =>
+      'Try adjusting your search or filters';
+
+  @override
+  String get purchaseBillMgmtTitle => 'Purchase Bills';
+
+  @override
+  String get purchaseBillMgmtUnknownSupplierLabel => 'Unknown supplier';
+
+  @override
+  String get purchaseBillMgmtNotesSectionLabel => 'Notes';
+
+  @override
+  String get purchaseBillMgmtItemsSectionLabel => 'Items';
+
+  @override
+  String get purchaseBillMgmtGrandTotalLabel => 'Grand Total';
+
+  @override
+  String get purchaseBillMgmtBillDetailsTitle => 'Bill Details';
+
+  @override
+  String get purchaseBillMgmtExistingSupplierLabel => 'Existing Supplier';
+
+  @override
+  String get purchaseBillMgmtWalkInSupplierLabel => 'Walk-in Supplier';
+
+  @override
+  String get purchaseBillMgmtSupplierRequiredLabel => 'Supplier *';
+
+  @override
+  String get purchaseBillMgmtBillNumberOptionalLabel =>
+      'Bill Number (optional)';
+
+  @override
+  String get purchaseBillMgmtAutoGenerateHint => 'Auto generate';
+
+  @override
+  String get purchaseBillMgmtBillDateRequiredLabel => 'Bill Date *';
+
+  @override
+  String get purchaseBillMgmtPickDateTooltip => 'Pick date';
+
+  @override
+  String get purchaseBillMgmtAddAnyNotesHint => 'Add any notes';
+
+  @override
+  String get purchaseBillMgmtAttachmentOptionalLabel => 'Attachment (optional)';
+
+  @override
+  String get purchaseBillMgmtAttachFileHint => 'Attach file';
+
+  @override
+  String get purchaseBillMgmtBrowseTooltip => 'Browse';
+
+  @override
+  String get purchaseBillMgmtSelectSupplierMessage =>
+      'Please select a supplier or switch to walk-in.';
+
+  @override
+  String get purchaseBillMgmtEnterSupplierNameMessage =>
+      'Please enter a supplier name.';
+
+  @override
+  String get purchaseBillMgmtAddAtLeastOneItemMessage =>
+      'Add at least one item.';
+
+  @override
+  String get purchaseBillMgmtUpdatedMessage => 'Purchase bill updated!';
+
+  @override
+  String get purchaseBillMgmtCreatedMessage => 'Purchase bill created!';
+
+  @override
+  String purchaseBillMgmtSaveErrorMessage(String error) {
+    return 'Error saving purchase bill: $error';
+  }
+
+  @override
+  String get purchaseBillMgmtEnterNameMessage => 'Enter a name';
+
+  @override
+  String get purchaseBillMgmtAddCustomItemTitle => 'Add Custom Item';
+
+  @override
+  String get purchaseBillMgmtDescriptionOptionalLabel =>
+      'Description (optional)';
+
+  @override
+  String get purchaseBillMgmtQuantityLabel => 'Quantity';
+
+  @override
+  String get purchaseBillMgmtCostPerUnitLabel => 'Cost/unit';
+
+  @override
+  String get purchaseBillMgmtCostIncludesTaxLabel => 'Cost/unit includes tax';
+
+  @override
+  String get purchaseBillMgmtEnterItemNameMessage => 'Enter an item name';
+
+  @override
+  String get purchaseBillMgmtInvalidValueMessage => 'Invalid';
+
+  @override
+  String get purchaseBillMgmtEditItemTitle => 'Edit Item';
+
+  @override
+  String get purchaseBillMgmtEditItemTooltip => 'Edit item';
+
+  @override
+  String get purchaseBillMgmtRemoveItemTooltip => 'Remove item';
+
+  @override
+  String get purchaseBillMgmtNoItemsAddedMessage => 'No items added yet';
+
+  @override
+  String purchaseBillMgmtLastCostLabel(String amount) {
+    return 'Last cost: $amount';
+  }
+
+  @override
+  String get purchaseBillMgmtSearchProductsHint => 'Search products to add...';
+
+  @override
+  String get purchaseBillMgmtCustomBadgeLabel => 'Custom';
+
+  @override
+  String get purchaseBillMgmtQtyDetailLabel => 'Qty';
+
+  @override
+  String get purchaseBillMgmtUnitCostDetailLabel => 'Unit Cost';
+
+  @override
+  String purchaseBillMgmtTaxInclusiveLabel(String rate) {
+    return '$rate% Inclusive';
+  }
+
+  @override
+  String get purchaseBillMgmtNetCostDetailLabel => 'Net Cost';
+
+  @override
+  String get purchaseBillMgmtEditPurchaseBillTitle => 'Edit Purchase Bill';
+
+  @override
+  String get purchaseBillMgmtUpdateSubtitle => 'Update this purchase bill';
+
+  @override
+  String get purchaseBillMgmtCreateSubtitle =>
+      'Create a new purchase bill for your supplier';
+
+  @override
+  String get purchaseBillMgmtSaveDraftButton => 'Save Draft';
+
+  @override
+  String get purchaseBillMgmtSavePurchaseBillButton => 'Save Purchase Bill';
+
+  @override
+  String get purchaseBillMgmtSelectSupplierFromListMessage =>
+      'Select a supplier from the list';
+
+  @override
+  String get purchaseBillMgmtSearchSupplierHint => 'Search supplier';
+
+  @override
+  String get purchaseBillMgmtColItem => 'Item';
+
+  @override
+  String get purchaseBillMgmtColCost => 'Cost';
+
+  @override
+  String get purchaseBillMgmtColTaxPercent => 'Tax %';
+
+  @override
+  String get purchaseBillMgmtPaymentRecordedMessage => 'Payment recorded.';
 }
