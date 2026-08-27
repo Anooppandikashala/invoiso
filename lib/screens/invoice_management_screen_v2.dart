@@ -1665,8 +1665,10 @@ class _InvoiceManagementScreenV2State
           Expanded(flex: 3, child: Padding(padding: const EdgeInsets.symmetric(vertical: 16), child: Text(l10n.invoiceMgmtColInvoiceCustomer, style: style))),
           if (widget.filterType == 'Invoice' && isWide)
             Expanded(child: Text(l10n.invoiceMgmtColTitle, style: style)),
-          SizedBox(width: 110, child: Text(l10n.invoiceMgmtColDate, style: style)),
-          if (isWide) SizedBox(width: 56, child: Text(l10n.invoiceMgmtColItems, style: style)),
+          if (isWide) ...[
+            SizedBox(width: 110, child: Text(l10n.invoiceMgmtColDate, style: style)),
+            SizedBox(width: 56, child: Text(l10n.invoiceMgmtColItems, style: style)),
+          ],
           Expanded(child: Text(l10n.fieldTotalLabel, style: style)),
           if (widget.filterType == 'Invoice') ...[
             SizedBox(width: 76, child: Text(l10n.invoiceMgmtColStatus, style: style)),
@@ -1753,6 +1755,14 @@ class _InvoiceManagementScreenV2State
                       CustomerInfoButton(customer: invoice.customer),
                     ],
                   ),
+                  // Narrow mode drops the fixed 110px Date column (it, plus
+                  // the checkbox/Sl.No/status/actions columns all fixed at
+                  // once, overflowed on narrower windows) — folded in here
+                  // instead, where it shares the flexible column's width.
+                  if (!isWide) ...[
+                    const SizedBox(height: 2),
+                    _buildDateCell(invoice),
+                  ],
                 ],
               ),
             ),
@@ -1763,8 +1773,8 @@ class _InvoiceManagementScreenV2State
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(fontSize: 12.5, color: Theme.of(context).colorScheme.onSurfaceVariant)),
             ),
-          SizedBox(width: 110, child: _buildDateCell(invoice)),
-          if (isWide)
+          if (isWide) ...[
+            SizedBox(width: 110, child: _buildDateCell(invoice)),
             SizedBox(
               width: 56,
               child: Align(
@@ -1780,6 +1790,7 @@ class _InvoiceManagementScreenV2State
                 ),
               ),
             ),
+          ],
           Expanded(
             child: Text(
               '${invoice.currencySymbol} ${invoice.total.toStringAsFixed(2)}',

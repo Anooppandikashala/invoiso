@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/common/app_config.dart';
+import 'package:invoiso/common/setting_key.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/providers/locale_provider.dart';
+import 'package:invoiso/providers/purchase_bills_settings_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/providers/sqlite_repository_overrides.dart';
 import 'package:invoiso/providers/theme_provider.dart';
@@ -110,6 +112,7 @@ class _MyAppState extends ConsumerState<MyApp> {
     super.initState();
     _loadThemeMode();
     _loadAppLocale();
+    _loadPurchaseBillsAndSuppliersEnabled();
   }
 
   Future<void> _loadThemeMode() async {
@@ -122,6 +125,15 @@ class _MyAppState extends ConsumerState<MyApp> {
     final key = await ref.read(settingsRepositoryProvider).getAppLocale();
     if (!mounted) return;
     applyAppLocale(ref, localeFromKey(key));
+  }
+
+  Future<void> _loadPurchaseBillsAndSuppliersEnabled() async {
+    final value = await ref
+        .read(settingsRepositoryProvider)
+        .getSetting(SettingKey.enablePurchaseBillsAndSuppliers);
+    if (!mounted) return;
+    ref.read(enablePurchaseBillsAndSuppliersProvider.notifier).state =
+        value == 'true';
   }
 
   @override

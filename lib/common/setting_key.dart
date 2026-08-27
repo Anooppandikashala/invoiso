@@ -70,6 +70,7 @@ enum SettingKey {
   hideInvoiceNumberByDefault, // whether the "Hide invoice number in PDF" toggle is on by default for new invoices (default false)
   appLocale, // app UI language code, e.g. 'en' | 'ne' | 'bo' | 'fr' | 'es' | 'hi' | 'zh'; unset/empty = follow system locale
   onboardingCompleted, // '1' once the first-login onboarding wizard has been finished or skipped
+  enablePurchaseBillsAndSuppliers, // whether the Purchase Bills / Suppliers dashboard tabs are shown (default false, opt-in)
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -217,6 +218,8 @@ extension SettingKeyExtension on SettingKey {
         return 'app_locale';
       case SettingKey.onboardingCompleted:
         return 'onboarding_completed';
+      case SettingKey.enablePurchaseBillsAndSuppliers:
+        return 'enable_purchase_bills_and_suppliers';
 
     }
   }

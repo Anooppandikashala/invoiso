@@ -63,6 +63,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get onboardingStepInvoiceSubtitle => '设置发票的工作方式';
 
   @override
+  String get onboardingStepPurchaseBillsTitle => '采购账单与供应商';
+
+  @override
+  String get onboardingStepPurchaseBillsSubtitle => '追踪供应商账单与库存采购（可选）';
+
+  @override
   String get onboardingStepAppearanceTitle => '发票外观';
 
   @override
@@ -97,6 +103,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get onboardingDefaultTaxRateLabel => '默认税率 (%)';
+
+  @override
+  String get onboardingEnablePurchaseBillsSuppliersLabel => '启用采购账单与供应商';
+
+  @override
+  String get onboardingEnablePurchaseBillsSuppliersSubtitle =>
+      '在仪表盘菜单中添加采购账单与供应商。您可以随时在设置中更改此项。';
 
   @override
   String get onboardingPageSizeLabel => '页面大小';
@@ -198,6 +211,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get navReports => '报表';
+
+  @override
+  String get navPurchaseBills => '采购账单';
+
+  @override
+  String get navSuppliers => '供应商';
 
   @override
   String get navSettings => '设置';
@@ -2884,6 +2903,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get invoiceSettingsSectionItems => '发票项目';
 
   @override
+  String get invoiceSettingsSectionSuppliers => '供应商';
+
+  @override
+  String get settingsEnablePurchaseBillsSuppliersLabel => '启用采购账单与供应商';
+
+  @override
+  String get settingsEnablePurchaseBillsSuppliersSubtitle =>
+      '在仪表盘菜单中显示采购账单与供应商';
+
+  @override
   String get invoiceSettingsPrefixLabel => '发票前缀';
 
   @override
@@ -3878,4 +3907,314 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get shortcutPrintPdfDescription => '生成／打印发票 PDF';
+
+  @override
+  String supplierMgmtLoadErrorMessage(String error) {
+    return '加载供应商失败：$error';
+  }
+
+  @override
+  String get supplierMgmtAddedMessage => '供应商添加成功！';
+
+  @override
+  String get supplierMgmtUpdatedMessage => '供应商更新成功！';
+
+  @override
+  String supplierMgmtSaveErrorMessage(String error) {
+    return '保存供应商时出错：$error';
+  }
+
+  @override
+  String supplierMgmtOutstandingLabel(String amount) {
+    return '未结：$amount';
+  }
+
+  @override
+  String supplierMgmtMoveToTrashBody(String name) {
+    return '将“$name”移至回收站？现有采购账单仍会显示已保存的供应商名称。';
+  }
+
+  @override
+  String get supplierMgmtMovedToTrashMessage => '供应商已移至回收站。';
+
+  @override
+  String get supplierMgmtRestoredMessage => '供应商已恢复。';
+
+  @override
+  String get supplierMgmtAddSupplierButton => '添加供应商';
+
+  @override
+  String get supplierMgmtTitle => '供应商';
+
+  @override
+  String get supplierMgmtSubtitle => '管理您向其采购库存的供应商';
+
+  @override
+  String get supplierMgmtSearchHint => '按名称、电话或GSTIN搜索供应商…';
+
+  @override
+  String get supplierMgmtColSupplier => '供应商';
+
+  @override
+  String get supplierMgmtColGstin => 'GSTIN';
+
+  @override
+  String supplierMgmtTotalCountLabel(int count) {
+    return '共计：$count';
+  }
+
+  @override
+  String get supplierMgmtNoSuppliersYetMessage => '尚无供应商';
+
+  @override
+  String get supplierMgmtNoSuppliersMatchMessage => '没有符合搜索条件的供应商';
+
+  @override
+  String get supplierMgmtAddNewTitle => '添加新供应商';
+
+  @override
+  String get supplierMgmtEditTitle => '编辑供应商';
+
+  @override
+  String get supplierMgmtSaveChangesButton => '保存更改';
+
+  @override
+  String get supplierMgmtTaxVatNumberLabel => '税务/增值税号（GSTIN）';
+
+  @override
+  String purchaseBillMgmtLoadErrorMessage(String error) {
+    return '加载采购账单失败：$error';
+  }
+
+  @override
+  String get purchaseBillMgmtAlreadyFullyPaidMessage => '此账单已全部付清。';
+
+  @override
+  String purchaseBillMgmtMoveToTrashBody(String billNumber) {
+    return '将账单“$billNumber”移至回收站？库存将被冲销。';
+  }
+
+  @override
+  String get purchaseBillMgmtMovedToTrashMessage => '采购账单已移至回收站。';
+
+  @override
+  String get purchaseBillMgmtRestoredMessage => '采购账单已恢复。';
+
+  @override
+  String get purchaseBillMgmtSortByTitle => '排序方式';
+
+  @override
+  String get purchaseBillMgmtSortDateNewest => '日期（最新在前）';
+
+  @override
+  String get purchaseBillMgmtSortDateOldest => '日期（最早在前）';
+
+  @override
+  String get purchaseBillMgmtSortSupplierAZ => '供应商（A-Z）';
+
+  @override
+  String get purchaseBillMgmtSortSupplierZA => '供应商（Z-A）';
+
+  @override
+  String get purchaseBillMgmtSortAmountHighest => '金额（从高到低）';
+
+  @override
+  String get purchaseBillMgmtSortAmountLowest => '金额（从低到高）';
+
+  @override
+  String get purchaseBillMgmtFilterTitle => '筛选采购账单';
+
+  @override
+  String get purchaseBillMgmtPaymentStatusLabel => '付款状态';
+
+  @override
+  String get purchaseBillMgmtSearchHint => '按账单号或供应商搜索…';
+
+  @override
+  String get purchaseBillMgmtNewBillButton => '新建采购账单';
+
+  @override
+  String get purchaseBillMgmtColBill => '账单';
+
+  @override
+  String get purchaseBillMgmtColBalance => '余额';
+
+  @override
+  String purchaseBillMgmtTotalCountLabel(int count) {
+    return '共计：$count';
+  }
+
+  @override
+  String get purchaseBillMgmtNoBillsFoundTitle => '未找到采购账单';
+
+  @override
+  String get purchaseBillMgmtCreateFirstMessage => '创建您的第一张采购账单以开始使用';
+
+  @override
+  String get purchaseBillMgmtTryAdjustingMessage => '请尝试调整搜索或筛选条件';
+
+  @override
+  String get purchaseBillMgmtTitle => '采购账单';
+
+  @override
+  String get purchaseBillMgmtUnknownSupplierLabel => '未知供应商';
+
+  @override
+  String get purchaseBillMgmtNotesSectionLabel => '备注';
+
+  @override
+  String get purchaseBillMgmtItemsSectionLabel => '项目';
+
+  @override
+  String get purchaseBillMgmtGrandTotalLabel => '总计';
+
+  @override
+  String get purchaseBillMgmtBillDetailsTitle => '账单详情';
+
+  @override
+  String get purchaseBillMgmtExistingSupplierLabel => '现有供应商';
+
+  @override
+  String get purchaseBillMgmtWalkInSupplierLabel => '临时供应商';
+
+  @override
+  String get purchaseBillMgmtSupplierRequiredLabel => '供应商 *';
+
+  @override
+  String get purchaseBillMgmtBillNumberOptionalLabel => '账单号（可选）';
+
+  @override
+  String get purchaseBillMgmtAutoGenerateHint => '自动生成';
+
+  @override
+  String get purchaseBillMgmtBillDateRequiredLabel => '账单日期 *';
+
+  @override
+  String get purchaseBillMgmtPickDateTooltip => '选择日期';
+
+  @override
+  String get purchaseBillMgmtAddAnyNotesHint => '添加备注';
+
+  @override
+  String get purchaseBillMgmtAttachmentOptionalLabel => '附件（可选）';
+
+  @override
+  String get purchaseBillMgmtAttachFileHint => '附加文件';
+
+  @override
+  String get purchaseBillMgmtBrowseTooltip => '浏览';
+
+  @override
+  String get purchaseBillMgmtSelectSupplierMessage => '请选择供应商或切换为临时供应商。';
+
+  @override
+  String get purchaseBillMgmtEnterSupplierNameMessage => '请输入供应商名称。';
+
+  @override
+  String get purchaseBillMgmtAddAtLeastOneItemMessage => '请至少添加一个项目。';
+
+  @override
+  String get purchaseBillMgmtUpdatedMessage => '采购账单已更新！';
+
+  @override
+  String get purchaseBillMgmtCreatedMessage => '采购账单已创建！';
+
+  @override
+  String purchaseBillMgmtSaveErrorMessage(String error) {
+    return '保存采购账单时出错：$error';
+  }
+
+  @override
+  String get purchaseBillMgmtEnterNameMessage => '请输入名称';
+
+  @override
+  String get purchaseBillMgmtAddCustomItemTitle => '添加自定义项目';
+
+  @override
+  String get purchaseBillMgmtDescriptionOptionalLabel => '描述（可选）';
+
+  @override
+  String get purchaseBillMgmtQuantityLabel => '数量';
+
+  @override
+  String get purchaseBillMgmtCostPerUnitLabel => '单位成本';
+
+  @override
+  String get purchaseBillMgmtCostIncludesTaxLabel => '单位成本已含税';
+
+  @override
+  String get purchaseBillMgmtEnterItemNameMessage => '请输入项目名称';
+
+  @override
+  String get purchaseBillMgmtInvalidValueMessage => '无效';
+
+  @override
+  String get purchaseBillMgmtEditItemTitle => '编辑项目';
+
+  @override
+  String get purchaseBillMgmtEditItemTooltip => '编辑项目';
+
+  @override
+  String get purchaseBillMgmtRemoveItemTooltip => '删除项目';
+
+  @override
+  String get purchaseBillMgmtNoItemsAddedMessage => '尚未添加任何项目';
+
+  @override
+  String purchaseBillMgmtLastCostLabel(String amount) {
+    return '最近成本：$amount';
+  }
+
+  @override
+  String get purchaseBillMgmtSearchProductsHint => '搜索要添加的产品…';
+
+  @override
+  String get purchaseBillMgmtCustomBadgeLabel => '自定义';
+
+  @override
+  String get purchaseBillMgmtQtyDetailLabel => '数量';
+
+  @override
+  String get purchaseBillMgmtUnitCostDetailLabel => '单位成本';
+
+  @override
+  String purchaseBillMgmtTaxInclusiveLabel(String rate) {
+    return '$rate% 含税';
+  }
+
+  @override
+  String get purchaseBillMgmtNetCostDetailLabel => '净成本';
+
+  @override
+  String get purchaseBillMgmtEditPurchaseBillTitle => '编辑采购账单';
+
+  @override
+  String get purchaseBillMgmtUpdateSubtitle => '更新此采购账单';
+
+  @override
+  String get purchaseBillMgmtCreateSubtitle => '为您的供应商创建新的采购账单';
+
+  @override
+  String get purchaseBillMgmtSaveDraftButton => '保存草稿';
+
+  @override
+  String get purchaseBillMgmtSavePurchaseBillButton => '保存采购账单';
+
+  @override
+  String get purchaseBillMgmtSelectSupplierFromListMessage => '从列表中选择供应商';
+
+  @override
+  String get purchaseBillMgmtSearchSupplierHint => '搜索供应商';
+
+  @override
+  String get purchaseBillMgmtColItem => '项目';
+
+  @override
+  String get purchaseBillMgmtColCost => '成本';
+
+  @override
+  String get purchaseBillMgmtColTaxPercent => '税率 %';
+
+  @override
+  String get purchaseBillMgmtPaymentRecordedMessage => '付款已记录。';
 }

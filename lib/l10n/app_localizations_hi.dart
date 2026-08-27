@@ -63,6 +63,13 @@ class AppLocalizationsHi extends AppLocalizations {
   String get onboardingStepInvoiceSubtitle => 'अपने इनवॉइस की सेटिंग करें';
 
   @override
+  String get onboardingStepPurchaseBillsTitle => 'खरीद बिल और आपूर्तिकर्ता';
+
+  @override
+  String get onboardingStepPurchaseBillsSubtitle =>
+      'आपूर्तिकर्ता बिल और स्टॉक खरीद ट्रैक करें (वैकल्पिक)';
+
+  @override
   String get onboardingStepAppearanceTitle => 'इनवॉइस स्वरूप';
 
   @override
@@ -98,6 +105,14 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get onboardingDefaultTaxRateLabel => 'डिफ़ॉल्ट टैक्स दर (%)';
+
+  @override
+  String get onboardingEnablePurchaseBillsSuppliersLabel =>
+      'खरीद बिल और आपूर्तिकर्ता सक्षम करें';
+
+  @override
+  String get onboardingEnablePurchaseBillsSuppliersSubtitle =>
+      'डैशबोर्ड मेनू में खरीद बिल और आपूर्तिकर्ता जोड़ता है। आप इसे कभी भी सेटिंग्स में बदल सकते हैं।';
 
   @override
   String get onboardingPageSizeLabel => 'पेज साइज़';
@@ -203,6 +218,12 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get navReports => 'रिपोर्ट';
+
+  @override
+  String get navPurchaseBills => 'खरीद बिल';
+
+  @override
+  String get navSuppliers => 'आपूर्तिकर्ता';
 
   @override
   String get navSettings => 'सेटिंग्स';
@@ -3006,6 +3027,17 @@ class AppLocalizationsHi extends AppLocalizations {
   String get invoiceSettingsSectionItems => 'इनवॉइस आइटम';
 
   @override
+  String get invoiceSettingsSectionSuppliers => 'आपूर्तिकर्ता';
+
+  @override
+  String get settingsEnablePurchaseBillsSuppliersLabel =>
+      'खरीद बिल और आपूर्तिकर्ता सक्षम करें';
+
+  @override
+  String get settingsEnablePurchaseBillsSuppliersSubtitle =>
+      'डैशबोर्ड मेनू में खरीद बिल और आपूर्तिकर्ता दिखाता है';
+
+  @override
   String get invoiceSettingsPrefixLabel => 'इनवॉइस प्रीफ़िक्स';
 
   @override
@@ -4053,4 +4085,335 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get shortcutPrintPdfDescription => 'इनवॉइस PDF जनरेट/प्रिंट करें';
+
+  @override
+  String supplierMgmtLoadErrorMessage(String error) {
+    return 'आपूर्तिकर्ता लोड करने में विफल: $error';
+  }
+
+  @override
+  String get supplierMgmtAddedMessage => 'आपूर्तिकर्ता सफलतापूर्वक जोड़ा गया!';
+
+  @override
+  String get supplierMgmtUpdatedMessage =>
+      'आपूर्तिकर्ता सफलतापूर्वक अपडेट किया गया!';
+
+  @override
+  String supplierMgmtSaveErrorMessage(String error) {
+    return 'आपूर्तिकर्ता सहेजने में त्रुटि: $error';
+  }
+
+  @override
+  String supplierMgmtOutstandingLabel(String amount) {
+    return 'बकाया: $amount';
+  }
+
+  @override
+  String supplierMgmtMoveToTrashBody(String name) {
+    return '\"$name\" को ट्रैश में ले जाएँ? मौजूदा खरीद बिल आपूर्तिकर्ता का सहेजा हुआ नाम दिखाते रहेंगे।';
+  }
+
+  @override
+  String get supplierMgmtMovedToTrashMessage =>
+      'आपूर्तिकर्ता ट्रैश में ले जाया गया।';
+
+  @override
+  String get supplierMgmtRestoredMessage =>
+      'आपूर्तिकर्ता पुनर्स्थापित किया गया।';
+
+  @override
+  String get supplierMgmtAddSupplierButton => 'आपूर्तिकर्ता जोड़ें';
+
+  @override
+  String get supplierMgmtTitle => 'आपूर्तिकर्ता';
+
+  @override
+  String get supplierMgmtSubtitle =>
+      'उन आपूर्तिकर्ताओं को प्रबंधित करें जिनसे आप स्टॉक खरीदते हैं';
+
+  @override
+  String get supplierMgmtSearchHint =>
+      'नाम, फ़ोन, या GSTIN से आपूर्तिकर्ता खोजें...';
+
+  @override
+  String get supplierMgmtColSupplier => 'आपूर्तिकर्ता';
+
+  @override
+  String get supplierMgmtColGstin => 'GSTIN';
+
+  @override
+  String supplierMgmtTotalCountLabel(int count) {
+    return 'कुल: $count';
+  }
+
+  @override
+  String get supplierMgmtNoSuppliersYetMessage =>
+      'अभी तक कोई आपूर्तिकर्ता नहीं';
+
+  @override
+  String get supplierMgmtNoSuppliersMatchMessage =>
+      'आपकी खोज से कोई आपूर्तिकर्ता मेल नहीं खाता';
+
+  @override
+  String get supplierMgmtAddNewTitle => 'नया आपूर्तिकर्ता जोड़ें';
+
+  @override
+  String get supplierMgmtEditTitle => 'आपूर्तिकर्ता संपादित करें';
+
+  @override
+  String get supplierMgmtSaveChangesButton => 'परिवर्तन सहेजें';
+
+  @override
+  String get supplierMgmtTaxVatNumberLabel => 'टैक्स/वैट नंबर (GSTIN)';
+
+  @override
+  String purchaseBillMgmtLoadErrorMessage(String error) {
+    return 'खरीद बिल लोड करने में विफल: $error';
+  }
+
+  @override
+  String get purchaseBillMgmtAlreadyFullyPaidMessage =>
+      'यह बिल पहले ही पूरी तरह भुगतान किया जा चुका है।';
+
+  @override
+  String purchaseBillMgmtMoveToTrashBody(String billNumber) {
+    return '\"$billNumber\" बिल को ट्रैश में ले जाएँ? स्टॉक वापस समायोजित हो जाएगा।';
+  }
+
+  @override
+  String get purchaseBillMgmtMovedToTrashMessage =>
+      'खरीद बिल ट्रैश में ले जाया गया।';
+
+  @override
+  String get purchaseBillMgmtRestoredMessage =>
+      'खरीद बिल पुनर्स्थापित किया गया।';
+
+  @override
+  String get purchaseBillMgmtSortByTitle => 'इसके अनुसार क्रमबद्ध करें';
+
+  @override
+  String get purchaseBillMgmtSortDateNewest => 'तारीख (नवीनतम पहले)';
+
+  @override
+  String get purchaseBillMgmtSortDateOldest => 'तारीख (सबसे पुराना पहले)';
+
+  @override
+  String get purchaseBillMgmtSortSupplierAZ => 'आपूर्तिकर्ता (A-Z)';
+
+  @override
+  String get purchaseBillMgmtSortSupplierZA => 'आपूर्तिकर्ता (Z-A)';
+
+  @override
+  String get purchaseBillMgmtSortAmountHighest => 'राशि (सर्वाधिक पहले)';
+
+  @override
+  String get purchaseBillMgmtSortAmountLowest => 'राशि (न्यूनतम पहले)';
+
+  @override
+  String get purchaseBillMgmtFilterTitle => 'खरीद बिल फ़िल्टर करें';
+
+  @override
+  String get purchaseBillMgmtPaymentStatusLabel => 'भुगतान स्थिति';
+
+  @override
+  String get purchaseBillMgmtSearchHint =>
+      'बिल नंबर या आपूर्तिकर्ता से खोजें...';
+
+  @override
+  String get purchaseBillMgmtNewBillButton => 'नया खरीद बिल';
+
+  @override
+  String get purchaseBillMgmtColBill => 'बिल';
+
+  @override
+  String get purchaseBillMgmtColBalance => 'शेष';
+
+  @override
+  String purchaseBillMgmtTotalCountLabel(int count) {
+    return 'कुल: $count';
+  }
+
+  @override
+  String get purchaseBillMgmtNoBillsFoundTitle => 'कोई खरीद बिल नहीं मिला';
+
+  @override
+  String get purchaseBillMgmtCreateFirstMessage =>
+      'शुरू करने के लिए अपना पहला खरीद बिल बनाएँ';
+
+  @override
+  String get purchaseBillMgmtTryAdjustingMessage =>
+      'अपनी खोज या फ़िल्टर समायोजित करके देखें';
+
+  @override
+  String get purchaseBillMgmtTitle => 'खरीद बिल';
+
+  @override
+  String get purchaseBillMgmtUnknownSupplierLabel => 'अज्ञात आपूर्तिकर्ता';
+
+  @override
+  String get purchaseBillMgmtNotesSectionLabel => 'नोट्स';
+
+  @override
+  String get purchaseBillMgmtItemsSectionLabel => 'आइटम';
+
+  @override
+  String get purchaseBillMgmtGrandTotalLabel => 'कुल योग';
+
+  @override
+  String get purchaseBillMgmtBillDetailsTitle => 'बिल विवरण';
+
+  @override
+  String get purchaseBillMgmtExistingSupplierLabel => 'मौजूदा आपूर्तिकर्ता';
+
+  @override
+  String get purchaseBillMgmtWalkInSupplierLabel => 'वॉक-इन आपूर्तिकर्ता';
+
+  @override
+  String get purchaseBillMgmtSupplierRequiredLabel => 'आपूर्तिकर्ता *';
+
+  @override
+  String get purchaseBillMgmtBillNumberOptionalLabel => 'बिल नंबर (वैकल्पिक)';
+
+  @override
+  String get purchaseBillMgmtAutoGenerateHint => 'स्वतः जनरेट करें';
+
+  @override
+  String get purchaseBillMgmtBillDateRequiredLabel => 'बिल तिथि *';
+
+  @override
+  String get purchaseBillMgmtPickDateTooltip => 'तारीख चुनें';
+
+  @override
+  String get purchaseBillMgmtAddAnyNotesHint => 'कोई नोट जोड़ें';
+
+  @override
+  String get purchaseBillMgmtAttachmentOptionalLabel => 'अटैचमेंट (वैकल्पिक)';
+
+  @override
+  String get purchaseBillMgmtAttachFileHint => 'फ़ाइल संलग्न करें';
+
+  @override
+  String get purchaseBillMgmtBrowseTooltip => 'ब्राउज़ करें';
+
+  @override
+  String get purchaseBillMgmtSelectSupplierMessage =>
+      'कृपया एक आपूर्तिकर्ता चुनें या वॉक-इन पर स्विच करें।';
+
+  @override
+  String get purchaseBillMgmtEnterSupplierNameMessage =>
+      'कृपया आपूर्तिकर्ता का नाम दर्ज करें।';
+
+  @override
+  String get purchaseBillMgmtAddAtLeastOneItemMessage =>
+      'कम से कम एक आइटम जोड़ें।';
+
+  @override
+  String get purchaseBillMgmtUpdatedMessage => 'खरीद बिल अपडेट किया गया!';
+
+  @override
+  String get purchaseBillMgmtCreatedMessage => 'खरीद बिल बनाया गया!';
+
+  @override
+  String purchaseBillMgmtSaveErrorMessage(String error) {
+    return 'खरीद बिल सहेजने में त्रुटि: $error';
+  }
+
+  @override
+  String get purchaseBillMgmtEnterNameMessage => 'नाम दर्ज करें';
+
+  @override
+  String get purchaseBillMgmtAddCustomItemTitle => 'कस्टम आइटम जोड़ें';
+
+  @override
+  String get purchaseBillMgmtDescriptionOptionalLabel => 'विवरण (वैकल्पिक)';
+
+  @override
+  String get purchaseBillMgmtQuantityLabel => 'मात्रा';
+
+  @override
+  String get purchaseBillMgmtCostPerUnitLabel => 'प्रति यूनिट लागत';
+
+  @override
+  String get purchaseBillMgmtCostIncludesTaxLabel =>
+      'प्रति यूनिट लागत में टैक्स शामिल है';
+
+  @override
+  String get purchaseBillMgmtEnterItemNameMessage => 'आइटम का नाम दर्ज करें';
+
+  @override
+  String get purchaseBillMgmtInvalidValueMessage => 'अमान्य';
+
+  @override
+  String get purchaseBillMgmtEditItemTitle => 'आइटम संपादित करें';
+
+  @override
+  String get purchaseBillMgmtEditItemTooltip => 'आइटम संपादित करें';
+
+  @override
+  String get purchaseBillMgmtRemoveItemTooltip => 'आइटम हटाएं';
+
+  @override
+  String get purchaseBillMgmtNoItemsAddedMessage =>
+      'अभी तक कोई आइटम नहीं जोड़ा गया';
+
+  @override
+  String purchaseBillMgmtLastCostLabel(String amount) {
+    return 'अंतिम लागत: $amount';
+  }
+
+  @override
+  String get purchaseBillMgmtSearchProductsHint =>
+      'जोड़ने के लिए उत्पाद खोजें...';
+
+  @override
+  String get purchaseBillMgmtCustomBadgeLabel => 'कस्टम';
+
+  @override
+  String get purchaseBillMgmtQtyDetailLabel => 'मात्रा';
+
+  @override
+  String get purchaseBillMgmtUnitCostDetailLabel => 'यूनिट लागत';
+
+  @override
+  String purchaseBillMgmtTaxInclusiveLabel(String rate) {
+    return '$rate% सम्मिलित';
+  }
+
+  @override
+  String get purchaseBillMgmtNetCostDetailLabel => 'शुद्ध लागत';
+
+  @override
+  String get purchaseBillMgmtEditPurchaseBillTitle => 'खरीद बिल संपादित करें';
+
+  @override
+  String get purchaseBillMgmtUpdateSubtitle => 'इस खरीद बिल को अपडेट करें';
+
+  @override
+  String get purchaseBillMgmtCreateSubtitle =>
+      'अपने आपूर्तिकर्ता के लिए नया खरीद बिल बनाएँ';
+
+  @override
+  String get purchaseBillMgmtSaveDraftButton => 'ड्राफ्ट सहेजें';
+
+  @override
+  String get purchaseBillMgmtSavePurchaseBillButton => 'खरीद बिल सहेजें';
+
+  @override
+  String get purchaseBillMgmtSelectSupplierFromListMessage =>
+      'सूची से एक आपूर्तिकर्ता चुनें';
+
+  @override
+  String get purchaseBillMgmtSearchSupplierHint => 'आपूर्तिकर्ता खोजें';
+
+  @override
+  String get purchaseBillMgmtColItem => 'आइटम';
+
+  @override
+  String get purchaseBillMgmtColCost => 'लागत';
+
+  @override
+  String get purchaseBillMgmtColTaxPercent => 'टैक्स %';
+
+  @override
+  String get purchaseBillMgmtPaymentRecordedMessage => 'भुगतान दर्ज किया गया।';
 }

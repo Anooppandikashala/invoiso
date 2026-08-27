@@ -64,6 +64,14 @@ class AppLocalizationsEs extends AppLocalizations {
       'Configura cómo funcionan tus facturas';
 
   @override
+  String get onboardingStepPurchaseBillsTitle =>
+      'Facturas de compra y proveedores';
+
+  @override
+  String get onboardingStepPurchaseBillsSubtitle =>
+      'Registra facturas de proveedores y compras de stock (opcional)';
+
+  @override
   String get onboardingStepAppearanceTitle => 'Apariencia de la factura';
 
   @override
@@ -102,6 +110,14 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get onboardingDefaultTaxRateLabel =>
       'Tasa de impuesto predeterminada (%)';
+
+  @override
+  String get onboardingEnablePurchaseBillsSuppliersLabel =>
+      'Habilitar Facturas de compra y Proveedores';
+
+  @override
+  String get onboardingEnablePurchaseBillsSuppliersSubtitle =>
+      'Añade Facturas de compra y Proveedores al menú del panel. Puedes cambiarlo en cualquier momento en Configuración.';
 
   @override
   String get onboardingPageSizeLabel => 'Tamaño de página';
@@ -207,6 +223,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get navReports => 'Informes';
+
+  @override
+  String get navPurchaseBills => 'Facturas de compra';
+
+  @override
+  String get navSuppliers => 'Proveedores';
 
   @override
   String get navSettings => 'Configuración';
@@ -3044,6 +3066,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get invoiceSettingsSectionItems => 'Artículos de la factura';
 
   @override
+  String get invoiceSettingsSectionSuppliers => 'Proveedores';
+
+  @override
+  String get settingsEnablePurchaseBillsSuppliersLabel =>
+      'Habilitar Facturas de compra y Proveedores';
+
+  @override
+  String get settingsEnablePurchaseBillsSuppliersSubtitle =>
+      'Muestra Facturas de compra y Proveedores en el menú del panel';
+
+  @override
   String get invoiceSettingsPrefixLabel => 'Prefijo de factura';
 
   @override
@@ -4118,4 +4151,341 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get shortcutPrintPdfDescription =>
       'Generar / imprimir el PDF de la factura';
+
+  @override
+  String supplierMgmtLoadErrorMessage(String error) {
+    return 'Error al cargar proveedores: $error';
+  }
+
+  @override
+  String get supplierMgmtAddedMessage => '¡Proveedor agregado correctamente!';
+
+  @override
+  String get supplierMgmtUpdatedMessage =>
+      '¡Proveedor actualizado correctamente!';
+
+  @override
+  String supplierMgmtSaveErrorMessage(String error) {
+    return 'Error al guardar el proveedor: $error';
+  }
+
+  @override
+  String supplierMgmtOutstandingLabel(String amount) {
+    return 'Pendiente: $amount';
+  }
+
+  @override
+  String supplierMgmtMoveToTrashBody(String name) {
+    return '¿Mover \"$name\" a la papelera? Las facturas de compra existentes seguirán mostrando el nombre del proveedor guardado.';
+  }
+
+  @override
+  String get supplierMgmtMovedToTrashMessage =>
+      'Proveedor movido a la papelera.';
+
+  @override
+  String get supplierMgmtRestoredMessage => 'Proveedor restaurado.';
+
+  @override
+  String get supplierMgmtAddSupplierButton => 'Agregar proveedor';
+
+  @override
+  String get supplierMgmtTitle => 'Proveedores';
+
+  @override
+  String get supplierMgmtSubtitle =>
+      'Administra los proveedores a quienes les compras stock';
+
+  @override
+  String get supplierMgmtSearchHint =>
+      'Buscar proveedores por nombre, teléfono o GSTIN...';
+
+  @override
+  String get supplierMgmtColSupplier => 'Proveedor';
+
+  @override
+  String get supplierMgmtColGstin => 'GSTIN';
+
+  @override
+  String supplierMgmtTotalCountLabel(int count) {
+    return 'Total: $count';
+  }
+
+  @override
+  String get supplierMgmtNoSuppliersYetMessage => 'Aún no hay proveedores';
+
+  @override
+  String get supplierMgmtNoSuppliersMatchMessage =>
+      'Ningún proveedor coincide con tu búsqueda';
+
+  @override
+  String get supplierMgmtAddNewTitle => 'Agregar nuevo proveedor';
+
+  @override
+  String get supplierMgmtEditTitle => 'Editar proveedor';
+
+  @override
+  String get supplierMgmtSaveChangesButton => 'Guardar cambios';
+
+  @override
+  String get supplierMgmtTaxVatNumberLabel => 'Número de impuesto/IVA (GSTIN)';
+
+  @override
+  String purchaseBillMgmtLoadErrorMessage(String error) {
+    return 'Error al cargar las facturas de compra: $error';
+  }
+
+  @override
+  String get purchaseBillMgmtAlreadyFullyPaidMessage =>
+      'Esta factura ya está totalmente pagada.';
+
+  @override
+  String purchaseBillMgmtMoveToTrashBody(String billNumber) {
+    return '¿Mover la factura \"$billNumber\" a la papelera? El stock se revertirá.';
+  }
+
+  @override
+  String get purchaseBillMgmtMovedToTrashMessage =>
+      'Factura de compra movida a la papelera.';
+
+  @override
+  String get purchaseBillMgmtRestoredMessage => 'Factura de compra restaurada.';
+
+  @override
+  String get purchaseBillMgmtSortByTitle => 'Ordenar por';
+
+  @override
+  String get purchaseBillMgmtSortDateNewest => 'Fecha (más reciente primero)';
+
+  @override
+  String get purchaseBillMgmtSortDateOldest => 'Fecha (más antigua primero)';
+
+  @override
+  String get purchaseBillMgmtSortSupplierAZ => 'Proveedor (A-Z)';
+
+  @override
+  String get purchaseBillMgmtSortSupplierZA => 'Proveedor (Z-A)';
+
+  @override
+  String get purchaseBillMgmtSortAmountHighest => 'Monto (mayor primero)';
+
+  @override
+  String get purchaseBillMgmtSortAmountLowest => 'Monto (menor primero)';
+
+  @override
+  String get purchaseBillMgmtFilterTitle => 'Filtrar facturas de compra';
+
+  @override
+  String get purchaseBillMgmtPaymentStatusLabel => 'Estado de pago';
+
+  @override
+  String get purchaseBillMgmtSearchHint =>
+      'Buscar por número de factura o proveedor...';
+
+  @override
+  String get purchaseBillMgmtNewBillButton => 'Nueva factura de compra';
+
+  @override
+  String get purchaseBillMgmtColBill => 'Factura';
+
+  @override
+  String get purchaseBillMgmtColBalance => 'Saldo';
+
+  @override
+  String purchaseBillMgmtTotalCountLabel(int count) {
+    return 'Total: $count';
+  }
+
+  @override
+  String get purchaseBillMgmtNoBillsFoundTitle =>
+      'No se encontraron facturas de compra';
+
+  @override
+  String get purchaseBillMgmtCreateFirstMessage =>
+      'Crea tu primera factura de compra para comenzar';
+
+  @override
+  String get purchaseBillMgmtTryAdjustingMessage =>
+      'Intenta ajustar tu búsqueda o filtros';
+
+  @override
+  String get purchaseBillMgmtTitle => 'Facturas de compra';
+
+  @override
+  String get purchaseBillMgmtUnknownSupplierLabel => 'Proveedor desconocido';
+
+  @override
+  String get purchaseBillMgmtNotesSectionLabel => 'Notas';
+
+  @override
+  String get purchaseBillMgmtItemsSectionLabel => 'Artículos';
+
+  @override
+  String get purchaseBillMgmtGrandTotalLabel => 'Total general';
+
+  @override
+  String get purchaseBillMgmtBillDetailsTitle => 'Detalles de la factura';
+
+  @override
+  String get purchaseBillMgmtExistingSupplierLabel => 'Proveedor existente';
+
+  @override
+  String get purchaseBillMgmtWalkInSupplierLabel => 'Proveedor ocasional';
+
+  @override
+  String get purchaseBillMgmtSupplierRequiredLabel => 'Proveedor *';
+
+  @override
+  String get purchaseBillMgmtBillNumberOptionalLabel =>
+      'Número de factura (opcional)';
+
+  @override
+  String get purchaseBillMgmtAutoGenerateHint => 'Generar automáticamente';
+
+  @override
+  String get purchaseBillMgmtBillDateRequiredLabel => 'Fecha de factura *';
+
+  @override
+  String get purchaseBillMgmtPickDateTooltip => 'Elegir fecha';
+
+  @override
+  String get purchaseBillMgmtAddAnyNotesHint => 'Agregar notas';
+
+  @override
+  String get purchaseBillMgmtAttachmentOptionalLabel => 'Adjunto (opcional)';
+
+  @override
+  String get purchaseBillMgmtAttachFileHint => 'Adjuntar archivo';
+
+  @override
+  String get purchaseBillMgmtBrowseTooltip => 'Explorar';
+
+  @override
+  String get purchaseBillMgmtSelectSupplierMessage =>
+      'Selecciona un proveedor o cambia a proveedor ocasional.';
+
+  @override
+  String get purchaseBillMgmtEnterSupplierNameMessage =>
+      'Ingresa el nombre del proveedor.';
+
+  @override
+  String get purchaseBillMgmtAddAtLeastOneItemMessage =>
+      'Agrega al menos un artículo.';
+
+  @override
+  String get purchaseBillMgmtUpdatedMessage =>
+      '¡Factura de compra actualizada!';
+
+  @override
+  String get purchaseBillMgmtCreatedMessage => '¡Factura de compra creada!';
+
+  @override
+  String purchaseBillMgmtSaveErrorMessage(String error) {
+    return 'Error al guardar la factura de compra: $error';
+  }
+
+  @override
+  String get purchaseBillMgmtEnterNameMessage => 'Ingresa un nombre';
+
+  @override
+  String get purchaseBillMgmtAddCustomItemTitle =>
+      'Agregar artículo personalizado';
+
+  @override
+  String get purchaseBillMgmtDescriptionOptionalLabel =>
+      'Descripción (opcional)';
+
+  @override
+  String get purchaseBillMgmtQuantityLabel => 'Cantidad';
+
+  @override
+  String get purchaseBillMgmtCostPerUnitLabel => 'Costo/unidad';
+
+  @override
+  String get purchaseBillMgmtCostIncludesTaxLabel =>
+      'El costo/unidad incluye impuesto';
+
+  @override
+  String get purchaseBillMgmtEnterItemNameMessage =>
+      'Ingresa el nombre del artículo';
+
+  @override
+  String get purchaseBillMgmtInvalidValueMessage => 'Inválido';
+
+  @override
+  String get purchaseBillMgmtEditItemTitle => 'Editar artículo';
+
+  @override
+  String get purchaseBillMgmtEditItemTooltip => 'Editar artículo';
+
+  @override
+  String get purchaseBillMgmtRemoveItemTooltip => 'Quitar artículo';
+
+  @override
+  String get purchaseBillMgmtNoItemsAddedMessage =>
+      'Aún no se han agregado artículos';
+
+  @override
+  String purchaseBillMgmtLastCostLabel(String amount) {
+    return 'Último costo: $amount';
+  }
+
+  @override
+  String get purchaseBillMgmtSearchProductsHint =>
+      'Buscar productos para agregar...';
+
+  @override
+  String get purchaseBillMgmtCustomBadgeLabel => 'Personalizado';
+
+  @override
+  String get purchaseBillMgmtQtyDetailLabel => 'Cant.';
+
+  @override
+  String get purchaseBillMgmtUnitCostDetailLabel => 'Costo unitario';
+
+  @override
+  String purchaseBillMgmtTaxInclusiveLabel(String rate) {
+    return '$rate% incluido';
+  }
+
+  @override
+  String get purchaseBillMgmtNetCostDetailLabel => 'Costo neto';
+
+  @override
+  String get purchaseBillMgmtEditPurchaseBillTitle =>
+      'Editar factura de compra';
+
+  @override
+  String get purchaseBillMgmtUpdateSubtitle =>
+      'Actualiza esta factura de compra';
+
+  @override
+  String get purchaseBillMgmtCreateSubtitle =>
+      'Crea una nueva factura de compra para tu proveedor';
+
+  @override
+  String get purchaseBillMgmtSaveDraftButton => 'Guardar borrador';
+
+  @override
+  String get purchaseBillMgmtSavePurchaseBillButton =>
+      'Guardar factura de compra';
+
+  @override
+  String get purchaseBillMgmtSelectSupplierFromListMessage =>
+      'Selecciona un proveedor de la lista';
+
+  @override
+  String get purchaseBillMgmtSearchSupplierHint => 'Buscar proveedor';
+
+  @override
+  String get purchaseBillMgmtColItem => 'Artículo';
+
+  @override
+  String get purchaseBillMgmtColCost => 'Costo';
+
+  @override
+  String get purchaseBillMgmtColTaxPercent => 'Impuesto %';
+
+  @override
+  String get purchaseBillMgmtPaymentRecordedMessage => 'Pago registrado.';
 }

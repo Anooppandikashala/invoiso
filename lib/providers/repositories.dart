@@ -6,8 +6,11 @@ import 'package:invoiso/repositories/invoice_item_repository.dart';
 import 'package:invoiso/repositories/invoice_repository.dart';
 import 'package:invoiso/repositories/payment_repository.dart';
 import 'package:invoiso/repositories/product_repository.dart';
+import 'package:invoiso/repositories/purchase_bill_repository.dart';
 import 'package:invoiso/repositories/report_repository.dart';
 import 'package:invoiso/repositories/settings_repository.dart';
+import 'package:invoiso/repositories/supplier_payment_repository.dart';
+import 'package:invoiso/repositories/supplier_repository.dart';
 
 final customerRepositoryProvider = Provider<CustomerRepository>((ref) {
   throw UnimplementedError(
@@ -60,6 +63,24 @@ final invoiceItemRepositoryProvider = Provider<InvoiceItemRepository>((ref) {
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   throw UnimplementedError(
     'invoiceItemRepositoryProvider must be overridden.',
+  );
+});
+
+final supplierRepositoryProvider = Provider<SupplierRepository>((ref) {
+  throw UnimplementedError(
+    'supplierRepositoryProvider must be overridden.',
+  );
+});
+
+final purchaseBillRepositoryProvider = Provider<PurchaseBillRepository>((ref) {
+  throw UnimplementedError(
+    'purchaseBillRepositoryProvider must be overridden.',
+  );
+});
+
+final supplierPaymentRepositoryProvider = Provider<SupplierPaymentRepository>((ref) {
+  throw UnimplementedError(
+    'supplierPaymentRepositoryProvider must be overridden.',
   );
 });
 

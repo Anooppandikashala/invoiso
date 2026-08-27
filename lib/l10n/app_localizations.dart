@@ -216,6 +216,18 @@ abstract class AppLocalizations {
   /// **'Set up how your invoices work'**
   String get onboardingStepInvoiceSubtitle;
 
+  /// No description provided for @onboardingStepPurchaseBillsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase Bills & Suppliers'**
+  String get onboardingStepPurchaseBillsTitle;
+
+  /// No description provided for @onboardingStepPurchaseBillsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Track supplier bills and stock purchases (optional)'**
+  String get onboardingStepPurchaseBillsSubtitle;
+
   /// No description provided for @onboardingStepAppearanceTitle.
   ///
   /// In en, this message translates to:
@@ -287,6 +299,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Default Tax Rate (%)'**
   String get onboardingDefaultTaxRateLabel;
+
+  /// No description provided for @onboardingEnablePurchaseBillsSuppliersLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Purchase Bills & Suppliers'**
+  String get onboardingEnablePurchaseBillsSuppliersLabel;
+
+  /// No description provided for @onboardingEnablePurchaseBillsSuppliersSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Adds Purchase Bills and Suppliers to the dashboard menu. You can change this anytime in Settings.'**
+  String get onboardingEnablePurchaseBillsSuppliersSubtitle;
 
   /// No description provided for @onboardingPageSizeLabel.
   ///
@@ -473,6 +497,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reports'**
   String get navReports;
+
+  /// No description provided for @navPurchaseBills.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase Bills'**
+  String get navPurchaseBills;
+
+  /// No description provided for @navSuppliers.
+  ///
+  /// In en, this message translates to:
+  /// **'Suppliers'**
+  String get navSuppliers;
 
   /// No description provided for @navSettings.
   ///
@@ -4968,6 +5004,24 @@ abstract class AppLocalizations {
   /// **'Invoice Items'**
   String get invoiceSettingsSectionItems;
 
+  /// No description provided for @invoiceSettingsSectionSuppliers.
+  ///
+  /// In en, this message translates to:
+  /// **'Suppliers'**
+  String get invoiceSettingsSectionSuppliers;
+
+  /// No description provided for @settingsEnablePurchaseBillsSuppliersLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Purchase Bills & Suppliers'**
+  String get settingsEnablePurchaseBillsSuppliersLabel;
+
+  /// No description provided for @settingsEnablePurchaseBillsSuppliersSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shows Purchase Bills and Suppliers in the dashboard menu'**
+  String get settingsEnablePurchaseBillsSuppliersSubtitle;
+
   /// No description provided for @invoiceSettingsPrefixLabel.
   ///
   /// In en, this message translates to:
@@ -6839,6 +6893,582 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Generate / print invoice PDF'**
   String get shortcutPrintPdfDescription;
+
+  /// No description provided for @supplierMgmtLoadErrorMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load suppliers: {error}'**
+  String supplierMgmtLoadErrorMessage(String error);
+
+  /// No description provided for @supplierMgmtAddedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier added successfully!'**
+  String get supplierMgmtAddedMessage;
+
+  /// No description provided for @supplierMgmtUpdatedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier updated successfully!'**
+  String get supplierMgmtUpdatedMessage;
+
+  /// No description provided for @supplierMgmtSaveErrorMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Error saving supplier: {error}'**
+  String supplierMgmtSaveErrorMessage(String error);
+
+  /// No description provided for @supplierMgmtOutstandingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Outstanding: {amount}'**
+  String supplierMgmtOutstandingLabel(String amount);
+
+  /// No description provided for @supplierMgmtMoveToTrashBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Move \"{name}\" to trash? Existing purchase bills keep showing their snapshotted supplier name.'**
+  String supplierMgmtMoveToTrashBody(String name);
+
+  /// No description provided for @supplierMgmtMovedToTrashMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier moved to trash.'**
+  String get supplierMgmtMovedToTrashMessage;
+
+  /// No description provided for @supplierMgmtRestoredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier restored.'**
+  String get supplierMgmtRestoredMessage;
+
+  /// No description provided for @supplierMgmtAddSupplierButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Supplier'**
+  String get supplierMgmtAddSupplierButton;
+
+  /// No description provided for @supplierMgmtTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Suppliers'**
+  String get supplierMgmtTitle;
+
+  /// No description provided for @supplierMgmtSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage the suppliers you purchase stock from'**
+  String get supplierMgmtSubtitle;
+
+  /// No description provided for @supplierMgmtSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search suppliers by name, phone, or GSTIN...'**
+  String get supplierMgmtSearchHint;
+
+  /// No description provided for @supplierMgmtColSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier'**
+  String get supplierMgmtColSupplier;
+
+  /// No description provided for @supplierMgmtColGstin.
+  ///
+  /// In en, this message translates to:
+  /// **'GSTIN'**
+  String get supplierMgmtColGstin;
+
+  /// No description provided for @supplierMgmtTotalCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total: {count}'**
+  String supplierMgmtTotalCountLabel(int count);
+
+  /// No description provided for @supplierMgmtNoSuppliersYetMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No suppliers yet'**
+  String get supplierMgmtNoSuppliersYetMessage;
+
+  /// No description provided for @supplierMgmtNoSuppliersMatchMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No suppliers match your search'**
+  String get supplierMgmtNoSuppliersMatchMessage;
+
+  /// No description provided for @supplierMgmtAddNewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add New Supplier'**
+  String get supplierMgmtAddNewTitle;
+
+  /// No description provided for @supplierMgmtEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Supplier'**
+  String get supplierMgmtEditTitle;
+
+  /// No description provided for @supplierMgmtSaveChangesButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Changes'**
+  String get supplierMgmtSaveChangesButton;
+
+  /// No description provided for @supplierMgmtTaxVatNumberLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax/VAT Number (GSTIN)'**
+  String get supplierMgmtTaxVatNumberLabel;
+
+  /// No description provided for @purchaseBillMgmtLoadErrorMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load purchase bills: {error}'**
+  String purchaseBillMgmtLoadErrorMessage(String error);
+
+  /// No description provided for @purchaseBillMgmtAlreadyFullyPaidMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This bill is already fully paid.'**
+  String get purchaseBillMgmtAlreadyFullyPaidMessage;
+
+  /// No description provided for @purchaseBillMgmtMoveToTrashBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Move bill \"{billNumber}\" to trash? Stock will be reversed.'**
+  String purchaseBillMgmtMoveToTrashBody(String billNumber);
+
+  /// No description provided for @purchaseBillMgmtMovedToTrashMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase bill moved to trash.'**
+  String get purchaseBillMgmtMovedToTrashMessage;
+
+  /// No description provided for @purchaseBillMgmtRestoredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase bill restored.'**
+  String get purchaseBillMgmtRestoredMessage;
+
+  /// No description provided for @purchaseBillMgmtSortByTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort By'**
+  String get purchaseBillMgmtSortByTitle;
+
+  /// No description provided for @purchaseBillMgmtSortDateNewest.
+  ///
+  /// In en, this message translates to:
+  /// **'Date (Newest First)'**
+  String get purchaseBillMgmtSortDateNewest;
+
+  /// No description provided for @purchaseBillMgmtSortDateOldest.
+  ///
+  /// In en, this message translates to:
+  /// **'Date (Oldest First)'**
+  String get purchaseBillMgmtSortDateOldest;
+
+  /// No description provided for @purchaseBillMgmtSortSupplierAZ.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier (A-Z)'**
+  String get purchaseBillMgmtSortSupplierAZ;
+
+  /// No description provided for @purchaseBillMgmtSortSupplierZA.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier (Z-A)'**
+  String get purchaseBillMgmtSortSupplierZA;
+
+  /// No description provided for @purchaseBillMgmtSortAmountHighest.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount (Highest First)'**
+  String get purchaseBillMgmtSortAmountHighest;
+
+  /// No description provided for @purchaseBillMgmtSortAmountLowest.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount (Lowest First)'**
+  String get purchaseBillMgmtSortAmountLowest;
+
+  /// No description provided for @purchaseBillMgmtFilterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter Purchase Bills'**
+  String get purchaseBillMgmtFilterTitle;
+
+  /// No description provided for @purchaseBillMgmtPaymentStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment Status'**
+  String get purchaseBillMgmtPaymentStatusLabel;
+
+  /// No description provided for @purchaseBillMgmtSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by bill number or supplier...'**
+  String get purchaseBillMgmtSearchHint;
+
+  /// No description provided for @purchaseBillMgmtNewBillButton.
+  ///
+  /// In en, this message translates to:
+  /// **'New Purchase Bill'**
+  String get purchaseBillMgmtNewBillButton;
+
+  /// No description provided for @purchaseBillMgmtColBill.
+  ///
+  /// In en, this message translates to:
+  /// **'Bill'**
+  String get purchaseBillMgmtColBill;
+
+  /// No description provided for @purchaseBillMgmtColBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance'**
+  String get purchaseBillMgmtColBalance;
+
+  /// No description provided for @purchaseBillMgmtTotalCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total: {count}'**
+  String purchaseBillMgmtTotalCountLabel(int count);
+
+  /// No description provided for @purchaseBillMgmtNoBillsFoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No purchase bills found'**
+  String get purchaseBillMgmtNoBillsFoundTitle;
+
+  /// No description provided for @purchaseBillMgmtCreateFirstMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your first purchase bill to get started'**
+  String get purchaseBillMgmtCreateFirstMessage;
+
+  /// No description provided for @purchaseBillMgmtTryAdjustingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Try adjusting your search or filters'**
+  String get purchaseBillMgmtTryAdjustingMessage;
+
+  /// No description provided for @purchaseBillMgmtTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase Bills'**
+  String get purchaseBillMgmtTitle;
+
+  /// No description provided for @purchaseBillMgmtUnknownSupplierLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown supplier'**
+  String get purchaseBillMgmtUnknownSupplierLabel;
+
+  /// No description provided for @purchaseBillMgmtNotesSectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get purchaseBillMgmtNotesSectionLabel;
+
+  /// No description provided for @purchaseBillMgmtItemsSectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Items'**
+  String get purchaseBillMgmtItemsSectionLabel;
+
+  /// No description provided for @purchaseBillMgmtGrandTotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Grand Total'**
+  String get purchaseBillMgmtGrandTotalLabel;
+
+  /// No description provided for @purchaseBillMgmtBillDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bill Details'**
+  String get purchaseBillMgmtBillDetailsTitle;
+
+  /// No description provided for @purchaseBillMgmtExistingSupplierLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing Supplier'**
+  String get purchaseBillMgmtExistingSupplierLabel;
+
+  /// No description provided for @purchaseBillMgmtWalkInSupplierLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Walk-in Supplier'**
+  String get purchaseBillMgmtWalkInSupplierLabel;
+
+  /// No description provided for @purchaseBillMgmtSupplierRequiredLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier *'**
+  String get purchaseBillMgmtSupplierRequiredLabel;
+
+  /// No description provided for @purchaseBillMgmtBillNumberOptionalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Bill Number (optional)'**
+  String get purchaseBillMgmtBillNumberOptionalLabel;
+
+  /// No description provided for @purchaseBillMgmtAutoGenerateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto generate'**
+  String get purchaseBillMgmtAutoGenerateHint;
+
+  /// No description provided for @purchaseBillMgmtBillDateRequiredLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Bill Date *'**
+  String get purchaseBillMgmtBillDateRequiredLabel;
+
+  /// No description provided for @purchaseBillMgmtPickDateTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick date'**
+  String get purchaseBillMgmtPickDateTooltip;
+
+  /// No description provided for @purchaseBillMgmtAddAnyNotesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add any notes'**
+  String get purchaseBillMgmtAddAnyNotesHint;
+
+  /// No description provided for @purchaseBillMgmtAttachmentOptionalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachment (optional)'**
+  String get purchaseBillMgmtAttachmentOptionalLabel;
+
+  /// No description provided for @purchaseBillMgmtAttachFileHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach file'**
+  String get purchaseBillMgmtAttachFileHint;
+
+  /// No description provided for @purchaseBillMgmtBrowseTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse'**
+  String get purchaseBillMgmtBrowseTooltip;
+
+  /// No description provided for @purchaseBillMgmtSelectSupplierMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a supplier or switch to walk-in.'**
+  String get purchaseBillMgmtSelectSupplierMessage;
+
+  /// No description provided for @purchaseBillMgmtEnterSupplierNameMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a supplier name.'**
+  String get purchaseBillMgmtEnterSupplierNameMessage;
+
+  /// No description provided for @purchaseBillMgmtAddAtLeastOneItemMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least one item.'**
+  String get purchaseBillMgmtAddAtLeastOneItemMessage;
+
+  /// No description provided for @purchaseBillMgmtUpdatedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase bill updated!'**
+  String get purchaseBillMgmtUpdatedMessage;
+
+  /// No description provided for @purchaseBillMgmtCreatedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase bill created!'**
+  String get purchaseBillMgmtCreatedMessage;
+
+  /// No description provided for @purchaseBillMgmtSaveErrorMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Error saving purchase bill: {error}'**
+  String purchaseBillMgmtSaveErrorMessage(String error);
+
+  /// No description provided for @purchaseBillMgmtEnterNameMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a name'**
+  String get purchaseBillMgmtEnterNameMessage;
+
+  /// No description provided for @purchaseBillMgmtAddCustomItemTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Custom Item'**
+  String get purchaseBillMgmtAddCustomItemTitle;
+
+  /// No description provided for @purchaseBillMgmtDescriptionOptionalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description (optional)'**
+  String get purchaseBillMgmtDescriptionOptionalLabel;
+
+  /// No description provided for @purchaseBillMgmtQuantityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity'**
+  String get purchaseBillMgmtQuantityLabel;
+
+  /// No description provided for @purchaseBillMgmtCostPerUnitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost/unit'**
+  String get purchaseBillMgmtCostPerUnitLabel;
+
+  /// No description provided for @purchaseBillMgmtCostIncludesTaxLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost/unit includes tax'**
+  String get purchaseBillMgmtCostIncludesTaxLabel;
+
+  /// No description provided for @purchaseBillMgmtEnterItemNameMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an item name'**
+  String get purchaseBillMgmtEnterItemNameMessage;
+
+  /// No description provided for @purchaseBillMgmtInvalidValueMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid'**
+  String get purchaseBillMgmtInvalidValueMessage;
+
+  /// No description provided for @purchaseBillMgmtEditItemTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Item'**
+  String get purchaseBillMgmtEditItemTitle;
+
+  /// No description provided for @purchaseBillMgmtEditItemTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit item'**
+  String get purchaseBillMgmtEditItemTooltip;
+
+  /// No description provided for @purchaseBillMgmtRemoveItemTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove item'**
+  String get purchaseBillMgmtRemoveItemTooltip;
+
+  /// No description provided for @purchaseBillMgmtNoItemsAddedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No items added yet'**
+  String get purchaseBillMgmtNoItemsAddedMessage;
+
+  /// No description provided for @purchaseBillMgmtLastCostLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Last cost: {amount}'**
+  String purchaseBillMgmtLastCostLabel(String amount);
+
+  /// No description provided for @purchaseBillMgmtSearchProductsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search products to add...'**
+  String get purchaseBillMgmtSearchProductsHint;
+
+  /// No description provided for @purchaseBillMgmtCustomBadgeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get purchaseBillMgmtCustomBadgeLabel;
+
+  /// No description provided for @purchaseBillMgmtQtyDetailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Qty'**
+  String get purchaseBillMgmtQtyDetailLabel;
+
+  /// No description provided for @purchaseBillMgmtUnitCostDetailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit Cost'**
+  String get purchaseBillMgmtUnitCostDetailLabel;
+
+  /// No description provided for @purchaseBillMgmtTaxInclusiveLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{rate}% Inclusive'**
+  String purchaseBillMgmtTaxInclusiveLabel(String rate);
+
+  /// No description provided for @purchaseBillMgmtNetCostDetailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Net Cost'**
+  String get purchaseBillMgmtNetCostDetailLabel;
+
+  /// No description provided for @purchaseBillMgmtEditPurchaseBillTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Purchase Bill'**
+  String get purchaseBillMgmtEditPurchaseBillTitle;
+
+  /// No description provided for @purchaseBillMgmtUpdateSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update this purchase bill'**
+  String get purchaseBillMgmtUpdateSubtitle;
+
+  /// No description provided for @purchaseBillMgmtCreateSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a new purchase bill for your supplier'**
+  String get purchaseBillMgmtCreateSubtitle;
+
+  /// No description provided for @purchaseBillMgmtSaveDraftButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Draft'**
+  String get purchaseBillMgmtSaveDraftButton;
+
+  /// No description provided for @purchaseBillMgmtSavePurchaseBillButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Purchase Bill'**
+  String get purchaseBillMgmtSavePurchaseBillButton;
+
+  /// No description provided for @purchaseBillMgmtSelectSupplierFromListMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a supplier from the list'**
+  String get purchaseBillMgmtSelectSupplierFromListMessage;
+
+  /// No description provided for @purchaseBillMgmtSearchSupplierHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search supplier'**
+  String get purchaseBillMgmtSearchSupplierHint;
+
+  /// No description provided for @purchaseBillMgmtColItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Item'**
+  String get purchaseBillMgmtColItem;
+
+  /// No description provided for @purchaseBillMgmtColCost.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost'**
+  String get purchaseBillMgmtColCost;
+
+  /// No description provided for @purchaseBillMgmtColTaxPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax %'**
+  String get purchaseBillMgmtColTaxPercent;
+
+  /// No description provided for @purchaseBillMgmtPaymentRecordedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment recorded.'**
+  String get purchaseBillMgmtPaymentRecordedMessage;
 }
 
 class _AppLocalizationsDelegate
