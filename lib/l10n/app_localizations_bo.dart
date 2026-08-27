@@ -3095,6 +3095,14 @@ class AppLocalizationsBo extends AppLocalizations {
       'ཐོན་རྫས་ཀྱི་ངོ་མའི་མིང་ཚབ་ PDF ནང་ས་གནས་སྐད་ཡིག་གི་མིང་གཞན (སྒྲིག་ཡོད་ན) པར་སྐྲུན་རོགས།';
 
   @override
+  String get invoiceSettingsShowDescriptionLabel =>
+      'ཐོན་རྫས་ཀྱི་འགྲེལ་བཤད་སྟོན་པ།';
+
+  @override
+  String get invoiceSettingsShowDescriptionSubtitle =>
+      'A4 PDF ནང་ཅ་དངོས་རེ་རེའི་འགྲེལ་བཤད་དེའི་འོག་ཏུ་གྲལ་ཐིག་གཅིག་ཏུ་པར་སྐྲུན་བྱེད་པ (ཚ་དྲོད་ཟིན་ཐོ་དང་ Grid Classic ནང་མིན)';
+
+  @override
   String get invoiceSettingsAllowFractionalQtyLabel => 'ཆ་ཤས་གྲངས་ཀ་ཆོག་པ།';
 
   @override

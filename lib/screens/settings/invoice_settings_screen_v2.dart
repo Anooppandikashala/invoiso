@@ -804,9 +804,8 @@ class _InvoiceSettingsScreenV2State
           onChanged: (val) => setState(() => _showAliasNameInPdf = val),
         ),
         _toggleCardV2(
-          title: 'Show Product Description',
-          subtitle:
-          "Print each item's description as a row under it on A4 PDFs (not on thermal receipts or the Grid Classic template)",
+          title: l10n.invoiceSettingsShowDescriptionLabel,
+          subtitle: l10n.invoiceSettingsShowDescriptionSubtitle,
           icon: Icons.notes_outlined,
           value: _showDescriptionInPdf,
           onChanged: (val) => setState(() => _showDescriptionInPdf = val),

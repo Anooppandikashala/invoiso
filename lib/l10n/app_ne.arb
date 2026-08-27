@@ -828,6 +828,8 @@
   "invoiceSettingsShowPrevBalanceLabel": "अघिल्लो बाँकी रकम देखाउनुहोस्",
   "invoiceSettingsAllowFractionalQtySubtitle": "दशमलव परिमाण सक्षम गर्नुहोस् (जस्तै 1.5 घण्टा, 0.5 किलो)",
   "invoiceSettingsShowAliasNameSubtitle": "PDF मा उत्पादनको वास्तविक नामको सट्टा स्थानीय-भाषा उपनाम (यदि सेट गरिएको छ भने) छाप्नुहोस्",
+  "invoiceSettingsShowDescriptionLabel": "उत्पादन विवरण देखाउनुहोस्",
+  "invoiceSettingsShowDescriptionSubtitle": "प्रत्येक वस्तुको विवरण A4 PDF मा त्यसको मुनि एक पङ्क्तिको रूपमा छाप्नुहोस् (थर्मल रसिद वा ग्रिड क्लासिक टेम्प्लेटमा होइन)",
   "invoiceSettingsSectionGeneral": "सामान्य",
   "commonLeftLabel": "बायाँ",
   "invoiceSettingsImageFormatHint": "PNG, JPG वा JPEG — अधिकतम 2 MB",

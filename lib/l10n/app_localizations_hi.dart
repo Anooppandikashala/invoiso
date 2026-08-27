@@ -3110,6 +3110,13 @@ class AppLocalizationsHi extends AppLocalizations {
       'PDF पर उत्पाद के वास्तविक नाम के बजाय उसका स्थानीय-भाषा उपनाम (यदि सेट है) प्रिंट करें';
 
   @override
+  String get invoiceSettingsShowDescriptionLabel => 'उत्पाद विवरण दिखाएं';
+
+  @override
+  String get invoiceSettingsShowDescriptionSubtitle =>
+      'प्रत्येक आइटम का विवरण A4 PDF में उसके नीचे एक पंक्ति के रूप में छापें (थर्मल रसीदों या ग्रिड क्लासिक टेम्पलेट पर नहीं)';
+
+  @override
   String get invoiceSettingsAllowFractionalQtyLabel =>
       'भिन्नात्मक मात्रा की अनुमति दें';
 

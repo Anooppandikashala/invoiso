@@ -5148,6 +5148,18 @@ abstract class AppLocalizations {
   /// **'Print a product\'s local-language alias (if set) instead of its actual name on PDFs'**
   String get invoiceSettingsShowAliasNameSubtitle;
 
+  /// No description provided for @invoiceSettingsShowDescriptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Product Description'**
+  String get invoiceSettingsShowDescriptionLabel;
+
+  /// No description provided for @invoiceSettingsShowDescriptionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Print each item\'s description as a row under it on A4 PDFs (not on thermal receipts or the Grid Classic template)'**
+  String get invoiceSettingsShowDescriptionSubtitle;
+
   /// No description provided for @invoiceSettingsAllowFractionalQtyLabel.
   ///
   /// In en, this message translates to:

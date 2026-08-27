@@ -1903,6 +1903,8 @@
   "invoiceSettingsShowRoundOffSubtitle": "Show a Round Off row + Net Amount (rounded to nearest) and amount in words on invoice PDFs.",
   "invoiceSettingsShowAliasNameLabel": "Show Alias Name in PDF",
   "invoiceSettingsShowAliasNameSubtitle": "Print a product's local-language alias (if set) instead of its actual name on PDFs",
+  "invoiceSettingsShowDescriptionLabel": "Show Product Description",
+  "invoiceSettingsShowDescriptionSubtitle": "Print each item's description as a row under it on A4 PDFs (not on thermal receipts or the Grid Classic template)",
   "invoiceSettingsAllowFractionalQtyLabel": "Allow Fractional Quantities",
   "invoiceSettingsAllowFractionalQtySubtitle": "Enable decimal quantities (e.g. 1.5 hrs, 0.5 kg)",
   "invoiceSettingsShowQuantityLabel": "Show Quantity Field",
