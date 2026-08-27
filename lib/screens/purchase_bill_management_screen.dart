@@ -8,7 +8,9 @@ import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/domain/invoice_calculator.dart';
 import 'package:invoiso/domain/purchase_bill_calculator.dart';
+import 'package:invoiso/common/invoiso_colors.dart';
 import 'package:invoiso/domain/purchase_bill_totals_calculator.dart';
+import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/models/product.dart';
 import 'package:invoiso/models/purchase_bill.dart';
 import 'package:invoiso/models/purchase_bill_item.dart';
@@ -78,7 +80,11 @@ class _PurchaseBillManagementScreenState
 }
 
 // ─────────────────────────────────────────────
-// List view: paginated table, search, soft-delete + trash.
+// List view: paginated table, search, sort, filter, soft-delete + trash.
+// Structure mirrors InvoiceManagementScreenV2 — gradient table header,
+// isWide-responsive columns/actions (row buttons collapse into one
+// overflow menu below the breakpoint instead of overflowing), and
+// dialog-based Sort/Filter buttons instead of an always-visible strip.
 class _PurchaseBillListView extends ConsumerStatefulWidget {
   final User user;
   final VoidCallback onNew;
@@ -105,6 +111,52 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
   String _currencySymbol = '₹';
   Timer? _searchDebounce;
   final TextEditingController _searchController = TextEditingController();
+
+  // Sort — 'bill_date' | 'supplier_name' | 'total_amount'
+  String _sortField = 'bill_date';
+  bool _sortAscending = false;
+
+  // Filter — payment status is the only meaningful dimension here (no
+  // due-date concept on purchase bills, unlike invoices).
+  String _statusFilter = 'all'; // 'all' | 'paid' | 'partial' | 'unpaid'
+
+  static const List<Map<String, dynamic>> _statusFilterOptionsV2 = [
+    {'value': 'all', 'color': Colors.grey},
+    {'value': 'paid', 'color': Colors.green},
+    {'value': 'partial', 'color': Colors.orange},
+    {'value': 'unpaid', 'color': Colors.red},
+  ];
+
+  static const List<(String, bool, IconData)> _sortOptionsV2 = [
+    ('bill_date', false, Icons.calendar_today_outlined),
+    ('bill_date', true, Icons.calendar_today_outlined),
+    ('supplier_name', true, Icons.sort_by_alpha_outlined),
+    ('supplier_name', false, Icons.sort_by_alpha_outlined),
+    ('total_amount', false, Icons.trending_down_outlined),
+    ('total_amount', true, Icons.trending_up_outlined),
+  ];
+
+  static String _sortOptionLabel(String field, bool asc) {
+    return switch ((field, asc)) {
+      ('bill_date', false) => 'Date (Newest First)',
+      ('bill_date', true) => 'Date (Oldest First)',
+      ('supplier_name', true) => 'Supplier (A-Z)',
+      ('supplier_name', false) => 'Supplier (Z-A)',
+      ('total_amount', false) => 'Amount (Highest First)',
+      _ => 'Amount (Lowest First)',
+    };
+  }
+
+  static String _statusFilterLabel(AppLocalizations l10n, String value) {
+    return switch (value) {
+      'paid' => l10n.paymentStatusPaid,
+      'partial' => l10n.paymentStatusPartial,
+      'unpaid' => l10n.paymentStatusUnpaid,
+      _ => 'All',
+    };
+  }
+
+  int get _activeFilterCountV2 => _statusFilter != 'all' ? 1 : 0;
 
   @override
   void initState() {
@@ -137,16 +189,38 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
           page: _currentPage,
           pageSize: _pageSize,
           searchQuery: _searchQuery,
+          orderBy: _sortField,
+          orderAscending: _sortAscending,
         ),
         billRepo.getPurchaseBillCount(searchQuery: _searchQuery),
       ]);
-      final bills = results[0] as List<PurchaseBill>;
+      var bills = results[0] as List<PurchaseBill>;
       final count = results[1] as int;
       final paidTotals = bills.isEmpty
           ? <String, double>{}
           : await ref
               .read(supplierPaymentRepositoryProvider)
               .getTotalPaidBatch(bills.map((b) => b.id).toList());
+      // Payment status isn't a DB column (derived from total vs paid), so —
+      // same tradeoff as InvoiceManagementScreenV2's own filters — it's
+      // applied to the already-paginated page rather than the query; a
+      // filtered page can show fewer than _pageSize rows.
+      if (_statusFilter != 'all') {
+        bills = bills.where((b) {
+          final paid = paidTotals[b.id] ?? 0.0;
+          final status = PurchaseBillCalculator.paymentStatus(total: b.total, paid: paid);
+          switch (_statusFilter) {
+            case 'paid':
+              return status == PaymentStatus.paid;
+            case 'partial':
+              return status == PaymentStatus.partial;
+            case 'unpaid':
+              return status == PaymentStatus.unpaid;
+            default:
+              return true;
+          }
+        }).toList();
+      }
       if (!mounted) return;
       setState(() {
         _bills = bills;
@@ -186,7 +260,29 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
           Navigator.pop(ctx);
           widget.onEdit(full);
         },
-      ), 
+      ),
+    );
+  }
+
+  Future<void> _showApplyPaymentDialog(PurchaseBill row) async {
+    final full = await ref.read(purchaseBillRepositoryProvider).getPurchaseBillById(row.id) ?? row;
+    if (!mounted) return;
+    final paid = await ref.read(supplierPaymentRepositoryProvider).getTotalPaidForBill(full.id);
+    if (!mounted) return;
+    final outstanding = PurchaseBillCalculator.outstanding(total: full.total, paid: paid);
+    if (outstanding <= 0) {
+      AppError.show(context, 'This bill is already fully paid.', isError: false);
+      return;
+    }
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => _RecordPaymentDialog(
+        bill: full,
+        currencySymbol: _currencySymbol,
+        outstanding: outstanding,
+        onPaymentRecorded: _loadPage,
+      ),
     );
   }
 
@@ -217,235 +313,88 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Purchase Bills'),
-        backgroundColor:
-            Theme.of(context).appBarTheme.backgroundColor ?? Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.delete_sweep_outlined),
-            onPressed: _showTrashDialog,
-            tooltip: 'Trash',
+  void _handleRowActionV2(String action, PurchaseBill bill) {
+    switch (action) {
+      case 'view':
+        _viewBill(bill);
+      case 'edit':
+        _editBill(bill);
+      case 'pay':
+        _showApplyPaymentDialog(bill);
+      case 'delete':
+        if (widget.user.isAdmin()) _softDelete(bill);
+    }
+  }
+
+  List<PopupMenuEntry<String>> _rowActionMenuItemsV2(PurchaseBill bill) {
+    return [
+      PopupMenuItem(value: 'view', child: _MenuRow(Icons.visibility_outlined, 'View', Colors.green)),
+      PopupMenuItem(value: 'edit', child: _MenuRow(Icons.edit_outlined, 'Edit', Colors.blue)),
+      PopupMenuItem(value: 'pay', child: _MenuRow(Icons.payments_outlined, 'Apply Payment', Colors.purple)),
+      if (widget.user.isAdmin())
+        PopupMenuItem(value: 'delete', child: _MenuRow(Icons.delete_outline, 'Move to Trash', Colors.red)),
+    ];
+  }
+
+  Widget _buildActionButton(IconData icon, Color color, String tooltip, VoidCallback? onPressed) {
+    final effectiveColor = onPressed != null ? color : Theme.of(context).colorScheme.onSurfaceVariant;
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: effectiveColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: effectiveColor.withValues(alpha: 0.2)),
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadPage,
-            tooltip: 'Refresh',
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: widget.onNew,
-        icon: const Icon(Icons.add),
-        label: const Text('New Purchase Bill'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
-        child: Card(
-          elevation: 3,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: Column(
-            children: [
-              _buildTableHeader(),
-              _buildSearchBar(),
-              Expanded(
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _bills.isEmpty
-                        ? _buildEmptyState()
-                        : SingleChildScrollView(
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(minWidth: 900),
-                                child: _buildDataTable(),
-                              ),
-                            ),
-                          ),
-              ),
-              _buildPaginationControls(),
-            ],
-          ),
+          child: Icon(icon, color: effectiveColor, size: 18),
         ),
       ),
     );
   }
 
-  Widget _buildTableHeader() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).primaryColor,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(16),
-          topRight: Radius.circular(16),
-        ),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.shopping_cart, color: Colors.white, size: 28),
-          const SizedBox(width: 12),
-          Text(
-            'Purchase Bills ($_totalCount)',
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
-          ),
-        ],
-      ),
+  Widget _rowActionsV2(PurchaseBill bill, PaymentStatus status, bool isWide) {
+    final menu = PopupMenuButton<String>(
+      icon: const Icon(Icons.more_vert, size: 20),
+      tooltip: 'More actions',
+      padding: EdgeInsets.zero,
+      onSelected: (action) => _handleRowActionV2(action, bill),
+      itemBuilder: (ctx) => _rowActionMenuItemsV2(bill),
     );
-  }
-
-  Widget _buildSearchBar() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: TextField(
-        controller: _searchController,
-        decoration: InputDecoration(
-          labelText: 'Search by bill number or supplier...',
-          prefixIcon: const Icon(Icons.search),
-          suffixIcon: _searchQuery.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    _searchController.clear();
-                    setState(() {
-                      _searchQuery = '';
-                      _currentPage = 0;
-                    });
-                    _loadPage();
-                  },
-                )
-              : null,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
-          filled: true,
-          fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-        ),
-        onChanged: (value) {
-          setState(() {
-            _searchQuery = value;
-            _currentPage = 0;
-          });
-          _searchDebounce?.cancel();
-          _searchDebounce = Timer(const Duration(milliseconds: 400), _loadPage);
-        },
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.receipt_long_outlined, size: 80, color: Theme.of(context).colorScheme.outlineVariant),
-          const SizedBox(height: 16),
-          Text('No purchase bills found',
-              style: TextStyle(fontSize: 18, color: Theme.of(context).colorScheme.onSurfaceVariant)),
-          const SizedBox(height: 8),
-          Text(
-            _searchQuery.isEmpty ? 'Create your first purchase bill to get started' : 'Try adjusting your search',
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDataTable() {
-    return DataTable(
-      headingRowColor: WidgetStateProperty.all(Theme.of(context).primaryColor.withValues(alpha: 0.1)),
-      dataRowMinHeight: 56,
-      dataRowMaxHeight: 72,
-      columns: const [
-        DataColumn(label: Text('Sl. No', style: TextStyle(fontWeight: FontWeight.bold))),
-        DataColumn(label: Text('Bill #', style: TextStyle(fontWeight: FontWeight.bold))),
-        DataColumn(label: Text('Supplier', style: TextStyle(fontWeight: FontWeight.bold))),
-        DataColumn(label: Text('Date', style: TextStyle(fontWeight: FontWeight.bold))),
-        DataColumn(label: Text('Total', style: TextStyle(fontWeight: FontWeight.bold))),
-        DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
-        DataColumn(label: Text('Balance', style: TextStyle(fontWeight: FontWeight.bold))),
-        DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
+    if (!isWide) return menu;
+    return Wrap(
+      spacing: 4,
+      runSpacing: 4,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        _buildActionButton(Icons.visibility_outlined, Colors.green, 'View', () => _viewBill(bill)),
+        _buildActionButton(Icons.edit_outlined, Colors.blue, 'Edit', () => _editBill(bill)),
+        _buildActionButton(Icons.payments_outlined,
+            status == PaymentStatus.paid ? Colors.green : Colors.purple,
+            'Apply Payment', () => _showApplyPaymentDialog(bill)),
+        if (widget.user.isAdmin())
+          _buildActionButton(Icons.delete_outline, Colors.red, 'Delete', () => _softDelete(bill)),
       ],
-      rows: List.generate(_bills.length, (index) {
-        final bill = _bills[index];
-        final serial = (_currentPage * _pageSize) + index + 1;
-        final paid = _paidTotals[bill.id] ?? 0.0;
-        final status = PurchaseBillCalculator.paymentStatus(total: bill.total, paid: paid);
-        final outstanding = PurchaseBillCalculator.outstanding(total: bill.total, paid: paid);
-        return DataRow(
-          color: WidgetStateProperty.all(
-            index.isEven ? Colors.transparent : Theme.of(context).colorScheme.surfaceContainerHighest,
-          ),
-          cells: [
-            DataCell(Text(serial.toString())),
-            DataCell(Text(bill.billNumber ?? '—', style: const TextStyle(fontWeight: FontWeight.w500))),
-            DataCell(Text(bill.supplierName.isEmpty ? '—' : bill.supplierName)),
-            DataCell(Text(AppDate.format(bill.billDate))),
-            DataCell(Text('$_currencySymbol ${bill.total.toStringAsFixed(2)}',
-                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green))),
-            DataCell(_buildStatusChip(status)),
-            DataCell(
-              status == PaymentStatus.paid
-                  ? Text('—', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))
-                  : Text(
-                      '$_currencySymbol ${outstanding.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: status == PaymentStatus.partial ? Colors.orange[700] : Colors.red[700],
-                      ),
-                    ),
-            ),
-            DataCell(
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.visibility, size: 20),
-                    color: Colors.blue,
-                    onPressed: () => _viewBill(bill),
-                    tooltip: 'View',
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.edit, size: 20),
-                    color: Colors.orange,
-                    onPressed: () => _editBill(bill),
-                    tooltip: 'Edit',
-                  ),
-                  if (widget.user.isAdmin())
-                    IconButton(
-                      icon: const Icon(Icons.delete, size: 20),
-                      color: Colors.red,
-                      onPressed: () => _softDelete(bill),
-                      tooltip: 'Delete',
-                    ),
-                ],
-              ),
-            ),
-          ],
-        );
-      }),
     );
   }
 
   Widget _buildStatusChip(PaymentStatus status) {
+    final l10n = AppLocalizations.of(context)!;
     final Color color;
     final String label;
     switch (status) {
       case PaymentStatus.paid:
         color = Colors.green;
-        label = 'Paid';
+        label = l10n.paymentStatusPaid;
       case PaymentStatus.partial:
         color = Colors.orange;
-        label = 'Partial';
+        label = l10n.paymentStatusPartial;
       case PaymentStatus.unpaid:
         color = Colors.red;
-        label = 'Unpaid';
+        label = l10n.paymentStatusUnpaid;
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
@@ -458,68 +407,552 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
     );
   }
 
-  Widget _buildPaginationControls() {
-    final totalPages = _totalPages == 0 ? 1 : _totalPages;
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(16),
-          bottomRight: Radius.circular(16),
-        ),
+  Future<void> _showSortDialogV2() async {
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Sort By'),
+          content: SizedBox(
+            width: 340,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: _sortOptionsV2.map((opt) {
+                final (field, asc, icon) = opt;
+                final selected = _sortField == field && _sortAscending == asc;
+                final primaryColor = Theme.of(context).primaryColor;
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(icon, size: 20, color: selected ? primaryColor : null),
+                  title: Text(_sortOptionLabel(field, asc),
+                      style: TextStyle(
+                          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                          color: selected ? primaryColor : null)),
+                  trailing: selected ? Icon(Icons.check_circle, color: primaryColor, size: 20) : null,
+                  onTap: () {
+                    Navigator.pop(dialogContext);
+                    if (_sortField == field && _sortAscending == asc) return;
+                    setState(() {
+                      _sortField = field;
+                      _sortAscending = asc;
+                      _currentPage = 0;
+                    });
+                    _loadPage();
+                  },
+                );
+              }).toList(),
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Close')),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showFilterDialogV2() async {
+    String tempStatus = _statusFilter;
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(builder: (dialogContext, setDialogState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Text('Filter Purchase Bills'),
+            content: SizedBox(
+              width: 340,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Payment Status',
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Theme.of(dialogContext).colorScheme.onSurfaceVariant)),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _statusFilterOptionsV2.map((opt) {
+                      final selected = tempStatus == opt['value'];
+                      final color = opt['color'] as Color;
+                      return ChoiceChip(
+                        label: Text(_statusFilterLabel(AppLocalizations.of(context)!, opt['value'] as String)),
+                        selected: selected,
+                        onSelected: (_) => setDialogState(() => tempStatus = opt['value'] as String),
+                        selectedColor: color.withValues(alpha: 0.18),
+                        labelStyle: TextStyle(
+                          color: selected ? color.withValues(alpha: 0.9) : null,
+                          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+            actionsAlignment: MainAxisAlignment.spaceBetween,
+            actions: [
+              TextButton(
+                onPressed: () => setDialogState(() => tempStatus = 'all'),
+                child: const Text('Reset'),
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    child: const Text('Cancel'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(dialogContext);
+                      setState(() {
+                        _statusFilter = tempStatus;
+                        _currentPage = 0;
+                      });
+                      _loadPage();
+                    },
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).primaryColor, foregroundColor: Colors.white),
+                    child: const Text('Apply'),
+                  ),
+                ],
+              ),
+            ],
+          );
+        });
+      },
+    );
+  }
+
+  List<Widget> _headerBarV2() {
+    return [
+      IconButton(
+        icon: const Icon(Icons.delete_sweep_outlined),
+        onPressed: _showTrashDialog,
+        tooltip: 'Trash',
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Text('Rows per page:', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 13)),
-              const SizedBox(width: 8),
-              DropdownButton<int>(
-                value: _pageSize,
-                underline: const SizedBox(),
-                items: [10, 25, 50, 100].map((n) => DropdownMenuItem(value: n, child: Text('$n'))).toList(),
-                onChanged: (n) {
-                  if (n == null) return;
+      IconButton(
+        onPressed: _isLoading ? null : _loadPage,
+        icon: _isLoading
+            ? const SizedBox(
+                width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+            : const Icon(Icons.refresh),
+        tooltip: 'Refresh',
+      ),
+    ];
+  }
+
+  Widget _searchFilterRowV2(bool isWide) {
+    final searchField = TextField(
+      controller: _searchController,
+      decoration: InputDecoration(
+        hintText: 'Search by bill number or supplier...',
+        prefixIcon: const Icon(Icons.search, size: 20),
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        suffixIcon: _searchQuery.isNotEmpty
+            ? IconButton(
+                icon: const Icon(Icons.clear, size: 18),
+                onPressed: () {
+                  _searchController.clear();
                   setState(() {
-                    _pageSize = n;
+                    _searchQuery = '';
                     _currentPage = 0;
                   });
                   _loadPage();
                 },
-              ),
-              const SizedBox(width: 16),
-              Text('Total: $_totalCount', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
-            ],
+              )
+            : null,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+          borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 2),
+        ),
+      ),
+      onChanged: (value) {
+        setState(() {
+          _searchQuery = value;
+          _currentPage = 0;
+        });
+        _searchDebounce?.cancel();
+        _searchDebounce = Timer(const Duration(milliseconds: 400), _loadPage);
+      },
+    );
+
+    final filterButton = Stack(
+      clipBehavior: Clip.none,
+      children: [
+        OutlinedButton.icon(
+          onPressed: _showFilterDialogV2,
+          icon: const Icon(Icons.filter_list, size: 18),
+          label: const Text('Filter'),
+        ),
+        if (_activeFilterCountV2 > 0)
+          Positioned(
+            right: -6,
+            top: -6,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(color: Theme.of(context).primaryColor, shape: BoxShape.circle),
+              child: Text('$_activeFilterCountV2',
+                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+            ),
           ),
-          Row(
-            children: [
-              IconButton(
-                onPressed: _currentPage > 0 ? () => _changePage(_currentPage - 1) : null,
-                icon: const Icon(Icons.chevron_left),
-                tooltip: 'Previous',
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  'Page ${_currentPage + 1} of $totalPages',
-                  style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).primaryColor),
-                ),
-              ),
-              IconButton(
-                onPressed: _currentPage < totalPages - 1 ? () => _changePage(_currentPage + 1) : null,
-                icon: const Icon(Icons.chevron_right),
-                tooltip: 'Next',
-              ),
-            ],
-          ),
+      ],
+    );
+
+    final sortButton = OutlinedButton.icon(
+      onPressed: _showSortDialogV2,
+      icon: const Icon(Icons.sort, size: 18),
+      label: const Text('Sort'),
+    );
+
+    final newBillButton = FilledButton.icon(
+      onPressed: widget.onNew,
+      icon: const Icon(Icons.add, size: 18),
+      label: const Text('New Purchase Bill'),
+    );
+
+    if (isWide) {
+      return Row(
+        children: [
+          Expanded(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 480), child: searchField)),
+          const SizedBox(width: 12),
+          filterButton,
+          const SizedBox(width: 12),
+          sortButton,
+          const Spacer(),
+          newBillButton,
+        ],
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        searchField,
+        const SizedBox(height: 12),
+        Row(children: [Expanded(child: filterButton), const SizedBox(width: 12), Expanded(child: sortButton)]),
+        const SizedBox(height: 12),
+        newBillButton,
+      ],
+    );
+  }
+
+  Widget _tableHeaderRowV2(bool isWide) {
+    const style = TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700, letterSpacing: 0.4);
+    return Container(
+      decoration: BoxDecoration(
+        gradient: PurchaseBillManagementScreenColors.topBarBackgroundGradientColor,
+        borderRadius: const BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      child: Row(
+        children: [
+          const SizedBox(width: 36, child: Text('#', style: style)),
+          const Expanded(flex: 3, child: Text('Bill', style: style)),
+          if (isWide) ...[
+            const Expanded(flex: 2, child: Text('Supplier', style: style)),
+            const SizedBox(width: 100, child: Text('Date', style: style)),
+          ],
+          const Expanded(child: Text('Total', style: style)),
+          const SizedBox(width: 76, child: Text('Status', style: style)),
+          if (isWide) const Expanded(child: Text('Balance', style: style)),
+          SizedBox(width: isWide ? 180 : 48, child: const SizedBox()),
         ],
       ),
+    );
+  }
+
+  Widget _billRowV2(PurchaseBill bill, int index, bool isEven, bool isWide) {
+    final paid = _paidTotals[bill.id] ?? 0.0;
+    final status = PurchaseBillCalculator.paymentStatus(total: bill.total, paid: paid);
+    final outstanding = PurchaseBillCalculator.outstanding(total: bill.total, paid: paid);
+    return Container(
+      decoration: BoxDecoration(
+        color: isEven
+            ? Theme.of(context).colorScheme.surfaceContainerHighest
+            : Theme.of(context).colorScheme.surfaceContainer,
+        border: Border(bottom: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 36,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text('$index',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Theme.of(context).primaryColor)),
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(bill.billNumber ?? '#${bill.id}',
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700)),
+                  if (!isWide) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                        '${bill.supplierName.isEmpty ? '—' : bill.supplierName}  ·  ${AppDate.format(bill.billDate)}',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 12.5, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          if (isWide) ...[
+            Expanded(
+              flex: 2,
+              child: Text(bill.supplierName.isEmpty ? '—' : bill.supplierName,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            ),
+            SizedBox(width: 100, child: Text(AppDate.format(bill.billDate), style: const TextStyle(fontSize: 13))),
+          ],
+          Expanded(
+            child: Text('$_currencySymbol ${bill.total.toStringAsFixed(2)}',
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Colors.green)),
+          ),
+          SizedBox(width: 76, child: Align(alignment: Alignment.centerLeft, child: _buildStatusChip(status))),
+          if (isWide)
+            Expanded(
+              child: status == PaymentStatus.paid
+                  ? Text('—', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))
+                  : Text(
+                      '$_currencySymbol ${outstanding.toStringAsFixed(2)}',
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: status == PaymentStatus.partial ? Colors.orange[700] : Colors.red[700]),
+                    ),
+            ),
+          SizedBox(width: isWide ? 180 : 48, child: _rowActionsV2(bill, status, isWide)),
+        ],
+      ),
+    );
+  }
+
+  Widget _paginationV2(bool isWide) {
+    final totalPages = _totalPages == 0 ? 1 : _totalPages;
+    final left = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text('Rows per page:', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 13)),
+        const SizedBox(width: 8),
+        DropdownButton<int>(
+          value: _pageSize,
+          underline: const SizedBox(),
+          items: [10, 25, 50, 100].map((n) => DropdownMenuItem(value: n, child: Text('$n'))).toList(),
+          onChanged: (n) {
+            if (n == null) return;
+            setState(() {
+              _pageSize = n;
+              _currentPage = 0;
+            });
+            _loadPage();
+          },
+        ),
+        const SizedBox(width: 16),
+        Text('Total: $_totalCount', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+      ],
+    );
+
+    // Icon-only (no "Previous"/"Next" text label) — with a text label this
+    // Row's own intrinsic width could exceed what's left inside the
+    // pagination bar even wrapped in a Wrap (Wrap doesn't shrink a single
+    // child below its natural size, only wraps whole children to a new
+    // line), so it kept overflowing by a few pixels at some widths.
+    final right = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          onPressed: _currentPage > 0 ? () => _changePage(_currentPage - 1) : null,
+          icon: const Icon(Icons.chevron_left),
+          tooltip: 'Previous',
+          iconSize: 20,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          visualDensity: VisualDensity.compact,
+        ),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Theme.of(context).primaryColor.withValues(alpha: 0.3)),
+          ),
+          child: Text('Page ${_currentPage + 1} of $totalPages',
+              style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Theme.of(context).primaryColor)),
+        ),
+        const SizedBox(width: 8),
+        IconButton(
+          onPressed: _currentPage < totalPages - 1 ? () => _changePage(_currentPage + 1) : null,
+          icon: const Icon(Icons.chevron_right),
+          tooltip: 'Next',
+          iconSize: 20,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          visualDensity: VisualDensity.compact,
+        ),
+      ],
+    );
+
+    // A Row(spaceBetween) here can still overflow right at the isWide
+    // threshold (900px) — "Previous"/"Next" labels plus the page indicator
+    // don't reliably fit in what's left after `left`. Wrap behaves the same
+    // as Row when both sides fit on one line, and drops to a second line
+    // instead of overflowing when they don't, regardless of isWide.
+    return Wrap(
+      alignment: WrapAlignment.spaceBetween,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 12,
+      runSpacing: 10,
+      children: [left, right],
+    );
+  }
+
+  // A plain Center can't shrink its child, so on a short window (the
+  // search/filter row alone can be taller than the Expanded area gives
+  // it once it wraps to a Column in narrow mode) this content would
+  // overflow. Scrolling instead of overflowing, but still centered
+  // when there's enough room via the minHeight constraint.
+  Widget _buildEmptyState() {
+    return LayoutBuilder(builder: (context, constraints) {
+      return SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.receipt_long_outlined,
+                    size: 72, color: Theme.of(context).colorScheme.outlineVariant),
+                const SizedBox(height: 16),
+                Text('No purchase bills found',
+                    style: TextStyle(fontSize: 18, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                const SizedBox(height: 8),
+                Text(
+                  _searchQuery.isEmpty && _statusFilter == 'all'
+                      ? 'Create your first purchase bill to get started'
+                      : 'Try adjusting your search or filters',
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(builder: (context, outerConstraints) {
+      final isWide = outerConstraints.maxWidth >= 900;
+      return Scaffold(
+        backgroundColor: Theme.of(context).brightness == Brightness.dark ? null : Colors.grey[50],
+        appBar: AppBar(
+          title: const Text('Purchase Bills'),
+          backgroundColor:
+              Theme.of(context).appBarTheme.backgroundColor ?? Theme.of(context).primaryColor,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          centerTitle: false,
+          actions: [..._headerBarV2(), const SizedBox(width: 8)],
+        ),
+        body: Column(
+          children: [
+            Container(
+              color: Theme.of(context).colorScheme.surfaceContainer,
+              padding: const EdgeInsets.all(20),
+              child: _searchFilterRowV2(isWide),
+            ),
+            const SizedBox(height: 16),
+            _isLoading
+                ? const Expanded(child: Center(child: CircularProgressIndicator()))
+                : Expanded(
+                    child: _bills.isEmpty
+                        ? _buildEmptyState()
+                        // No max-width cap here (unlike InvoiceManagementScreenV2's
+                        // dense many-column table) — with only ~7 columns, capping
+                        // this at maxWidthNarrow left huge empty margins on a wide
+                        // desktop window, making the whole screen look shrunk.
+                        : Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: SingleChildScrollView(
+                              child: Card(
+                                elevation: 2,
+                                shadowColor: Colors.black.withValues(alpha: 0.1),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                                clipBehavior: Clip.antiAlias,
+                                child: Column(
+                                  children: [
+                                    _tableHeaderRowV2(isWide),
+                                    ..._bills.asMap().entries.map((entry) {
+                                      final index = entry.key;
+                                      final globalIndex = (_currentPage * _pageSize) + index + 1;
+                                      return _billRowV2(entry.value, globalIndex, index.isEven, isWide);
+                                    }),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                  ),
+            if (_bills.isNotEmpty)
+              Container(
+                color: Theme.of(context).colorScheme.surfaceContainer,
+                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+                child: _paginationV2(isWide),
+              ),
+          ],
+        ),
+      );
+    });
+  }
+}
+
+class _MenuRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  const _MenuRow(this.icon, this.label, this.color);
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: color),
+        const SizedBox(width: 10),
+        Text(label),
+      ],
     );
   }
 }
@@ -1159,6 +1592,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
               costPerUnit: i.costPerUnit,
               quantity: i.quantity,
               taxRatePercent: i.taxRate,
+              costIncludesTax: i.costIncludesTax,
             )),
       );
 
@@ -1195,86 +1629,97 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
     final taxController = TextEditingController(text: item.taxRate.toString());
     final formKey = GlobalKey<FormState>();
     final isCustom = item.productId == null;
+    bool costIncludesTax = item.costIncludesTax;
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Edit Item'),
-        content: SizedBox(
-          width: 380,
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (isCustom) ...[
-                  TextFormField(
-                    controller: nameController,
-                    decoration: InputDecoration(labelText: 'Item Name', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
-                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter an item name' : null,
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: descController,
-                    decoration: InputDecoration(labelText: 'Description (optional)', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: quantityController,
-                        decoration: InputDecoration(labelText: 'Quantity', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
-                        validator: (v) => (double.tryParse(v ?? '') ?? 0) <= 0 ? 'Invalid' : null,
-                      ),
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setDialogState) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Edit Item'),
+          content: SizedBox(
+            width: 380,
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isCustom) ...[
+                    TextFormField(
+                      controller: nameController,
+                      decoration: InputDecoration(labelText: 'Item Name', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                      validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter an item name' : null,
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        controller: costController,
-                        decoration: InputDecoration(labelText: 'Cost/unit', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
-                        validator: (v) => double.tryParse(v ?? '') == null ? 'Invalid' : null,
-                      ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: descController,
+                      decoration: InputDecoration(labelText: 'Description (optional)', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
                     ),
+                    const SizedBox(height: 12),
                   ],
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: taxController,
-                  decoration: InputDecoration(labelText: 'Tax Rate (%)', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
-                ),
-              ],
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: quantityController,
+                          decoration: InputDecoration(labelText: 'Quantity', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                          validator: (v) => (double.tryParse(v ?? '') ?? 0) <= 0 ? 'Invalid' : null,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextFormField(
+                          controller: costController,
+                          decoration: InputDecoration(labelText: 'Cost/unit', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                          validator: (v) => double.tryParse(v ?? '') == null ? 'Invalid' : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: taxController,
+                    decoration: InputDecoration(labelText: 'Tax Rate (%)', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                  ),
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    title: const Text('Cost/unit includes tax'),
+                    value: costIncludesTax,
+                    onChanged: (v) => setDialogState(() => costIncludesTax = v ?? false),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () {
-              if (!formKey.currentState!.validate()) return;
-              setState(() {
-                if (isCustom) {
-                  item.productName = nameController.text.trim();
-                  item.productDescription = descController.text.trim();
-                }
-                item.quantity = double.tryParse(quantityController.text) ?? item.quantity;
-                item.costPerUnit = double.tryParse(costController.text) ?? item.costPerUnit;
-                item.taxRate = double.tryParse(taxController.text) ?? item.taxRate;
-              });
-              Navigator.pop(ctx);
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () {
+                if (!formKey.currentState!.validate()) return;
+                setState(() {
+                  if (isCustom) {
+                    item.productName = nameController.text.trim();
+                    item.productDescription = descController.text.trim();
+                  }
+                  item.quantity = double.tryParse(quantityController.text) ?? item.quantity;
+                  item.costPerUnit = double.tryParse(costController.text) ?? item.costPerUnit;
+                  item.taxRate = double.tryParse(taxController.text) ?? item.taxRate;
+                  item.costIncludesTax = costIncludesTax;
+                });
+                Navigator.pop(ctx);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      }),
     );
   }
 
@@ -1401,90 +1846,101 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
     final costController = TextEditingController();
     final taxController = TextEditingController(text: '0');
     final formKey = GlobalKey<FormState>();
+    bool costIncludesTax = false;
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.add_box, color: Colors.deepPurple),
-            SizedBox(width: 12),
-            Text('Add Custom Item'),
-          ],
-        ),
-        content: SizedBox(
-          width: 380,
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: nameController,
-                  decoration: InputDecoration(labelText: 'Item Name', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter an item name' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: descController,
-                  decoration: InputDecoration(labelText: 'Description (optional)', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: quantityController,
-                        decoration: InputDecoration(labelText: 'Quantity', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
-                        validator: (v) => (double.tryParse(v ?? '') ?? 0) <= 0 ? 'Invalid' : null,
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setDialogState) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.add_box, color: Colors.deepPurple),
+              SizedBox(width: 12),
+              Text('Add Custom Item'),
+            ],
+          ),
+          content: SizedBox(
+            width: 380,
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: nameController,
+                    decoration: InputDecoration(labelText: 'Item Name', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter an item name' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: descController,
+                    decoration: InputDecoration(labelText: 'Description (optional)', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: quantityController,
+                          decoration: InputDecoration(labelText: 'Quantity', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                          validator: (v) => (double.tryParse(v ?? '') ?? 0) <= 0 ? 'Invalid' : null,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        controller: costController,
-                        decoration: InputDecoration(labelText: 'Cost/unit', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
-                        validator: (v) => double.tryParse(v ?? '') == null ? 'Invalid' : null,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextFormField(
+                          controller: costController,
+                          decoration: InputDecoration(labelText: 'Cost/unit', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                          validator: (v) => double.tryParse(v ?? '') == null ? 'Invalid' : null,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: taxController,
-                  decoration: InputDecoration(labelText: 'Tax Rate (%)', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
-                ),
-              ],
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: taxController,
+                    decoration: InputDecoration(labelText: 'Tax Rate (%)', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                  ),
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    title: const Text('Cost/unit includes tax'),
+                    value: costIncludesTax,
+                    onChanged: (v) => setDialogState(() => costIncludesTax = v ?? false),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
-            onPressed: () {
-              if (!formKey.currentState!.validate()) return;
-              _addItem(PurchaseBillItem(
-                productId: null,
-                productName: nameController.text.trim(),
-                productDescription: descController.text.trim(),
-                quantity: double.tryParse(quantityController.text) ?? 1.0,
-                costPerUnit: double.tryParse(costController.text) ?? 0.0,
-                taxRate: double.tryParse(taxController.text) ?? 0.0,
-              ));
-              Navigator.pop(ctx);
-            },
-            child: const Text('Add', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
+              onPressed: () {
+                if (!formKey.currentState!.validate()) return;
+                _addItem(PurchaseBillItem(
+                  productId: null,
+                  productName: nameController.text.trim(),
+                  productDescription: descController.text.trim(),
+                  quantity: double.tryParse(quantityController.text) ?? 1.0,
+                  costPerUnit: double.tryParse(costController.text) ?? 0.0,
+                  taxRate: double.tryParse(taxController.text) ?? 0.0,
+                  costIncludesTax: costIncludesTax,
+                ));
+                Navigator.pop(ctx);
+              },
+              child: const Text('Add', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      }),
     );
   }
 
@@ -1494,72 +1950,83 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
         text: (product.purchasePrice > 0 ? product.purchasePrice : product.price).toStringAsFixed(2));
     final taxController = TextEditingController(text: product.tax_rate.toString());
     final formKey = GlobalKey<FormState>();
+    bool costIncludesTax = false;
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(product.name, style: const TextStyle(fontSize: 18)),
-        content: SizedBox(
-          width: 380,
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: quantityController,
-                        decoration: InputDecoration(labelText: 'Quantity', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
-                        validator: (v) => (double.tryParse(v ?? '') ?? 0) <= 0 ? 'Invalid' : null,
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setDialogState) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(product.name, style: const TextStyle(fontSize: 18)),
+          content: SizedBox(
+            width: 380,
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: quantityController,
+                          decoration: InputDecoration(labelText: 'Quantity', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                          validator: (v) => (double.tryParse(v ?? '') ?? 0) <= 0 ? 'Invalid' : null,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        controller: costController,
-                        decoration: InputDecoration(labelText: 'Cost/unit', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
-                        validator: (v) => double.tryParse(v ?? '') == null ? 'Invalid' : null,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextFormField(
+                          controller: costController,
+                          decoration: InputDecoration(labelText: 'Cost/unit', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                          validator: (v) => double.tryParse(v ?? '') == null ? 'Invalid' : null,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: taxController,
-                  decoration: InputDecoration(labelText: 'Tax Rate (%)', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
-                ),
-              ],
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: taxController,
+                    decoration: InputDecoration(labelText: 'Tax Rate (%)', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                  ),
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    title: const Text('Cost/unit includes tax'),
+                    value: costIncludesTax,
+                    onChanged: (v) => setDialogState(() => costIncludesTax = v ?? false),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () {
-              if (!formKey.currentState!.validate()) return;
-              _addItem(PurchaseBillItem(
-                productId: product.id,
-                productName: product.name,
-                productDescription: product.description,
-                quantity: double.tryParse(quantityController.text) ?? 1.0,
-                costPerUnit: double.tryParse(costController.text) ?? 0.0,
-                taxRate: double.tryParse(taxController.text) ?? 0.0,
-              ));
-              Navigator.pop(ctx);
-            },
-            child: const Text('Add'),
-          ),
-        ],
-      ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () {
+                if (!formKey.currentState!.validate()) return;
+                _addItem(PurchaseBillItem(
+                  productId: product.id,
+                  productName: product.name,
+                  productDescription: product.description,
+                  quantity: double.tryParse(quantityController.text) ?? 1.0,
+                  costPerUnit: double.tryParse(costController.text) ?? 0.0,
+                  taxRate: double.tryParse(taxController.text) ?? 0.0,
+                  costIncludesTax: costIncludesTax,
+                ));
+                Navigator.pop(ctx);
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      }),
     );
   }
 
@@ -1663,13 +2130,24 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
     );
   }
 
+  // Same flat-card look as CreateInvoiceScreenV2's `_flatCardDecorationV2`
+  // (12px radius + a subtle shadow instead of a plain border-only card).
+  BoxDecoration _flatCardDecorationV2() => BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      );
+
   Widget _buildDetailsCard() {
     return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(AppBorderRadius.large),
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-      ),
+      decoration: _flatCardDecorationV2(),
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1963,27 +2441,37 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
   Widget _buildItemsCard(bool isWide) {
     final products = ref.watch(productsProvider);
     final filteredProducts = products.maybeWhen(
-      data: (list) => _productQuery.isEmpty
-          ? list
-          : list.where((p) => p.name.toLowerCase().contains(_productQuery.toLowerCase())).toList(),
+      data: (list) => list
+          .where((p) => p.type == 'product')
+          .where((p) => _productQuery.isEmpty ||
+              p.name.toLowerCase().contains(_productQuery.toLowerCase()))
+          .toList(),
       orElse: () => <Product>[],
     );
 
     return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(AppBorderRadius.large),
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-      ),
+      decoration: _flatCardDecorationV2(),
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.shopping_cart_outlined, size: 20, color: Theme.of(context).primaryColor),
-              const SizedBox(width: 8),
-              Text('Items (${_items.length})', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text('ITEMS',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.6)),
+              const SizedBox(width: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text('${_items.length}',
+                    style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              ),
               const Spacer(),
               TextButton.icon(
                 onPressed: _addAdHocItemDialog,
@@ -2011,45 +2499,52 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
             )
           else if (isWide)
             Flexible(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildItemsTableHeader(),
-                  Flexible(
-                    child: ListView.builder(
-                      shrinkWrap: false,
-                      itemCount: _items.length,
-                      itemBuilder: (context, index) => _buildItemRow(index, _items[index]),
-                    ),
-                  ),
-                ],
+              child: ListView.builder(
+                shrinkWrap: false,
+                itemCount: _items.length,
+                itemBuilder: (context, index) => _buildItemRow(index, _items[index]),
               ),
             )
-          else ...[
-            _buildItemsTableHeader(),
+          else
             ..._items.asMap().entries.map((entry) => _buildItemRow(entry.key, entry.value)),
-          ],
           const SizedBox(height: 12),
           if (_productQuery.isNotEmpty) ...[
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 220),
-              child: filteredProducts.isEmpty
-                  ? const Padding(padding: EdgeInsets.all(12), child: Text('No products found'))
-                  : ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: filteredProducts.length > 8 ? 8 : filteredProducts.length,
-                      itemBuilder: (context, index) {
-                        final product = filteredProducts[index];
-                        return ListTile(
-                          dense: true,
-                          leading: const Icon(Icons.inventory_2_outlined),
-                          title: Text(product.name),
-                          subtitle: Text('Last cost: $_currencySymbol${product.purchasePrice.toStringAsFixed(2)}'),
-                          trailing: const Icon(Icons.add_circle, color: Colors.green),
-                          onTap: () => _addProductItemDialog(product),
-                        );
-                      },
-                    ),
+            // Same floating-panel treatment as CreateInvoiceScreenV2's
+            // product dropdown (Material + border) — without it, this list
+            // had no visual separation from the card behind it.
+            Material(
+              elevation: 6,
+              borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+              color: Theme.of(context).colorScheme.surface,
+              child: Container(
+                constraints: const BoxConstraints(maxHeight: 220),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                  border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                ),
+                child: filteredProducts.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text('No products found',
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        shrinkWrap: true,
+                        itemCount: filteredProducts.length > 8 ? 8 : filteredProducts.length,
+                        itemBuilder: (context, index) {
+                          final product = filteredProducts[index];
+                          return ListTile(
+                            dense: true,
+                            leading: const Icon(Icons.inventory_2_outlined),
+                            title: Text(product.name),
+                            subtitle: Text('Last cost: $_currencySymbol${product.purchasePrice.toStringAsFixed(2)}'),
+                            trailing: const Icon(Icons.add_circle, color: Colors.green),
+                            onTap: () => _addProductItemDialog(product),
+                          );
+                        },
+                      ),
+              ),
             ),
             const SizedBox(height: 8),
           ],
@@ -2070,76 +2565,106 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
     );
   }
 
-  Widget _buildItemsTableHeader() {
-    final style = TextStyle(
-      fontSize: 11,
-      fontWeight: FontWeight.w600,
-      color: Theme.of(context).colorScheme.onSurfaceVariant,
-    );
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-      child: Row(
-        children: [
-          SizedBox(width: 22, child: Text('#', style: style)),
-          Expanded(flex: 2, child: Text('Item / Description', style: style)),
-          SizedBox(width: 110, child: Text('Qty', style: style)),
-          const SizedBox(width: 16),
-          SizedBox(width: 120, child: Text('Unit Cost', style: style)),
-          const SizedBox(width: 16),
-          SizedBox(width: 120, child: Text('Amount', style: style)),
-          const SizedBox(width: 80),
-        ],
-      ),
-    );
-  }
-
+  // Card-row style (numbered badge + name + wrapped detail chips + total),
+  // matching CreateInvoiceScreenV2's item rows exactly — no more
+  // fixed-width table columns to keep aligned with a header row.
   Widget _buildItemRow(int index, PurchaseBillItem item) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 14),
       decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainer,
         border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(width: 22, child: Text('${index + 1}')),
+          Container(
+            width: 30,
+            height: 30,
+            margin: const EdgeInsets.only(top: 2),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.12),
+            ),
+            child: Text('${index + 1}',
+                style: TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.bold, color: Theme.of(context).primaryColor)),
+          ),
+          const SizedBox(width: 14),
           Expanded(
-            flex: 2,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item.productName, style: const TextStyle(fontWeight: FontWeight.w600)),
-                if (item.productId == null)
-                  const Text('Custom item', style: TextStyle(fontSize: 11, color: Colors.deepPurple)),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(item.productName,
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis),
+                    ),
+                    if (item.productId == null) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text('Custom',
+                            style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.3,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                      ),
+                    ],
+                  ],
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Wrap(
+                    spacing: 16,
+                    runSpacing: 4,
+                    children: [
+                      _buildItemDetail('Qty',
+                          item.quantity == item.quantity.roundToDouble()
+                              ? item.quantity.toInt().toString()
+                              : item.quantity.toString()),
+                      _buildItemDetail(
+                          'Unit Cost', '$_currencySymbol${item.costPerUnit.toStringAsFixed(2)}'),
+                      if (item.taxRate > 0) ...[
+                        item.costIncludesTax
+                            ? _buildItemDetail(
+                                'Tax', '${item.taxRate.toStringAsFixed(item.taxRate == item.taxRate.roundToDouble() ? 0 : 1)}% Inclusive',
+                                color: Colors.teal[700])
+                            : _buildItemDetail('Tax',
+                                '${item.taxRate.toStringAsFixed(item.taxRate == item.taxRate.roundToDouble() ? 0 : 1)}%'),
+                        if (item.costIncludesTax)
+                          _buildItemDetail('Net Cost',
+                              '$_currencySymbol${item.netCostPerUnit.toStringAsFixed(2)}',
+                              color: Colors.teal[700]),
+                      ],
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
-          SizedBox(width: 110, child: _buildQtyStepper(item)),
-          const SizedBox(width: 16),
-          SizedBox(
-            width: 120,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerRight,
-              child: Text('$_currencySymbol${item.costPerUnit.toStringAsFixed(2)}', maxLines: 1),
-            ),
-          ),
-          const SizedBox(width: 16),
-          SizedBox(
-            width: 120,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerRight,
-              child: Text('$_currencySymbol${item.total.toStringAsFixed(2)}',
-                  maxLines: 1, style: const TextStyle(fontWeight: FontWeight.bold)),
-            ),
-          ),
+          const SizedBox(width: 12),
+          Text('$_currencySymbol${item.total.toStringAsFixed(2)}',
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
           IconButton(
             icon: const Icon(Icons.edit_outlined, size: 18),
+            tooltip: 'Edit item',
+            visualDensity: VisualDensity.compact,
             onPressed: () => _editItemDialog(index, item),
           ),
           IconButton(
-            icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+            icon: const Icon(Icons.delete_outline, size: 18),
+            tooltip: 'Remove item',
+            visualDensity: VisualDensity.compact,
+            color: Theme.of(context).colorScheme.error,
             onPressed: () => _removeItem(index),
           ),
         ],
@@ -2147,41 +2672,13 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
     );
   }
 
-  Widget _buildQtyStepper(PurchaseBillItem item) {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          InkWell(
-            onTap: () => setState(() {
-              if (item.quantity > 1) item.quantity -= 1;
-            }),
-            child: const Padding(padding: EdgeInsets.all(4), child: Icon(Icons.remove, size: 14)),
-          ),
-          ConstrainedBox(
-            constraints: const BoxConstraints(minWidth: 26, maxWidth: 50),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                item.quantity == item.quantity.roundToDouble()
-                    ? item.quantity.toInt().toString()
-                    : item.quantity.toString(),
-                maxLines: 1,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 13),
-              ),
-            ),
-          ),
-          InkWell(
-            onTap: () => setState(() => item.quantity += 1),
-            child: const Padding(padding: EdgeInsets.all(4), child: Icon(Icons.add, size: 14)),
-          ),
-        ],
-      ),
+  Widget _buildItemDetail(String label, String value, {Color? color}) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text('$label: ', style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+        Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: color)),
+      ],
     );
   }
 }

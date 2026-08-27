@@ -34,6 +34,7 @@ class PurchaseBill {
               costPerUnit: item.costPerUnit,
               quantity: item.quantity,
               taxRatePercent: item.taxRate,
+              costIncludesTax: item.costIncludesTax,
             )),
       );
 

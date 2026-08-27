@@ -216,6 +216,18 @@ abstract class AppLocalizations {
   /// **'Set up how your invoices work'**
   String get onboardingStepInvoiceSubtitle;
 
+  /// No description provided for @onboardingStepPurchaseBillsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase Bills & Suppliers'**
+  String get onboardingStepPurchaseBillsTitle;
+
+  /// No description provided for @onboardingStepPurchaseBillsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Track supplier bills and stock purchases (optional)'**
+  String get onboardingStepPurchaseBillsSubtitle;
+
   /// No description provided for @onboardingStepAppearanceTitle.
   ///
   /// In en, this message translates to:
@@ -287,6 +299,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Default Tax Rate (%)'**
   String get onboardingDefaultTaxRateLabel;
+
+  /// No description provided for @onboardingEnablePurchaseBillsSuppliersLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Purchase Bills & Suppliers'**
+  String get onboardingEnablePurchaseBillsSuppliersLabel;
+
+  /// No description provided for @onboardingEnablePurchaseBillsSuppliersSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Adds Purchase Bills and Suppliers to the dashboard menu. You can change this anytime in Settings.'**
+  String get onboardingEnablePurchaseBillsSuppliersSubtitle;
 
   /// No description provided for @onboardingPageSizeLabel.
   ///
@@ -4967,6 +4991,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Invoice Items'**
   String get invoiceSettingsSectionItems;
+
+  /// No description provided for @invoiceSettingsSectionSuppliers.
+  ///
+  /// In en, this message translates to:
+  /// **'Suppliers'**
+  String get invoiceSettingsSectionSuppliers;
+
+  /// No description provided for @settingsEnablePurchaseBillsSuppliersLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Purchase Bills & Suppliers'**
+  String get settingsEnablePurchaseBillsSuppliersLabel;
+
+  /// No description provided for @settingsEnablePurchaseBillsSuppliersSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shows Purchase Bills and Suppliers in the dashboard menu'**
+  String get settingsEnablePurchaseBillsSuppliersSubtitle;
 
   /// No description provided for @invoiceSettingsPrefixLabel.
   ///

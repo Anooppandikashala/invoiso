@@ -118,7 +118,7 @@ class PurchaseBillService {
 
     await ProductService.updatePurchaseInfo(
       product.id,
-      purchasePrice: item.costPerUnit,
+      purchasePrice: item.netCostPerUnit,
       lastPurchaseDate: bill.billDate,
     );
 
@@ -137,7 +137,7 @@ class PurchaseBillService {
       quantityChange: item.quantity,
       stockBefore: stockBefore.toDouble(),
       stockAfter: stockAfter.toDouble(),
-      unitCost: item.costPerUnit,
+      unitCost: item.netCostPerUnit,
       transactionDate: bill.billDate,
     );
   }
@@ -227,6 +227,8 @@ class PurchaseBillService {
     int page = 0,
     int pageSize = 50,
     String searchQuery = '',
+    String orderBy = 'bill_date',
+    bool orderAscending = false,
   }) async {
     final db = await dbHelper.database;
 
@@ -240,11 +242,18 @@ class PurchaseBillService {
           ['%$searchQuery%', '%$searchQuery%', '%$searchQuery%']);
     }
 
+    final order = orderAscending ? 'ASC' : 'DESC';
+    final orderClause = switch (orderBy) {
+      'supplier_name' => 'supplier_name COLLATE NOCASE $order, id DESC',
+      'total_amount' => 'total_amount $order, id DESC',
+      _ => 'bill_date $order, id DESC',
+    };
+
     final maps = await db.query(
       'purchase_bills',
       where: whereParts.join(' AND '),
       whereArgs: whereArgs.isEmpty ? null : whereArgs,
-      orderBy: 'bill_date DESC, id DESC',
+      orderBy: orderClause,
       limit: pageSize,
       offset: page * pageSize,
     );

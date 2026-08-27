@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/common/app_config.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/providers/app_config_provider.dart';
+import 'package:invoiso/providers/purchase_bills_settings_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/services/update_service.dart';
 import 'package:invoiso/widgets/update_dialog.dart';
@@ -238,9 +239,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           openAccessibilityToken: _accessibilityJumpToken,
         );
       case 9:
-        return PurchaseBillManagementScreen(user: _currentUser);
+        return ref.watch(enablePurchaseBillsAndSuppliersProvider)
+            ? PurchaseBillManagementScreen(user: _currentUser)
+            : Center(
+                child: Text(
+                    AppLocalizations.of(context)!.dashboardUnknownTabLabel));
       case 10:
-        return SupplierManagementScreen(user: _currentUser);
+        return ref.watch(enablePurchaseBillsAndSuppliersProvider)
+            ? SupplierManagementScreen(user: _currentUser)
+            : Center(
+                child: Text(
+                    AppLocalizations.of(context)!.dashboardUnknownTabLabel));
       default:
         return Center(
             child:
@@ -402,6 +411,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final expanded = _sidebarExpanded;
     final primary = Theme.of(context).primaryColor;
     final cfg = ref.watch(appEditionConfigProvider);
+    final showPurchaseBillsAndSuppliers =
+        ref.watch(enablePurchaseBillsAndSuppliersProvider);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 220),
@@ -540,10 +551,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         AppLocalizations.of(context)!.navProducts),
                     _buildNavItem(7, Icons.bar_chart_outlined, Icons.bar_chart,
                         AppLocalizations.of(context)!.navReports),
-                    _buildNavItem(9, Icons.shopping_cart_outlined,
-                        Icons.shopping_cart, 'Purchase Bills'),
-                    _buildNavItem(10, Icons.local_shipping_outlined,
-                        Icons.local_shipping, 'Suppliers'),
+                    if (showPurchaseBillsAndSuppliers) ...[
+                      _buildNavItem(9, Icons.shopping_cart_outlined,
+                          Icons.shopping_cart, 'Purchase Bills'),
+                      _buildNavItem(10, Icons.local_shipping_outlined,
+                          Icons.local_shipping, 'Suppliers'),
+                    ],
                     _buildNavItem(8, Icons.settings_outlined, Icons.settings,
                         AppLocalizations.of(context)!.navSettings,
                         showDot: _hasUpdate),

@@ -64,6 +64,13 @@ class AppLocalizationsBo extends AppLocalizations {
       'ཁྱེད་ཀྱི་ཁྲལ་ཤོག་ཇི་ལྟར་བྱེད་མིན་སྒྲིག་རོགས།';
 
   @override
+  String get onboardingStepPurchaseBillsTitle => 'Purchase Bills & Suppliers';
+
+  @override
+  String get onboardingStepPurchaseBillsSubtitle =>
+      'Track supplier bills and stock purchases (optional)';
+
+  @override
   String get onboardingStepAppearanceTitle => 'ཁྲལ་ཤོག་བཀོད་པ།';
 
   @override
@@ -100,6 +107,14 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get onboardingDefaultTaxRateLabel => 'སྔར་སྒྲིག་ཁྲལ་ཚད (%)';
+
+  @override
+  String get onboardingEnablePurchaseBillsSuppliersLabel =>
+      'Enable Purchase Bills & Suppliers';
+
+  @override
+  String get onboardingEnablePurchaseBillsSuppliersSubtitle =>
+      'Adds Purchase Bills and Suppliers to the dashboard menu. You can change this anytime in Settings.';
 
   @override
   String get onboardingPageSizeLabel => 'ཤོག་ངོས་ཚད།';
@@ -2988,6 +3003,17 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get invoiceSettingsSectionItems => 'ཁྲལ་ཤོག་རས་ཆས།';
+
+  @override
+  String get invoiceSettingsSectionSuppliers => 'Suppliers';
+
+  @override
+  String get settingsEnablePurchaseBillsSuppliersLabel =>
+      'Enable Purchase Bills & Suppliers';
+
+  @override
+  String get settingsEnablePurchaseBillsSuppliersSubtitle =>
+      'Shows Purchase Bills and Suppliers in the dashboard menu';
 
   @override
   String get invoiceSettingsPrefixLabel => 'ཁྲལ་ཤོག་སྔོན་སྐྱོན།';

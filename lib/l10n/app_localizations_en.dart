@@ -63,6 +63,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingStepInvoiceSubtitle => 'Set up how your invoices work';
 
   @override
+  String get onboardingStepPurchaseBillsTitle => 'Purchase Bills & Suppliers';
+
+  @override
+  String get onboardingStepPurchaseBillsSubtitle =>
+      'Track supplier bills and stock purchases (optional)';
+
+  @override
   String get onboardingStepAppearanceTitle => 'Invoice Appearance';
 
   @override
@@ -99,6 +106,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingDefaultTaxRateLabel => 'Default Tax Rate (%)';
+
+  @override
+  String get onboardingEnablePurchaseBillsSuppliersLabel =>
+      'Enable Purchase Bills & Suppliers';
+
+  @override
+  String get onboardingEnablePurchaseBillsSuppliersSubtitle =>
+      'Adds Purchase Bills and Suppliers to the dashboard menu. You can change this anytime in Settings.';
 
   @override
   String get onboardingPageSizeLabel => 'Page Size';
@@ -2990,6 +3005,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get invoiceSettingsSectionItems => 'Invoice Items';
+
+  @override
+  String get invoiceSettingsSectionSuppliers => 'Suppliers';
+
+  @override
+  String get settingsEnablePurchaseBillsSuppliersLabel =>
+      'Enable Purchase Bills & Suppliers';
+
+  @override
+  String get settingsEnablePurchaseBillsSuppliersSubtitle =>
+      'Shows Purchase Bills and Suppliers in the dashboard menu';
 
   @override
   String get invoiceSettingsPrefixLabel => 'Invoice Prefix';

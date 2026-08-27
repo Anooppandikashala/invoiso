@@ -31,7 +31,10 @@ class _SupplierManagementScreenState
   Timer? _searchDebounce;
   final TextEditingController _searchController = TextEditingController();
 
-  // Form controllers (Add New Supplier card)
+  // Add/Edit overlay panel state
+  bool _showAddPanelV2 = false;
+  String? _editingSupplierId;
+  final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _businessNameController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -39,7 +42,6 @@ class _SupplierManagementScreenState
   final _addressController = TextEditingController();
   final _gstinController = TextEditingController();
   final _notesController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
 
   @override
   void initState() {
@@ -104,33 +106,6 @@ class _SupplierManagementScreenState
     _loadPage();
   }
 
-  Future<void> _handleAddSupplier() async {
-    if (!_formKey.currentState!.validate() || !mounted) return;
-    setState(() => _isLoading = true);
-    try {
-      final supplier = Supplier(
-        id: const Uuid().v4(),
-        name: _nameController.text.trim(),
-        businessName: _businessNameController.text.trim(),
-        phone: _phoneController.text.trim(),
-        email: _emailController.text.trim(),
-        address: _addressController.text.trim(),
-        gstin: _gstinController.text.trim(),
-        notes: _notesController.text.trim(),
-      );
-      await ref.read(supplierRepositoryProvider).insertSupplier(supplier);
-      ref.read(suppliersProvider.notifier).refresh();
-      _clearForm();
-      await _loadPage();
-      if (mounted) AppError.showSuccess(context, 'Supplier added successfully!');
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        AppError.show(context, 'Error saving supplier: $e');
-      }
-    }
-  }
-
   void _clearForm() {
     _formKey.currentState?.reset();
     _nameController.clear();
@@ -142,295 +117,131 @@ class _SupplierManagementScreenState
     _notesController.clear();
   }
 
-  void _showSupplierDialog(Supplier supplier, bool isEdit) {
-    final nameCtrl = TextEditingController(text: supplier.name);
-    final businessNameCtrl = TextEditingController(text: supplier.businessName);
-    final phoneCtrl = TextEditingController(text: supplier.phone);
-    final emailCtrl = TextEditingController(text: supplier.email);
-    final addressCtrl = TextEditingController(text: supplier.address);
-    final gstinCtrl = TextEditingController(text: supplier.gstin);
-    final notesCtrl = TextEditingController(text: supplier.notes);
-    final dialogFormKey = GlobalKey<FormState>();
+  void _openAddPanelV2() {
+    _clearForm();
+    setState(() {
+      _editingSupplierId = null;
+      _showAddPanelV2 = true;
+    });
+  }
 
+  void _editSupplierV2(Supplier supplier) {
+    _nameController.text = supplier.name;
+    _businessNameController.text = supplier.businessName;
+    _phoneController.text = supplier.phone;
+    _emailController.text = supplier.email;
+    _addressController.text = supplier.address;
+    _gstinController.text = supplier.gstin;
+    _notesController.text = supplier.notes;
+    setState(() {
+      _editingSupplierId = supplier.id;
+      _showAddPanelV2 = true;
+    });
+  }
+
+  Future<void> _saveSupplierV2() async {
+    if (!_formKey.currentState!.validate() || !mounted) return;
+    setState(() => _isLoading = true);
+    final wasAdding = _editingSupplierId == null;
+    try {
+      final supplier = Supplier(
+        id: _editingSupplierId ?? const Uuid().v4(),
+        name: _nameController.text.trim(),
+        businessName: _businessNameController.text.trim(),
+        phone: _phoneController.text.trim(),
+        email: _emailController.text.trim(),
+        address: _addressController.text.trim(),
+        gstin: _gstinController.text.trim(),
+        notes: _notesController.text.trim(),
+      );
+      if (wasAdding) {
+        await ref.read(supplierRepositoryProvider).insertSupplier(supplier);
+      } else {
+        await ref.read(supplierRepositoryProvider).updateSupplier(supplier);
+      }
+      ref.read(suppliersProvider.notifier).refresh();
+      _clearForm();
+      if (!mounted) return;
+      setState(() => _showAddPanelV2 = false);
+      await _loadPage();
+      if (mounted) {
+        AppError.showSuccess(context,
+            wasAdding ? 'Supplier added successfully!' : 'Supplier updated successfully!');
+      }
+    } catch (e) {
+      if (mounted) AppError.show(context, 'Error saving supplier: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _showViewSupplierDialogV2(Supplier supplier) {
+    final balance = _balances[supplier.id] ?? 0.0;
     showDialog(
       context: context,
-      builder: (context) {
-        bool isSaving = false;
-        return StatefulBuilder(builder: (context, setDialogState) {
-          return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: Row(
-              children: [
-                Icon(isEdit ? Icons.edit : Icons.visibility,
-                    color: Theme.of(context).primaryColor),
-                const SizedBox(width: 8),
-                Text(isEdit ? 'Edit Supplier' : 'View Supplier'),
-              ],
-            ),
-            content: SizedBox(
-              width: MediaQuery.of(context).size.width * 0.4,
-              child: Form(
-                key: dialogFormKey,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildDialogTextField(nameCtrl, 'Name', Icons.person, readOnly: !isEdit),
-                      const SizedBox(height: 16),
-                      _buildDialogTextField(businessNameCtrl, 'Business Name',
-                          Icons.business_center, readOnly: !isEdit, maxLength: 100),
-                      const SizedBox(height: 16),
-                      _buildDialogTextField(phoneCtrl, 'Phone', Icons.phone,
-                          readOnly: !isEdit, keyboardType: TextInputType.phone, maxLength: 15),
-                      const SizedBox(height: 16),
-                      _buildDialogTextField(emailCtrl, 'Email', Icons.email,
-                          readOnly: !isEdit, keyboardType: TextInputType.emailAddress),
-                      const SizedBox(height: 16),
-                      _buildDialogTextField(gstinCtrl, 'Tax/VAT Number (GSTIN)',
-                          Icons.receipt_long, readOnly: !isEdit, maxLength: 50),
-                      const SizedBox(height: 16),
-                      _buildDialogTextField(addressCtrl, 'Address', Icons.location_on,
-                          readOnly: !isEdit, maxLines: 3, maxLength: 150),
-                      const SizedBox(height: 16),
-                      _buildDialogTextField(notesCtrl, 'Notes', Icons.notes,
-                          readOnly: !isEdit, maxLines: 3, maxLength: 200),
-                    ],
-                  ),
-                ),
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: Colors.teal.withValues(alpha: 0.12),
+              child: Text(
+                supplier.name.isNotEmpty ? supplier.name[0].toUpperCase() : '?',
+                style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold),
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Close'),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(supplier.name,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: 360,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (supplier.businessName.isNotEmpty)
+                _infoRowV2(Icons.business_center, supplier.businessName),
+              if (supplier.phone.isNotEmpty) _infoRowV2(Icons.phone, supplier.phone),
+              if (supplier.email.isNotEmpty) _infoRowV2(Icons.email, supplier.email),
+              if (supplier.gstin.isNotEmpty)
+                _infoRowV2(Icons.receipt_long, supplier.gstin),
+              if (supplier.address.isNotEmpty)
+                _infoRowV2(Icons.location_on, supplier.address),
+              if (supplier.notes.isNotEmpty) _infoRowV2(Icons.notes, supplier.notes),
+              const SizedBox(height: 8),
+              _infoRowV2(
+                Icons.account_balance_wallet_outlined,
+                'Outstanding: ${balance.toStringAsFixed(2)}',
+                color: balance > 0 ? Colors.red[700] : Colors.green[700],
               ),
-              if (isEdit)
-                FilledButton.icon(
-                  onPressed: isSaving
-                      ? null
-                      : () async {
-                          if (!dialogFormKey.currentState!.validate()) return;
-                          setDialogState(() => isSaving = true);
-                          try {
-                            final updated = Supplier(
-                              id: supplier.id,
-                              name: nameCtrl.text.trim(),
-                              businessName: businessNameCtrl.text.trim(),
-                              phone: phoneCtrl.text.trim(),
-                              email: emailCtrl.text.trim(),
-                              address: addressCtrl.text.trim(),
-                              gstin: gstinCtrl.text.trim(),
-                              notes: notesCtrl.text.trim(),
-                            );
-                            await ref.read(supplierRepositoryProvider).updateSupplier(updated);
-                            ref.read(suppliersProvider.notifier).refresh();
-                            await _loadPage();
-                            if (context.mounted) Navigator.pop(context);
-                            if (mounted) {
-                              AppError.showSuccess(context, 'Supplier updated successfully!');
-                            }
-                          } finally {
-                            setDialogState(() => isSaving = false);
-                          }
-                        },
-                  icon: isSaving
-                      ? const SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.save),
-                  label: Text(isSaving ? 'Saving...' : 'Update'),
-                ),
             ],
-          );
-        });
-      },
-    );
-  }
-
-  Widget _buildDialogTextField(
-    TextEditingController controller,
-    String label,
-    IconData icon, {
-    bool readOnly = false,
-    int maxLines = 1,
-    int? maxLength,
-    TextInputType? keyboardType,
-  }) {
-    return TextFormField(
-      controller: controller,
-      readOnly: readOnly,
-      maxLines: maxLines,
-      maxLength: maxLength,
-      keyboardType: keyboardType,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
-        filled: readOnly,
-        fillColor: readOnly ? Theme.of(context).colorScheme.surfaceContainerHighest : null,
-      ),
-      validator: (value) {
-        if (label == 'Name' && (value == null || value.trim().isEmpty)) {
-          return 'Please enter a name';
-        }
-        return null;
-      },
-    );
-  }
-
-  Future<void> _confirmSoftDelete(Supplier supplier) async {
-    final confirmed = await AppError.confirm(
-      context,
-      title: 'Move to Trash',
-      message: 'Move "${supplier.name}" to trash? Existing purchase bills keep showing their snapshotted supplier name.',
-      confirmLabel: 'Move to Trash',
-      confirmColor: Colors.orange,
-    );
-    if (!confirmed) return;
-
-    await ref.read(supplierRepositoryProvider).softDeleteSupplier(supplier.id);
-    ref.read(suppliersProvider.notifier).refresh();
-    await _loadPage();
-    if (mounted) AppError.showSuccess(context, 'Supplier moved to trash.');
-  }
-
-  void _showTrashDialog() async {
-    final deleted = await ref.read(supplierRepositoryProvider).getDeletedSuppliers();
-    if (!mounted) return;
-    showDialog(
-      context: context,
-      builder: (ctx) => _SupplierTrashDialog(
-        deletedSuppliers: deleted,
-        onRestored: () async {
-          ref.read(suppliersProvider.notifier).refresh();
-          await _loadPage();
-        },
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Supplier Management'),
-        backgroundColor:
-            Theme.of(context).appBarTheme.backgroundColor ?? Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.delete_sweep_outlined),
-            onPressed: _showTrashDialog,
-            tooltip: 'Trash',
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadPage,
-            tooltip: 'Refresh',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Close'),
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              width: 320,
-              child: SingleChildScrollView(child: _buildAddSupplierCard()),
-            ),
-            const SizedBox(width: 16),
-            Expanded(child: _buildSupplierTable()),
-          ],
-        ),
-      ),
     );
   }
 
-  Widget _buildAddSupplierCard() {
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+  Widget _infoRowV2(IconData icon, String text, {Color? color}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.local_shipping, color: Colors.white, size: 28),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Add New Supplier',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  _buildFormField(_nameController, 'Name', Icons.person, true, maxLength: 50),
-                  const SizedBox(height: 16),
-                  _buildFormField(_businessNameController, 'Business Name',
-                      Icons.business_center, false, maxLength: 100),
-                  const SizedBox(height: 16),
-                  _buildFormField(_phoneController, 'Phone', Icons.phone, false,
-                      keyboardType: TextInputType.phone, maxLength: 15),
-                  const SizedBox(height: 16),
-                  _buildFormField(_emailController, 'Email', Icons.email, false,
-                      maxLength: 100, keyboardType: TextInputType.emailAddress),
-                  const SizedBox(height: 16),
-                  _buildFormField(_gstinController, 'Tax/VAT Number (GSTIN)',
-                      Icons.receipt_long, false, maxLength: 50),
-                  const SizedBox(height: 16),
-                  _buildFormField(_addressController, 'Address', Icons.location_on, false,
-                      maxLines: 3, maxLength: 150),
-                  const SizedBox(height: 16),
-                  _buildFormField(_notesController, 'Notes', Icons.notes, false,
-                      maxLines: 3, maxLength: 200),
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _clearForm,
-                          icon: const Icon(Icons.clear),
-                          label: const Text('Clear'),
-                          style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        flex: 2,
-                        child: FilledButton.icon(
-                          onPressed: _handleAddSupplier,
-                          icon: const Icon(Icons.add),
-                          label: const Text('Add Supplier'),
-                          style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
+          Icon(icon, size: 16, color: color ?? Theme.of(context).colorScheme.onSurfaceVariant),
+          const SizedBox(width: 8),
+          Expanded(child: Text(text, style: TextStyle(color: color))),
         ],
       ),
     );
@@ -465,247 +276,586 @@ class _SupplierManagementScreenState
     );
   }
 
-  Widget _buildSupplierTable() {
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Column(
-        children: [
-          _buildTableHeader(),
-          _buildSearchBar(),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _suppliers.isEmpty
-                    ? _buildEmptyState()
-                    : SingleChildScrollView(
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(minWidth: 800),
-                            child: _buildDataTable(),
-                          ),
-                        ),
-                      ),
-          ),
-          _buildPaginationControls(),
-        ],
-      ),
+  Future<void> _confirmSoftDelete(Supplier supplier) async {
+    final confirmed = await AppError.confirm(
+      context,
+      title: 'Move to Trash',
+      message:
+          'Move "${supplier.name}" to trash? Existing purchase bills keep showing their snapshotted supplier name.',
+      confirmLabel: 'Move to Trash',
+      confirmColor: Colors.orange,
     );
+    if (!confirmed) return;
+
+    await ref.read(supplierRepositoryProvider).softDeleteSupplier(supplier.id);
+    ref.read(suppliersProvider.notifier).refresh();
+    await _loadPage();
+    if (mounted) AppError.showSuccess(context, 'Supplier moved to trash.');
   }
 
-  Widget _buildTableHeader() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).primaryColor,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(16),
-          topRight: Radius.circular(16),
-        ),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.local_shipping, color: Colors.white, size: 28),
-          const SizedBox(width: 12),
-          Text(
-            'Suppliers ($_totalCount)',
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSearchBar() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: TextField(
-        controller: _searchController,
-        decoration: InputDecoration(
-          labelText: 'Search suppliers...',
-          prefixIcon: const Icon(Icons.search),
-          suffixIcon: _searchQuery.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    _searchController.clear();
-                    setState(() {
-                      _searchQuery = '';
-                      _currentPage = 0;
-                    });
-                    _loadPage();
-                  },
-                )
-              : null,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
-          filled: true,
-          fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-        ),
-        onChanged: (value) {
-          setState(() {
-            _searchQuery = value;
-            _currentPage = 0;
-          });
-          _searchDebounce?.cancel();
-          _searchDebounce = Timer(const Duration(milliseconds: 400), _loadPage);
+  void _showTrashDialog() async {
+    final deleted = await ref.read(supplierRepositoryProvider).getDeletedSuppliers();
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => _SupplierTrashDialog(
+        deletedSuppliers: deleted,
+        onRestored: () async {
+          ref.read(suppliersProvider.notifier).refresh();
+          await _loadPage();
         },
       ),
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.local_shipping_outlined, size: 80, color: Theme.of(context).colorScheme.outlineVariant),
-          const SizedBox(height: 16),
-          Text('No suppliers found',
-              style: TextStyle(fontSize: 18, color: Theme.of(context).colorScheme.onSurfaceVariant)),
-          const SizedBox(height: 8),
-          Text(
-            _searchQuery.isEmpty ? 'Add your first supplier to get started' : 'Try adjusting your search',
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
-          ),
-        ],
-      ),
-    );
-  }
+  // ============================================================
+  // V2 layout — flat header/search/table (matching
+  // CustomerManagementScreenV2 and UserManagementScreenV2): the Add/Edit
+  // form floats as a scrim-backed overlay instead of a fixed side panel
+  // stealing width from the table, and the pagination row scrolls
+  // horizontally instead of overflowing on narrow windows.
+  // ============================================================
 
-  Widget _buildDataTable() {
-    return DataTable(
-      headingRowColor: WidgetStateProperty.all(Theme.of(context).primaryColor.withValues(alpha: 0.1)),
-      dataRowMinHeight: 56,
-      dataRowMaxHeight: 72,
-      columns: const [
-        DataColumn(label: Text('Sl. No', style: TextStyle(fontWeight: FontWeight.bold))),
-        DataColumn(label: Text('Name', style: TextStyle(fontWeight: FontWeight.bold))),
-        DataColumn(label: Text('Business Name', style: TextStyle(fontWeight: FontWeight.bold))),
-        DataColumn(label: Text('Phone', style: TextStyle(fontWeight: FontWeight.bold))),
-        DataColumn(label: Text('GSTIN', style: TextStyle(fontWeight: FontWeight.bold))),
-        DataColumn(label: Text('Outstanding', style: TextStyle(fontWeight: FontWeight.bold))),
-        DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
-      ],
-      rows: List.generate(_suppliers.length, (index) {
-        final supplier = _suppliers[index];
-        final serial = (_currentPage * _pageSize) + index + 1;
-        final balance = _balances[supplier.id] ?? 0.0;
-        return DataRow(
-          color: WidgetStateProperty.all(
-            index.isEven ? Colors.transparent : Theme.of(context).colorScheme.surfaceContainerHighest,
-          ),
-          cells: [
-            DataCell(Text(serial.toString())),
-            DataCell(Text(supplier.name, style: const TextStyle(fontWeight: FontWeight.w500))),
-            DataCell(Text(supplier.businessName)),
-            DataCell(Text(supplier.phone)),
-            DataCell(Text(supplier.gstin)),
-            DataCell(
-              Text(
-                balance.toStringAsFixed(2),
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: balance > 0 ? Colors.red[700] : Colors.green[700],
-                ),
-              ),
-            ),
-            DataCell(
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.visibility, size: 20),
-                    color: Colors.blue,
-                    onPressed: () => _showSupplierDialog(supplier, false),
-                    tooltip: 'View',
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.edit, size: 20),
-                    color: Colors.orange,
-                    onPressed: () => _showSupplierDialog(supplier, true),
-                    tooltip: 'Edit',
-                  ),
-                  if (widget.user.isAdmin())
-                    IconButton(
-                      icon: const Icon(Icons.delete, size: 20),
-                      color: Colors.red,
-                      onPressed: () => _confirmSoftDelete(supplier),
-                      tooltip: 'Delete',
-                    ),
-                ],
-              ),
-            ),
-          ],
-        );
-      }),
-    );
-  }
+  BoxDecoration _flatCardDecorationV2(BuildContext context) => BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      );
 
-  Widget _buildPaginationControls() {
-    final totalPages = _totalPages == 0 ? 1 : _totalPages;
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(16),
-          bottomRight: Radius.circular(16),
+  Widget _actionButtonV2({
+    required IconData icon,
+    required Color color,
+    required String tooltip,
+    required VoidCallback onPressed,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          padding: const EdgeInsets.all(7),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: color.withValues(alpha: 0.15)),
+          ),
+          child: Icon(icon, color: color, size: 18),
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
+    );
+  }
+
+  Widget _headerBarV2() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Rows per page:', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 13)),
-              const SizedBox(width: 8),
-              DropdownButton<int>(
-                value: _pageSize,
-                underline: const SizedBox(),
-                items: [10, 25, 50, 100].map((n) => DropdownMenuItem(value: n, child: Text('$n'))).toList(),
-                onChanged: (n) {
-                  if (n == null) return;
+              Row(
+                children: [
+                  Text('Suppliers',
+                      style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: Theme.of(context).colorScheme.onSurface)),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text('$_totalCount',
+                        style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            color: Theme.of(context).primaryColor)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 2),
+              Text('Manage the suppliers you purchase stock from',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            ],
+          ),
+        ),
+        Flexible(
+          child: Wrap(
+            alignment: WrapAlignment.end,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              IconButton(
+                onPressed: _showTrashDialog,
+                icon: const Icon(Icons.delete_sweep_outlined),
+                tooltip: 'Trash',
+              ),
+              IconButton(
+                onPressed: _isLoading ? null : _loadPage,
+                icon: _isLoading
+                    ? const SizedBox(
+                        width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.refresh),
+                tooltip: 'Refresh',
+              ),
+              FilledButton.icon(
+                onPressed: _openAddPanelV2,
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Add Supplier'),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _searchFilterRowV2() {
+    return TextField(
+      controller: _searchController,
+      decoration: InputDecoration(
+        hintText: 'Search suppliers by name, phone, or GSTIN...',
+        prefixIcon: const Icon(Icons.search, size: 20),
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        suffixIcon: _searchQuery.isNotEmpty
+            ? IconButton(
+                icon: const Icon(Icons.clear, size: 16),
+                onPressed: () {
+                  _searchController.clear();
                   setState(() {
-                    _pageSize = n;
+                    _searchQuery = '';
                     _currentPage = 0;
                   });
                   _loadPage();
                 },
+              )
+            : null,
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+            borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
+        enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+            borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
+      ),
+      onChanged: (value) {
+        setState(() {
+          _searchQuery = value;
+          _currentPage = 0;
+        });
+        _searchDebounce?.cancel();
+        _searchDebounce = Timer(const Duration(milliseconds: 400), _loadPage);
+      },
+    );
+  }
+
+  Widget _tableHeaderRowV2() {
+    final style = TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.4,
+        color: Theme.of(context).colorScheme.onSurfaceVariant);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: Theme.of(context).colorScheme.outlineVariant, width: 1.4),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(flex: 3, child: Text('Supplier', style: style)),
+          Expanded(flex: 2, child: Text('Phone', style: style)),
+          Expanded(flex: 2, child: Text('GSTIN', style: style)),
+          Expanded(flex: 2, child: Text('Outstanding', style: style)),
+          const SizedBox(width: 136, child: Text('')),
+        ],
+      ),
+    );
+  }
+
+  Widget _tableRowV2(Supplier supplier) {
+    final balance = _balances[supplier.id] ?? 0.0;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: Colors.teal.withValues(alpha: 0.12),
+                    child: Text(
+                      supplier.name.isNotEmpty ? supplier.name[0].toUpperCase() : '?',
+                      style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(supplier.name,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                      if (supplier.businessName.trim().isNotEmpty)
+                        Text(supplier.businessName,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                fontSize: 12,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                    ],
+                  ),
+                ],
               ),
-              const SizedBox(width: 16),
-              Text(
-                'Total: $_totalCount',
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-              ),
-            ],
+            ),
           ),
-          Row(
-            children: [
-              IconButton(
-                onPressed: _currentPage > 0 ? () => _changePage(_currentPage - 1) : null,
-                icon: const Icon(Icons.chevron_left),
-                tooltip: 'Previous',
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+          Expanded(flex: 2, child: Text(supplier.phone.isEmpty ? '—' : supplier.phone)),
+          Expanded(
+              flex: 2,
+              child: Text(supplier.gstin.isEmpty ? '—' : supplier.gstin,
+                  overflow: TextOverflow.ellipsis)),
+          Expanded(
+            flex: 2,
+            child: Text(
+              balance.toStringAsFixed(2),
+              style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: balance > 0 ? Colors.red[700] : Colors.green[700]),
+            ),
+          ),
+          SizedBox(
+            width: 136,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _actionButtonV2(
+                  icon: Icons.visibility_outlined,
+                  color: Colors.green,
+                  tooltip: 'View',
+                  onPressed: () => _showViewSupplierDialogV2(supplier),
                 ),
-                child: Text(
-                  'Page ${_currentPage + 1} of $totalPages',
-                  style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).primaryColor),
+                const SizedBox(width: 6),
+                _actionButtonV2(
+                  icon: Icons.edit_outlined,
+                  color: Colors.blue,
+                  tooltip: 'Edit',
+                  onPressed: () => _editSupplierV2(supplier),
                 ),
-              ),
-              IconButton(
-                onPressed: _currentPage < totalPages - 1 ? () => _changePage(_currentPage + 1) : null,
-                icon: const Icon(Icons.chevron_right),
-                tooltip: 'Next',
-              ),
-            ],
+                if (widget.user.isAdmin()) ...[
+                  const SizedBox(width: 6),
+                  _actionButtonV2(
+                    icon: Icons.delete_outline,
+                    color: Colors.red,
+                    tooltip: 'Delete',
+                    onPressed: () => _confirmSoftDelete(supplier),
+                  ),
+                ],
+              ],
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  // A plain Row with no Expanded/Wrap would overflow horizontally on a
+  // narrow window. A horizontally-scrolling Row keeps this bar's height
+  // constant and never overflows regardless of how narrow it gets.
+  Widget _paginationV2() {
+    final totalPages = _totalPages == 0 ? 1 : _totalPages;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text('Rows per page:',
+                style: TextStyle(
+                    fontSize: 12.5, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            const SizedBox(width: 8),
+            DropdownButton<int>(
+              value: _pageSize,
+              underline: const SizedBox(),
+              items: [10, 25, 50, 100]
+                  .map((n) => DropdownMenuItem(value: n, child: Text('$n')))
+                  .toList(),
+              onChanged: (n) {
+                if (n == null) return;
+                setState(() {
+                  _pageSize = n;
+                  _currentPage = 0;
+                });
+                _loadPage();
+              },
+            ),
+            const SizedBox(width: 16),
+            Text('Total: $_totalCount',
+                style: TextStyle(
+                    fontSize: 12.5, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            const SizedBox(width: 24),
+            IconButton(
+              onPressed: _currentPage > 0 ? () => _changePage(_currentPage - 1) : null,
+              icon: const Icon(Icons.chevron_left),
+              iconSize: 20,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              visualDensity: VisualDensity.compact,
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text('${_currentPage + 1}',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+            const SizedBox(width: 4),
+            Text('of $totalPages',
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            IconButton(
+              onPressed:
+                  _currentPage < totalPages - 1 ? () => _changePage(_currentPage + 1) : null,
+              icon: const Icon(Icons.chevron_right),
+              iconSize: 20,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              visualDensity: VisualDensity.compact,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Sizes itself naturally instead of relying on `Expanded` to fill
+  // whatever space a bounded ancestor gives it — the page itself is a
+  // CustomScrollView (see _buildV2), so the list here is shrink-wrapped
+  // (its own scrolling disabled) and the page just scrolls further if the
+  // natural content (header + rows + pagination) doesn't fit the viewport.
+  Widget _tableSectionV2() {
+    return Container(
+      decoration: _flatCardDecorationV2(context),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _tableHeaderRowV2(),
+          _isLoading && _suppliers.isEmpty
+              ? const SizedBox(
+                  height: 240, child: Center(child: CircularProgressIndicator()))
+              : _suppliers.isEmpty
+                  ? SizedBox(
+                      height: 240,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.local_shipping_outlined,
+                                size: 48, color: Theme.of(context).colorScheme.outlineVariant),
+                            const SizedBox(height: 12),
+                            Text(
+                              _searchQuery.isEmpty
+                                  ? 'No suppliers yet'
+                                  : 'No suppliers match your search',
+                              style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: _suppliers.length,
+                      itemBuilder: (context, index) => _tableRowV2(_suppliers[index]),
+                    ),
+          _paginationV2(),
+        ],
+      ),
+    );
+  }
+
+  Widget _addPanelV2() {
+    final isAdding = _editingSupplierId == null;
+    final primaryColor = Theme.of(context).primaryColor;
+    return Container(
+      decoration: _flatCardDecorationV2(context),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 16, 10, 16),
+            child: Row(
+              children: [
+                Text(isAdding ? 'Add New Supplier' : 'Edit Supplier',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.close, size: 20),
+                  onPressed: () {
+                    _clearForm();
+                    setState(() => _showAddPanelV2 = false);
+                  },
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildFormField(_nameController, 'Name', Icons.person, true, maxLength: 50),
+                    const SizedBox(height: 16),
+                    _buildFormField(_businessNameController, 'Business Name',
+                        Icons.business_center, false, maxLength: 100),
+                    const SizedBox(height: 16),
+                    _buildFormField(_phoneController, 'Phone', Icons.phone, false,
+                        keyboardType: TextInputType.phone, maxLength: 15),
+                    const SizedBox(height: 16),
+                    _buildFormField(_emailController, 'Email', Icons.email, false,
+                        maxLength: 100, keyboardType: TextInputType.emailAddress),
+                    const SizedBox(height: 16),
+                    _buildFormField(_gstinController, 'Tax/VAT Number (GSTIN)',
+                        Icons.receipt_long, false, maxLength: 50),
+                    const SizedBox(height: 16),
+                    _buildFormField(_addressController, 'Address', Icons.location_on, false,
+                        maxLines: 3, maxLength: 150),
+                    const SizedBox(height: 16),
+                    _buildFormField(_notesController, 'Notes', Icons.notes, false,
+                        maxLines: 3, maxLength: 200),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      _clearForm();
+                      setState(() => _showAddPanelV2 = false);
+                    },
+                    child: const Text('Cancel'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: FilledButton.icon(
+                    onPressed: _isLoading ? null : _saveSupplierV2,
+                    style: FilledButton.styleFrom(backgroundColor: primaryColor),
+                    icon: _isLoading
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : Icon(isAdding ? Icons.add : Icons.check, size: 18),
+                    label: Text(isAdding ? 'Add Supplier' : 'Save Changes'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final panelWidth = constraints.maxWidth < 750
+                ? constraints.maxWidth - 32
+                : (constraints.maxWidth * 0.42).clamp(520.0, 680.0);
+
+            return Stack(
+              children: [
+                CustomScrollView(
+                  slivers: [
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                      sliver: SliverToBoxAdapter(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _headerBarV2(),
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: _flatCardDecorationV2(context),
+                              child: _searchFilterRowV2(),
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      sliver: SliverToBoxAdapter(child: _tableSectionV2()),
+                    ),
+                  ],
+                ),
+                if (_showAddPanelV2) ...[
+                  Positioned.fill(
+                    child: GestureDetector(
+                      onTap: () => setState(() => _showAddPanelV2 = false),
+                      child: Container(color: Colors.black.withValues(alpha: 0.3)),
+                    ),
+                  ),
+                  Positioned(
+                    top: 16,
+                    right: 16,
+                    bottom: 16,
+                    width: panelWidth,
+                    child: _addPanelV2(),
+                  ),
+                ],
+              ],
+            );
+          },
+        ),
       ),
     );
   }

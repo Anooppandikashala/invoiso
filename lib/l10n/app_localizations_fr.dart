@@ -64,6 +64,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Configurez le fonctionnement de vos factures';
 
   @override
+  String get onboardingStepPurchaseBillsTitle => 'Purchase Bills & Suppliers';
+
+  @override
+  String get onboardingStepPurchaseBillsSubtitle =>
+      'Track supplier bills and stock purchases (optional)';
+
+  @override
   String get onboardingStepAppearanceTitle => 'Apparence de la facture';
 
   @override
@@ -101,6 +108,14 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get onboardingDefaultTaxRateLabel => 'Taux de taxe par défaut (%)';
+
+  @override
+  String get onboardingEnablePurchaseBillsSuppliersLabel =>
+      'Enable Purchase Bills & Suppliers';
+
+  @override
+  String get onboardingEnablePurchaseBillsSuppliersSubtitle =>
+      'Adds Purchase Bills and Suppliers to the dashboard menu. You can change this anytime in Settings.';
 
   @override
   String get onboardingPageSizeLabel => 'Format de page';
@@ -3050,6 +3065,17 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get invoiceSettingsSectionItems => 'Articles de facture';
+
+  @override
+  String get invoiceSettingsSectionSuppliers => 'Suppliers';
+
+  @override
+  String get settingsEnablePurchaseBillsSuppliersLabel =>
+      'Enable Purchase Bills & Suppliers';
+
+  @override
+  String get settingsEnablePurchaseBillsSuppliersSubtitle =>
+      'Shows Purchase Bills and Suppliers in the dashboard menu';
 
   @override
   String get invoiceSettingsPrefixLabel => 'Préfixe de facture';

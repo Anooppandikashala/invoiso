@@ -16,11 +16,15 @@ class SqlitePurchaseBillRepository implements PurchaseBillRepository {
     int page = 0,
     int pageSize = 50,
     String searchQuery = '',
+    String orderBy = 'bill_date',
+    bool orderAscending = false,
   }) =>
       PurchaseBillService.getPurchaseBillsPaginated(
         page: page,
         pageSize: pageSize,
         searchQuery: searchQuery,
+        orderBy: orderBy,
+        orderAscending: orderAscending,
       );
   @override
   Future<int> getPurchaseBillCount({String searchQuery = ''}) =>

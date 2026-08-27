@@ -9,6 +9,8 @@ abstract class PurchaseBillRepository {
     int page = 0,
     int pageSize = 50,
     String searchQuery = '',
+    String orderBy = 'bill_date',
+    bool orderAscending = false,
   });
   Future<int> getPurchaseBillCount({String searchQuery = ''});
   Future<void> softDeletePurchaseBill(String id);

@@ -34,9 +34,17 @@ class PurchaseBillTotalsCalculator {
     required double costPerUnit,
     required double quantity,
     double taxRatePercent = 0,
+    bool costIncludesTax = false,
   }) {
+    final rawTotal = costPerUnit * quantity;
+    // When the entered cost already includes tax, back it out so lineTotal
+    // holds the taxable base — itemTax/displayTotal (lineTotal + itemTax)
+    // then still resolve back to the original rawTotal, same technique as
+    // InvoiceTotalsCalculator.line's priceIncludesTax handling.
+    final taxDivisor =
+        (costIncludesTax && taxRatePercent > 0) ? (1 + taxRatePercent / 100) : 1.0;
     return PurchaseBillLineAmount(
-      lineTotal: costPerUnit * quantity,
+      lineTotal: rawTotal / taxDivisor,
       taxRatePercent: taxRatePercent,
     );
   }
@@ -46,6 +54,7 @@ class PurchaseBillTotalsCalculator {
       costPerUnit: (row['cost_per_unit'] as num?)?.toDouble() ?? 0.0,
       quantity: (row['quantity'] as num?)?.toDouble() ?? 0.0,
       taxRatePercent: (row['tax_rate'] as num?)?.toDouble() ?? 0.0,
+      costIncludesTax: (row['cost_includes_tax'] as int?) == 1,
     );
   }
 

@@ -15,7 +15,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 41;
+  final dbVersion = 42;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -252,6 +252,7 @@ class DatabaseHelper {
         quantity REAL,
         cost_per_unit REAL,
         tax_rate REAL DEFAULT 0,
+        cost_includes_tax INTEGER DEFAULT 0,
         line_total REAL
       )
     ''');
@@ -809,6 +810,7 @@ class DatabaseHelper {
             quantity REAL,
             cost_per_unit REAL,
             tax_rate REAL DEFAULT 0,
+            cost_includes_tax INTEGER DEFAULT 0,
             line_total REAL
           )
         ''');
@@ -864,6 +866,15 @@ class DatabaseHelper {
           () async {
         await db.execute(
           'ALTER TABLE products ADD COLUMN last_purchase_date TEXT',
+        );
+      });
+    }
+
+    if (oldVersion < 42) {
+      await _runMigrationStep(
+          db, 42, 'add_cost_includes_tax_to_purchase_bill_items', () async {
+        await db.execute(
+          'ALTER TABLE purchase_bill_items ADD COLUMN cost_includes_tax INTEGER DEFAULT 0',
         );
       });
     }

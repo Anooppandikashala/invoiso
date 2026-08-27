@@ -63,6 +63,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get onboardingStepInvoiceSubtitle => '设置发票的工作方式';
 
   @override
+  String get onboardingStepPurchaseBillsTitle => 'Purchase Bills & Suppliers';
+
+  @override
+  String get onboardingStepPurchaseBillsSubtitle =>
+      'Track supplier bills and stock purchases (optional)';
+
+  @override
   String get onboardingStepAppearanceTitle => '发票外观';
 
   @override
@@ -97,6 +104,14 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get onboardingDefaultTaxRateLabel => '默认税率 (%)';
+
+  @override
+  String get onboardingEnablePurchaseBillsSuppliersLabel =>
+      'Enable Purchase Bills & Suppliers';
+
+  @override
+  String get onboardingEnablePurchaseBillsSuppliersSubtitle =>
+      'Adds Purchase Bills and Suppliers to the dashboard menu. You can change this anytime in Settings.';
 
   @override
   String get onboardingPageSizeLabel => '页面大小';
@@ -2882,6 +2897,17 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get invoiceSettingsSectionItems => '发票项目';
+
+  @override
+  String get invoiceSettingsSectionSuppliers => 'Suppliers';
+
+  @override
+  String get settingsEnablePurchaseBillsSuppliersLabel =>
+      'Enable Purchase Bills & Suppliers';
+
+  @override
+  String get settingsEnablePurchaseBillsSuppliersSubtitle =>
+      'Shows Purchase Bills and Suppliers in the dashboard menu';
 
   @override
   String get invoiceSettingsPrefixLabel => '发票前缀';

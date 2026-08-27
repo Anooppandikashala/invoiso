@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/supported_currencies.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
+import 'package:invoiso/providers/purchase_bills_settings_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/common/constants.dart';
 
@@ -47,6 +48,7 @@ class _InvoiceSettingsScreenV2State
   bool _hideInvoiceNumberByDefault = false;
   bool _showCgstSgst = false;
   bool _showRoundOff = false;
+  bool _enablePurchaseBillsAndSuppliers = false;
   String _defaultTaxMode = 'global';
   String? _signatureBase64;
   String _signaturePosition = 'left';
@@ -105,6 +107,7 @@ class _InvoiceSettingsScreenV2State
       settingsRepo.getSetting(SettingKey.showRoundOff),
       settingsRepo.getSetting(SettingKey.invoiceLeadingZeros),
       settingsRepo.getHideInvoiceNumberByDefault(),
+      settingsRepo.getSetting(SettingKey.enablePurchaseBillsAndSuppliers),
     ]);
 
     if (!mounted) return;
@@ -142,6 +145,7 @@ class _InvoiceSettingsScreenV2State
       _showRoundOff = (results[28] as String?) == 'true';
       _invoiceLeadingZeros = (results[29] as String?) != 'false';
       _hideInvoiceNumberByDefault = results[30] as bool;
+      _enablePurchaseBillsAndSuppliers = (results[31] as String?) == 'true';
       _isLoading = false;
     });
   }
@@ -202,7 +206,11 @@ class _InvoiceSettingsScreenV2State
             SettingKey.showRoundOff, _showRoundOff.toString()),
         settingsRepo.setSetting(SettingKey.hideInvoiceNumberByDefault,
             _hideInvoiceNumberByDefault.toString()),
+        settingsRepo.setSetting(SettingKey.enablePurchaseBillsAndSuppliers,
+            _enablePurchaseBillsAndSuppliers.toString()),
       ]);
+      ref.read(enablePurchaseBillsAndSuppliersProvider.notifier).state =
+          _enablePurchaseBillsAndSuppliers;
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -318,6 +326,7 @@ class _InvoiceSettingsScreenV2State
     Icons.image_outlined,
     Icons.percent_rounded,
     Icons.view_list_rounded,
+    Icons.local_shipping_outlined,
   ];
 
   String _navSectionLabelV2(BuildContext context, int index) {
@@ -326,7 +335,8 @@ class _InvoiceSettingsScreenV2State
       0 => l10n.invoiceSettingsSectionGeneral,
       1 => l10n.invoiceSettingsSectionBranding,
       2 => l10n.invoiceSettingsSectionTax,
-      _ => l10n.invoiceSettingsSectionItems,
+      3 => l10n.invoiceSettingsSectionItems,
+      _ => l10n.invoiceSettingsSectionSuppliers,
     };
   }
 
@@ -1083,9 +1093,22 @@ class _InvoiceSettingsScreenV2State
         return _sectionTaxV2();
       case 3:
         return _sectionItemsV2();
+      case 4:
+        return _sectionSuppliersV2();
       default:
         return _sectionLanguageV2();
     }
+  }
+
+  Widget _sectionSuppliersV2() {
+    final l10n = AppLocalizations.of(context)!;
+    return _toggleCardV2(
+      title: l10n.settingsEnablePurchaseBillsSuppliersLabel,
+      subtitle: l10n.settingsEnablePurchaseBillsSuppliersSubtitle,
+      icon: Icons.local_shipping_outlined,
+      value: _enablePurchaseBillsAndSuppliers,
+      onChanged: (v) => setState(() => _enablePurchaseBillsAndSuppliers = v),
+    );
   }
 
   Widget _promoCardV2() {

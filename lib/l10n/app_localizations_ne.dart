@@ -65,6 +65,13 @@ class AppLocalizationsNe extends AppLocalizations {
       'तपाईंको बीजक कसरी काम गर्छ भनी सेट गर्नुहोस्';
 
   @override
+  String get onboardingStepPurchaseBillsTitle => 'Purchase Bills & Suppliers';
+
+  @override
+  String get onboardingStepPurchaseBillsSubtitle =>
+      'Track supplier bills and stock purchases (optional)';
+
+  @override
   String get onboardingStepAppearanceTitle => 'बीजक स्वरूप';
 
   @override
@@ -101,6 +108,14 @@ class AppLocalizationsNe extends AppLocalizations {
 
   @override
   String get onboardingDefaultTaxRateLabel => 'पूर्वनिर्धारित कर दर (%)';
+
+  @override
+  String get onboardingEnablePurchaseBillsSuppliersLabel =>
+      'Enable Purchase Bills & Suppliers';
+
+  @override
+  String get onboardingEnablePurchaseBillsSuppliersSubtitle =>
+      'Adds Purchase Bills and Suppliers to the dashboard menu. You can change this anytime in Settings.';
 
   @override
   String get onboardingPageSizeLabel => 'पृष्ठ साइज';
@@ -3017,6 +3032,17 @@ class AppLocalizationsNe extends AppLocalizations {
 
   @override
   String get invoiceSettingsSectionItems => 'बीजक वस्तुहरू';
+
+  @override
+  String get invoiceSettingsSectionSuppliers => 'Suppliers';
+
+  @override
+  String get settingsEnablePurchaseBillsSuppliersLabel =>
+      'Enable Purchase Bills & Suppliers';
+
+  @override
+  String get settingsEnablePurchaseBillsSuppliersSubtitle =>
+      'Shows Purchase Bills and Suppliers in the dashboard menu';
 
   @override
   String get invoiceSettingsPrefixLabel => 'बीजक उपसर्ग';
