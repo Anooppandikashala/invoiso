@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/services/update_service.dart';
 
 class UpdateDialog extends StatelessWidget {
@@ -18,6 +19,7 @@ class UpdateDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primary = const Color(0xFF002E78);
+    final l10n = AppLocalizations.of(context)!;
 
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -26,9 +28,9 @@ class UpdateDialog extends StatelessWidget {
         children: [
           Icon(Icons.system_update_alt_rounded, color: primary, size: 22),
           const SizedBox(width: 10),
-          const Text(
-            'Update Available',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+          Text(
+            l10n.updateDialogTitle,
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
           ),
         ],
       ),
@@ -38,13 +40,21 @@ class UpdateDialog extends StatelessWidget {
         children: [
           const Divider(height: 1),
           const SizedBox(height: 16),
-          _versionRow(context, 'Current version', info.currentVersion, Theme.of(context).colorScheme.onSurfaceVariant),
+          _versionRow(
+              context,
+              l10n.appInfoCurrentVersionLabel,
+              info.currentVersion,
+              Theme.of(context).colorScheme.onSurfaceVariant),
           const SizedBox(height: 6),
-          _versionRow(context, 'Latest version', info.latestVersion, Colors.green.shade700),
+          _versionRow(context, l10n.appInfoLatestVersionLabel,
+              info.latestVersion, Colors.green.shade700),
           const SizedBox(height: 16),
           Text(
-            'A new version of invoiso is available. Visit the download page to get the latest release.',
-            style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant, height: 1.5),
+            l10n.updateDialogBodyMessage,
+            style: TextStyle(
+                fontSize: 13,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                height: 1.5),
           ),
           const SizedBox(height: 8),
         ],
@@ -55,12 +65,14 @@ class UpdateDialog extends StatelessWidget {
             await UpdateService.markNotified(info.latestVersion);
             if (context.mounted) Navigator.of(context).pop();
           },
-          child: Text('Dismiss', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          child: Text(l10n.actionDismiss,
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant)),
         ),
         FilledButton.icon(
           style: FilledButton.styleFrom(backgroundColor: primary),
           icon: const Icon(Icons.download_rounded, size: 16),
-          label: const Text('Download'),
+          label: Text(l10n.createInvoiceDownloadLabel),
           onPressed: () async {
             await UpdateService.markNotified(info.latestVersion);
             if (context.mounted) Navigator.of(context).pop();
@@ -74,16 +86,21 @@ class UpdateDialog extends StatelessWidget {
     );
   }
 
-  Widget _versionRow(BuildContext context, String label, String version, Color versionColor) {
+  Widget _versionRow(
+      BuildContext context, String label, String version, Color versionColor) {
     return Row(
       children: [
         SizedBox(
           width: 120,
-          child: Text(label, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          child: Text(label,
+              style: TextStyle(
+                  fontSize: 13,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant)),
         ),
         Text(
           version,
-          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: versionColor),
+          style: TextStyle(
+              fontSize: 13, fontWeight: FontWeight.w600, color: versionColor),
         ),
       ],
     );

@@ -363,6 +363,6 @@ class PaymentReceiptService {
   static String _fmt(double v) => v.toStringAsFixed(2);
 
   static String _formatDate(DateTime d, String pattern) {
-    return DateFormat(pattern).format(d);
+    return DateFormat(pattern, 'en_US').format(d);
   }
 }

@@ -1,5 +1,25 @@
+import 'package:flutter/widgets.dart';
+import 'package:invoiso/l10n/app_localizations.dart';
+
 export 'setting_key.dart';
 export 'pdf_styles.dart';
+
+/// Shared "X-Small"/"Small"/"Medium"/"Large" labels for [LogoSize],
+/// [SignatureSize], and [ThermalCompanyNameSize] — same wording, so one
+/// ARB key set covers all three instead of tripling near-identical keys.
+String _genericSizeLabel(BuildContext context, String key) {
+  final l10n = AppLocalizations.of(context)!;
+  switch (key) {
+    case 'xsmall':
+      return l10n.sizeXSmallLabel;
+    case 'small':
+      return l10n.sizeSmallLabel;
+    case 'medium':
+      return l10n.sizeMediumLabel;
+    default:
+      return l10n.sizeLargeLabel;
+  }
+}
 
 enum InvoiceTemplate {
   classic,
@@ -13,8 +33,21 @@ enum InvoiceTemplate {
 
 class ProductUnits {
   static const List<String> presets = [
-    'pcs', 'kg', 'gm', 'ltr', 'ml', 'mtr', 'cm', 'box', 'bag',
-    'dozen', 'set', 'pair', 'roll', 'sqft', 'unit',
+    'pcs',
+    'kg',
+    'gm',
+    'ltr',
+    'ml',
+    'mtr',
+    'cm',
+    'box',
+    'bag',
+    'dozen',
+    'set',
+    'pair',
+    'roll',
+    'sqft',
+    'unit',
   ];
 }
 
@@ -79,21 +112,6 @@ extension PageSizeExtension on PageSize {
     }
   }
 
-  String get label {
-    switch (this) {
-      case PageSize.a4:
-        return 'Standard A4';
-      case PageSize.a5:
-        return 'Standard A5';
-      case PageSize.a6:
-        return 'Standard A6';
-      case PageSize.thermal80:
-        return 'Thermal Paper 80mm';
-      case PageSize.thermal58:
-        return 'Thermal Paper 58mm';
-    }
-  }
-
   static PageSize fromKey(String? key) {
     switch (key) {
       case 'a5':
@@ -107,6 +125,22 @@ extension PageSizeExtension on PageSize {
       default:
         return PageSize.a4;
     }
+  }
+}
+
+String pageSizeLabel(BuildContext context, PageSize size) {
+  final l10n = AppLocalizations.of(context)!;
+  switch (size) {
+    case PageSize.a4:
+      return l10n.pageSizeA4Label;
+    case PageSize.a5:
+      return l10n.pageSizeA5Label;
+    case PageSize.a6:
+      return l10n.pageSizeA6Label;
+    case PageSize.thermal80:
+      return l10n.pageSizeThermal80Label;
+    case PageSize.thermal58:
+      return l10n.pageSizeThermal58Label;
   }
 }
 
@@ -131,19 +165,6 @@ extension DateFormatOptionExtension on DateFormatOption {
     }
   }
 
-  String get label {
-    switch (this) {
-      case DateFormatOption.ddmmyyyy:
-        return 'DD/MM/YYYY  (e.g. 15/04/2026)';
-      case DateFormatOption.mmddyyyy:
-        return 'MM/DD/YYYY  (e.g. 04/15/2026)';
-      case DateFormatOption.ddMmmyyyy:
-        return 'DD MMM YYYY  (e.g. 15 Apr 2026)';
-      case DateFormatOption.yyyymmdd:
-        return 'YYYY-MM-DD  (e.g. 2026-04-15)';
-    }
-  }
-
   static DateFormatOption fromKey(String? key) {
     switch (key) {
       case 'MM/dd/yyyy':
@@ -155,6 +176,20 @@ extension DateFormatOptionExtension on DateFormatOption {
       default:
         return DateFormatOption.ddmmyyyy;
     }
+  }
+}
+
+String dateFormatOptionLabel(BuildContext context, DateFormatOption option) {
+  final l10n = AppLocalizations.of(context)!;
+  switch (option) {
+    case DateFormatOption.ddmmyyyy:
+      return l10n.dateFormatDdmmyyyyLabel;
+    case DateFormatOption.mmddyyyy:
+      return l10n.dateFormatMmddyyyyLabel;
+    case DateFormatOption.ddMmmyyyy:
+      return l10n.dateFormatDdMmmyyyyLabel;
+    case DateFormatOption.yyyymmdd:
+      return l10n.dateFormatYyyymmddLabel;
   }
 }
 
@@ -319,7 +354,6 @@ String panLabel(String? country) {
 bool isIndiaCountry(String? country) =>
     country == null || country.isEmpty || country.toLowerCase() == 'india';
 
-
 enum PaymentStatus {
   unpaid,
   partial,
@@ -353,19 +387,6 @@ extension LogoSizeExtension on LogoSize {
     }
   }
 
-  String get label {
-    switch (this) {
-      case LogoSize.xsmall:
-        return 'X-Small';
-      case LogoSize.small:
-        return 'Small';
-      case LogoSize.medium:
-        return 'Medium';
-      case LogoSize.large:
-        return 'Large';
-    }
-  }
-
   /// Logo pixel size used when rendering the company logo on PDFs.
   double get pixelSize {
     switch (this) {
@@ -388,6 +409,9 @@ LogoSize logoSizeFromKey(String? key) {
   );
 }
 
+String logoSizeLabel(BuildContext context, LogoSize size) =>
+    _genericSizeLabel(context, size.key);
+
 enum SignatureSize { small, medium, large }
 
 extension SignatureSizeExtension on SignatureSize {
@@ -399,17 +423,6 @@ extension SignatureSizeExtension on SignatureSize {
         return 'medium';
       case SignatureSize.large:
         return 'large';
-    }
-  }
-
-  String get label {
-    switch (this) {
-      case SignatureSize.small:
-        return 'Small';
-      case SignatureSize.medium:
-        return 'Medium';
-      case SignatureSize.large:
-        return 'Large';
     }
   }
 
@@ -433,6 +446,8 @@ SignatureSize signatureSizeFromKey(String? key) {
   );
 }
 
+String signatureSizeLabel(BuildContext context, SignatureSize size) =>
+    _genericSizeLabel(context, size.key);
 
 /// Which optional Product fields (and the unrelated invoice Extra Cost
 /// field, bundled in here for a single settings screen) are shown/editable.
@@ -483,26 +498,26 @@ class ProductColumnsConfig {
   });
 
   Map<String, dynamic> toJson() => {
-    'aliasName': aliasName,
-    'taxRate': taxRate,
-    'hsncode': hsncode,
-    'description': description,
-    'purchasePrice': purchasePrice,
-    'defaultDiscount': defaultDiscount,
-    'unit': unit,
-    'type': type,
-    'extraCost': extraCost,
-    'stock': stock,
-    'productMetadata': productMetadata,
-    'metaStorageLocation': metaStorageLocation,
-    'metaContainerNumber': metaContainerNumber,
-    'metaBatchNumber': metaBatchNumber,
-    'metaExpiryDate': metaExpiryDate,
-    'metaManufactureDate': metaManufactureDate,
-    'metaSupplierName': metaSupplierName,
-    'metaSkuCode': metaSkuCode,
-    'metaNotes': metaNotes,
-  };
+        'aliasName': aliasName,
+        'taxRate': taxRate,
+        'hsncode': hsncode,
+        'description': description,
+        'purchasePrice': purchasePrice,
+        'defaultDiscount': defaultDiscount,
+        'unit': unit,
+        'type': type,
+        'extraCost': extraCost,
+        'stock': stock,
+        'productMetadata': productMetadata,
+        'metaStorageLocation': metaStorageLocation,
+        'metaContainerNumber': metaContainerNumber,
+        'metaBatchNumber': metaBatchNumber,
+        'metaExpiryDate': metaExpiryDate,
+        'metaManufactureDate': metaManufactureDate,
+        'metaSupplierName': metaSupplierName,
+        'metaSkuCode': metaSkuCode,
+        'metaNotes': metaNotes,
+      };
 
   factory ProductColumnsConfig.fromJson(Map<String, dynamic> json) =>
       ProductColumnsConfig(
@@ -612,19 +627,6 @@ extension ThermalCompanyNameSizeExtension on ThermalCompanyNameSize {
     }
   }
 
-  String get label {
-    switch (this) {
-      case ThermalCompanyNameSize.xsmall:
-        return 'X-Small';
-      case ThermalCompanyNameSize.small:
-        return 'Small';
-      case ThermalCompanyNameSize.medium:
-        return 'Medium';
-      case ThermalCompanyNameSize.large:
-        return 'Large';
-    }
-  }
-
   /// Multiplier applied to [PdfLayout.thermalPrinterHeadFontSize] for the
   /// company name on thermal receipts. 'medium' matches the previous
   /// hardcoded 0.9 factor so existing receipts don't change by default.
@@ -644,7 +646,11 @@ extension ThermalCompanyNameSizeExtension on ThermalCompanyNameSize {
 
 ThermalCompanyNameSize thermalCompanyNameSizeFromKey(String? key) {
   return ThermalCompanyNameSize.values.firstWhere(
-        (s) => s.key == key,
+    (s) => s.key == key,
     orElse: () => ThermalCompanyNameSize.medium,
   );
 }
+
+String thermalCompanyNameSizeLabel(
+        BuildContext context, ThermalCompanyNameSize size) =>
+    _genericSizeLabel(context, size.key);

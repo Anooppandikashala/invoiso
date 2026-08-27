@@ -65,6 +65,10 @@ class PdfFontAssets {
   static const myanmarFallback = 'assets/fonts/NotoSansMyanmar-Regular.ttf';
   static const myanmarFallbackBold = 'assets/fonts/NotoSansMyanmar-Bold.ttf';
 
+  // Tibetan
+  static const tibetanFallback = 'assets/fonts/NotoSerifTibetan-Regular.ttf';
+  static const tibetanFallbackBold = 'assets/fonts/NotoSerifTibetan-Bold.ttf';
+
   // Additional Unicode symbols
   static const symbolsFallback =
       'assets/fonts/NotoSansSymbols2-Regular.ttf';

@@ -67,6 +67,9 @@ enum SettingKey {
   createInvoiceLayout, // which create-invoice screen layout to use: 'v1' | 'v2'
   showCustomerStatsCards, // whether the stat cards row is shown on customer management v2 (default true)
   showProductStatsCards, // whether the stat cards row is shown on product management v2 (default true)
+  hideInvoiceNumberByDefault, // whether the "Hide invoice number in PDF" toggle is on by default for new invoices (default false)
+  appLocale, // app UI language code, e.g. 'en' | 'ne' | 'bo' | 'fr' | 'es' | 'hi' | 'zh'; unset/empty = follow system locale
+  onboardingCompleted, // '1' once the first-login onboarding wizard has been finished or skipped
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -208,6 +211,12 @@ extension SettingKeyExtension on SettingKey {
         return 'show_customer_stats_cards';
       case SettingKey.showProductStatsCards:
         return 'show_product_stats_cards';
+      case SettingKey.hideInvoiceNumberByDefault:
+        return 'hide_invoice_number_by_default';
+      case SettingKey.appLocale:
+        return 'app_locale';
+      case SettingKey.onboardingCompleted:
+        return 'onboarding_completed';
 
     }
   }

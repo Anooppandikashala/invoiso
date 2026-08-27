@@ -576,7 +576,7 @@ class PDFService {
         .toLowerCase()
         .replaceAll(RegExp(r'\s+'), '_')
         .replaceAll(RegExp(r'[^a-z0-9_]'), '');
-    final date = DateFormat('yyyyMMdd').format(invoice.date);
+    final date = DateFormat('yyyyMMdd', 'en_US').format(invoice.date);
     return 'inv-$invoiceNumber-$fullName-$date.pdf';
   }
 
@@ -595,7 +595,9 @@ class PDFService {
             children: [
               AppBar(
                 automaticallyImplyLeading: false,
-                title: Text('${invoice.invoiceTitle ?? invoice.type} #${invoice.invoiceNumber ?? invoice.id}'),
+                title: Text(invoice.pdfNumberText('') != null
+                    ? '${invoice.invoiceTitle ?? invoice.type} #${invoice.pdfNumberText('')}'
+                    : invoice.invoiceTitle ?? invoice.type),
                 actions: [
                   IconButton(
                     icon: const Icon(Icons.print_outlined),

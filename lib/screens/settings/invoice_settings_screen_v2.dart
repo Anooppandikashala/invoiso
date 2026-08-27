@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/supported_currencies.dart';
+import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/common/constants.dart';
 
@@ -15,17 +16,21 @@ class InvoiceSettingsScreenV2 extends ConsumerStatefulWidget {
   const InvoiceSettingsScreenV2({super.key, this.onNavigateToCustomization});
 
   @override
-  ConsumerState<InvoiceSettingsScreenV2> createState() => _InvoiceSettingsScreenV2State();
+  ConsumerState<InvoiceSettingsScreenV2> createState() =>
+      _InvoiceSettingsScreenV2State();
 }
 
-class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV2> {
+class _InvoiceSettingsScreenV2State
+    extends ConsumerState<InvoiceSettingsScreenV2> {
   final TextEditingController invoicePrefixController = TextEditingController();
-  final TextEditingController invoiceStartingNumberController = TextEditingController();
+  final TextEditingController invoiceStartingNumberController =
+      TextEditingController();
   final TextEditingController additionalInfoController =
       TextEditingController();
   final TextEditingController thankYouController = TextEditingController();
   final TextEditingController quantityLabelController = TextEditingController();
-  final TextEditingController defaultTaxRateController = TextEditingController();
+  final TextEditingController defaultTaxRateController =
+      TextEditingController();
 
   String _selectedLogoPosition = 'left';
   String _selectedCurrencyCode = 'INR';
@@ -39,6 +44,7 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
   bool _showPreviousBalance = false;
   bool _showAliasNameInPdf = false;
   bool _showTaxButtonInInvoicePage = true;
+  bool _hideInvoiceNumberByDefault = false;
   bool _showCgstSgst = false;
   bool _showRoundOff = false;
   String _defaultTaxMode = 'global';
@@ -98,6 +104,7 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
       settingsRepo.getSetting(SettingKey.defaultTaxMode),
       settingsRepo.getSetting(SettingKey.showRoundOff),
       settingsRepo.getSetting(SettingKey.invoiceLeadingZeros),
+      settingsRepo.getHideInvoiceNumberByDefault(),
     ]);
 
     if (!mounted) return;
@@ -121,10 +128,8 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
       _signatureBase64 = results[14] as String?;
       _signaturePosition = results[15] as String;
       _invoiceCount = results[16] as int;
-      invoiceStartingNumberController.text =
-          (results[17] as String?) ?? '1';
-      defaultTaxRateController.text =
-          (results[18] as String?) ?? '18';
+      invoiceStartingNumberController.text = (results[17] as String?) ?? '1';
+      defaultTaxRateController.text = (results[18] as String?) ?? '18';
       _showAliasNameInPdf = (results[19] as String?) == 'true';
       _showTaxButtonInInvoicePage = results[20] as bool;
       _selectedSignatureSize = results[21] as String;
@@ -136,61 +141,77 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
       _defaultTaxMode = (results[27] as String?) ?? 'global';
       _showRoundOff = (results[28] as String?) == 'true';
       _invoiceLeadingZeros = (results[29] as String?) != 'false';
+      _hideInvoiceNumberByDefault = results[30] as bool;
       _isLoading = false;
     });
   }
 
   Future<void> _saveSettings() async {
     if (_isSaving) return;
-    if(mounted) {
+    if (mounted) {
       setState(() => _isSaving = true);
     }
     try {
-    final settingsRepo = ref.read(settingsRepositoryProvider);
-    final taxRateVal = double.tryParse(defaultTaxRateController.text.trim()) ?? 18.0;
-    await Future.wait([
-      settingsRepo.setSetting(SettingKey.logoSize, _selectedLogoSize),
-      settingsRepo.setSetting(SettingKey.logoPosition, _selectedLogoPosition),
-      settingsRepo.setSetting(SettingKey.invoicePrefix, invoicePrefixController.text),
-      if (_invoiceCount == 0)
-        settingsRepo.setSetting(SettingKey.invoiceStartingNumber,
-            (int.tryParse(invoiceStartingNumberController.text.trim()) ?? 1)
-                .clamp(1, 99999999)
-                .toString()),
-      settingsRepo.setSetting(
-          SettingKey.invoiceLeadingZeros, _invoiceLeadingZeros.toString()),
-      settingsRepo.setSetting(SettingKey.additionalInfo, additionalInfoController.text),
-      settingsRepo.setSetting(SettingKey.thankYouNote, thankYouController.text),
-      settingsRepo.setCurrency(_selectedCurrencyCode),
-      settingsRepo.setDateFormat(_selectedDateFormat),
-      settingsRepo.setSetting(SettingKey.showGstFields, _showGstFields.toString()),
-      settingsRepo.setSetting(SettingKey.fractionalQuantity, _fractionalQuantity.toString()),
-      settingsRepo.setSetting(SettingKey.quantityLabel, quantityLabelController.text.trim()),
-      settingsRepo.setSetting(
-          SettingKey.defaultTaxRate, taxRateVal.clamp(0, 100).toStringAsFixed(1)),
-      settingsRepo.setShowQuantity(_showQuantity),
-      settingsRepo.setShowDiscount(_showDiscount),
-      settingsRepo.setShowTypeTag(_showTypeTag),
-      settingsRepo.setShowPreviousBalance(_showPreviousBalance),
-      settingsRepo.setSetting(SettingKey.signaturePosition, _signaturePosition),
-      settingsRepo.setSetting(SettingKey.signatureSize, _selectedSignatureSize),
-      settingsRepo.setSetting(
-          SettingKey.showAliasNameInPdf, _showAliasNameInPdf.toString()),
-      settingsRepo.setSetting(
-          SettingKey.showTaxButtonInInvoicePage, _showTaxButtonInInvoicePage.toString()),
-      settingsRepo.setAllowDuplicateInvoiceItems(_allowDuplicateInvoiceItems),
-      settingsRepo.setSetting(SettingKey.showCgstSgst, _showCgstSgst.toString()),
-      settingsRepo.setSetting(SettingKey.defaultTaxMode, _defaultTaxMode),
-      settingsRepo.setSetting(SettingKey.showRoundOff, _showRoundOff.toString()),
-    ]);
+      final settingsRepo = ref.read(settingsRepositoryProvider);
+      final taxRateVal =
+          double.tryParse(defaultTaxRateController.text.trim()) ?? 18.0;
+      await Future.wait([
+        settingsRepo.setSetting(SettingKey.logoSize, _selectedLogoSize),
+        settingsRepo.setSetting(SettingKey.logoPosition, _selectedLogoPosition),
+        settingsRepo.setSetting(
+            SettingKey.invoicePrefix, invoicePrefixController.text),
+        if (_invoiceCount == 0)
+          settingsRepo.setSetting(
+              SettingKey.invoiceStartingNumber,
+              (int.tryParse(invoiceStartingNumberController.text.trim()) ?? 1)
+                  .clamp(1, 99999999)
+                  .toString()),
+        settingsRepo.setSetting(
+            SettingKey.invoiceLeadingZeros, _invoiceLeadingZeros.toString()),
+        settingsRepo.setSetting(
+            SettingKey.additionalInfo, additionalInfoController.text),
+        settingsRepo.setSetting(
+            SettingKey.thankYouNote, thankYouController.text),
+        settingsRepo.setCurrency(_selectedCurrencyCode),
+        settingsRepo.setDateFormat(_selectedDateFormat),
+        settingsRepo.setSetting(
+            SettingKey.showGstFields, _showGstFields.toString()),
+        settingsRepo.setSetting(
+            SettingKey.fractionalQuantity, _fractionalQuantity.toString()),
+        settingsRepo.setSetting(
+            SettingKey.quantityLabel, quantityLabelController.text.trim()),
+        settingsRepo.setSetting(SettingKey.defaultTaxRate,
+            taxRateVal.clamp(0, 100).toStringAsFixed(1)),
+        settingsRepo.setShowQuantity(_showQuantity),
+        settingsRepo.setShowDiscount(_showDiscount),
+        settingsRepo.setShowTypeTag(_showTypeTag),
+        settingsRepo.setShowPreviousBalance(_showPreviousBalance),
+        settingsRepo.setSetting(
+            SettingKey.signaturePosition, _signaturePosition),
+        settingsRepo.setSetting(
+            SettingKey.signatureSize, _selectedSignatureSize),
+        settingsRepo.setSetting(
+            SettingKey.showAliasNameInPdf, _showAliasNameInPdf.toString()),
+        settingsRepo.setSetting(SettingKey.showTaxButtonInInvoicePage,
+            _showTaxButtonInInvoicePage.toString()),
+        settingsRepo.setAllowDuplicateInvoiceItems(_allowDuplicateInvoiceItems),
+        settingsRepo.setSetting(
+            SettingKey.showCgstSgst, _showCgstSgst.toString()),
+        settingsRepo.setSetting(SettingKey.defaultTaxMode, _defaultTaxMode),
+        settingsRepo.setSetting(
+            SettingKey.showRoundOff, _showRoundOff.toString()),
+        settingsRepo.setSetting(SettingKey.hideInvoiceNumberByDefault,
+            _hideInvoiceNumberByDefault.toString()),
+      ]);
 
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Invoice settings saved successfully!'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content:
+              Text(AppLocalizations.of(context)!.invoiceSettingsSavedMessage),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -206,22 +227,23 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
     if (bytes.length > 2 * 1024 * 1024) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Signature image must be less than 2 MB.')),
+          SnackBar(
+              content: Text(AppLocalizations.of(context)!
+                  .invoiceSettingsSignatureTooLargeMessage)),
         );
       }
       return;
     }
     final base64Sig = base64Encode(bytes);
     await ref.read(settingsRepositoryProvider).setSignatureImage(base64Sig);
-    if(mounted) {
+    if (mounted) {
       setState(() => _signatureBase64 = base64Sig);
     }
   }
 
   Future<void> _clearSignature() async {
     await ref.read(settingsRepositoryProvider).setSignatureImage('');
-    if(!mounted) return;
+    if (!mounted) return;
     setState(() => _signatureBase64 = null);
   }
 
@@ -235,22 +257,25 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
     if (bytes.length > 2 * 1024 * 1024) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Watermark image must be less than 2 MB.')),
+          SnackBar(
+              content: Text(AppLocalizations.of(context)!
+                  .invoiceSettingsWatermarkTooLargeMessage)),
         );
       }
       return;
     }
     final base64Watermark = base64Encode(bytes);
-    await ref.read(settingsRepositoryProvider).setWatermarkImage(base64Watermark);
-    if(mounted) {
+    await ref
+        .read(settingsRepositoryProvider)
+        .setWatermarkImage(base64Watermark);
+    if (mounted) {
       setState(() => _watermarkBase64 = base64Watermark);
     }
   }
 
   Future<void> _clearWatermark() async {
     await ref.read(settingsRepositoryProvider).setWatermarkImage('');
-    if(!mounted) return;
+    if (!mounted) return;
     setState(() => _watermarkBase64 = null);
   }
 
@@ -288,13 +313,22 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
   //    field too narrow to use).
   // ============================================================
 
-  static const List<Map<String, dynamic>> _navSectionsV2 = [
-    {'label': 'General', 'icon': Icons.settings_outlined},
-    {'label': 'Branding', 'icon': Icons.image_outlined},
-    {'label': 'Tax & GST', 'icon': Icons.percent_rounded},
-    {'label': 'Invoice Items', 'icon': Icons.view_list_rounded},
-    //{'label': 'Language & Notes', 'icon': Icons.translate_outlined},
+  static const List<IconData> _navSectionIconsV2 = [
+    Icons.settings_outlined,
+    Icons.image_outlined,
+    Icons.percent_rounded,
+    Icons.view_list_rounded,
   ];
+
+  String _navSectionLabelV2(BuildContext context, int index) {
+    final l10n = AppLocalizations.of(context)!;
+    return switch (index) {
+      0 => l10n.invoiceSettingsSectionGeneral,
+      1 => l10n.invoiceSettingsSectionBranding,
+      2 => l10n.invoiceSettingsSectionTax,
+      _ => l10n.invoiceSettingsSectionItems,
+    };
+  }
 
   InputDecoration _fieldDecorationV2(
     BuildContext context, {
@@ -375,10 +409,11 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
                       behavior: HitTestBehavior.opaque,
                       onPanUpdate: (details) {
                         setDialogState(() {
-                          dialogWidth = (dialogWidth + details.delta.dx)
-                              .clamp(_longTextDialogMinWidth, _longTextDialogMaxWidth);
+                          dialogWidth = (dialogWidth + details.delta.dx).clamp(
+                              _longTextDialogMinWidth, _longTextDialogMaxWidth);
                           dialogHeight = (dialogHeight + details.delta.dy)
-                              .clamp(_longTextDialogMinHeight, _longTextDialogMaxHeight);
+                              .clamp(_longTextDialogMinHeight,
+                                  _longTextDialogMaxHeight);
                         });
                       },
                       child: const Padding(
@@ -394,11 +429,11 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
+              child: Text(AppLocalizations.of(context)!.actionCancel),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(ctx, dialogController.text),
-              child: const Text('Save'),
+              child: Text(AppLocalizations.of(context)!.actionSave),
             ),
           ],
         ),
@@ -446,15 +481,18 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
   // narrow — this is the one real behavioural fix over the original,
   // which always split fields exactly in half regardless of how narrow
   // the container actually was.
-  Widget _fieldWrapV2(List<Widget> halfWidthChildren, List<Widget> fullWidthChildren) {
+  Widget _fieldWrapV2(
+      List<Widget> halfWidthChildren, List<Widget> fullWidthChildren) {
     return LayoutBuilder(builder: (context, constraints) {
       final singleColumn = constraints.maxWidth < 480;
-      final fieldWidth = singleColumn ? constraints.maxWidth : constraints.maxWidth / 2 - 12;
+      final fieldWidth =
+          singleColumn ? constraints.maxWidth : constraints.maxWidth / 2 - 12;
       return Wrap(
         spacing: 24,
         runSpacing: 20,
         children: [
-          for (final child in halfWidthChildren) SizedBox(width: fieldWidth, child: child),
+          for (final child in halfWidthChildren)
+            SizedBox(width: fieldWidth, child: child),
           for (final child in fullWidthChildren)
             SizedBox(width: constraints.maxWidth, child: child),
         ],
@@ -463,13 +501,14 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
   }
 
   Widget _sectionGeneralV2() {
+    final l10n = AppLocalizations.of(context)!;
     return _fieldWrapV2(
       [
         TextField(
           controller: invoicePrefixController,
           maxLength: 25,
           decoration: _fieldDecorationV2(context,
-              label: 'Invoice Prefix',
+              label: l10n.invoiceSettingsPrefixLabel,
               prefixIcon: const Icon(Icons.confirmation_number)),
         ),
         _invoiceCount == 0
@@ -478,12 +517,13 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
                 keyboardType: TextInputType.number,
                 maxLength: 8,
                 decoration: _fieldDecorationV2(context,
-                    label: 'Invoice Starting Number',
+                    label: l10n.onboardingInvoiceStartingNumberLabel,
                     prefixIcon: const Icon(Icons.looks_one_outlined),
-                    helperText: 'First invoice will start from this number'),
+                    helperText: l10n.invoiceSettingsStartingNumberHelper),
               )
             : Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
                   color: Colors.orange[50],
                   borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
@@ -492,21 +532,24 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.lock_outline, size: 16, color: Colors.orange[700]),
+                    Icon(Icons.lock_outline,
+                        size: 16, color: Colors.orange[700]),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Invoice starting number cannot be changed while invoices exist. '
-                        'Please permanently delete all invoices/quotations (including trash) and try again.',
-                        style: TextStyle(fontSize: 12, color: Colors.orange[800], height: 1.4),
+                        l10n.invoiceSettingsStartingNumberLockedMessage,
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.orange[800],
+                            height: 1.4),
                       ),
                     ),
                   ],
                 ),
               ),
         _toggleCardV2(
-          title: 'Leading Zeros',
-          subtitle: 'Pad invoice numbers to 8 digits (e.g. 00000007)',
+          title: l10n.onboardingLeadingZerosLabel,
+          subtitle: l10n.onboardingLeadingZerosSubtitle,
           icon: Icons.pin_outlined,
           value: _invoiceLeadingZeros,
           onChanged: (val) => setState(() => _invoiceLeadingZeros = val),
@@ -516,16 +559,19 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
           isExpanded: true,
           value: _selectedDateFormat,
           decoration: _fieldDecorationV2(context,
-              label: 'Date Format', prefixIcon: const Icon(Icons.calendar_today)),
+              label: l10n.onboardingDateFormatLabel,
+              prefixIcon: const Icon(Icons.calendar_today)),
           items: DateFormatOption.values.map((opt) {
             return DropdownMenuItem<DateFormatOption>(
               value: opt,
-              child: Text(opt.label, maxLines: 1, overflow: TextOverflow.ellipsis),
+              child: Text(dateFormatOptionLabel(context, opt),
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
             );
           }).toList(),
           selectedItemBuilder: (context) {
             return DateFormatOption.values.map((opt) {
-              return Text(opt.key, maxLines: 1, overflow: TextOverflow.ellipsis);
+              return Text(opt.key,
+                  maxLines: 1, overflow: TextOverflow.ellipsis);
             }).toList();
           },
           onChanged: (value) {
@@ -537,9 +583,9 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
           controller: quantityLabelController,
           maxLength: 30,
           decoration: _fieldDecorationV2(context,
-              label: 'Quantity Column Label',
-              hint: 'e.g. Words, Hours, Units',
-              helperText: 'Leave blank to use default "Qty"',
+              label: l10n.invoiceSettingsQuantityColumnLabel,
+              hint: l10n.invoiceSettingsQuantityColumnHint,
+              helperText: l10n.invoiceSettingsQuantityColumnHelper,
               prefixIcon: const Icon(Icons.tag)),
         ),
       ],
@@ -549,14 +595,15 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
           maxLength: DefaultValues.additionalNotesLength,
           maxLines: 3,
           decoration: _fieldDecorationV2(context,
-              label: 'Additional Information', prefixIcon: const Icon(Icons.info_outline))
+                  label: l10n.invoiceSettingsAdditionalInfoLabel,
+                  prefixIcon: const Icon(Icons.info_outline))
               .copyWith(
                   alignLabelWithHint: true,
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.open_in_full, size: 18),
-                    tooltip: 'Edit in larger view',
+                    tooltip: l10n.tooltipEditInLargerView,
                     onPressed: () => _editLongTextDialogV2(
-                      title: 'Additional Information',
+                      title: l10n.invoiceSettingsAdditionalInfoLabel,
                       controller: additionalInfoController,
                       maxLength: DefaultValues.additionalNotesLength,
                     ),
@@ -567,24 +614,33 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
           maxLength: 300,
           maxLines: 3,
           decoration: _fieldDecorationV2(context,
-              label: 'Thank You Note', prefixIcon: const Icon(Icons.favorite_outline))
+                  label: l10n.invoiceSettingsThankYouNoteLabel,
+                  prefixIcon: const Icon(Icons.favorite_outline))
               .copyWith(
                   alignLabelWithHint: true,
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.open_in_full, size: 18),
-                    tooltip: 'Edit in larger view',
+                    tooltip: l10n.tooltipEditInLargerView,
                     onPressed: () => _editLongTextDialogV2(
-                      title: 'Thank You Note',
+                      title: l10n.invoiceSettingsThankYouNoteLabel,
                       controller: thankYouController,
                       maxLength: 300,
                     ),
                   )),
-        )
+        ),
+        _toggleCardV2(
+          title: l10n.invoiceSettingsHideInvoiceNumberLabel,
+          subtitle: l10n.invoiceSettingsHideInvoiceNumberSubtitle,
+          icon: Icons.confirmation_number_outlined,
+          value: _hideInvoiceNumberByDefault,
+          onChanged: (val) => setState(() => _hideInvoiceNumberByDefault = val),
+        ),
       ],
     );
   }
 
   Widget _sectionTaxV2() {
+    final l10n = AppLocalizations.of(context)!;
     return _fieldWrapV2(
       [
         TextField(
@@ -592,16 +648,16 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           maxLength: 5,
           decoration: _fieldDecorationV2(context,
-              label: 'Default Tax Rate (%)',
-              hint: 'e.g. 18',
-              helperText: 'Applied to new invoices',
+              label: l10n.onboardingDefaultTaxRateLabel,
+              hint: l10n.invoiceSettingsTaxRateHint,
+              helperText: l10n.invoiceSettingsTaxRateHelper,
               prefixIcon: const Icon(Icons.percent)),
         ),
       ],
       [
         _toggleCardV2(
-          title: 'Tax Enabled by Default',
-          subtitle: 'Enable the Tax toggle by default when creating new invoices.',
+          title: l10n.invoiceSettingsTaxEnabledLabel,
+          subtitle: l10n.invoiceSettingsTaxEnabledSubtitle,
           icon: Icons.percent_rounded,
           value: _showTaxButtonInInvoicePage,
           onChanged: (val) => setState(() => _showTaxButtonInInvoicePage = val),
@@ -611,40 +667,47 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+            border:
+                Border.all(color: Theme.of(context).colorScheme.outlineVariant),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Default Tax Rate Mode'),
-              const Text('Applies to new invoices only', style: TextStyle(fontSize: 12)),
+              Text(l10n.invoiceSettingsTaxModeLabel),
+              Text(l10n.invoiceSettingsAppliesNewInvoicesOnly,
+                  style: const TextStyle(fontSize: 12)),
               const SizedBox(height: 8),
               SegmentedButton<bool>(
-                segments: const [
+                segments: [
                   ButtonSegment<bool>(
-                      value: false, icon: Icon(Icons.percent, size: 16), label: Text('Global')),
+                      value: false,
+                      icon: const Icon(Icons.percent, size: 16),
+                      label: Text(l10n.invoiceSettingsTaxModeGlobal)),
                   ButtonSegment<bool>(
-                      value: true, icon: Icon(Icons.list_alt, size: 16), label: Text('Per Item')),
+                      value: true,
+                      icon: const Icon(Icons.list_alt, size: 16),
+                      label: Text(l10n.invoiceSettingsTaxModePerItem)),
                 ],
                 selected: {_defaultTaxMode == 'perItem'},
                 onSelectionChanged: (selection) {
                   if (!mounted) return;
-                  setState(() => _defaultTaxMode = selection.first ? 'perItem' : 'global');
+                  setState(() =>
+                      _defaultTaxMode = selection.first ? 'perItem' : 'global');
                 },
               ),
             ],
           ),
         ),
         _toggleCardV2(
-          title: 'Show GST Fields',
-          subtitle: 'Display GSTIN fields (HSN/SAC) on invoices, PDFs, and CSV exports',
+          title: l10n.invoiceSettingsShowGstFieldsLabel,
+          subtitle: l10n.invoiceSettingsShowGstFieldsSubtitle,
           icon: Icons.receipt_long_rounded,
           value: _showGstFields,
           onChanged: (val) => setState(() => _showGstFields = val),
         ),
         _toggleCardV2(
-          title: 'Show CGST/SGST',
-          subtitle: 'Split tax into CGST + SGST on invoices (India only).',
+          title: l10n.invoiceSettingsShowCgstSgstLabel,
+          subtitle: l10n.invoiceSettingsShowCgstSgstSubtitle,
           icon: Icons.percent_rounded,
           value: _showCgstSgst,
           onChanged: (val) => setState(() => _showCgstSgst = val),
@@ -654,38 +717,58 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+            border:
+                Border.all(color: Theme.of(context).colorScheme.outlineVariant),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(_showGstFields ? 'Default GST Invoice Title' : 'Default TAX Invoice Title',
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+              Text(
+                  _showGstFields
+                      ? l10n.invoiceSettingsDefaultGstTitleLabel
+                      : l10n.invoiceSettingsDefaultTaxTitleLabel,
+                  style: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w500)),
               const SizedBox(height: 4),
               Text(
                 _showGstFields
-                    ? 'Preselected on new invoices — e.g. "Bill of Supply" for GST Composition Scheme dealers'
-                    : 'Preselected on new invoices',
-                style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    ? l10n.invoiceSettingsGstTitleHelperGst
+                    : l10n.invoiceSettingsGstTitleHelperGeneric,
+                style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String?>(
                 isExpanded: true,
                 value: _defaultInvoiceTitle,
                 decoration: InputDecoration(
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                  border: OutlineInputBorder(
+                      borderRadius:
+                          BorderRadius.circular(AppBorderRadius.xsmall)),
                   filled: true,
                   fillColor: Theme.of(context).colorScheme.surface,
                 ),
-                items: const [
-                  DropdownMenuItem(value: null, child: Text('Invoice')),
-                  DropdownMenuItem(value: 'Tax Invoice', child: Text('Tax Invoice')),
-                  DropdownMenuItem(value: 'Bill of Supply', child: Text('Bill of Supply')),
+                items: [
+                  DropdownMenuItem(value: null, child: Text(l10n.labelInvoice)),
                   DropdownMenuItem(
-                      value: 'Invoice-cum-Bill of Supply', child: Text('Invoice-cum-Bill of Supply')),
-                  DropdownMenuItem(value: 'Credit Note', child: Text('Credit Note')),
-                  DropdownMenuItem(value: 'Debit Note', child: Text('Debit Note')),
-                  DropdownMenuItem(value: 'Revised Invoice', child: Text('Revised Invoice')),
+                      value: 'Tax Invoice',
+                      child: Text(l10n.gstTitleTaxInvoiceLabel)),
+                  DropdownMenuItem(
+                      value: 'Bill of Supply',
+                      child: Text(l10n.gstTitleBillOfSupplyLabel)),
+                  DropdownMenuItem(
+                      value: 'Invoice-cum-Bill of Supply',
+                      child: Text(l10n.gstTitleInvoiceCumBillLabel)),
+                  DropdownMenuItem(
+                      value: 'Credit Note',
+                      child: Text(l10n.gstTitleCreditNoteLabel)),
+                  DropdownMenuItem(
+                      value: 'Debit Note',
+                      child: Text(l10n.gstTitleDebitNoteLabel)),
+                  DropdownMenuItem(
+                      value: 'Revised Invoice',
+                      child: Text(l10n.gstTitleRevisedInvoiceLabel)),
                 ],
                 onChanged: _setDefaultInvoiceTitle,
               ),
@@ -693,9 +776,8 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
           ),
         ),
         _toggleCardV2(
-          title: 'Show Round Off',
-          subtitle:
-          'Show a Round Off row + Net Amount (rounded to nearest) and amount in words on invoice PDFs.',
+          title: l10n.invoiceSettingsShowRoundOffLabel,
+          subtitle: l10n.invoiceSettingsShowRoundOffSubtitle,
           icon: Icons.currency_rupee_rounded,
           value: _showRoundOff,
           onChanged: (val) => setState(() => _showRoundOff = val),
@@ -703,56 +785,57 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
       ],
     );
   }
+
   Widget _sectionItemsV2() {
+    final l10n = AppLocalizations.of(context)!;
     return _fieldWrapV2(
       [],
       [
         _toggleCardV2(
-          title: 'Show Alias Name in PDF',
-          subtitle:
-          "Print a product's local-language alias (if set) instead of its actual name on PDFs",
+          title: l10n.invoiceSettingsShowAliasNameLabel,
+          subtitle: l10n.invoiceSettingsShowAliasNameSubtitle,
           icon: Icons.translate_outlined,
           value: _showAliasNameInPdf,
           onChanged: (val) => setState(() => _showAliasNameInPdf = val),
         ),
         _toggleCardV2(
-          title: 'Allow Fractional Quantities',
-          subtitle: 'Enable decimal quantities (e.g. 1.5 hrs, 0.5 kg)',
+          title: l10n.invoiceSettingsAllowFractionalQtyLabel,
+          subtitle: l10n.invoiceSettingsAllowFractionalQtySubtitle,
           icon: Icons.pin_outlined,
           value: _fractionalQuantity,
           onChanged: (val) => setState(() => _fractionalQuantity = val),
         ),
         _toggleCardV2(
-          title: 'Show Quantity Field',
-          subtitle: 'Hide quantity for service-based billing; price column becomes "Rate"',
+          title: l10n.invoiceSettingsShowQuantityLabel,
+          subtitle: l10n.invoiceSettingsShowQuantitySubtitle,
           icon: Icons.onetwothree_rounded,
           value: _showQuantity,
           onChanged: (val) => setState(() => _showQuantity = val),
         ),
         _toggleCardV2(
-          title: 'Show Discount Column',
-          subtitle: 'Hide discount column for clients who don\'t use item-level discounts',
+          title: l10n.invoiceSettingsShowDiscountLabel,
+          subtitle: l10n.invoiceSettingsShowDiscountSubtitle,
           icon: Icons.discount_outlined,
           value: _showDiscount,
           onChanged: (val) => setState(() => _showDiscount = val),
         ),
         _toggleCardV2(
-          title: 'Show Product/Service Tag',
-          subtitle: 'Show or hide the Product/Service label on each invoice item',
+          title: l10n.invoiceSettingsShowTypeTagLabel,
+          subtitle: l10n.invoiceSettingsShowTypeTagSubtitle,
           icon: Icons.label_outline,
           value: _showTypeTag,
           onChanged: (val) => setState(() => _showTypeTag = val),
         ),
         _toggleCardV2(
-          title: 'Allow Duplicate Invoice Items',
-          subtitle: 'Allow adding the same product more than once to an invoice',
+          title: l10n.invoiceSettingsAllowDuplicateItemsLabel,
+          subtitle: l10n.invoiceSettingsAllowDuplicateItemsSubtitle,
           icon: Icons.content_copy_outlined,
           value: _allowDuplicateInvoiceItems,
           onChanged: (val) => setState(() => _allowDuplicateInvoiceItems = val),
         ),
         _toggleCardV2(
-          title: 'Show Previous Balance Due',
-          subtitle: 'Show calculated prior outstanding balance on invoice PDFs',
+          title: l10n.invoiceSettingsShowPrevBalanceLabel,
+          subtitle: l10n.invoiceSettingsShowPrevBalanceSubtitle,
           icon: Icons.account_balance_wallet_outlined,
           value: _showPreviousBalance,
           onChanged: (val) => setState(() => _showPreviousBalance = val),
@@ -762,15 +845,18 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
   }
 
   Widget _sectionBrandingV2() {
+    final l10n = AppLocalizations.of(context)!;
     return _fieldWrapV2(
       [
         DropdownButtonFormField<String>(
           value: _selectedLogoPosition,
           isExpanded: true,
-          decoration: _fieldDecorationV2(context, label: 'Company Logo Position'),
-          items: const [
-            DropdownMenuItem(value: 'left', child: Text('Left')),
-            DropdownMenuItem(value: 'right', child: Text('Right')),
+          decoration: _fieldDecorationV2(context,
+              label: l10n.invoiceSettingsLogoPositionLabel),
+          items: [
+            DropdownMenuItem(value: 'left', child: Text(l10n.commonLeftLabel)),
+            DropdownMenuItem(
+                value: 'right', child: Text(l10n.commonRightLabel)),
           ],
           onChanged: (value) {
             if (!mounted) return;
@@ -780,10 +866,12 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
         DropdownButtonFormField<String>(
           value: _selectedLogoSize,
           isExpanded: true,
-          decoration: _fieldDecorationV2(context, label: 'Company Logo Size'),
+          decoration: _fieldDecorationV2(context,
+              label: l10n.invoiceSettingsLogoSizeLabel),
           items: [
             for (final size in LogoSize.values)
-              DropdownMenuItem(value: size.key, child: Text(size.label)),
+              DropdownMenuItem(
+                  value: size.key, child: Text(logoSizeLabel(context, size))),
           ],
           onChanged: (value) {
             if (!mounted) return;
@@ -797,23 +885,30 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+            border:
+                Border.all(color: Theme.of(context).colorScheme.outlineVariant),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Signature Image',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+              Text(l10n.invoiceSettingsSignatureImageLabel,
+                  style: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w500)),
               const SizedBox(height: 4),
-              Text('Printed on invoices as Authorised Signature',
-                  style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
-              Text('PNG, JPG or JPEG — max 2 MB',
-                  style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              Text(l10n.invoiceSettingsSignatureImageSubtitle,
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              Text(l10n.invoiceSettingsImageFormatHint,
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
               const SizedBox(height: 12),
               if (_signatureBase64 != null && _signatureBase64!.isNotEmpty) ...[
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
-                  child: Image.memory(base64Decode(_signatureBase64!), height: 60),
+                  child:
+                      Image.memory(base64Decode(_signatureBase64!), height: 60),
                 ),
                 const SizedBox(height: 8),
               ],
@@ -822,16 +917,20 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
                   OutlinedButton.icon(
                     onPressed: _pickSignature,
                     icon: const Icon(Icons.upload_outlined, size: 16),
-                    label: Text(_signatureBase64 != null && _signatureBase64!.isNotEmpty
-                        ? 'Change Signature'
-                        : 'Upload Signature'),
+                    label: Text(
+                        _signatureBase64 != null && _signatureBase64!.isNotEmpty
+                            ? l10n.invoiceSettingsChangeSignatureButton
+                            : l10n.invoiceSettingsUploadSignatureButton),
                   ),
-                  if (_signatureBase64 != null && _signatureBase64!.isNotEmpty) ...[
+                  if (_signatureBase64 != null &&
+                      _signatureBase64!.isNotEmpty) ...[
                     const SizedBox(width: 8),
                     TextButton.icon(
                       onPressed: _clearSignature,
-                      icon: const Icon(Icons.delete_outline, size: 16, color: Colors.red),
-                      label: const Text('Remove', style: TextStyle(color: Colors.red)),
+                      icon: const Icon(Icons.delete_outline,
+                          size: 16, color: Colors.red),
+                      label: Text(l10n.tooltipRemove,
+                          style: const TextStyle(color: Colors.red)),
                     ),
                   ],
                 ],
@@ -844,11 +943,14 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
                       value: _selectedSignatureSize,
                       isExpanded: true,
                       decoration: _fieldDecorationV2(context,
-                          label: 'Signature Size',
-                          prefixIcon: const Icon(Icons.photo_size_select_small_outlined)),
+                          label: l10n.invoiceSettingsSignatureSizeLabel,
+                          prefixIcon: const Icon(
+                              Icons.photo_size_select_small_outlined)),
                       items: [
                         for (final size in SignatureSize.values)
-                          DropdownMenuItem(value: size.key, child: Text(size.label)),
+                          DropdownMenuItem(
+                              value: size.key,
+                              child: Text(signatureSizeLabel(context, size))),
                       ],
                       onChanged: (val) {
                         if (!mounted) return;
@@ -862,11 +964,14 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
                       value: _signaturePosition,
                       isExpanded: true,
                       decoration: _fieldDecorationV2(context,
-                          label: 'Signature Position',
-                          prefixIcon: const Icon(Icons.format_align_left_outlined)),
-                      items: const [
-                        DropdownMenuItem(value: 'left', child: Text('Left')),
-                        DropdownMenuItem(value: 'right', child: Text('Right')),
+                          label: l10n.invoiceSettingsSignaturePositionLabel,
+                          prefixIcon:
+                              const Icon(Icons.format_align_left_outlined)),
+                      items: [
+                        DropdownMenuItem(
+                            value: 'left', child: Text(l10n.commonLeftLabel)),
+                        DropdownMenuItem(
+                            value: 'right', child: Text(l10n.commonRightLabel)),
                       ],
                       onChanged: (val) {
                         if (!mounted) return;
@@ -884,23 +989,30 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+            border:
+                Border.all(color: Theme.of(context).colorScheme.outlineVariant),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Watermark Image',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+              Text(l10n.invoiceSettingsWatermarkImageLabel,
+                  style: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w500)),
               const SizedBox(height: 4),
-              Text('Shown behind the items table on invoice PDFs (not printed on thermal receipts)',
-                  style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
-              Text('PNG, JPG or JPEG — max 2 MB',
-                  style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              Text(l10n.invoiceSettingsWatermarkImageSubtitle,
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              Text(l10n.invoiceSettingsImageFormatHint,
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
               const SizedBox(height: 12),
               if (_watermarkBase64 != null && _watermarkBase64!.isNotEmpty) ...[
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
-                  child: Image.memory(base64Decode(_watermarkBase64!), height: 60),
+                  child:
+                      Image.memory(base64Decode(_watermarkBase64!), height: 60),
                 ),
                 const SizedBox(height: 8),
               ],
@@ -909,30 +1021,37 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
                   OutlinedButton.icon(
                     onPressed: _pickWatermark,
                     icon: const Icon(Icons.upload_outlined, size: 16),
-                    label: Text(_watermarkBase64 != null && _watermarkBase64!.isNotEmpty
-                        ? 'Change Watermark'
-                        : 'Upload Watermark'),
+                    label: Text(
+                        _watermarkBase64 != null && _watermarkBase64!.isNotEmpty
+                            ? l10n.invoiceSettingsChangeWatermarkButton
+                            : l10n.invoiceSettingsUploadWatermarkButton),
                   ),
-                  if (_watermarkBase64 != null && _watermarkBase64!.isNotEmpty) ...[
+                  if (_watermarkBase64 != null &&
+                      _watermarkBase64!.isNotEmpty) ...[
                     const SizedBox(width: 8),
                     TextButton.icon(
                       onPressed: _clearWatermark,
-                      icon: const Icon(Icons.delete_outline, size: 16, color: Colors.red),
-                      label: const Text('Remove', style: TextStyle(color: Colors.red)),
+                      icon: const Icon(Icons.delete_outline,
+                          size: 16, color: Colors.red),
+                      label: Text(l10n.tooltipRemove,
+                          style: const TextStyle(color: Colors.red)),
                     ),
                   ],
                 ],
               ),
               if (_watermarkBase64 != null && _watermarkBase64!.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                Text('Opacity: ${(_watermarkOpacity * 100).round()}%',
+                Text(
+                    l10n.invoiceSettingsOpacityLabel(
+                        (_watermarkOpacity * 100).round()),
                     style: const TextStyle(fontSize: 13)),
                 Slider(
                   value: _watermarkOpacity,
                   min: 0.02,
                   max: 0.6,
                   divisions: 29,
-                  label: '${(_watermarkOpacity * 100).round()}%',
+                  label: l10n.invoiceSettingsPercentValueLabel(
+                      (_watermarkOpacity * 100).round()),
                   onChanged: (val) {
                     if (!mounted) return;
                     setState(() => _watermarkOpacity = val);
@@ -970,7 +1089,8 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
   }
 
   Widget _promoCardV2() {
-    if (widget.onNavigateToCustomization == null) return const SizedBox.shrink();
+    if (widget.onNavigateToCustomization == null)
+      return const SizedBox.shrink();
     final primaryColor = Theme.of(context).primaryColor;
     return Container(
       padding: const EdgeInsets.all(14),
@@ -997,16 +1117,18 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
               const SizedBox(width: 15),
               Flexible(
                 child: Text(
-                  'Need more fields on your invoices?',
+                  AppLocalizations.of(context)!.invoiceSettingsPromoTitle,
                   style: TextStyle(
-                      fontSize: AppFontSize.small, fontWeight: FontWeight.w600, color: primaryColor),
+                      fontSize: AppFontSize.small,
+                      fontWeight: FontWeight.w600,
+                      color: primaryColor),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
           Text(
-            'Add PO number, project code, department, or any custom field.',
+            AppLocalizations.of(context)!.invoiceSettingsPromoBody,
             style: TextStyle(
                 fontSize: AppFontSize.xsmall,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -1018,13 +1140,18 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
             child: OutlinedButton.icon(
               onPressed: widget.onNavigateToCustomization,
               icon: const Icon(Icons.arrow_forward_rounded, size: 14),
-              label: const Text('See Options',
-                  style: TextStyle(fontSize: AppFontSize.xsmall, fontWeight: FontWeight.w600)),
+              label: Text(
+                  AppLocalizations.of(context)!.invoiceSettingsPromoButton,
+                  style: const TextStyle(
+                      fontSize: AppFontSize.xsmall,
+                      fontWeight: FontWeight.w600)),
               style: OutlinedButton.styleFrom(
                 foregroundColor: primaryColor,
                 side: BorderSide(color: primaryColor.withValues(alpha: 0.5)),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppBorderRadius.small)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppBorderRadius.small)),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
             ),
@@ -1043,14 +1170,18 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
             ? const SizedBox(
                 width: 18,
                 height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: Colors.white))
             : const Icon(Icons.save_rounded),
-        label: Text(_isSaving ? 'Saving...' : 'Save'),
+        label: Text(_isSaving
+            ? AppLocalizations.of(context)!.createInvoiceSavingEllipsisLabel
+            : AppLocalizations.of(context)!.actionSave),
         style: ElevatedButton.styleFrom(
           backgroundColor: Theme.of(context).primaryColor,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppBorderRadius.small)),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppBorderRadius.small)),
         ),
       ),
     );
@@ -1067,38 +1198,48 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
             Expanded(
               child: ListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
-                itemCount: _navSectionsV2.length,
+                itemCount: _navSectionIconsV2.length,
                 itemBuilder: (context, index) {
                   final selected = _selectedSectionV2 == index;
-                  final entry = _navSectionsV2[index];
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 4),
                     child: Material(
                       color: selected
-                          ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
+                          ? Theme.of(context)
+                              .primaryColor
+                              .withValues(alpha: 0.1)
                           : Colors.transparent,
-                      borderRadius: BorderRadius.circular(AppBorderRadius.small),
+                      borderRadius:
+                          BorderRadius.circular(AppBorderRadius.small),
                       child: InkWell(
-                        borderRadius: BorderRadius.circular(AppBorderRadius.small),
+                        borderRadius:
+                            BorderRadius.circular(AppBorderRadius.small),
                         onTap: () => setState(() => _selectedSectionV2 = index),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 12),
                           child: Row(
                             children: [
-                              Icon(entry['icon'] as IconData,
+                              Icon(_navSectionIconsV2[index],
                                   size: 19,
                                   color: selected
                                       ? Theme.of(context).primaryColor
-                                      : Theme.of(context).colorScheme.onSurfaceVariant),
+                                      : Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  entry['label'] as String,
+                                  _navSectionLabelV2(context, index),
                                   style: TextStyle(
-                                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                                    fontWeight: selected
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
                                     color: selected
                                         ? Theme.of(context).primaryColor
-                                        : Theme.of(context).colorScheme.onSurface,
+                                        : Theme.of(context)
+                                            .colorScheme
+                                            .onSurface,
                                   ),
                                 ),
                               ),
@@ -1135,17 +1276,20 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
         padding: const EdgeInsets.symmetric(horizontal: 12),
         child: Row(
           children: [
-            for (int i = 0; i < _navSectionsV2.length; i++)
+            for (int i = 0; i < _navSectionIconsV2.length; i++)
               Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: ChoiceChip(
-                  label: Text(_navSectionsV2[i]['label'] as String),
-                  avatar: Icon(_navSectionsV2[i]['icon'] as IconData, size: 16),
+                  label: Text(_navSectionLabelV2(context, i)),
+                  avatar: Icon(_navSectionIconsV2[i], size: 16),
                   selected: _selectedSectionV2 == i,
                   onSelected: (_) => setState(() => _selectedSectionV2 = i),
-                  selectedColor: Theme.of(context).primaryColor.withValues(alpha: 0.14),
+                  selectedColor:
+                      Theme.of(context).primaryColor.withValues(alpha: 0.14),
                   labelStyle: TextStyle(
-                    fontWeight: _selectedSectionV2 == i ? FontWeight.w700 : FontWeight.w500,
+                    fontWeight: _selectedSectionV2 == i
+                        ? FontWeight.w700
+                        : FontWeight.w500,
                     color: _selectedSectionV2 == i
                         ? Theme.of(context).primaryColor
                         : Theme.of(context).colorScheme.onSurface,
@@ -1159,7 +1303,6 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
   }
 
   Widget _sectionCardV2() {
-    final entry = _navSectionsV2[_selectedSectionV2];
     return Card(
       elevation: 4,
       color: Theme.of(context).colorScheme.surfaceContainer,
@@ -1182,8 +1325,9 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  entry['label'] as String,
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  _navSectionLabelV2(context, _selectedSectionV2),
+                  style: const TextStyle(
+                      fontSize: 20, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -1202,9 +1346,9 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
             ? null
             : Theme.of(context).colorScheme.surfaceContainerHighest,
         appBar: AppBar(
-          title: const Text('Invoice Settings'),
-          backgroundColor:
-              Theme.of(context).appBarTheme.backgroundColor ?? Theme.of(context).primaryColor,
+          title: Text(AppLocalizations.of(context)!.invoiceSettingsAppBarTitle),
+          backgroundColor: Theme.of(context).appBarTheme.backgroundColor ??
+              Theme.of(context).primaryColor,
           foregroundColor: Colors.white,
           centerTitle: false,
         ),
@@ -1217,9 +1361,9 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
           ? null
           : Theme.of(context).colorScheme.surfaceContainerHighest,
       appBar: AppBar(
-        title: const Text('Invoice Settings'),
-        backgroundColor:
-            Theme.of(context).appBarTheme.backgroundColor ?? Theme.of(context).primaryColor,
+        title: Text(AppLocalizations.of(context)!.invoiceSettingsAppBarTitle),
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor ??
+            Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
@@ -1231,7 +1375,9 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
           return Row(
             children: [
               _navRailV2(),
-              VerticalDivider(width: 1, color: Theme.of(context).colorScheme.outlineVariant),
+              VerticalDivider(
+                  width: 1,
+                  color: Theme.of(context).colorScheme.outlineVariant),
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(vertical: 28),
@@ -1254,7 +1400,8 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
         return Column(
           children: [
             _narrowTabsV2(),
-            Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
+            Divider(
+                height: 1, color: Theme.of(context).colorScheme.outlineVariant),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
@@ -1265,7 +1412,8 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surfaceContainer,
                 border: Border(
-                  top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+                  top: BorderSide(
+                      color: Theme.of(context).colorScheme.outlineVariant),
                 ),
               ),
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
@@ -1298,7 +1446,7 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
         if (value.text.isEmpty) return SupportedCurrencies.all;
         final query = value.text.toLowerCase();
         return SupportedCurrencies.all.where((c) =>
-        c.name.toLowerCase().contains(query) ||
+            c.name.toLowerCase().contains(query) ||
             c.code.toLowerCase().contains(query) ||
             c.symbol.toLowerCase().contains(query));
       },
@@ -1312,14 +1460,14 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
           focusNode: focusNode,
           style: const TextStyle(fontSize: AppFontSize.medium),
           decoration: InputDecoration(
-            labelText: 'Currency',
+            labelText: AppLocalizations.of(context)!.onboardingCurrencyLabel,
             prefixIcon: const Icon(Icons.attach_money),
             border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-              borderSide:
-              BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+              borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
@@ -1352,7 +1500,9 @@ class _InvoiceSettingsScreenV2State extends ConsumerState<InvoiceSettingsScreenV
                     trailing: Text(c.code,
                         style: TextStyle(
                             fontSize: AppFontSize.xsmall,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant)),
                     onTap: () => onSelected(c),
                   );
                 },

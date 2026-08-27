@@ -13,6 +13,7 @@ import 'package:invoiso/models/customer.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/widgets/apply_customer_payment_dialog.dart';
+import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:uuid/uuid.dart';
 import 'package:csv/csv.dart';
 import 'package:pdf/pdf.dart';
@@ -39,7 +40,9 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
   int _currentPage = 0;
   bool _isLoading = false;
   String? _companyCountry;
-  String get _taxWord => isIndiaCountry(_companyCountry) ? 'GST' : 'Tax';
+  String get _taxWord => isIndiaCountry(_companyCountry)
+      ? AppLocalizations.of(context)!.taxWordGst
+      : AppLocalizations.of(context)!.taxWordTax;
   Map<String, double> _outstandingByCustomer = {};
   String _outstandingCurrencySymbol = '';
   List<String> _outstandingCurrencies = [];
@@ -146,7 +149,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
         _filterAndSort();
       });
     } catch (e) {
-      _showSnackBar('Error loading customers: $e', isError: true);
+      _showSnackBar(AppLocalizations.of(context)!.customerMgmtLoadErrorMessage(e.toString()), isError: true);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -206,6 +209,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
 
   Future<void> _handleAddOrUpdateCustomer([Customer? customer]) async {
     if (!_formKey.currentState!.validate() || !mounted) return;
+    final l10n = AppLocalizations.of(context)!;
 
     setState(() => _isLoading = true);
     try {
@@ -221,16 +225,16 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
 
       if (customer == null) {
         await ref.read(customerRepositoryProvider).insertCustomer(newCustomer);
-        _showSnackBar('Customer added successfully!');
+        _showSnackBar(l10n.customerMgmtAddedMessage);
       } else {
         await ref.read(customerRepositoryProvider).updateCustomer(newCustomer);
-        _showSnackBar('Customer updated successfully!');
+        _showSnackBar(l10n.customerMgmtUpdatedMessage);
       }
 
       _clearForm();
       await _loadCustomers();
     } catch (e) {
-      _showSnackBar('Error saving customer: $e', isError: true);
+      _showSnackBar(l10n.customerMgmtSaveErrorMessage(e.toString()), isError: true);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -292,7 +296,9 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
               color: Theme.of(context).primaryColor,
             ),
             const SizedBox(width: 8),
-            Text(isEdit ? 'Edit Customer' : 'View Customer'),
+            Text(isEdit
+                ? AppLocalizations.of(context)!.customerMgmtEditCustomerTitle
+                : AppLocalizations.of(context)!.customerMgmtViewCustomerTitle),
           ],
         ),
         content: SizedBox(
@@ -303,24 +309,24 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _buildDialogTextField(nameCtrl, 'Name', Icons.person,
+                  _buildDialogTextField(nameCtrl, AppLocalizations.of(context)!.fieldNameLabel, Icons.person,
                       readOnly: !isEdit),
                   const SizedBox(height: 16),
-                  _buildDialogTextField(businessNameCtrl, 'Business Name', Icons.business_center,
+                  _buildDialogTextField(businessNameCtrl, AppLocalizations.of(context)!.fieldBusinessNameLabel, Icons.business_center,
                       readOnly: !isEdit, maxLength: 100),
                   const SizedBox(height: 16),
-                  _buildDialogTextField(emailCtrl, 'Email', Icons.email,
+                  _buildDialogTextField(emailCtrl, AppLocalizations.of(context)!.fieldEmailLabel, Icons.email,
                       readOnly: !isEdit, keyboardType: TextInputType.emailAddress),
                   const SizedBox(height: 16),
-                  _buildDialogTextField(phoneCtrl, 'Phone', Icons.phone,
+                  _buildDialogTextField(phoneCtrl, AppLocalizations.of(context)!.fieldPhoneLabel, Icons.phone,
                       readOnly: !isEdit,
                       keyboardType: TextInputType.phone,
                       maxLength: 12),
                   const SizedBox(height: 16),
-                  _buildDialogTextField(gstinCtrl, '$_taxWord / VAT Number', Icons.receipt_long,
+                  _buildDialogTextField(gstinCtrl, AppLocalizations.of(context)!.fieldTaxVatNumberLabel(_taxWord), Icons.receipt_long,
                       readOnly: !isEdit, maxLength: 50),
                   const SizedBox(height: 16),
-                  _buildDialogTextField(addressCtrl, 'Address', Icons.location_on,
+                  _buildDialogTextField(addressCtrl, AppLocalizations.of(context)!.fieldAddressLabel, Icons.location_on,
                       readOnly: !isEdit, maxLines: 3, maxLength: 100),
                 ],
               ),
@@ -330,12 +336,13 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: Text(AppLocalizations.of(context)!.actionClose),
           ),
           if (isEdit)
             FilledButton.icon(
               onPressed: isSaving ? null : () async {
                 if (!dialogFormKey.currentState!.validate()) return;
+                final l10n = AppLocalizations.of(context)!;
                 setDialogState(() => isSaving = true);
                 try {
                   final updatedCustomer = Customer(
@@ -351,7 +358,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                   await ref.read(customerRepositoryProvider).updateCustomer(updatedCustomer);
                   await _loadCustomers();
                   if (context.mounted) Navigator.pop(context);
-                  _showSnackBar('Customer updated successfully!');
+                  _showSnackBar(l10n.customerMgmtUpdatedMessage);
                 } finally {
                   setDialogState(() => isSaving = false);
                 }
@@ -359,7 +366,9 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
               icon: isSaving
                   ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                   : const Icon(Icons.save),
-              label: Text(isSaving ? 'Saving...' : 'Update'),
+              label: Text(isSaving
+                  ? AppLocalizations.of(context)!.createInvoiceSavingEllipsisLabel
+                  : AppLocalizations.of(context)!.actionUpdate),
             ),
         ],
         );
@@ -391,8 +400,9 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
         fillColor: readOnly ? Theme.of(context).colorScheme.surfaceContainerHighest : null,
       ),
       validator: (value) {
-        if (label == 'Name' && (value == null || value.trim().isEmpty)) {
-          return 'Please enter a name';
+        if (label == AppLocalizations.of(context)!.fieldNameLabel &&
+            (value == null || value.trim().isEmpty)) {
+          return AppLocalizations.of(context)!.fieldRequiredMessage(label);
         }
         return null;
       },
@@ -400,27 +410,28 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
   }
 
   Future<void> _confirmDelete(Customer customer) async {
+    final l10n = AppLocalizations.of(context)!;
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.orange),
-            SizedBox(width: 8),
-            Text('Confirm Delete'),
+            const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+            const SizedBox(width: 8),
+            Text(AppLocalizations.of(context)!.customerMgmtConfirmDeleteTitle),
           ],
         ),
-        content: Text('Are you sure you want to delete "${customer.name}"?'),
+        content: Text(AppLocalizations.of(context)!.customerMgmtDeleteConfirmBody(customer.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.actionCancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
+            child: Text(AppLocalizations.of(context)!.actionDelete),
           ),
         ],
       ),
@@ -429,7 +440,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
     if (result == true) {
       await ref.read(customerRepositoryProvider).deleteCustomer(customer.id);
       await _loadCustomers();
-      _showSnackBar('Customer deleted successfully!');
+      _showSnackBar(l10n.customerMgmtDeletedMessage);
     }
   }
 
@@ -437,9 +448,10 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
     const sample = '"name","email","phone","address","business_name","tax_number"\n'
         '"John Smith","john@example.com","+27821234567","123 Main St, Cape Town","Acme (Pty) Ltd","ZA123456789"\n'
         '"Jane Doe","jane@example.com","+27831234567","456 Oak Ave, Johannesburg","",""\n';
+    final l10n = AppLocalizations.of(context)!;
 
     final savePath = await FilePicker.platform.saveFile(
-      dialogTitle: 'Save Sample CSV',
+      dialogTitle: l10n.customerMgmtSaveSampleCsvDialogTitle,
       fileName: 'customers_sample.csv',
       type: FileType.custom,
       allowedExtensions: ['csv'],
@@ -448,9 +460,9 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
 
     try {
       await File(savePath).writeAsBytes(utf8.encode('\uFEFF$sample'));
-      _showSnackBar('Sample CSV saved successfully!');
+      _showSnackBar(l10n.customerMgmtSampleSavedMessage);
     } catch (e) {
-      _showSnackBar('Error saving sample: $e', isError: true);
+      _showSnackBar(l10n.customerMgmtErrorSavingSampleMessage(e.toString()), isError: true);
     }
   }
 
@@ -467,7 +479,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
           children: [
             Icon(Icons.upload_file, color: Theme.of(context).primaryColor),
             const SizedBox(width: 10),
-            const Text('Import Customers from CSV'),
+            Text(AppLocalizations.of(context)!.customerMgmtImportCsvDialogTitle),
           ],
         ),
         content: SizedBox(
@@ -477,8 +489,8 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'Your CSV file must use the following column headers (exact spelling, any order):',
+                Text(
+                  AppLocalizations.of(context)!.customerMgmtCsvFormatInstructionMessage,
                 ),
                 const SizedBox(height: 12),
                 // Columns table
@@ -492,26 +504,26 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                   children: [
                     TableRow(
                       decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest),
-                      children: const [
-                        _TableHeader('Column'),
-                        _TableHeader('Required'),
-                        _TableHeader('Description'),
+                      children: [
+                        _TableHeader(AppLocalizations.of(context)!.customerMgmtCsvColColumnHeader),
+                        _TableHeader(AppLocalizations.of(context)!.customerMgmtCsvColRequiredHeader),
+                        _TableHeader(AppLocalizations.of(context)!.customerMgmtCsvColDescriptionHeader),
                       ],
                     ),
-                    _csvRuleRow(context, 'name',          'Yes', 'Customer full name'),
-                    _csvRuleRow(context, 'email',         'No',  'Email address'),
-                    _csvRuleRow(context, 'phone',         'No',  'Phone number'),
-                    _csvRuleRow(context, 'address',       'No',  'Full address'),
-                    _csvRuleRow(context, 'business_name', 'No',  'Company / business name'),
-                    _csvRuleRow(context, 'tax_number',    'No',  'Tax / VAT / GSTIN number'),
+                    _csvRuleRow(context, 'name',          AppLocalizations.of(context)!.commonYesLabel, AppLocalizations.of(context)!.customerMgmtCsvDescName, required: true),
+                    _csvRuleRow(context, 'email',         AppLocalizations.of(context)!.commonNoLabel,  AppLocalizations.of(context)!.customerMgmtCsvDescEmail),
+                    _csvRuleRow(context, 'phone',         AppLocalizations.of(context)!.commonNoLabel,  AppLocalizations.of(context)!.customerMgmtCsvDescPhone),
+                    _csvRuleRow(context, 'address',       AppLocalizations.of(context)!.commonNoLabel,  AppLocalizations.of(context)!.customerMgmtCsvDescAddress),
+                    _csvRuleRow(context, 'business_name', AppLocalizations.of(context)!.commonNoLabel,  AppLocalizations.of(context)!.customerMgmtCsvDescBusinessName),
+                    _csvRuleRow(context, 'tax_number',    AppLocalizations.of(context)!.commonNoLabel,  AppLocalizations.of(context)!.customerMgmtCsvDescTaxNumber),
                   ],
                 ),
                 const SizedBox(height: 16),
                 // Notes
-                _ruleNote(context, Icons.info_outline, 'Maximum $_csvMaxRows rows per import.'),
-                _ruleNote(context, Icons.info_outline, 'Duplicates are detected by email or phone. You will be asked to overwrite or skip each one.'),
-                _ruleNote(context, Icons.info_outline, 'Rows missing a name are skipped and reported at the end.'),
-                _ruleNote(context, Icons.info_outline, 'UTF-8 encoding recommended. Excel BOM is handled automatically.'),
+                _ruleNote(context, Icons.info_outline, AppLocalizations.of(context)!.customerMgmtCsvMaxRowsNote(_csvMaxRows)),
+                _ruleNote(context, Icons.info_outline, AppLocalizations.of(context)!.customerMgmtCsvDuplicatesNote),
+                _ruleNote(context, Icons.info_outline, AppLocalizations.of(context)!.customerMgmtCsvMissingNameNote),
+                _ruleNote(context, Icons.info_outline, AppLocalizations.of(context)!.customerMgmtCsvEncodingNote),
                 const SizedBox(height: 16),
                 OutlinedButton.icon(
                   onPressed: () async {
@@ -519,7 +531,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                     await _downloadSampleCSV();
                   },
                   icon: const Icon(Icons.download),
-                  label: const Text('Download Sample CSV'),
+                  label: Text(AppLocalizations.of(context)!.customerMgmtDownloadSampleCsvButton),
                 ),
               ],
             ),
@@ -528,12 +540,12 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.actionCancel),
           ),
           FilledButton.icon(
             onPressed: () => Navigator.pop(ctx, true),
             icon: const Icon(Icons.folder_open),
-            label: const Text('Choose File'),
+            label: Text(AppLocalizations.of(context)!.customerMgmtChooseFileButton),
           ),
         ],
       ),
@@ -541,7 +553,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
     if (proceed == true) await _importFromCSV();
   }
 
-  static TableRow _csvRuleRow(BuildContext context, String col, String req, String desc) {
+  static TableRow _csvRuleRow(BuildContext context, String col, String req, String desc, {bool required = false}) {
     return TableRow(
       children: [
         Padding(
@@ -555,7 +567,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: req == 'Yes' ? Colors.red.shade700 : Theme.of(context).colorScheme.onSurfaceVariant,
+              color: required ? Colors.red.shade700 : Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ),
@@ -582,10 +594,11 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
   }
 
   Future<void> _importFromCSV() async {
+    final l10n = AppLocalizations.of(context)!;
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['csv'],
-      dialogTitle: 'Select Customer CSV',
+      dialogTitle: l10n.customerMgmtSelectCsvDialogTitle,
     );
     if (result == null || result.files.single.path == null || !mounted) return;
 
@@ -603,7 +616,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
 
       final rows = const CsvToListConverter(eol: '\n').convert(content);
       if (rows.isEmpty) {
-        _showSnackBar('CSV file is empty.', isError: true);
+        _showSnackBar(l10n.customerMgmtCsvEmptyMessage, isError: true);
         if(!mounted) return;
         setState(() => _isLoading = false);
         return;
@@ -612,14 +625,14 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
       // Parse and validate headers
       final headers = rows.first.map((h) => h.toString().trim().toLowerCase()).toList();
       if (!headers.contains('name')) {
-        _showSnackBar('CSV missing required column: "name"', isError: true);
+        _showSnackBar(l10n.customerMgmtCsvMissingNameColumnMessage, isError: true);
         if(!mounted) return;
         setState(() => _isLoading = false);
         return;
       }
       for (final col in headers) {
         if (!_csvHeaders.contains(col)) {
-          _showSnackBar('Unknown column "$col". Expected: ${_csvHeaders.join(', ')}', isError: true);
+          _showSnackBar(l10n.customerMgmtUnknownColumnMessage(col, _csvHeaders.join(', ')), isError: true);
           if(!mounted) return;
           setState(() => _isLoading = false);
           return;
@@ -630,7 +643,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
 
       // Hard limit
       if (dataRows.length > _csvMaxRows) {
-        _showSnackBar('CSV has ${dataRows.length} rows. Maximum is $_csvMaxRows. Please split the file.', isError: true);
+        _showSnackBar(l10n.customerMgmtCsvTooManyRowsMessage(dataRows.length, _csvMaxRows), isError: true);
         if(!mounted) return;
         setState(() => _isLoading = false);
         return;
@@ -654,13 +667,13 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
         barrierDismissible: false,
         builder: (ctx) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Importing Customers'),
+          title: Text(l10n.customerMgmtImportingTitle),
           content: ValueListenableBuilder<int>(
             valueListenable: progress,
             builder: (_, done, __) => Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Checking for duplicates and validating ${dataRows.length} row${dataRows.length == 1 ? '' : 's'}...'),
+                Text(l10n.customerMgmtValidatingRowsMessage(dataRows.length)),
                 const SizedBox(height: 16),
                 LinearProgressIndicator(
                   value: dataRows.isEmpty ? null : done / dataRows.length,
@@ -682,7 +695,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
         progress.value = i + 1;
         final name = getField(row, 'name');
         if (name.isEmpty) {
-          errors.add('Row ${i + 2}: missing name — skipped');
+          errors.add(l10n.customerMgmtRowMissingNameMessage(i + 2));
           continue;
         }
         final email = getField(row, 'email');
@@ -717,7 +730,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
       }
       if(!mounted) return;
       setState(() => _isLoading = false);
-      _showSnackBar('Error reading CSV: $e', isError: true);
+      _showSnackBar(l10n.customerMgmtCsvReadErrorMessage(e.toString()), isError: true);
     }
   }
 
@@ -737,7 +750,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
           final total = newCustomers.length + overwriteFlags.where((f) => f).length;
 
           return AlertDialog(
-            title: const Text('Import Preview'),
+            title: Text(AppLocalizations.of(context)!.customerMgmtImportPreviewTitle),
             content: SizedBox(
               width: MediaQuery.of(context).size.width * 0.55,
               child: SingleChildScrollView(
@@ -750,18 +763,18 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                       runSpacing: 8,
                       children: [
                         Chip(
-                          label: Text('${newCustomers.length} new'),
+                          label: Text(AppLocalizations.of(context)!.customerMgmtNewCountChip(newCustomers.length)),
                           backgroundColor: Colors.green.shade100,
                           avatar: const Icon(Icons.person_add, size: 16),
                         ),
                         Chip(
-                          label: Text('${duplicates.length} duplicates'),
+                          label: Text(AppLocalizations.of(context)!.customerMgmtDuplicatesCountChip(duplicates.length)),
                           backgroundColor: Colors.orange.shade100,
                           avatar: const Icon(Icons.warning_amber, size: 16),
                         ),
                         if (errors.isNotEmpty)
                           Chip(
-                            label: Text('${errors.length} errors'),
+                            label: Text(AppLocalizations.of(context)!.customerMgmtErrorsCountChip(errors.length)),
                             backgroundColor: Colors.red.shade100,
                             avatar: const Icon(Icons.error_outline, size: 16),
                           ),
@@ -772,21 +785,21 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                       const SizedBox(height: 16),
                       Row(
                         children: [
-                          const Expanded(
-                            child: Text('Duplicates (matched by email or phone):',
-                                style: TextStyle(fontWeight: FontWeight.bold)),
+                          Expanded(
+                            child: Text(AppLocalizations.of(context)!.customerMgmtDuplicatesMatchedLabel,
+                                style: const TextStyle(fontWeight: FontWeight.bold)),
                           ),
                           TextButton(
                             onPressed: () => setDialogState(() {
                               for (int i = 0; i < overwriteFlags.length; i++) { overwriteFlags[i] = true; }
                             }),
-                            child: const Text('Overwrite All'),
+                            child: Text(AppLocalizations.of(context)!.customerMgmtOverwriteAllButton),
                           ),
                           TextButton(
                             onPressed: () => setDialogState(() {
                               for (int i = 0; i < overwriteFlags.length; i++) { overwriteFlags[i] = false; }
                             }),
-                            child: const Text('Skip All'),
+                            child: Text(AppLocalizations.of(context)!.customerMgmtSkipAllButton),
                           ),
                         ],
                       ),
@@ -802,12 +815,12 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Text('Skip', style: TextStyle(fontSize: 12)),
+                                Text(AppLocalizations.of(context)!.actionSkip, style: const TextStyle(fontSize: 12)),
                                 Switch(
                                   value: overwriteFlags[i],
                                   onChanged: (v) => setDialogState(() => overwriteFlags[i] = v),
                                 ),
-                                const Text('Overwrite', style: TextStyle(fontSize: 12)),
+                                Text(AppLocalizations.of(context)!.customerMgmtOverwriteLabel, style: const TextStyle(fontSize: 12)),
                               ],
                             ),
                           ),
@@ -817,19 +830,19 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
 
                     if (errors.isNotEmpty) ...[
                       const SizedBox(height: 16),
-                      const Text('Skipped rows (errors):',
-                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+                      Text(AppLocalizations.of(context)!.customerMgmtSkippedRowsLabel,
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
                       const SizedBox(height: 8),
                       ...errors.map((e) => Padding(
                             padding: const EdgeInsets.only(bottom: 4),
-                            child: Text('• $e',
+                            child: Text(AppLocalizations.of(context)!.customerMgmtErrorBulletLabel(e),
                                 style: const TextStyle(fontSize: 12, color: Colors.red)),
                           )),
                     ],
 
                     const SizedBox(height: 12),
                     Text(
-                      'Will import $total customer${total == 1 ? '' : 's'}.',
+                      AppLocalizations.of(context)!.customerMgmtWillImportMessage(total),
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ],
@@ -839,7 +852,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel'),
+                child: Text(AppLocalizations.of(context)!.actionCancel),
               ),
               FilledButton.icon(
                 onPressed: total == 0
@@ -849,7 +862,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                         await _executeImport(newCustomers, duplicates, overwriteFlags);
                       },
                 icon: const Icon(Icons.upload),
-                label: Text('Import $total'),
+                label: Text(AppLocalizations.of(context)!.customerMgmtImportCountButton(total)),
               ),
             ],
           );
@@ -864,6 +877,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
     List<bool> overwriteFlags,
   ) async {
     if(!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
     setState(() => _isLoading = true);
     try {
       if (newCustomers.isNotEmpty) {
@@ -876,38 +890,38 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
       }
       await _loadCustomers();
       final imported = newCustomers.length + overwriteFlags.where((f) => f).length;
-      _showSnackBar('Imported $imported customer${imported == 1 ? '' : 's'} successfully!');
+      _showSnackBar(l10n.customerMgmtImportedMessage(imported));
     } catch (e) {
       if(!mounted) return;
       setState(() => _isLoading = false);
-      _showSnackBar('Import error: $e', isError: true);
+      _showSnackBar(l10n.customerMgmtImportErrorMessage(e.toString()), isError: true);
     }
   }
 
   // ── Delete All ────────────────────────────────────────────────────────────
 
   Future<void> _confirmDeleteAll() async {
+    final l10n = AppLocalizations.of(context)!;
     if (_customers.isEmpty) {
-      _showSnackBar('No customers to delete.');
+      _showSnackBar(l10n.customerMgmtNoCustomersToDeleteMessage);
       return;
     }
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete All Customers'),
+        title: Text(l10n.customerMgmtDeleteAllTitle),
         content: Text(
-          'This will permanently delete all ${_customers.length} customer${_customers.length == 1 ? '' : 's'}. '
-          'Existing invoices are not affected. This cannot be undone.',
+          l10n.customerMgmtDeleteAllBody(_customers.length),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.actionCancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete All'),
+            child: Text(l10n.customerMgmtDeleteAllButton),
           ),
         ],
       ),
@@ -917,15 +931,16 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
     try {
       await ref.read(customerRepositoryProvider).deleteAllCustomers();
       await _loadCustomers();
-      _showSnackBar('All customers deleted.');
+      _showSnackBar(l10n.customerMgmtAllDeletedMessage);
     } catch (e) {
       if(!mounted) return;
       setState(() => _isLoading = false);
-      _showSnackBar('Error deleting customers: $e', isError: true);
+      _showSnackBar(l10n.customerMgmtDeleteAllErrorMessage(e.toString()), isError: true);
     }
   }
 
   Future<void> _exportToCSV() async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       List<List<String>> csvData = [
         ['name', 'email', 'phone', 'address', 'business_name', 'tax_number'],
@@ -941,20 +956,21 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
 
       final csv = buildQuotedCsv(csvData);
       final savePath = await FilePicker.platform.saveFile(
-        dialogTitle: 'Save Customer CSV',
+        dialogTitle: l10n.customerMgmtSaveCsvDialogTitle,
         fileName: 'customers.csv',
         type: FileType.custom,
         allowedExtensions: ['csv'],
       );
       if (savePath == null) return;
       await File(savePath).writeAsBytes(utf8.encode('\uFEFF$csv'));
-      _showSnackBar('CSV exported successfully!');
+      _showSnackBar(l10n.customerMgmtCsvExportedMessage);
     } catch (e) {
-      _showSnackBar('Error exporting CSV: $e', isError: true);
+      _showSnackBar(l10n.customerMgmtCsvExportErrorMessage(e.toString()), isError: true);
     }
   }
 
   Future<void> _exportToPDF() async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       final totalCount = _filteredCustomers.length;
       final pdf = pw.Document();
@@ -1006,16 +1022,16 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
       );
 
       final savePath = await FilePicker.platform.saveFile(
-        dialogTitle: 'Save Customer PDF',
+        dialogTitle: l10n.customerMgmtSavePdfDialogTitle,
         fileName: 'customers.pdf',
         type: FileType.custom,
         allowedExtensions: ['pdf'],
       );
       if (savePath == null) return;
       await File(savePath).writeAsBytes(await pdf.save());
-      _showSnackBar('PDF exported successfully!');
+      _showSnackBar(l10n.customerMgmtPdfExportedMessage);
     } catch (e) {
-      _showSnackBar('Error exporting PDF: $e', isError: true);
+      _showSnackBar(l10n.customerMgmtPdfExportErrorMessage(e.toString()), isError: true);
     }
   }
 
@@ -1218,30 +1234,30 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
   Widget _statCardsRowV2() {
     final cards = [
       _statCardV2(
-        label: 'Total Customers',
+        label: AppLocalizations.of(context)!.customerMgmtTotalCustomersLabel,
         value: '${_customers.length}',
-        subtitle: 'All customers',
+        subtitle: AppLocalizations.of(context)!.customerMgmtAllCustomersSubtitle,
         icon: Icons.groups_outlined,
         accent: Theme.of(context).primaryColor,
       ),
       _statCardV2(
-        label: 'Businesses',
+        label: AppLocalizations.of(context)!.customerMgmtBusinessesLabel,
         value: '$_businessesCountV2',
-        subtitle: 'Registered businesses',
+        subtitle: AppLocalizations.of(context)!.customerMgmtRegisteredBusinessesSubtitle,
         icon: Icons.apartment_outlined,
         accent: Colors.green,
       ),
       _statCardV2(
-        label: 'Individuals',
+        label: AppLocalizations.of(context)!.customerMgmtIndividualsLabel,
         value: '$_individualsCountV2',
-        subtitle: 'Individual customers',
+        subtitle: AppLocalizations.of(context)!.customerMgmtIndividualCustomersSubtitle,
         icon: Icons.person_outline,
         accent: Colors.deepPurple,
       ),
       _statCardV2(
-        label: '$_taxWord Registered',
+        label: AppLocalizations.of(context)!.customerMgmtTaxRegisteredLabel(_taxWord),
         value: '$_gstRegisteredCountV2',
-        subtitle: 'With $_taxWord number',
+        subtitle: AppLocalizations.of(context)!.customerMgmtWithTaxNumberSubtitle(_taxWord),
         icon: Icons.receipt_long_outlined,
         accent: Colors.orange,
       ),
@@ -1278,14 +1294,14 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Customer Management',
+              Text(AppLocalizations.of(context)!.customerMgmtTitle,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
                       color: Theme.of(context).colorScheme.onSurface)),
               const SizedBox(height: 2),
-              Text('Manage your customers and contact details',
+              Text(AppLocalizations.of(context)!.customerMgmtSubtitle,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                       fontSize: 13,
@@ -1303,44 +1319,44 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
             OutlinedButton.icon(
               onPressed: _showImportDialog,
               icon: const Icon(Icons.upload_file_outlined, size: 16),
-              label: const Text('Import'),
+              label: Text(AppLocalizations.of(context)!.actionImport),
             ),
             OutlinedButton.icon(
               onPressed: _exportToCSV,
               icon: const Icon(Icons.file_download_outlined, size: 16),
-              label: const Text('Export'),
+              label: Text(AppLocalizations.of(context)!.actionExport),
             ),
             if (widget.user.isAdmin())
               PopupMenuButton<String>(
-                tooltip: 'More actions',
+                tooltip: AppLocalizations.of(context)!.invoiceMgmtMoreActionsTooltip,
                 onSelected: (value) {
                   if (value == 'export_pdf') _exportToPDF();
                   if (value == 'delete_all') _confirmDeleteAll();
                 },
                 itemBuilder: (ctx) => [
-                  const PopupMenuItem<String>(
+                  PopupMenuItem<String>(
                     value: 'export_pdf',
                     child: Row(
                       children: [
-                        Icon(Icons.picture_as_pdf_outlined, size: 18),
-                        SizedBox(width: 8),
-                        Text('Export PDF'),
+                        const Icon(Icons.picture_as_pdf_outlined, size: 18),
+                        const SizedBox(width: 8),
+                        Text(AppLocalizations.of(context)!.customerMgmtExportPdfMenuLabel),
                       ],
                     ),
                   ),
-                  const PopupMenuItem<String>(
+                  PopupMenuItem<String>(
                     value: 'delete_all',
                     child: Row(
                       children: [
-                        Icon(Icons.delete_sweep, color: Colors.red, size: 18),
-                        SizedBox(width: 8),
-                        Text('Delete All Customers',
-                            style: TextStyle(color: Colors.red)),
+                        const Icon(Icons.delete_sweep, color: Colors.red, size: 18),
+                        const SizedBox(width: 8),
+                        Text(AppLocalizations.of(context)!.customerMgmtDeleteAllTitle,
+                            style: const TextStyle(color: Colors.red)),
                       ],
                     ),
                   ),
                 ],
-                child: _menuButtonLookV2(Icons.more_horiz, 'More'),
+                child: _menuButtonLookV2(Icons.more_horiz, AppLocalizations.of(context)!.commonMoreLabel),
               ),
             IconButton(
               onPressed: _isLoading ? null : _loadCustomers,
@@ -1350,12 +1366,12 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2))
                   : const Icon(Icons.refresh),
-              tooltip: 'Refresh',
+              tooltip: AppLocalizations.of(context)!.actionRefresh,
             ),
             FilledButton.icon(
               onPressed: () => setState(() => _showAddPanelV2 = true),
               icon: const Icon(Icons.add, size: 18),
-              label: const Text('New Customer'),
+              label: Text(AppLocalizations.of(context)!.customerMgmtNewCustomerButton),
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
                 shape: RoundedRectangleBorder(
@@ -1370,11 +1386,12 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
   }
 
   Widget _searchFilterRowV2() {
-    const sortOptions = [
-      {'label': 'Name A-Z', 'field': 'name', 'asc': true},
-      {'label': 'Name Z-A', 'field': 'name', 'asc': false},
-      {'label': 'ID (oldest first)', 'field': 'id', 'asc': true},
-      {'label': 'ID (newest first)', 'field': 'id', 'asc': false},
+    final l10n = AppLocalizations.of(context)!;
+    final sortOptions = [
+      {'label': l10n.customerMgmtSortNameAZ, 'field': 'name', 'asc': true},
+      {'label': l10n.customerMgmtSortNameZA, 'field': 'name', 'asc': false},
+      {'label': l10n.customerMgmtSortIdOldest, 'field': 'id', 'asc': true},
+      {'label': l10n.customerMgmtSortIdNewest, 'field': 'id', 'asc': false},
       {'label': 'Outstanding (high-low)', 'field': 'outstanding', 'asc': false},
       {'label': 'Outstanding (low-high)', 'field': 'outstanding', 'asc': true},
     ];
@@ -1390,7 +1407,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
             focusNode: _searchFocusNode,
             onChanged: _onSearchChangedV2,
             decoration: InputDecoration(
-              hintText: 'Search customers by name, business, phone, $_taxWord, email…',
+              hintText: l10n.customerMgmtSearchHint(_taxWord),
               prefixIcon: const Icon(Icons.search, size: 20),
               isDense: true,
               contentPadding:
@@ -1415,7 +1432,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
             runSpacing: 8,
             children: [
               PopupMenuButton<String>(
-                tooltip: 'Filter',
+                tooltip: l10n.invoiceMgmtFilterLabel,
                 onSelected: (value) {
                   if (!mounted) return;
                   setState(() {
@@ -1429,11 +1446,11 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                   });
                 },
                 itemBuilder: (ctx) => [
-                  PopupMenuItem(value: 'all', child: Text('All $_taxWord statuses')),
-                  PopupMenuItem(value: 'gst', child: Text('$_taxWord registered')),
-                  PopupMenuItem(value: 'no_gst', child: Text('Without $_taxWord')),
+                  PopupMenuItem(value: 'all', child: Text(l10n.customerMgmtAllTaxStatusesLabel(_taxWord))),
+                  PopupMenuItem(value: 'gst', child: Text(l10n.customerMgmtTaxRegisteredLowerLabel(_taxWord))),
+                  PopupMenuItem(value: 'no_gst', child: Text(l10n.customerMgmtWithoutTaxLabel(_taxWord))),
                 ],
-                child: _menuButtonLookV2(Icons.filter_list, 'Filter'),
+                child: _menuButtonLookV2(Icons.filter_list, l10n.invoiceMgmtFilterLabel),
               ),
               if (_outstandingCurrencies.length > 1)
                 PopupMenuButton<String>(
@@ -1446,32 +1463,32 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                       'Currency: ${_selectedOutstandingCurrency ?? ''}'),
                 ),
               PopupMenuButton<Map<String, Object>>(
-                tooltip: 'Sort',
+                tooltip: l10n.invoiceMgmtSortLabel,
                 onSelected: (opt) =>
                     _onSortSelectionV2(opt['field'] as String, opt['asc'] as bool),
                 itemBuilder: (ctx) => sortOptions
                     .map((o) => PopupMenuItem(value: o, child: Text(o['label'] as String)))
                     .toList(),
-                child: _menuButtonLookV2(Icons.swap_vert, 'Sort: $currentLabel'),
+                child: _menuButtonLookV2(Icons.swap_vert, l10n.customerMgmtSortWithLabel(currentLabel)),
               ),
               PopupMenuButton<String>(
-                tooltip: 'Columns',
+                tooltip: l10n.customerMgmtColumnsLabel,
                 onSelected: (key) {
                   if (!mounted) return;
                   setState(() =>
                       _visibleColumnsV2[key] = !(_visibleColumnsV2[key] ?? true));
                 },
                 itemBuilder: (ctx) => [
-                  _columnMenuItemV2('phone', 'Phone'),
-                  _columnMenuItemV2('email', 'Email'),
-                  _columnMenuItemV2('gstin', '$_taxWord / VAT No'),
-                  _columnMenuItemV2('address', 'Address'),
-                  _columnMenuItemV2('outstanding', 'Outstanding'),
+                  _columnMenuItemV2('phone', l10n.fieldPhoneLabel),
+                  _columnMenuItemV2('email', l10n.fieldEmailLabel),
+                  _columnMenuItemV2('gstin', l10n.customerMgmtTaxVatNoColumnLabel(_taxWord)),
+                  _columnMenuItemV2('address', l10n.fieldAddressLabel),
+                  _columnMenuItemV2('outstanding', l10n.invoiceMgmtColOutstanding),
                 ],
-                child: _menuButtonLookV2(Icons.view_column_outlined, 'Columns'),
+                child: _menuButtonLookV2(Icons.view_column_outlined, l10n.customerMgmtColumnsLabel),
               ),
               IconButton(
-                tooltip: _showStatsCardsV2 ? 'Hide stat cards' : 'Show stat cards',
+                tooltip: _showStatsCardsV2 ? l10n.customerMgmtHideStatCardsTooltip : l10n.customerMgmtShowStatCardsTooltip,
                 onPressed: _toggleStatsCardsV2,
                 icon: Icon(
                   _showStatsCardsV2 ? Icons.visibility_outlined : Icons.visibility_off_outlined,
@@ -1517,7 +1534,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         ),
-        child: Text('$label ($count)'),
+        child: Text(AppLocalizations.of(context)!.customerMgmtTabChipLabel(label, count)),
       ),
     );
   }
@@ -1527,12 +1544,12 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          _tabChipV2('All', _customers.length, 0),
-          _tabChipV2('Businesses', _businessesCountV2, 1),
-          _tabChipV2('Individuals', _individualsCountV2, 2),
-          _tabChipV2('$_taxWord Registered', _gstRegisteredCountV2, 3),
+          _tabChipV2(AppLocalizations.of(context)!.invoiceMgmtStatusAllLabel, _customers.length, 0),
+          _tabChipV2(AppLocalizations.of(context)!.customerMgmtBusinessesLabel, _businessesCountV2, 1),
+          _tabChipV2(AppLocalizations.of(context)!.customerMgmtIndividualsLabel, _individualsCountV2, 2),
+          _tabChipV2(AppLocalizations.of(context)!.customerMgmtTaxRegisteredLabel(_taxWord), _gstRegisteredCountV2, 3),
           _tabChipV2('With Outstanding', _withOutstandingCountV2, 5),
-          _tabChipV2('Without $_taxWord', _withoutGstCountV2, 4),
+          _tabChipV2(AppLocalizations.of(context)!.customerMgmtWithoutTaxLabel(_taxWord), _withoutGstCountV2, 4),
         ],
       ),
     );
@@ -1662,14 +1679,14 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                   icon: const Icon(Icons.visibility_outlined, size: 18),
                   visualDensity: VisualDensity.compact,
                   onPressed: () => _viewCustomerV2(c),
-                  tooltip: 'View',
+                  tooltip: AppLocalizations.of(context)!.actionView,
                 ),
                 if (widget.onViewCustomerStatement != null)
                   IconButton(
                     icon: const Icon(Icons.receipt_long_outlined, size: 18),
                     visualDensity: VisualDensity.compact,
                     onPressed: () => widget.onViewCustomerStatement!(c),
-                    tooltip: 'View Statement (in Reports)',
+                    tooltip: AppLocalizations.of(context)!.customerMgmtViewStatementTooltip,
                   ),
                 IconButton(
                   icon: const Icon(Icons.payments_outlined, size: 18),
@@ -1681,7 +1698,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                   icon: const Icon(Icons.edit_outlined, size: 18),
                   visualDensity: VisualDensity.compact,
                   onPressed: () => _editCustomerV2(c),
-                  tooltip: 'Edit',
+                  tooltip: AppLocalizations.of(context)!.actionEdit,
                 ),
                 if (widget.user.isAdmin())
                   IconButton(
@@ -1689,7 +1706,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                     visualDensity: VisualDensity.compact,
                     color: Theme.of(context).colorScheme.error,
                     onPressed: () => _deleteCustomerV2(c),
-                    tooltip: 'Delete',
+                    tooltip: AppLocalizations.of(context)!.actionDelete,
                   ),
               ],
             ),
@@ -1716,20 +1733,20 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
         children: [
           SizedBox(
               width: 56,
-              child: Text('SL. NO.',
+              child: Text(AppLocalizations.of(context)!.customerMgmtColSlNo,
                   maxLines: 1, overflow: TextOverflow.ellipsis, style: style)),
-          Expanded(flex: 3, child: Text('NAME / BUSINESS', style: style)),
+          Expanded(flex: 3, child: Text(AppLocalizations.of(context)!.customerMgmtColNameBusiness, style: style)),
           if (_visibleColumnsV2['phone'] ?? true)
-            Expanded(flex: 2, child: Text('PHONE', style: style)),
+            Expanded(flex: 2, child: Text(AppLocalizations.of(context)!.customerMgmtColPhone, style: style)),
           if (_visibleColumnsV2['email'] ?? true)
-            Expanded(flex: 3, child: Text('EMAIL', style: style)),
+            Expanded(flex: 3, child: Text(AppLocalizations.of(context)!.customerMgmtColEmail, style: style)),
           if (_visibleColumnsV2['gstin'] ?? true)
-            Expanded(flex: 2, child: Text('${_taxWord.toUpperCase()} / VAT NO', style: style)),
+            Expanded(flex: 2, child: Text(AppLocalizations.of(context)!.customerMgmtColTaxVatNo(_taxWord.toUpperCase()), style: style)),
           if (_visibleColumnsV2['address'] ?? true)
-            Expanded(flex: 3, child: Text('ADDRESS', style: style)),
+            Expanded(flex: 3, child: Text(AppLocalizations.of(context)!.customerMgmtColAddress, style: style)),
           if (_visibleColumnsV2['outstanding'] ?? true)
-            Expanded(flex: 2, child: Text('OUTSTANDING', style: style)),
-          SizedBox(width: 200, child: Text('ACTIONS', style: style)),
+            Expanded(flex: 2, child: Text(AppLocalizations.of(context)!.invoiceMgmtColOutstanding.toUpperCase(), style: style)),
+          SizedBox(width: 200, child: Text(AppLocalizations.of(context)!.customerMgmtColActions, style: style)),
         ],
       ),
     );
@@ -1754,15 +1771,17 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
           Text(
-            'Showing ${total == 0 ? 0 : _currentPage * _pageSize + 1} to '
-            '${(_currentPage * _pageSize + _pageSize).clamp(0, total)} of $total customers',
+            AppLocalizations.of(context)!.customerMgmtShowingRangeLabel(
+                total == 0 ? 0 : _currentPage * _pageSize + 1,
+                (_currentPage * _pageSize + _pageSize).clamp(0, total),
+                total),
             style: TextStyle(
                 fontSize: 12.5, color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
           const SizedBox(width: 24),
           Row(
             children: [
-              Text('Rows per page',
+              Text(AppLocalizations.of(context)!.customerMgmtRowsPerPageLabel,
                   style: TextStyle(
                       fontSize: 12.5,
                       color: Theme.of(context).colorScheme.onSurfaceVariant)),
@@ -1801,7 +1820,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               ),
               const SizedBox(width: 4),
-              Text('of $totalPages',
+              Text(AppLocalizations.of(context)!.customerMgmtOfTotalPagesLabel(totalPages),
                   style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
               IconButton(
                 onPressed: _currentPage < totalPages - 1
@@ -1876,8 +1895,8 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
             padding: const EdgeInsets.fromLTRB(18, 16, 10, 16),
             child: Row(
               children: [
-                const Text('New Customer',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                Text(AppLocalizations.of(context)!.customerMgmtNewCustomerButton,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
                 const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.close, size: 20),
@@ -1895,24 +1914,24 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildFormField(_nameController, 'Name', Icons.person, true,
+                      _buildFormField(_nameController, AppLocalizations.of(context)!.fieldNameLabel, Icons.person, true,
                           maxLength: 50),
                       const SizedBox(height: 16),
-                      _buildFormField(_businessNameController, 'Business Name',
+                      _buildFormField(_businessNameController, AppLocalizations.of(context)!.fieldBusinessNameLabel,
                           Icons.business_center, false,
                           maxLength: 100),
                       const SizedBox(height: 16),
-                      _buildFormField(_phoneController, 'Phone', Icons.phone, true,
+                      _buildFormField(_phoneController, AppLocalizations.of(context)!.fieldPhoneLabel, Icons.phone, true,
                           keyboardType: TextInputType.phone, maxLength: 12),
                       const SizedBox(height: 16),
-                      _buildFormField(_emailController, 'Email', Icons.email, false,
+                      _buildFormField(_emailController, AppLocalizations.of(context)!.fieldEmailLabel, Icons.email, false,
                           maxLength: 100, keyboardType: TextInputType.emailAddress),
                       const SizedBox(height: 16),
-                      _buildFormField(_gstinController, '$_taxWord / VAT Number',
+                      _buildFormField(_gstinController, AppLocalizations.of(context)!.fieldTaxVatNumberLabel(_taxWord),
                           Icons.receipt_long, false,
                           maxLength: 50),
                       const SizedBox(height: 16),
-                      _buildFormField(_addressController, 'Address', Icons.location_on,
+                      _buildFormField(_addressController, AppLocalizations.of(context)!.fieldAddressLabel, Icons.location_on,
                           false,
                           maxLines: 3, maxLength: 500),
                     ],
@@ -1938,7 +1957,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                       onChanged: (v) =>
                           setState(() => _addAnotherAfterSavingV2 = v ?? false),
                     ),
-                    const Expanded(child: Text('Add another after saving')),
+                    Expanded(child: Text(AppLocalizations.of(context)!.customerMgmtAddAnotherLabel)),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -1950,7 +1969,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                           _clearForm();
                           setState(() => _showAddPanelV2 = false);
                         },
-                        child: const Text('Cancel'),
+                        child: Text(AppLocalizations.of(context)!.actionCancel),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -1965,7 +1984,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                                 child: CircularProgressIndicator(
                                     strokeWidth: 2, color: Colors.white))
                             : const Icon(Icons.save_outlined, size: 18),
-                        label: const Text('Save Customer'),
+                        label: Text(AppLocalizations.of(context)!.customerMgmtSaveCustomerButton),
                       ),
                     ),
                   ],
@@ -2094,7 +2113,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
       validator: required
           ? (value) {
         if (value == null || value.trim().isEmpty) {
-          return 'Please enter $label';
+          return AppLocalizations.of(context)!.fieldRequiredMessage(label);
         }
         return null;
       }
@@ -2110,14 +2129,14 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
           Icon(Icons.person_off, size: 80, color: Theme.of(context).colorScheme.outlineVariant),
           const SizedBox(height: 16),
           Text(
-            'No customers found',
+            AppLocalizations.of(context)!.createInvoiceNoCustomersFoundMessage,
             style: TextStyle(fontSize: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
           const SizedBox(height: 8),
           Text(
             _searchQuery.isEmpty
-                ? 'Add your first customer to get started'
-                : 'Try adjusting your search',
+                ? AppLocalizations.of(context)!.customerMgmtAddFirstCustomerSubtitle
+                : AppLocalizations.of(context)!.customerMgmtTryAdjustingSearchSubtitle,
             style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ],
