@@ -297,7 +297,6 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
   Future<void> _loadProducts() async {
     final requestId = ++_loadRequestId;
     if(!mounted) return;
-    final l10n = AppLocalizations.of(context)!;
     setState(() => _isLoading = true);
     try {
       final productRepo = ref.read(productRepositoryProvider);
@@ -321,8 +320,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         _allProductsCount = allCount;
       });
     } catch (e) {
-      if (requestId != _loadRequestId) return;
-      _showSnackBar(l10n.productMgmtLoadErrorMessage(e.toString()), isError: true);
+      if (requestId != _loadRequestId || !mounted) return;
+      _showSnackBar(AppLocalizations.of(context)!.productMgmtLoadErrorMessage(e.toString()), isError: true);
     } finally {
 
       if (requestId == _loadRequestId && mounted) setState(() => _isLoading = false);
@@ -1440,7 +1439,6 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
 
   Future<void> _loadStatsV2() async {
     if (!mounted) return;
-    final l10n = AppLocalizations.of(context)!;
     setState(() => _statsLoadingV2 = true);
     try {
       final repo = ref.read(productRepositoryProvider);
@@ -1453,7 +1451,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
       });
       _applyClientFilterV2();
     } catch (e) {
-      _showSnackBar(l10n.productMgmtLoadErrorMessage(e.toString()), isError: true);
+      if (!mounted) return;
+      _showSnackBar(AppLocalizations.of(context)!.productMgmtLoadErrorMessage(e.toString()), isError: true);
     } finally {
       if (mounted) setState(() => _statsLoadingV2 = false);
     }

@@ -49,7 +49,6 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
   }
 
   Future<void> _loadUsers() async {
-    final l10n = AppLocalizations.of(context)!;
     setState(() => _isLoading = true);
 
     try {
@@ -73,7 +72,8 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
       _animationController.forward();
     } catch (e) {
       setState(() => _isLoading = false);
-      _showSnackBar(l10n.userMgmtLoadErrorMessage(e.toString()), Colors.red);
+      if (!mounted) return;
+      _showSnackBar(AppLocalizations.of(context)!.userMgmtLoadErrorMessage(e.toString()), Colors.red);
     }
   }
 
@@ -1053,19 +1053,22 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
             ),
           Expanded(
             flex: 3,
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 16,
-                  backgroundColor: avatarColor.withValues(alpha: 0.12),
-                  child: Text(
-                    user.username.isNotEmpty ? user.username[0].toUpperCase() : '?',
-                    style: TextStyle(color: avatarColor, fontWeight: FontWeight.bold),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: avatarColor.withValues(alpha: 0.12),
+                    child: Text(
+                      user.username.isNotEmpty ? user.username[0].toUpperCase() : '?',
+                      style: TextStyle(color: avatarColor, fontWeight: FontWeight.bold),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
+                  const SizedBox(width: 10),
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(user.username,
@@ -1088,11 +1091,17 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                         ),
                     ],
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-          Expanded(flex: 2, child: _buildUserTypeChip(user.userType)),
+          Expanded(
+            flex: 2,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: _buildUserTypeChip(user.userType),
+            ),
+          ),
           SizedBox(
             width: 164,
             child: Row(
@@ -1154,9 +1163,12 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
           top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
           Row(
             children: [
               if (widget.currentUser.isAdmin())
@@ -1195,6 +1207,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                       fontSize: 12.5, color: Theme.of(context).colorScheme.onSurfaceVariant)),
             ],
           ),
+          const SizedBox(width: 24),
           Row(
             children: [
               IconButton(
@@ -1231,46 +1244,55 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
               ),
             ],
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
+  // Sizes itself naturally instead of relying on `Expanded` to fill
+  // whatever space a bounded ancestor gives it — the page itself is a
+  // CustomScrollView (see _buildV2), so the list here is shrink-wrapped
+  // (its own scrolling disabled) and the page just scrolls further if the
+  // natural content (header + rows + pagination) doesn't fit the viewport.
   Widget _tableSectionV2() {
     final pageItems = _pagedUsersV2();
-    return Expanded(
-      child: Container(
-        decoration: _flatCardDecorationV2(context),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          children: [
-            _tableHeaderRowV2(),
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : pageItems.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.person_search_outlined,
-                                  size: 48,
-                                  color: Theme.of(context).colorScheme.outlineVariant),
-                              const SizedBox(height: 12),
-                              Text(AppLocalizations.of(context)!.userMgmtNoUsersFoundMessage,
-                                  style: TextStyle(
-                                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                            ],
-                          ),
-                        )
-                      : ListView.builder(
-                          itemCount: pageItems.length,
-                          itemBuilder: (context, index) => _tableRowV2(pageItems[index]),
+    return Container(
+      decoration: _flatCardDecorationV2(context),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _tableHeaderRowV2(),
+          _isLoading && _users.isEmpty
+              ? const SizedBox(
+                  height: 240, child: Center(child: CircularProgressIndicator()))
+              : pageItems.isEmpty
+                  ? SizedBox(
+                      height: 240,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.person_search_outlined,
+                                size: 48,
+                                color: Theme.of(context).colorScheme.outlineVariant),
+                            const SizedBox(height: 12),
+                            Text(AppLocalizations.of(context)!.userMgmtNoUsersFoundMessage,
+                                style: TextStyle(
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                          ],
                         ),
-            ),
-            _paginationV2(),
-          ],
-        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: pageItems.length,
+                      itemBuilder: (context, index) => _tableRowV2(pageItems[index]),
+                    ),
+          _paginationV2(),
+        ],
       ),
     );
   }
@@ -1283,8 +1305,9 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
     final l10n = AppLocalizations.of(context)!;
     final isAdding = _editingUserId == null;
     final primaryColor = Theme.of(context).primaryColor;
+    // Width is controlled by the Positioned wrapper in _buildV2 (scales with
+    // the window, capped between 520-680px, full width on narrow screens).
     return Container(
-      width: 400,
       decoration: _flatCardDecorationV2(context),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -1535,36 +1558,66 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
 
     return Scaffold(
       body: SafeArea(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _headerBarV2(),
-                    const SizedBox(height: 12),
-                    _statCardsRowV2(),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: _flatCardDecorationV2(context),
-                      child: _searchFilterRowV2(),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Add/Edit panel width: floats as an overlay instead of sitting
+            // in a Row next to the main content, so it never steals width
+            // from the table. Scales with the window on large screens
+            // (capped so it doesn't get unwieldy), full width on narrow ones.
+            final panelWidth = constraints.maxWidth < 750
+                ? constraints.maxWidth - 32
+                : (constraints.maxWidth * 0.42).clamp(520.0, 680.0);
+
+            return Stack(
+              children: [
+                CustomScrollView(
+                  slivers: [
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                      sliver: SliverToBoxAdapter(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _headerBarV2(),
+                            const SizedBox(height: 12),
+                            _statCardsRowV2(),
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: _flatCardDecorationV2(context),
+                              child: _searchFilterRowV2(),
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                        ),
+                      ),
                     ),
-                    const SizedBox(height: 12),
-                    _tableSectionV2(),
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      sliver: SliverToBoxAdapter(
+                        child: _tableSectionV2(),
+                      ),
+                    ),
                   ],
                 ),
-              ),
-            ),
-            if (_showAddPanelV2)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(0, 16, 16, 16),
-                child: _addPanelV2(),
-              ),
-          ],
+                if (_showAddPanelV2) ...[
+                  Positioned.fill(
+                    child: GestureDetector(
+                      onTap: () => setState(() => _showAddPanelV2 = false),
+                      child: Container(color: Colors.black.withValues(alpha: 0.3)),
+                    ),
+                  ),
+                  Positioned(
+                    top: 16,
+                    right: 16,
+                    bottom: 16,
+                    width: panelWidth,
+                    child: _addPanelV2(),
+                  ),
+                ],
+              ],
+            );
+          },
         ),
       ),
     );

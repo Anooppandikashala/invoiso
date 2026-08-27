@@ -25,16 +25,16 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
   }
 
   Future<void> _loadBackups() async {
-    final l10n = AppLocalizations.of(context)!;
     setState(() => _isLoading = true);
 
     try {
       final backups = await _backupManager.getBackupList();
       setState(() => _backups = backups);
     } catch (e) {
-      _showErrorDialog(l10n.backupLoadErrorMessage(e.toString()));
+      if (!mounted) return;
+      _showErrorDialog(AppLocalizations.of(context)!.backupLoadErrorMessage(e.toString()));
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
