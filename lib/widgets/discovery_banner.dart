@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:invoiso/l10n/app_localizations.dart';
 
 /// Dismissible "New: ..." feature-discovery banner. Shared shape for all
 /// discovery banners on the dashboard (layout, theme, shortcuts, support) —
@@ -76,7 +77,8 @@ class DiscoveryBanner extends StatelessWidget {
                     style: TextButton.styleFrom(
                       foregroundColor: actionColor,
                       backgroundColor: actionBackgroundColor,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     child: Text(actionLabel,
@@ -86,9 +88,10 @@ class DiscoveryBanner extends StatelessWidget {
                     icon: const Icon(Icons.close, size: 16),
                     color: dismissIconColor,
                     onPressed: onDismiss,
-                    tooltip: 'Dismiss',
+                    tooltip: AppLocalizations.of(context)!.actionDismiss,
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                    constraints:
+                        const BoxConstraints(minWidth: 28, minHeight: 28),
                   ),
                 ],
               ),

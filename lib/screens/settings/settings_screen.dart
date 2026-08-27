@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/common/common.dart';
+import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/providers/app_config_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/screens/settings/accessibility_screen.dart';
@@ -75,10 +76,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _loadCachedUpdateInfo() async {
-    final cached = await ref.read(settingsRepositoryProvider).getSetting(SettingKey.lastKnownLatestVersion);
+    final cached = await ref
+        .read(settingsRepositoryProvider)
+        .getSetting(SettingKey.lastKnownLatestVersion);
     if (cached != null && cached.isNotEmpty && mounted) {
       setState(() {
-        _updateInfo = UpdateInfo(latestVersion: cached, currentVersion: ref.read(appEditionConfigProvider).version);
+        _updateInfo = UpdateInfo(
+            latestVersion: cached,
+            currentVersion: ref.read(appEditionConfigProvider).version);
       });
     }
   }
@@ -125,10 +130,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           padding: const EdgeInsets.all(16.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            children: const [
-              Icon(Icons.add_circle_outline, size: 64, color: Colors.blueGrey),
+            children: [
+              const Icon(Icons.add_circle_outline,
+                  size: 64, color: Colors.blueGrey),
               AppSpacing.hMedium,
-              Text("Options coming soon...", style: TextStyle(fontSize: 18)),
+              Text(
+                  AppLocalizations.of(context)!
+                      .settingsOptionsComingSoonMessage,
+                  style: const TextStyle(fontSize: 18)),
             ],
           ),
         ),
@@ -159,30 +168,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final int idx;
     if (_selectedIndex == productColumnsPosition) {
       idx = 8;
-    }
-    else if (_selectedIndex == customizeIndex) {
+    } else if (_selectedIndex == customizeIndex) {
       idx = 6;
-    }
-    else if (_selectedIndex == accessibilityPosition) {
+    } else if (_selectedIndex == accessibilityPosition) {
       idx = 9;
-    }
-    else if (_selectedIndex == softwareInfoPosition) {
+    } else if (_selectedIndex == softwareInfoPosition) {
       idx = 5;
-    }
-    else if (hasExtraTab && _selectedIndex == 1) {
+    } else if (hasExtraTab && _selectedIndex == 1) {
       idx = 7;
-    }
-    else if (!cfg.isCloud) {
+    } else if (!cfg.isCloud) {
       idx = _selectedIndex;
-    }
-    else if (_selectedIndex == 0) {
+    } else if (_selectedIndex == 0) {
       idx = 0;
-    }
-    else {
+    } else {
       idx = _selectedIndex + (hasExtraTab ? 1 : 2);
     }
 
-      switch (idx) {
+    switch (idx) {
       case 0:
         return const CompanyInfoScreen();
       case 1:
@@ -220,7 +222,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       case 9:
         return const AccessibilityScreen();
       default:
-        return _buildDummySection("Invoice Settings");
+        return _buildDummySection(
+            AppLocalizations.of(context)!.invoiceSettingsAppBarTitle);
     }
   }
 
@@ -230,6 +233,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (!widget.currentUser.isAdmin()) {
       return _buildAppInfoScreen();
     }
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       body: Row(
@@ -243,44 +247,45 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               });
             },
             destinations: [
-              const NavigationRailDestination(
-                icon: Icon(Icons.business),
-                label: Text('Company Info'),
+              NavigationRailDestination(
+                icon: const Icon(Icons.business),
+                label: Text(l10n.settingsNavCompanyInfoLabel),
               ),
               if (cfg.extraSettingsTab != null)
                 NavigationRailDestination(
                   icon: Icon(cfg.extraSettingsTabIcon ?? Icons.group),
-                  label: Text(cfg.extraSettingsTabLabel ?? 'Team'),
+                  label: Text(
+                      cfg.extraSettingsTabLabel ?? l10n.settingsNavTeamLabel),
                 ),
               if (!cfg.isCloud)
-                const NavigationRailDestination(
-                  icon: Icon(Icons.backup),
-                  label: Text('Backup'),
+                NavigationRailDestination(
+                  icon: const Icon(Icons.backup),
+                  label: Text(l10n.settingsNavBackupLabel),
                 ),
               if (!cfg.isCloud)
-                const NavigationRailDestination(
-                  icon: Icon(Icons.people),
-                  label: Text('Users'),
+                NavigationRailDestination(
+                  icon: const Icon(Icons.people),
+                  label: Text(l10n.settingsNavUsersLabel),
                 ),
-              const NavigationRailDestination(
-                icon: Icon(Icons.settings),
-                label: Text('PDF Settings'),
+              NavigationRailDestination(
+                icon: const Icon(Icons.settings),
+                label: Text(l10n.pdfSettingsTitle),
               ),
-              const NavigationRailDestination(
-                icon: Icon(Icons.file_present),
-                label: Text('Invoice Settings'),
+              NavigationRailDestination(
+                icon: const Icon(Icons.file_present),
+                label: Text(l10n.invoiceSettingsAppBarTitle),
               ),
-              const NavigationRailDestination(
-                icon: Icon(Icons.view_column_outlined),
-                label: Text('Product Details'),
+              NavigationRailDestination(
+                icon: const Icon(Icons.view_column_outlined),
+                label: Text(l10n.settingsNavProductDetailsLabel),
               ),
-              const NavigationRailDestination(
-                icon: Icon(Icons.tune_rounded),
-                label: Text('Customize'),
+              NavigationRailDestination(
+                icon: const Icon(Icons.tune_rounded),
+                label: Text(l10n.settingsNavCustomizeLabel),
               ),
-              const NavigationRailDestination(
-                icon: Icon(Icons.accessibility_new_rounded),
-                label: Text('Accessibility'),
+              NavigationRailDestination(
+                icon: const Icon(Icons.accessibility_new_rounded),
+                label: Text(l10n.settingsNavAccessibilityLabel),
               ),
               NavigationRailDestination(
                 icon: Stack(
@@ -302,7 +307,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                   ],
                 ),
-                label: const Text('Software Info'),
+                label: Text(l10n.settingsNavSoftwareInfoLabel),
               ),
             ],
           ),

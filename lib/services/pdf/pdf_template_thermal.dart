@@ -241,7 +241,7 @@ pw.Page buildThermalTemplate(
   }
 
   List<pw.Widget> buildPdfBody() {
-    final dateStr = DateFormat(datePattern).format(invoice.date);
+    final dateStr = DateFormat(datePattern, 'en_US').format(invoice.date);
     final netTotal = roundNetTotal(invoice.total + previousBalanceDue);
     return [
       // ── Business Header ──
@@ -276,7 +276,7 @@ pw.Page buildThermalTemplate(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
             pw.Text('Due:', style: const pw.TextStyle(fontSize: bodyFs)),
-            pw.Text(DateFormat(datePattern).format(invoice.dueDate!),
+            pw.Text(DateFormat(datePattern, 'en_US').format(invoice.dueDate!),
                 style: const pw.TextStyle(fontSize: bodyFs)),
           ],
         ),
