@@ -998,8 +998,12 @@ pw.Widget buildAdditionalNotes(Invoice invoice,
   );
 }
 
+// Locale pinned to 'en_US' regardless of the app's UI language: PDF dates
+// must stay stable for the recipient, and DateFormat with no explicit
+// locale follows Intl.defaultLocale (set to the app language, e.g. 'bo' for
+// Tibetan) — 'bo' has no intl locale data at all, so that throws.
 String formatPdfDate(DateTime date, String pattern) {
-  return DateFormat(pattern).format(date);
+  return DateFormat(pattern, 'en_US').format(date);
 }
 
 String formatInvoiceNumberForDisplay(String number, bool showLeadingZeros) {

@@ -13,7 +13,7 @@ import 'package:invoiso/screens/test_gate_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:invoiso/providers/app_config_provider.dart';
-import 'package:invoiso/screens/dashboard_screen.dart';
+import 'package:invoiso/utils/post_auth_navigation.dart';
 
 // Login Screen
 class LoginScreen extends ConsumerStatefulWidget {
@@ -78,10 +78,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if(cfg.isCloud)
     {
       if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => DashboardScreen(user)),
-      );
+      await navigateAfterAuth(context, ref, user);
     }
     else if (!user.passwordChanged && !cfg.isCloud) {
       // Force password change
@@ -95,10 +92,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
     else{
       if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => DashboardScreen(user)),
-      );
+      await navigateAfterAuth(context, ref, user);
     }
 
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:invoiso/database/database_helper.dart';
+import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/screens/auth/login_screen.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/utils/app_logger.dart';
@@ -26,16 +27,17 @@ class _SplashScreenState extends State<SplashScreen> {
     } catch (e, stack) {
       AppLogger.e(_tag, 'Database initialization failed', e, stack);
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       showDialog(
         context: context,
         barrierDismissible: false,
         builder: (ctx) => AlertDialog(
-          title: const Text('Initialization Error'),
-          content: Text('Failed to initialize the database.\n\n$e'),
+          title: Text(l10n.splashInitErrorTitle),
+          content: Text(l10n.splashInitErrorMessage('$e')),
           actions: [
             ElevatedButton(
               onPressed: () => _initializeApp(),
-              child: const Text('Retry'),
+              child: Text(l10n.actionRetry),
             ),
           ],
         ),
@@ -54,14 +56,15 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Initializing App...', style: TextStyle(fontSize: 18)),
+            Text(AppLocalizations.of(context)!.splashInitializingMessage,
+                style: const TextStyle(fontSize: 18)),
             AppSpacing.hXlarge,
-            CircularProgressIndicator(),
+            const CircularProgressIndicator(),
           ],
         ),
       ),

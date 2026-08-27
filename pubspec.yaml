@@ -8,6 +8,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   intl: ^0.20.2
   pdf: ^3.11.3
@@ -51,6 +53,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true
   assets:
    - assets/images/logo.png
    - assets/images/logo_dark.png
@@ -58,6 +61,17 @@ flutter:
    - assets/images/logo_v.png
    - assets/images/logo_v_dark.png
    - assets/fonts/
+  fonts:
+    - family: NotoSansDevanagari
+      fonts:
+        - asset: assets/fonts/NotoSansDevanagari-Regular.ttf
+        - asset: assets/fonts/NotoSansDevanagari-Bold.ttf
+          weight: 700
+    - family: NotoSerifTibetan
+      fonts:
+        - asset: assets/fonts/NotoSerifTibetan-Regular.ttf
+        - asset: assets/fonts/NotoSerifTibetan-Bold.ttf
+          weight: 700
 
 flutter_launcher_icons:
   macos:

@@ -14,6 +14,7 @@ import 'package:csv/csv.dart';
 
 import 'package:intl/intl.dart';
 import 'package:invoiso/common/common.dart';
+import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/models/product.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/utils/formatters.dart';
@@ -201,22 +202,22 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                 children: [
                   const Icon(Icons.tune, color: Color(0xFF2563EB), size: 20),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'New: Customize product fields',
-                          style: TextStyle(
+                          AppLocalizations.of(context)!.productMgmtColumnsBannerTitle,
+                          style: const TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 13,
                             color: Color(0xFF1E40AF),
                           ),
                         ),
-                        SizedBox(height: 2),
+                        const SizedBox(height: 2),
                         Text(
-                          'Choose which fields show for a simpler catalog. Settings > Customize Product Details.',
-                          style: TextStyle(fontSize: 12, color: Color(0xFF3B82F6)),
+                          AppLocalizations.of(context)!.productMgmtColumnsBannerSubtitle,
+                          style: const TextStyle(fontSize: 12, color: Color(0xFF3B82F6)),
                         ),
                       ],
                     ),
@@ -233,14 +234,14 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    child: const Text('Configure',
-                        style: TextStyle(fontWeight: FontWeight.w600)),
+                    child: Text(AppLocalizations.of(context)!.productMgmtConfigureAction,
+                        style: const TextStyle(fontWeight: FontWeight.w600)),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close, size: 16),
                     color: const Color(0xFF93C5FD),
                     onPressed: _dismissColumnsBanner,
-                    tooltip: 'Dismiss',
+                    tooltip: AppLocalizations.of(context)!.actionDismiss,
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                   ),
@@ -319,10 +320,10 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         _allProductsCount = allCount;
       });
     } catch (e) {
-      if (requestId != _loadRequestId) return;
-      _showSnackBar('Error loading products: $e', isError: true);
+      if (requestId != _loadRequestId || !mounted) return;
+      _showSnackBar(AppLocalizations.of(context)!.productMgmtLoadErrorMessage(e.toString()), isError: true);
     } finally {
-      
+
       if (requestId == _loadRequestId && mounted) setState(() => _isLoading = false);
     }
   }
@@ -335,6 +336,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         double.tryParse(_purchasePriceController.text.trim()) ?? 0.0;
     if (!await _confirmIfSellingAtLoss(price, purchasePrice)) return;
     if(!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
     setState(() => _isLoading = true);
     try {
       final newProduct = Product(
@@ -373,9 +375,9 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
           );
       _clearForm();
       await _loadProducts();
-      _showSnackBar('Product added successfully!');
+      _showSnackBar(l10n.productMgmtAddedMessage);
     } catch (e) {
-      _showSnackBar('Error adding product: $e', isError: true);
+      _showSnackBar(l10n.productMgmtAddErrorMessage(e.toString()), isError: true);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -445,23 +447,25 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
   /// means selling at a loss.
   Future<bool> _confirmIfSellingAtLoss(double price, double purchasePrice) async {
     if (purchasePrice <= 0 || purchasePrice <= price) return true;
+    final l10n = AppLocalizations.of(context)!;
     final proceed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Selling at a loss'),
+        title: Text(l10n.productMgmtSellingAtLossTitle),
         content: Text(
-          'Purchase price ($_currencySymbol${purchasePrice.toStringAsFixed(2)}) '
-          'is higher than sale price ($_currencySymbol${price.toStringAsFixed(2)}). '
-          'Save anyway?',
+          l10n.productMgmtSellingAtLossMessage(
+            '$_currencySymbol${purchasePrice.toStringAsFixed(2)}',
+            '$_currencySymbol${price.toStringAsFixed(2)}',
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.actionCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Save Anyway'),
+            child: Text(l10n.actionSaveAnyway),
           ),
         ],
       ),
@@ -541,30 +545,31 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
       );
     }
 
+    final l10n = AppLocalizations.of(context)!;
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: ExpansionTile(
         tilePadding: EdgeInsets.zero,
-        title: const Text('Advanced Information'),
+        title: Text(l10n.productMgmtAdvancedInformationLabel),
         leading: const Icon(Icons.more_horiz),
         childrenPadding: const EdgeInsets.only(top: 8),
         children: [
           if (_columnsConfig.metaStorageLocation)
-            field(storageLocationCtrl, 'Storage Location', Icons.place_outlined),
+            field(storageLocationCtrl, l10n.productMgmtStorageLocationLabel, Icons.place_outlined),
           if (_columnsConfig.metaContainerNumber)
-            field(containerNumberCtrl, 'Container Number', Icons.inventory_2_outlined),
+            field(containerNumberCtrl, l10n.productMgmtContainerNumberLabel, Icons.inventory_2_outlined),
           if (_columnsConfig.metaBatchNumber)
-            field(batchNumberCtrl, 'Batch Number', Icons.tag),
+            field(batchNumberCtrl, l10n.productMgmtBatchNumberLabel, Icons.tag),
           if (_columnsConfig.metaExpiryDate)
-            dateField('Expiry Date', expiryDate, onExpiryChanged),
+            dateField(l10n.productMgmtExpiryDateLabel, expiryDate, onExpiryChanged),
           if (_columnsConfig.metaManufactureDate)
-            dateField('Manufacture Date', manufactureDate, onManufactureChanged),
+            dateField(l10n.productMgmtManufactureDateLabel, manufactureDate, onManufactureChanged),
           if (_columnsConfig.metaSupplierName)
-            field(supplierNameCtrl, 'Supplier Name', Icons.local_shipping_outlined),
+            field(supplierNameCtrl, l10n.productMgmtSupplierNameLabel, Icons.local_shipping_outlined),
           if (_columnsConfig.metaSkuCode)
-            field(skuCodeCtrl, 'SKU Code', Icons.qr_code_2),
+            field(skuCodeCtrl, l10n.productMgmtSkuCodeLabel, Icons.qr_code_2),
           if (_columnsConfig.metaNotes)
-            field(notesCtrl, 'Notes', Icons.notes, maxLines: 3),
+            field(notesCtrl, l10n.productMgmtNotesLabel, Icons.notes, maxLines: 3),
         ],
       ),
     );
@@ -581,10 +586,12 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     bool isPrice = false,
     bool isStock = false,
     bool isTaxRate = false,
+    bool isRequired = false,
     String? prefixText,
     String? helperText,
     VoidCallback? onSubmitted,
   }) {
+    final l10n = AppLocalizations.of(context)!;
     return TextFormField(
       controller: controller,
       readOnly: readOnly,
@@ -626,22 +633,19 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
       ),
       validator: (value) {
         if (value == null || value.trim().isEmpty) {
-          if (label.contains('Name')) return 'Please enter product name';
-          if (label.contains('Price')) return 'Please enter price';
-          if (label.contains('Stock')) return 'Please enter stock';
-          if (label.contains('Tax')) return 'Please enter tax rate';
+          if (isRequired) return l10n.fieldRequiredMessage(label);
         }
         if (isPrice) {
           final price = double.tryParse(value!);
-          if (price == null || price < 0) return 'Enter valid price';
+          if (price == null || price < 0) return l10n.fieldEnterValidPriceMessage;
         }
         if (isStock) {
           final stock = int.tryParse(value!);
-          if (stock == null || stock < 0) return 'Enter valid stock';
+          if (stock == null || stock < 0) return l10n.fieldEnterValidStockMessage;
         }
         if (isTaxRate) {
           final tax = int.tryParse(value!);
-          if (tax == null || tax < 0 || tax > 100) return 'Tax must be 0-100';
+          if (tax == null || tax < 0 || tax > 100) return l10n.fieldTaxRangeMessage;
         }
         return null;
       },
@@ -649,27 +653,28 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
   }
 
   Future<void> _confirmDelete(Product product) async {
+    final l10n = AppLocalizations.of(context)!;
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.orange),
-            SizedBox(width: 8),
-            Text('Confirm Delete'),
+            const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+            const SizedBox(width: 8),
+            Text(l10n.customerMgmtConfirmDeleteTitle),
           ],
         ),
-        content: Text('Are you sure you want to delete "${product.name}"?'),
+        content: Text(l10n.customerMgmtDeleteConfirmBody(product.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.actionCancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
+            child: Text(l10n.actionDelete),
           ),
         ],
       ),
@@ -678,7 +683,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     if (result == true) {
       await ref.read(productRepositoryProvider).deleteProduct(product.id);
       await _loadProducts();
-      _showSnackBar('Product deleted successfully!');
+      _showSnackBar(l10n.productMgmtDeletedMessage);
     }
   }
 
@@ -691,8 +696,9 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         '"USB Hub","84734000","4-port USB 3.0 hub","299.00","18","100","product","0","180.00","","pcs","0","0","","CNT-1023","","","","","",""\n'
         '"Annual Support","998314","Annual technical support plan","4999.00","18","0","service","10.00","0","","unit","1","1","","","","","","","",""\n';
 
+    final l10n = AppLocalizations.of(context)!;
     final savePath = await FilePicker.platform.saveFile(
-      dialogTitle: 'Save Sample CSV',
+      dialogTitle: l10n.customerMgmtSaveSampleCsvDialogTitle,
       fileName: 'products_sample.csv',
       type: FileType.custom,
       allowedExtensions: ['csv'],
@@ -701,15 +707,16 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
 
     try {
       await File(savePath).writeAsBytes(utf8.encode('\uFEFF$sample'));
-      _showSnackBar('Sample CSV saved successfully!');
+      _showSnackBar(l10n.customerMgmtSampleSavedMessage);
     } catch (e) {
-      _showSnackBar('Error saving sample: $e', isError: true);
+      _showSnackBar(l10n.customerMgmtErrorSavingSampleMessage(e.toString()), isError: true);
     }
   }
 
   // ── CSV Import ────────────────────────────────────────────────────────────
 
   Future<void> _showImportDialog() async {
+    final l10n = AppLocalizations.of(context)!;
     final proceed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -717,7 +724,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
           children: [
             Icon(Icons.upload_file, color: Theme.of(context).primaryColor),
             const SizedBox(width: 10),
-            const Text('Import Products from CSV'),
+            Text(l10n.productMgmtImportProductsCsvTitle),
           ],
         ),
         content: SizedBox(
@@ -727,9 +734,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'Your CSV file must use the following column headers (exact spelling, any order):',
-                ),
+                Text(l10n.customerMgmtCsvFormatInstructionMessage),
                 const SizedBox(height: 12),
                 Table(
                   border: TableBorder.all(
@@ -743,44 +748,44 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                   children: [
                     TableRow(
                       decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest),
-                      children: const [
-                        _TableHeader('Column'),
-                        _TableHeader('Required'),
-                        _TableHeader('Description'),
+                      children: [
+                        _TableHeader(l10n.customerMgmtCsvColColumnHeader),
+                        _TableHeader(l10n.customerMgmtCsvColRequiredHeader),
+                        _TableHeader(l10n.customerMgmtCsvColDescriptionHeader),
                       ],
                     ),
-                    _csvRuleRow(context, 'name', 'Yes', 'Product name'),
-                    _csvRuleRow(context, 'price', 'Yes', 'Unit price (numeric)'),
-                    _csvRuleRow(context, 'hsn_code', 'No', 'HSN / SAC code'),
-                    _csvRuleRow(context, 'description', 'No', 'Short description'),
-                    _csvRuleRow(context, 'tax_rate', 'No', 'Tax % (0–100), default 0'),
-                    _csvRuleRow(context, 'stock', 'No', 'Stock quantity, default 0'),
-                    _csvRuleRow(context, 'type', 'No', '"product" or "service", default product'),
-                    _csvRuleRow(context, 'default_discount', 'No', 'Flat discount amount (currency), default 0'),
-                    _csvRuleRow(context, 'purchase_price', 'No', 'Cost price (numeric), default 0'),
-                    _csvRuleRow(context, 'alias_name', 'No', 'Local-language display name for PDFs'),
-                    _csvRuleRow(context, 'unit', 'No', 'Unit of measure (e.g. kg, bag, pcs), default pcs'),
-                    _csvRuleRow(context, 'unlimited_stock', 'No', '1/true for unlimited stock, default 0'),
-                    _csvRuleRow(context, 'price_includes_tax', 'No', '1/true if price already includes tax, default 0'),
-                    _csvRuleRow(context, 'storage_location', 'No', 'Warehouse/shelf location'),
-                    _csvRuleRow(context, 'container_number', 'No', 'Container/box number'),
-                    _csvRuleRow(context, 'batch_number', 'No', 'Batch/lot number'),
-                    _csvRuleRow(context, 'expiry_date', 'No', 'Expiry date'),
-                    _csvRuleRow(context, 'manufacture_date', 'No', 'Manufacture date'),
-                    _csvRuleRow(context, 'supplier_name', 'No', 'Supplier name'),
-                    _csvRuleRow(context, 'sku_code', 'No', 'SKU code'),
-                    _csvRuleRow(context, 'notes', 'No', 'Free-text notes'),
+                    _csvRuleRow(context, 'name', true, l10n.productMgmtCsvDescName),
+                    _csvRuleRow(context, 'price', true, l10n.productMgmtCsvDescPrice),
+                    _csvRuleRow(context, 'hsn_code', false, l10n.productMgmtCsvDescHsnCode),
+                    _csvRuleRow(context, 'description', false, l10n.productMgmtCsvDescDescription),
+                    _csvRuleRow(context, 'tax_rate', false, l10n.productMgmtCsvDescTaxRate),
+                    _csvRuleRow(context, 'stock', false, l10n.productMgmtCsvDescStock),
+                    _csvRuleRow(context, 'type', false, l10n.productMgmtCsvDescType),
+                    _csvRuleRow(context, 'default_discount', false, l10n.productMgmtCsvDescDefaultDiscount),
+                    _csvRuleRow(context, 'purchase_price', false, l10n.productMgmtCsvDescPurchasePrice),
+                    _csvRuleRow(context, 'alias_name', false, l10n.productMgmtCsvDescAliasName),
+                    _csvRuleRow(context, 'unit', false, l10n.productMgmtCsvDescUnit),
+                    _csvRuleRow(context, 'unlimited_stock', false, l10n.productMgmtCsvDescUnlimitedStock),
+                    _csvRuleRow(context, 'price_includes_tax', false, l10n.productMgmtCsvDescPriceIncludesTax),
+                    _csvRuleRow(context, 'storage_location', false, l10n.productMgmtCsvDescStorageLocation),
+                    _csvRuleRow(context, 'container_number', false, l10n.productMgmtCsvDescContainerNumber),
+                    _csvRuleRow(context, 'batch_number', false, l10n.productMgmtCsvDescBatchNumber),
+                    _csvRuleRow(context, 'expiry_date', false, l10n.productMgmtCsvDescExpiryDate),
+                    _csvRuleRow(context, 'manufacture_date', false, l10n.productMgmtCsvDescManufactureDate),
+                    _csvRuleRow(context, 'supplier_name', false, l10n.productMgmtCsvDescSupplierName),
+                    _csvRuleRow(context, 'sku_code', false, l10n.productMgmtCsvDescSkuCode),
+                    _csvRuleRow(context, 'notes', false, l10n.productMgmtCsvDescNotes),
                   ],
                 ),
                 const SizedBox(height: 16),
                 _ruleNote(context, Icons.info_outline,
-                    'Maximum $_csvMaxRows rows per import.'),
+                    l10n.customerMgmtCsvMaxRowsNote(_csvMaxRows)),
                 _ruleNote(context, Icons.info_outline,
-                    'Duplicates are detected by product name (case-insensitive). You will be asked to overwrite or skip each one.'),
+                    l10n.productMgmtCsvDuplicateNote),
                 _ruleNote(context, Icons.info_outline,
-                    'Rows missing name or price are skipped and reported.'),
+                    l10n.productMgmtCsvMissingRequiredNote),
                 _ruleNote(context, Icons.info_outline,
-                    'UTF-8 encoding recommended. Excel BOM is handled automatically.'),
+                    l10n.customerMgmtCsvEncodingNote),
                 const SizedBox(height: 16),
                 OutlinedButton.icon(
                   onPressed: () async {
@@ -788,7 +793,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                     await _downloadSampleCSV();
                   },
                   icon: const Icon(Icons.download),
-                  label: const Text('Download Sample CSV'),
+                  label: Text(l10n.customerMgmtDownloadSampleCsvButton),
                 ),
               ],
             ),
@@ -797,12 +802,12 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.actionCancel),
           ),
           FilledButton.icon(
             onPressed: () => Navigator.pop(ctx, true),
             icon: const Icon(Icons.folder_open),
-            label: const Text('Choose File'),
+            label: Text(l10n.customerMgmtChooseFileButton),
           ),
         ],
       ),
@@ -810,7 +815,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     if (proceed == true) await _importFromCSV();
   }
 
-  static TableRow _csvRuleRow(BuildContext context, String col, String req, String desc) {
+  static TableRow _csvRuleRow(BuildContext context, String col, bool required, String desc) {
+    final l10n = AppLocalizations.of(context)!;
     return TableRow(
       children: [
         Padding(
@@ -821,11 +827,11 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           child: Text(
-            req,
+            required ? l10n.commonYesLabel : l10n.commonNoLabel,
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: req == 'Yes' ? Colors.red.shade700 : Theme.of(context).colorScheme.onSurfaceVariant,
+              color: required ? Colors.red.shade700 : Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ),
@@ -854,10 +860,11 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
   }
 
   Future<void> _importFromCSV() async {
+    final l10n = AppLocalizations.of(context)!;
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['csv'],
-      dialogTitle: 'Select Product CSV',
+      dialogTitle: l10n.productMgmtSelectCsvDialogTitle,
     );
     if (result == null || result.files.single.path == null || !mounted) return;
     setState(() => _isLoading = true);
@@ -877,7 +884,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
 
       final rows = const CsvToListConverter(eol: '\n').convert(content);
       if (rows.isEmpty) {
-        _showSnackBar('CSV file is empty.', isError: true);
+        _showSnackBar(l10n.customerMgmtCsvEmptyMessage, isError: true);
         if(!mounted) return;
         setState(() => _isLoading = false);
         return;
@@ -888,13 +895,13 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
           rows.first.map((h) => h.toString().trim().toLowerCase()).toList();
 
       if (!headers.contains('name')) {
-        _showSnackBar('CSV missing required column: "name"', isError: true);
+        _showSnackBar(l10n.customerMgmtCsvMissingNameColumnMessage, isError: true);
         if(!mounted) return;
         setState(() => _isLoading = false);
         return;
       }
       if (!headers.contains('price')) {
-        _showSnackBar('CSV missing required column: "price"', isError: true);
+        _showSnackBar(l10n.productMgmtCsvMissingPriceColumnMessage, isError: true);
         if(!mounted) return;
         setState(() => _isLoading = false);
         return;
@@ -902,7 +909,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
       for (final col in headers) {
         if (!_csvHeaders.contains(col)) {
           _showSnackBar(
-              'Unknown column "$col". Expected: ${_csvHeaders.join(', ')}',
+              l10n.customerMgmtUnknownColumnMessage(col, _csvHeaders.join(', ')),
               isError: true);
           if(!mounted) return;
           setState(() => _isLoading = false);
@@ -914,7 +921,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
 
       if (dataRows.length > _csvMaxRows) {
         _showSnackBar(
-            'CSV has ${dataRows.length} rows. Maximum is $_csvMaxRows. Please split the file.',
+            l10n.customerMgmtCsvTooManyRowsMessage(dataRows.length, _csvMaxRows),
             isError: true);
         if(!mounted) return;
         setState(() => _isLoading = false);
@@ -939,13 +946,13 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         barrierDismissible: false,
         builder: (ctx) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Importing Products'),
+          title: Text(l10n.productMgmtImportingTitle),
           content: ValueListenableBuilder<int>(
             valueListenable: progress,
             builder: (_, done, __) => Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Checking for duplicates and validating ${dataRows.length} row${dataRows.length == 1 ? '' : 's'}...'),
+                Text(l10n.customerMgmtValidatingRowsMessage(dataRows.length)),
                 const SizedBox(height: 16),
                 LinearProgressIndicator(
                   value: dataRows.isEmpty ? null : done / dataRows.length,
@@ -969,12 +976,12 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         final priceStr = getField(row, 'price');
 
         if (name.isEmpty) {
-          errors.add('Row ${i + 2}: missing name — skipped');
+          errors.add(l10n.customerMgmtRowMissingNameMessage(i + 2));
           continue;
         }
         final price = double.tryParse(priceStr);
         if (price == null || price < 0) {
-          errors.add('Row ${i + 2}: invalid price "$priceStr" — skipped');
+          errors.add(l10n.productMgmtRowInvalidPriceMessage(i + 2, priceStr));
           continue;
         }
 
@@ -1043,7 +1050,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         Navigator.of(context, rootNavigator: true).pop();
       }
       setState(() => _isLoading = false);
-      _showSnackBar('Error reading CSV: $e', isError: true);
+      _showSnackBar(l10n.customerMgmtCsvReadErrorMessage(e.toString()), isError: true);
     }
   }
 
@@ -1054,6 +1061,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     Map<String, ProductMetadata> metadataById,
   ) async {
     final overwriteFlags = List<bool>.filled(duplicates.length, false);
+    final l10n = AppLocalizations.of(context)!;
 
     await showDialog(
       context: context,
@@ -1064,7 +1072,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
               newProducts.length + overwriteFlags.where((f) => f).length;
 
           return AlertDialog(
-            title: const Text('Import Preview'),
+            title: Text(l10n.customerMgmtImportPreviewTitle),
             content: SizedBox(
               width: MediaQuery.of(context).size.width * 0.55,
               child: SingleChildScrollView(
@@ -1077,18 +1085,18 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                       runSpacing: 8,
                       children: [
                         Chip(
-                          label: Text('${newProducts.length} new'),
+                          label: Text(l10n.customerMgmtNewCountChip(newProducts.length)),
                           backgroundColor: Colors.green.shade100,
                           avatar: const Icon(Icons.add_box_outlined, size: 16),
                         ),
                         Chip(
-                          label: Text('${duplicates.length} duplicates'),
+                          label: Text(l10n.customerMgmtDuplicatesCountChip(duplicates.length)),
                           backgroundColor: Colors.orange.shade100,
                           avatar: const Icon(Icons.warning_amber, size: 16),
                         ),
                         if (errors.isNotEmpty)
                           Chip(
-                            label: Text('${errors.length} errors'),
+                            label: Text(l10n.customerMgmtErrorsCountChip(errors.length)),
                             backgroundColor: Colors.red.shade100,
                             avatar: const Icon(Icons.error_outline, size: 16),
                           ),
@@ -1098,9 +1106,9 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                       const SizedBox(height: 16),
                       Row(
                         children: [
-                          const Expanded(
-                            child: Text('Duplicates (matched by name):',
-                                style: TextStyle(fontWeight: FontWeight.bold)),
+                          Expanded(
+                            child: Text(l10n.productMgmtDuplicatesMatchedByNameLabel,
+                                style: const TextStyle(fontWeight: FontWeight.bold)),
                           ),
                           TextButton(
                             onPressed: () => setDialogState(() {
@@ -1108,7 +1116,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                                 overwriteFlags[i] = true;
                               }
                             }),
-                            child: const Text('Overwrite All'),
+                            child: Text(l10n.customerMgmtOverwriteAllButton),
                           ),
                           TextButton(
                             onPressed: () => setDialogState(() {
@@ -1116,7 +1124,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                                 overwriteFlags[i] = false;
                               }
                             }),
-                            child: const Text('Skip All'),
+                            child: Text(l10n.customerMgmtSkipAllButton),
                           ),
                         ],
                       ),
@@ -1133,15 +1141,15 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Text('Skip',
-                                    style: TextStyle(fontSize: 12)),
+                                Text(l10n.actionSkip,
+                                    style: const TextStyle(fontSize: 12)),
                                 Switch(
                                   value: overwriteFlags[i],
                                   onChanged: (v) => setDialogState(
                                       () => overwriteFlags[i] = v),
                                 ),
-                                const Text('Overwrite',
-                                    style: TextStyle(fontSize: 12)),
+                                Text(l10n.customerMgmtOverwriteLabel,
+                                    style: const TextStyle(fontSize: 12)),
                               ],
                             ),
                           ),
@@ -1150,20 +1158,20 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                     ],
                     if (errors.isNotEmpty) ...[
                       const SizedBox(height: 16),
-                      const Text('Skipped rows (errors):',
-                          style: TextStyle(
+                      Text(l10n.customerMgmtSkippedRowsLabel,
+                          style: const TextStyle(
                               fontWeight: FontWeight.bold, color: Colors.red)),
                       const SizedBox(height: 8),
                       ...errors.map((e) => Padding(
                             padding: const EdgeInsets.only(bottom: 4),
-                            child: Text('• $e',
+                            child: Text(l10n.customerMgmtErrorBulletLabel(e),
                                 style: const TextStyle(
                                     fontSize: 12, color: Colors.red)),
                           )),
                     ],
                     const SizedBox(height: 12),
                     Text(
-                      'Will import $total product${total == 1 ? '' : 's'}.',
+                      l10n.productMgmtWillImportMessage(total),
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ],
@@ -1173,7 +1181,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel'),
+                child: Text(l10n.actionCancel),
               ),
               FilledButton.icon(
                 onPressed: total == 0
@@ -1184,7 +1192,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                             newProducts, duplicates, overwriteFlags, metadataById);
                       },
                 icon: const Icon(Icons.upload),
-                label: Text('Import $total'),
+                label: Text(l10n.customerMgmtImportCountButton(total)),
               ),
             ],
           );
@@ -1200,6 +1208,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     Map<String, ProductMetadata> metadataById,
   ) async {
     if(!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
     setState(() => _isLoading = true);
     try {
       final repo = ref.read(productRepositoryProvider);
@@ -1220,40 +1229,36 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
       await _loadProducts();
       final imported =
           newProducts.length + overwriteFlags.where((f) => f).length;
-      _showSnackBar(
-          'Imported $imported product${imported == 1 ? '' : 's'} successfully!');
+      _showSnackBar(l10n.productMgmtImportedMessage(imported));
     } catch (e) {
       if(!mounted) return;
       setState(() => _isLoading = false);
-      _showSnackBar('Import error: $e', isError: true);
+      _showSnackBar(l10n.customerMgmtImportErrorMessage(e.toString()), isError: true);
     }
   }
 
   // ── Delete All ────────────────────────────────────────────────────────────
 
   Future<void> _confirmDeleteAll() async {
+    final l10n = AppLocalizations.of(context)!;
     if (_allProductsCount == 0) {
-      _showSnackBar('No products to delete.');
+      _showSnackBar(l10n.productMgmtNoProductsToDeleteMessage);
       return;
     }
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete All Products'),
-        content: Text(
-          'This will permanently delete all $_allProductsCount '
-          'product${_allProductsCount == 1 ? '' : 's'}. '
-          'Existing invoices are not affected. This cannot be undone.',
-        ),
+        title: Text(l10n.productMgmtDeleteAllTitle),
+        content: Text(l10n.productMgmtDeleteAllBody(_allProductsCount)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.actionCancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete All'),
+            child: Text(l10n.customerMgmtDeleteAllButton),
           ),
         ],
       ),
@@ -1263,15 +1268,16 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     try {
       await ref.read(productRepositoryProvider).deleteAllProducts();
       await _loadProducts();
-      _showSnackBar('All products deleted.');
+      _showSnackBar(l10n.productMgmtAllDeletedMessage);
     } catch (e) {
       if(!mounted) return;
       setState(() => _isLoading = false);
-      _showSnackBar('Error deleting products: $e', isError: true);
+      _showSnackBar(l10n.productMgmtDeleteAllErrorMessage(e.toString()), isError: true);
     }
   }
 
   Future<void> _exportToCSV() async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       final repo = ref.read(productRepositoryProvider);
       final allProducts = await repo.getAllProducts();
@@ -1307,40 +1313,41 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
       ];
       final csvData = buildQuotedCsv(rows);
       final savePath = await FilePicker.platform.saveFile(
-        dialogTitle: 'Save Products CSV',
+        dialogTitle: l10n.productMgmtSaveProductsCsvDialogTitle,
         fileName: 'products.csv',
         type: FileType.custom,
         allowedExtensions: ['csv'],
       );
       if (savePath == null) return;
       await File(savePath).writeAsBytes(utf8.encode('\uFEFF$csvData'));
-      _showSnackBar('CSV exported successfully!');
+      _showSnackBar(l10n.customerMgmtCsvExportedMessage);
     } catch (e) {
-      _showSnackBar('Error exporting CSV: $e', isError: true);
+      _showSnackBar(l10n.customerMgmtCsvExportErrorMessage(e.toString()), isError: true);
     }
   }
 
   Future<void> _exportToPDF() async {
+    final l10n = AppLocalizations.of(context)!;
     // Ask user: current page or all products
     final choice = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Export to PDF'),
+        title: Text(l10n.productMgmtExportToPdfTitle),
         content: Text(
-          'Export the current page ($_pageSize products) or all $_allProductsCount products?',
+          l10n.productMgmtExportPdfChoiceMessage(_pageSize, _allProductsCount),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(l10n.actionCancel),
           ),
           OutlinedButton(
             onPressed: () => Navigator.pop(ctx, 'page'),
-            child: const Text('Current Page'),
+            child: Text(l10n.productMgmtCurrentPageLabel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, 'all'),
-            child: const Text('All Products'),
+            child: Text(l10n.productMgmtAllProductsLabel),
           ),
         ],
       ),
@@ -1404,16 +1411,16 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
       );
 
       final savePath = await FilePicker.platform.saveFile(
-        dialogTitle: 'Save Products PDF',
+        dialogTitle: l10n.productMgmtSaveProductsPdfDialogTitle,
         fileName: 'products.pdf',
         type: FileType.custom,
         allowedExtensions: ['pdf'],
       );
       if (savePath == null) return;
       await File(savePath).writeAsBytes(await pdf.save());
-      _showSnackBar('PDF exported successfully!');
+      _showSnackBar(l10n.customerMgmtPdfExportedMessage);
     } catch (e) {
-      _showSnackBar('Error exporting PDF: $e', isError: true);
+      _showSnackBar(l10n.customerMgmtPdfExportErrorMessage(e.toString()), isError: true);
     }
   }
 
@@ -1444,7 +1451,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
       });
       _applyClientFilterV2();
     } catch (e) {
-      _showSnackBar('Error loading products: $e', isError: true);
+      if (!mounted) return;
+      _showSnackBar(AppLocalizations.of(context)!.productMgmtLoadErrorMessage(e.toString()), isError: true);
     } finally {
       if (mounted) setState(() => _statsLoadingV2 = false);
     }
@@ -1691,32 +1699,33 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
   }
 
   Widget _statCardsRowV2() {
+    final l10n = AppLocalizations.of(context)!;
     final cards = [
       _statCardV2(
-        label: 'All Products',
+        label: l10n.productMgmtAllProductsLabel,
         value: '$_allCountV2',
-        subtitle: 'Total items',
+        subtitle: l10n.productMgmtTotalItemsSubtitle,
         icon: Icons.inventory_2_outlined,
         accent: Theme.of(context).primaryColor,
       ),
       _statCardV2(
-        label: 'Products',
+        label: l10n.navProducts,
         value: '$_productsCountV2',
-        subtitle: 'Tangible products',
+        subtitle: l10n.productMgmtTangibleProductsSubtitle,
         icon: Icons.widgets_outlined,
         accent: Colors.green,
       ),
       _statCardV2(
-        label: 'Services',
+        label: l10n.productMgmtServicesTabLabel,
         value: '$_servicesCountV2',
-        subtitle: 'Non-tangible services',
+        subtitle: l10n.productMgmtNonTangibleServicesSubtitle,
         icon: Icons.design_services_outlined,
         accent: Colors.orange,
       ),
       _statCardV2(
-        label: 'Low Stock',
+        label: l10n.productMgmtLowStockTabLabel,
         value: '$_lowStockCountV2',
-        subtitle: 'Need attention',
+        subtitle: l10n.productMgmtNeedAttentionSubtitle,
         icon: Icons.warning_amber_rounded,
         accent: Colors.red,
       ),
@@ -1753,14 +1762,14 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Product Management',
+              Text(AppLocalizations.of(context)!.productMgmtTitle,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
                       color: Theme.of(context).colorScheme.onSurface)),
               const SizedBox(height: 2),
-              Text('Manage your products and services',
+              Text(AppLocalizations.of(context)!.productMgmtSubtitle,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                       fontSize: 13,
@@ -1781,16 +1790,16 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                 await _loadStatsV2();
               },
               icon: const Icon(Icons.upload_file_outlined, size: 16),
-              label: const Text('Import'),
+              label: Text(AppLocalizations.of(context)!.actionImport),
             ),
             OutlinedButton.icon(
               onPressed: _exportToCSV,
               icon: const Icon(Icons.file_download_outlined, size: 16),
-              label: const Text('Export'),
+              label: Text(AppLocalizations.of(context)!.actionExport),
             ),
             if (widget.user.isAdmin())
               PopupMenuButton<String>(
-                tooltip: 'More actions',
+                tooltip: AppLocalizations.of(context)!.invoiceMgmtMoreActionsTooltip,
                 onSelected: (value) async {
                   if (value == 'export_pdf') await _exportToPDF();
                   if (value == 'delete_all') {
@@ -1799,29 +1808,30 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                   }
                 },
                 itemBuilder: (ctx) => [
-                  const PopupMenuItem<String>(
+                  PopupMenuItem<String>(
                     value: 'export_pdf',
                     child: Row(
                       children: [
-                        Icon(Icons.picture_as_pdf_outlined, size: 18),
-                        SizedBox(width: 8),
-                        Text('Export PDF'),
+                        const Icon(Icons.picture_as_pdf_outlined, size: 18),
+                        const SizedBox(width: 8),
+                        Text(AppLocalizations.of(context)!.customerMgmtExportPdfMenuLabel),
                       ],
                     ),
                   ),
-                  const PopupMenuItem<String>(
+                  PopupMenuItem<String>(
                     value: 'delete_all',
                     child: Row(
                       children: [
-                        Icon(Icons.delete_sweep, color: Colors.red, size: 18),
-                        SizedBox(width: 8),
-                        Text('Delete All Products',
-                            style: TextStyle(color: Colors.red)),
+                        const Icon(Icons.delete_sweep, color: Colors.red, size: 18),
+                        const SizedBox(width: 8),
+                        Text(AppLocalizations.of(context)!.productMgmtDeleteAllTitle,
+                            style: const TextStyle(color: Colors.red)),
                       ],
                     ),
                   ),
                 ],
-                child: _menuButtonLookV2(Icons.more_horiz, 'More'),
+                child: _menuButtonLookV2(
+                    Icons.more_horiz, AppLocalizations.of(context)!.commonMoreLabel),
               ),
             IconButton(
               onPressed: _statsLoadingV2
@@ -1835,7 +1845,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2))
                   : const Icon(Icons.refresh),
-              tooltip: 'Refresh',
+              tooltip: AppLocalizations.of(context)!.actionRefresh,
             ),
             FilledButton.icon(
               onPressed: () {
@@ -1845,7 +1855,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                 });
               },
               icon: const Icon(Icons.add, size: 18),
-              label: const Text('New Product'),
+              label: Text(AppLocalizations.of(context)!.productMgmtNewProductButton),
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
                 shape: RoundedRectangleBorder(
@@ -1860,13 +1870,14 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
   }
 
   Widget _searchFilterRowV2() {
-    const sortOptions = [
-      {'label': 'Name A-Z', 'field': 'name', 'asc': true},
-      {'label': 'Name Z-A', 'field': 'name', 'asc': false},
-      {'label': 'Price Low-High', 'field': 'price', 'asc': true},
-      {'label': 'Price High-Low', 'field': 'price', 'asc': false},
-      {'label': 'Stock Low-High', 'field': 'stock', 'asc': true},
-      {'label': 'Stock High-Low', 'field': 'stock', 'asc': false},
+    final l10n = AppLocalizations.of(context)!;
+    final sortOptions = [
+      {'label': l10n.customerMgmtSortNameAZ, 'field': 'name', 'asc': true},
+      {'label': l10n.customerMgmtSortNameZA, 'field': 'name', 'asc': false},
+      {'label': l10n.productMgmtSortPriceLowHigh, 'field': 'price', 'asc': true},
+      {'label': l10n.productMgmtSortPriceHighLow, 'field': 'price', 'asc': false},
+      {'label': l10n.productMgmtSortStockLowHigh, 'field': 'stock', 'asc': true},
+      {'label': l10n.productMgmtSortStockHighLow, 'field': 'stock', 'asc': false},
     ];
     final currentLabel = sortOptions.firstWhere(
       (o) => o['field'] == _sortBy && o['asc'] == _isAscending,
@@ -1880,7 +1891,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
             focusNode: _searchFocusNode,
             onChanged: _onSearchChangedV2,
             decoration: InputDecoration(
-              hintText: 'Search products by name, alias, HSN/SAC, SKU…',
+              hintText: l10n.productMgmtSearchHint,
               prefixIcon: const Icon(Icons.search, size: 20),
               isDense: true,
               contentPadding:
@@ -1905,7 +1916,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
             runSpacing: 8,
             children: [
               PopupMenuButton<String>(
-                tooltip: 'Filter by stock status',
+                tooltip: l10n.productMgmtFilterByStockStatusTooltip,
                 onSelected: (value) {
                   if (!mounted) return;
                   setState(() {
@@ -1920,30 +1931,33 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                   _applyClientFilterV2();
                 },
                 itemBuilder: (ctx) => [
-                  const PopupMenuItem(value: 'all', child: Text('All stock levels')),
-                  const PopupMenuItem(value: 'low', child: Text('Low stock')),
-                  const PopupMenuItem(value: 'out', child: Text('Out of stock')),
+                  PopupMenuItem(value: 'all', child: Text(l10n.productMgmtAllStockLevelsLabel)),
+                  PopupMenuItem(value: 'low', child: Text(l10n.productMgmtLowStockLabel)),
+                  PopupMenuItem(value: 'out', child: Text(l10n.productMgmtOutOfStockLabel)),
                   if (_columnsConfig.productMetadata && _columnsConfig.metaExpiryDate)
-                    const PopupMenuItem(value: 'expired', child: Text('Expired')),
+                    PopupMenuItem(value: 'expired', child: Text(l10n.productMgmtExpiredLabel)),
                 ],
-                child: _menuButtonLookV2(Icons.filter_list, 'Filter'),
+                child: _menuButtonLookV2(Icons.filter_list, l10n.invoiceMgmtFilterLabel),
               ),
               PopupMenuButton<Map<String, Object>>(
-                tooltip: 'Sort',
+                tooltip: l10n.invoiceMgmtSortLabel,
                 onSelected: (opt) =>
                     _onSortSelectionV2(opt['field'] as String, opt['asc'] as bool),
                 itemBuilder: (ctx) => sortOptions
                     .map((o) => PopupMenuItem(value: o, child: Text(o['label'] as String)))
                     .toList(),
-                child: _menuButtonLookV2(Icons.swap_vert, 'Sort: $currentLabel'),
+                child: _menuButtonLookV2(
+                    Icons.swap_vert, l10n.customerMgmtSortWithLabel(currentLabel)),
               ),
               OutlinedButton.icon(
                 onPressed: _openColumnsSettingsV2,
                 icon: const Icon(Icons.view_column_outlined, size: 16),
-                label: const Text('Columns'),
+                label: Text(l10n.customerMgmtColumnsLabel),
               ),
               IconButton(
-                tooltip: _showStatsCardsV2 ? 'Hide stat cards' : 'Show stat cards',
+                tooltip: _showStatsCardsV2
+                    ? l10n.customerMgmtHideStatCardsTooltip
+                    : l10n.customerMgmtShowStatCardsTooltip,
                 onPressed: _toggleStatsCardsV2,
                 icon: Icon(
                   _showStatsCardsV2 ? Icons.visibility_outlined : Icons.visibility_off_outlined,
@@ -1974,23 +1988,24 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         ),
-        child: Text('$label ($count)'),
+        child: Text(AppLocalizations.of(context)!.customerMgmtTabChipLabel(label, count)),
       ),
     );
   }
 
   Widget _tabsRowV2() {
+    final l10n = AppLocalizations.of(context)!;
     final showExpiredTab = _columnsConfig.productMetadata && _columnsConfig.metaExpiryDate;
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          _tabChipV2('All', _allCountV2, 0),
-          _tabChipV2('Products', _productsCountV2, 1),
-          _tabChipV2('Services', _servicesCountV2, 2),
-          _tabChipV2('Low Stock', _lowStockCountV2, 3),
-          _tabChipV2('Out of Stock', _outOfStockCountV2, 4),
-          if (showExpiredTab) _tabChipV2('Expired', _expiredCountV2, 5),
+          _tabChipV2(l10n.invoiceMgmtStatusAllLabel, _allCountV2, 0),
+          _tabChipV2(l10n.navProducts, _productsCountV2, 1),
+          _tabChipV2(l10n.productMgmtServicesTabLabel, _servicesCountV2, 2),
+          _tabChipV2(l10n.productMgmtLowStockTabLabel, _lowStockCountV2, 3),
+          _tabChipV2(l10n.productMgmtOutOfStockTabLabel, _outOfStockCountV2, 4),
+          if (showExpiredTab) _tabChipV2(l10n.productMgmtExpiredLabel, _expiredCountV2, 5),
         ],
       ),
     );
@@ -2006,7 +2021,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
-        isService ? 'Service' : 'Product',
+        isService ? AppLocalizations.of(context)!.labelService : AppLocalizations.of(context)!.labelProduct,
         style: TextStyle(
             fontSize: 11, fontWeight: FontWeight.w700, color: color.shade700),
       ),
@@ -2136,13 +2151,13 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                   icon: const Icon(Icons.visibility_outlined, size: 18),
                   visualDensity: VisualDensity.compact,
                   onPressed: () => _viewProductV2(p),
-                  tooltip: 'View',
+                  tooltip: AppLocalizations.of(context)!.actionView,
                 ),
                 IconButton(
                   icon: const Icon(Icons.edit_outlined, size: 18),
                   visualDensity: VisualDensity.compact,
                   onPressed: () => _editProductV2(p),
-                  tooltip: 'Edit',
+                  tooltip: AppLocalizations.of(context)!.actionEdit,
                 ),
                 if (widget.user.isAdmin())
                   IconButton(
@@ -2150,7 +2165,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                     visualDensity: VisualDensity.compact,
                     color: Theme.of(context).colorScheme.error,
                     onPressed: () => _deleteProductV2(p),
-                    tooltip: 'Delete',
+                    tooltip: AppLocalizations.of(context)!.actionDelete,
                   ),
               ],
             ),
@@ -2161,6 +2176,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
   }
 
   Widget _tableHeaderRowV2() {
+    final l10n = AppLocalizations.of(context)!;
     TextStyle style = TextStyle(
         fontSize: 11,
         fontWeight: FontWeight.w700,
@@ -2175,16 +2191,16 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
       ),
       child: Row(
         children: [
-          SizedBox(width: 56, child: Text('SL. NO.', style: style)),
-          Expanded(flex: 3, child: Text('NAME / ALIAS', style: style)),
-          if (_columnsConfig.hsncode) Expanded(flex: 2, child: Text('HSN / SAC', style: style)),
-          Expanded(flex: 2, child: Text('PRICE', style: style)),
+          SizedBox(width: 56, child: Text(l10n.productMgmtColSlNo, style: style)),
+          Expanded(flex: 3, child: Text(l10n.productMgmtColNameAlias, style: style)),
+          if (_columnsConfig.hsncode) Expanded(flex: 2, child: Text(l10n.productMgmtColHsnSac, style: style)),
+          Expanded(flex: 2, child: Text(l10n.productMgmtColPrice, style: style)),
           if (_columnsConfig.purchasePrice)
-            Expanded(flex: 2, child: Text('PURCHASE', style: style)),
-          if (_columnsConfig.stock) Expanded(flex: 1, child: Text('STOCK', style: style)),
-          if (_columnsConfig.taxRate) Expanded(flex: 1, child: Text('TAX %', style: style)),
+            Expanded(flex: 2, child: Text(l10n.productMgmtColPurchase, style: style)),
+          if (_columnsConfig.stock) Expanded(flex: 1, child: Text(l10n.productMgmtColStock, style: style)),
+          if (_columnsConfig.taxRate) Expanded(flex: 1, child: Text(l10n.productMgmtColTaxPercent, style: style)),
           if (_columnsConfig.productMetadata && _columnsConfig.metaExpiryDate)
-            Expanded(flex: 2, child: Text('EXPIRY DATE', style: style)),
+            Expanded(flex: 2, child: Text(l10n.productMgmtColExpiryDate, style: style)),
           SizedBox(width: 116, child: Text('', style: style)),
         ],
       ),
@@ -2226,6 +2242,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
   }
 
   Widget _paginationV2(int totalPages) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
@@ -2246,8 +2263,10 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
           Text(
-            'Showing ${_totalProducts == 0 ? 0 : _currentPage * _pageSize + 1} to '
-            '${(_currentPage * _pageSize + _pageSize).clamp(0, _totalProducts)} of $_totalProducts products',
+            l10n.productMgmtShowingRangeLabel(
+                _totalProducts == 0 ? 0 : _currentPage * _pageSize + 1,
+                (_currentPage * _pageSize + _pageSize).clamp(0, _totalProducts),
+                _totalProducts),
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
                 fontSize: 12.5, color: Theme.of(context).colorScheme.onSurfaceVariant),
@@ -2256,7 +2275,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Rows per page',
+              Text(l10n.customerMgmtRowsPerPageLabel,
                   style: TextStyle(
                       fontSize: 12.5,
                       color: Theme.of(context).colorScheme.onSurfaceVariant)),
@@ -2297,7 +2316,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               ),
               const SizedBox(width: 4),
-              Text('of $totalPages',
+              Text(l10n.customerMgmtOfTotalPagesLabel(totalPages),
                   style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
               IconButton(
                 onPressed: _currentPage < totalPages - 1
@@ -2323,39 +2342,39 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
   // the View/Edit dialog (General / Pricing / Inventory / Advanced
   // Information) instead of the old Basic Information / Advanced tabs.
   Widget _addPanelFormV2() {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionLabelV2('General'),
-        _buildFormField(_nameController, 'Name', Icons.inventory_2,
+        _sectionLabelV2(l10n.productMgmtSectionGeneral),
+        _buildFormField(_nameController, l10n.fieldNameLabel, Icons.inventory_2,
             maxLength: 100, onSubmitted: _addProductV2),
         if (_columnsConfig.aliasName) ...[
           const SizedBox(height: 16),
           _buildFormField(_aliasNameController,
-              'Alias Name (for invoice PDF)', Icons.translate,
+              l10n.productMgmtAliasNameLabel, Icons.translate,
               maxLength: 100,
               required: false,
-              helperText:
-                  'Optional local-language display name used only on PDF invoices.'),
+              helperText: l10n.productMgmtAliasHelperText),
         ],
         if (_columnsConfig.description) ...[
           const SizedBox(height: 16),
           _buildFormField(
-              _descriptionController, 'Description', Icons.description,
+              _descriptionController, l10n.productMgmtDescriptionLabel, Icons.description,
               maxLines: 3, maxLength: 500, required: false),
         ],
         if (_columnsConfig.hsncode) ...[
           const SizedBox(height: 16),
-          _buildFormField(_hsnCodeController, 'HSN/SAC', Icons.qr_code,
+          _buildFormField(_hsnCodeController, l10n.productMgmtHsnSacLabel, Icons.qr_code,
               maxLength: 100, required: false),
         ],
         const SizedBox(height: 20),
-        _sectionLabelV2('Pricing'),
+        _sectionLabelV2(l10n.productMgmtSectionPricing),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: _buildFormField(_priceController, 'Sale Price', Icons.attach_money,
+              child: _buildFormField(_priceController, l10n.productMgmtSalePriceLabel, Icons.attach_money,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   isPrice: true,
                   prefixText: '$_currencySymbol ',
@@ -2365,7 +2384,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
               const SizedBox(width: 12),
               Expanded(
                 child: _buildFormField(
-                    _purchasePriceController, 'Purchase Price', Icons.shopping_cart_outlined,
+                    _purchasePriceController, l10n.productMgmtPurchasePriceLabel, Icons.shopping_cart_outlined,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     isPrice: true,
                     required: _newItemType != 'service',
@@ -2377,7 +2396,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         if (_columnsConfig.defaultDiscount) ...[
           const SizedBox(height: 16),
           _buildFormField(
-              _defaultDiscountController, 'Default Discount', Icons.discount,
+              _defaultDiscountController, l10n.productMgmtDefaultDiscountLabel, Icons.discount,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               isPrice: true,
               required: false,
@@ -2389,7 +2408,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
-                child: _buildFormField(_taxRateController, 'Tax (%)', Icons.percent,
+                child: _buildFormField(_taxRateController, l10n.productMgmtTaxPercentLabel, Icons.percent,
                     keyboardType: TextInputType.number, isTaxRate: true),
               ),
               const SizedBox(width: 12),
@@ -2405,7 +2424,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                       },
                     ),
                     Flexible(
-                      child: Text('Price includes tax',
+                      child: Text(l10n.fieldPriceIncludesTaxLabel,
                           overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.bodyMedium),
                     ),
@@ -2416,7 +2435,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
           ),
           Padding(
             padding: const EdgeInsets.only(left: 4),
-            child: Text('Per-item tax mode only',
+            child: Text(l10n.productMgmtPerItemTaxModeOnlyLabel,
                 style: TextStyle(
                     fontSize: 11.5,
                     color: Theme.of(context).colorScheme.onSurfaceVariant)),
@@ -2424,13 +2443,13 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         ],
         if (_columnsConfig.stock || _columnsConfig.unit) ...[
           const SizedBox(height: 12),
-          _sectionLabelV2('Inventory'),
+          _sectionLabelV2(l10n.productMgmtSectionInventory),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (_columnsConfig.stock)
                 Expanded(
-                  child: _buildFormField(_stockController, 'Stock', Icons.inventory,
+                  child: _buildFormField(_stockController, l10n.labelStock, Icons.inventory,
                       keyboardType: TextInputType.number,
                       isStock: true,
                       required: !_unlimitedStock,
@@ -2460,8 +2479,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                 if (!mounted) return;
                 setState(() => _unlimitedStock = v ?? false);
               },
-              title: const Text('Unlimited stock'),
-              subtitle: const Text('Track infinite stock for this product'),
+              title: Text(l10n.productMgmtUnlimitedStockLabel),
+              subtitle: Text(l10n.productMgmtTrackInfiniteStockSubtitle),
             ),
         ],
         if (_columnsConfig.productMetadata) ...[
@@ -2500,7 +2519,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
               const Icon(Icons.lightbulb_outline, size: 16, color: Colors.amber),
               const SizedBox(width: 8),
               Expanded(
-                child: Text('Tip: Enable custom fields from Columns to add more details.',
+                child: Text(l10n.productMgmtTipEnableCustomFieldsMessage,
                     style: TextStyle(
                         fontSize: 12,
                         color: Theme.of(context).colorScheme.onSurfaceVariant)),
@@ -2516,6 +2535,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     // Width is now controlled by the Positioned wrapper in _buildV2 (fixed
     // 400 on wide screens, screen-width-minus-margins on narrow ones), so
     // this no longer hardcodes its own width.
+    final l10n = AppLocalizations.of(context)!;
     final showTypeToggle = _businessType == BusinessType.both && _columnsConfig.type;
     return Container(
       decoration: _flatCardDecorationV2(context),
@@ -2532,11 +2552,14 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Add New ${_newItemType == 'service' ? 'Service' : 'Product'}',
+                      Text(
+                          l10n.productMgmtAddNewItemTitle(_newItemType == 'service'
+                              ? l10n.labelService
+                              : l10n.labelProduct),
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
                       const SizedBox(height: 2),
-                      Text('Enter product details',
+                      Text(l10n.productMgmtEnterProductDetailsSubtitle,
                           style: TextStyle(
                               fontSize: 12,
                               color: Theme.of(context).colorScheme.onSurfaceVariant)),
@@ -2546,15 +2569,15 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                 if (showTypeToggle) ...[
                   const SizedBox(width: 8),
                   SegmentedButton<String>(
-                    segments: const [
+                    segments: [
                       ButtonSegment(
                           value: 'product',
-                          label: Text('Product'),
-                          icon: Icon(Icons.inventory_2_outlined, size: 14)),
+                          label: Text(l10n.labelProduct),
+                          icon: const Icon(Icons.inventory_2_outlined, size: 14)),
                       ButtonSegment(
                           value: 'service',
-                          label: Text('Service'),
-                          icon: Icon(Icons.design_services_outlined, size: 14)),
+                          label: Text(l10n.labelService),
+                          icon: const Icon(Icons.design_services_outlined, size: 14)),
                     ],
                     selected: {_newItemType},
                     onSelectionChanged: (val) {
@@ -2601,7 +2624,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                       onChanged: (v) => setState(
                           () => _addAnotherAfterSavingV2 = v ?? false),
                     ),
-                    const Expanded(child: Text('Add another after saving')),
+                    Expanded(child: Text(l10n.customerMgmtAddAnotherLabel)),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -2613,7 +2636,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                           _clearForm();
                           setState(() => _showAddPanelV2 = false);
                         },
-                        child: const Text('Cancel'),
+                        child: Text(l10n.actionCancel),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -2628,7 +2651,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                                 child: CircularProgressIndicator(
                                     strokeWidth: 2, color: Colors.white))
                             : const Icon(Icons.save_outlined, size: 18),
-                        label: const Text('Save Product'),
+                        label: Text(l10n.productMgmtSaveProductButton),
                       ),
                     ),
                   ],
@@ -2654,6 +2677,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     final metadata =
         await ref.read(productRepositoryProvider).getProductMetadata(product.id);
     if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
 
     final nameCtrl = TextEditingController(text: product.name);
     final aliasCtrl = TextEditingController(text: product.aliasName ?? '');
@@ -2718,6 +2742,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
             bool isPrice = false,
             bool isStock = false,
             bool isTaxRate = false,
+            bool isRequired = false,
             String? prefixText,
           }) {
             return _buildDialogTextField(
@@ -2731,6 +2756,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
               isPrice: isPrice,
               isStock: isStock,
               isTaxRate: isTaxRate,
+              isRequired: isRequired,
               prefixText: prefixText,
             );
           }
@@ -2790,7 +2816,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                   );
               await _loadStatsV2();
               if (dialogContext.mounted) Navigator.pop(dialogContext);
-              _showSnackBar('Product/Service updated successfully!');
+              _showSnackBar(l10n.productMgmtUpdatedMessage);
             } finally {
               setDialogState(() => isSaving = false);
             }
@@ -2820,11 +2846,13 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(isEdit ? 'Edit Product' : 'View Product',
+                              Text(isEdit ? l10n.productMgmtEditProductTitle : l10n.productMgmtViewProductTitle,
                                   style: const TextStyle(
                                       fontSize: 16, fontWeight: FontWeight.w800)),
                               const SizedBox(height: 2),
-                              Text(isEdit ? 'Update product details' : 'Product details',
+                              Text(isEdit
+                                      ? l10n.productMgmtUpdateProductDetailsSubtitle
+                                      : l10n.productMgmtProductDetailsSubtitle,
                                   style: TextStyle(
                                       fontSize: 12,
                                       color:
@@ -2836,16 +2864,16 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                           const SizedBox(width: 8),
                           if (isEdit)
                             SegmentedButton<String>(
-                              segments: const [
+                              segments: [
                                 ButtonSegment(
                                     value: 'product',
-                                    label: Text('Product'),
-                                    icon: Icon(Icons.inventory_2_outlined, size: 14)),
+                                    label: Text(l10n.labelProduct),
+                                    icon: const Icon(Icons.inventory_2_outlined, size: 14)),
                                 ButtonSegment(
                                     value: 'service',
-                                    label: Text('Service'),
+                                    label: Text(l10n.labelService),
                                     icon:
-                                        Icon(Icons.design_services_outlined, size: 14)),
+                                        const Icon(Icons.design_services_outlined, size: 14)),
                               ],
                               selected: {itemType},
                               onSelectionChanged: (val) =>
@@ -2858,7 +2886,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                                       ? Icons.design_services_outlined
                                       : Icons.inventory_2_outlined,
                                   size: 14),
-                              label: Text(itemType == 'service' ? 'Service' : 'Product'),
+                              label: Text(itemType == 'service' ? l10n.labelService : l10n.labelProduct),
                             ),
                         ],
                         IconButton(
@@ -2876,19 +2904,19 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            sectionLabel('General'),
+                            sectionLabel(l10n.productMgmtSectionGeneral),
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Expanded(
-                                  child: field(nameCtrl, 'Product Name',
-                                      Icons.inventory_2, maxLength: 100),
+                                  child: field(nameCtrl, l10n.productMgmtProductNameLabel,
+                                      Icons.inventory_2, maxLength: 100, isRequired: true),
                                 ),
                                 if (_columnsConfig.aliasName) ...[
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: field(aliasCtrl,
-                                        'Alias Name (for invoice PDF)', Icons.translate,
+                                        l10n.productMgmtAliasNameLabel, Icons.translate,
                                         maxLength: 100),
                                   ),
                                 ],
@@ -2896,34 +2924,36 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                             ),
                             if (_columnsConfig.description) ...[
                               const SizedBox(height: 16),
-                              field(descCtrl, 'Description', Icons.description,
+                              field(descCtrl, l10n.productMgmtDescriptionLabel, Icons.description,
                                   maxLines: 3, maxLength: 500),
                             ],
                             if (_columnsConfig.hsncode) ...[
                               const SizedBox(height: 16),
-                              field(hsnCtrl, 'HSN / SAC', Icons.qr_code, maxLength: 100),
+                              field(hsnCtrl, l10n.productMgmtColHsnSac, Icons.qr_code, maxLength: 100),
                             ],
                             const SizedBox(height: 20),
-                            sectionLabel('Pricing'),
+                            sectionLabel(l10n.productMgmtSectionPricing),
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Expanded(
-                                  child: field(priceCtrl, 'Price', Icons.attach_money,
+                                  child: field(priceCtrl, l10n.productMgmtPriceLabel, Icons.attach_money,
                                       keyboardType: const TextInputType.numberWithOptions(
                                           decimal: true),
                                       isPrice: true,
+                                      isRequired: true,
                                       prefixText: '$_currencySymbol '),
                                 ),
                                 if (_columnsConfig.purchasePrice) ...[
                                   const SizedBox(width: 12),
                                   Expanded(
-                                    child: field(purchaseCtrl, 'Purchase Price',
+                                    child: field(purchaseCtrl, l10n.productMgmtPurchasePriceLabel,
                                         Icons.shopping_cart_outlined,
                                         keyboardType:
                                             const TextInputType.numberWithOptions(
                                                 decimal: true),
                                         isPrice: true,
+                                        isRequired: true,
                                         prefixText: '$_currencySymbol '),
                                   ),
                                 ],
@@ -2931,7 +2961,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                             ),
                             if (_columnsConfig.defaultDiscount) ...[
                               const SizedBox(height: 16),
-                              field(discountCtrl, 'Default Discount', Icons.discount,
+                              field(discountCtrl, l10n.productMgmtDefaultDiscountLabel, Icons.discount,
                                   keyboardType:
                                       const TextInputType.numberWithOptions(decimal: true),
                                   isPrice: true,
@@ -2944,9 +2974,10 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                                 children: [
                                   Expanded(
                                     child: field(
-                                        taxCtrl, 'Tax Rate (%)', Icons.percent,
+                                        taxCtrl, l10n.fieldTaxRateLabel, Icons.percent,
                                         keyboardType: TextInputType.number,
-                                        isTaxRate: true),
+                                        isTaxRate: true,
+                                        isRequired: true),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
@@ -2961,7 +2992,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                                                   () => priceIncludesTax = v ?? false),
                                         ),
                                         Flexible(
-                                          child: Text('Price includes tax',
+                                          child: Text(l10n.fieldPriceIncludesTaxLabel,
                                               overflow: TextOverflow.ellipsis,
                                               style: Theme.of(dialogContext)
                                                   .textTheme
@@ -2974,7 +3005,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                               ),
                               Padding(
                                 padding: const EdgeInsets.only(left: 4, top: 2),
-                                child: Text('Per-item tax mode only',
+                                child: Text(l10n.productMgmtPerItemTaxModeOnlyLabel,
                                     style: TextStyle(
                                         fontSize: 11.5,
                                         color:
@@ -2983,15 +3014,16 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                             ],
                             if (_columnsConfig.stock || _columnsConfig.unit) ...[
                               const SizedBox(height: 12),
-                              sectionLabel('Inventory'),
+                              sectionLabel(l10n.productMgmtSectionInventory),
                               Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   if (_columnsConfig.stock)
                                     Expanded(
-                                      child: field(stockCtrl, 'Stock', Icons.inventory,
+                                      child: field(stockCtrl, l10n.labelStock, Icons.inventory,
                                           keyboardType: TextInputType.number,
-                                          isStock: !unlimitedStock),
+                                          isStock: !unlimitedStock,
+                                          isRequired: !unlimitedStock),
                                     ),
                                   if (_columnsConfig.stock && _columnsConfig.unit)
                                     const SizedBox(width: 12),
@@ -3016,9 +3048,9 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                                       ? null
                                       : (v) => setDialogState(
                                           () => unlimitedStock = v ?? false),
-                                  title: const Text('Unlimited stock'),
+                                  title: Text(l10n.productMgmtUnlimitedStockLabel),
                                   subtitle:
-                                      const Text('Track infinite stock for this product'),
+                                      Text(l10n.productMgmtTrackInfiniteStockSubtitle),
                                 ),
                             ],
                             if (_columnsConfig.productMetadata) ...[
@@ -3059,7 +3091,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
-                                          'Tip: Enable custom fields from Columns to add more details.',
+                                          l10n.productMgmtTipEnableCustomFieldsMessage,
                                           style: TextStyle(
                                               fontSize: 12,
                                               color: Theme.of(dialogContext)
@@ -3093,8 +3125,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                             },
                             icon: const Icon(Icons.delete_outline,
                                 size: 18, color: Colors.red),
-                            label: const Text('Delete Product',
-                                style: TextStyle(color: Colors.red)),
+                            label: Text(l10n.productMgmtDeleteProductButton,
+                                style: const TextStyle(color: Colors.red)),
                             style: OutlinedButton.styleFrom(
                               side: const BorderSide(color: Colors.red),
                             ),
@@ -3103,7 +3135,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                         if (isEdit) ...[
                           OutlinedButton(
                             onPressed: () => Navigator.pop(dialogContext),
-                            child: const Text('Cancel'),
+                            child: Text(l10n.actionCancel),
                           ),
                           const SizedBox(width: 12),
                           FilledButton.icon(
@@ -3115,18 +3147,18 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                                     child: CircularProgressIndicator(
                                         strokeWidth: 2, color: Colors.white))
                                 : const Icon(Icons.save_outlined, size: 18),
-                            label: const Text('Save Changes'),
+                            label: Text(l10n.productMgmtSaveChangesButton),
                           ),
                         ] else ...[
                           OutlinedButton(
                             onPressed: () => Navigator.pop(dialogContext),
-                            child: const Text('Close'),
+                            child: Text(l10n.actionClose),
                           ),
                           const SizedBox(width: 12),
                           FilledButton.icon(
                             onPressed: () => setDialogState(() => isEdit = true),
                             icon: const Icon(Icons.edit_outlined, size: 18),
-                            label: const Text('Edit'),
+                            label: Text(l10n.actionEdit),
                           ),
                         ],
                       ],
@@ -3140,7 +3172,10 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         });
       },
     );
-    disposeAll();
+    // showDialog's future completes on Navigator.pop, before the dialog's
+    // close (exit) animation finishes rebuilding the still-mounted subtree.
+    // Delay disposal past that or the fields get used-after-dispose.
+    Future.delayed(const Duration(milliseconds: 300), disposeAll);
   }
 
 
@@ -3264,6 +3299,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     bool enabled = true,
     VoidCallback? onSubmitted,
   }) {
+    final l10n = AppLocalizations.of(context)!;
     return TextFormField(
       controller: controller,
       enabled: enabled,
@@ -3310,20 +3346,20 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
       validator: (value) {
         if (!required) return null;
         if (value == null || value.trim().isEmpty) {
-          return 'Please enter $label';
+          return l10n.fieldRequiredMessage(label);
         }
         if (isPrice) {
           final price = double.tryParse(value);
-          if (price == null || price < 0) return 'Enter valid price';
+          if (price == null || price < 0) return l10n.fieldEnterValidPriceMessage;
         }
         if (isStock) {
           final stock = int.tryParse(value);
-          if (stock == null || stock < 0) return 'Enter valid stock';
+          if (stock == null || stock < 0) return l10n.fieldEnterValidStockMessage;
         }
         if (isTaxRate) {
           final tax = int.tryParse(value);
           if (tax == null || tax < 0 || tax > 100) {
-            return 'Tax must be between 0-100';
+            return l10n.fieldTaxRangeMessage;
           }
         }
         return null;
@@ -3340,14 +3376,14 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
               size: 80, color: Theme.of(context).colorScheme.outlineVariant),
           const SizedBox(height: 16),
           Text(
-            'No products found',
+            AppLocalizations.of(context)!.createInvoiceNoProductsFoundMessage,
             style: TextStyle(fontSize: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
           const SizedBox(height: 8),
           Text(
             _searchQuery.isEmpty
-                ? 'Add your first product to get started'
-                : 'Try adjusting your search',
+                ? AppLocalizations.of(context)!.productMgmtAddFirstProductSubtitle
+                : AppLocalizations.of(context)!.customerMgmtTryAdjustingSearchSubtitle,
             style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ],
@@ -3406,13 +3442,14 @@ class _UnitFieldState extends State<_UnitField> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         DropdownButtonFormField<String>(
           value: _isCustom ? 'custom' : _presetValue,
           decoration: InputDecoration(
-            labelText: 'Unit',
+            labelText: l10n.fieldUnitLabel,
             prefixIcon: const Icon(Icons.straighten),
             border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
@@ -3420,10 +3457,10 @@ class _UnitFieldState extends State<_UnitField> {
             fillColor: widget.readOnly ? Theme.of(context).colorScheme.surfaceContainerHighest : null,
           ),
           items: [
-            const DropdownMenuItem(value: '', child: Text('None')),
+            DropdownMenuItem(value: '', child: Text(l10n.commonNoneLabel)),
             for (final u in ProductUnits.presets)
               DropdownMenuItem(value: u, child: Text(u.toUpperCase())),
-            const DropdownMenuItem(value: 'custom', child: Text('Custom…')),
+            DropdownMenuItem(value: 'custom', child: Text(l10n.commonCustomEllipsisLabel)),
           ],
           onChanged: widget.readOnly
               ? null
@@ -3443,7 +3480,7 @@ class _UnitFieldState extends State<_UnitField> {
             controller: widget.customController,
             readOnly: widget.readOnly,
             decoration: InputDecoration(
-              labelText: 'Custom unit',
+              labelText: l10n.fieldCustomUnitLabel,
               border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
               filled: widget.readOnly,

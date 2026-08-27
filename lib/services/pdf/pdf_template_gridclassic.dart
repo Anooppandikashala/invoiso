@@ -250,7 +250,7 @@ pw.MultiPage buildGridClassicTemplate(
                         infoRow('${invoice.invoiceTitle ?? invoice.type} No',
                             invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros)!),
                       infoRow('Date', formatPdfDate(invoice.date, datePattern)),
-                      infoRow('Time', DateFormat('HH:mm:ss').format(invoice.date)),
+                      infoRow('Time', DateFormat('HH:mm:ss', 'en_US').format(invoice.date)),
                       if (invoice.dueDate != null)
                         infoRow('Due Date', formatPdfDate(invoice.dueDate!, datePattern)),
                     ],

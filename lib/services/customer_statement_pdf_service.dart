@@ -18,11 +18,11 @@ class CustomerStatementPdfService {
     final doc = pw.Document(theme: theme);
     final company = await BackendServices.companyInfo.getCompanyInfo();
     final dateFmt = (await BackendServices.settings.getDateFormat()).key;
-    final generatedOn = DateFormat(dateFmt).format(DateTime.now());
+    final generatedOn = DateFormat(dateFmt, 'en_US').format(DateTime.now());
 
     String formatStatementDate(String value) {
       final parsed = DateTime.tryParse(value);
-      return parsed == null ? value : DateFormat(dateFmt).format(parsed);
+      return parsed == null ? value : DateFormat(dateFmt, 'en_US').format(parsed);
     }
 
     for (final statement in statements) {
