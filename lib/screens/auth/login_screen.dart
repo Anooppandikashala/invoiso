@@ -28,6 +28,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _showDefaultCredsHint = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkFirstTimeUser();
+  }
+
+  // Show the hint only while admin/admin actually still works as a login.
+  // Cloud edition has no seeded default account — skip the check entirely.
+  Future<void> _checkFirstTimeUser() async {
+    if (ref.read(appEditionConfigProvider).isCloud) return;
+    final user =
+        await ref.read(authRepositoryProvider).getUser('admin', 'admin');
+    if (!mounted || user == null) return;
+    _usernameController.text = 'admin';
+    _passwordController.text = 'admin';
+    setState(() => _showDefaultCredsHint = true);
+  }
 
   @override
   void dispose() {
@@ -233,7 +252,64 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           height: 100,
                           fit: BoxFit.contain,
                         ),
-                        AppSpacing.hXlarge,
+                        AppSpacing.hSmall,
+                        if (!cfg.isCloud && _showDefaultCredsHint) ...[
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .outlineVariant),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.info_outline,
+                                    size: 18,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text.rich(
+                                    TextSpan(
+                                      children: [
+                                        const TextSpan(
+                                            text:
+                                                'First time here? Log in with username '),
+                                        TextSpan(
+                                            text: 'admin',
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.orange.shade700)),
+                                        const TextSpan(text: ' and password '),
+                                        TextSpan(
+                                            text: 'admin',
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.orange.shade700)),
+                                        const TextSpan(
+                                            text:
+                                                ', then set your own password when prompted.'),
+                                      ],
+                                    ),
+                                    style: TextStyle(
+                                        fontSize: 13,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          AppSpacing.hLarge,
+                        ],
                         TextField(
                           controller: _usernameController,
                           decoration: InputDecoration(

@@ -193,7 +193,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Remember this password.\nThere is no reset option - recovering it requires erasing all app data.',
+                              'Remember this password.',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
