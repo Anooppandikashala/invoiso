@@ -860,6 +860,51 @@ pw.Widget buildInvoiceTable(Invoice invoice,
         decoration: rowDecoration(rowColor),
         child: pw.Row(
           children: [
+            buildTableCell('${index + 1}',
+                fontSize: tableFontSize,
+                cellPaddingH: cellPaddingH,
+                cellPaddingV: cellPaddingV),
+            pw.Padding(
+              padding: pw.EdgeInsets.symmetric(
+                horizontal: cellPaddingH,
+                vertical: (showTypeTag && businessType == BusinessType.both || showDiscount &&
+                    item.discountPerUnit &&
+                    item.discount > 0 || item.effectiveDescription.isNotEmpty) ? cellPaddingV * 0.5 : cellPaddingV,
+              ),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                mainAxisAlignment: pw.MainAxisAlignment.center,
+                children: [
+                  pw.Text(item.product.displayName(showAliasName),
+                      style: pw.TextStyle(fontSize: tableFontSize * 0.9)),
+                  if (item.effectiveDescription.isNotEmpty)
+                    pw.Text(
+                      item.effectiveDescription,
+                      style: pw.TextStyle(
+                        fontSize: tableFontSize * 0.75,
+                        color: PdfColors.grey700,
+                      ),
+                    ),
+                  if (showTypeTag && businessType == BusinessType.both)
+                    pw.Text(
+                      item.product.type == 'service' ? 'Service' : 'Product',
+                      style: pw.TextStyle(
+                        fontSize: tableFontSize * 0.7,
+                        color: item.product.type == 'service'
+                            ? PdfColors.purple700
+                            : PdfColors.indigo700,
+                      ),
+                    ),
+                  if (showDiscount &&
+                      item.discountPerUnit &&
+                      item.discount > 0)
+                    pw.Text(
+                      '(${item.effectivePrice.toStringAsFixed(2)} - ${item.discount.toStringAsFixed(2)} = ${(item.effectivePrice - item.discount).toStringAsFixed(2)}/item)',
+                      style: pw.TextStyle(
+                          fontSize: tableFontSize * 0.7,
+                          color: PdfColors.teal700),
+                    ),
+                ],
             pw.Expanded(flex: slNoFlex, child: pw.SizedBox()),
             pw.Expanded(
               flex: restFlex,

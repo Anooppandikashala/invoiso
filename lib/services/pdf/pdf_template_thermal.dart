@@ -142,6 +142,15 @@ pw.Page buildThermalTemplate(
                   ],
                 ),
               ),
+              if (item.effectiveDescription.isNotEmpty)
+                pw.Padding(
+                  padding: const pw.EdgeInsets.only(left: 12),
+                  child: pw.Text(
+                    item.effectiveDescription,
+                    style: const pw.TextStyle(
+                        fontSize: smallFs, color: PdfColors.grey700),
+                  ),
+                ),
               if (showDiscount && item.totalDiscount > 0)
                 pw.Padding(
                   padding: const pw.EdgeInsets.only(left: 12),
@@ -198,6 +207,15 @@ pw.Page buildThermalTemplate(
                   ),
                 ],
               ),
+              if (item.effectiveDescription.isNotEmpty)
+                pw.Padding(
+                  padding: const pw.EdgeInsets.only(left: 14),
+                  child: pw.Text(
+                    item.effectiveDescription,
+                    style: const pw.TextStyle(
+                        fontSize: smallFs, color: PdfColors.grey700),
+                  ),
+                ),
               if (showDiscount && item.totalDiscount > 0)
                 pw.Padding(
                   padding: const pw.EdgeInsets.only(left: 14),

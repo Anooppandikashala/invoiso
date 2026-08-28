@@ -66,6 +66,25 @@ void main() {
     await db.close();
   });
 
+  test('fresh create invoice_items has the per-line description column',
+      () async {
+    final db = await openDatabase(
+      inMemoryDatabasePath,
+      version: currentVersion,
+      onCreate: (db, v) => DatabaseHelper().createDbForTest(db, v),
+    );
+
+    final cols = await db.rawQuery('PRAGMA table_info(invoice_items)');
+    final colNames = cols.map((r) => r['name']).toSet();
+
+    // `description` is the line-level text typed on the invoice;
+    // `product_description` is the product's own text, snapshotted at
+    // invoice time. Both must exist — the first falls back to the second.
+    expect(colNames, containsAll(['description', 'product_description']));
+
+    await db.close();
+  });
+
   test('fresh create company_info has country column defaulting to India',
       () async {
     final db = await openDatabase(
