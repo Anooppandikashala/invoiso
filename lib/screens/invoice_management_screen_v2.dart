@@ -7,6 +7,7 @@ import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/domain/invoice_calculator.dart';
 import 'package:invoiso/common/invoiso_colors.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
+import 'package:invoiso/models/customer.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/providers/invoice_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
@@ -47,6 +48,8 @@ class _InvoiceManagementScreenV2State
   int _currentPage = 0;
   int _pageSize = 10;
   String _searchQuery = '';
+  String? _selectedCustomerId;
+  String? _selectedCustomerName;
   bool _isLoadingPage = false;
   bool _isBulkLoading = false;
   bool _hidePaid = false;
@@ -127,10 +130,12 @@ class _InvoiceManagementScreenV2State
           filterType: widget.filterType,
           orderBy: _sortField,
           orderAscending: _sortAscending,
+          customerId: _selectedCustomerId,
         ),
         ref.read(invoiceRepositoryProvider).getInvoiceCount(
           searchQuery: _searchQuery,
           filterType: widget.filterType,
+          customerId: _selectedCustomerId,
         ),
       ]);
       if (mounted) {
@@ -1093,6 +1098,114 @@ class _InvoiceManagementScreenV2State
     };
   }
 
+  // Deliberately separate from _showFilterDialogV2 — picking a customer is
+  // its own control, not one more field inside the Filter dialog.
+  Future<void> _pickCustomerFilterV2() async {
+    final results = await Future.wait([
+      ref.read(customerRepositoryProvider).getAllCustomers(),
+      ref.read(invoiceRepositoryProvider).getCustomersWithInvoices(filterType: widget.filterType),
+    ]);
+    final allCustomers = results[0] as List<Customer>;
+    final invoiceCustomers = results[1] as List<({String id, String name})>;
+    final byId = {for (final c in allCustomers) c.id: c};
+    // Customers typed directly on an invoice without being saved to the
+    // Customers list still get a real (random) customer_id on the invoice —
+    // show them too, using the invoice's snapshotted name, instead of
+    // silently dropping anything that isn't a saved Customer record.
+    final savedIds = byId.keys.toSet();
+    final customers = invoiceCustomers.map((ic) {
+      return byId[ic.id] ??
+          Customer(
+            id: ic.id,
+            name: ic.name.isEmpty ? 'Unknown' : ic.name,
+            email: '',
+            phone: '',
+            address: '',
+            gstin: '',
+          );
+    }).toList()
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    if (!mounted) return;
+    final selected = await showDialog<Customer?>(
+      context: context,
+      builder: (dialogContext) {
+        String query = '';
+        return StatefulBuilder(builder: (dialogContext, setDialogState) {
+          final filtered = query.isEmpty
+              ? customers
+              : customers
+                  .where((c) => c.name.toLowerCase().contains(query.toLowerCase()))
+                  .toList();
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Text('Filter by Customer'),
+            content: SizedBox(
+              width: 380,
+              height: 440,
+              child: Column(
+                children: [
+                  TextField(
+                    autofocus: true,
+                    decoration: const InputDecoration(
+                      hintText: 'Search customers…',
+                      prefixIcon: Icon(Icons.search, size: 20),
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    onChanged: (v) => setDialogState(() => query = v),
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: filtered.isEmpty
+                        ? const Center(child: Text('No customers found'))
+                        : ListView.builder(
+                            itemCount: filtered.length,
+                            itemBuilder: (context, i) {
+                              final c = filtered[i];
+                              final isSaved = savedIds.contains(c.id);
+                              return ListTile(
+                                title: Text(c.name),
+                                subtitle: !isSaved
+                                    ? const Text('Not saved as a customer')
+                                    : c.businessName.isNotEmpty
+                                        ? Text(c.businessName)
+                                        : null,
+                                onTap: () => Navigator.pop(dialogContext, c),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Cancel'),
+              ),
+            ],
+          );
+        });
+      },
+    );
+    if (selected == null || !mounted) return;
+    setState(() {
+      _selectedCustomerId = selected.id;
+      _selectedCustomerName = selected.name;
+      _currentPage = 0;
+    });
+    _loadPage();
+  }
+
+  void _clearCustomerFilterV2() {
+    setState(() {
+      _selectedCustomerId = null;
+      _selectedCustomerName = null;
+      _currentPage = 0;
+    });
+    _loadPage();
+  }
+
   int get _activeFilterCountV2 =>
       (_hidePaid ? 1 : 0) +
       (_dueDateFilter != 'all' ? 1 : 0) +
@@ -1408,6 +1521,20 @@ class _InvoiceManagementScreenV2State
       },
     );
 
+    final customerButton = _selectedCustomerId == null
+        ? OutlinedButton.icon(
+            onPressed: _pickCustomerFilterV2,
+            icon: const Icon(Icons.person_outline, size: 18),
+            label: const Text('Customer'),
+          )
+        : InputChip(
+            avatar: const Icon(Icons.person, size: 16),
+            label: Text(_selectedCustomerName ?? '',
+                overflow: TextOverflow.ellipsis, maxLines: 1),
+            onPressed: _pickCustomerFilterV2,
+            onDeleted: _clearCustomerFilterV2,
+          );
+
     final filterButton = widget.filterType != 'Invoice'
         ? const SizedBox.shrink()
         : Stack(
@@ -1456,6 +1583,8 @@ class _InvoiceManagementScreenV2State
         children: [
           Expanded(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 480), child: searchField)),
           const SizedBox(width: 12),
+          customerButton,
+          const SizedBox(width: 8),
           filterButton,
           if (widget.filterType == 'Invoice') const SizedBox(width: 8),
           sortButton,
@@ -1471,6 +1600,8 @@ class _InvoiceManagementScreenV2State
         const SizedBox(height: 10),
         Row(
           children: [
+            customerButton,
+            const SizedBox(width: 8),
             filterButton,
             if (widget.filterType == 'Invoice') const SizedBox(width: 8),
             sortButton,

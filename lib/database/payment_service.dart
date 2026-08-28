@@ -131,6 +131,73 @@ class PaymentService {
   }
 
   // ─────────────────────────────────────────────
+  // Apply one payment split across multiple invoices (e.g. FIFO-allocated
+  // against a customer's oldest open invoices). Amounts are decided by the
+  // caller; this only persists them, one InvoicePayment per invoice with a
+  // positive amount, snapshotting previouslyPaid/balanceAfter per invoice
+  // the same way addPayment does.
+  static Future<List<InvoicePayment>> applyPaymentAcrossInvoices({
+    required List<({Invoice invoice, double amount})> allocations,
+    required DateTime datePaid,
+    String? paymentMethod,
+    String? notes,
+  }) async {
+    final db = await _dbHelper.database;
+    final saved = <InvoicePayment>[];
+    await db.transaction((txn) async {
+      for (final a in allocations) {
+        final invoice = a.invoice;
+        final amountPaid = a.amount;
+        if (amountPaid <= InvoiceCalculator.moneyEpsilon) continue;
+
+        final sumResult = await txn.rawQuery(
+          'SELECT COALESCE(SUM(amount_paid), 0.0) AS total FROM invoice_payments WHERE invoice_id = ?',
+          [invoice.id],
+        );
+        final previouslyPaid = (sumResult.first['total'] as num).toDouble();
+
+        final suffixResult = await txn.rawQuery(
+          'SELECT receipt_number FROM invoice_payments WHERE invoice_id = ?',
+          [invoice.id],
+        );
+        final receiptNumber = PaymentReceiptNumbers.nextReceiptNumber(
+          invoiceId: invoice.id,
+          existingReceiptNumbers:
+              suffixResult.map((row) => row['receipt_number'] as String?),
+        );
+
+        final taxAmountPaid = invoice.total > 0
+            ? (amountPaid * (invoice.tax / invoice.total))
+            : 0.0;
+
+        final balanceAfter = InvoiceCalculator.outstanding(
+          total: invoice.total,
+          paid: previouslyPaid + amountPaid,
+        );
+
+        final payment = InvoicePayment(
+          id: _uuid.v4(),
+          invoiceId: invoice.id,
+          invoiceNumber: invoice.invoiceNumber ?? invoice.id,
+          receiptNumber: receiptNumber,
+          amountPaid: amountPaid,
+          taxAmountPaid: taxAmountPaid,
+          previouslyPaid: previouslyPaid,
+          balanceAfter: balanceAfter,
+          datePaid: datePaid,
+          paymentMethod: paymentMethod,
+          notes: notes,
+        );
+
+        await txn.insert('invoice_payments', payment.toMap());
+        saved.add(payment);
+      }
+    });
+    AppLogger.d(_tag, 'Applied payment across ${saved.length} invoice(s).');
+    return saved;
+  }
+
+  // ─────────────────────────────────────────────
   // Fetch all payments for an invoice, oldest first
   static Future<List<InvoicePayment>> getPaymentsForInvoice(
       String invoiceId) async {

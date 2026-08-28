@@ -1193,6 +1193,9 @@
   "customerMgmtSortNameZA": "Name Z-A",
   "customerMgmtSortIdOldest": "ID (oldest first)",
   "customerMgmtSortIdNewest": "ID (newest first)",
+  "customerMgmtSortOutstandingHighLow": "Outstanding (high-low)",
+  "customerMgmtSortOutstandingLowHigh": "Outstanding (low-high)",
+  "customerMgmtWithOutstandingLabel": "With Outstanding",
   "customerMgmtSearchHint": "Search customers by name, business, phone, {taxWord}, email…",
   "@customerMgmtSearchHint": {
     "placeholders": {

@@ -3060,6 +3060,24 @@ abstract class AppLocalizations {
   /// **'ID (newest first)'**
   String get customerMgmtSortIdNewest;
 
+  /// No description provided for @customerMgmtSortOutstandingHighLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Outstanding (high-low)'**
+  String get customerMgmtSortOutstandingHighLow;
+
+  /// No description provided for @customerMgmtSortOutstandingLowHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'Outstanding (low-high)'**
+  String get customerMgmtSortOutstandingLowHigh;
+
+  /// No description provided for @customerMgmtWithOutstandingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'With Outstanding'**
+  String get customerMgmtWithOutstandingLabel;
+
   /// No description provided for @customerMgmtSearchHint.
   ///
   /// In en, this message translates to:

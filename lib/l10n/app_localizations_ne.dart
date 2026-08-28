@@ -1854,6 +1854,15 @@ class AppLocalizationsNe extends AppLocalizations {
   String get customerMgmtSortIdNewest => 'ID (नयाँ पहिले)';
 
   @override
+  String get customerMgmtSortOutstandingHighLow => 'बाँकी (धेरैदेखि थोरै)';
+
+  @override
+  String get customerMgmtSortOutstandingLowHigh => 'बाँकी (थोरैदेखि धेरै)';
+
+  @override
+  String get customerMgmtWithOutstandingLabel => 'बाँकी भएका';
+
+  @override
   String customerMgmtSearchHint(String taxWord) {
     return 'नाम, व्यवसाय, फोन, $taxWord, इमेलद्वारा ग्राहक खोज्नुहोस्…';
   }

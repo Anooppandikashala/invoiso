@@ -1860,6 +1860,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get customerMgmtSortIdNewest => 'ID (más reciente primero)';
 
   @override
+  String get customerMgmtSortOutstandingHighLow =>
+      'Saldo pendiente (mayor a menor)';
+
+  @override
+  String get customerMgmtSortOutstandingLowHigh =>
+      'Saldo pendiente (menor a mayor)';
+
+  @override
+  String get customerMgmtWithOutstandingLabel => 'Con saldo pendiente';
+
+  @override
   String customerMgmtSearchHint(String taxWord) {
     return 'Buscar clientes por nombre, empresa, teléfono, $taxWord, correo…';
   }
