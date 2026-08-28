@@ -68,6 +68,7 @@ enum SettingKey {
   showCustomerStatsCards, // whether the stat cards row is shown on customer management v2 (default true)
   showProductStatsCards, // whether the stat cards row is shown on product management v2 (default true)
   hideInvoiceNumberByDefault, // whether the "Hide invoice number in PDF" toggle is on by default for new invoices (default false)
+  showDescriptionInPdf, // whether to print a product's description as a full-width row under each invoice item on A4 PDFs (default false)
   appLocale, // app UI language code, e.g. 'en' | 'ne' | 'bo' | 'fr' | 'es' | 'hi' | 'zh'; unset/empty = follow system locale
   onboardingCompleted, // '1' once the first-login onboarding wizard has been finished or skipped
 }
@@ -213,6 +214,8 @@ extension SettingKeyExtension on SettingKey {
         return 'show_product_stats_cards';
       case SettingKey.hideInvoiceNumberByDefault:
         return 'hide_invoice_number_by_default';
+      case SettingKey.showDescriptionInPdf:
+        return 'show_description_in_pdf';
       case SettingKey.appLocale:
         return 'app_locale';
       case SettingKey.onboardingCompleted:

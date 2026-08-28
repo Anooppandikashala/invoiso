@@ -828,6 +828,8 @@
   "invoiceSettingsShowPrevBalanceLabel": "显示以前的欠款余额",
   "invoiceSettingsAllowFractionalQtySubtitle": "启用小数数量（例如 1.5 小时、0.5 千克）",
   "invoiceSettingsShowAliasNameSubtitle": "在 PDF 上打印产品的本地语言别名（如已设置）而非其实际名称",
+  "invoiceSettingsShowDescriptionLabel": "显示产品描述",
+  "invoiceSettingsShowDescriptionSubtitle": "在 A4 PDF 中将每个项目的描述作为其下方的一行打印（不适用于热敏收据或 Grid Classic 模板）",
   "invoiceSettingsSectionGeneral": "常规",
   "commonLeftLabel": "左",
   "invoiceSettingsImageFormatHint": "PNG、JPG 或 JPEG — 最大 2 MB",

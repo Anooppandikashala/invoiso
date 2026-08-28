@@ -43,6 +43,7 @@ class _InvoiceSettingsScreenV2State
   bool _showTypeTag = true;
   bool _showPreviousBalance = false;
   bool _showAliasNameInPdf = false;
+  bool _showDescriptionInPdf = false;
   bool _showTaxButtonInInvoicePage = true;
   bool _hideInvoiceNumberByDefault = false;
   bool _showCgstSgst = false;
@@ -105,6 +106,7 @@ class _InvoiceSettingsScreenV2State
       settingsRepo.getSetting(SettingKey.showRoundOff),
       settingsRepo.getSetting(SettingKey.invoiceLeadingZeros),
       settingsRepo.getHideInvoiceNumberByDefault(),
+      settingsRepo.getSetting(SettingKey.showDescriptionInPdf),
     ]);
 
     if (!mounted) return;
@@ -142,6 +144,7 @@ class _InvoiceSettingsScreenV2State
       _showRoundOff = (results[28] as String?) == 'true';
       _invoiceLeadingZeros = (results[29] as String?) != 'false';
       _hideInvoiceNumberByDefault = results[30] as bool;
+      _showDescriptionInPdf = (results[31] as String?) == 'true';
       _isLoading = false;
     });
   }
@@ -202,6 +205,8 @@ class _InvoiceSettingsScreenV2State
             SettingKey.showRoundOff, _showRoundOff.toString()),
         settingsRepo.setSetting(SettingKey.hideInvoiceNumberByDefault,
             _hideInvoiceNumberByDefault.toString()),
+        settingsRepo.setSetting(
+            SettingKey.showDescriptionInPdf, _showDescriptionInPdf.toString()),
       ]);
 
       if (!mounted) return;
@@ -797,6 +802,13 @@ class _InvoiceSettingsScreenV2State
           icon: Icons.translate_outlined,
           value: _showAliasNameInPdf,
           onChanged: (val) => setState(() => _showAliasNameInPdf = val),
+        ),
+        _toggleCardV2(
+          title: l10n.invoiceSettingsShowDescriptionLabel,
+          subtitle: l10n.invoiceSettingsShowDescriptionSubtitle,
+          icon: Icons.notes_outlined,
+          value: _showDescriptionInPdf,
+          onChanged: (val) => setState(() => _showDescriptionInPdf = val),
         ),
         _toggleCardV2(
           title: l10n.invoiceSettingsAllowFractionalQtyLabel,

@@ -828,6 +828,8 @@
   "invoiceSettingsShowPrevBalanceLabel": "Afficher le solde précédent dû",
   "invoiceSettingsAllowFractionalQtySubtitle": "Activer les quantités décimales (ex. 1,5 h, 0,5 kg)",
   "invoiceSettingsShowAliasNameSubtitle": "Imprimer l'alias en langue locale d'un produit (s'il est défini) au lieu de son nom réel sur les PDF",
+  "invoiceSettingsShowDescriptionLabel": "Afficher la description du produit",
+  "invoiceSettingsShowDescriptionSubtitle": "Imprimer la description de chaque article sur une ligne en dessous dans les PDF A4 (pas sur les reçus thermiques ni le modèle Grid Classic)",
   "invoiceSettingsSectionGeneral": "Général",
   "commonLeftLabel": "Gauche",
   "invoiceSettingsImageFormatHint": "PNG, JPG ou JPEG — max 2 Mo",

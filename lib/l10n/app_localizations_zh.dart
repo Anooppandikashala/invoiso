@@ -2981,6 +2981,13 @@ class AppLocalizationsZh extends AppLocalizations {
       '在 PDF 上打印产品的本地语言别名（如已设置）而非其实际名称';
 
   @override
+  String get invoiceSettingsShowDescriptionLabel => '显示产品描述';
+
+  @override
+  String get invoiceSettingsShowDescriptionSubtitle =>
+      '在 A4 PDF 中将每个项目的描述作为其下方的一行打印（不适用于热敏收据或 Grid Classic 模板）';
+
+  @override
   String get invoiceSettingsAllowFractionalQtyLabel => '允许小数数量';
 
   @override

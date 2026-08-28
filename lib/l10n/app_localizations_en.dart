@@ -3095,6 +3095,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Print a product\'s local-language alias (if set) instead of its actual name on PDFs';
 
   @override
+  String get invoiceSettingsShowDescriptionLabel => 'Show Product Description';
+
+  @override
+  String get invoiceSettingsShowDescriptionSubtitle =>
+      'Print each item\'s description as a row under it on A4 PDFs (not on thermal receipts or the Grid Classic template)';
+
+  @override
   String get invoiceSettingsAllowFractionalQtyLabel =>
       'Allow Fractional Quantities';
 
