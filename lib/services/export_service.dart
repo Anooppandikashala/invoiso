@@ -91,7 +91,7 @@ class ExportService {
       exportDir = Directory(outputDirectory);
     } else {
       final docsDir = await getApplicationDocumentsDirectory();
-      final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      final timestamp = DateFormat('yyyyMMdd_HHmmss', 'en_US').format(DateTime.now());
       exportDir = Directory('${docsDir.path}/invoice_pdfs_$timestamp');
     }
     await exportDir.create(recursive: true);

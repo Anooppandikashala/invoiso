@@ -4,7 +4,7 @@ import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/utils/password_utils.dart';
-import '../dashboard_screen.dart';
+import 'package:invoiso/utils/post_auth_navigation.dart';
 
 class ChangePasswordScreen extends ConsumerStatefulWidget {
   final User user;
@@ -104,12 +104,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
         ),
       );
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => DashboardScreen(updatedUser ?? widget.user),
-        ),
-      );
+      await navigateAfterAuth(context, ref, updatedUser ?? widget.user);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -121,19 +116,29 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    // Same phone/tablet fix as login_screen.dart: fill the width (minus
+    // side padding) on phones instead of the old `width * 0.3`, which
+    // shrank to an unusably narrow card on tablet/phone widths.
+    final isPhone = screenWidth < 600;
+    final cardWidth = isPhone ? screenWidth - 48 : 460.0;
+    final cardPadding = isPhone ? 20.0 : 32.0;
     return PopScope(
       canPop: !widget.forced,
       child: Scaffold(
         backgroundColor: Theme.of(context).brightness == Brightness.dark
             ? null
             : Colors.blue[50],
-        body: Center(
-          child: Card(
+        body: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+              child: Card(
             elevation: 8,
             color: Theme.of(context).colorScheme.surfaceContainer,
             child: Container(
-              width: MediaQuery.sizeOf(context).width * 0.3,
-              padding: const EdgeInsets.all(32),
+              width: cardWidth,
+              padding: EdgeInsets.all(cardPadding),
               child: FocusTraversalGroup(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -188,7 +193,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Remember this password.\nThere is no reset option - recovering it requires erasing all app data.',
+                              'Remember this password.',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -321,8 +326,10 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
               ),
             ),
           ),
+              ),
+            ),
+          ),
         ),
-      ),
-    );
+      );
   }
 }

@@ -148,9 +148,15 @@ class SqliteSettingsRepository implements SettingsRepository {
   @override
   Future<bool> getShowTaxButtonInInvoicePage() => SettingsService.getShowTaxButtonInInvoicePage();
   @override
+  Future<bool> getHideInvoiceNumberByDefault() => SettingsService.getHideInvoiceNumberByDefault();
+  @override
   Future<String> getThemeMode() => SettingsService.getThemeMode();
   @override
   Future<void> setThemeMode(String mode) => SettingsService.setThemeMode(mode);
+  @override
+  Future<String?> getAppLocale() => SettingsService.getAppLocale();
+  @override
+  Future<void> setAppLocale(String? languageCode) => SettingsService.setAppLocale(languageCode);
   @override
   Future<bool> getAllowDuplicateInvoiceItems() => SettingsService.getAllowDuplicateInvoiceItems();
   @override

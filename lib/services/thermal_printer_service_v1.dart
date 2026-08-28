@@ -185,10 +185,11 @@ class ThermalPrinterServiceOld {
     hr();
 
     // ── Invoice meta ──
-    final dateFormatter = DateFormat(dateFmt.key);
+    final dateFormatter = DateFormat(dateFmt.key, 'en_US');
     final dateStr = dateFormatter.format(invoice.date);
-    twoCol('Inv No: ${settings.invoicePrefix}${invoice.invoiceNumber ?? invoice.id}',
-        'Date: $dateStr');
+    final numberText = invoice.pdfNumberText(settings.invoicePrefix,
+        showLeadingZeros: settings.showLeadingZeros);
+    twoCol(numberText != null ? 'Inv No: $numberText' : '', 'Date: $dateStr');
     if (invoice.dueDate != null) {
       twoCol('Due:', dateFormatter.format(invoice.dueDate!));
     }
@@ -255,6 +256,9 @@ class ThermalPrinterServiceOld {
         if (showItemTax) detailParts.add('${item.product.tax_rate}%');
         detailParts.add(total);
         line('  ${detailParts.join('  ')}');
+      }
+      if (settings.showDescription && item.printedDescription.isNotEmpty) {
+        line('  ${item.printedDescription}');
       }
       if (settings.showDiscount && item.totalDiscount > 0) {
         line('  Disc: -${item.totalDiscount.toStringAsFixed(2)}');

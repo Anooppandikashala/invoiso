@@ -1,5 +1,8 @@
 import 'dart:typed_data';
+import 'package:intl/intl.dart';
 import 'package:invoiso/database/database_helper.dart';
+import 'package:invoiso/services/backend_services.dart';
+import 'package:invoiso/services/pdf/pdf_report_header.dart';
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/domain/customer_identity.dart';
 import 'package:invoiso/domain/invoice_calculator.dart';
@@ -467,6 +470,32 @@ class ReportService {
       return b.daysOverdue.compareTo(a.daysOverdue);
     });
     return result;
+  }
+
+  /// Total outstanding (all-time, not date-bound) per customer, keyed by
+  /// customer_id — for a customer-list "Outstanding" column/filter/sort.
+  static Future<Map<String, double>> getOutstandingByCustomer(
+      {String? currencyCode}) async {
+    final rows = await _loadRows(currencyCode: currencyCode);
+    final result = <String, double>{};
+    for (final r in rows) {
+      if (r.outstanding <= InvoiceCalculator.moneyEpsilon) continue;
+      result[r.customerKey] = (result[r.customerKey] ?? 0) + r.outstanding;
+    }
+    return result;
+  }
+
+  /// Distinct currency codes actually used across (non-deleted) invoices —
+  /// for a currency picker, e.g. next to the Outstanding column.
+  static Future<List<String>> getInvoiceCurrencies() async {
+    final db = await _db.database;
+    final rows = await db.rawQuery(
+      "SELECT DISTINCT currency_code FROM invoices "
+      "WHERE deleted_at IS NULL AND type = 'Invoice' AND currency_code IS NOT NULL",
+    );
+    final codes = rows.map((r) => r['currency_code'] as String).toList();
+    codes.sort();
+    return codes;
   }
 
   // ── 5. Tax collected by rate ───────────────────────────────────────────────
@@ -1064,6 +1093,9 @@ class ReportService {
   }) async {
     final theme = await PdfFontService.loadTheme();
     final doc = pw.Document(theme: theme);
+    final company = await BackendServices.companyInfo.getCompanyInfo();
+    final dateFmt = (await BackendServices.settings.getDateFormat()).key;
+    final generatedOn = DateFormat(dateFmt).format(DateTime.now());
 
     String money(double v) => '$currencySymbol ${v.toStringAsFixed(2)}';
     final totalInvoices = rows.fold<int>(0, (a, d) => a + d.invoiceCount);
@@ -1074,15 +1106,15 @@ class ReportService {
 
     doc.addPage(
       pw.MultiPage(
-        pageFormat: PdfPageFormat.a4.landscape,
+        pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(24),
         header: (context) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            pw.Text('Daily Sales & Profit Report',
-                style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
-            pw.SizedBox(height: 4),
-            pw.Text(dateRangeLabel, style: const pw.TextStyle(fontSize: 10)),
+            PdfReportHeader.build(
+                company: company, title: 'DAILY SALES & PROFIT REPORT', generatedOn: generatedOn),
+            pw.Text(dateRangeLabel,
+                style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
             pw.SizedBox(height: 12),
           ],
         ),
@@ -1098,39 +1130,51 @@ class ReportService {
         ),
         build: (context) => [
           pw.TableHelper.fromTextArray(
-            headers: ['Date', 'Invoices', 'Sales', 'COGS', 'Profit', 'Margin %'],
-            data: [
-              for (final d in rows)
-                [
-                  d.date,
-                  '${d.invoiceCount}',
-                  money(d.billed),
-                  money(d.cogs),
-                  money(d.profit),
-                  '${d.marginPercent.toStringAsFixed(1)}%',
-                ],
-            ],
-            headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
+            headers: ['SL', 'Date', 'Invoices', 'Sales', 'COGS', 'Profit', 'Margin %'],
+            data: List<List<String>>.generate(rows.length, (i) {
+              final d = rows[i];
+              return [
+                '${i + 1}',
+                d.date,
+                '${d.invoiceCount}',
+                money(d.billed),
+                money(d.cogs),
+                money(d.profit),
+                '${d.marginPercent.toStringAsFixed(1)}%',
+              ];
+            }),
+            headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9, color: PdfColors.white),
             cellStyle: const pw.TextStyle(fontSize: 9),
-            headerDecoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF1F5F9)),
+            headerDecoration: const pw.BoxDecoration(color: PdfReportHeader.accentColor),
             cellAlignments: {
-              0: pw.Alignment.centerLeft,
-              1: pw.Alignment.centerRight,
+              0: pw.Alignment.centerRight,
+              1: pw.Alignment.centerLeft,
               2: pw.Alignment.centerRight,
               3: pw.Alignment.centerRight,
               4: pw.Alignment.centerRight,
               5: pw.Alignment.centerRight,
+              6: pw.Alignment.centerRight,
             },
             cellHeight: 22,
+            oddRowDecoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF8FAFC)),
           ),
           pw.SizedBox(height: 12),
           pw.Container(
-            alignment: pw.Alignment.centerRight,
-            child: pw.Text(
-              'Total — Invoices: $totalInvoices   Sales: ${money(totalSales)}   '
-              'COGS: ${money(totalCogs)}   Profit: ${money(totalProfit)}   '
-              'Margin: ${totalMargin.toStringAsFixed(1)}%',
-              style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+            padding: const pw.EdgeInsets.all(10),
+            decoration: pw.BoxDecoration(
+              color: PdfColors.grey100,
+              borderRadius: pw.BorderRadius.circular(4),
+            ),
+            child: pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.end,
+              children: [
+                pw.Text(
+                  'Total — Invoices: $totalInvoices   Sales: ${money(totalSales)}   '
+                  'COGS: ${money(totalCogs)}   Profit: ${money(totalProfit)}   '
+                  'Margin: ${totalMargin.toStringAsFixed(1)}%',
+                  style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+                ),
+              ],
             ),
           ),
         ],

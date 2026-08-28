@@ -116,6 +116,9 @@ class PDFService {
       BackendServices.settings.getShowAddress(), // 36
       BackendServices.settings.getShowLogo(), // 37
       BackendServices.settings.getSetting(SettingKey.thermalCompanyNameSize), // 38
+      BackendServices.settings.getSetting(SettingKey.invoiceLeadingZeros), // 39
+      BackendServices.settings.getSetting(SettingKey.showDescriptionInPdf), // 40
+      BackendServices.settings.getSetting(SettingKey.descriptionNewLineInPdf), // 41
     ]);
 
     final rawPrefix = (results[2] as String?) ?? 'INV';
@@ -176,6 +179,9 @@ class PDFService {
       showAddress: results[36] as bool,
       showLogo: results[37] as bool,
       thermalCompanyNameSize: (results[38] as String?) ?? 'medium',
+      showLeadingZeros: (results[39] as String?) != 'false',
+      showDescription: (results[40] as String?) == 'true',
+      descriptionNewLine: (results[41] as String?) == 'true',
     );
   }
 
@@ -229,6 +235,8 @@ class PDFService {
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
           showAliasName: s.showAliasName,
+          showDescription: s.showDescription,
+          descriptionNewLine: s.descriptionNewLine,
           businessType: s.businessType,
           bankAccount: effectiveBank,
           datePattern: s.datePattern,
@@ -248,6 +256,7 @@ class PDFService {
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
           showRoundOff: s.showRoundOff,
+          showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
           showEmail: s.showEmail,
           showCompanyName: s.showCompanyName,
@@ -270,6 +279,8 @@ class PDFService {
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
           showAliasName: s.showAliasName,
+          showDescription: s.showDescription,
+          descriptionNewLine: s.descriptionNewLine,
           businessType: s.businessType,
           bankAccount: effectiveBank,
           datePattern: s.datePattern,
@@ -289,6 +300,7 @@ class PDFService {
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
           showRoundOff: s.showRoundOff,
+          showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
           showEmail: s.showEmail,
           showCompanyName: s.showCompanyName,
@@ -311,6 +323,8 @@ class PDFService {
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
           showAliasName: s.showAliasName,
+          showDescription: s.showDescription,
+          descriptionNewLine: s.descriptionNewLine,
           businessType: s.businessType,
           bankAccount: effectiveBank,
           datePattern: s.datePattern,
@@ -330,6 +344,7 @@ class PDFService {
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
           showRoundOff: s.showRoundOff,
+          showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
           showEmail: s.showEmail,
           showCompanyName: s.showCompanyName,
@@ -352,6 +367,8 @@ class PDFService {
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
           showAliasName: s.showAliasName,
+          showDescription: s.showDescription,
+          descriptionNewLine: s.descriptionNewLine,
           businessType: s.businessType,
           bankAccount: effectiveBank,
           datePattern: s.datePattern,
@@ -371,6 +388,7 @@ class PDFService {
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
           showRoundOff: s.showRoundOff,
+          showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
           showEmail: s.showEmail,
           showCompanyName: s.showCompanyName,
@@ -393,6 +411,8 @@ class PDFService {
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
           showAliasName: s.showAliasName,
+          showDescription: s.showDescription,
+          descriptionNewLine: s.descriptionNewLine,
           businessType: s.businessType,
           bankAccount: effectiveBank,
           datePattern: s.datePattern,
@@ -413,6 +433,7 @@ class PDFService {
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
           showRoundOff: s.showRoundOff,
+          showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
           showCompanyName: s.showCompanyName,
           showPan: s.showPan,
@@ -430,6 +451,7 @@ class PDFService {
           showQuantity: s.showQuantity,
           showDiscount: s.showDiscount,
           showAliasName: s.showAliasName,
+          showDescription: s.showDescription,
           datePattern: s.datePattern,
           thankYouNote: s.thankYouNote,
           showFooterBranding: s.showFooterBranding,
@@ -440,6 +462,7 @@ class PDFService {
           pdfTheme: pdfTheme,
           itemLayout: s.thermalItemLayout,
           showRoundOff: s.showRoundOff,
+          showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
           showCompanyName: s.showCompanyName,
           showAddress: s.showAddress,
@@ -457,6 +480,8 @@ class PDFService {
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
           showAliasName: s.showAliasName,
+          showDescription: s.showDescription,
+          descriptionNewLine: s.descriptionNewLine,
           showTotalQuantity: s.showTotalQuantity,
           businessType: s.businessType,
           bankAccount: effectiveBank,
@@ -477,6 +502,7 @@ class PDFService {
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
           showRoundOff: s.showRoundOff,
+          showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
           showCompanyName: s.showCompanyName,
           showPan: s.showPan,
@@ -567,7 +593,7 @@ class PDFService {
         .toLowerCase()
         .replaceAll(RegExp(r'\s+'), '_')
         .replaceAll(RegExp(r'[^a-z0-9_]'), '');
-    final date = DateFormat('yyyyMMdd').format(invoice.date);
+    final date = DateFormat('yyyyMMdd', 'en_US').format(invoice.date);
     return 'inv-$invoiceNumber-$fullName-$date.pdf';
   }
 
@@ -586,7 +612,9 @@ class PDFService {
             children: [
               AppBar(
                 automaticallyImplyLeading: false,
-                title: Text('${invoice.invoiceTitle ?? invoice.type} #${invoice.invoiceNumber ?? invoice.id}'),
+                title: Text(invoice.pdfNumberText('') != null
+                    ? '${invoice.invoiceTitle ?? invoice.type} #${invoice.pdfNumberText('')}'
+                    : invoice.invoiceTitle ?? invoice.type),
                 actions: [
                   IconButton(
                     icon: const Icon(Icons.print_outlined),

@@ -7,6 +7,7 @@ import 'package:invoiso/common/common.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/invoice_payment.dart';
 import 'package:invoiso/services/pdf/pdf_font_service.dart';
+import 'package:invoiso/services/pdf/pdf_widgets.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -49,6 +50,9 @@ class PaymentReceiptService {
         base64Logo != null ? pw.MemoryImage(base64Decode(base64Logo)) : null;
     final sym = invoice.currencySymbol;
     final dateFmt = (await BackendServices.settings.getDateFormat()).key;
+    final leadingZerosStr =
+        await BackendServices.settings.getSetting(SettingKey.invoiceLeadingZeros);
+    final showLeadingZeros = leadingZerosStr != 'false';
 
     pdf.addPage(
       pw.Page(
@@ -62,6 +66,7 @@ class PaymentReceiptService {
           sym: sym,
           logoImage: logoImage,
           dateFmt: dateFmt,
+          showLeadingZeros: showLeadingZeros,
         ),
       ),
     );
@@ -76,6 +81,7 @@ class PaymentReceiptService {
     required String sym,
     required pw.MemoryImage? logoImage,
     required String dateFmt,
+    required bool showLeadingZeros,
   }) {
     const accentColor = PdfColors.indigo800;
     final isPaidInFull = payment.balanceAfter <= 0;
@@ -172,7 +178,10 @@ class PaymentReceiptService {
                 children: [
                   _metaRow('Receipt #', payment.receiptNumber),
                   pw.SizedBox(height: 4),
-                  _metaRow('Invoice #', invoice.invoiceNumber ?? invoice.id),
+                  _metaRow(
+                      'Invoice #',
+                      formatInvoiceNumberForDisplay(
+                          invoice.invoiceNumber ?? invoice.id, showLeadingZeros)),
                 ],
               ),
               pw.Column(
@@ -354,6 +363,6 @@ class PaymentReceiptService {
   static String _fmt(double v) => v.toStringAsFixed(2);
 
   static String _formatDate(DateTime d, String pattern) {
-    return DateFormat(pattern).format(d);
+    return DateFormat(pattern, 'en_US').format(d);
   }
 }

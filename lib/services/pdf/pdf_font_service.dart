@@ -60,9 +60,12 @@ class PdfFontService {
       // 28-29: Myanmar
       rootBundle.load(PdfFontAssets.myanmarFallback),
       rootBundle.load(PdfFontAssets.myanmarFallbackBold),
-      // 30: Symbols
+      // 30-31: Tibetan
+      rootBundle.load(PdfFontAssets.tibetanFallback),
+      rootBundle.load(PdfFontAssets.tibetanFallbackBold),
+      // 32: Symbols
       rootBundle.load(PdfFontAssets.symbolsFallback),
-      // 31: Inter
+      // 33: Inter
       rootBundle.load(PdfFontAssets.interRegular),
     ]);
 
@@ -111,9 +114,12 @@ class PdfFontService {
     final myanmar = pw.Font.ttf(fonts[27]);
     final myanmarBold = pw.Font.ttf(fonts[28]);
 
-    final symbols = pw.Font.ttf(fonts[29]);
+    final tibetan = pw.Font.ttf(fonts[29]);
+    final tibetanBold = pw.Font.ttf(fonts[30]);
 
-    final inter = pw.Font.ttf(fonts[30]);
+    final symbols = pw.Font.ttf(fonts[31]);
+
+    final inter = pw.Font.ttf(fonts[32]);
 
     return pw.ThemeData.withFont(
       base: regular,
@@ -157,6 +163,8 @@ class PdfFontService {
         armenianBold,
         myanmar,
         myanmarBold,
+        tibetan,
+        tibetanBold,
       ],
     );
   }

@@ -19,6 +19,8 @@ pw.MultiPage buildModernTemplate(
   bool showDiscount = true,
   bool showTypeTag = true,
   bool showAliasName = false,
+  bool showDescription = false,
+  bool descriptionNewLine = false,
   BusinessType businessType = BusinessType.both,
   BankAccount? bankAccount,
   String datePattern = 'dd/MM/yyyy',
@@ -38,6 +40,7 @@ pw.MultiPage buildModernTemplate(
   double watermarkOpacity = 0.12,
   bool showCgstSgst = false,
   bool showRoundOff = false,
+  bool showLeadingZeros = true,
   bool showPhone = true,
   bool showEmail = true,
   bool showCompanyName = true,
@@ -203,9 +206,11 @@ pw.MultiPage buildModernTemplate(
             pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.end,
               children: [
-                pw.Text("#: $invoicePrefix${invoice.invoiceNumber ?? invoice.id}",
-                    style: pw.TextStyle(
-                        fontWeight: pw.FontWeight.bold, fontSize: modernPdfStyle.bodyFontSize)),
+                if (invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros) != null)
+                  pw.Text(
+                      "#: ${invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros)}",
+                      style: pw.TextStyle(
+                          fontWeight: pw.FontWeight.bold, fontSize: modernPdfStyle.bodyFontSize)),
                 pw.Text("Date: ${formatPdfDate(invoice.date, datePattern)}",
                     style: pw.TextStyle(fontSize: modernPdfStyle.bodyFontSize)),
                 if (invoice.dueDate != null)
@@ -231,6 +236,8 @@ pw.MultiPage buildModernTemplate(
             showDiscount: showDiscount,
             showTypeTag: showTypeTag,
             showAliasName: showAliasName,
+            showDescription: showDescription,
+            descriptionNewLine: descriptionNewLine,
             businessType: businessType,
             watermarkBytes: watermarkBytes,
             watermarkOpacity: watermarkOpacity,
@@ -248,7 +255,7 @@ pw.MultiPage buildModernTemplate(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
-            pw.Expanded(child: buildAdditionalNotes(invoice)),
+            pw.Expanded(child: buildAdditionalNotes(invoice, accentColor: accentColor)),
             pw.SizedBox(width: 20),
             buildEnhancedTotals(
               invoice,

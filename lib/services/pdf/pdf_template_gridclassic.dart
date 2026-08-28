@@ -27,6 +27,8 @@ pw.MultiPage buildGridClassicTemplate(
   bool showDiscount = true,
   bool showTypeTag = true,
   bool showAliasName = false,
+  bool showDescription = false,
+  bool descriptionNewLine = false,
   bool showTotalQuantity = false,
   BusinessType businessType = BusinessType.both,
   BankAccount? bankAccount,
@@ -47,6 +49,7 @@ pw.MultiPage buildGridClassicTemplate(
   double watermarkOpacity = 0.12,
   bool showCgstSgst = false,
   bool showRoundOff = false,
+  bool showLeadingZeros = true,
   bool showPhone = true,
   bool showCompanyName = true,
   bool showPan = true,
@@ -245,10 +248,11 @@ pw.MultiPage buildGridClassicTemplate(
                   child: pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      infoRow('${invoice.invoiceTitle ?? invoice.type} No',
-                          '$invoicePrefix${invoice.invoiceNumber ?? invoice.id}'),
+                      if (invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros) != null)
+                        infoRow('${invoice.invoiceTitle ?? invoice.type} No',
+                            invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros)!),
                       infoRow('Date', formatPdfDate(invoice.date, datePattern)),
-                      infoRow('Time', DateFormat('HH:mm:ss').format(invoice.date)),
+                      infoRow('Time', DateFormat('HH:mm:ss', 'en_US').format(invoice.date)),
                       if (invoice.dueDate != null)
                         infoRow('Due Date', formatPdfDate(invoice.dueDate!, datePattern)),
                     ],
@@ -280,7 +284,7 @@ pw.MultiPage buildGridClassicTemplate(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              pw.Expanded(child: buildAdditionalNotes(invoice,fontSize: gridClassicPdfStyle.bodyFontSize*fontScale)),
+              pw.Expanded(child: buildAdditionalNotes(invoice,fontSize: gridClassicPdfStyle.bodyFontSize*fontScale, accentColor: accentColor)),
               pw.SizedBox(width: 5 * fontScale),
               pw.SizedBox(
                 width: 200 * fontScale,
@@ -461,6 +465,8 @@ pw.MultiPage buildGridClassicTemplate(
         showDiscount: showDiscount,
         showTypeTag: showTypeTag,
         showAliasName: showAliasName,
+        showDescription: showDescription,
+        descriptionNewLine: descriptionNewLine,
         businessType: businessType,
         tableFontSize: tableFontSize,
         cellPaddingH: cellPadH,

@@ -63,16 +63,23 @@ class SqliteInvoiceRepository implements InvoiceRepository {
     int pageSize = 50,
     String searchQuery = '',
     String? filterType,
+    String orderBy = 'id',
+    bool orderAscending = false,
+    String? customerId,
   }) =>
       InvoiceService.getInvoicesPaginated(
         page: page,
         pageSize: pageSize,
         searchQuery: searchQuery,
         filterType: filterType,
+        orderBy: orderBy,
+        orderAscending: orderAscending,
+        customerId: customerId,
       );
   @override
-  Future<int> getInvoiceCount({String searchQuery = '', String? filterType}) =>
-      InvoiceService.getInvoiceCount(searchQuery: searchQuery, filterType: filterType);
+  Future<int> getInvoiceCount({String searchQuery = '', String? filterType, String? customerId}) =>
+      InvoiceService.getInvoiceCount(
+          searchQuery: searchQuery, filterType: filterType, customerId: customerId);
   @override
   Future<void> softDeleteInvoice(String id) => InvoiceService.softDeleteInvoice(id);
   @override
@@ -95,6 +102,12 @@ class SqliteInvoiceRepository implements InvoiceRepository {
   Future<List<Invoice>> getDueSoonInvoices() => InvoiceService.getDueSoonInvoices();
   @override
   Future<List<Invoice>> getOverdueInvoices({int limit = 10}) => InvoiceService.getOverdueInvoices(limit: limit);
+  @override
+  Future<List<Invoice>> getOpenInvoicesForCustomer(String customerId) =>
+      InvoiceService.getOpenInvoicesForCustomer(customerId);
+  @override
+  Future<List<({String id, String name})>> getCustomersWithInvoices({String? filterType}) =>
+      InvoiceService.getCustomersWithInvoices(filterType: filterType);
   @override
   Future<List<Map<String, dynamic>>> getMonthlyRevenue() => InvoiceService.getMonthlyRevenue();
   @override

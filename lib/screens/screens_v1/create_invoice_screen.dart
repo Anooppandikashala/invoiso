@@ -56,11 +56,17 @@ class CreateInvoiceScreen extends ConsumerStatefulWidget {
 class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   final FocusNode _screenFocusNode = FocusNode();
   ProductColumnsConfig _columnsConfig = const ProductColumnsConfig();
+  bool _showDescriptionInPdf = false;
 
   Future<void> _loadColumnsConfig() async {
-    final config = await ref.read(settingsRepositoryProvider).getProductColumnsConfig();
+    final repo = ref.read(settingsRepositoryProvider);
+    final config = await repo.getProductColumnsConfig();
+    final showDesc = await repo.getSetting(SettingKey.showDescriptionInPdf);
     if (!mounted) return;
-    setState(() => _columnsConfig = config);
+    setState(() {
+      _columnsConfig = config;
+      _showDescriptionInPdf = showDesc == 'true';
+    });
   }
 
   Customer? selectedCustomer;
@@ -85,6 +91,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   final _invoiceDiscountController = TextEditingController();
 
   final notesController = TextEditingController();
+  final customInvoiceNumberController = TextEditingController();
+  bool _hideInvoiceNumber = false;
   final searchController = TextEditingController();
   final customerSearchController = TextEditingController();
   final nameController = TextEditingController();
@@ -177,6 +185,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             DateFormat(_datePattern).format(_invoice!.dueDate!);
       }
       _quantityLabel = _invoice!.quantityLabel ?? '';
+      _hideInvoiceNumber = _invoice!.hideInvoiceNumber;
+      customInvoiceNumberController.text = _invoice!.customInvoiceNumber ?? '';
       for (final c in _invoice!.additionalCosts) {
         _additionalCostControllers.add((
           label: TextEditingController(text: c.label),
@@ -194,7 +204,19 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       // isEditing stays false → _createInvoice() will be called on save.
       final src = widget.cloneFrom!;
       selectedCustomer = src.customer;
-      invoiceItems = List.from(src.items);
+      invoiceItems = src.items
+          .map((i) => InvoiceItem(
+                product: i.product,
+                quantity: i.quantity,
+                discount: i.discount,
+                unitPrice: i.unitPrice,
+                extraCost: i.extraCost,
+                unit: i.unit,
+                description: i.description,
+                discountPerUnit: i.discountPerUnit,
+                isProductSaved: i.isProductSaved,
+              ))
+          .toList();
       nameController.text = src.customer.name;
       emailController.text = src.customer.email;
       phoneController.text = src.customer.phone;
@@ -208,6 +230,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       invoiceType = widget.cloneType ?? src.type;
       invoiceTitle = invoiceType == src.type ? src.invoiceTitle : null;
       _quantityLabel = src.quantityLabel ?? '';
+      // Custom PDF number is invoice-specific; don't carry it into a clone.
       for (final c in src.additionalCosts) {
         _additionalCostControllers.add((
           label: TextEditingController(text: c.label),
@@ -269,6 +292,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       widget.guard?.canLeave = null;
     }
     notesController.dispose();
+    customInvoiceNumberController.dispose();
     searchController.dispose();
     customerSearchController.dispose();
     nameController.dispose();
@@ -361,6 +385,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       'upiId': _selectedUpi?.id ?? '',
       'bankAccount': _selectedBankAccount?.accountNumber ?? '',
       'quantityLabel': _quantityLabel.trim(),
+      'hideInvoiceNumber': _hideInvoiceNumber,
+      'customInvoiceNumber': customInvoiceNumberController.text.trim(),
     });
   }
 
@@ -434,6 +460,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         settingsRepo.getDefaultInvoiceTitle(), // 15
         settingsRepo.getAllowDuplicateInvoiceItems(), // 16
         settingsRepo.getDefaultTaxMode(), // 17
+        settingsRepo.getHideInvoiceNumberByDefault(), // 18
       ]);
 
       final c = results[0] as List<Customer>;
@@ -477,6 +504,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       final defaultInvoiceTitle = results[15] as String?;
       final allowDuplicateInvoiceItems = results[16] as bool;
       final defaultTaxMode = results[17] as String;
+      final hideInvoiceNumberByDefault = results[18] as bool;
 
       // Determine which UPI to pre-select.
       String? existingUpiId;
@@ -543,6 +571,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         if (!isEditing && widget.cloneFrom == null) {
           _isTaxEnabled = showTaxButtonInInvoicePage;
           _isPerItem = defaultTaxMode == 'perItem';
+          _hideInvoiceNumber = hideInvoiceNumberByDefault;
         }
         _businessType = businessType;
         _adHocItemType =
@@ -602,6 +631,11 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         TextEditingController(text: product.price.toString());
     final extraCostController = TextEditingController();
     final unitController = TextEditingController(text: product.unit);
+    // Seed from the product's own description so the user starts from it and
+    // can tweak it for this line; what they leave is snapshotted on the item.
+    // Only when the field is actually shown, else nothing is silently stored.
+    final descriptionController = TextEditingController(
+        text: _showDescriptionInPdf ? product.description : '');
 
     bool discountPerUnit = true;
     String dialogUnit = product.unit;
@@ -662,6 +696,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   unitPrice: unitPrice,
                   extraCost: extraCost,
                   unit: dialogUnit.trim(),
+                  description: descriptionController.text.trim(),
                   discountPerUnit: discountPerUnit),
               insertAt: insertAt);
         }
@@ -697,6 +732,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   unitPrice: unitPrice,
                   extraCost: extraCost,
                   unit: dialogUnit.trim(),
+                  description: descriptionController.text.trim(),
                   discountPerUnit: discountPerUnit),
               insertAt: insertAt);
         }
@@ -710,6 +746,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 unitPrice: unitPrice,
                 extraCost: extraCost,
                 unit: dialogUnit.trim(),
+                description: descriptionController.text.trim(),
                 discountPerUnit: discountPerUnit),
             insertAt: insertAt);
       }
@@ -957,6 +994,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     ],
                   ),
                 ],
+                if (_showDescriptionInPdf) ...[
+                  const SizedBox(height: 16),
+                  _buildItemDescriptionField(descriptionController),
+                ],
                 if (invoiceItems.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   const Divider(height: 1),
@@ -1172,6 +1213,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         additionalCosts: _buildAdditionalCosts(),
         invoiceDiscountType: _invoiceDiscountType,
         invoiceDiscountValue: _invoiceDiscountValue,
+        hideInvoiceNumber: _hideInvoiceNumber,
+        customInvoiceNumber: customInvoiceNumberController.text.trim().isEmpty
+            ? null
+            : customInvoiceNumberController.text.trim(),
       );
 
       await ref.read(invoiceRepositoryProvider).insertInvoice(invoice);
@@ -1227,11 +1272,16 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         text: item.extraCost != null ? item.extraCost.toString() : '');
     bool discountPerUnit = item.discountPerUnit;
     final unitController = TextEditingController(text: item.effectiveUnit.toString());
+    final descriptionController =
+        TextEditingController(text: item.effectiveDescription);
     String dialogUnit = item.effectiveUnit.toString();
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
+          // The extra description field can push this past the viewport on
+          // short windows; the add-item dialog already scrolls its content.
+          scrollable: true,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Row(
@@ -1443,6 +1493,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     ],
                   ),
                 ],
+                if (_showDescriptionInPdf) ...[
+                  const SizedBox(height: 16),
+                  _buildItemDescriptionField(descriptionController),
+                ],
               ],
             ),
           ),
@@ -1482,6 +1536,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   unitPrice: unitPrice,
                   extraCost: extraCost,
                   unit: dialogUnit.trim(),
+                  description: descriptionController.text.trim(),
                   discountPerUnit: discountPerUnit,
                 );
                 if(!mounted) return;
@@ -1679,6 +1734,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     final taxRateController = TextEditingController(text: '0');
     final extraCostController = TextEditingController();
     final unitController = TextEditingController();
+    final descriptionController = TextEditingController();
 
     bool discountPerUnit = true;
     bool dialogPriceIncludesTax = false;
@@ -1740,6 +1796,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
               discount: double.tryParse(discountController.text) ?? 0.0,
               extraCost: extraCost,
               unit: selectedUnit.trim(),
+              description: descriptionController.text.trim(),
               discountPerUnit: discountPerUnit,
             );
             Navigator.pop(context);
@@ -1910,6 +1967,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                     ],
                   ),
+                ],
+                if (_showDescriptionInPdf) ...[
+                  const SizedBox(height: 16),
+                  _buildItemDescriptionField(descriptionController),
                 ],
                 if (_taxMode == TaxMode.perItem && _columnsConfig.taxRate) ...[
                   const SizedBox(height: 16),
@@ -2098,6 +2159,58 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         _isPreviousBalanceLoading = false;
       });
     }
+  }
+
+  Widget _pdfNumberOverrideSection() {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(AppPadding.medium),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.visibility_off, color: Theme.of(context).primaryColor),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Hide Invoice Number In PDF',
+                    style: TextStyle(
+                        fontSize: AppFontSize.small, fontWeight: FontWeight.bold),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Switch(
+                  value: _hideInvoiceNumber,
+                  onChanged: (value) {
+                    if (!mounted) return;
+                    setState(() => _hideInvoiceNumber = value);
+                  },
+                ),
+              ],
+            ),
+            if (_hideInvoiceNumber) ...[
+              const SizedBox(height: 12),
+              TextField(
+                controller: customInvoiceNumberController,
+                style: TextStyle(fontSize: AppFontSize.medium),
+                decoration: InputDecoration(
+                  labelText: 'Custom number (optional)',
+                  hintText: 'e.g. QUO-2026-014 — shown in PDF instead',
+                  labelStyle: TextStyle(fontSize: AppFontSize.medium),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                  filled: true,
+                  fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _customerSearchView() {
@@ -3656,6 +3769,29 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     );
   }
 
+  // Optional per-line description, stored on the invoice item. The
+  // add-product dialog seeds it from the product's own description; the
+  // ad-hoc dialog starts empty. Whatever is left here is snapshotted on
+  // the item and prints under the item name.
+  Widget _buildItemDescriptionField(TextEditingController controller) {
+    return TextField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: 'Description (optional)',
+        hintText: 'Extra detail printed under the item name',
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+        prefixIcon: const Icon(Icons.notes_outlined, size: 18),
+        filled: true,
+        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+      ),
+      minLines: 1,
+      maxLines: 3,
+      keyboardType: TextInputType.multiline,
+      textCapitalization: TextCapitalization.sentences,
+    );
+  }
+
   Widget _buildUnitPicker({
     required String selectedUnit,
     required TextEditingController customController,
@@ -4138,6 +4274,23 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                 spacing: 16,
                                 runSpacing: 4,
                                 children: [
+                                  if (_columnsConfig.description &&
+                                      item.effectiveDescription.isNotEmpty)
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: Text(
+                                        item.effectiveDescription,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontStyle: FontStyle.italic,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ),
                                   if(item.unitPrice != null)
                                     _buildItemDetail('Price',
                                         '$_currencySymbol${item.effectivePrice.toStringAsFixed(2)} *',
@@ -4247,7 +4400,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                         final newProduct = Product(
                                           id: const Uuid().v4(),
                                           name: item.product.name,
-                                          description: '',
+                                          description:
+                                              item.effectiveDescription,
                                           price: item.effectivePrice,
                                           stock: 0,
                                           hsncode: item.product.hsncode,
@@ -4870,6 +5024,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         additionalCosts: _buildAdditionalCosts(),
         invoiceDiscountType: _invoiceDiscountType,
         invoiceDiscountValue: _invoiceDiscountValue,
+        hideInvoiceNumber: _hideInvoiceNumber,
+        customInvoiceNumber: customInvoiceNumberController.text.trim().isEmpty
+            ? null
+            : customInvoiceNumberController.text.trim(),
       );
 
       await ref.read(invoiceRepositoryProvider).updateInvoice(updatedInvoice);
@@ -5428,6 +5586,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           flex: 1,
           child: Column(
             children: [
+              _pdfNumberOverrideSection(),
+              AppSpacing.hMedium,
               _customerSearchView(),
               AppSpacing.hMedium,
               _productSearchView(),
@@ -5472,6 +5632,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
               flex: 1,
               child: Column(
                 children: [
+                  _pdfNumberOverrideSection(),
+                  const SizedBox(height: 16),
                   _customerSearchView(),
                   const SizedBox(height: 16),
                   _productSearchView(),
@@ -5509,6 +5671,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       double grossSubtotal, double totalDiscount, double invoiceDiscountAmount) {
     return Column(
       children: [
+        _pdfNumberOverrideSection(),
+        const SizedBox(height: 16),
         _customerSearchView(),
         const SizedBox(height: 16),
         _productSearchView(),

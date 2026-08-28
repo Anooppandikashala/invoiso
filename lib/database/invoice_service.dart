@@ -50,6 +50,8 @@ class InvoiceService {
         'additional_costs': AdditionalCost.listToJson(invoice.additionalCosts),
         'invoice_discount_type': invoice.invoiceDiscountType.key,
         'invoice_discount_value': invoice.invoiceDiscountValue,
+        'hide_invoice_number': invoice.hideInvoiceNumber ? 1 : 0,
+        'custom_invoice_number': invoice.customInvoiceNumber,
       });
 
       for (var item in invoice.items) {
@@ -74,6 +76,7 @@ class InvoiceService {
           'product_alias_name': item.product.aliasName,
           'product_unit': item.product.unit,
           'unit': item.unit,
+          'description': item.description,
         });
       }
     });
@@ -122,6 +125,8 @@ class InvoiceService {
               AdditionalCost.listToJson(invoice.additionalCosts),
           'invoice_discount_type': invoice.invoiceDiscountType.key,
           'invoice_discount_value': invoice.invoiceDiscountValue,
+          'hide_invoice_number': invoice.hideInvoiceNumber ? 1 : 0,
+          'custom_invoice_number': invoice.customInvoiceNumber,
         },
         where: 'id = ?',
         whereArgs: [invoice.id],
@@ -157,6 +162,7 @@ class InvoiceService {
           'product_alias_name': item.product.aliasName,
           'product_unit': item.product.unit,
           'unit': item.unit,
+          'description': item.description,
         });
       }
     });
@@ -353,6 +359,7 @@ class InvoiceService {
           unitPrice: unitPrice,
           extraCost: extraCost,
           unit: row['unit'] as String?,
+          description: row['description'] as String?,
         ));
       } catch (e, stackTrace) {
         AppLogger.e(_tag, 'Error parsing invoice item row', e, stackTrace);
@@ -390,6 +397,8 @@ class InvoiceService {
           InvoiceDiscountTypeExtension.fromKey(i['invoice_discount_type'] as String?),
       invoiceDiscountValue:
           (i['invoice_discount_value'] as num?)?.toDouble() ?? 0.0,
+      hideInvoiceNumber: (i['hide_invoice_number'] as int?) == 1,
+      customInvoiceNumber: i['custom_invoice_number'] as String?,
       payments: payments,
     );
   }
@@ -495,6 +504,9 @@ class InvoiceService {
     int pageSize = 50,
     String searchQuery = '',
     String? filterType,
+    String orderBy = 'id',
+    bool orderAscending = false,
+    String? customerId,
   }) async {
     final db = await dbHelper.database;
 
@@ -509,13 +521,21 @@ class InvoiceService {
       whereParts.add('type = ?');
       whereArgs.add(filterType);
     }
+    if (customerId != null && customerId.isNotEmpty) {
+      whereParts.add('customer_id = ?');
+      whereArgs.add(customerId);
+    }
 
     final where = whereParts.join(' AND ');
+    final order = orderAscending ? 'ASC' : 'DESC';
+    final orderClause = orderBy == 'customer_name'
+        ? 'customer_name COLLATE NOCASE $order'
+        : '$orderBy $order';
     final invoiceMaps = await db.query(
       'invoices',
       where: where,
       whereArgs: whereArgs.isEmpty ? null : whereArgs,
-      orderBy: 'id DESC',
+      orderBy: orderClause,
       limit: pageSize,
       offset: page * pageSize,
     );
@@ -526,6 +546,7 @@ class InvoiceService {
   static Future<int> getInvoiceCount({
     String searchQuery = '',
     String? filterType,
+    String? customerId,
   }) async {
     final db = await dbHelper.database;
 
@@ -539,6 +560,10 @@ class InvoiceService {
     if (filterType != null && filterType.isNotEmpty) {
       whereParts.add('type = ?');
       whereArgs.add(filterType);
+    }
+    if (customerId != null && customerId.isNotEmpty) {
+      whereParts.add('customer_id = ?');
+      whereArgs.add(customerId);
     }
 
     final where = whereParts.join(' AND ');
@@ -662,6 +687,8 @@ class InvoiceService {
               map['invoice_discount_type'] as String?),
           invoiceDiscountValue:
               (map['invoice_discount_value'] as num?)?.toDouble() ?? 0.0,
+          hideInvoiceNumber: (map['hide_invoice_number'] as int?) == 1,
+          customInvoiceNumber: map['custom_invoice_number'] as String?,
         ),
       );
     }
@@ -853,6 +880,45 @@ class InvoiceService {
             ))
         .toList();
     return overdue.length > limit ? overdue.sublist(0, limit) : overdue;
+  }
+
+  /// This customer's not-fully-paid invoices, oldest first, across all
+  /// currencies — for applying one payment across several open invoices.
+  static Future<List<Invoice>> getOpenInvoicesForCustomer(String customerId) async {
+    final db = await dbHelper.database;
+    final rows = await db.query(
+      'invoices',
+      where: 'deleted_at IS NULL AND type = ? AND customer_id = ?',
+      whereArgs: ['Invoice', customerId],
+      orderBy: 'date ASC',
+    );
+    final invoices = await _buildInvoiceList(rows);
+    return invoices
+        .where((inv) => inv.outstandingBalance > InvoiceCalculator.moneyEpsilon)
+        .toList();
+  }
+
+  /// Distinct customer_id values that have at least one non-deleted invoice
+  /// of [filterType] (or any type, if null) — for narrowing a customer
+  /// picker to only customers actually present in the invoice list.
+  static Future<List<({String id, String name})>> getCustomersWithInvoices(
+      {String? filterType}) async {
+    final db = await dbHelper.database;
+    final whereParts = ["deleted_at IS NULL", "customer_id IS NOT NULL", "customer_id != ''"];
+    final args = <Object?>[];
+    if (filterType != null && filterType.isNotEmpty) {
+      whereParts.add('type = ?');
+      args.add(filterType);
+    }
+    final rows = await db.rawQuery(
+      'SELECT DISTINCT customer_id, customer_name FROM invoices WHERE ${whereParts.join(' AND ')}',
+      args,
+    );
+    final byId = <String, String>{};
+    for (final r in rows) {
+      byId[r['customer_id'] as String] = (r['customer_name'] as String?) ?? '';
+    }
+    return byId.entries.map((e) => (id: e.key, name: e.value)).toList();
   }
 
   /// Revenue grouped by month for the last [months] calendar months.

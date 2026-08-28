@@ -418,6 +418,11 @@ class SettingsService {
     return val != 'false';
   }
 
+  static Future<bool> getHideInvoiceNumberByDefault() async {
+    final val = await getSetting(SettingKey.hideInvoiceNumberByDefault);
+    return val == 'true';
+  }
+
   static Future<String> getThemeMode() async {
     final val = await getSetting(SettingKey.themeMode);
     return val ?? 'system';
@@ -425,6 +430,18 @@ class SettingsService {
 
   static Future<void> setThemeMode(String mode) async {
     await setSetting(SettingKey.themeMode, mode);
+  }
+
+  static Future<String?> getAppLocale() async {
+    return await getSetting(SettingKey.appLocale);
+  }
+
+  static Future<void> setAppLocale(String? languageCode) async {
+    if (languageCode == null) {
+      await deleteSetting(SettingKey.appLocale);
+    } else {
+      await setSetting(SettingKey.appLocale, languageCode);
+    }
   }
 
   static Future<bool> getAllowDuplicateInvoiceItems() async {

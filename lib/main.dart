@@ -1,8 +1,12 @@
 import 'dart:io';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:invoiso/common/constants.dart';
+import 'package:invoiso/common/app_config.dart';
+import 'package:invoiso/l10n/app_localizations.dart';
+import 'package:invoiso/providers/locale_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/providers/sqlite_repository_overrides.dart';
 import 'package:invoiso/providers/theme_provider.dart';
@@ -105,6 +109,7 @@ class _MyAppState extends ConsumerState<MyApp> {
   void initState() {
     super.initState();
     _loadThemeMode();
+    _loadAppLocale();
   }
 
   Future<void> _loadThemeMode() async {
@@ -113,15 +118,30 @@ class _MyAppState extends ConsumerState<MyApp> {
     ref.read(themeModeProvider.notifier).state = themeModeFromKey(key);
   }
 
+  Future<void> _loadAppLocale() async {
+    final key = await ref.read(settingsRepositoryProvider).getAppLocale();
+    if (!mounted) return;
+    applyAppLocale(ref, localeFromKey(key));
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeMode = ref.watch(themeModeProvider);
+    final locale = ref.watch(localeProvider);
     return MaterialApp(
       title: AppConfig.name,
       debugShowCheckedModeBanner: false,
       themeMode: themeMode,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
+      locale: locale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        FallbackLocalizationsDelegate<MaterialLocalizations>(GlobalMaterialLocalizations.delegate),
+        FallbackLocalizationsDelegate<WidgetsLocalizations>(GlobalWidgetsLocalizations.delegate),
+        FallbackLocalizationsDelegate<CupertinoLocalizations>(GlobalCupertinoLocalizations.delegate),
+      ],
       home: const SplashScreen(),
     );
   }

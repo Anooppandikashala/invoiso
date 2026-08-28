@@ -15,7 +15,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 39;
+  final dbVersion = 42;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -115,7 +115,9 @@ class DatabaseHelper {
         invoice_number TEXT,
         invoice_discount_type TEXT DEFAULT 'percent',
         invoice_discount_value REAL DEFAULT 0.0,
-        invoice_title TEXT
+        invoice_title TEXT,
+        hide_invoice_number INTEGER DEFAULT 0,
+        custom_invoice_number TEXT
       )
     ''');
 
@@ -140,7 +142,8 @@ class DatabaseHelper {
         product_alias_name TEXT,
         product_unit TEXT DEFAULT '',
         unit TEXT,
-        product_price_includes_tax INTEGER DEFAULT 0
+        product_price_includes_tax INTEGER DEFAULT 0,
+        description TEXT
       )
     ''');
 
@@ -660,6 +663,55 @@ class DatabaseHelper {
         );
         await db.execute(
           'ALTER TABLE invoices ADD COLUMN invoice_discount_value REAL DEFAULT 0.0',
+        );
+      });
+    }
+
+    if (oldVersion < 40) {
+      await _runMigrationStep(
+          db, 40, 'add_custom_invoice_number_to_invoices', () async {
+        await db.execute(
+          'ALTER TABLE invoices ADD COLUMN hide_invoice_number INTEGER DEFAULT 0',
+        );
+        await db.execute(
+          'ALTER TABLE invoices ADD COLUMN custom_invoice_number TEXT',
+        );
+      });
+    }
+
+    if (oldVersion < 41) {
+      await _runMigrationStep(db, 41, 'backfill_onboarding_completed', () async {
+        // The first-login onboarding wizard shipped without a backfill, so
+        // every upgrading user would be forced through it. If no account is
+        // still on a forced default password, the app was already set up the
+        // long way before the wizard existed — mark onboarding done. An
+        // install still carrying a default-password account (fresh seed, or
+        // an upgrade where admin/admin was never changed) falls through and
+        // gets the wizard. Username isn't checked — it's user-editable.
+        final unchanged = Sqflite.firstIntValue(await db.rawQuery(
+              'SELECT COUNT(*) FROM users WHERE password_changed = 0',
+            )) ??
+            0;
+        if (unchanged == 0) {
+          await db.insert(
+            'settings',
+            {'key': 'onboarding_completed', 'value': 'true'},
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
+        }
+      });
+    }
+
+    if (oldVersion < 42) {
+      // Per-line description entered while building the invoice. Kept separate
+      // from product_description (the product's own text, snapshotted at
+      // invoice time) so editing a line never touches the product catalogue.
+      // NULL on every pre-v42 row, which reads back as "no description" and
+      // prints exactly as those invoices always did.
+      await _runMigrationStep(
+          db, 42, 'add_description_to_invoice_items', () async {
+        await db.execute(
+          'ALTER TABLE invoice_items ADD COLUMN description TEXT',
         );
       });
     }

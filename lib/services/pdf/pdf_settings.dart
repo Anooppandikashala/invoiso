@@ -15,6 +15,8 @@ class PdfGenerationSettings {
   final bool showDiscount;
   final bool showTypeTag;
   final bool showAliasName;
+  final bool showDescription;
+  final bool descriptionNewLine;
   final BusinessType businessType;
   final List<UpiEntry> upiEntries;
   final String? showQrStr;
@@ -49,6 +51,7 @@ class PdfGenerationSettings {
   final double watermarkOpacity;
   final bool showCgstSgst;
   final bool showRoundOff;
+  final bool showLeadingZeros;
 
   const PdfGenerationSettings({
     required this.company,
@@ -82,6 +85,8 @@ class PdfGenerationSettings {
     this.signaturePosition = 'left',
     this.signatureSizePx = 50,
     this.showAliasName = false,
+    this.showDescription = false,
+    this.descriptionNewLine = false,
     this.watermarkBytes,
     this.watermarkOpacity = 0.12,
     this.showRoundOff = false,
@@ -93,5 +98,6 @@ class PdfGenerationSettings {
     this.showWebsite = true,
     this.showAddress = true,
     this.showLogo = true,
+    this.showLeadingZeros = true,
   });
 }

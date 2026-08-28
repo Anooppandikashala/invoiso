@@ -1,12 +1,11 @@
 import 'dart:io';
 import 'dart:convert';
-import 'package:invoiso/common/constants.dart';
+import 'package:invoiso/common/app_config.dart';
 import 'package:invoiso/database/database_helper.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
 
 import 'package:invoiso/common/common.dart';
@@ -38,14 +37,6 @@ class BackupManager {
     BackupType type = BackupType.database,
   }) async {
     try {
-      // Request storage permission
-      if (!await _requestStoragePermission()) {
-        return BackupResult(
-          success: false,
-          message: 'Storage permission denied',
-        );
-      }
-
       final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-');
       final backupName = 'invoice_backup_$timestamp';
 
@@ -445,14 +436,5 @@ class BackupManager {
     }
 
     return await getApplicationDocumentsDirectory();
-  }
-
-  // Request storage permission
-  Future<bool> _requestStoragePermission() async {
-    if (Platform.isAndroid) {
-      final permission = await Permission.storage.request();
-      return permission == PermissionStatus.granted;
-    }
-    return true;
   }
 }

@@ -19,6 +19,8 @@ pw.MultiPage buildCompactTemplate(
   bool showDiscount = true,
   bool showTypeTag = true,
   bool showAliasName = false,
+  bool showDescription = false,
+  bool descriptionNewLine = false,
   BusinessType businessType = BusinessType.both,
   BankAccount? bankAccount,
   String datePattern = 'dd/MM/yyyy',
@@ -39,6 +41,7 @@ pw.MultiPage buildCompactTemplate(
   double watermarkOpacity = 0.12,
   bool showCgstSgst = false,
   bool showRoundOff = false,
+  bool showLeadingZeros = true,
   bool showPhone = true,
   bool showCompanyName = true,
   bool showPan = true,
@@ -226,8 +229,10 @@ pw.MultiPage buildCompactTemplate(
                                       fontSize: sectionHeaderFont,
                                       fontWeight: pw.FontWeight.bold)),
                               pw.SizedBox(height: 1),
-                              pw.Text('No: $invoicePrefix${invoice.invoiceNumber ?? invoice.id}',
-                                  style: pw.TextStyle(fontSize: addressFont)),
+                              if (invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros) != null)
+                                pw.Text(
+                                    'No: ${invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros)}',
+                                    style: pw.TextStyle(fontSize: addressFont)),
                               pw.Text(
                                   'Date: ${formatPdfDate(invoice.date, datePattern)}',
                                   style: pw.TextStyle(fontSize: addressFont)),
@@ -265,6 +270,8 @@ pw.MultiPage buildCompactTemplate(
         showDiscount: showDiscount,
         showTypeTag: showTypeTag,
         showAliasName: showAliasName,
+        showDescription: showDescription,
+        descriptionNewLine: descriptionNewLine,
         businessType: businessType,
         tableFontSize: tableFontSize,
         cellPaddingH: cellPaddingH,

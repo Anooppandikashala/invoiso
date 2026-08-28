@@ -18,6 +18,7 @@ pw.Page buildThermalTemplate(
   bool showQuantity = true,
   bool showDiscount = true,
   bool showAliasName = false,
+  bool showDescription = false,
   String datePattern = 'dd/MM/yyyy',
   String thankYouNote = '',
   bool showFooterBranding = false,
@@ -28,6 +29,7 @@ pw.Page buildThermalTemplate(
   pw.ThemeData? pdfTheme,
   String itemLayout = 'table',
   bool showRoundOff = false,
+  bool showLeadingZeros = true,
   bool showPhone = true,
   bool showCompanyName = true,
   bool showAddress = true,
@@ -141,6 +143,15 @@ pw.Page buildThermalTemplate(
                   ],
                 ),
               ),
+              if (showDescription && item.printedDescription.isNotEmpty)
+                pw.Padding(
+                  padding: const pw.EdgeInsets.only(left: 12),
+                  child: pw.Text(
+                    item.printedDescription,
+                    style: const pw.TextStyle(
+                        fontSize: smallFs, color: PdfColors.grey700),
+                  ),
+                ),
               if (showDiscount && item.totalDiscount > 0)
                 pw.Padding(
                   padding: const pw.EdgeInsets.only(left: 12),
@@ -197,6 +208,15 @@ pw.Page buildThermalTemplate(
                   ),
                 ],
               ),
+              if (showDescription && item.printedDescription.isNotEmpty)
+                pw.Padding(
+                  padding: const pw.EdgeInsets.only(left: 14),
+                  child: pw.Text(
+                    item.printedDescription,
+                    style: const pw.TextStyle(
+                        fontSize: smallFs, color: PdfColors.grey700),
+                  ),
+                ),
               if (showDiscount && item.totalDiscount > 0)
                 pw.Padding(
                   padding: const pw.EdgeInsets.only(left: 14),
@@ -240,7 +260,7 @@ pw.Page buildThermalTemplate(
   }
 
   List<pw.Widget> buildPdfBody() {
-    final dateStr = DateFormat(datePattern).format(invoice.date);
+    final dateStr = DateFormat(datePattern, 'en_US').format(invoice.date);
     final netTotal = roundNetTotal(invoice.total + previousBalanceDue);
     return [
       // ── Business Header ──
@@ -262,8 +282,10 @@ pw.Page buildThermalTemplate(
       pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
-          pw.Text('Inv No: $invoicePrefix${invoice.invoiceNumber ?? invoice.id}',
-              style: const pw.TextStyle(fontSize: bodyFs)),
+          if (invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros) != null)
+            pw.Text(
+                'Inv No: ${invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros)}',
+                style: const pw.TextStyle(fontSize: bodyFs)),
           pw.Text('Date: $dateStr',
               style: const pw.TextStyle(fontSize: bodyFs)),
         ],
@@ -273,7 +295,7 @@ pw.Page buildThermalTemplate(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
             pw.Text('Due:', style: const pw.TextStyle(fontSize: bodyFs)),
-            pw.Text(DateFormat(datePattern).format(invoice.dueDate!),
+            pw.Text(DateFormat(datePattern, 'en_US').format(invoice.dueDate!),
                 style: const pw.TextStyle(fontSize: bodyFs)),
           ],
         ),
@@ -451,6 +473,9 @@ pw.Page buildThermalTemplate(
       if ((invoice.notes ?? '').isNotEmpty) ...[
         pw.SizedBox(height: 4),
         dashedSep(),
+        pw.Text('NOTES',
+            style: pw.TextStyle(
+                fontSize: smallFs, fontWeight: pw.FontWeight.bold)),
         pw.Text(invoice.notes!,
             style: pw.TextStyle(
                 fontSize: smallFs, fontStyle: pw.FontStyle.italic)),
