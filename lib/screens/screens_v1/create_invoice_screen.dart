@@ -631,7 +631,11 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         TextEditingController(text: product.price.toString());
     final extraCostController = TextEditingController();
     final unitController = TextEditingController(text: product.unit);
-    final descriptionController = TextEditingController();
+    // Seed from the product's own description so the user starts from it and
+    // can tweak it for this line; what they leave is snapshotted on the item.
+    // Only when the field is actually shown, else nothing is silently stored.
+    final descriptionController = TextEditingController(
+        text: _showDescriptionInPdf ? product.description : '');
 
     bool discountPerUnit = true;
     String dialogUnit = product.unit;
@@ -3765,9 +3769,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     );
   }
 
-  // Optional per-line description, stored on the invoice item. Starts empty
-  // and is never seeded from product.description, so nothing prints unless
-  // the user types it here.
+  // Optional per-line description, stored on the invoice item. The
+  // add-product dialog seeds it from the product's own description; the
+  // ad-hoc dialog starts empty. Whatever is left here is snapshotted on
+  // the item and prints under the item name.
   Widget _buildItemDescriptionField(TextEditingController controller) {
     return TextField(
       controller: controller,
