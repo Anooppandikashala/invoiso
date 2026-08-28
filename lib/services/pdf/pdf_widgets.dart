@@ -1058,6 +1058,16 @@ String formatPdfDate(DateTime date, String pattern) {
   return DateFormat(pattern, 'en_US').format(date);
 }
 
+/// Invoice date, optionally with the creation time appended.
+/// [timeFormat] '12' → h:mm a (e.g. "2:30 PM"), anything else → HH:mm (24h).
+String formatPdfDateTime(DateTime date, String pattern,
+    {bool showTime = true, String timeFormat = '24'}) {
+  final dateStr = formatPdfDate(date, pattern);
+  if (!showTime) return dateStr;
+  final timePattern = timeFormat == '12' ? 'h:mm a' : 'HH:mm';
+  return '$dateStr ${DateFormat(timePattern, 'en_US').format(date)}';
+}
+
 String formatInvoiceNumberForDisplay(String number, bool showLeadingZeros) {
   if (showLeadingZeros) return number;
   final stripped = number.replaceFirst(RegExp(r'^0+'), '');

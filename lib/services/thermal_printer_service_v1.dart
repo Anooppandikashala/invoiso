@@ -186,7 +186,9 @@ class ThermalPrinterService {
 
     // ── Invoice meta ──
     final dateFormatter = DateFormat(dateFmt.key, 'en_US');
-    final dateStr = dateFormatter.format(invoice.date);
+    final dateStr = settings.showTimeInPdf
+        ? '${dateFormatter.format(invoice.date)} ${DateFormat(settings.pdfTimeFormat == '12' ? 'h:mm a' : 'HH:mm', 'en_US').format(invoice.date)}'
+        : dateFormatter.format(invoice.date);
     final numberText = invoice.pdfNumberText(settings.invoicePrefix,
         showLeadingZeros: settings.showLeadingZeros);
     twoCol(numberText != null ? 'Inv No: $numberText' : '', 'Date: $dateStr');
@@ -197,13 +199,16 @@ class ThermalPrinterService {
 
     // ── Customer ──
     line('Name: ${invoice.customer.name}', bold: true);
-    if (invoice.customer.businessName.isNotEmpty) {
+    if (settings.showCustomerBusinessName &&
+        invoice.customer.businessName.isNotEmpty) {
       line(invoice.customer.businessName);
     }
-    if (invoice.customer.phone.isNotEmpty) {
+    if (settings.showCustomerPhone && invoice.customer.phone.isNotEmpty) {
       line('Ph: ${invoice.customer.phone}');
     }
-    if (settings.showGst && invoice.customer.gstin.isNotEmpty) {
+    if (settings.showGst &&
+        settings.showCustomerGstin &&
+        invoice.customer.gstin.isNotEmpty) {
       line('${taxLabel(company?.country)}: ${invoice.customer.gstin}');
     }
     hr();

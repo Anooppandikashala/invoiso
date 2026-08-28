@@ -36,6 +36,8 @@ class _InvoiceSettingsScreenV2State
   String _selectedCurrencyCode = 'INR';
   String _selectedLogoSize = 'medium';
   DateFormatOption _selectedDateFormat = DateFormatOption.ddmmyyyy;
+  bool _showTimeInPdf = true;
+  String _pdfTimeFormat = '24';
   bool _showGstFields = true;
   bool _fractionalQuantity = false;
   bool _showQuantity = true;
@@ -45,6 +47,11 @@ class _InvoiceSettingsScreenV2State
   bool _showAliasNameInPdf = false;
   bool _showDescriptionInPdf = false;
   bool _descriptionNewLineInPdf = false;
+  bool _showCustomerBusinessName = true;
+  bool _showCustomerAddress = true;
+  bool _showCustomerPhone = true;
+  bool _showCustomerEmail = true;
+  bool _showCustomerGstin = true;
   bool _showTaxButtonInInvoicePage = true;
   bool _hideInvoiceNumberByDefault = false;
   bool _showCgstSgst = false;
@@ -109,6 +116,13 @@ class _InvoiceSettingsScreenV2State
       settingsRepo.getHideInvoiceNumberByDefault(),
       settingsRepo.getSetting(SettingKey.showDescriptionInPdf),
       settingsRepo.getSetting(SettingKey.descriptionNewLineInPdf),
+      settingsRepo.getShowCustomerBusinessName(),
+      settingsRepo.getShowCustomerAddress(),
+      settingsRepo.getShowCustomerPhone(),
+      settingsRepo.getShowCustomerEmail(),
+      settingsRepo.getShowCustomerGstin(),
+      settingsRepo.getShowTimeInPdf(),
+      settingsRepo.getPdfTimeFormat(),
     ]);
 
     if (!mounted) return;
@@ -148,6 +162,13 @@ class _InvoiceSettingsScreenV2State
       _hideInvoiceNumberByDefault = results[30] as bool;
       _showDescriptionInPdf = (results[31] as String?) == 'true';
       _descriptionNewLineInPdf = (results[32] as String?) == 'true';
+      _showCustomerBusinessName = results[33] as bool;
+      _showCustomerAddress = results[34] as bool;
+      _showCustomerPhone = results[35] as bool;
+      _showCustomerEmail = results[36] as bool;
+      _showCustomerGstin = results[37] as bool;
+      _showTimeInPdf = results[38] as bool;
+      _pdfTimeFormat = results[39] as String;
       _isLoading = false;
     });
   }
@@ -212,6 +233,13 @@ class _InvoiceSettingsScreenV2State
             SettingKey.showDescriptionInPdf, _showDescriptionInPdf.toString()),
         settingsRepo.setSetting(SettingKey.descriptionNewLineInPdf,
             _descriptionNewLineInPdf.toString()),
+        settingsRepo.setShowCustomerBusinessName(_showCustomerBusinessName),
+        settingsRepo.setShowCustomerAddress(_showCustomerAddress),
+        settingsRepo.setShowCustomerPhone(_showCustomerPhone),
+        settingsRepo.setShowCustomerEmail(_showCustomerEmail),
+        settingsRepo.setShowCustomerGstin(_showCustomerGstin),
+        settingsRepo.setShowTimeInPdf(_showTimeInPdf),
+        settingsRepo.setPdfTimeFormat(_pdfTimeFormat),
       ]);
 
       if (!mounted) return;
@@ -328,6 +356,7 @@ class _InvoiceSettingsScreenV2State
     Icons.image_outlined,
     Icons.percent_rounded,
     Icons.view_list_rounded,
+    Icons.person_outline,
   ];
 
   String _navSectionLabelV2(BuildContext context, int index) {
@@ -336,7 +365,8 @@ class _InvoiceSettingsScreenV2State
       0 => l10n.invoiceSettingsSectionGeneral,
       1 => l10n.invoiceSettingsSectionBranding,
       2 => l10n.invoiceSettingsSectionTax,
-      _ => l10n.invoiceSettingsSectionItems,
+      3 => l10n.invoiceSettingsSectionItems,
+      _ => l10n.invoiceSettingsSectionCustomer,
     };
   }
 
@@ -588,6 +618,30 @@ class _InvoiceSettingsScreenV2State
             if (!mounted) return;
             setState(() => _selectedDateFormat = value!);
           },
+        ),
+        DropdownButtonFormField<String>(
+          isExpanded: true,
+          value: _pdfTimeFormat,
+          decoration: _fieldDecorationV2(context,
+              label: l10n.invoiceSettingsTimeFormatLabel,
+              prefixIcon: const Icon(Icons.schedule)),
+          items: [
+            DropdownMenuItem(
+                value: '24', child: Text(l10n.invoiceSettingsTimeFormat24)),
+            DropdownMenuItem(
+                value: '12', child: Text(l10n.invoiceSettingsTimeFormat12)),
+          ],
+          onChanged: (value) {
+            if (!mounted) return;
+            setState(() => _pdfTimeFormat = value!);
+          },
+        ),
+        _toggleCardV2(
+          title: l10n.invoiceSettingsShowTimeInPdfLabel,
+          subtitle: l10n.invoiceSettingsShowTimeInPdfSubtitle,
+          icon: Icons.access_time,
+          value: _showTimeInPdf,
+          onChanged: (val) => setState(() => _showTimeInPdf = val),
         ),
         TextField(
           controller: quantityLabelController,
@@ -1133,9 +1187,63 @@ class _InvoiceSettingsScreenV2State
         return _sectionTaxV2();
       case 3:
         return _sectionItemsV2();
+      case 4:
+        return _sectionCustomerV2();
       default:
         return _sectionLanguageV2();
     }
+  }
+
+  // Customer details visibility on PDFs / thermal receipts. Each field is only
+  // ever printed when it's toggled on AND the customer actually has a value —
+  // toggling on never forces an empty line. Name is always shown.
+  Widget _sectionCustomerV2() {
+    final l10n = AppLocalizations.of(context)!;
+    return _fieldWrapV2(
+      [],
+      [
+        Text(l10n.invoiceSettingsCustomerSectionHint,
+            style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant)),
+        const SizedBox(height: 4),
+        _toggleCardV2(
+          title: l10n.invoiceSettingsShowCustomerBusinessNameLabel,
+          subtitle: l10n.invoiceSettingsShowCustomerBusinessNameSubtitle,
+          icon: Icons.business_outlined,
+          value: _showCustomerBusinessName,
+          onChanged: (val) => setState(() => _showCustomerBusinessName = val),
+        ),
+        _toggleCardV2(
+          title: l10n.invoiceSettingsShowCustomerAddressLabel,
+          subtitle: l10n.invoiceSettingsShowCustomerAddressSubtitle,
+          icon: Icons.location_on_outlined,
+          value: _showCustomerAddress,
+          onChanged: (val) => setState(() => _showCustomerAddress = val),
+        ),
+        _toggleCardV2(
+          title: l10n.invoiceSettingsShowCustomerPhoneLabel,
+          subtitle: l10n.invoiceSettingsShowCustomerPhoneSubtitle,
+          icon: Icons.phone_outlined,
+          value: _showCustomerPhone,
+          onChanged: (val) => setState(() => _showCustomerPhone = val),
+        ),
+        _toggleCardV2(
+          title: l10n.invoiceSettingsShowCustomerEmailLabel,
+          subtitle: l10n.invoiceSettingsShowCustomerEmailSubtitle,
+          icon: Icons.email_outlined,
+          value: _showCustomerEmail,
+          onChanged: (val) => setState(() => _showCustomerEmail = val),
+        ),
+        _toggleCardV2(
+          title: l10n.invoiceSettingsShowCustomerGstinLabel,
+          subtitle: l10n.invoiceSettingsShowCustomerGstinSubtitle,
+          icon: Icons.badge_outlined,
+          value: _showCustomerGstin,
+          onChanged: (val) => setState(() => _showCustomerGstin = val),
+        ),
+      ],
+    );
   }
 
   Widget _promoCardV2() {

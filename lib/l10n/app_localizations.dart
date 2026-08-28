@@ -4986,6 +4986,108 @@ abstract class AppLocalizations {
   /// **'Invoice Items'**
   String get invoiceSettingsSectionItems;
 
+  /// No description provided for @invoiceSettingsSectionCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer Details'**
+  String get invoiceSettingsSectionCustomer;
+
+  /// No description provided for @invoiceSettingsCustomerSectionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose which customer details print on invoice PDFs and thermal receipts. A field only shows when it\'s enabled and the customer has a value for it. Customer name is always shown.'**
+  String get invoiceSettingsCustomerSectionHint;
+
+  /// No description provided for @invoiceSettingsShowCustomerBusinessNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Business Name'**
+  String get invoiceSettingsShowCustomerBusinessNameLabel;
+
+  /// No description provided for @invoiceSettingsShowCustomerBusinessNameSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Print the customer\'s business name under their name'**
+  String get invoiceSettingsShowCustomerBusinessNameSubtitle;
+
+  /// No description provided for @invoiceSettingsShowCustomerAddressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Address'**
+  String get invoiceSettingsShowCustomerAddressLabel;
+
+  /// No description provided for @invoiceSettingsShowCustomerAddressSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Print the customer\'s address in the Bill To block'**
+  String get invoiceSettingsShowCustomerAddressSubtitle;
+
+  /// No description provided for @invoiceSettingsShowCustomerPhoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Phone'**
+  String get invoiceSettingsShowCustomerPhoneLabel;
+
+  /// No description provided for @invoiceSettingsShowCustomerPhoneSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Print the customer\'s phone number'**
+  String get invoiceSettingsShowCustomerPhoneSubtitle;
+
+  /// No description provided for @invoiceSettingsShowCustomerEmailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Email'**
+  String get invoiceSettingsShowCustomerEmailLabel;
+
+  /// No description provided for @invoiceSettingsShowCustomerEmailSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Print the customer\'s email address (not shown on thermal receipts)'**
+  String get invoiceSettingsShowCustomerEmailSubtitle;
+
+  /// No description provided for @invoiceSettingsShowCustomerGstinLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show GSTIN / Tax ID'**
+  String get invoiceSettingsShowCustomerGstinLabel;
+
+  /// No description provided for @invoiceSettingsShowCustomerGstinSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Print the customer\'s GSTIN / tax id (requires GST fields on)'**
+  String get invoiceSettingsShowCustomerGstinSubtitle;
+
+  /// No description provided for @invoiceSettingsShowTimeInPdfLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Time on PDF'**
+  String get invoiceSettingsShowTimeInPdfLabel;
+
+  /// No description provided for @invoiceSettingsShowTimeInPdfSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Append the invoice creation time next to the date on PDFs and thermal receipts'**
+  String get invoiceSettingsShowTimeInPdfSubtitle;
+
+  /// No description provided for @invoiceSettingsTimeFormatLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Time Format'**
+  String get invoiceSettingsTimeFormatLabel;
+
+  /// No description provided for @invoiceSettingsTimeFormat24.
+  ///
+  /// In en, this message translates to:
+  /// **'24-hour (14:30)'**
+  String get invoiceSettingsTimeFormat24;
+
+  /// No description provided for @invoiceSettingsTimeFormat12.
+  ///
+  /// In en, this message translates to:
+  /// **'12-hour (2:30 PM)'**
+  String get invoiceSettingsTimeFormat12;
+
   /// No description provided for @invoiceSettingsPrefixLabel.
   ///
   /// In en, this message translates to:

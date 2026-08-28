@@ -29,6 +29,13 @@ class PdfGenerationSettings {
   final bool showWebsite;
   final bool showAddress;
   final bool showLogo;
+  final bool showCustomerBusinessName;
+  final bool showCustomerAddress;
+  final bool showCustomerPhone;
+  final bool showCustomerEmail;
+  final bool showCustomerGstin;
+  final bool showTimeInPdf;
+  final String pdfTimeFormat;
   final List<BankAccount> bankAccounts;
   final LogoPosition logoPosition;
   final double logoSizePx;
@@ -98,6 +105,13 @@ class PdfGenerationSettings {
     this.showWebsite = true,
     this.showAddress = true,
     this.showLogo = true,
+    this.showCustomerBusinessName = true,
+    this.showCustomerAddress = true,
+    this.showCustomerPhone = true,
+    this.showCustomerEmail = true,
+    this.showCustomerGstin = true,
+    this.showTimeInPdf = true,
+    this.pdfTimeFormat = '24',
     this.showLeadingZeros = true,
   });
 }

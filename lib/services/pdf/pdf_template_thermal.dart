@@ -33,6 +33,11 @@ pw.Page buildThermalTemplate(
   bool showPhone = true,
   bool showCompanyName = true,
   bool showAddress = true,
+  bool showCustomerBusinessName = true,
+  bool showCustomerPhone = true,
+  bool showCustomerGstin = true,
+  bool showTimeInPdf = true,
+  String pdfTimeFormat = '24',
 }) {
   const double bodyFs = 6;
   const double smallFs = 5.5;
@@ -260,7 +265,8 @@ pw.Page buildThermalTemplate(
   }
 
   List<pw.Widget> buildPdfBody() {
-    final dateStr = DateFormat(datePattern, 'en_US').format(invoice.date);
+    final dateStr = formatPdfDateTime(invoice.date, datePattern,
+        showTime: showTimeInPdf, timeFormat: pdfTimeFormat);
     final netTotal = roundNetTotal(invoice.total + previousBalanceDue);
     return [
       // ── Business Header ──
@@ -306,13 +312,13 @@ pw.Page buildThermalTemplate(
       pw.Text('Name: ${invoice.customer.name}',
           style: pw.TextStyle(
               fontSize: bodyFs, fontWeight: pw.FontWeight.bold)),
-      if (invoice.customer.businessName.isNotEmpty)
+      if (showCustomerBusinessName && invoice.customer.businessName.isNotEmpty)
         pw.Text(invoice.customer.businessName,
             style: const pw.TextStyle(fontSize: smallFs)),
-      if (invoice.customer.phone.isNotEmpty)
+      if (showCustomerPhone && invoice.customer.phone.isNotEmpty)
         pw.Text('Ph: ${invoice.customer.phone}',
             style: const pw.TextStyle(fontSize: smallFs)),
-      if (showGst && invoice.customer.gstin.isNotEmpty)
+      if (showGst && showCustomerGstin && invoice.customer.gstin.isNotEmpty)
         pw.Text('${taxLabel(company?.country)}: ${invoice.customer.gstin}',
             style: const pw.TextStyle(fontSize: smallFs)),
       pw.SizedBox(height: 3),

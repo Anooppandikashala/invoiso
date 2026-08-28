@@ -49,6 +49,13 @@ pw.MultiPage buildClassicTemplate(
   bool showWebsite = true,
   bool showAddress = true,
   bool showLogo = true,
+  bool showCustomerBusinessName = true,
+  bool showCustomerAddress = true,
+  bool showCustomerPhone = true,
+  bool showCustomerEmail = true,
+  bool showCustomerGstin = true,
+  bool showTimeInPdf = true,
+  String pdfTimeFormat = '24',
 }) {
   final accentColor = themeColor ?? PdfColors.indigo900;
   final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
@@ -161,16 +168,19 @@ pw.MultiPage buildClassicTemplate(
                     pw.SizedBox(height: classicPdfStyle.headerGap),
                     pw.Text(invoice.customer.name,
                         style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: classicPdfStyle.bodyFontSize)),
-                    if (invoice.customer.businessName.isNotEmpty)
+                    if (showCustomerBusinessName && invoice.customer.businessName.isNotEmpty)
                       pw.Text(invoice.customer.businessName,
                           style: pw.TextStyle(fontSize: classicPdfStyle.bodyFontSize)),
-                    pw.Text(invoice.customer.address,
-                        style: pw.TextStyle(fontSize: classicPdfStyle.bodyFontSize)),
-                    pw.Text(invoice.customer.phone,
-                        style: pw.TextStyle(fontSize: classicPdfStyle.bodyFontSize)),
-                    pw.Text(invoice.customer.email,
-                        style: pw.TextStyle(fontSize: classicPdfStyle.bodyFontSize)),
-                    if (showGst)
+                    if (showCustomerAddress && invoice.customer.address.isNotEmpty)
+                      pw.Text(invoice.customer.address,
+                          style: pw.TextStyle(fontSize: classicPdfStyle.bodyFontSize)),
+                    if (showCustomerPhone && invoice.customer.phone.isNotEmpty)
+                      pw.Text(invoice.customer.phone,
+                          style: pw.TextStyle(fontSize: classicPdfStyle.bodyFontSize)),
+                    if (showCustomerEmail && invoice.customer.email.isNotEmpty)
+                      pw.Text(invoice.customer.email,
+                          style: pw.TextStyle(fontSize: classicPdfStyle.bodyFontSize)),
+                    if (showGst && showCustomerGstin && invoice.customer.gstin.isNotEmpty)
                       pw.Text(
                           "${taxLabel(company?.country)}: ${invoice.customer.gstin}",
                           style: pw.TextStyle(
@@ -189,7 +199,8 @@ pw.MultiPage buildClassicTemplate(
                 pw.Text(
                     "#: ${invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros)}",
                     style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: classicPdfStyle.subtitleFontSize)),
-              pw.Text("Date: ${formatPdfDate(invoice.date, datePattern)}",
+              pw.Text(
+                  "Date: ${formatPdfDateTime(invoice.date, datePattern, showTime: showTimeInPdf, timeFormat: pdfTimeFormat)}",
                   style: pw.TextStyle(fontSize: classicPdfStyle.bodyFontSize)),
               if (invoice.dueDate != null)
                 pw.Text("Due Date: ${formatPdfDate(invoice.dueDate!, datePattern)}",
