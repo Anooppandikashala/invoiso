@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/common/common.dart';
+import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/common/constants.dart';
 
@@ -36,13 +37,14 @@ class _ProductColumnsSettingsScreenState
 
   Future<void> _saveConfig() async {
     if (_isSaving) return;
+    final l10n = AppLocalizations.of(context)!;
     setState(() => _isSaving = true);
     try {
       final settingsRepo = ref.read(settingsRepositoryProvider);
       await settingsRepo.setProductColumnsConfig(_config);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Product columns saved.')),
+        SnackBar(content: Text(l10n.productColumnsSavedMessage)),
       );
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -107,7 +109,7 @@ class _ProductColumnsSettingsScreenState
             ? null
             : Colors.grey[50],
         appBar: AppBar(
-          title: const Text('Customize Product Details'),
+          title: Text(AppLocalizations.of(context)!.productColumnsScreenTitle),
           backgroundColor: Theme.of(context).appBarTheme.backgroundColor ??
               Theme.of(context).primaryColor,
           foregroundColor: Colors.white,
@@ -117,12 +119,13 @@ class _ProductColumnsSettingsScreenState
       );
     }
 
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: Theme.of(context).brightness == Brightness.dark
           ? null
           : Colors.grey[50],
       appBar: AppBar(
-        title: const Text('Customize Product Details'),
+        title: Text(l10n.productColumnsScreenTitle),
         backgroundColor: Theme.of(context).appBarTheme.backgroundColor ??
             Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
@@ -152,7 +155,9 @@ class _ProductColumnsSettingsScreenState
                                 child: CircularProgressIndicator(
                                     strokeWidth: 2, color: Colors.white))
                             : const Icon(Icons.save_rounded),
-                        label: Text(_isSaving ? 'Saving...' : 'Save'),
+                        label: Text(_isSaving
+                            ? l10n.createInvoiceSavingEllipsisLabel
+                            : l10n.actionSave),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Theme.of(context).primaryColor,
                           foregroundColor: Colors.white,
@@ -193,9 +198,7 @@ class _ProductColumnsSettingsScreenState
                           Padding(
                             padding: const EdgeInsets.only(bottom: 12),
                             child: Text(
-                              'Choose which fields appear on the product add/edit forms, '
-                              'the product list, and invoice line items. Name and Price '
-                              'are always required.',
+                              l10n.productColumnsIntroText,
                               style: TextStyle(
                                   color: Theme.of(context)
                                       .colorScheme
@@ -203,104 +206,103 @@ class _ProductColumnsSettingsScreenState
                             ),
                           ),
                           _tile(
-                            title: 'Name',
-                            subtitle: 'Always shown — required.',
+                            title: l10n.productColumnsNameLabel,
+                            subtitle: l10n.productColumnsAlwaysRequiredSubtitle,
                             icon: Icons.label_outline,
                             value: true,
                             onChanged: null,
                           ),
                           _tile(
-                            title: 'Price',
-                            subtitle: 'Always shown — required.',
+                            title: l10n.productColumnsPriceLabel,
+                            subtitle: l10n.productColumnsAlwaysRequiredSubtitle,
                             icon: Icons.currency_rupee,
                             value: true,
                             onChanged: null,
                           ),
                           _tile(
-                            title: 'Stock',
-                            subtitle: 'Turn off if you never track stock — '
-                                'products default to unlimited stock instead.',
+                            title: l10n.productColumnsStockLabel,
+                            subtitle: l10n.productColumnsStockSubtitle,
                             icon: Icons.inventory_2_outlined,
                             value: _config.stock,
                             onChanged: (v) => setState(
                                 () => _config = _config.copyWith(stock: v)),
                           ),
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 8),
-                            child: Text('Product fields',
-                                style: TextStyle(fontWeight: FontWeight.bold)),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Text(
+                                l10n.productColumnsProductFieldsSectionTitle,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold)),
                           ),
                           _tile(
-                            title: 'Alias Name',
-                            subtitle:
-                                'Local-language display name for PDFs/printing.',
+                            title: l10n.productColumnsAliasNameLabel,
+                            subtitle: l10n.productColumnsAliasNameSubtitle,
                             icon: Icons.translate,
                             value: _config.aliasName,
                             onChanged: (v) => setState(
                                 () => _config = _config.copyWith(aliasName: v)),
                           ),
                           _tile(
-                            title: 'Tax Rate',
-                            subtitle: 'Per-product tax percentage.',
+                            title: l10n.productColumnsTaxRateLabel,
+                            subtitle: l10n.productColumnsTaxRateSubtitle,
                             icon: Icons.percent_rounded,
                             value: _config.taxRate,
                             onChanged: (v) => setState(
                                 () => _config = _config.copyWith(taxRate: v)),
                           ),
                           _tile(
-                            title: 'HSN/SAC',
-                            subtitle: 'HSN or SAC code field.',
+                            title: l10n.productColumnsHsnSacLabel,
+                            subtitle: l10n.productColumnsHsnSacSubtitle,
                             icon: Icons.qr_code_2,
                             value: _config.hsncode,
                             onChanged: (v) => setState(
                                 () => _config = _config.copyWith(hsncode: v)),
                           ),
                           _tile(
-                            title: 'Description',
-                            subtitle: 'Free-text product description.',
+                            title: l10n.productColumnsDescriptionLabel,
+                            subtitle: l10n.productColumnsDescriptionSubtitle,
                             icon: Icons.notes,
                             value: _config.description,
                             onChanged: (v) => setState(() =>
                                 _config = _config.copyWith(description: v)),
                           ),
                           _tile(
-                            title: 'Purchase Price',
-                            subtitle: 'Cost price, for margin tracking.',
+                            title: l10n.productColumnsPurchasePriceLabel,
+                            subtitle: l10n.productColumnsPurchasePriceSubtitle,
                             icon: Icons.shopping_cart_outlined,
                             value: _config.purchasePrice,
                             onChanged: (v) => setState(() =>
                                 _config = _config.copyWith(purchasePrice: v)),
                           ),
                           _tile(
-                            title: 'Default Discount',
+                            title: l10n.productColumnsDefaultDiscountLabel,
                             subtitle:
-                                'Pre-filled discount when adding this product to an invoice.',
+                                l10n.productColumnsDefaultDiscountSubtitle,
                             icon: Icons.discount_outlined,
                             value: _config.defaultDiscount,
                             onChanged: (v) => setState(() =>
                                 _config = _config.copyWith(defaultDiscount: v)),
                           ),
                           _tile(
-                            title: 'Unit',
-                            subtitle: 'Unit of measure (pcs, kg, hrs...).',
+                            title: l10n.productColumnsUnitLabel,
+                            subtitle: l10n.productColumnsUnitSubtitle,
                             icon: Icons.straighten,
                             value: _config.unit,
                             onChanged: (v) => setState(
                                 () => _config = _config.copyWith(unit: v)),
                           ),
                           _tile(
-                            title: 'Product/Service Type',
-                            subtitle: 'Segmented Product vs Service selector.',
+                            title: l10n.productColumnsProductServiceTypeLabel,
+                            subtitle:
+                                l10n.productColumnsProductServiceTypeSubtitle,
                             icon: Icons.category_outlined,
                             value: _config.type,
                             onChanged: (v) => setState(
                                 () => _config = _config.copyWith(type: v)),
                           ),
                           _tile(
-                            title: 'Product Metadata',
-                            subtitle:
-                                'Storage location, container/batch number, expiry, '
-                                'manufacture date, supplier, SKU, notes.',
+                            title: l10n.productColumnsMetadataLabel,
+                            subtitle: l10n.productColumnsMetadataSubtitle,
                             icon: Icons.more_horiz,
                             value: _config.productMetadata,
                             onChanged: (v) => setState(() =>
@@ -308,63 +310,66 @@ class _ProductColumnsSettingsScreenState
                           ),
                           if (_config.productMetadata) ...[
                             _subTile(
-                              title: 'Storage Location',
+                              title:
+                                  l10n.productColumnsMetaStorageLocationLabel,
                               value: _config.metaStorageLocation,
                               onChanged: (v) => setState(() => _config =
                                   _config.copyWith(metaStorageLocation: v)),
                             ),
                             _subTile(
-                              title: 'Container Number',
+                              title:
+                                  l10n.productColumnsMetaContainerNumberLabel,
                               value: _config.metaContainerNumber,
                               onChanged: (v) => setState(() => _config =
                                   _config.copyWith(metaContainerNumber: v)),
                             ),
                             _subTile(
-                              title: 'Batch Number',
+                              title: l10n.productColumnsMetaBatchNumberLabel,
                               value: _config.metaBatchNumber,
                               onChanged: (v) => setState(() => _config =
                                   _config.copyWith(metaBatchNumber: v)),
                             ),
                             _subTile(
-                              title: 'Expiry Date',
+                              title: l10n.productColumnsMetaExpiryDateLabel,
                               value: _config.metaExpiryDate,
                               onChanged: (v) => setState(() => _config =
                                   _config.copyWith(metaExpiryDate: v)),
                             ),
                             _subTile(
-                              title: 'Manufacture Date',
+                              title:
+                                  l10n.productColumnsMetaManufactureDateLabel,
                               value: _config.metaManufactureDate,
                               onChanged: (v) => setState(() => _config =
                                   _config.copyWith(metaManufactureDate: v)),
                             ),
                             _subTile(
-                              title: 'Supplier Name',
+                              title: l10n.productColumnsMetaSupplierNameLabel,
                               value: _config.metaSupplierName,
                               onChanged: (v) => setState(() => _config =
                                   _config.copyWith(metaSupplierName: v)),
                             ),
                             _subTile(
-                              title: 'SKU Code',
+                              title: l10n.productColumnsMetaSkuCodeLabel,
                               value: _config.metaSkuCode,
                               onChanged: (v) => setState(() =>
                                   _config = _config.copyWith(metaSkuCode: v)),
                             ),
                             _subTile(
-                              title: 'Notes',
+                              title: l10n.productColumnsMetaNotesLabel,
                               value: _config.metaNotes,
                               onChanged: (v) => setState(() =>
                                   _config = _config.copyWith(metaNotes: v)),
                             ),
                           ],
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 8),
-                            child: Text('Invoice',
-                                style: TextStyle(fontWeight: FontWeight.bold)),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Text(l10n.labelInvoice,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold)),
                           ),
                           _tile(
-                            title: 'Extra Cost',
-                            subtitle:
-                                'Optional flat extra charge on an invoice line item.',
+                            title: l10n.productColumnsExtraCostLabel,
+                            subtitle: l10n.productColumnsExtraCostSubtitle,
                             icon: Icons.add_card_outlined,
                             value: _config.extraCost,
                             onChanged: (v) => setState(

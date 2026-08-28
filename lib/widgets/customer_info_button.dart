@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/models/customer.dart';
 
 /// Tapping the ⓘ icon shows a clean dialog with the customer's full contact details.
@@ -10,7 +11,7 @@ class CustomerInfoButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Tooltip(
-      message: 'View contact details',
+      message: AppLocalizations.of(context)!.customerInfoButtonTooltip,
       child: InkWell(
         onTap: () => _showDialog(context),
         borderRadius: BorderRadius.circular(4),
@@ -23,6 +24,7 @@ class CustomerInfoButton extends StatelessWidget {
   }
 
   void _showDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final c = customer;
     final hasAny = c.phone.isNotEmpty ||
         c.email.isNotEmpty ||
@@ -62,7 +64,8 @@ class CustomerInfoButton extends StatelessWidget {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                      icon: const Icon(Icons.close,
+                          color: Colors.white70, size: 20),
                       onPressed: () => Navigator.pop(ctx),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
@@ -81,18 +84,26 @@ class CustomerInfoButton extends StatelessWidget {
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         child: Text(
-                          'No contact details available.',
-                          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13),
+                          l10n.customerInfoButtonNoContactMessage,
+                          style: TextStyle(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                              fontSize: 13),
                         ),
                       ),
                     if (c.phone.isNotEmpty)
-                      _infoRow(context, Icons.phone_outlined, 'Phone', c.phone, Colors.green),
+                      _infoRow(context, Icons.phone_outlined,
+                          l10n.fieldPhoneLabel, c.phone, Colors.green),
                     if (c.email.isNotEmpty)
-                      _infoRow(context, Icons.email_outlined, 'Email', c.email, Colors.blue),
+                      _infoRow(context, Icons.email_outlined,
+                          l10n.fieldEmailLabel, c.email, Colors.blue),
                     if (c.address.isNotEmpty)
-                      _infoRow(context, Icons.location_on_outlined, 'Address', c.address, Colors.orange),
+                      _infoRow(context, Icons.location_on_outlined,
+                          l10n.fieldAddressLabel, c.address, Colors.orange),
                     if (c.gstin.isNotEmpty)
-                      _infoRow(context, Icons.badge_outlined, 'GSTIN', c.gstin, Colors.purple),
+                      _infoRow(context, Icons.badge_outlined,
+                          l10n.fieldGstinLabel, c.gstin, Colors.purple),
                   ],
                 ),
               ),
@@ -104,7 +115,7 @@ class CustomerInfoButton extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(0, 4, 16, 12),
                   child: TextButton(
                     onPressed: () => Navigator.pop(ctx),
-                    child: const Text('Close'),
+                    child: Text(l10n.actionClose),
                   ),
                 ),
               ),
@@ -115,7 +126,8 @@ class CustomerInfoButton extends StatelessWidget {
     );
   }
 
-  Widget _infoRow(BuildContext context, IconData icon, String label, String value, Color color) {
+  Widget _infoRow(BuildContext context, IconData icon, String label,
+      String value, Color color) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Row(
@@ -145,7 +157,9 @@ class CustomerInfoButton extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   value,
-                  style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurface),
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurface),
                 ),
               ],
             ),

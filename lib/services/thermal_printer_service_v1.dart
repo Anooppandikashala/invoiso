@@ -185,7 +185,7 @@ class ThermalPrinterService {
     hr();
 
     // ── Invoice meta ──
-    final dateFormatter = DateFormat(dateFmt.key);
+    final dateFormatter = DateFormat(dateFmt.key, 'en_US');
     final dateStr = dateFormatter.format(invoice.date);
     final numberText = invoice.pdfNumberText(settings.invoicePrefix,
         showLeadingZeros: settings.showLeadingZeros);

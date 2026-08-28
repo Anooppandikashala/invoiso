@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:invoiso/common/constants.dart';
+import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/providers/app_config_provider.dart';
 import 'package:invoiso/services/update_service.dart';
 
@@ -28,15 +29,16 @@ class _AppInfoScreenState extends ConsumerState<AppInfoScreen> {
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).primaryColor;
     final cfg = ref.watch(appEditionConfigProvider);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: Theme.of(context).brightness == Brightness.dark
           ? null
           : Colors.grey[50],
       appBar: AppBar(
-        title: const Text('Software Information'),
-        backgroundColor: Theme.of(context).appBarTheme.backgroundColor ??
-            primaryColor,
+        title: Text(l10n.appInfoTitle),
+        backgroundColor:
+            Theme.of(context).appBarTheme.backgroundColor ?? primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
@@ -55,7 +57,8 @@ class _AppInfoScreenState extends ConsumerState<AppInfoScreen> {
                   color: Theme.of(context).colorScheme.surfaceContainer,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppBorderRadius.medium),
-                    side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+                    side: BorderSide(
+                        color: Theme.of(context).colorScheme.outlineVariant),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
@@ -64,7 +67,9 @@ class _AppInfoScreenState extends ConsumerState<AppInfoScreen> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Image.asset(
-                          Theme.of(context).brightness == Brightness.dark ? 'assets/images/logo_dark.png' : 'assets/images/logo.png',
+                          Theme.of(context).brightness == Brightness.dark
+                              ? 'assets/images/logo_dark.png'
+                              : 'assets/images/logo.png',
                           width: 130,
                           height: 52,
                           fit: BoxFit.contain,
@@ -87,7 +92,9 @@ class _AppInfoScreenState extends ConsumerState<AppInfoScreen> {
                                 cfg.description,
                                 style: TextStyle(
                                   fontSize: AppFontSize.small,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
                                   height: 1.5,
                                 ),
                               ),
@@ -126,24 +133,26 @@ class _AppInfoScreenState extends ConsumerState<AppInfoScreen> {
                   children: [
                     Expanded(
                       flex: 2,
-                      child: _infoCard('APP DETAILS', [
-                        _infoRow(Icons.apps_rounded, 'App Name',
+                      child: _infoCard(l10n.appInfoAppDetailsTitle, [
+                        _infoRow(Icons.apps_rounded, l10n.appInfoAppNameLabel,
                             cfg.name.toUpperCase()),
-                        _infoRow(Icons.tag_rounded, 'Version',
+                        _infoRow(Icons.tag_rounded, l10n.appInfoVersionLabel,
                             cfg.version),
-                        _infoRow(Icons.gavel_rounded, 'License',
+                        _infoRow(Icons.gavel_rounded, l10n.appInfoLicenseLabel,
                             cfg.license.toUpperCase()),
                       ]),
                     ),
                     const SizedBox(width: 20),
                     Expanded(
                       flex: 3,
-                      child: _infoCard('DEVELOPER', [
-                        _infoRow(Icons.person_rounded, 'Developer',
+                      child: _infoCard(l10n.appInfoDeveloperTitle, [
+                        _infoRow(
+                            Icons.person_rounded,
+                            l10n.appInfoDeveloperLabel,
                             cfg.developer.toUpperCase()),
-                        _infoRow(Icons.email_rounded, 'Support Email',
-                            cfg.supportEmail),
-                        _infoRow(Icons.language_rounded, 'Website',
+                        _infoRow(Icons.email_rounded,
+                            l10n.appInfoSupportEmailLabel, cfg.supportEmail),
+                        _infoRow(Icons.language_rounded, l10n.fieldWebsiteLabel,
                             cfg.website),
                       ]),
                     ),
@@ -153,14 +162,14 @@ class _AppInfoScreenState extends ConsumerState<AppInfoScreen> {
                 const SizedBox(height: 20),
 
                 // ── Update card ──────────────────────────────────────────
-                if (cfg.enableUpdateCheck)
-                  _buildUpdateCard(),
+                if (cfg.enableUpdateCheck) _buildUpdateCard(),
 
                 const SizedBox(height: 32),
 
                 // ── Footer ───────────────────────────────────────────────
                 Text(
-                  '© ${DateTime.now().year} ${cfg.developer}  |  Released under the ${cfg.license} License',
+                  l10n.appInfoFooterCopyright(
+                      DateTime.now().year, cfg.developer, cfg.license),
                   style: TextStyle(
                     fontSize: AppFontSize.small,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -175,10 +184,10 @@ class _AppInfoScreenState extends ConsumerState<AppInfoScreen> {
     );
   }
 
-
   Widget _buildUpdateCard() {
     final primaryColor = Theme.of(context).primaryColor;
     final cfg = ref.watch(appEditionConfigProvider);
+    final l10n = AppLocalizations.of(context)!;
     final info = widget.updateInfo;
     final hasUpdate = info != null && info.hasUpdate;
     final isUpToDate = info != null && !info.hasUpdate;
@@ -191,10 +200,13 @@ class _AppInfoScreenState extends ConsumerState<AppInfoScreen> {
           SizedBox(
             width: 12,
             height: 12,
-            child: CircularProgressIndicator(strokeWidth: 2, color: primaryColor),
+            child:
+                CircularProgressIndicator(strokeWidth: 2, color: primaryColor),
           ),
           const SizedBox(width: 8),
-          Text('Checking...', style: TextStyle(fontSize: AppFontSize.xsmall, color: primaryColor)),
+          Text(l10n.appInfoCheckingLabel,
+              style:
+                  TextStyle(fontSize: AppFontSize.xsmall, color: primaryColor)),
         ],
       );
     } else if (hasUpdate) {
@@ -206,8 +218,11 @@ class _AppInfoScreenState extends ConsumerState<AppInfoScreen> {
           border: Border.all(color: Colors.orange.shade300),
         ),
         child: Text(
-          'Update Available',
-          style: TextStyle(fontSize: AppFontSize.xsmall, color: Colors.orange.shade800, fontWeight: FontWeight.w600),
+          l10n.appInfoUpdateAvailableLabel,
+          style: TextStyle(
+              fontSize: AppFontSize.xsmall,
+              color: Colors.orange.shade800,
+              fontWeight: FontWeight.w600),
         ),
       );
     } else if (isUpToDate) {
@@ -219,8 +234,11 @@ class _AppInfoScreenState extends ConsumerState<AppInfoScreen> {
           border: Border.all(color: Colors.green.shade300),
         ),
         child: Text(
-          'Up to date',
-          style: TextStyle(fontSize: AppFontSize.xsmall, color: Colors.green.shade700, fontWeight: FontWeight.w600),
+          l10n.appInfoUpToDateLabel,
+          style: TextStyle(
+              fontSize: AppFontSize.xsmall,
+              color: Colors.green.shade700,
+              fontWeight: FontWeight.w600),
         ),
       );
     } else if (widget.updateCheckFailed) {
@@ -232,8 +250,11 @@ class _AppInfoScreenState extends ConsumerState<AppInfoScreen> {
           border: Border.all(color: Colors.red.shade200),
         ),
         child: Text(
-          'Check failed',
-          style: TextStyle(fontSize: AppFontSize.xsmall, color: Colors.red.shade600, fontWeight: FontWeight.w600),
+          l10n.appInfoCheckFailedLabel,
+          style: TextStyle(
+              fontSize: AppFontSize.xsmall,
+              color: Colors.red.shade600,
+              fontWeight: FontWeight.w600),
         ),
       );
     } else {
@@ -255,7 +276,7 @@ class _AppInfoScreenState extends ConsumerState<AppInfoScreen> {
             Row(
               children: [
                 Text(
-                  'UPDATES',
+                  l10n.appInfoUpdatesTitle,
                   style: TextStyle(
                     fontSize: AppFontSize.xsmall,
                     fontWeight: FontWeight.w700,
@@ -275,34 +296,57 @@ class _AppInfoScreenState extends ConsumerState<AppInfoScreen> {
                 Expanded(
                   child: Row(
                     children: [
-                      Icon(Icons.tag_rounded, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      Icon(Icons.tag_rounded,
+                          size: 18,
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant),
                       const SizedBox(width: 14),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Current Version',
-                              style: TextStyle(fontSize: AppFontSize.xsmall, color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500)),
+                          Text(l10n.appInfoCurrentVersionLabel,
+                              style: TextStyle(
+                                  fontSize: AppFontSize.xsmall,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                  fontWeight: FontWeight.w500)),
                           const SizedBox(height: 3),
                           Text(cfg.version,
-                              style: const TextStyle(fontSize: AppFontSize.medium, fontWeight: FontWeight.w500)),
+                              style: const TextStyle(
+                                  fontSize: AppFontSize.medium,
+                                  fontWeight: FontWeight.w500)),
                         ],
                       ),
                       if (info != null) ...[
                         const SizedBox(width: 32),
-                        Icon(Icons.new_releases_outlined, size: 18, color: hasUpdate ? Colors.orange.shade400 : Theme.of(context).colorScheme.onSurfaceVariant),
+                        Icon(Icons.new_releases_outlined,
+                            size: 18,
+                            color: hasUpdate
+                                ? Colors.orange.shade400
+                                : Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant),
                         const SizedBox(width: 14),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Latest Version',
-                                style: TextStyle(fontSize: AppFontSize.xsmall, color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500)),
+                            Text(l10n.appInfoLatestVersionLabel,
+                                style: TextStyle(
+                                    fontSize: AppFontSize.xsmall,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                    fontWeight: FontWeight.w500)),
                             const SizedBox(height: 3),
                             Text(
                               info.latestVersion,
                               style: TextStyle(
                                 fontSize: AppFontSize.medium,
                                 fontWeight: FontWeight.w600,
-                                color: hasUpdate ? Colors.orange.shade700 : Colors.green.shade700,
+                                color: hasUpdate
+                                    ? Colors.orange.shade700
+                                    : Colors.green.shade700,
                               ),
                             ),
                           ],
@@ -314,20 +358,24 @@ class _AppInfoScreenState extends ConsumerState<AppInfoScreen> {
                 Row(
                   children: [
                     OutlinedButton.icon(
-                      onPressed: widget.isCheckingUpdate ? null : widget.onCheckForUpdates,
+                      onPressed: widget.isCheckingUpdate
+                          ? null
+                          : widget.onCheckForUpdates,
                       icon: const Icon(Icons.refresh_rounded, size: 16),
-                      label: const Text('Check Now'),
+                      label: Text(l10n.appInfoCheckNowButton),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: primaryColor,
-                        side: BorderSide(color: primaryColor.withValues(alpha: 0.4)),
+                        side: BorderSide(
+                            color: primaryColor.withValues(alpha: 0.4)),
                       ),
                     ),
                     if (hasUpdate) ...[
                       const SizedBox(width: 10),
                       FilledButton.icon(
-                        style: FilledButton.styleFrom(backgroundColor: primaryColor),
+                        style: FilledButton.styleFrom(
+                            backgroundColor: primaryColor),
                         icon: const Icon(Icons.download_rounded, size: 16),
-                        label: const Text('Download'),
+                        label: Text(l10n.createInvoiceDownloadLabel),
                         onPressed: () => launchUrl(
                           Uri.parse('https://invoiso.co.in/download.html'),
                           mode: LaunchMode.externalApplication,
@@ -343,7 +391,6 @@ class _AppInfoScreenState extends ConsumerState<AppInfoScreen> {
       ),
     );
   }
-
 
   Widget _infoCard(String title, List<Widget> rows) {
     return Card(
@@ -368,10 +415,16 @@ class _AppInfoScreenState extends ConsumerState<AppInfoScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            ...rows.expand((row) => [
-                  row,
-                  Divider(height: 1, color: Theme.of(context).colorScheme.surfaceContainerHighest),
-                ]).toList()
+            ...rows
+                .expand((row) => [
+                      row,
+                      Divider(
+                          height: 1,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest),
+                    ])
+                .toList()
               ..removeLast(),
           ],
         ),
@@ -379,14 +432,14 @@ class _AppInfoScreenState extends ConsumerState<AppInfoScreen> {
     );
   }
 
-
   Widget _infoRow(IconData icon, String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+          Icon(icon,
+              size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -416,5 +469,4 @@ class _AppInfoScreenState extends ConsumerState<AppInfoScreen> {
       ),
     );
   }
-
 }

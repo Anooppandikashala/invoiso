@@ -690,6 +690,25 @@ class DatabaseHelper {
         await db.execute(
           'ALTER TABLE invoice_items ADD COLUMN description TEXT',
         );
+      await _runMigrationStep(db, 41, 'backfill_onboarding_completed', () async {
+        // The first-login onboarding wizard shipped without a backfill, so
+        // every upgrading user would be forced through it. If no account is
+        // still on a forced default password, the app was already set up the
+        // long way before the wizard existed — mark onboarding done. An
+        // install still carrying a default-password account (fresh seed, or
+        // an upgrade where admin/admin was never changed) falls through and
+        // gets the wizard. Username isn't checked — it's user-editable.
+        final unchanged = Sqflite.firstIntValue(await db.rawQuery(
+              'SELECT COUNT(*) FROM users WHERE password_changed = 0',
+            )) ??
+            0;
+        if (unchanged == 0) {
+          await db.insert(
+            'settings',
+            {'key': 'onboarding_completed', 'value': 'true'},
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
+        }
       });
     }
   }

@@ -8,6 +8,37 @@ import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/constants.dart';
 
+// Legacy screen (out of i18n scope) — these mirror the English text that
+// used to live in PageSize/ThermalCompanyNameSize's `.label` getters in
+// common.dart before those were localized.
+String _legacyPageSizeLabel(PageSize s) {
+  switch (s) {
+    case PageSize.a4:
+      return 'Standard A4';
+    case PageSize.a5:
+      return 'Standard A5';
+    case PageSize.a6:
+      return 'Standard A6';
+    case PageSize.thermal80:
+      return 'Thermal Paper 80mm';
+    case PageSize.thermal58:
+      return 'Thermal Paper 58mm';
+  }
+}
+
+String _legacyThermalCompanyNameSizeLabel(ThermalCompanyNameSize s) {
+  switch (s) {
+    case ThermalCompanyNameSize.xsmall:
+      return 'X-Small';
+    case ThermalCompanyNameSize.small:
+      return 'Small';
+    case ThermalCompanyNameSize.medium:
+      return 'Medium';
+    case ThermalCompanyNameSize.large:
+      return 'Large';
+  }
+}
+
 class PdfSettingsScreen extends ConsumerStatefulWidget {
   final VoidCallback? onNavigateToCustomization;
 
@@ -97,9 +128,15 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
       ref.read(settingsRepositoryProvider).getPdfThemeColor(),
       ref.read(settingsRepositoryProvider).getPageSize(),
       ref.read(settingsRepositoryProvider).getShowTotalQuantity(),
-      ref.read(settingsRepositoryProvider).getSetting(SettingKey.thermalWidthMargin),
-      ref.read(settingsRepositoryProvider).getSetting(SettingKey.thermalItemLayout),
-      ref.read(settingsRepositoryProvider).getSetting(SettingKey.thermalCompanyNameSize),
+      ref
+          .read(settingsRepositoryProvider)
+          .getSetting(SettingKey.thermalWidthMargin),
+      ref
+          .read(settingsRepositoryProvider)
+          .getSetting(SettingKey.thermalItemLayout),
+      ref
+          .read(settingsRepositoryProvider)
+          .getSetting(SettingKey.thermalCompanyNameSize),
     ]);
     final saved = results[0] as InvoiceTemplate;
     final savedThemeColor = results[1] as String?;
@@ -134,39 +171,47 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
     if (_isSaving) return;
     setState(() => _isSaving = true);
     try {
-    await Future.wait([
-      ref.read(settingsRepositoryProvider).setInvoiceTemplate(_previewedTemplate),
-      if (_previewedThemeColorHex == null)
-        ref.read(settingsRepositoryProvider).clearPdfThemeColor()
-      else
-        ref.read(settingsRepositoryProvider).setPdfThemeColor(_previewedThemeColorHex!),
-      ref.read(settingsRepositoryProvider).setPageSize(_previewedPageSize),
-      ref.read(settingsRepositoryProvider).setShowTotalQuantity(_previewedShowTotalQuantity),
-      ref.read(settingsRepositoryProvider).setSetting(SettingKey.thermalWidthMargin,
-          (int.tryParse(_previewedThermalWidthMargin.trim()) ?? 1)
-              .clamp(-10, 10)
-              .toString()),
-      ref.read(settingsRepositoryProvider).setSetting(
-          SettingKey.thermalItemLayout, _previewedThermalItemLayout),
-      ref.read(settingsRepositoryProvider).setSetting(
-          SettingKey.thermalCompanyNameSize, _previewedThermalCompanyNameSize),
-    ]);
-    setState(() {
-      _savedTemplate = _previewedTemplate;
-      _savedThemeColorHex = _previewedThemeColorHex;
-      _savedPageSize = _previewedPageSize;
-      _savedShowTotalQuantity = _previewedShowTotalQuantity;
-      _savedThermalWidthMargin = _previewedThermalWidthMargin;
-      _savedThermalItemLayout = _previewedThermalItemLayout;
-      _savedThermalCompanyNameSize = _previewedThermalCompanyNameSize;
-    });
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("PDF settings saved"),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+      await Future.wait([
+        ref
+            .read(settingsRepositoryProvider)
+            .setInvoiceTemplate(_previewedTemplate),
+        if (_previewedThemeColorHex == null)
+          ref.read(settingsRepositoryProvider).clearPdfThemeColor()
+        else
+          ref
+              .read(settingsRepositoryProvider)
+              .setPdfThemeColor(_previewedThemeColorHex!),
+        ref.read(settingsRepositoryProvider).setPageSize(_previewedPageSize),
+        ref
+            .read(settingsRepositoryProvider)
+            .setShowTotalQuantity(_previewedShowTotalQuantity),
+        ref.read(settingsRepositoryProvider).setSetting(
+            SettingKey.thermalWidthMargin,
+            (int.tryParse(_previewedThermalWidthMargin.trim()) ?? 1)
+                .clamp(-10, 10)
+                .toString()),
+        ref.read(settingsRepositoryProvider).setSetting(
+            SettingKey.thermalItemLayout, _previewedThermalItemLayout),
+        ref.read(settingsRepositoryProvider).setSetting(
+            SettingKey.thermalCompanyNameSize,
+            _previewedThermalCompanyNameSize),
+      ]);
+      setState(() {
+        _savedTemplate = _previewedTemplate;
+        _savedThemeColorHex = _previewedThemeColorHex;
+        _savedPageSize = _previewedPageSize;
+        _savedShowTotalQuantity = _previewedShowTotalQuantity;
+        _savedThermalWidthMargin = _previewedThermalWidthMargin;
+        _savedThermalItemLayout = _previewedThermalItemLayout;
+        _savedThermalCompanyNameSize = _previewedThermalCompanyNameSize;
+      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("PDF settings saved"),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -312,7 +357,9 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
                       .toDouble(),
                   child: _buildSettingsPanel(hasUnsavedChange),
                 ),
-                Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
+                Divider(
+                    height: 1,
+                    color: Theme.of(context).colorScheme.outlineVariant),
                 Expanded(child: previewPanel),
               ],
             );
@@ -324,7 +371,9 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
                 width: panelWidth,
                 child: _buildSettingsPanel(hasUnsavedChange),
               ),
-              VerticalDivider(width: 1, color: Theme.of(context).colorScheme.outlineVariant),
+              VerticalDivider(
+                  width: 1,
+                  color: Theme.of(context).colorScheme.outlineVariant),
               Expanded(child: previewPanel),
             ],
           );
@@ -350,7 +399,8 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
                     _previewedTemplate == InvoiceTemplate.thermal ||
                     _previewedTemplate == InvoiceTemplate.gridClassic) ...[
                   const SizedBox(height: 6),
-                  if (_previewedTemplate == InvoiceTemplate.compact || _previewedTemplate == InvoiceTemplate.gridClassic)
+                  if (_previewedTemplate == InvoiceTemplate.compact ||
+                      _previewedTemplate == InvoiceTemplate.gridClassic)
                     _buildTotalQuantityToggle(),
                   if (_previewedTemplate == InvoiceTemplate.thermal) ...[
                     _buildThermalItemLayoutField(),
@@ -381,7 +431,8 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
                       themeColor: _activePreviewColor,
                       isPreviewed: _previewedTemplate == template,
                       isSaved: _savedTemplate == template,
-                      thermalDetailedTemplate: _previewedThermalItemLayout != "table",
+                      thermalDetailedTemplate:
+                          _previewedThermalItemLayout != "table",
                       isDefault: index == 0,
                       isDisabled: isDisabled,
                       disabledLabel: template == InvoiceTemplate.compact
@@ -418,16 +469,23 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
           child: SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: (hasUnsavedChange && !_isSaving) ? _saveTemplate : null,
+              onPressed:
+                  (hasUnsavedChange && !_isSaving) ? _saveTemplate : null,
               icon: _isSaving
-                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
                   : const Icon(Icons.save_rounded, size: 16),
               label: Text(_isSaving ? 'Saving...' : 'Save'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).primaryColor,
                 foregroundColor: Colors.white,
-                disabledBackgroundColor: Theme.of(context).colorScheme.outlineVariant,
-                disabledForegroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                disabledBackgroundColor:
+                    Theme.of(context).colorScheme.outlineVariant,
+                disabledForegroundColor:
+                    Theme.of(context).colorScheme.onSurfaceVariant,
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppBorderRadius.small),
@@ -480,19 +538,20 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
                   const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+                borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.outlineVariant),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+                borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.outlineVariant),
               ),
             ),
             items: PageSize.values
                 .map((s) => DropdownMenuItem<PageSize>(
                       value: s,
-                      child: Text(s.label,
-                          style:
-                              const TextStyle(fontSize: AppFontSize.small)),
+                      child: Text(_legacyPageSizeLabel(s),
+                          style: const TextStyle(fontSize: AppFontSize.small)),
                     ))
                 .toList(),
             onChanged: (val) {
@@ -574,7 +633,9 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
           Text(
             'Table: one line per item (Sl/Name/Qty/Rate/Total). '
             'Detailed: name on its own line, then Qty/Rate/Total below it.',
-            style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            style: TextStyle(
+                fontSize: 11,
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ],
       ),
@@ -614,7 +675,9 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
             ),
             items: [
               for (final size in ThermalCompanyNameSize.values)
-                DropdownMenuItem(value: size.key, child: Text(size.label)),
+                DropdownMenuItem(
+                    value: size.key,
+                    child: Text(_legacyThermalCompanyNameSizeLabel(size))),
             ],
             onChanged: (value) =>
                 setState(() => _previewedThermalCompanyNameSize = value!),
@@ -650,7 +713,9 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
                 Text(
                   'Characters trimmed from each line to avoid edge clipping. '
                   'Increase if text runs off the paper edge on your printer.',
-                  style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  style: TextStyle(
+                      fontSize: 11,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ],
             ),
@@ -675,7 +740,8 @@ class _PdfSettingsScreenState extends ConsumerState<PdfSettingsScreen> {
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                  borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+                  borderSide: BorderSide(
+                      color: Theme.of(context).colorScheme.outlineVariant),
                 ),
               ),
               onChanged: (val) =>
@@ -797,19 +863,18 @@ class _TemplateListTile extends StatelessWidget {
   final VoidCallback onTap;
   final bool thermalDetailedTemplate;
 
-  const _TemplateListTile({
-    required this.template,
-    required this.name,
-    required this.description,
-    required this.themeColor,
-    required this.isPreviewed,
-    required this.isSaved,
-    required this.isDefault,
-    required this.onTap,
-    this.isDisabled = false,
-    this.disabledLabel,
-    required this.thermalDetailedTemplate
-  });
+  const _TemplateListTile(
+      {required this.template,
+      required this.name,
+      required this.description,
+      required this.themeColor,
+      required this.isPreviewed,
+      required this.isSaved,
+      required this.isDefault,
+      required this.onTap,
+      this.isDisabled = false,
+      this.disabledLabel,
+      required this.thermalDetailedTemplate});
 
   @override
   Widget build(BuildContext context) {
@@ -895,7 +960,8 @@ class _TemplateListTile extends StatelessWidget {
                           "Default",
                           style: TextStyle(
                             fontSize: AppFontSize.xsmall,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -942,13 +1008,12 @@ class _PreviewPanel extends StatelessWidget {
   final Color themeColor;
   final bool thermalDetailedTemplate;
 
-  const _PreviewPanel({
-    required this.templates,
-    required this.previewedTemplate,
-    required this.savedTemplate,
-    required this.themeColor,
-    required this.thermalDetailedTemplate
-  });
+  const _PreviewPanel(
+      {required this.templates,
+      required this.previewedTemplate,
+      required this.savedTemplate,
+      required this.themeColor,
+      required this.thermalDetailedTemplate});
 
   @override
   Widget build(BuildContext context) {
@@ -1179,7 +1244,8 @@ class _ThemeColorCard extends StatelessWidget {
                     width: 20,
                     height: 20,
                     decoration: BoxDecoration(
-                      color: _colorFromHex(selectedHex) ?? Theme.of(context).colorScheme.outlineVariant,
+                      color: _colorFromHex(selectedHex) ??
+                          Theme.of(context).colorScheme.outlineVariant,
                       shape: BoxShape.circle,
                       border: Border.all(
                         color: Colors.black.withValues(alpha: 0.15),
@@ -1204,7 +1270,8 @@ class _ThemeColorCard extends StatelessWidget {
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+                borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.outlineVariant),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
@@ -1511,14 +1578,16 @@ class _TemplatePreviewSketch extends StatelessWidget {
   Widget _gridClassic() {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFF334155), width: showDetails ? 1.2 : 1),
+        border: Border.all(
+            color: const Color(0xFF334155), width: showDetails ? 1.2 : 1),
       ),
       padding: EdgeInsets.all(showDetails ? 10 : 3),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Centered header block
-          _fixedLine(showDetails ? 110 : 26, height: showDetails ? 8 : 3, color: themeColor),
+          _fixedLine(showDetails ? 110 : 26,
+              height: showDetails ? 8 : 3, color: themeColor),
           SizedBox(height: showDetails ? 5 : 2),
           _fixedLine(showDetails ? 80 : 20, height: showDetails ? 5 : 2),
           SizedBox(height: showDetails ? 10 : 3),
@@ -1562,7 +1631,9 @@ class _TemplatePreviewSketch extends StatelessWidget {
             ),
             child: Column(
               children: [
-                Container(height: showDetails ? 16 : 4, color: const Color(0xFFE2E8F0)),
+                Container(
+                    height: showDetails ? 16 : 4,
+                    color: const Color(0xFFE2E8F0)),
                 Expanded(
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1623,7 +1694,7 @@ class _TemplatePreviewSketch extends StatelessWidget {
   }
 
   Widget _thermal({bool detailed = false}) {
-    final rows = showDetails ? 20  : 5;
+    final rows = showDetails ? 20 : 5;
     return Center(
       child: FractionallySizedBox(
         widthFactor: 0.62,
@@ -1634,7 +1705,8 @@ class _TemplatePreviewSketch extends StatelessWidget {
             // Centered header — narrow roll-paper look
             _dashedLine(),
             SizedBox(height: showDetails ? 8 : 2),
-            _fixedLine(showDetails ? 90 : 22, height: showDetails ? 7 : 3, color: themeColor),
+            _fixedLine(showDetails ? 90 : 22,
+                height: showDetails ? 7 : 3, color: themeColor),
             SizedBox(height: showDetails ? 4 : 1),
             _fixedLine(showDetails ? 70 : 16, height: showDetails ? 4 : 2),
             SizedBox(height: showDetails ? 2 : 1),
@@ -1643,35 +1715,41 @@ class _TemplatePreviewSketch extends StatelessWidget {
             _dashedLine(),
             SizedBox(height: showDetails ? 6 : 2),
             // Item lines — name left, price right, no grid borders
-            ...List.generate(rows, (i) => Column(
-              children: [
-                Padding(
-                  padding: EdgeInsets.only(bottom: showDetails ? 4 : 1),
-                  child: Row(
-                    children: [
-                      Expanded(child: _line(.6, height: showDetails ? 5 : 2)),
-                      SizedBox(width: showDetails ? 6 : 2),
-                      if(!detailed)
-                      _fixedLine(showDetails ? 20 : 6, height: showDetails ? 5 : 2),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.only(bottom: showDetails ? 4 : 1),
-                  child: Row(
-                    children: [
-                      if(detailed)
-                      Expanded(child: _line(0.3, height: showDetails ? 5 : 2)),
-                      SizedBox(width: showDetails ? 6 : 2),
-                      if(detailed)
-                      _fixedLine(showDetails ? 20 : 6, height: showDetails ? 5 : 2),
-                    ],
-                  ),
-                )
-
-              ],
-            )
-            ),
+            ...List.generate(
+                rows,
+                (i) => Column(
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.only(bottom: showDetails ? 4 : 1),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                  child:
+                                      _line(.6, height: showDetails ? 5 : 2)),
+                              SizedBox(width: showDetails ? 6 : 2),
+                              if (!detailed)
+                                _fixedLine(showDetails ? 20 : 6,
+                                    height: showDetails ? 5 : 2),
+                            ],
+                          ),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.only(bottom: showDetails ? 4 : 1),
+                          child: Row(
+                            children: [
+                              if (detailed)
+                                Expanded(
+                                    child: _line(0.3,
+                                        height: showDetails ? 5 : 2)),
+                              SizedBox(width: showDetails ? 6 : 2),
+                              if (detailed)
+                                _fixedLine(showDetails ? 20 : 6,
+                                    height: showDetails ? 5 : 2),
+                            ],
+                          ),
+                        )
+                      ],
+                    )),
             SizedBox(height: showDetails ? 2 : 1),
             _dashedLine(),
             SizedBox(height: showDetails ? 6 : 2),
@@ -1679,8 +1757,10 @@ class _TemplatePreviewSketch extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _fixedLine(showDetails ? 40 : 10, height: showDetails ? 7 : 3, color: themeColor),
-                _fixedLine(showDetails ? 40 : 10, height: showDetails ? 7 : 3, color: themeColor),
+                _fixedLine(showDetails ? 40 : 10,
+                    height: showDetails ? 7 : 3, color: themeColor),
+                _fixedLine(showDetails ? 40 : 10,
+                    height: showDetails ? 7 : 3, color: themeColor),
               ],
             ),
             SizedBox(height: showDetails ? 8 : 2),

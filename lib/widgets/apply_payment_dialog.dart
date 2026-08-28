@@ -1,11 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/domain/invoice_calculator.dart';
+import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/invoice_payment.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/services/payment_receipt_service.dart';
 import 'package:invoiso/utils/app_date.dart';
+
+String _paymentMethodLabel(AppLocalizations l10n, String method) {
+  switch (method) {
+    case 'Cash':
+      return l10n.paymentMethodCash;
+    case 'Bank Transfer':
+      return l10n.paymentMethodBankTransfer;
+    case 'Check':
+      return l10n.paymentMethodCheck;
+    case 'Online':
+      return l10n.paymentMethodOnline;
+    default:
+      return l10n.paymentMethodOther;
+  }
+}
 
 class ApplyPaymentDialog extends ConsumerStatefulWidget {
   final Invoice invoice;
@@ -48,8 +64,9 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
   }
 
   Future<void> _loadPayments() async {
-    final payments =
-        await ref.read(paymentRepositoryProvider).getPaymentsForInvoice(widget.invoice.id);
+    final payments = await ref
+        .read(paymentRepositoryProvider)
+        .getPaymentsForInvoice(widget.invoice.id);
     if (mounted) {
       setState(() {
         _payments = payments;
@@ -81,17 +98,18 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
 
   Future<void> _savePayment() async {
     if (!_formKey.currentState!.validate()) return;
+    final l10n = AppLocalizations.of(context)!;
     setState(() => _isSaving = true);
     try {
       await ref.read(paymentRepositoryProvider).addPayment(
-        invoice: widget.invoice,
-        amountPaid: _enteredAmount,
-        datePaid: _selectedDate,
-        paymentMethod: _selectedMethod,
-        notes: _notesController.text.trim().isEmpty
-            ? null
-            : _notesController.text.trim(),
-      );
+            invoice: widget.invoice,
+            amountPaid: _enteredAmount,
+            datePaid: _selectedDate,
+            paymentMethod: _selectedMethod,
+            notes: _notesController.text.trim().isEmpty
+                ? null
+                : _notesController.text.trim(),
+          );
       widget.onPaymentRecorded();
       await _loadPayments();
       _notesController.clear();
@@ -101,8 +119,10 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(_outstanding <= InvoiceCalculator.moneyEpsilon
-                ? 'Invoice fully paid!'
-                : 'Payment recorded. Outstanding: ${widget.invoice.currencySymbol} ${_outstanding.toStringAsFixed(2)}'),
+                ? l10n.paymentDialogFullyPaidExclaimMessage
+                : l10n.paymentDialogRecordedMessage(
+                    widget.invoice.currencySymbol,
+                    _outstanding.toStringAsFixed(2))),
             backgroundColor: Colors.green,
           ),
         );
@@ -112,7 +132,8 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Failed to record payment: $e'),
+              content:
+                  Text(l10n.paymentDialogRecordFailedMessage(e.toString())),
               backgroundColor: Colors.red),
         );
       }
@@ -120,21 +141,22 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
   }
 
   Future<void> _deletePayment(InvoicePayment payment) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: const Text('Delete Payment'),
-        content: Text(
-            'Delete receipt ${payment.receiptNumber}?\n\nThis cannot be undone.'),
+        title: Text(l10n.paymentDialogDeleteTitle),
+        content:
+            Text(l10n.paymentDialogDeleteConfirmBody(payment.receiptNumber)),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+              child: Text(l10n.actionCancel)),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
+            child: Text(l10n.actionDelete),
           ),
         ],
       ),
@@ -149,6 +171,7 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final sym = widget.invoice.currencySymbol;
 
     return Dialog(
@@ -177,13 +200,15 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Record Payment',
-                            style: TextStyle(
+                        Text(l10n.actionRecordPayment,
+                            style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold)),
                         Text(
-                          '#${widget.invoice.invoiceNumber ?? widget.invoice.id} — ${widget.invoice.customer.name}',
+                          l10n.paymentDialogInvoiceRefLabel(
+                              widget.invoice.invoiceNumber ?? widget.invoice.id,
+                              widget.invoice.customer.name),
                           style: const TextStyle(
                               color: Colors.white70, fontSize: 13),
                         ),
@@ -209,20 +234,20 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
                     Row(
                       children: [
                         PaymentSummaryCard(
-                          label: 'Invoice Total',
+                          label: l10n.paymentDialogInvoiceTotalLabel,
                           value:
                               '$sym ${widget.invoice.total.toStringAsFixed(2)}',
                           color: Colors.blue,
                         ),
                         const SizedBox(width: 12),
                         PaymentSummaryCard(
-                          label: 'Amount Paid',
+                          label: l10n.paymentDialogAmountPaidLabel,
                           value: '$sym ${_totalPaid.toStringAsFixed(2)}',
                           color: Colors.green,
                         ),
                         const SizedBox(width: 12),
                         PaymentSummaryCard(
-                          label: 'Outstanding',
+                          label: l10n.dashboardOutstandingLabel,
                           value: '$sym ${_outstanding.toStringAsFixed(2)}',
                           color: _outstanding <= InvoiceCalculator.moneyEpsilon
                               ? Colors.green
@@ -233,11 +258,13 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
 
                     const SizedBox(height: 20),
 
-                    Text('Payment History',
+                    Text(l10n.paymentDialogHistoryTitle,
                         style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant)),
                     const SizedBox(height: 8),
 
                     if (_isLoadingPayments)
@@ -251,17 +278,24 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                          border: Border.all(
+                              color:
+                                  Theme.of(context).colorScheme.outlineVariant),
                         ),
                         child: Center(
-                          child: Text('No payments recorded yet',
-                              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                          child: Text(l10n.paymentDialogNoPaymentsMessage,
+                              style: TextStyle(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant)),
                         ),
                       )
                     else
-                      _buildPaymentHistoryTable(sym),
+                      _buildPaymentHistoryTable(sym, l10n),
 
                     // Paid-in-full banner
                     if (!_isLoadingPayments &&
@@ -277,14 +311,14 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
                           border: Border.all(
                               color: Colors.green.withValues(alpha: 0.4)),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.check_circle,
+                            const Icon(Icons.check_circle,
                                 color: Colors.green, size: 20),
-                            SizedBox(width: 8),
-                            Text('Invoice fully paid',
-                                style: TextStyle(
+                            const SizedBox(width: 8),
+                            Text(l10n.paymentDialogFullyPaidBannerLabel,
+                                style: const TextStyle(
                                     color: Colors.green,
                                     fontWeight: FontWeight.w600)),
                           ],
@@ -298,7 +332,7 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
                       const SizedBox(height: 20),
                       const Divider(),
                       const SizedBox(height: 12),
-                      Text('New Payment',
+                      Text(l10n.paymentDialogNewPaymentTitle,
                           style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
@@ -315,12 +349,14 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
                                   child: TextFormField(
                                     controller: _amountController,
                                     decoration: InputDecoration(
-                                      labelText: 'Amount ($sym)',
+                                      labelText: l10n
+                                          .paymentDialogAmountFieldLabel(sym),
                                       border: OutlineInputBorder(
                                           borderRadius:
                                               BorderRadius.circular(8)),
                                       helperText:
-                                          'Max: $sym ${_outstanding.toStringAsFixed(2)}',
+                                          l10n.paymentDialogMaxHelperText(sym,
+                                              _outstanding.toStringAsFixed(2)),
                                     ),
                                     keyboardType:
                                         const TextInputType.numberWithOptions(
@@ -330,12 +366,14 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
                                       final n =
                                           double.tryParse(v?.trim() ?? '');
                                       if (n == null || n <= 0) {
-                                        return 'Enter a valid amount';
+                                        return l10n
+                                            .paymentDialogInvalidAmountError;
                                       }
                                       if (n >
                                           _outstanding +
                                               InvoiceCalculator.moneyEpsilon) {
-                                        return 'Exceeds outstanding balance';
+                                        return l10n
+                                            .paymentDialogExceedsOutstandingError;
                                       }
                                       return null;
                                     },
@@ -347,7 +385,7 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
                                     onTap: _pickDate,
                                     child: InputDecorator(
                                       decoration: InputDecoration(
-                                        labelText: 'Date',
+                                        labelText: l10n.invoiceMgmtColDate,
                                         border: OutlineInputBorder(
                                             borderRadius:
                                                 BorderRadius.circular(8)),
@@ -374,15 +412,19 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
                                   child: DropdownButtonFormField<String>(
                                     value: _selectedMethod,
                                     decoration: InputDecoration(
-                                      labelText: 'Payment Method',
+                                      labelText:
+                                          l10n.paymentDialogMethodFieldLabel,
                                       border: OutlineInputBorder(
                                           borderRadius:
                                               BorderRadius.circular(8)),
                                     ),
-                                    hint: const Text('Select method'),
+                                    hint: Text(
+                                        l10n.paymentDialogSelectMethodHint),
                                     items: _methods
                                         .map((m) => DropdownMenuItem(
-                                            value: m, child: Text(m)))
+                                            value: m,
+                                            child: Text(
+                                                _paymentMethodLabel(l10n, m))))
                                         .toList(),
                                     onChanged: (v) =>
                                         setState(() => _selectedMethod = v),
@@ -392,18 +434,25 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
                                 Expanded(
                                   child: InputDecorator(
                                     decoration: InputDecoration(
-                                      labelText: 'Tax Covered',
+                                      labelText:
+                                          l10n.paymentDialogTaxCoveredLabel,
                                       border: OutlineInputBorder(
                                           borderRadius:
                                               BorderRadius.circular(8)),
-                                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                      fillColor: Theme.of(context)
+                                          .colorScheme
+                                          .surfaceContainerHighest,
                                       filled: true,
-                                      helperText: 'Auto-calculated',
+                                      helperText: l10n
+                                          .paymentDialogAutoCalculatedHelper,
                                     ),
                                     child: Text(
                                       '$sym ${_taxOnEnteredAmount.toStringAsFixed(2)}',
                                       style: TextStyle(
-                                          fontSize: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                          fontSize: 16,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant),
                                     ),
                                   ),
                                 ),
@@ -413,10 +462,10 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
                             TextFormField(
                               controller: _notesController,
                               decoration: InputDecoration(
-                                labelText: 'Reference / Notes (optional)',
+                                labelText: l10n.paymentDialogNotesFieldLabel,
                                 border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8)),
-                                hintText: 'e.g. cheque no., transaction ID...',
+                                hintText: l10n.paymentDialogNotesHint,
                               ),
                               maxLines: 2,
                             ),
@@ -437,7 +486,7 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Close'),
+                    child: Text(l10n.actionClose),
                   ),
                   if (!_isLoadingPayments &&
                       _outstanding > InvoiceCalculator.moneyEpsilon) ...[
@@ -459,7 +508,9 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
                               child: CircularProgressIndicator(
                                   color: Colors.white, strokeWidth: 2))
                           : const Icon(Icons.check, size: 18),
-                      label: Text(_isSaving ? 'Saving...' : 'Record Payment'),
+                      label: Text(_isSaving
+                          ? l10n.createInvoiceSavingEllipsisLabel
+                          : l10n.actionRecordPayment),
                     ),
                   ],
                 ],
@@ -471,7 +522,7 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
     );
   }
 
-  Widget _buildPaymentHistoryTable(String sym) {
+  Widget _buildPaymentHistoryTable(String sym, AppLocalizations l10n) {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
@@ -488,46 +539,49 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
                 topRight: Radius.circular(8),
               ),
             ),
-            child: const Row(
+            child: Row(
               children: [
                 SizedBox(
                     width: 130,
-                    child: Text('Receipt #',
-                        style: TextStyle(
+                    child: Text(l10n.paymentDialogReceiptColLabel,
+                        style: const TextStyle(
                             fontSize: 12, fontWeight: FontWeight.w600))),
                 SizedBox(
                     width: 90,
-                    child: Text('Date',
-                        style: TextStyle(
+                    child: Text(l10n.invoiceMgmtColDate,
+                        style: const TextStyle(
                             fontSize: 12, fontWeight: FontWeight.w600))),
                 Expanded(
-                    child: Text('Amount',
-                        style: TextStyle(
+                    child: Text(l10n.labelAmount,
+                        style: const TextStyle(
                             fontSize: 12, fontWeight: FontWeight.w600))),
                 Expanded(
-                    child: Text('Tax Covered',
-                        style: TextStyle(
+                    child: Text(l10n.paymentDialogTaxCoveredLabel,
+                        style: const TextStyle(
                             fontSize: 12, fontWeight: FontWeight.w600))),
                 SizedBox(
                     width: 100,
-                    child: Text('Method',
-                        style: TextStyle(
+                    child: Text(l10n.paymentDialogMethodColLabel,
+                        style: const TextStyle(
                             fontSize: 12, fontWeight: FontWeight.w600))),
-                SizedBox(width: 72),
+                const SizedBox(width: 72),
               ],
             ),
           ),
-          ..._payments.map((p) => _buildPaymentRow(p, sym)),
+          ..._payments.map((p) => _buildPaymentRow(p, sym, l10n)),
         ],
       ),
     );
   }
 
-  Widget _buildPaymentRow(InvoicePayment payment, String sym) {
+  Widget _buildPaymentRow(
+      InvoicePayment payment, String sym, AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
+        border: Border(
+            top: BorderSide(
+                color: Theme.of(context).colorScheme.outlineVariant)),
       ),
       child: Row(
         children: [
@@ -560,14 +614,20 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
           Expanded(
             child: Text(
               '$sym ${payment.taxAmountPaid.toStringAsFixed(2)}',
-              style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: TextStyle(
+                  fontSize: 13,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ),
           SizedBox(
             width: 100,
             child: Text(
-              payment.paymentMethod ?? '—',
-              style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
+              payment.paymentMethod == null
+                  ? '—'
+                  : _paymentMethodLabel(l10n, payment.paymentMethod!),
+              style: TextStyle(
+                  fontSize: 13,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ),
           SizedBox(
@@ -576,7 +636,7 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Tooltip(
-                  message: 'Download receipt',
+                  message: l10n.paymentDialogDownloadReceiptTooltip,
                   child: InkWell(
                     onTap: () => PaymentReceiptService.printOrDownload(
                         context, widget.invoice, payment),
@@ -589,7 +649,7 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
                   ),
                 ),
                 Tooltip(
-                  message: 'Delete payment',
+                  message: l10n.paymentDialogDeletePaymentTooltip,
                   child: InkWell(
                     onTap: () => _deletePayment(payment),
                     borderRadius: BorderRadius.circular(4),
