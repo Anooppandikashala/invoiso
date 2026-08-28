@@ -3114,7 +3114,14 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get invoiceSettingsShowDescriptionSubtitle =>
-      'प्रत्येक आइटम का विवरण A4 PDF में उसके नीचे एक पंक्ति के रूप में छापें (थर्मल रसीदों या ग्रिड क्लासिक टेम्पलेट पर नहीं)';
+      'प्रत्येक आइटम का विवरण A4 PDF में उसके नीचे एक पंक्ति के रूप में छापें (थर्मल रसीदों पर नहीं)';
+
+  @override
+  String get invoiceSettingsDescriptionNewLineLabel => 'विवरण नई पंक्ति में';
+
+  @override
+  String get invoiceSettingsDescriptionNewLineSubtitle =>
+      'विवरण को आइटम के नाम के नीचे एक पंक्ति के बजाय आइटम के नीचे पूरी-चौड़ाई की पंक्ति के रूप में छापें';
 
   @override
   String get invoiceSettingsAllowFractionalQtyLabel =>

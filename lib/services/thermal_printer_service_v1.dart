@@ -257,8 +257,8 @@ class ThermalPrinterService {
         detailParts.add(total);
         line('  ${detailParts.join('  ')}');
       }
-      if (item.effectiveDescription.isNotEmpty) {
-        line('  ${item.effectiveDescription}');
+      if (settings.showDescription && item.printedDescription.isNotEmpty) {
+        line('  ${item.printedDescription}');
       }
       if (settings.showDiscount && item.totalDiscount > 0) {
         line('  Disc: -${item.totalDiscount.toStringAsFixed(2)}');

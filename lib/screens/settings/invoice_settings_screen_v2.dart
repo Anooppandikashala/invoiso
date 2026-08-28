@@ -44,6 +44,7 @@ class _InvoiceSettingsScreenV2State
   bool _showPreviousBalance = false;
   bool _showAliasNameInPdf = false;
   bool _showDescriptionInPdf = false;
+  bool _descriptionNewLineInPdf = false;
   bool _showTaxButtonInInvoicePage = true;
   bool _hideInvoiceNumberByDefault = false;
   bool _showCgstSgst = false;
@@ -107,6 +108,7 @@ class _InvoiceSettingsScreenV2State
       settingsRepo.getSetting(SettingKey.invoiceLeadingZeros),
       settingsRepo.getHideInvoiceNumberByDefault(),
       settingsRepo.getSetting(SettingKey.showDescriptionInPdf),
+      settingsRepo.getSetting(SettingKey.descriptionNewLineInPdf),
     ]);
 
     if (!mounted) return;
@@ -145,6 +147,7 @@ class _InvoiceSettingsScreenV2State
       _invoiceLeadingZeros = (results[29] as String?) != 'false';
       _hideInvoiceNumberByDefault = results[30] as bool;
       _showDescriptionInPdf = (results[31] as String?) == 'true';
+      _descriptionNewLineInPdf = (results[32] as String?) == 'true';
       _isLoading = false;
     });
   }
@@ -207,6 +210,8 @@ class _InvoiceSettingsScreenV2State
             _hideInvoiceNumberByDefault.toString()),
         settingsRepo.setSetting(
             SettingKey.showDescriptionInPdf, _showDescriptionInPdf.toString()),
+        settingsRepo.setSetting(SettingKey.descriptionNewLineInPdf,
+            _descriptionNewLineInPdf.toString()),
       ]);
 
       if (!mounted) return;
@@ -791,6 +796,45 @@ class _InvoiceSettingsScreenV2State
     );
   }
 
+  // The two description toggles read as one setting: the second only makes
+  // sense when the first is on, so they're boxed together and the "new line"
+  // toggle is indented under its parent.
+  Widget _descriptionGroupV2(AppLocalizations l10n) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).primaryColor.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(AppBorderRadius.small),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        children: [
+          _toggleCardV2(
+            title: l10n.invoiceSettingsShowDescriptionLabel,
+            subtitle: l10n.invoiceSettingsShowDescriptionSubtitle,
+            icon: Icons.notes_outlined,
+            value: _showDescriptionInPdf,
+            onChanged: (val) => setState(() => _showDescriptionInPdf = val),
+          ),
+          if (_showDescriptionInPdf) ...[
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.only(left: 16),
+              child: _toggleCardV2(
+                title: l10n.invoiceSettingsDescriptionNewLineLabel,
+                subtitle: l10n.invoiceSettingsDescriptionNewLineSubtitle,
+                icon: Icons.subdirectory_arrow_right_outlined,
+                value: _descriptionNewLineInPdf,
+                onChanged: (val) =>
+                    setState(() => _descriptionNewLineInPdf = val),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _sectionItemsV2() {
     final l10n = AppLocalizations.of(context)!;
     return _fieldWrapV2(
@@ -803,13 +847,7 @@ class _InvoiceSettingsScreenV2State
           value: _showAliasNameInPdf,
           onChanged: (val) => setState(() => _showAliasNameInPdf = val),
         ),
-        _toggleCardV2(
-          title: l10n.invoiceSettingsShowDescriptionLabel,
-          subtitle: l10n.invoiceSettingsShowDescriptionSubtitle,
-          icon: Icons.notes_outlined,
-          value: _showDescriptionInPdf,
-          onChanged: (val) => setState(() => _showDescriptionInPdf = val),
-        ),
+        _descriptionGroupV2(l10n),
         _toggleCardV2(
           title: l10n.invoiceSettingsAllowFractionalQtyLabel,
           subtitle: l10n.invoiceSettingsAllowFractionalQtySubtitle,
@@ -1385,6 +1423,10 @@ class _InvoiceSettingsScreenV2State
 
         if (isWide) {
           return Row(
+            // Stretch so the scroll area fills the full height; otherwise the
+            // Row centers a short section vertically and it jumps around when
+            // switching sections.
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _navRailV2(),
               VerticalDivider(
@@ -1392,8 +1434,12 @@ class _InvoiceSettingsScreenV2State
                   color: Theme.of(context).colorScheme.outlineVariant),
               Expanded(
                 child: SingleChildScrollView(
+                  // Fresh scroll view per section → each opens scrolled to top
+                  // instead of inheriting the previous section's offset.
+                  key: ValueKey(_selectedSectionV2),
                   padding: const EdgeInsets.symmetric(vertical: 28),
-                  child: Center(
+                  child: Align(
+                    alignment: Alignment.topCenter,
                     child: Container(
                       constraints: const BoxConstraints(maxWidth: 900),
                       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -1410,14 +1456,19 @@ class _InvoiceSettingsScreenV2State
         // custom-fields promo) move into a bottom bar so both stay
         // reachable without needing a persistent side rail.
         return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _narrowTabsV2(),
             Divider(
                 height: 1, color: Theme.of(context).colorScheme.outlineVariant),
             Expanded(
               child: SingleChildScrollView(
+                key: ValueKey(_selectedSectionV2),
                 padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
-                child: _sectionCardV2(),
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: _sectionCardV2(),
+                ),
               ),
             ),
             Container(

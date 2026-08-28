@@ -2985,7 +2985,14 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get invoiceSettingsShowDescriptionSubtitle =>
-      '在 A4 PDF 中将每个项目的描述作为其下方的一行打印（不适用于热敏收据或 Grid Classic 模板）';
+      '在 A4 PDF 中将每个项目的描述作为其下方的一行打印（不适用于热敏收据）';
+
+  @override
+  String get invoiceSettingsDescriptionNewLineLabel => '描述另起一行';
+
+  @override
+  String get invoiceSettingsDescriptionNewLineSubtitle =>
+      '将描述作为项目下方的整行打印，而不是名称下方的一行';
 
   @override
   String get invoiceSettingsAllowFractionalQtyLabel => '允许小数数量';

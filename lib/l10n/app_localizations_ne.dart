@@ -3128,7 +3128,14 @@ class AppLocalizationsNe extends AppLocalizations {
 
   @override
   String get invoiceSettingsShowDescriptionSubtitle =>
-      'प्रत्येक वस्तुको विवरण A4 PDF मा त्यसको मुनि एक पङ्क्तिको रूपमा छाप्नुहोस् (थर्मल रसिद वा ग्रिड क्लासिक टेम्प्लेटमा होइन)';
+      'प्रत्येक वस्तुको विवरण A4 PDF मा त्यसको मुनि एक पङ्क्तिको रूपमा छाप्नुहोस् (थर्मल रसिदमा होइन)';
+
+  @override
+  String get invoiceSettingsDescriptionNewLineLabel => 'विवरण नयाँ लाइनमा';
+
+  @override
+  String get invoiceSettingsDescriptionNewLineSubtitle =>
+      'विवरणलाई वस्तुको नाम मुनिको लाइनको सट्टा वस्तु मुनि पूर्ण-चौडाइको पङ्क्तिको रूपमा छाप्नुहोस्';
 
   @override
   String get invoiceSettingsAllowFractionalQtyLabel =>

@@ -38,6 +38,15 @@ class InvoiceItem {
   
   String get effectiveDescription => (description ?? '').trim();
 
+  /// What prints on an invoice (A4 + thermal): the per-line note if the user
+  /// typed one, otherwise the product's own snapshotted description. Only
+  /// rendered when the "Show Product Description" setting is on. Kept out of
+  /// [effectiveDescription] so the edit field is never seeded from the
+  /// product.
+  String get printedDescription => effectiveDescription.isNotEmpty
+      ? effectiveDescription
+      : product.description.trim();
+
   InvoiceLineAmount get _amounts => InvoiceTotalsCalculator.line(
         price: effectivePrice,
         quantity: quantity,

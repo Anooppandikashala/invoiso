@@ -15,7 +15,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 41;
+  final dbVersion = 42;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -680,16 +680,6 @@ class DatabaseHelper {
     }
 
     if (oldVersion < 41) {
-      // Per-line description entered while building the invoice. Kept separate
-      // from product_description (the product's own text, snapshotted at
-      // invoice time) so editing a line never touches the product catalogue.
-      // NULL on every pre-v41 row, which reads back as "no description" and
-      // prints exactly as those invoices always did.
-      await _runMigrationStep(
-          db, 41, 'add_description_to_invoice_items', () async {
-        await db.execute(
-          'ALTER TABLE invoice_items ADD COLUMN description TEXT',
-        );
       await _runMigrationStep(db, 41, 'backfill_onboarding_completed', () async {
         // The first-login onboarding wizard shipped without a backfill, so
         // every upgrading user would be forced through it. If no account is
@@ -709,6 +699,20 @@ class DatabaseHelper {
             conflictAlgorithm: ConflictAlgorithm.replace,
           );
         }
+      });
+    }
+
+    if (oldVersion < 42) {
+      // Per-line description entered while building the invoice. Kept separate
+      // from product_description (the product's own text, snapshotted at
+      // invoice time) so editing a line never touches the product catalogue.
+      // NULL on every pre-v42 row, which reads back as "no description" and
+      // prints exactly as those invoices always did.
+      await _runMigrationStep(
+          db, 42, 'add_description_to_invoice_items', () async {
+        await db.execute(
+          'ALTER TABLE invoice_items ADD COLUMN description TEXT',
+        );
       });
     }
   }

@@ -18,6 +18,7 @@ pw.Page buildThermalTemplate(
   bool showQuantity = true,
   bool showDiscount = true,
   bool showAliasName = false,
+  bool showDescription = false,
   String datePattern = 'dd/MM/yyyy',
   String thankYouNote = '',
   bool showFooterBranding = false,
@@ -142,11 +143,11 @@ pw.Page buildThermalTemplate(
                   ],
                 ),
               ),
-              if (item.effectiveDescription.isNotEmpty)
+              if (showDescription && item.printedDescription.isNotEmpty)
                 pw.Padding(
                   padding: const pw.EdgeInsets.only(left: 12),
                   child: pw.Text(
-                    item.effectiveDescription,
+                    item.printedDescription,
                     style: const pw.TextStyle(
                         fontSize: smallFs, color: PdfColors.grey700),
                   ),
@@ -207,11 +208,11 @@ pw.Page buildThermalTemplate(
                   ),
                 ],
               ),
-              if (item.effectiveDescription.isNotEmpty)
+              if (showDescription && item.printedDescription.isNotEmpty)
                 pw.Padding(
                   padding: const pw.EdgeInsets.only(left: 14),
                   child: pw.Text(
-                    item.effectiveDescription,
+                    item.printedDescription,
                     style: const pw.TextStyle(
                         fontSize: smallFs, color: PdfColors.grey700),
                   ),

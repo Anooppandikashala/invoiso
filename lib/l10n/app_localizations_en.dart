@@ -3099,7 +3099,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get invoiceSettingsShowDescriptionSubtitle =>
-      'Print each item\'s description as a row under it on A4 PDFs (not on thermal receipts or the Grid Classic template)';
+      'Print each item\'s description as a row under it on A4 PDFs (not on thermal receipts)';
+
+  @override
+  String get invoiceSettingsDescriptionNewLineLabel =>
+      'Description on a New Line';
+
+  @override
+  String get invoiceSettingsDescriptionNewLineSubtitle =>
+      'Print the description as a full-width row below the item instead of a line under its name';
 
   @override
   String get invoiceSettingsAllowFractionalQtyLabel =>

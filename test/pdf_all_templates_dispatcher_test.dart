@@ -158,8 +158,9 @@ void main() {
           showTotalQuantity: true,
           pdfTheme: pdfTheme,
           watermarkBytes: watermarkBytes,
-          watermarkOpacity: 0.15,
+          watermarkOpacity: 0.05,
           signaturePosition: 'right',
+          descriptionNewLine: true,
           showCgstSgst: true,
           showDescription: true,
         );

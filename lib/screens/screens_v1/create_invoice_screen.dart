@@ -56,11 +56,17 @@ class CreateInvoiceScreen extends ConsumerStatefulWidget {
 class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   final FocusNode _screenFocusNode = FocusNode();
   ProductColumnsConfig _columnsConfig = const ProductColumnsConfig();
+  bool _showDescriptionInPdf = false;
 
   Future<void> _loadColumnsConfig() async {
-    final config = await ref.read(settingsRepositoryProvider).getProductColumnsConfig();
+    final repo = ref.read(settingsRepositoryProvider);
+    final config = await repo.getProductColumnsConfig();
+    final showDesc = await repo.getSetting(SettingKey.showDescriptionInPdf);
     if (!mounted) return;
-    setState(() => _columnsConfig = config);
+    setState(() {
+      _columnsConfig = config;
+      _showDescriptionInPdf = showDesc == 'true';
+    });
   }
 
   Customer? selectedCustomer;
@@ -984,7 +990,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     ],
                   ),
                 ],
-                if (_columnsConfig.description) ...[
+                if (_showDescriptionInPdf) ...[
                   const SizedBox(height: 16),
                   _buildItemDescriptionField(descriptionController),
                 ],
@@ -1483,7 +1489,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     ],
                   ),
                 ],
-                if (_columnsConfig.description) ...[
+                if (_showDescriptionInPdf) ...[
                   const SizedBox(height: 16),
                   _buildItemDescriptionField(descriptionController),
                 ],
@@ -1958,7 +1964,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     ],
                   ),
                 ],
-                if (_columnsConfig.description) ...[
+                if (_showDescriptionInPdf) ...[
                   const SizedBox(height: 16),
                   _buildItemDescriptionField(descriptionController),
                 ],

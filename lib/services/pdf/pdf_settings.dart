@@ -16,6 +16,7 @@ class PdfGenerationSettings {
   final bool showTypeTag;
   final bool showAliasName;
   final bool showDescription;
+  final bool descriptionNewLine;
   final BusinessType businessType;
   final List<UpiEntry> upiEntries;
   final String? showQrStr;
@@ -85,6 +86,7 @@ class PdfGenerationSettings {
     this.signatureSizePx = 50,
     this.showAliasName = false,
     this.showDescription = false,
+    this.descriptionNewLine = false,
     this.watermarkBytes,
     this.watermarkOpacity = 0.12,
     this.showRoundOff = false,

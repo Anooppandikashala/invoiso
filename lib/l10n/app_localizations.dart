@@ -5157,8 +5157,20 @@ abstract class AppLocalizations {
   /// No description provided for @invoiceSettingsShowDescriptionSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Print each item\'s description as a row under it on A4 PDFs (not on thermal receipts or the Grid Classic template)'**
+  /// **'Print each item\'s description as a row under it on A4 PDFs (not on thermal receipts)'**
   String get invoiceSettingsShowDescriptionSubtitle;
+
+  /// No description provided for @invoiceSettingsDescriptionNewLineLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description on a New Line'**
+  String get invoiceSettingsDescriptionNewLineLabel;
+
+  /// No description provided for @invoiceSettingsDescriptionNewLineSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Print the description as a full-width row below the item instead of a line under its name'**
+  String get invoiceSettingsDescriptionNewLineSubtitle;
 
   /// No description provided for @invoiceSettingsAllowFractionalQtyLabel.
   ///

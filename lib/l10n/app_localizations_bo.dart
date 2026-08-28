@@ -3100,7 +3100,15 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get invoiceSettingsShowDescriptionSubtitle =>
-      'A4 PDF ནང་ཅ་དངོས་རེ་རེའི་འགྲེལ་བཤད་དེའི་འོག་ཏུ་གྲལ་ཐིག་གཅིག་ཏུ་པར་སྐྲུན་བྱེད་པ (ཚ་དྲོད་ཟིན་ཐོ་དང་ Grid Classic ནང་མིན)';
+      'A4 PDF ནང་ཅ་དངོས་རེ་རེའི་འགྲེལ་བཤད་དེའི་འོག་ཏུ་གྲལ་ཐིག་གཅིག་ཏུ་པར་སྐྲུན་བྱེད་པ (ཚ་དྲོད་ཟིན་ཐོ་ནང་མིན)';
+
+  @override
+  String get invoiceSettingsDescriptionNewLineLabel =>
+      'Description on a New Line';
+
+  @override
+  String get invoiceSettingsDescriptionNewLineSubtitle =>
+      'Print the description as a full-width row below the item instead of a line under its name';
 
   @override
   String get invoiceSettingsAllowFractionalQtyLabel => 'ཆ་ཤས་གྲངས་ཀ་ཆོག་པ།';

@@ -3158,7 +3158,15 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get invoiceSettingsShowDescriptionSubtitle =>
-      'Imprimir la descripción de cada artículo como una fila debajo de él en los PDF A4 (no en recibos térmicos ni en la plantilla Grid Classic)';
+      'Imprimir la descripción de cada artículo como una fila debajo de él en los PDF A4 (no en recibos térmicos)';
+
+  @override
+  String get invoiceSettingsDescriptionNewLineLabel =>
+      'Descripción en una línea nueva';
+
+  @override
+  String get invoiceSettingsDescriptionNewLineSubtitle =>
+      'Imprimir la descripción como una fila de ancho completo debajo del artículo en lugar de una línea bajo su nombre';
 
   @override
   String get invoiceSettingsAllowFractionalQtyLabel =>
