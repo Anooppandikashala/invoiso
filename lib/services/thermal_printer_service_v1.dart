@@ -299,7 +299,9 @@ class ThermalPrinterService {
       hr();
       line('=== TAX SUMMARY ===', align: PosAlign.center, bold: true);
       twoCol('Taxable Amt:', '$currency ${invoice.subtotal.toStringAsFixed(2)}');
-      if (isIndia) {
+      if (isIndia && invoice.isInterState) {
+        twoCol('IGST:', '$currency ${invoice.tax.toStringAsFixed(2)}');
+      } else if (isIndia) {
         twoCol('SGST:', '$currency ${(invoice.tax / 2).toStringAsFixed(2)}');
         twoCol('CGST:', '$currency ${(invoice.tax / 2).toStringAsFixed(2)}');
       }

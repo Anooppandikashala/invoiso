@@ -1662,6 +1662,12 @@ abstract class AppLocalizations {
   /// **'Invoice-cum-Bill of Supply'**
   String get gstTitleInvoiceCumBillLabel;
 
+  /// No description provided for @gstTitleCashBillLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash Bill'**
+  String get gstTitleCashBillLabel;
+
   /// No description provided for @gstTitleCreditNoteLabel.
   ///
   /// In en, this message translates to:
@@ -1817,6 +1823,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tax rate from each product'**
   String get createInvoiceTaxRateFromProductMessage;
+
+  /// No description provided for @createInvoiceInterStateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Interstate supply (IGST)'**
+  String get createInvoiceInterStateLabel;
 
   /// No description provided for @createInvoicePaymentUpiAccountLabel.
   ///
@@ -5211,13 +5223,13 @@ abstract class AppLocalizations {
   /// No description provided for @invoiceSettingsShowCgstSgstLabel.
   ///
   /// In en, this message translates to:
-  /// **'Show CGST/SGST'**
+  /// **'Show CGST/SGST/IGST'**
   String get invoiceSettingsShowCgstSgstLabel;
 
   /// No description provided for @invoiceSettingsShowCgstSgstSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Split tax into CGST + SGST on invoices (India only).'**
+  /// **'Split tax into CGST + SGST, or IGST for interstate invoices (India only).'**
   String get invoiceSettingsShowCgstSgstSubtitle;
 
   /// No description provided for @invoiceSettingsDefaultGstTitleLabel.

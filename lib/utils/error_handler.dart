@@ -32,6 +32,8 @@ class AppError {
         ),
         backgroundColor: isError ? Colors.red[700] : Colors.blueGrey[700],
         behavior: SnackBarBehavior.floating,
+        showCloseIcon: true,
+        closeIconColor: Colors.white,
         action: onRetry != null
             ? SnackBarAction(
                 label: 'Retry',
@@ -56,6 +58,8 @@ class AppError {
         ),
         backgroundColor: Colors.green[700],
         behavior: SnackBarBehavior.floating,
+        showCloseIcon: true,
+        closeIconColor: Colors.white,
       ),
     );
   }

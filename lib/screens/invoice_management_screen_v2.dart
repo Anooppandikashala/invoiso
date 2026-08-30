@@ -2419,7 +2419,9 @@ class _TrashDialogState extends ConsumerState<_TrashDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: Text(AppLocalizations.of(context)!.invoiceMgmtInvoiceRestoredMessage),
-            backgroundColor: Colors.green),
+            backgroundColor: Colors.green,
+            showCloseIcon: true,
+            closeIconColor: Colors.white),
       );
     }
   }

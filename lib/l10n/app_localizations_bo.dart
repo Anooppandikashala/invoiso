@@ -915,6 +915,9 @@ class AppLocalizationsBo extends AppLocalizations {
   String get gstTitleInvoiceCumBillLabel => 'ཁྲལ་ཤོག-སྤྲོད་ཐོ།';
 
   @override
+  String get gstTitleCashBillLabel => 'Cash Bill';
+
+  @override
   String get gstTitleCreditNoteLabel => 'སྐྱོན་བཅོས་ཐོ (ཡར)';
 
   @override
@@ -1002,6 +1005,9 @@ class AppLocalizationsBo extends AppLocalizations {
   @override
   String get createInvoiceTaxRateFromProductMessage =>
       'ཐོན་རྫས་སོ་སོའི་ཁྲལ་ཚད།';
+
+  @override
+  String get createInvoiceInterStateLabel => 'Interstate supply (IGST)';
 
   @override
   String get createInvoicePaymentUpiAccountLabel => 'འཇལ་བའི UPI རྩིས་ཐོ།';

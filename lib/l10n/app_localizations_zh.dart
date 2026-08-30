@@ -889,6 +889,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get gstTitleInvoiceCumBillLabel => '发票兼供货单';
 
   @override
+  String get gstTitleCashBillLabel => 'Cash Bill';
+
+  @override
   String get gstTitleCreditNoteLabel => '贷项通知单';
 
   @override
@@ -969,6 +972,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get createInvoiceTaxRateFromProductMessage => '使用各产品自身的税率';
+
+  @override
+  String get createInvoiceInterStateLabel => 'Interstate supply (IGST)';
 
   @override
   String get createInvoicePaymentUpiAccountLabel => '收款 UPI 账户';

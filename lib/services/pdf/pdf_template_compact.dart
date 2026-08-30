@@ -40,6 +40,7 @@ pw.MultiPage buildCompactTemplate(
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
   bool showCgstSgst = false,
+  bool showIgst = false,
   bool showRoundOff = false,
   bool showLeadingZeros = true,
   bool showPhone = true,
@@ -284,7 +285,7 @@ pw.MultiPage buildCompactTemplate(
         tableFontSize: tableFontSize,
         cellPaddingH: cellPaddingH,
         cellPaddingV: cellPaddingV,
-        showCgstSgst: showCgstSgst,
+        showCgstSgst: showCgstSgst, showIgst: showIgst,
         totalQuantityText: showTotalQuantity && showQuantity
             ? '${totalQty == totalQty.roundToDouble() ? totalQty.toInt() : totalQty}'
             : null,
@@ -306,7 +307,7 @@ pw.MultiPage buildCompactTemplate(
           previousBalanceDue: previousBalanceDue,
           fontSize: totalsFontSize,
           compact: true,
-          showCgstSgst: showCgstSgst,
+          showCgstSgst: showCgstSgst, showIgst: showIgst,
           showRoundOff: showRoundOff,
         ),
       ),

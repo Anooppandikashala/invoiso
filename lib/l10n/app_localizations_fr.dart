@@ -924,6 +924,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get gstTitleInvoiceCumBillLabel => 'Facture-bordereau de livraison';
 
   @override
+  String get gstTitleCashBillLabel => 'Cash Bill';
+
+  @override
   String get gstTitleCreditNoteLabel => 'Note de crédit';
 
   @override
@@ -1013,6 +1016,9 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get createInvoiceTaxRateFromProductMessage =>
       'Taux de taxe de chaque produit';
+
+  @override
+  String get createInvoiceInterStateLabel => 'Interstate supply (IGST)';
 
   @override
   String get createInvoicePaymentUpiAccountLabel => 'Compte UPI de paiement';

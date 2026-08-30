@@ -253,7 +253,10 @@ pw.Page buildThermalTemplate(
       labelValue('Taxable Amt:',
           '$currencySymbol ${totalTaxable.toStringAsFixed(2)}',
           fontSize: smallFs),
-      if (isIndia) ...[
+      if (isIndia && invoice.isInterState)
+        labelValue('IGST:', '$currencySymbol ${totalTax.toStringAsFixed(2)}',
+            fontSize: smallFs)
+      else if (isIndia) ...[
         labelValue('SGST:', '$currencySymbol ${(totalTax / 2).toStringAsFixed(2)}',
             fontSize: smallFs),
         labelValue('CGST:', '$currencySymbol ${(totalTax / 2).toStringAsFixed(2)}',

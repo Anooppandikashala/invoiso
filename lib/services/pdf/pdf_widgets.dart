@@ -318,6 +318,7 @@ pw.Widget buildEnhancedTotals(
     double fontSize = 10,
     bool compact = false,
     bool showCgstSgst = false,
+    bool showIgst = false,
     bool showRoundOff = false}) {
   final hasPaid = invoice.amountPaid > 0;
   final isPaidInFull = invoice.outstandingBalance <= 0;
@@ -362,13 +363,18 @@ pw.Widget buildEnhancedTotals(
             horizontalPadding: rowHorizontalPadding,
             verticalPadding: rowVerticalPadding,
           ),
-        if (invoice.taxMode != TaxMode.none && !showCgstSgst)
+        if (invoice.taxMode != TaxMode.none && !showCgstSgst && !showIgst)
           pdfTotalRow(invoiceTaxLabel(invoice),
               "$currencySymbol ${invoice.tax.toStringAsFixed(2)}",
               fontSize: rowFontSize,
               horizontalPadding: rowHorizontalPadding,
               verticalPadding: rowVerticalPadding),
-        if (invoice.taxMode != TaxMode.none && showCgstSgst) ...[
+        if (invoice.taxMode != TaxMode.none && showIgst)
+          pdfTotalRow("IGST", "$currencySymbol ${invoice.tax.toStringAsFixed(2)}",
+              fontSize: rowFontSize,
+              horizontalPadding: rowHorizontalPadding,
+              verticalPadding: rowVerticalPadding),
+        if (invoice.taxMode != TaxMode.none && showCgstSgst && !showIgst) ...[
           pdfTotalRow("CGST", "$currencySymbol ${(invoice.tax / 2).toStringAsFixed(2)}",
               fontSize: rowFontSize,
               horizontalPadding: rowHorizontalPadding,
@@ -616,11 +622,13 @@ pw.Widget buildInvoiceTable(Invoice invoice,
     pw.TableBorder? border,
     Uint8List? watermarkBytes,
     double watermarkOpacity = 0.12,
-    bool showCgstSgst = false,}) {
+    bool showCgstSgst = false,
+    bool showIgst = false,}) {
   final bool showItemTax = invoice.taxMode == TaxMode.perItem;
   final bool isGlobalTaxMode = invoice.taxMode == TaxMode.global;
   final bool splitCgstSgst =
-      (showItemTax || isGlobalTaxMode) && showCgstSgst;
+      (showItemTax || isGlobalTaxMode) && showCgstSgst && !showIgst;
+  final bool showIgstCol = (showItemTax || isGlobalTaxMode) && showIgst;
   final double globalTaxRatePercent = invoice.taxRate * 100;
   final watermarkImage =
       watermarkBytes != null ? pw.MemoryImage(watermarkBytes) : null;
@@ -638,6 +646,8 @@ pw.Widget buildInvoiceTable(Invoice invoice,
   colWidths[col++] = const pw.FlexColumnWidth(1.5);
   if (splitCgstSgst) {
     colWidths[col++] = const pw.FlexColumnWidth(1.2);
+    colWidths[col++] = const pw.FlexColumnWidth(1.2);
+  } else if (showIgstCol) {
     colWidths[col++] = const pw.FlexColumnWidth(1.2);
   } else if (showItemTax) {
     colWidths[col++] = const pw.FlexColumnWidth(1);
@@ -747,7 +757,14 @@ pw.Widget buildInvoiceTable(Invoice invoice,
             fontSize: tableFontSize,
             cellPaddingH: cellPaddingH,
             cellPaddingV: cellPaddingV),
-      ] else if (showItemTax)
+      ] else if (showIgstCol)
+        buildTableCell('IGST',
+            isHeader: true,
+            textColor: textColor,
+            fontSize: tableFontSize,
+            cellPaddingH: cellPaddingH,
+            cellPaddingV: cellPaddingV)
+      else if (showItemTax)
         buildTableCell('Tax %',
             isHeader: true,
             textColor: textColor,
@@ -867,7 +884,13 @@ pw.Widget buildInvoiceTable(Invoice invoice,
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
               cellPaddingV: cellPaddingV),
-        ] else if (showItemTax)
+        ] else if (showIgstCol)
+          buildTableCell(
+              '${(isGlobalTaxMode ? (invoice.subtotal > 0 ? invoice.tax * (item.total / invoice.subtotal) : 0.0) : item.taxAmount).toStringAsFixed(2)}\n(${isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate}%)',
+              fontSize: tableFontSize,
+              cellPaddingH: cellPaddingH,
+              cellPaddingV: cellPaddingV)
+        else if (showItemTax)
           buildTableCell('${item.product.tax_rate}%',
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,

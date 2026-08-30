@@ -209,8 +209,12 @@ class PDFService {
     final effectivePreviousBalance =
         s.showPreviousBalance ? previousBalanceDue : 0.0;
     final pdfTheme = s.pdfTheme;
-    final effectiveShowCgstSgst =
-        s.showCgstSgst && isIndiaCountry(s.company?.country);
+    final gstSplitOn = s.showCgstSgst &&
+        isIndiaCountry(s.company?.country) &&
+        invoice.taxMode != TaxMode.none;
+    // Interstate supply → one IGST line; else the CGST/SGST 50/50 split.
+    final showIgst = gstSplitOn && invoice.isInterState;
+    final effectiveShowCgstSgst = gstSplitOn && !invoice.isInterState;
 
     String? effectiveUpiId = invoice.upiId;
     if (effectiveUpiId == null || effectiveUpiId.trim().isEmpty) {
@@ -276,6 +280,7 @@ class PDFService {
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
+          showIgst: showIgst,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
@@ -327,6 +332,7 @@ class PDFService {
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
+          showIgst: showIgst,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
@@ -378,6 +384,7 @@ class PDFService {
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
+          showIgst: showIgst,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
@@ -429,6 +436,7 @@ class PDFService {
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
+          showIgst: showIgst,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
@@ -479,6 +487,7 @@ class PDFService {
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
+          showIgst: showIgst,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
@@ -560,6 +569,7 @@ class PDFService {
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
+          showIgst: showIgst,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,

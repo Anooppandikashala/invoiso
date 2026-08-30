@@ -825,6 +825,9 @@ class _InvoiceSettingsScreenV2State
                       value: 'Invoice-cum-Bill of Supply',
                       child: Text(l10n.gstTitleInvoiceCumBillLabel)),
                   DropdownMenuItem(
+                      value: 'Cash Bill',
+                      child: Text(l10n.gstTitleCashBillLabel)),
+                  DropdownMenuItem(
                       value: 'Credit Note',
                       child: Text(l10n.gstTitleCreditNoteLabel)),
                   DropdownMenuItem(

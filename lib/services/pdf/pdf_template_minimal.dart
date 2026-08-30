@@ -39,6 +39,7 @@ pw.MultiPage buildMinimalTemplate(
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
   bool showCgstSgst = false,
+  bool showIgst = false,
   bool showRoundOff = false,
   bool showLeadingZeros = true,
   bool showPhone = true,
@@ -272,7 +273,7 @@ pw.MultiPage buildMinimalTemplate(
           watermarkBytes: watermarkBytes,
           watermarkOpacity: watermarkOpacity,
           tableFontSize: minimalPdfStyle.tableFontSize,
-          showCgstSgst: showCgstSgst),
+          showCgstSgst: showCgstSgst, showIgst: showIgst),
 
       pw.SizedBox(height: 5),
 
@@ -290,7 +291,7 @@ pw.MultiPage buildMinimalTemplate(
             currencySymbol,
             previousBalanceDue: previousBalanceDue,
             fontSize: minimalPdfStyle.totalsFontSize,
-            showCgstSgst: showCgstSgst,
+            showCgstSgst: showCgstSgst, showIgst: showIgst,
             showRoundOff: showRoundOff,
           ),
         ],

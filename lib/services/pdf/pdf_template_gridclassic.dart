@@ -48,6 +48,7 @@ pw.MultiPage buildGridClassicTemplate(
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
   bool showCgstSgst = false,
+  bool showIgst = false,
   bool showRoundOff = false,
   bool showLeadingZeros = true,
   bool showPhone = true,
@@ -327,8 +328,11 @@ pw.MultiPage buildGridClassicTemplate(
                     if (invoice.totalDiscount > 0)
                       totalsRow('Discount',
                           '-$currencySymbol ${invoice.totalDiscount.toStringAsFixed(2)}'),
-                    if (invoice.taxMode != TaxMode.none)
+                    if (invoice.taxMode != TaxMode.none && !showIgst)
                       totalsRow(invoiceTaxLabel(invoice),
+                          '$currencySymbol ${invoice.tax.toStringAsFixed(2)}'),
+                    if (invoice.taxMode != TaxMode.none && showIgst)
+                      totalsRow('IGST',
                           '$currencySymbol ${invoice.tax.toStringAsFixed(2)}'),
                     if (invoice.taxMode != TaxMode.none && showCgstSgst) ...[
                       totalsRow('CGST',
@@ -508,6 +512,7 @@ pw.MultiPage buildGridClassicTemplate(
         watermarkBytes: watermarkBytes,
         watermarkOpacity: watermarkOpacity,
         showCgstSgst: showCgstSgst,
+        showIgst: showIgst,
       ),
       // ── Notes, totals, signature, footer (inset again) ──
       buildInvoiceFooter()

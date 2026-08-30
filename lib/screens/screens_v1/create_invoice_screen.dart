@@ -113,6 +113,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
 
   bool _isTaxEnabled = true;
   bool _isPerItem = false;
+  bool _isInterState = false; // India: interstate supply → IGST instead of CGST/SGST
   bool isEditing = false;
   bool isLoading = false;
 
@@ -174,6 +175,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       taxRateController.text = (taxRate * 100).toStringAsFixed(1);
       _isTaxEnabled = _invoice!.taxMode != TaxMode.none;
       _isPerItem = _invoice!.taxMode == TaxMode.perItem;
+      _isInterState = _invoice!.isInterState;
       invoiceType = _invoice!.type;
       invoiceTitle = _invoice!.invoiceTitle;
       currentInvoiceNumber = _invoice!.invoiceNumber ?? _invoice!.id;
@@ -227,6 +229,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       taxRateController.text = (taxRate * 100).toStringAsFixed(1);
       _isTaxEnabled = src.taxMode != TaxMode.none;
       _isPerItem = src.taxMode == TaxMode.perItem;
+      _isInterState = src.isInterState;
       invoiceType = widget.cloneType ?? src.type;
       invoiceTitle = invoiceType == src.type ? src.invoiceTitle : null;
       _quantityLabel = src.quantityLabel ?? '';
@@ -377,6 +380,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       'invoiceType': invoiceType,
       'taxEnabled': _isTaxEnabled,
       'perItemTax': _isPerItem,
+      'interState': _isInterState,
       'taxRate': taxRate,
       'taxRateText': taxRateController.text.trim(),
       'date': _selectedOrderDate.toIso8601String(),
@@ -1206,6 +1210,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         currencyCode: _currencyCode,
         currencySymbol: _currencySymbol,
         taxMode: _taxMode,
+        isInterState: _isInterState,
         upiId: _selectedUpi?.id,
         bankAccountId: _selectedBankAccount?.accountNumber,
         quantityLabel:
@@ -2815,6 +2820,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                         DropdownMenuItem(
                             value: 'Invoice-cum-Bill of Supply',
                             child: Text('Invoice-cum-Bill of Supply',
+                                style: TextStyle(fontSize: AppFontSize.medium))),
+                        DropdownMenuItem(
+                            value: 'Cash Bill',
+                            child: Text('Cash Bill',
                                 style: TextStyle(fontSize: AppFontSize.medium))),
                         DropdownMenuItem(
                             value: 'Credit Note',
@@ -4717,6 +4726,31 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                   ],
                                 ),
                               ),
+                            if (_showGstFields) ...[
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  const Flexible(
+                                    child: Text(
+                                      'Interstate supply (IGST)',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.w600),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  Transform.scale(
+                                    scale: 0.7,
+                                    child: Switch(
+                                      value: _isInterState,
+                                      onChanged: (value) {
+                                        if (!mounted) return;
+                                        setState(() => _isInterState = value);
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ],
                         ],
                       ),
@@ -5017,6 +5051,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         currencyCode: _currencyCode,
         currencySymbol: _currencySymbol,
         taxMode: _taxMode,
+        isInterState: _isInterState,
         upiId: _selectedUpi?.id,
         bankAccountId: _selectedBankAccount?.accountNumber,
         quantityLabel:

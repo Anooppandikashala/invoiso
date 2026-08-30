@@ -39,6 +39,7 @@ pw.MultiPage buildExecutiveTemplate(
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
   bool showCgstSgst = false,
+  bool showIgst = false,
   bool showRoundOff = false,
   bool showLeadingZeros = true,
   bool showPhone = true,
@@ -225,7 +226,7 @@ pw.MultiPage buildExecutiveTemplate(
         businessType: businessType,
         watermarkBytes: watermarkBytes,
         watermarkOpacity: watermarkOpacity,
-        showCgstSgst: showCgstSgst,
+        showCgstSgst: showCgstSgst, showIgst: showIgst,
         tableFontSize: executivePdfStyle.tableFontSize
       ),
       pw.SizedBox(height: 5),
@@ -242,7 +243,7 @@ pw.MultiPage buildExecutiveTemplate(
             accentColor,
             currencySymbol,
             previousBalanceDue: previousBalanceDue,
-            showCgstSgst: showCgstSgst,
+            showCgstSgst: showCgstSgst, showIgst: showIgst,
             showRoundOff: showRoundOff,
             fontSize: executivePdfStyle.totalsFontSize
           ),

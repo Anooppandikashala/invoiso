@@ -43,6 +43,7 @@ class InvoiceService {
         'currency_code': invoice.currencyCode,
         'currency_symbol': invoice.currencySymbol,
         'tax_mode': invoice.taxMode.key,
+        'is_interstate': invoice.isInterState ? 1 : 0,
         'upi_id': invoice.upiId,
         'bank_account_id': invoice.bankAccountId,
         'due_date': invoice.dueDate?.toIso8601String(),
@@ -118,6 +119,7 @@ class InvoiceService {
           'type': invoice.type,
           'invoice_title': invoice.invoiceTitle,
           'tax_mode': invoice.taxMode.key,
+          'is_interstate': invoice.isInterState ? 1 : 0,
           'upi_id': invoice.upiId,
           'due_date': invoice.dueDate?.toIso8601String(),
           'quantity_label': invoice.quantityLabel,
@@ -384,6 +386,7 @@ class InvoiceService {
       currencyCode: i['currency_code'] as String? ?? 'INR',
       currencySymbol: i['currency_symbol'] as String? ?? '₹',
       taxMode: TaxModeExtension.fromKey(i['tax_mode'] as String?),
+      isInterState: (i['is_interstate'] as int?) == 1,
       upiId: i['upi_id'] as String?,
       bankAccountId: i['bank_account_id'] as String?,
       dueDate: i['due_date'] != null
@@ -674,6 +677,7 @@ class InvoiceService {
           currencyCode: map['currency_code'] as String? ?? 'INR',
           currencySymbol: map['currency_symbol'] as String? ?? '₹',
           taxMode: TaxModeExtension.fromKey(map['tax_mode'] as String?),
+          isInterState: (map['is_interstate'] as int?) == 1,
           upiId: map['upi_id'] as String?,
           bankAccountId: map['bank_account_id'] as String?,
           dueDate: map['due_date'] != null

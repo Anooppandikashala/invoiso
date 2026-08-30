@@ -15,7 +15,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 42;
+  final dbVersion = 43;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -117,7 +117,8 @@ class DatabaseHelper {
         invoice_discount_value REAL DEFAULT 0.0,
         invoice_title TEXT,
         hide_invoice_number INTEGER DEFAULT 0,
-        custom_invoice_number TEXT
+        custom_invoice_number TEXT,
+        is_interstate INTEGER DEFAULT 0
       )
     ''');
 
@@ -712,6 +713,17 @@ class DatabaseHelper {
           db, 42, 'add_description_to_invoice_items', () async {
         await db.execute(
           'ALTER TABLE invoice_items ADD COLUMN description TEXT',
+        );
+      });
+    }
+
+    if (oldVersion < 43) {
+      // India interstate-supply flag. Drives IGST vs CGST/SGST display only —
+      // no effect on totals. NULL/0 on every pre-v43 row = intrastate, prints
+      // exactly as before.
+      await _runMigrationStep(db, 43, 'add_is_interstate_to_invoices', () async {
+        await db.execute(
+          'ALTER TABLE invoices ADD COLUMN is_interstate INTEGER DEFAULT 0',
         );
       });
     }

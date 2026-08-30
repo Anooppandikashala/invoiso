@@ -917,6 +917,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gstTitleInvoiceCumBillLabel => 'Invoice-cum-Bill of Supply';
 
   @override
+  String get gstTitleCashBillLabel => 'Cash Bill';
+
+  @override
   String get gstTitleCreditNoteLabel => 'Credit Note';
 
   @override
@@ -1000,6 +1003,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get createInvoiceTaxRateFromProductMessage =>
       'Tax rate from each product';
+
+  @override
+  String get createInvoiceInterStateLabel => 'Interstate supply (IGST)';
 
   @override
   String get createInvoicePaymentUpiAccountLabel => 'Payment UPI account';
@@ -3128,11 +3134,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Display GSTIN fields (HSN/SAC) on invoices, PDFs, and CSV exports';
 
   @override
-  String get invoiceSettingsShowCgstSgstLabel => 'Show CGST/SGST';
+  String get invoiceSettingsShowCgstSgstLabel => 'Show CGST/SGST/IGST';
 
   @override
   String get invoiceSettingsShowCgstSgstSubtitle =>
-      'Split tax into CGST + SGST on invoices (India only).';
+      'Split tax into CGST + SGST, or IGST for interstate invoices (India only).';
 
   @override
   String get invoiceSettingsDefaultGstTitleLabel => 'Default GST Invoice Title';

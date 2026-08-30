@@ -919,6 +919,9 @@ class AppLocalizationsNe extends AppLocalizations {
   String get gstTitleInvoiceCumBillLabel => 'बीजक-सह-आपूर्ति बिल';
 
   @override
+  String get gstTitleCashBillLabel => 'Cash Bill';
+
+  @override
   String get gstTitleCreditNoteLabel => 'क्रेडिट नोट';
 
   @override
@@ -1006,6 +1009,9 @@ class AppLocalizationsNe extends AppLocalizations {
   @override
   String get createInvoiceTaxRateFromProductMessage =>
       'प्रत्येक उत्पादनबाट कर दर';
+
+  @override
+  String get createInvoiceInterStateLabel => 'Interstate supply (IGST)';
 
   @override
   String get createInvoicePaymentUpiAccountLabel => 'भुक्तानी युपिआई खाता';

@@ -39,6 +39,7 @@ pw.MultiPage buildModernTemplate(
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
   bool showCgstSgst = false,
+  bool showIgst = false,
   bool showRoundOff = false,
   bool showLeadingZeros = true,
   bool showPhone = true,
@@ -255,7 +256,7 @@ pw.MultiPage buildModernTemplate(
             tableFontSize: modernPdfStyle.tableFontSize,
             cellPaddingH: modernPdfStyle.cellPaddingH,
             cellPaddingV: modernPdfStyle.cellPaddingV,
-            showCgstSgst: showCgstSgst,),
+            showCgstSgst: showCgstSgst, showIgst: showIgst,),
       ),
 
       pw.SizedBox(height: 5),
@@ -275,7 +276,7 @@ pw.MultiPage buildModernTemplate(
               accentColor,
               currencySymbol,
               previousBalanceDue: previousBalanceDue,
-              showCgstSgst: showCgstSgst,
+              showCgstSgst: showCgstSgst, showIgst: showIgst,
               showRoundOff: showRoundOff,
               fontSize: modernPdfStyle.totalsFontSize
             ),
