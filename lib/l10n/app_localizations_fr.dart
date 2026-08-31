@@ -924,6 +924,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get gstTitleInvoiceCumBillLabel => 'Facture-bordereau de livraison';
 
   @override
+  String get gstTitleCashBillLabel => 'Cash Bill';
+
+  @override
   String get gstTitleCreditNoteLabel => 'Note de crédit';
 
   @override
@@ -1013,6 +1016,9 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get createInvoiceTaxRateFromProductMessage =>
       'Taux de taxe de chaque produit';
+
+  @override
+  String get createInvoiceInterStateLabel => 'Interstate supply (IGST)';
 
   @override
   String get createInvoicePaymentUpiAccountLabel => 'Compte UPI de paiement';
@@ -1865,6 +1871,15 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get customerMgmtSortIdNewest => 'ID (plus récent d\'abord)';
+
+  @override
+  String get customerMgmtSortOutstandingHighLow => 'Solde dû (décroissant)';
+
+  @override
+  String get customerMgmtSortOutstandingLowHigh => 'Solde dû (croissant)';
+
+  @override
+  String get customerMgmtWithOutstandingLabel => 'Avec solde dû';
 
   @override
   String customerMgmtSearchHint(String taxWord) {
@@ -3052,6 +3067,65 @@ class AppLocalizationsFr extends AppLocalizations {
   String get invoiceSettingsSectionItems => 'Articles de facture';
 
   @override
+  String get invoiceSettingsSectionCustomer => 'Customer Details';
+
+  @override
+  String get invoiceSettingsCustomerSectionHint =>
+      'Choose which customer details print on invoice PDFs and thermal receipts. A field only shows when it\'s enabled and the customer has a value for it. Customer name is always shown.';
+
+  @override
+  String get invoiceSettingsShowCustomerBusinessNameLabel =>
+      'Show Business Name';
+
+  @override
+  String get invoiceSettingsShowCustomerBusinessNameSubtitle =>
+      'Print the customer\'s business name under their name';
+
+  @override
+  String get invoiceSettingsShowCustomerAddressLabel => 'Show Address';
+
+  @override
+  String get invoiceSettingsShowCustomerAddressSubtitle =>
+      'Print the customer\'s address in the Bill To block';
+
+  @override
+  String get invoiceSettingsShowCustomerPhoneLabel => 'Show Phone';
+
+  @override
+  String get invoiceSettingsShowCustomerPhoneSubtitle =>
+      'Print the customer\'s phone number';
+
+  @override
+  String get invoiceSettingsShowCustomerEmailLabel => 'Show Email';
+
+  @override
+  String get invoiceSettingsShowCustomerEmailSubtitle =>
+      'Print the customer\'s email address (not shown on thermal receipts)';
+
+  @override
+  String get invoiceSettingsShowCustomerGstinLabel => 'Show GSTIN / Tax ID';
+
+  @override
+  String get invoiceSettingsShowCustomerGstinSubtitle =>
+      'Print the customer\'s GSTIN / tax id (requires GST fields on)';
+
+  @override
+  String get invoiceSettingsShowTimeInPdfLabel => 'Show Time on PDF';
+
+  @override
+  String get invoiceSettingsShowTimeInPdfSubtitle =>
+      'Append the invoice creation time next to the date on PDFs and thermal receipts';
+
+  @override
+  String get invoiceSettingsTimeFormatLabel => 'Time Format';
+
+  @override
+  String get invoiceSettingsTimeFormat24 => '24-hour (14:30)';
+
+  @override
+  String get invoiceSettingsTimeFormat12 => '12-hour (2:30 PM)';
+
+  @override
   String get invoiceSettingsPrefixLabel => 'Préfixe de facture';
 
   @override
@@ -3158,6 +3232,22 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get invoiceSettingsShowAliasNameSubtitle =>
       'Imprimer l\'alias en langue locale d\'un produit (s\'il est défini) au lieu de son nom réel sur les PDF';
+
+  @override
+  String get invoiceSettingsShowDescriptionLabel =>
+      'Afficher la description du produit';
+
+  @override
+  String get invoiceSettingsShowDescriptionSubtitle =>
+      'Imprimer la description de chaque article sur une ligne en dessous dans les PDF A4 (pas sur les reçus thermiques)';
+
+  @override
+  String get invoiceSettingsDescriptionNewLineLabel =>
+      'Description sur une nouvelle ligne';
+
+  @override
+  String get invoiceSettingsDescriptionNewLineSubtitle =>
+      'Imprimer la description sur une ligne pleine largeur sous l\'article au lieu d\'une ligne sous son nom';
 
   @override
   String get invoiceSettingsAllowFractionalQtyLabel =>

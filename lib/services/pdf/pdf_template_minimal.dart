@@ -19,6 +19,8 @@ pw.MultiPage buildMinimalTemplate(
   bool showDiscount = true,
   bool showTypeTag = true,
   bool showAliasName = false,
+  bool showDescription = false,
+  bool descriptionNewLine = false,
   BusinessType businessType = BusinessType.both,
   BankAccount? bankAccount,
   String datePattern = 'dd/MM/yyyy',
@@ -37,6 +39,7 @@ pw.MultiPage buildMinimalTemplate(
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
   bool showCgstSgst = false,
+  bool showIgst = false,
   bool showRoundOff = false,
   bool showLeadingZeros = true,
   bool showPhone = true,
@@ -47,6 +50,13 @@ pw.MultiPage buildMinimalTemplate(
   bool showWebsite = true,
   bool showAddress = true,
   bool showLogo = true,
+  bool showCustomerBusinessName = true,
+  bool showCustomerAddress = true,
+  bool showCustomerPhone = true,
+  bool showCustomerEmail = true,
+  bool showCustomerGstin = true,
+  bool showTimeInPdf = true,
+  String pdfTimeFormat = '24',
 }) {
   final accentColor = themeColor ?? PdfColors.grey700;
   final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
@@ -105,7 +115,9 @@ pw.MultiPage buildMinimalTemplate(
                         fontWeight: pw.FontWeight.bold,
                         fontSize: minimalPdfStyle.labelFontSize,
                         color: accentColor)),
-                pw.Text(formatPdfDate(invoice.date, datePattern),
+                pw.Text(
+                    formatPdfDateTime(invoice.date, datePattern,
+                        showTime: showTimeInPdf, timeFormat: pdfTimeFormat),
                     style: pw.TextStyle(fontSize: minimalPdfStyle.bodyFontSize)),
                 if (invoice.dueDate != null) ...[
                   pw.SizedBox(height: minimalPdfStyle.headerGap),
@@ -140,7 +152,9 @@ pw.MultiPage buildMinimalTemplate(
                         fontWeight: pw.FontWeight.bold,
                         fontSize: minimalPdfStyle.labelFontSize,
                         color: accentColor)),
-                pw.Text(formatPdfDate(invoice.date, datePattern),
+                pw.Text(
+                    formatPdfDateTime(invoice.date, datePattern,
+                        showTime: showTimeInPdf, timeFormat: pdfTimeFormat),
                     style: pw.TextStyle(fontSize: minimalPdfStyle.bodyFontSize)),
                 if (invoice.dueDate != null) ...[
                   pw.SizedBox(height: minimalPdfStyle.headerGap),
@@ -220,16 +234,19 @@ pw.MultiPage buildMinimalTemplate(
               pw.Text(invoice.customer.name,
                   style: pw.TextStyle(
                       fontWeight: pw.FontWeight.bold, fontSize: minimalPdfStyle.bodyFontSize)),
-              if (invoice.customer.businessName.isNotEmpty)
+              if (showCustomerBusinessName && invoice.customer.businessName.isNotEmpty)
                 pw.Text(invoice.customer.businessName,
                     style: pw.TextStyle(fontSize: minimalPdfStyle.bodyFontSize)),
-              pw.Text(invoice.customer.address,
-                  style: pw.TextStyle(fontSize: minimalPdfStyle.bodyFontSize)),
-              pw.Text(invoice.customer.phone,
-                  style: pw.TextStyle(fontSize: minimalPdfStyle.bodyFontSize)),
-              pw.Text(invoice.customer.email,
-                  style: pw.TextStyle(fontSize: minimalPdfStyle.bodyFontSize)),
-              if (showGst && invoice.customer.gstin.isNotEmpty)
+              if (showCustomerAddress && invoice.customer.address.isNotEmpty)
+                pw.Text(invoice.customer.address,
+                    style: pw.TextStyle(fontSize: minimalPdfStyle.bodyFontSize)),
+              if (showCustomerPhone && invoice.customer.phone.isNotEmpty)
+                pw.Text(invoice.customer.phone,
+                    style: pw.TextStyle(fontSize: minimalPdfStyle.bodyFontSize)),
+              if (showCustomerEmail && invoice.customer.email.isNotEmpty)
+                pw.Text(invoice.customer.email,
+                    style: pw.TextStyle(fontSize: minimalPdfStyle.bodyFontSize)),
+              if (showGst && showCustomerGstin && invoice.customer.gstin.isNotEmpty)
                 pw.Text(
                     "${taxLabel(company?.country)}: ${invoice.customer.gstin}",
                     style: pw.TextStyle(
@@ -250,11 +267,13 @@ pw.MultiPage buildMinimalTemplate(
           showDiscount: showDiscount,
           showTypeTag: showTypeTag,
           showAliasName: showAliasName,
+          showDescription: showDescription,
+          descriptionNewLine: descriptionNewLine,
           businessType: businessType,
           watermarkBytes: watermarkBytes,
           watermarkOpacity: watermarkOpacity,
           tableFontSize: minimalPdfStyle.tableFontSize,
-          showCgstSgst: showCgstSgst),
+          showCgstSgst: showCgstSgst, showIgst: showIgst),
 
       pw.SizedBox(height: 5),
 
@@ -272,7 +291,7 @@ pw.MultiPage buildMinimalTemplate(
             currencySymbol,
             previousBalanceDue: previousBalanceDue,
             fontSize: minimalPdfStyle.totalsFontSize,
-            showCgstSgst: showCgstSgst,
+            showCgstSgst: showCgstSgst, showIgst: showIgst,
             showRoundOff: showRoundOff,
           ),
         ],

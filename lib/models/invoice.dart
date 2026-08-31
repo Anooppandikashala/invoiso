@@ -19,6 +19,7 @@ class Invoice {
   String currencyCode;
   String currencySymbol;
   TaxMode taxMode;
+  bool isInterState; // India: interstate supply → show IGST instead of CGST/SGST
   List<InvoicePayment> payments;
   String? upiId; // selected UPI account for this invoice
   String? bankAccountId; // selected bank account label key for this invoice
@@ -46,6 +47,7 @@ class Invoice {
     this.currencyCode = 'INR',
     this.currencySymbol = '₹',
     this.taxMode = TaxMode.global,
+    this.isInterState = false,
     this.payments = const [],
     this.upiId,
     this.bankAccountId,

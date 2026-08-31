@@ -27,6 +27,8 @@ pw.MultiPage buildGridClassicTemplate(
   bool showDiscount = true,
   bool showTypeTag = true,
   bool showAliasName = false,
+  bool showDescription = false,
+  bool descriptionNewLine = false,
   bool showTotalQuantity = false,
   BusinessType businessType = BusinessType.both,
   BankAccount? bankAccount,
@@ -46,6 +48,7 @@ pw.MultiPage buildGridClassicTemplate(
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
   bool showCgstSgst = false,
+  bool showIgst = false,
   bool showRoundOff = false,
   bool showLeadingZeros = true,
   bool showPhone = true,
@@ -54,6 +57,13 @@ pw.MultiPage buildGridClassicTemplate(
   bool showFssai = true,
   bool showAddress = true,
   bool showLogo = true,
+  bool showCustomerBusinessName = true,
+  bool showCustomerAddress = true,
+  bool showCustomerPhone = true,
+  bool showCustomerEmail = true,
+  bool showCustomerGstin = true,
+  bool showTimeInPdf = true,
+  String pdfTimeFormat = '24',
 }) {
   final accentColor = themeColor ?? PdfColors.black;
   final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
@@ -230,13 +240,31 @@ pw.MultiPage buildGridClassicTemplate(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
                       infoRow('Customer', invoice.customer.name),
-                      if (invoice.customer.address.isNotEmpty)
+                      if (showCustomerBusinessName && invoice.customer.businessName.isNotEmpty)
+                        pw.Padding(
+                          padding: pw.EdgeInsets.only(left: 60 * fontScale),
+                          child: pw.Text(invoice.customer.businessName,
+                              style: pw.TextStyle(fontSize: labelFont)),
+                        ),
+                      if (showCustomerAddress && invoice.customer.address.isNotEmpty)
                         pw.Padding(
                           padding: pw.EdgeInsets.only(left: 60 * fontScale),
                           child: pw.Text(invoice.customer.address,
                               style: pw.TextStyle(fontSize: labelFont)),
                         ),
-                      if (showGst && invoice.customer.gstin.isNotEmpty)
+                      if (showCustomerPhone && invoice.customer.phone.isNotEmpty)
+                        pw.Padding(
+                          padding: pw.EdgeInsets.only(left: 60 * fontScale),
+                          child: pw.Text('Ph: ${invoice.customer.phone}',
+                              style: pw.TextStyle(fontSize: labelFont)),
+                        ),
+                      if (showCustomerEmail && invoice.customer.email.isNotEmpty)
+                        pw.Padding(
+                          padding: pw.EdgeInsets.only(left: 60 * fontScale),
+                          child: pw.Text(invoice.customer.email,
+                              style: pw.TextStyle(fontSize: labelFont)),
+                        ),
+                      if (showGst && showCustomerGstin && invoice.customer.gstin.isNotEmpty)
                         infoRow(gstLabel, invoice.customer.gstin),
                     ],
                   ),
@@ -250,7 +278,12 @@ pw.MultiPage buildGridClassicTemplate(
                         infoRow('${invoice.invoiceTitle ?? invoice.type} No',
                             invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros)!),
                       infoRow('Date', formatPdfDate(invoice.date, datePattern)),
-                      infoRow('Time', DateFormat('HH:mm:ss', 'en_US').format(invoice.date)),
+                      if (showTimeInPdf)
+                        infoRow(
+                            'Time',
+                            DateFormat(pdfTimeFormat == '12' ? 'h:mm a' : 'HH:mm',
+                                    'en_US')
+                                .format(invoice.date)),
                       if (invoice.dueDate != null)
                         infoRow('Due Date', formatPdfDate(invoice.dueDate!, datePattern)),
                     ],
@@ -295,8 +328,11 @@ pw.MultiPage buildGridClassicTemplate(
                     if (invoice.totalDiscount > 0)
                       totalsRow('Discount',
                           '-$currencySymbol ${invoice.totalDiscount.toStringAsFixed(2)}'),
-                    if (invoice.taxMode != TaxMode.none)
+                    if (invoice.taxMode != TaxMode.none && !showIgst)
                       totalsRow(invoiceTaxLabel(invoice),
+                          '$currencySymbol ${invoice.tax.toStringAsFixed(2)}'),
+                    if (invoice.taxMode != TaxMode.none && showIgst)
+                      totalsRow('IGST',
                           '$currencySymbol ${invoice.tax.toStringAsFixed(2)}'),
                     if (invoice.taxMode != TaxMode.none && showCgstSgst) ...[
                       totalsRow('CGST',
@@ -463,6 +499,8 @@ pw.MultiPage buildGridClassicTemplate(
         showDiscount: showDiscount,
         showTypeTag: showTypeTag,
         showAliasName: showAliasName,
+        showDescription: showDescription,
+        descriptionNewLine: descriptionNewLine,
         businessType: businessType,
         tableFontSize: tableFontSize,
         cellPaddingH: cellPadH,
@@ -474,6 +512,7 @@ pw.MultiPage buildGridClassicTemplate(
         watermarkBytes: watermarkBytes,
         watermarkOpacity: watermarkOpacity,
         showCgstSgst: showCgstSgst,
+        showIgst: showIgst,
       ),
       // ── Notes, totals, signature, footer (inset again) ──
       buildInvoiceFooter()

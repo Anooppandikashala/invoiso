@@ -56,11 +56,17 @@ class CreateInvoiceScreen extends ConsumerStatefulWidget {
 class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   final FocusNode _screenFocusNode = FocusNode();
   ProductColumnsConfig _columnsConfig = const ProductColumnsConfig();
+  bool _showDescriptionInPdf = false;
 
   Future<void> _loadColumnsConfig() async {
-    final config = await ref.read(settingsRepositoryProvider).getProductColumnsConfig();
+    final repo = ref.read(settingsRepositoryProvider);
+    final config = await repo.getProductColumnsConfig();
+    final showDesc = await repo.getSetting(SettingKey.showDescriptionInPdf);
     if (!mounted) return;
-    setState(() => _columnsConfig = config);
+    setState(() {
+      _columnsConfig = config;
+      _showDescriptionInPdf = showDesc == 'true';
+    });
   }
 
   Customer? selectedCustomer;
@@ -107,6 +113,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
 
   bool _isTaxEnabled = true;
   bool _isPerItem = false;
+  bool _isInterState = false; // India: interstate supply → IGST instead of CGST/SGST
   bool isEditing = false;
   bool isLoading = false;
 
@@ -168,6 +175,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       taxRateController.text = (taxRate * 100).toStringAsFixed(1);
       _isTaxEnabled = _invoice!.taxMode != TaxMode.none;
       _isPerItem = _invoice!.taxMode == TaxMode.perItem;
+      _isInterState = _invoice!.isInterState;
       invoiceType = _invoice!.type;
       invoiceTitle = _invoice!.invoiceTitle;
       currentInvoiceNumber = _invoice!.invoiceNumber ?? _invoice!.id;
@@ -206,6 +214,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 unitPrice: i.unitPrice,
                 extraCost: i.extraCost,
                 unit: i.unit,
+                description: i.description,
                 discountPerUnit: i.discountPerUnit,
                 isProductSaved: i.isProductSaved,
               ))
@@ -220,6 +229,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       taxRateController.text = (taxRate * 100).toStringAsFixed(1);
       _isTaxEnabled = src.taxMode != TaxMode.none;
       _isPerItem = src.taxMode == TaxMode.perItem;
+      _isInterState = src.isInterState;
       invoiceType = widget.cloneType ?? src.type;
       invoiceTitle = invoiceType == src.type ? src.invoiceTitle : null;
       _quantityLabel = src.quantityLabel ?? '';
@@ -370,6 +380,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       'invoiceType': invoiceType,
       'taxEnabled': _isTaxEnabled,
       'perItemTax': _isPerItem,
+      'interState': _isInterState,
       'taxRate': taxRate,
       'taxRateText': taxRateController.text.trim(),
       'date': _selectedOrderDate.toIso8601String(),
@@ -624,6 +635,11 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         TextEditingController(text: product.price.toString());
     final extraCostController = TextEditingController();
     final unitController = TextEditingController(text: product.unit);
+    // Seed from the product's own description so the user starts from it and
+    // can tweak it for this line; what they leave is snapshotted on the item.
+    // Only when the field is actually shown, else nothing is silently stored.
+    final descriptionController = TextEditingController(
+        text: _showDescriptionInPdf ? product.description : '');
 
     bool discountPerUnit = true;
     String dialogUnit = product.unit;
@@ -684,6 +700,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   unitPrice: unitPrice,
                   extraCost: extraCost,
                   unit: dialogUnit.trim(),
+                  description: descriptionController.text.trim(),
                   discountPerUnit: discountPerUnit),
               insertAt: insertAt);
         }
@@ -719,6 +736,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   unitPrice: unitPrice,
                   extraCost: extraCost,
                   unit: dialogUnit.trim(),
+                  description: descriptionController.text.trim(),
                   discountPerUnit: discountPerUnit),
               insertAt: insertAt);
         }
@@ -732,6 +750,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 unitPrice: unitPrice,
                 extraCost: extraCost,
                 unit: dialogUnit.trim(),
+                description: descriptionController.text.trim(),
                 discountPerUnit: discountPerUnit),
             insertAt: insertAt);
       }
@@ -979,6 +998,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     ],
                   ),
                 ],
+                if (_showDescriptionInPdf) ...[
+                  const SizedBox(height: 16),
+                  _buildItemDescriptionField(descriptionController),
+                ],
                 if (invoiceItems.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   const Divider(height: 1),
@@ -1187,6 +1210,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         currencyCode: _currencyCode,
         currencySymbol: _currencySymbol,
         taxMode: _taxMode,
+        isInterState: _isInterState,
         upiId: _selectedUpi?.id,
         bankAccountId: _selectedBankAccount?.accountNumber,
         quantityLabel:
@@ -1253,11 +1277,16 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         text: item.extraCost != null ? item.extraCost.toString() : '');
     bool discountPerUnit = item.discountPerUnit;
     final unitController = TextEditingController(text: item.effectiveUnit.toString());
+    final descriptionController =
+        TextEditingController(text: item.effectiveDescription);
     String dialogUnit = item.effectiveUnit.toString();
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
+          // The extra description field can push this past the viewport on
+          // short windows; the add-item dialog already scrolls its content.
+          scrollable: true,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Row(
@@ -1469,6 +1498,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     ],
                   ),
                 ],
+                if (_showDescriptionInPdf) ...[
+                  const SizedBox(height: 16),
+                  _buildItemDescriptionField(descriptionController),
+                ],
               ],
             ),
           ),
@@ -1508,6 +1541,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   unitPrice: unitPrice,
                   extraCost: extraCost,
                   unit: dialogUnit.trim(),
+                  description: descriptionController.text.trim(),
                   discountPerUnit: discountPerUnit,
                 );
                 if(!mounted) return;
@@ -1705,6 +1739,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     final taxRateController = TextEditingController(text: '0');
     final extraCostController = TextEditingController();
     final unitController = TextEditingController();
+    final descriptionController = TextEditingController();
 
     bool discountPerUnit = true;
     bool dialogPriceIncludesTax = false;
@@ -1766,6 +1801,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
               discount: double.tryParse(discountController.text) ?? 0.0,
               extraCost: extraCost,
               unit: selectedUnit.trim(),
+              description: descriptionController.text.trim(),
               discountPerUnit: discountPerUnit,
             );
             Navigator.pop(context);
@@ -1936,6 +1972,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                     ],
                   ),
+                ],
+                if (_showDescriptionInPdf) ...[
+                  const SizedBox(height: 16),
+                  _buildItemDescriptionField(descriptionController),
                 ],
                 if (_taxMode == TaxMode.perItem && _columnsConfig.taxRate) ...[
                   const SizedBox(height: 16),
@@ -2780,6 +2820,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                         DropdownMenuItem(
                             value: 'Invoice-cum-Bill of Supply',
                             child: Text('Invoice-cum-Bill of Supply',
+                                style: TextStyle(fontSize: AppFontSize.medium))),
+                        DropdownMenuItem(
+                            value: 'Cash Bill',
+                            child: Text('Cash Bill',
                                 style: TextStyle(fontSize: AppFontSize.medium))),
                         DropdownMenuItem(
                             value: 'Credit Note',
@@ -3734,6 +3778,29 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     );
   }
 
+  // Optional per-line description, stored on the invoice item. The
+  // add-product dialog seeds it from the product's own description; the
+  // ad-hoc dialog starts empty. Whatever is left here is snapshotted on
+  // the item and prints under the item name.
+  Widget _buildItemDescriptionField(TextEditingController controller) {
+    return TextField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: 'Description (optional)',
+        hintText: 'Extra detail printed under the item name',
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+        prefixIcon: const Icon(Icons.notes_outlined, size: 18),
+        filled: true,
+        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+      ),
+      minLines: 1,
+      maxLines: 3,
+      keyboardType: TextInputType.multiline,
+      textCapitalization: TextCapitalization.sentences,
+    );
+  }
+
   Widget _buildUnitPicker({
     required String selectedUnit,
     required TextEditingController customController,
@@ -4216,6 +4283,23 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                 spacing: 16,
                                 runSpacing: 4,
                                 children: [
+                                  if (_columnsConfig.description &&
+                                      item.effectiveDescription.isNotEmpty)
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: Text(
+                                        item.effectiveDescription,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontStyle: FontStyle.italic,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ),
                                   if(item.unitPrice != null)
                                     _buildItemDetail('Price',
                                         '$_currencySymbol${item.effectivePrice.toStringAsFixed(2)} *',
@@ -4325,7 +4409,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                         final newProduct = Product(
                                           id: const Uuid().v4(),
                                           name: item.product.name,
-                                          description: '',
+                                          description:
+                                              item.effectiveDescription,
                                           price: item.effectivePrice,
                                           stock: 0,
                                           hsncode: item.product.hsncode,
@@ -4641,6 +4726,31 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                   ],
                                 ),
                               ),
+                            if (_showGstFields) ...[
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  const Flexible(
+                                    child: Text(
+                                      'Interstate supply (IGST)',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.w600),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  Transform.scale(
+                                    scale: 0.7,
+                                    child: Switch(
+                                      value: _isInterState,
+                                      onChanged: (value) {
+                                        if (!mounted) return;
+                                        setState(() => _isInterState = value);
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ],
                         ],
                       ),
@@ -4941,6 +5051,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         currencyCode: _currencyCode,
         currencySymbol: _currencySymbol,
         taxMode: _taxMode,
+        isInterState: _isInterState,
         upiId: _selectedUpi?.id,
         bankAccountId: _selectedBankAccount?.accountNumber,
         quantityLabel:

@@ -33,10 +33,12 @@ abstract class InvoiceRepository {
     String? filterType,
     String orderBy = 'id',
     bool orderAscending = false,
+    String? customerId,
   });
   Future<int> getInvoiceCount({
     String searchQuery = '',
     String? filterType,
+    String? customerId,
   });
   Future<void> softDeleteInvoice(String id);
   Future<void> restoreInvoice(String id);
@@ -57,6 +59,16 @@ abstract class InvoiceRepository {
   Future<List<Invoice>> getRecentInvoices({int limit = 5});
   Future<List<Invoice>> getDueSoonInvoices();
   Future<List<Invoice>> getOverdueInvoices({int limit = 10});
+  /// This customer's not-fully-paid invoices, oldest first, across all
+  /// currencies — for applying one payment across several open invoices.
+  Future<List<Invoice>> getOpenInvoicesForCustomer(String customerId);
+  /// Distinct (customer_id, customer_name) pairs that have at least one
+  /// non-deleted invoice of [filterType] (or any type, if null) — for a
+  /// customer picker scoped to the invoice list. Includes customers typed
+  /// directly on an invoice without being saved to the Customers list — the
+  /// invoice still snapshots a customer_id + customer_name for those, they
+  /// just won't match a real Customer record.
+  Future<List<({String id, String name})>> getCustomersWithInvoices({String? filterType});
   Future<List<Map<String, dynamic>>> getMonthlyRevenue();
   Future<List<Map<String, dynamic>>> getTopCustomers();
   Future<List<Map<String, dynamic>>> getTopProducts();

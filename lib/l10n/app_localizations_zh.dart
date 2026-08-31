@@ -889,6 +889,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get gstTitleInvoiceCumBillLabel => '发票兼供货单';
 
   @override
+  String get gstTitleCashBillLabel => 'Cash Bill';
+
+  @override
   String get gstTitleCreditNoteLabel => '贷项通知单';
 
   @override
@@ -969,6 +972,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get createInvoiceTaxRateFromProductMessage => '使用各产品自身的税率';
+
+  @override
+  String get createInvoiceInterStateLabel => 'Interstate supply (IGST)';
 
   @override
   String get createInvoicePaymentUpiAccountLabel => '收款 UPI 账户';
@@ -1776,6 +1782,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get customerMgmtSortIdNewest => 'ID（最新优先）';
+
+  @override
+  String get customerMgmtSortOutstandingHighLow => '未结余额（从高到低）';
+
+  @override
+  String get customerMgmtSortOutstandingLowHigh => '未结余额（从低到高）';
+
+  @override
+  String get customerMgmtWithOutstandingLabel => '有未结余额';
 
   @override
   String customerMgmtSearchHint(String taxWord) {
@@ -2884,6 +2899,65 @@ class AppLocalizationsZh extends AppLocalizations {
   String get invoiceSettingsSectionItems => '发票项目';
 
   @override
+  String get invoiceSettingsSectionCustomer => 'Customer Details';
+
+  @override
+  String get invoiceSettingsCustomerSectionHint =>
+      'Choose which customer details print on invoice PDFs and thermal receipts. A field only shows when it\'s enabled and the customer has a value for it. Customer name is always shown.';
+
+  @override
+  String get invoiceSettingsShowCustomerBusinessNameLabel =>
+      'Show Business Name';
+
+  @override
+  String get invoiceSettingsShowCustomerBusinessNameSubtitle =>
+      'Print the customer\'s business name under their name';
+
+  @override
+  String get invoiceSettingsShowCustomerAddressLabel => 'Show Address';
+
+  @override
+  String get invoiceSettingsShowCustomerAddressSubtitle =>
+      'Print the customer\'s address in the Bill To block';
+
+  @override
+  String get invoiceSettingsShowCustomerPhoneLabel => 'Show Phone';
+
+  @override
+  String get invoiceSettingsShowCustomerPhoneSubtitle =>
+      'Print the customer\'s phone number';
+
+  @override
+  String get invoiceSettingsShowCustomerEmailLabel => 'Show Email';
+
+  @override
+  String get invoiceSettingsShowCustomerEmailSubtitle =>
+      'Print the customer\'s email address (not shown on thermal receipts)';
+
+  @override
+  String get invoiceSettingsShowCustomerGstinLabel => 'Show GSTIN / Tax ID';
+
+  @override
+  String get invoiceSettingsShowCustomerGstinSubtitle =>
+      'Print the customer\'s GSTIN / tax id (requires GST fields on)';
+
+  @override
+  String get invoiceSettingsShowTimeInPdfLabel => 'Show Time on PDF';
+
+  @override
+  String get invoiceSettingsShowTimeInPdfSubtitle =>
+      'Append the invoice creation time next to the date on PDFs and thermal receipts';
+
+  @override
+  String get invoiceSettingsTimeFormatLabel => 'Time Format';
+
+  @override
+  String get invoiceSettingsTimeFormat24 => '24-hour (14:30)';
+
+  @override
+  String get invoiceSettingsTimeFormat12 => '12-hour (2:30 PM)';
+
+  @override
   String get invoiceSettingsPrefixLabel => '发票前缀';
 
   @override
@@ -2979,6 +3053,20 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get invoiceSettingsShowAliasNameSubtitle =>
       '在 PDF 上打印产品的本地语言别名（如已设置）而非其实际名称';
+
+  @override
+  String get invoiceSettingsShowDescriptionLabel => '显示产品描述';
+
+  @override
+  String get invoiceSettingsShowDescriptionSubtitle =>
+      '在 A4 PDF 中将每个项目的描述作为其下方的一行打印（不适用于热敏收据）';
+
+  @override
+  String get invoiceSettingsDescriptionNewLineLabel => '描述另起一行';
+
+  @override
+  String get invoiceSettingsDescriptionNewLineSubtitle =>
+      '将描述作为项目下方的整行打印，而不是名称下方的一行';
 
   @override
   String get invoiceSettingsAllowFractionalQtyLabel => '允许小数数量';

@@ -18,6 +18,7 @@ pw.Page buildThermalTemplate(
   bool showQuantity = true,
   bool showDiscount = true,
   bool showAliasName = false,
+  bool showDescription = false,
   String datePattern = 'dd/MM/yyyy',
   String thankYouNote = '',
   bool showFooterBranding = false,
@@ -32,6 +33,11 @@ pw.Page buildThermalTemplate(
   bool showPhone = true,
   bool showCompanyName = true,
   bool showAddress = true,
+  bool showCustomerBusinessName = true,
+  bool showCustomerPhone = true,
+  bool showCustomerGstin = true,
+  bool showTimeInPdf = true,
+  String pdfTimeFormat = '24',
 }) {
   const double bodyFs = 6;
   const double smallFs = 5.5;
@@ -142,6 +148,15 @@ pw.Page buildThermalTemplate(
                   ],
                 ),
               ),
+              if (showDescription && item.printedDescription.isNotEmpty)
+                pw.Padding(
+                  padding: const pw.EdgeInsets.only(left: 12),
+                  child: pw.Text(
+                    item.printedDescription,
+                    style: const pw.TextStyle(
+                        fontSize: smallFs, color: PdfColors.grey700),
+                  ),
+                ),
               if (showDiscount && item.totalDiscount > 0)
                 pw.Padding(
                   padding: const pw.EdgeInsets.only(left: 12),
@@ -198,6 +213,15 @@ pw.Page buildThermalTemplate(
                   ),
                 ],
               ),
+              if (showDescription && item.printedDescription.isNotEmpty)
+                pw.Padding(
+                  padding: const pw.EdgeInsets.only(left: 14),
+                  child: pw.Text(
+                    item.printedDescription,
+                    style: const pw.TextStyle(
+                        fontSize: smallFs, color: PdfColors.grey700),
+                  ),
+                ),
               if (showDiscount && item.totalDiscount > 0)
                 pw.Padding(
                   padding: const pw.EdgeInsets.only(left: 14),
@@ -229,7 +253,10 @@ pw.Page buildThermalTemplate(
       labelValue('Taxable Amt:',
           '$currencySymbol ${totalTaxable.toStringAsFixed(2)}',
           fontSize: smallFs),
-      if (isIndia) ...[
+      if (isIndia && invoice.isInterState)
+        labelValue('IGST:', '$currencySymbol ${totalTax.toStringAsFixed(2)}',
+            fontSize: smallFs)
+      else if (isIndia) ...[
         labelValue('SGST:', '$currencySymbol ${(totalTax / 2).toStringAsFixed(2)}',
             fontSize: smallFs),
         labelValue('CGST:', '$currencySymbol ${(totalTax / 2).toStringAsFixed(2)}',
@@ -241,7 +268,8 @@ pw.Page buildThermalTemplate(
   }
 
   List<pw.Widget> buildPdfBody() {
-    final dateStr = DateFormat(datePattern, 'en_US').format(invoice.date);
+    final dateStr = formatPdfDateTime(invoice.date, datePattern,
+        showTime: showTimeInPdf, timeFormat: pdfTimeFormat);
     final netTotal = roundNetTotal(invoice.total + previousBalanceDue);
     return [
       // ── Business Header ──
@@ -287,13 +315,13 @@ pw.Page buildThermalTemplate(
       pw.Text('Name: ${invoice.customer.name}',
           style: pw.TextStyle(
               fontSize: bodyFs, fontWeight: pw.FontWeight.bold)),
-      if (invoice.customer.businessName.isNotEmpty)
+      if (showCustomerBusinessName && invoice.customer.businessName.isNotEmpty)
         pw.Text(invoice.customer.businessName,
             style: const pw.TextStyle(fontSize: smallFs)),
-      if (invoice.customer.phone.isNotEmpty)
+      if (showCustomerPhone && invoice.customer.phone.isNotEmpty)
         pw.Text('Ph: ${invoice.customer.phone}',
             style: const pw.TextStyle(fontSize: smallFs)),
-      if (showGst && invoice.customer.gstin.isNotEmpty)
+      if (showGst && showCustomerGstin && invoice.customer.gstin.isNotEmpty)
         pw.Text('${taxLabel(company?.country)}: ${invoice.customer.gstin}',
             style: const pw.TextStyle(fontSize: smallFs)),
       pw.SizedBox(height: 3),

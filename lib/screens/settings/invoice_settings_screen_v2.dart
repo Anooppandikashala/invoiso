@@ -36,6 +36,8 @@ class _InvoiceSettingsScreenV2State
   String _selectedCurrencyCode = 'INR';
   String _selectedLogoSize = 'medium';
   DateFormatOption _selectedDateFormat = DateFormatOption.ddmmyyyy;
+  bool _showTimeInPdf = true;
+  String _pdfTimeFormat = '24';
   bool _showGstFields = true;
   bool _fractionalQuantity = false;
   bool _showQuantity = true;
@@ -43,6 +45,13 @@ class _InvoiceSettingsScreenV2State
   bool _showTypeTag = true;
   bool _showPreviousBalance = false;
   bool _showAliasNameInPdf = false;
+  bool _showDescriptionInPdf = false;
+  bool _descriptionNewLineInPdf = false;
+  bool _showCustomerBusinessName = true;
+  bool _showCustomerAddress = true;
+  bool _showCustomerPhone = true;
+  bool _showCustomerEmail = true;
+  bool _showCustomerGstin = true;
   bool _showTaxButtonInInvoicePage = true;
   bool _hideInvoiceNumberByDefault = false;
   bool _showCgstSgst = false;
@@ -105,6 +114,15 @@ class _InvoiceSettingsScreenV2State
       settingsRepo.getSetting(SettingKey.showRoundOff),
       settingsRepo.getSetting(SettingKey.invoiceLeadingZeros),
       settingsRepo.getHideInvoiceNumberByDefault(),
+      settingsRepo.getSetting(SettingKey.showDescriptionInPdf),
+      settingsRepo.getSetting(SettingKey.descriptionNewLineInPdf),
+      settingsRepo.getShowCustomerBusinessName(),
+      settingsRepo.getShowCustomerAddress(),
+      settingsRepo.getShowCustomerPhone(),
+      settingsRepo.getShowCustomerEmail(),
+      settingsRepo.getShowCustomerGstin(),
+      settingsRepo.getShowTimeInPdf(),
+      settingsRepo.getPdfTimeFormat(),
     ]);
 
     if (!mounted) return;
@@ -142,6 +160,15 @@ class _InvoiceSettingsScreenV2State
       _showRoundOff = (results[28] as String?) == 'true';
       _invoiceLeadingZeros = (results[29] as String?) != 'false';
       _hideInvoiceNumberByDefault = results[30] as bool;
+      _showDescriptionInPdf = (results[31] as String?) == 'true';
+      _descriptionNewLineInPdf = (results[32] as String?) == 'true';
+      _showCustomerBusinessName = results[33] as bool;
+      _showCustomerAddress = results[34] as bool;
+      _showCustomerPhone = results[35] as bool;
+      _showCustomerEmail = results[36] as bool;
+      _showCustomerGstin = results[37] as bool;
+      _showTimeInPdf = results[38] as bool;
+      _pdfTimeFormat = results[39] as String;
       _isLoading = false;
     });
   }
@@ -202,6 +229,17 @@ class _InvoiceSettingsScreenV2State
             SettingKey.showRoundOff, _showRoundOff.toString()),
         settingsRepo.setSetting(SettingKey.hideInvoiceNumberByDefault,
             _hideInvoiceNumberByDefault.toString()),
+        settingsRepo.setSetting(
+            SettingKey.showDescriptionInPdf, _showDescriptionInPdf.toString()),
+        settingsRepo.setSetting(SettingKey.descriptionNewLineInPdf,
+            _descriptionNewLineInPdf.toString()),
+        settingsRepo.setShowCustomerBusinessName(_showCustomerBusinessName),
+        settingsRepo.setShowCustomerAddress(_showCustomerAddress),
+        settingsRepo.setShowCustomerPhone(_showCustomerPhone),
+        settingsRepo.setShowCustomerEmail(_showCustomerEmail),
+        settingsRepo.setShowCustomerGstin(_showCustomerGstin),
+        settingsRepo.setShowTimeInPdf(_showTimeInPdf),
+        settingsRepo.setPdfTimeFormat(_pdfTimeFormat),
       ]);
 
       if (!mounted) return;
@@ -318,6 +356,7 @@ class _InvoiceSettingsScreenV2State
     Icons.image_outlined,
     Icons.percent_rounded,
     Icons.view_list_rounded,
+    Icons.person_outline,
   ];
 
   String _navSectionLabelV2(BuildContext context, int index) {
@@ -326,7 +365,8 @@ class _InvoiceSettingsScreenV2State
       0 => l10n.invoiceSettingsSectionGeneral,
       1 => l10n.invoiceSettingsSectionBranding,
       2 => l10n.invoiceSettingsSectionTax,
-      _ => l10n.invoiceSettingsSectionItems,
+      3 => l10n.invoiceSettingsSectionItems,
+      _ => l10n.invoiceSettingsSectionCustomer,
     };
   }
 
@@ -579,6 +619,30 @@ class _InvoiceSettingsScreenV2State
             setState(() => _selectedDateFormat = value!);
           },
         ),
+        DropdownButtonFormField<String>(
+          isExpanded: true,
+          value: _pdfTimeFormat,
+          decoration: _fieldDecorationV2(context,
+              label: l10n.invoiceSettingsTimeFormatLabel,
+              prefixIcon: const Icon(Icons.schedule)),
+          items: [
+            DropdownMenuItem(
+                value: '24', child: Text(l10n.invoiceSettingsTimeFormat24)),
+            DropdownMenuItem(
+                value: '12', child: Text(l10n.invoiceSettingsTimeFormat12)),
+          ],
+          onChanged: (value) {
+            if (!mounted) return;
+            setState(() => _pdfTimeFormat = value!);
+          },
+        ),
+        _toggleCardV2(
+          title: l10n.invoiceSettingsShowTimeInPdfLabel,
+          subtitle: l10n.invoiceSettingsShowTimeInPdfSubtitle,
+          icon: Icons.access_time,
+          value: _showTimeInPdf,
+          onChanged: (val) => setState(() => _showTimeInPdf = val),
+        ),
         TextField(
           controller: quantityLabelController,
           maxLength: 30,
@@ -761,6 +825,9 @@ class _InvoiceSettingsScreenV2State
                       value: 'Invoice-cum-Bill of Supply',
                       child: Text(l10n.gstTitleInvoiceCumBillLabel)),
                   DropdownMenuItem(
+                      value: 'Cash Bill',
+                      child: Text(l10n.gstTitleCashBillLabel)),
+                  DropdownMenuItem(
                       value: 'Credit Note',
                       child: Text(l10n.gstTitleCreditNoteLabel)),
                   DropdownMenuItem(
@@ -786,6 +853,45 @@ class _InvoiceSettingsScreenV2State
     );
   }
 
+  // The two description toggles read as one setting: the second only makes
+  // sense when the first is on, so they're boxed together and the "new line"
+  // toggle is indented under its parent.
+  Widget _descriptionGroupV2(AppLocalizations l10n) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).primaryColor.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(AppBorderRadius.small),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        children: [
+          _toggleCardV2(
+            title: l10n.invoiceSettingsShowDescriptionLabel,
+            subtitle: l10n.invoiceSettingsShowDescriptionSubtitle,
+            icon: Icons.notes_outlined,
+            value: _showDescriptionInPdf,
+            onChanged: (val) => setState(() => _showDescriptionInPdf = val),
+          ),
+          if (_showDescriptionInPdf) ...[
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.only(left: 16),
+              child: _toggleCardV2(
+                title: l10n.invoiceSettingsDescriptionNewLineLabel,
+                subtitle: l10n.invoiceSettingsDescriptionNewLineSubtitle,
+                icon: Icons.subdirectory_arrow_right_outlined,
+                value: _descriptionNewLineInPdf,
+                onChanged: (val) =>
+                    setState(() => _descriptionNewLineInPdf = val),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _sectionItemsV2() {
     final l10n = AppLocalizations.of(context)!;
     return _fieldWrapV2(
@@ -798,6 +904,7 @@ class _InvoiceSettingsScreenV2State
           value: _showAliasNameInPdf,
           onChanged: (val) => setState(() => _showAliasNameInPdf = val),
         ),
+        _descriptionGroupV2(l10n),
         _toggleCardV2(
           title: l10n.invoiceSettingsAllowFractionalQtyLabel,
           subtitle: l10n.invoiceSettingsAllowFractionalQtySubtitle,
@@ -1083,9 +1190,63 @@ class _InvoiceSettingsScreenV2State
         return _sectionTaxV2();
       case 3:
         return _sectionItemsV2();
+      case 4:
+        return _sectionCustomerV2();
       default:
         return _sectionLanguageV2();
     }
+  }
+
+  // Customer details visibility on PDFs / thermal receipts. Each field is only
+  // ever printed when it's toggled on AND the customer actually has a value —
+  // toggling on never forces an empty line. Name is always shown.
+  Widget _sectionCustomerV2() {
+    final l10n = AppLocalizations.of(context)!;
+    return _fieldWrapV2(
+      [],
+      [
+        Text(l10n.invoiceSettingsCustomerSectionHint,
+            style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant)),
+        const SizedBox(height: 4),
+        _toggleCardV2(
+          title: l10n.invoiceSettingsShowCustomerBusinessNameLabel,
+          subtitle: l10n.invoiceSettingsShowCustomerBusinessNameSubtitle,
+          icon: Icons.business_outlined,
+          value: _showCustomerBusinessName,
+          onChanged: (val) => setState(() => _showCustomerBusinessName = val),
+        ),
+        _toggleCardV2(
+          title: l10n.invoiceSettingsShowCustomerAddressLabel,
+          subtitle: l10n.invoiceSettingsShowCustomerAddressSubtitle,
+          icon: Icons.location_on_outlined,
+          value: _showCustomerAddress,
+          onChanged: (val) => setState(() => _showCustomerAddress = val),
+        ),
+        _toggleCardV2(
+          title: l10n.invoiceSettingsShowCustomerPhoneLabel,
+          subtitle: l10n.invoiceSettingsShowCustomerPhoneSubtitle,
+          icon: Icons.phone_outlined,
+          value: _showCustomerPhone,
+          onChanged: (val) => setState(() => _showCustomerPhone = val),
+        ),
+        _toggleCardV2(
+          title: l10n.invoiceSettingsShowCustomerEmailLabel,
+          subtitle: l10n.invoiceSettingsShowCustomerEmailSubtitle,
+          icon: Icons.email_outlined,
+          value: _showCustomerEmail,
+          onChanged: (val) => setState(() => _showCustomerEmail = val),
+        ),
+        _toggleCardV2(
+          title: l10n.invoiceSettingsShowCustomerGstinLabel,
+          subtitle: l10n.invoiceSettingsShowCustomerGstinSubtitle,
+          icon: Icons.badge_outlined,
+          value: _showCustomerGstin,
+          onChanged: (val) => setState(() => _showCustomerGstin = val),
+        ),
+      ],
+    );
   }
 
   Widget _promoCardV2() {
@@ -1373,6 +1534,10 @@ class _InvoiceSettingsScreenV2State
 
         if (isWide) {
           return Row(
+            // Stretch so the scroll area fills the full height; otherwise the
+            // Row centers a short section vertically and it jumps around when
+            // switching sections.
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _navRailV2(),
               VerticalDivider(
@@ -1380,8 +1545,12 @@ class _InvoiceSettingsScreenV2State
                   color: Theme.of(context).colorScheme.outlineVariant),
               Expanded(
                 child: SingleChildScrollView(
+                  // Fresh scroll view per section → each opens scrolled to top
+                  // instead of inheriting the previous section's offset.
+                  key: ValueKey(_selectedSectionV2),
                   padding: const EdgeInsets.symmetric(vertical: 28),
-                  child: Center(
+                  child: Align(
+                    alignment: Alignment.topCenter,
                     child: Container(
                       constraints: const BoxConstraints(maxWidth: 900),
                       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -1398,14 +1567,19 @@ class _InvoiceSettingsScreenV2State
         // custom-fields promo) move into a bottom bar so both stay
         // reachable without needing a persistent side rail.
         return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _narrowTabsV2(),
             Divider(
                 height: 1, color: Theme.of(context).colorScheme.outlineVariant),
             Expanded(
               child: SingleChildScrollView(
+                key: ValueKey(_selectedSectionV2),
                 padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
-                child: _sectionCardV2(),
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: _sectionCardV2(),
+                ),
               ),
             ),
             Container(

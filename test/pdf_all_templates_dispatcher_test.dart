@@ -40,7 +40,9 @@ List<InvoiceItem> _sampleItems() => List.generate(25, (i) {
       final product = Product(
         id: 'p${i + 1}',
         name: 'CEMENT ACC ${i + 1}',
-        description: '',
+        description: i % 3 == 0
+            ? ''
+            : 'Premium grade cement, weather-resistant packaging, sourced from certified plant batch ${i + 1}.',
         price: 370 + i * 5,
         stock: 10,
         hsncode: '2523',
@@ -156,9 +158,11 @@ void main() {
           showTotalQuantity: true,
           pdfTheme: pdfTheme,
           watermarkBytes: watermarkBytes,
-          watermarkOpacity: 0.15,
+          watermarkOpacity: 0.05,
           signaturePosition: 'right',
+          descriptionNewLine: true,
           showCgstSgst: true,
+          showDescription: true,
         );
 
         final pdf = PDFService.generateInvoicePDFWithSettings(

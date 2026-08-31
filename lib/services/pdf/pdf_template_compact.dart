@@ -19,6 +19,8 @@ pw.MultiPage buildCompactTemplate(
   bool showDiscount = true,
   bool showTypeTag = true,
   bool showAliasName = false,
+  bool showDescription = false,
+  bool descriptionNewLine = false,
   BusinessType businessType = BusinessType.both,
   BankAccount? bankAccount,
   String datePattern = 'dd/MM/yyyy',
@@ -38,6 +40,7 @@ pw.MultiPage buildCompactTemplate(
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
   bool showCgstSgst = false,
+  bool showIgst = false,
   bool showRoundOff = false,
   bool showLeadingZeros = true,
   bool showPhone = true,
@@ -46,6 +49,11 @@ pw.MultiPage buildCompactTemplate(
   bool showFssai = true,
   bool showAddress = true,
   bool showLogo = true,
+  bool showCustomerBusinessName = true,
+  bool showCustomerAddress = true,
+  bool showCustomerGstin = true,
+  bool showTimeInPdf = true,
+  String pdfTimeFormat = '24',
 }) {
   final accentColor = themeColor ?? PdfColors.black;
   final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
@@ -194,17 +202,20 @@ pw.MultiPage buildCompactTemplate(
                               pw.SizedBox(height: 1),
                               pw.Text(invoice.customer.name,
                                   style: pw.TextStyle(fontSize: bodyFont)),
-                              if (invoice.customer.businessName.isNotEmpty)
+                              if (showCustomerBusinessName &&
+                                  invoice.customer.businessName.isNotEmpty)
                                 pw.Text(invoice.customer.businessName,
                                     style: pw.TextStyle(
                                         fontSize: addressFont,
                                         color: PdfColors.grey700)),
-                              if (invoice.customer.address.isNotEmpty)
+                              if (showCustomerAddress &&
+                                  invoice.customer.address.isNotEmpty)
                                 pw.Text(invoice.customer.address,
                                     style: pw.TextStyle(
                                         fontSize: addressFont,
                                         color: PdfColors.grey700)),
                               if (showGst &&
+                                  showCustomerGstin &&
                                   invoice.customer.gstin.isNotEmpty)
                                 pw.Text(
                                     '${taxLabel(company?.country)}: ${invoice.customer.gstin}',
@@ -232,7 +243,7 @@ pw.MultiPage buildCompactTemplate(
                                     'No: ${invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros)}',
                                     style: pw.TextStyle(fontSize: addressFont)),
                               pw.Text(
-                                  'Date: ${formatPdfDate(invoice.date, datePattern)}',
+                                  'Date: ${formatPdfDateTime(invoice.date, datePattern, showTime: showTimeInPdf, timeFormat: pdfTimeFormat)}',
                                   style: pw.TextStyle(fontSize: addressFont)),
                               if (invoice.dueDate != null)
                                 pw.Text(
@@ -268,11 +279,13 @@ pw.MultiPage buildCompactTemplate(
         showDiscount: showDiscount,
         showTypeTag: showTypeTag,
         showAliasName: showAliasName,
+        showDescription: showDescription,
+        descriptionNewLine: descriptionNewLine,
         businessType: businessType,
         tableFontSize: tableFontSize,
         cellPaddingH: cellPaddingH,
         cellPaddingV: cellPaddingV,
-        showCgstSgst: showCgstSgst,
+        showCgstSgst: showCgstSgst, showIgst: showIgst,
         totalQuantityText: showTotalQuantity && showQuantity
             ? '${totalQty == totalQty.roundToDouble() ? totalQty.toInt() : totalQty}'
             : null,
@@ -294,7 +307,7 @@ pw.MultiPage buildCompactTemplate(
           previousBalanceDue: previousBalanceDue,
           fontSize: totalsFontSize,
           compact: true,
-          showCgstSgst: showCgstSgst,
+          showCgstSgst: showCgstSgst, showIgst: showIgst,
           showRoundOff: showRoundOff,
         ),
       ),

@@ -80,6 +80,46 @@ class SqliteSettingsRepository implements SettingsRepository {
   @override
   Future<void> setShowLogo(bool show) => SettingsService.setShowLogo(show);
   @override
+  Future<bool> getShowCustomerBusinessName() =>
+      SettingsService.getShowCustomerBusinessName();
+  @override
+  Future<void> setShowCustomerBusinessName(bool show) =>
+      SettingsService.setShowCustomerBusinessName(show);
+  @override
+  Future<bool> getShowCustomerAddress() =>
+      SettingsService.getShowCustomerAddress();
+  @override
+  Future<void> setShowCustomerAddress(bool show) =>
+      SettingsService.setShowCustomerAddress(show);
+  @override
+  Future<bool> getShowCustomerPhone() =>
+      SettingsService.getShowCustomerPhone();
+  @override
+  Future<void> setShowCustomerPhone(bool show) =>
+      SettingsService.setShowCustomerPhone(show);
+  @override
+  Future<bool> getShowCustomerEmail() =>
+      SettingsService.getShowCustomerEmail();
+  @override
+  Future<void> setShowCustomerEmail(bool show) =>
+      SettingsService.setShowCustomerEmail(show);
+  @override
+  Future<bool> getShowCustomerGstin() =>
+      SettingsService.getShowCustomerGstin();
+  @override
+  Future<void> setShowCustomerGstin(bool show) =>
+      SettingsService.setShowCustomerGstin(show);
+  @override
+  Future<bool> getShowTimeInPdf() => SettingsService.getShowTimeInPdf();
+  @override
+  Future<void> setShowTimeInPdf(bool show) =>
+      SettingsService.setShowTimeInPdf(show);
+  @override
+  Future<String> getPdfTimeFormat() => SettingsService.getPdfTimeFormat();
+  @override
+  Future<void> setPdfTimeFormat(String format) =>
+      SettingsService.setPdfTimeFormat(format);
+  @override
   Future<bool> getShowGstFields() => SettingsService.getShowGstFields();
   @override
   Future<bool> getShowInvoiceFooterBranding() => SettingsService.getShowInvoiceFooterBranding();

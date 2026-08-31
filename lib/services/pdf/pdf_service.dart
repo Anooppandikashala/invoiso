@@ -117,6 +117,15 @@ class PDFService {
       BackendServices.settings.getShowLogo(), // 37
       BackendServices.settings.getSetting(SettingKey.thermalCompanyNameSize), // 38
       BackendServices.settings.getSetting(SettingKey.invoiceLeadingZeros), // 39
+      BackendServices.settings.getSetting(SettingKey.showDescriptionInPdf), // 40
+      BackendServices.settings.getSetting(SettingKey.descriptionNewLineInPdf), // 41
+      BackendServices.settings.getShowCustomerBusinessName(), // 42
+      BackendServices.settings.getShowCustomerAddress(), // 43
+      BackendServices.settings.getShowCustomerPhone(), // 44
+      BackendServices.settings.getShowCustomerEmail(), // 45
+      BackendServices.settings.getShowCustomerGstin(), // 46
+      BackendServices.settings.getShowTimeInPdf(), // 47
+      BackendServices.settings.getPdfTimeFormat(), // 48
     ]);
 
     final rawPrefix = (results[2] as String?) ?? 'INV';
@@ -178,6 +187,15 @@ class PDFService {
       showLogo: results[37] as bool,
       thermalCompanyNameSize: (results[38] as String?) ?? 'medium',
       showLeadingZeros: (results[39] as String?) != 'false',
+      showDescription: (results[40] as String?) == 'true',
+      descriptionNewLine: (results[41] as String?) == 'true',
+      showCustomerBusinessName: results[42] as bool,
+      showCustomerAddress: results[43] as bool,
+      showCustomerPhone: results[44] as bool,
+      showCustomerEmail: results[45] as bool,
+      showCustomerGstin: results[46] as bool,
+      showTimeInPdf: results[47] as bool,
+      pdfTimeFormat: results[48] as String,
     );
   }
 
@@ -191,8 +209,12 @@ class PDFService {
     final effectivePreviousBalance =
         s.showPreviousBalance ? previousBalanceDue : 0.0;
     final pdfTheme = s.pdfTheme;
-    final effectiveShowCgstSgst =
-        s.showCgstSgst && isIndiaCountry(s.company?.country);
+    final gstSplitOn = s.showCgstSgst &&
+        isIndiaCountry(s.company?.country) &&
+        invoice.taxMode != TaxMode.none;
+    // Interstate supply → one IGST line; else the CGST/SGST 50/50 split.
+    final showIgst = gstSplitOn && invoice.isInterState;
+    final effectiveShowCgstSgst = gstSplitOn && !invoice.isInterState;
 
     String? effectiveUpiId = invoice.upiId;
     if (effectiveUpiId == null || effectiveUpiId.trim().isEmpty) {
@@ -224,6 +246,13 @@ class PDFService {
           s.company,
           currencySymbol,
           s.invoicePrefix,
+          showCustomerBusinessName: s.showCustomerBusinessName,
+          showCustomerAddress: s.showCustomerAddress,
+          showCustomerPhone: s.showCustomerPhone,
+          showCustomerEmail: s.showCustomerEmail,
+          showCustomerGstin: s.showCustomerGstin,
+          showTimeInPdf: s.showTimeInPdf,
+          pdfTimeFormat: s.pdfTimeFormat,
           upiId: effectiveUpiId,
           showUpiQr: showUpiQr,
           showGst: s.showGst,
@@ -231,6 +260,8 @@ class PDFService {
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
           showAliasName: s.showAliasName,
+          showDescription: s.showDescription,
+          descriptionNewLine: s.descriptionNewLine,
           businessType: s.businessType,
           bankAccount: effectiveBank,
           datePattern: s.datePattern,
@@ -249,6 +280,7 @@ class PDFService {
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
+          showIgst: showIgst,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
@@ -266,6 +298,13 @@ class PDFService {
           s.company,
           currencySymbol,
           s.invoicePrefix,
+          showCustomerBusinessName: s.showCustomerBusinessName,
+          showCustomerAddress: s.showCustomerAddress,
+          showCustomerPhone: s.showCustomerPhone,
+          showCustomerEmail: s.showCustomerEmail,
+          showCustomerGstin: s.showCustomerGstin,
+          showTimeInPdf: s.showTimeInPdf,
+          pdfTimeFormat: s.pdfTimeFormat,
           upiId: effectiveUpiId,
           showUpiQr: showUpiQr,
           showGst: s.showGst,
@@ -273,6 +312,8 @@ class PDFService {
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
           showAliasName: s.showAliasName,
+          showDescription: s.showDescription,
+          descriptionNewLine: s.descriptionNewLine,
           businessType: s.businessType,
           bankAccount: effectiveBank,
           datePattern: s.datePattern,
@@ -291,6 +332,7 @@ class PDFService {
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
+          showIgst: showIgst,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
@@ -308,6 +350,13 @@ class PDFService {
           s.company,
           currencySymbol,
           s.invoicePrefix,
+          showCustomerBusinessName: s.showCustomerBusinessName,
+          showCustomerAddress: s.showCustomerAddress,
+          showCustomerPhone: s.showCustomerPhone,
+          showCustomerEmail: s.showCustomerEmail,
+          showCustomerGstin: s.showCustomerGstin,
+          showTimeInPdf: s.showTimeInPdf,
+          pdfTimeFormat: s.pdfTimeFormat,
           upiId: effectiveUpiId,
           showUpiQr: showUpiQr,
           showGst: s.showGst,
@@ -315,6 +364,8 @@ class PDFService {
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
           showAliasName: s.showAliasName,
+          showDescription: s.showDescription,
+          descriptionNewLine: s.descriptionNewLine,
           businessType: s.businessType,
           bankAccount: effectiveBank,
           datePattern: s.datePattern,
@@ -333,6 +384,7 @@ class PDFService {
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
+          showIgst: showIgst,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
@@ -350,6 +402,13 @@ class PDFService {
           s.company,
           currencySymbol,
           s.invoicePrefix,
+          showCustomerBusinessName: s.showCustomerBusinessName,
+          showCustomerAddress: s.showCustomerAddress,
+          showCustomerPhone: s.showCustomerPhone,
+          showCustomerEmail: s.showCustomerEmail,
+          showCustomerGstin: s.showCustomerGstin,
+          showTimeInPdf: s.showTimeInPdf,
+          pdfTimeFormat: s.pdfTimeFormat,
           upiId: effectiveUpiId,
           showUpiQr: showUpiQr,
           showGst: s.showGst,
@@ -357,6 +416,8 @@ class PDFService {
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
           showAliasName: s.showAliasName,
+          showDescription: s.showDescription,
+          descriptionNewLine: s.descriptionNewLine,
           businessType: s.businessType,
           bankAccount: effectiveBank,
           datePattern: s.datePattern,
@@ -375,6 +436,7 @@ class PDFService {
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
+          showIgst: showIgst,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
@@ -392,6 +454,11 @@ class PDFService {
           s.company,
           currencySymbol,
           s.invoicePrefix,
+          showCustomerBusinessName: s.showCustomerBusinessName,
+          showCustomerAddress: s.showCustomerAddress,
+          showCustomerGstin: s.showCustomerGstin,
+          showTimeInPdf: s.showTimeInPdf,
+          pdfTimeFormat: s.pdfTimeFormat,
           upiId: effectiveUpiId,
           showUpiQr: showUpiQr,
           showGst: s.showGst,
@@ -399,6 +466,8 @@ class PDFService {
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
           showAliasName: s.showAliasName,
+          showDescription: s.showDescription,
+          descriptionNewLine: s.descriptionNewLine,
           businessType: s.businessType,
           bankAccount: effectiveBank,
           datePattern: s.datePattern,
@@ -418,6 +487,7 @@ class PDFService {
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
+          showIgst: showIgst,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
@@ -433,10 +503,16 @@ class PDFService {
           s.company,
           currencySymbol,
           s.invoicePrefix,
+          showCustomerBusinessName: s.showCustomerBusinessName,
+          showCustomerPhone: s.showCustomerPhone,
+          showCustomerGstin: s.showCustomerGstin,
+          showTimeInPdf: s.showTimeInPdf,
+          pdfTimeFormat: s.pdfTimeFormat,
           showGst: s.showGst,
           showQuantity: s.showQuantity,
           showDiscount: s.showDiscount,
           showAliasName: s.showAliasName,
+          showDescription: s.showDescription,
           datePattern: s.datePattern,
           thankYouNote: s.thankYouNote,
           showFooterBranding: s.showFooterBranding,
@@ -458,6 +534,13 @@ class PDFService {
           s.company,
           currencySymbol,
           s.invoicePrefix,
+          showCustomerBusinessName: s.showCustomerBusinessName,
+          showCustomerAddress: s.showCustomerAddress,
+          showCustomerPhone: s.showCustomerPhone,
+          showCustomerEmail: s.showCustomerEmail,
+          showCustomerGstin: s.showCustomerGstin,
+          showTimeInPdf: s.showTimeInPdf,
+          pdfTimeFormat: s.pdfTimeFormat,
           upiId: effectiveUpiId,
           showUpiQr: showUpiQr,
           showGst: s.showGst,
@@ -465,6 +548,8 @@ class PDFService {
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
           showAliasName: s.showAliasName,
+          showDescription: s.showDescription,
+          descriptionNewLine: s.descriptionNewLine,
           showTotalQuantity: s.showTotalQuantity,
           businessType: s.businessType,
           bankAccount: effectiveBank,
@@ -484,6 +569,7 @@ class PDFService {
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
           showCgstSgst: effectiveShowCgstSgst,
+          showIgst: showIgst,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,

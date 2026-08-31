@@ -19,6 +19,8 @@ pw.MultiPage buildModernTemplate(
   bool showDiscount = true,
   bool showTypeTag = true,
   bool showAliasName = false,
+  bool showDescription = false,
+  bool descriptionNewLine = false,
   BusinessType businessType = BusinessType.both,
   BankAccount? bankAccount,
   String datePattern = 'dd/MM/yyyy',
@@ -37,6 +39,7 @@ pw.MultiPage buildModernTemplate(
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
   bool showCgstSgst = false,
+  bool showIgst = false,
   bool showRoundOff = false,
   bool showLeadingZeros = true,
   bool showPhone = true,
@@ -47,6 +50,13 @@ pw.MultiPage buildModernTemplate(
   bool showWebsite = true,
   bool showAddress = true,
   bool showLogo = true,
+  bool showCustomerBusinessName = true,
+  bool showCustomerAddress = true,
+  bool showCustomerPhone = true,
+  bool showCustomerEmail = true,
+  bool showCustomerGstin = true,
+  bool showTimeInPdf = true,
+  String pdfTimeFormat = '24',
 }) {
   final accentColor = themeColor ?? PdfColors.blue600;
   final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
@@ -184,16 +194,19 @@ pw.MultiPage buildModernTemplate(
                   pw.Text(invoice.customer.name,
                       style: pw.TextStyle(
                           fontSize: modernPdfStyle.bodyFontSize, fontWeight: pw.FontWeight.bold)),
-                  if (invoice.customer.businessName.isNotEmpty)
+                  if (showCustomerBusinessName && invoice.customer.businessName.isNotEmpty)
                     pw.Text(invoice.customer.businessName,
                         style: pw.TextStyle(fontSize: modernPdfStyle.bodyFontSize)),
-                  pw.Text(invoice.customer.address,
-                      style: pw.TextStyle(fontSize: modernPdfStyle.bodyFontSize)),
-                  pw.Text(invoice.customer.phone,
-                      style: pw.TextStyle(fontSize: modernPdfStyle.bodyFontSize)),
-                  pw.Text(invoice.customer.email,
-                      style: pw.TextStyle(fontSize: modernPdfStyle.bodyFontSize)),
-                  if (showGst)
+                  if (showCustomerAddress && invoice.customer.address.isNotEmpty)
+                    pw.Text(invoice.customer.address,
+                        style: pw.TextStyle(fontSize: modernPdfStyle.bodyFontSize)),
+                  if (showCustomerPhone && invoice.customer.phone.isNotEmpty)
+                    pw.Text(invoice.customer.phone,
+                        style: pw.TextStyle(fontSize: modernPdfStyle.bodyFontSize)),
+                  if (showCustomerEmail && invoice.customer.email.isNotEmpty)
+                    pw.Text(invoice.customer.email,
+                        style: pw.TextStyle(fontSize: modernPdfStyle.bodyFontSize)),
+                  if (showGst && showCustomerGstin && invoice.customer.gstin.isNotEmpty)
                     pw.Text(
                         "${taxLabel(company?.country)}: ${invoice.customer.gstin}",
                         style: pw.TextStyle(
@@ -209,7 +222,8 @@ pw.MultiPage buildModernTemplate(
                       "#: ${invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros)}",
                       style: pw.TextStyle(
                           fontWeight: pw.FontWeight.bold, fontSize: modernPdfStyle.bodyFontSize)),
-                pw.Text("Date: ${formatPdfDate(invoice.date, datePattern)}",
+                pw.Text(
+                    "Date: ${formatPdfDateTime(invoice.date, datePattern, showTime: showTimeInPdf, timeFormat: pdfTimeFormat)}",
                     style: pw.TextStyle(fontSize: modernPdfStyle.bodyFontSize)),
                 if (invoice.dueDate != null)
                   pw.Text(
@@ -234,13 +248,15 @@ pw.MultiPage buildModernTemplate(
             showDiscount: showDiscount,
             showTypeTag: showTypeTag,
             showAliasName: showAliasName,
+            showDescription: showDescription,
+            descriptionNewLine: descriptionNewLine,
             businessType: businessType,
             watermarkBytes: watermarkBytes,
             watermarkOpacity: watermarkOpacity,
             tableFontSize: modernPdfStyle.tableFontSize,
             cellPaddingH: modernPdfStyle.cellPaddingH,
             cellPaddingV: modernPdfStyle.cellPaddingV,
-            showCgstSgst: showCgstSgst,),
+            showCgstSgst: showCgstSgst, showIgst: showIgst,),
       ),
 
       pw.SizedBox(height: 5),
@@ -260,7 +276,7 @@ pw.MultiPage buildModernTemplate(
               accentColor,
               currencySymbol,
               previousBalanceDue: previousBalanceDue,
-              showCgstSgst: showCgstSgst,
+              showCgstSgst: showCgstSgst, showIgst: showIgst,
               showRoundOff: showRoundOff,
               fontSize: modernPdfStyle.totalsFontSize
             ),

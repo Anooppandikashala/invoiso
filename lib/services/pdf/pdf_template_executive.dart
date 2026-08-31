@@ -19,6 +19,8 @@ pw.MultiPage buildExecutiveTemplate(
   bool showDiscount = true,
   bool showTypeTag = true,
   bool showAliasName = false,
+  bool showDescription = false,
+  bool descriptionNewLine = false,
   BusinessType businessType = BusinessType.both,
   BankAccount? bankAccount,
   String datePattern = 'dd/MM/yyyy',
@@ -37,6 +39,7 @@ pw.MultiPage buildExecutiveTemplate(
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
   bool showCgstSgst = false,
+  bool showIgst = false,
   bool showRoundOff = false,
   bool showLeadingZeros = true,
   bool showPhone = true,
@@ -47,6 +50,13 @@ pw.MultiPage buildExecutiveTemplate(
   bool showWebsite = true,
   bool showAddress = true,
   bool showLogo = true,
+  bool showCustomerBusinessName = true,
+  bool showCustomerAddress = true,
+  bool showCustomerPhone = true,
+  bool showCustomerEmail = true,
+  bool showCustomerGstin = true,
+  bool showTimeInPdf = true,
+  String pdfTimeFormat = '24',
 }) {
   final accentColor = themeColor ?? PdfColors.blueGrey800;
   final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
@@ -92,12 +102,16 @@ pw.MultiPage buildExecutiveTemplate(
 
   final customerLines = [
     invoice.customer.name,
-    if (invoice.customer.businessName.isNotEmpty)
+    if (showCustomerBusinessName && invoice.customer.businessName.isNotEmpty)
       invoice.customer.businessName,
-    invoice.customer.address,
-    invoice.customer.phone,
-    invoice.customer.email,
-    if (showGst) '${taxLabel(company?.country)}: ${invoice.customer.gstin}',
+    if (showCustomerAddress && invoice.customer.address.isNotEmpty)
+      invoice.customer.address,
+    if (showCustomerPhone && invoice.customer.phone.isNotEmpty)
+      invoice.customer.phone,
+    if (showCustomerEmail && invoice.customer.email.isNotEmpty)
+      invoice.customer.email,
+    if (showGst && showCustomerGstin && invoice.customer.gstin.isNotEmpty)
+      '${taxLabel(company?.country)}: ${invoice.customer.gstin}',
   ];
 
   return pw.MultiPage(
@@ -166,7 +180,8 @@ pw.MultiPage buildExecutiveTemplate(
                     '# ${invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros)}',
                     style: pw.TextStyle(
                         fontSize: executivePdfStyle.bodyFontSize, fontWeight: pw.FontWeight.bold)),
-              pw.Text('Date: ${formatPdfDate(invoice.date, datePattern)}',
+              pw.Text(
+                  'Date: ${formatPdfDateTime(invoice.date, datePattern, showTime: showTimeInPdf, timeFormat: pdfTimeFormat)}',
                   style: pw.TextStyle(fontSize: executivePdfStyle.bodyFontSize)),
               if (invoice.dueDate != null)
                 pw.Text('Due: ${formatPdfDate(invoice.dueDate!, datePattern)}',
@@ -206,10 +221,12 @@ pw.MultiPage buildExecutiveTemplate(
         showDiscount: showDiscount,
         showTypeTag: showTypeTag,
         showAliasName: showAliasName,
+        showDescription: showDescription,
+        descriptionNewLine: descriptionNewLine,
         businessType: businessType,
         watermarkBytes: watermarkBytes,
         watermarkOpacity: watermarkOpacity,
-        showCgstSgst: showCgstSgst,
+        showCgstSgst: showCgstSgst, showIgst: showIgst,
         tableFontSize: executivePdfStyle.tableFontSize
       ),
       pw.SizedBox(height: 5),
@@ -226,7 +243,7 @@ pw.MultiPage buildExecutiveTemplate(
             accentColor,
             currencySymbol,
             previousBalanceDue: previousBalanceDue,
-            showCgstSgst: showCgstSgst,
+            showCgstSgst: showCgstSgst, showIgst: showIgst,
             showRoundOff: showRoundOff,
             fontSize: executivePdfStyle.totalsFontSize
           ),

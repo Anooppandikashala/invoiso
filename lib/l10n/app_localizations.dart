@@ -1662,6 +1662,12 @@ abstract class AppLocalizations {
   /// **'Invoice-cum-Bill of Supply'**
   String get gstTitleInvoiceCumBillLabel;
 
+  /// No description provided for @gstTitleCashBillLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash Bill'**
+  String get gstTitleCashBillLabel;
+
   /// No description provided for @gstTitleCreditNoteLabel.
   ///
   /// In en, this message translates to:
@@ -1817,6 +1823,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tax rate from each product'**
   String get createInvoiceTaxRateFromProductMessage;
+
+  /// No description provided for @createInvoiceInterStateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Interstate supply (IGST)'**
+  String get createInvoiceInterStateLabel;
 
   /// No description provided for @createInvoicePaymentUpiAccountLabel.
   ///
@@ -3059,6 +3071,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'ID (newest first)'**
   String get customerMgmtSortIdNewest;
+
+  /// No description provided for @customerMgmtSortOutstandingHighLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Outstanding (high-low)'**
+  String get customerMgmtSortOutstandingHighLow;
+
+  /// No description provided for @customerMgmtSortOutstandingLowHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'Outstanding (low-high)'**
+  String get customerMgmtSortOutstandingLowHigh;
+
+  /// No description provided for @customerMgmtWithOutstandingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'With Outstanding'**
+  String get customerMgmtWithOutstandingLabel;
 
   /// No description provided for @customerMgmtSearchHint.
   ///
@@ -4968,6 +4998,108 @@ abstract class AppLocalizations {
   /// **'Invoice Items'**
   String get invoiceSettingsSectionItems;
 
+  /// No description provided for @invoiceSettingsSectionCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer Details'**
+  String get invoiceSettingsSectionCustomer;
+
+  /// No description provided for @invoiceSettingsCustomerSectionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose which customer details print on invoice PDFs and thermal receipts. A field only shows when it\'s enabled and the customer has a value for it. Customer name is always shown.'**
+  String get invoiceSettingsCustomerSectionHint;
+
+  /// No description provided for @invoiceSettingsShowCustomerBusinessNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Business Name'**
+  String get invoiceSettingsShowCustomerBusinessNameLabel;
+
+  /// No description provided for @invoiceSettingsShowCustomerBusinessNameSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Print the customer\'s business name under their name'**
+  String get invoiceSettingsShowCustomerBusinessNameSubtitle;
+
+  /// No description provided for @invoiceSettingsShowCustomerAddressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Address'**
+  String get invoiceSettingsShowCustomerAddressLabel;
+
+  /// No description provided for @invoiceSettingsShowCustomerAddressSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Print the customer\'s address in the Bill To block'**
+  String get invoiceSettingsShowCustomerAddressSubtitle;
+
+  /// No description provided for @invoiceSettingsShowCustomerPhoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Phone'**
+  String get invoiceSettingsShowCustomerPhoneLabel;
+
+  /// No description provided for @invoiceSettingsShowCustomerPhoneSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Print the customer\'s phone number'**
+  String get invoiceSettingsShowCustomerPhoneSubtitle;
+
+  /// No description provided for @invoiceSettingsShowCustomerEmailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Email'**
+  String get invoiceSettingsShowCustomerEmailLabel;
+
+  /// No description provided for @invoiceSettingsShowCustomerEmailSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Print the customer\'s email address (not shown on thermal receipts)'**
+  String get invoiceSettingsShowCustomerEmailSubtitle;
+
+  /// No description provided for @invoiceSettingsShowCustomerGstinLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show GSTIN / Tax ID'**
+  String get invoiceSettingsShowCustomerGstinLabel;
+
+  /// No description provided for @invoiceSettingsShowCustomerGstinSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Print the customer\'s GSTIN / tax id (requires GST fields on)'**
+  String get invoiceSettingsShowCustomerGstinSubtitle;
+
+  /// No description provided for @invoiceSettingsShowTimeInPdfLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Time on PDF'**
+  String get invoiceSettingsShowTimeInPdfLabel;
+
+  /// No description provided for @invoiceSettingsShowTimeInPdfSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Append the invoice creation time next to the date on PDFs and thermal receipts'**
+  String get invoiceSettingsShowTimeInPdfSubtitle;
+
+  /// No description provided for @invoiceSettingsTimeFormatLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Time Format'**
+  String get invoiceSettingsTimeFormatLabel;
+
+  /// No description provided for @invoiceSettingsTimeFormat24.
+  ///
+  /// In en, this message translates to:
+  /// **'24-hour (14:30)'**
+  String get invoiceSettingsTimeFormat24;
+
+  /// No description provided for @invoiceSettingsTimeFormat12.
+  ///
+  /// In en, this message translates to:
+  /// **'12-hour (2:30 PM)'**
+  String get invoiceSettingsTimeFormat12;
+
   /// No description provided for @invoiceSettingsPrefixLabel.
   ///
   /// In en, this message translates to:
@@ -5091,13 +5223,13 @@ abstract class AppLocalizations {
   /// No description provided for @invoiceSettingsShowCgstSgstLabel.
   ///
   /// In en, this message translates to:
-  /// **'Show CGST/SGST'**
+  /// **'Show CGST/SGST/IGST'**
   String get invoiceSettingsShowCgstSgstLabel;
 
   /// No description provided for @invoiceSettingsShowCgstSgstSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Split tax into CGST + SGST on invoices (India only).'**
+  /// **'Split tax into CGST + SGST, or IGST for interstate invoices (India only).'**
   String get invoiceSettingsShowCgstSgstSubtitle;
 
   /// No description provided for @invoiceSettingsDefaultGstTitleLabel.
@@ -5147,6 +5279,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Print a product\'s local-language alias (if set) instead of its actual name on PDFs'**
   String get invoiceSettingsShowAliasNameSubtitle;
+
+  /// No description provided for @invoiceSettingsShowDescriptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Product Description'**
+  String get invoiceSettingsShowDescriptionLabel;
+
+  /// No description provided for @invoiceSettingsShowDescriptionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Print each item\'s description as a row under it on A4 PDFs (not on thermal receipts)'**
+  String get invoiceSettingsShowDescriptionSubtitle;
+
+  /// No description provided for @invoiceSettingsDescriptionNewLineLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description on a New Line'**
+  String get invoiceSettingsDescriptionNewLineLabel;
+
+  /// No description provided for @invoiceSettingsDescriptionNewLineSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Print the description as a full-width row below the item instead of a line under its name'**
+  String get invoiceSettingsDescriptionNewLineSubtitle;
 
   /// No description provided for @invoiceSettingsAllowFractionalQtyLabel.
   ///

@@ -916,6 +916,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get gstTitleInvoiceCumBillLabel => 'इनवॉइस-सह-आपूर्ति बिल';
 
   @override
+  String get gstTitleCashBillLabel => 'Cash Bill';
+
+  @override
   String get gstTitleCreditNoteLabel => 'क्रेडिट नोट';
 
   @override
@@ -1000,6 +1003,9 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get createInvoiceTaxRateFromProductMessage =>
       'प्रत्येक उत्पाद से टैक्स दर';
+
+  @override
+  String get createInvoiceInterStateLabel => 'Interstate supply (IGST)';
 
   @override
   String get createInvoicePaymentUpiAccountLabel => 'भुगतान यूपीआई खाता';
@@ -1845,6 +1851,15 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get customerMgmtSortIdNewest => 'ID (सबसे नया पहले)';
+
+  @override
+  String get customerMgmtSortOutstandingHighLow => 'बकाया (अधिक से कम)';
+
+  @override
+  String get customerMgmtSortOutstandingLowHigh => 'बकाया (कम से अधिक)';
+
+  @override
+  String get customerMgmtWithOutstandingLabel => 'बकाया वाले';
 
   @override
   String customerMgmtSearchHint(String taxWord) {
@@ -3006,6 +3021,65 @@ class AppLocalizationsHi extends AppLocalizations {
   String get invoiceSettingsSectionItems => 'इनवॉइस आइटम';
 
   @override
+  String get invoiceSettingsSectionCustomer => 'Customer Details';
+
+  @override
+  String get invoiceSettingsCustomerSectionHint =>
+      'Choose which customer details print on invoice PDFs and thermal receipts. A field only shows when it\'s enabled and the customer has a value for it. Customer name is always shown.';
+
+  @override
+  String get invoiceSettingsShowCustomerBusinessNameLabel =>
+      'Show Business Name';
+
+  @override
+  String get invoiceSettingsShowCustomerBusinessNameSubtitle =>
+      'Print the customer\'s business name under their name';
+
+  @override
+  String get invoiceSettingsShowCustomerAddressLabel => 'Show Address';
+
+  @override
+  String get invoiceSettingsShowCustomerAddressSubtitle =>
+      'Print the customer\'s address in the Bill To block';
+
+  @override
+  String get invoiceSettingsShowCustomerPhoneLabel => 'Show Phone';
+
+  @override
+  String get invoiceSettingsShowCustomerPhoneSubtitle =>
+      'Print the customer\'s phone number';
+
+  @override
+  String get invoiceSettingsShowCustomerEmailLabel => 'Show Email';
+
+  @override
+  String get invoiceSettingsShowCustomerEmailSubtitle =>
+      'Print the customer\'s email address (not shown on thermal receipts)';
+
+  @override
+  String get invoiceSettingsShowCustomerGstinLabel => 'Show GSTIN / Tax ID';
+
+  @override
+  String get invoiceSettingsShowCustomerGstinSubtitle =>
+      'Print the customer\'s GSTIN / tax id (requires GST fields on)';
+
+  @override
+  String get invoiceSettingsShowTimeInPdfLabel => 'Show Time on PDF';
+
+  @override
+  String get invoiceSettingsShowTimeInPdfSubtitle =>
+      'Append the invoice creation time next to the date on PDFs and thermal receipts';
+
+  @override
+  String get invoiceSettingsTimeFormatLabel => 'Time Format';
+
+  @override
+  String get invoiceSettingsTimeFormat24 => '24-hour (14:30)';
+
+  @override
+  String get invoiceSettingsTimeFormat12 => '12-hour (2:30 PM)';
+
+  @override
   String get invoiceSettingsPrefixLabel => 'इनवॉइस प्रीफ़िक्स';
 
   @override
@@ -3108,6 +3182,20 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get invoiceSettingsShowAliasNameSubtitle =>
       'PDF पर उत्पाद के वास्तविक नाम के बजाय उसका स्थानीय-भाषा उपनाम (यदि सेट है) प्रिंट करें';
+
+  @override
+  String get invoiceSettingsShowDescriptionLabel => 'उत्पाद विवरण दिखाएं';
+
+  @override
+  String get invoiceSettingsShowDescriptionSubtitle =>
+      'प्रत्येक आइटम का विवरण A4 PDF में उसके नीचे एक पंक्ति के रूप में छापें (थर्मल रसीदों पर नहीं)';
+
+  @override
+  String get invoiceSettingsDescriptionNewLineLabel => 'विवरण नई पंक्ति में';
+
+  @override
+  String get invoiceSettingsDescriptionNewLineSubtitle =>
+      'विवरण को आइटम के नाम के नीचे एक पंक्ति के बजाय आइटम के नीचे पूरी-चौड़ाई की पंक्ति के रूप में छापें';
 
   @override
   String get invoiceSettingsAllowFractionalQtyLabel =>

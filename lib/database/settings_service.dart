@@ -305,6 +305,77 @@ class SettingsService {
     await setSetting(SettingKey.showLogo, show.toString());
   }
 
+  /// Whether the customer business name is shown on PDFs. Defaults to true.
+  static Future<bool> getShowCustomerBusinessName() async {
+    final val = await getSetting(SettingKey.showCustomerBusinessNameInPdf);
+    return val != 'false';
+  }
+
+  static Future<void> setShowCustomerBusinessName(bool show) async {
+    await setSetting(
+        SettingKey.showCustomerBusinessNameInPdf, show.toString());
+  }
+
+  /// Whether the customer address is shown on PDFs. Defaults to true.
+  static Future<bool> getShowCustomerAddress() async {
+    final val = await getSetting(SettingKey.showCustomerAddressInPdf);
+    return val != 'false';
+  }
+
+  static Future<void> setShowCustomerAddress(bool show) async {
+    await setSetting(SettingKey.showCustomerAddressInPdf, show.toString());
+  }
+
+  /// Whether the customer phone is shown on PDFs. Defaults to true.
+  static Future<bool> getShowCustomerPhone() async {
+    final val = await getSetting(SettingKey.showCustomerPhoneInPdf);
+    return val != 'false';
+  }
+
+  static Future<void> setShowCustomerPhone(bool show) async {
+    await setSetting(SettingKey.showCustomerPhoneInPdf, show.toString());
+  }
+
+  /// Whether the customer email is shown on PDFs. Defaults to true.
+  static Future<bool> getShowCustomerEmail() async {
+    final val = await getSetting(SettingKey.showCustomerEmailInPdf);
+    return val != 'false';
+  }
+
+  static Future<void> setShowCustomerEmail(bool show) async {
+    await setSetting(SettingKey.showCustomerEmailInPdf, show.toString());
+  }
+
+  /// Whether the customer GSTIN/tax id is shown on PDFs. Defaults to true.
+  static Future<bool> getShowCustomerGstin() async {
+    final val = await getSetting(SettingKey.showCustomerGstinInPdf);
+    return val != 'false';
+  }
+
+  static Future<void> setShowCustomerGstin(bool show) async {
+    await setSetting(SettingKey.showCustomerGstinInPdf, show.toString());
+  }
+
+  /// Whether the invoice creation time is shown on PDFs. Defaults to true.
+  static Future<bool> getShowTimeInPdf() async {
+    final val = await getSetting(SettingKey.showTimeInPdf);
+    return val != 'false';
+  }
+
+  static Future<void> setShowTimeInPdf(bool show) async {
+    await setSetting(SettingKey.showTimeInPdf, show.toString());
+  }
+
+  /// PDF time format: '24' (HH:mm) or '12' (h:mm a). Defaults to '24'.
+  static Future<String> getPdfTimeFormat() async {
+    final val = await getSetting(SettingKey.pdfTimeFormat);
+    return val == '12' ? '12' : '24';
+  }
+
+  static Future<void> setPdfTimeFormat(String format) async {
+    await setSetting(SettingKey.pdfTimeFormat, format == '12' ? '12' : '24');
+  }
+
   static Future<bool> getShowDiscount() async {
     final val = await getSetting(SettingKey.showDiscount);
     return val != 'false'; // default true

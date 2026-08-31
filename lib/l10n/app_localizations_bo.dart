@@ -915,6 +915,9 @@ class AppLocalizationsBo extends AppLocalizations {
   String get gstTitleInvoiceCumBillLabel => 'ཁྲལ་ཤོག-སྤྲོད་ཐོ།';
 
   @override
+  String get gstTitleCashBillLabel => 'Cash Bill';
+
+  @override
   String get gstTitleCreditNoteLabel => 'སྐྱོན་བཅོས་ཐོ (ཡར)';
 
   @override
@@ -1002,6 +1005,9 @@ class AppLocalizationsBo extends AppLocalizations {
   @override
   String get createInvoiceTaxRateFromProductMessage =>
       'ཐོན་རྫས་སོ་སོའི་ཁྲལ་ཚད།';
+
+  @override
+  String get createInvoiceInterStateLabel => 'Interstate supply (IGST)';
 
   @override
   String get createInvoicePaymentUpiAccountLabel => 'འཇལ་བའི UPI རྩིས་ཐོ།';
@@ -1835,6 +1841,15 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get customerMgmtSortIdNewest => 'ID (གསར་ཤོས་ཐོག་མར)';
+
+  @override
+  String get customerMgmtSortOutstandingHighLow => 'ལྷག་ལུས། (མང་ཤོས་ཐོག་མར)';
+
+  @override
+  String get customerMgmtSortOutstandingLowHigh => 'ལྷག་ལུས། (ཉུང་ཤོས་ཐོག་མར)';
+
+  @override
+  String get customerMgmtWithOutstandingLabel => 'ལྷག་ལུས་ཡོད་པ';
 
   @override
   String customerMgmtSearchHint(String taxWord) {
@@ -2990,6 +3005,65 @@ class AppLocalizationsBo extends AppLocalizations {
   String get invoiceSettingsSectionItems => 'ཁྲལ་ཤོག་རས་ཆས།';
 
   @override
+  String get invoiceSettingsSectionCustomer => 'Customer Details';
+
+  @override
+  String get invoiceSettingsCustomerSectionHint =>
+      'Choose which customer details print on invoice PDFs and thermal receipts. A field only shows when it\'s enabled and the customer has a value for it. Customer name is always shown.';
+
+  @override
+  String get invoiceSettingsShowCustomerBusinessNameLabel =>
+      'Show Business Name';
+
+  @override
+  String get invoiceSettingsShowCustomerBusinessNameSubtitle =>
+      'Print the customer\'s business name under their name';
+
+  @override
+  String get invoiceSettingsShowCustomerAddressLabel => 'Show Address';
+
+  @override
+  String get invoiceSettingsShowCustomerAddressSubtitle =>
+      'Print the customer\'s address in the Bill To block';
+
+  @override
+  String get invoiceSettingsShowCustomerPhoneLabel => 'Show Phone';
+
+  @override
+  String get invoiceSettingsShowCustomerPhoneSubtitle =>
+      'Print the customer\'s phone number';
+
+  @override
+  String get invoiceSettingsShowCustomerEmailLabel => 'Show Email';
+
+  @override
+  String get invoiceSettingsShowCustomerEmailSubtitle =>
+      'Print the customer\'s email address (not shown on thermal receipts)';
+
+  @override
+  String get invoiceSettingsShowCustomerGstinLabel => 'Show GSTIN / Tax ID';
+
+  @override
+  String get invoiceSettingsShowCustomerGstinSubtitle =>
+      'Print the customer\'s GSTIN / tax id (requires GST fields on)';
+
+  @override
+  String get invoiceSettingsShowTimeInPdfLabel => 'Show Time on PDF';
+
+  @override
+  String get invoiceSettingsShowTimeInPdfSubtitle =>
+      'Append the invoice creation time next to the date on PDFs and thermal receipts';
+
+  @override
+  String get invoiceSettingsTimeFormatLabel => 'Time Format';
+
+  @override
+  String get invoiceSettingsTimeFormat24 => '24-hour (14:30)';
+
+  @override
+  String get invoiceSettingsTimeFormat12 => '12-hour (2:30 PM)';
+
+  @override
   String get invoiceSettingsPrefixLabel => 'ཁྲལ་ཤོག་སྔོན་སྐྱོན།';
 
   @override
@@ -3093,6 +3167,22 @@ class AppLocalizationsBo extends AppLocalizations {
   @override
   String get invoiceSettingsShowAliasNameSubtitle =>
       'ཐོན་རྫས་ཀྱི་ངོ་མའི་མིང་ཚབ་ PDF ནང་ས་གནས་སྐད་ཡིག་གི་མིང་གཞན (སྒྲིག་ཡོད་ན) པར་སྐྲུན་རོགས།';
+
+  @override
+  String get invoiceSettingsShowDescriptionLabel =>
+      'ཐོན་རྫས་ཀྱི་འགྲེལ་བཤད་སྟོན་པ།';
+
+  @override
+  String get invoiceSettingsShowDescriptionSubtitle =>
+      'A4 PDF ནང་ཅ་དངོས་རེ་རེའི་འགྲེལ་བཤད་དེའི་འོག་ཏུ་གྲལ་ཐིག་གཅིག་ཏུ་པར་སྐྲུན་བྱེད་པ (ཚ་དྲོད་ཟིན་ཐོ་ནང་མིན)';
+
+  @override
+  String get invoiceSettingsDescriptionNewLineLabel =>
+      'Description on a New Line';
+
+  @override
+  String get invoiceSettingsDescriptionNewLineSubtitle =>
+      'Print the description as a full-width row below the item instead of a line under its name';
 
   @override
   String get invoiceSettingsAllowFractionalQtyLabel => 'ཆ་ཤས་གྲངས་ཀ་ཆོག་པ།';

@@ -15,6 +15,8 @@ class PdfGenerationSettings {
   final bool showDiscount;
   final bool showTypeTag;
   final bool showAliasName;
+  final bool showDescription;
+  final bool descriptionNewLine;
   final BusinessType businessType;
   final List<UpiEntry> upiEntries;
   final String? showQrStr;
@@ -27,6 +29,13 @@ class PdfGenerationSettings {
   final bool showWebsite;
   final bool showAddress;
   final bool showLogo;
+  final bool showCustomerBusinessName;
+  final bool showCustomerAddress;
+  final bool showCustomerPhone;
+  final bool showCustomerEmail;
+  final bool showCustomerGstin;
+  final bool showTimeInPdf;
+  final String pdfTimeFormat;
   final List<BankAccount> bankAccounts;
   final LogoPosition logoPosition;
   final double logoSizePx;
@@ -83,6 +92,8 @@ class PdfGenerationSettings {
     this.signaturePosition = 'left',
     this.signatureSizePx = 50,
     this.showAliasName = false,
+    this.showDescription = false,
+    this.descriptionNewLine = false,
     this.watermarkBytes,
     this.watermarkOpacity = 0.12,
     this.showRoundOff = false,
@@ -94,6 +105,13 @@ class PdfGenerationSettings {
     this.showWebsite = true,
     this.showAddress = true,
     this.showLogo = true,
+    this.showCustomerBusinessName = true,
+    this.showCustomerAddress = true,
+    this.showCustomerPhone = true,
+    this.showCustomerEmail = true,
+    this.showCustomerGstin = true,
+    this.showTimeInPdf = true,
+    this.pdfTimeFormat = '24',
     this.showLeadingZeros = true,
   });
 }
