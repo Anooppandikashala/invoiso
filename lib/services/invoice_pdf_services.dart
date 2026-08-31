@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:invoiso/services/backend_services.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/services/pdf_service.dart';
-import 'package:invoiso/services/thermal_printer_service_v1.dart';
+import 'package:invoiso/services/thermal_printer_service_v2.dart';
 import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
 
@@ -16,7 +16,7 @@ class InvoicePdfServices {
       final template = await BackendServices.settings.getInvoiceTemplate();
       if (template == InvoiceTemplate.thermal) {
         if (!context.mounted) return;
-        await ThermalPrinterService.printInvoice(context, invoice);
+        await ThermalPrinterServiceV2.printInvoice(context, invoice);
       } else {
         final dateFmt = await BackendServices.settings.getDateFormat();
         final pdf = await PDFService.generateInvoicePDF(invoice,

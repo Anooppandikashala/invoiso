@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show kDebugMode;
+/*import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:invoiso/services/backend_services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_esc_pos_utils/flutter_esc_pos_utils.dart';
@@ -13,7 +13,7 @@ import 'package:thermal_printer/thermal_printer.dart';
 /// instead of rendering a PDF and letting the OS/GDI driver rasterize it.
 /// This is what fixes garbled thermal output — the printer gets its native
 /// command language instead of a rasterized page the driver may mishandle.
-class ThermalPrinterService {
+class ThermalPrinterServiceOld {
   static Future<void> printInvoice(
       BuildContext context, Invoice invoice) async {
     final discovered = await UsbPrinterConnector.discoverPrinters();
@@ -442,3 +442,4 @@ class _NetworkPrintRowState extends State<_NetworkPrintRow> {
     );
   }
 }
+*/
