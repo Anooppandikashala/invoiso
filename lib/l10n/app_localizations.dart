@@ -5670,6 +5670,24 @@ abstract class AppLocalizations {
   /// **'Landscape'**
   String get pdfSettingsOrientationLandscape;
 
+  /// No description provided for @pdfSettingsMetadataColumnsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Product metadata columns'**
+  String get pdfSettingsMetadataColumnsLabel;
+
+  /// No description provided for @pdfSettingsMetadataColumnsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Print product metadata as extra columns in the items table.'**
+  String get pdfSettingsMetadataColumnsHint;
+
+  /// No description provided for @pdfSettingsMetadataColumnsWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Metadata columns print only on Grid Classic at A4. Each one narrows the others — if the table looks cramped, switch to Landscape above. Values are captured when an item is added; editing the product later won\'t change past invoices.'**
+  String get pdfSettingsMetadataColumnsWarning;
+
   /// No description provided for @pdfSettingsItemLayoutLabel.
   ///
   /// In en, this message translates to:

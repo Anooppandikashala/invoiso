@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/database/invoice_item_service.dart';
 import 'package:invoiso/database/settings_service.dart';
@@ -78,6 +80,9 @@ class InvoiceService {
           'product_unit': item.product.unit,
           'unit': item.unit,
           'description': item.description,
+          'line_metadata': item.metadata == null
+              ? null
+              : jsonEncode(item.metadata!.toMap()),
         });
       }
     });
@@ -165,6 +170,9 @@ class InvoiceService {
           'product_unit': item.product.unit,
           'unit': item.unit,
           'description': item.description,
+          'line_metadata': item.metadata == null
+              ? null
+              : jsonEncode(item.metadata!.toMap()),
         });
       }
     });
@@ -362,6 +370,7 @@ class InvoiceService {
           extraCost: extraCost,
           unit: row['unit'] as String?,
           description: row['description'] as String?,
+          metadata: ProductMetadata.fromJsonString(row['line_metadata']),
         ));
       } catch (e, stackTrace) {
         AppLogger.e(_tag, 'Error parsing invoice item row', e, stackTrace);

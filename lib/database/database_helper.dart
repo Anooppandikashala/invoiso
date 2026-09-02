@@ -15,7 +15,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 43;
+  final dbVersion = 44;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -144,7 +144,8 @@ class DatabaseHelper {
         product_unit TEXT DEFAULT '',
         unit TEXT,
         product_price_includes_tax INTEGER DEFAULT 0,
-        description TEXT
+        description TEXT,
+        line_metadata TEXT
       )
     ''');
 
@@ -724,6 +725,19 @@ class DatabaseHelper {
       await _runMigrationStep(db, 43, 'add_is_interstate_to_invoices', () async {
         await db.execute(
           'ALTER TABLE invoices ADD COLUMN is_interstate INTEGER DEFAULT 0',
+        );
+      });
+    }
+
+    if (oldVersion < 44) {
+      // JSON snapshot of the product's metadata (storage location, batch/
+      // container number, expiry/manufacture date, supplier, SKU, notes) taken
+      // when the line is added, so it can print on the Grid Classic PDF and
+      // stay frozen. NULL on every pre-v44 row = no metadata, prints as before.
+      await _runMigrationStep(
+          db, 44, 'add_line_metadata_to_invoice_items', () async {
+        await db.execute(
+          'ALTER TABLE invoice_items ADD COLUMN line_metadata TEXT',
         );
       });
     }

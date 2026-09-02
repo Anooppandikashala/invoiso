@@ -46,6 +46,7 @@ pw.MultiPage buildGridClassicTemplate(
   double previousBalanceDue = 0.0,
   PdfPageFormat pageFormat = PdfPageFormat.a4,
   bool landscape = false,
+  Map<String, bool> metadataColumns = const {},
   pw.ThemeData? pdfTheme,
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
@@ -552,6 +553,8 @@ pw.MultiPage buildGridClassicTemplate(
         showCgstSgst: showCgstSgst,
         showIgst: showIgst,
         isLandscape: landscape,
+        metadataColumns: metadataColumns,
+        metadataDatePattern: datePattern,
       ),
       // ── Notes, totals, signature, footer (inset again) ──
       buildInvoiceFooter()

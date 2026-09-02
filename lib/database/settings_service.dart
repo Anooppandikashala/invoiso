@@ -229,6 +229,19 @@ class SettingsService {
     await setSetting(SettingKey.productListColumnsConfig, jsonEncode(cols));
   }
 
+  /// Which product-metadata columns print in the Grid Classic A4 invoice PDF.
+  /// Stored keys only; absent keys fall back to the screen's defaults (all off).
+  static Future<Map<String, bool>> getInvoicePdfMetadataColumns() async {
+    final json = await getSetting(SettingKey.invoicePdfMetadataColumns);
+    if (json == null || json.isEmpty) return const {};
+    final m = jsonDecode(json) as Map<String, dynamic>;
+    return m.map((k, v) => MapEntry(k, v == true));
+  }
+
+  static Future<void> setInvoicePdfMetadataColumns(Map<String, bool> cols) async {
+    await setSetting(SettingKey.invoicePdfMetadataColumns, jsonEncode(cols));
+  }
+
   static Future<bool> getShowBankDetails() async {
     final val = await getSetting(SettingKey.showBankDetails);
     return val == 'true';

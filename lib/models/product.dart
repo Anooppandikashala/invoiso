@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class Product {
   String id;
   String name;
@@ -159,5 +161,15 @@ class ProductMetadata {
       'sku_code': skuCode,
       'notes': notes,
     };
+  }
+
+  /// Detached copy — used to freeze a snapshot onto an invoice line so later
+  /// edits to the catalogue product never touch past invoices.
+  ProductMetadata copy() => ProductMetadata.fromMap(toMap());
+
+  /// Decode a `line_metadata` JSON blob stored on invoice_items; null/blank → null.
+  static ProductMetadata? fromJsonString(Object? raw) {
+    if (raw is! String || raw.isEmpty) return null;
+    return ProductMetadata.fromMap(jsonDecode(raw) as Map<String, dynamic>);
   }
 }

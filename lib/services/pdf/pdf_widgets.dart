@@ -6,6 +6,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:qr/qr.dart';
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/models/invoice.dart';
+import 'package:invoiso/models/invoice_item.dart';
 import 'package:invoiso/utils/amount_in_words.dart';
 
 /// Tracks how much table-row height has been painted so far, so the
@@ -81,6 +82,67 @@ double getSlNumberFlex(PdfPageFormat format, InvoiceTemplate template, bool isLa
    if(format == PdfPageFormat.a4) return isLandscape ? 0.5 : 0.6;
    if(format == PdfPageFormat.a5) return isLandscape ? 0.6 : 0.7;
    return isLandscape ? 0.6 : 0.8;
+}
+
+// ── Product-metadata snapshot columns (Grid Classic A4 only) ──────────────
+
+double _metaColFlex(String key) =>
+    (key == 'expiryDate' || key == 'manufactureDate') ? 1.6
+        : (key == 'notes') ? 2.2
+        : 1.4;
+
+String _metaHeaderText(String key) {
+  switch (key) {
+    case 'storageLocation':
+      return 'Storage';
+    case 'containerNumber':
+      return 'Container No.';
+    case 'batchNumber':
+      return 'Batch No.';
+    case 'expiryDate':
+      return 'Expiry';
+    case 'manufactureDate':
+      return 'Mfg. Date';
+    case 'supplierName':
+      return 'Supplier';
+    case 'skuCode':
+      return 'SKU';
+    case 'notes':
+      return 'Notes';
+    default:
+      return key;
+  }
+}
+
+String _metaCellValue(InvoiceItem item, String key, String datePattern) {
+  final m = item.metadata;
+  if (m == null) return '';
+  String fmtDate(String? raw) {
+    if (raw == null || raw.isEmpty) return '';
+    final d = DateTime.tryParse(raw);
+    return d == null ? raw : DateFormat(datePattern).format(d);
+  }
+
+  switch (key) {
+    case 'storageLocation':
+      return m.storageLocation ?? '';
+    case 'containerNumber':
+      return m.containerNumber ?? '';
+    case 'batchNumber':
+      return m.batchNumber ?? '';
+    case 'expiryDate':
+      return fmtDate(m.expiryDate);
+    case 'manufactureDate':
+      return fmtDate(m.manufactureDate);
+    case 'supplierName':
+      return m.supplierName ?? '';
+    case 'skuCode':
+      return m.skuCode ?? '';
+    case 'notes':
+      return m.notes ?? '';
+    default:
+      return '';
+  }
 }
 
 pw.Widget buildSignatureWidget(
@@ -635,7 +697,24 @@ pw.Widget buildInvoiceTable(Invoice invoice,
     double watermarkOpacity = 0.12,
     bool showCgstSgst = false,
     bool showIgst = false,
-    bool isLandscape = false}) {
+    bool isLandscape = false,
+    Map<String, bool> metadataColumns = const {},
+    String metadataDatePattern = 'dd/MM/yyyy'}) {
+  // Optional product-metadata snapshot columns — Grid Classic A4 only. Order is
+  // fixed; only the keys the user enabled are kept.
+  final List<String> metaKeys = (template == InvoiceTemplate.gridClassic &&
+          pageFormat == PdfPageFormat.a4)
+      ? const [
+          'storageLocation',
+          'containerNumber',
+          'batchNumber',
+          'manufactureDate',
+          'expiryDate',
+          'supplierName',
+          'skuCode',
+          'notes',
+        ].where((k) => metadataColumns[k] == true).toList()
+      : const <String>[];
   final bool showItemTax = invoice.taxMode == TaxMode.perItem;
   final bool isGlobalTaxMode = invoice.taxMode == TaxMode.global;
   final bool splitCgstSgst =
@@ -654,6 +733,9 @@ pw.Widget buildInvoiceTable(Invoice invoice,
     if (showGst) col: const pw.FlexColumnWidth(1.4),
   };
   if (showGst) col++;
+  for (final k in metaKeys) {
+    colWidths[col++] = pw.FlexColumnWidth(_metaColFlex(k));
+  }
   if (showQuantity) colWidths[col++] = const pw.FlexColumnWidth(1);
   colWidths[col++] = const pw.FlexColumnWidth(1.5);
   if (splitCgstSgst) {
@@ -740,6 +822,13 @@ pw.Widget buildInvoiceTable(Invoice invoice,
           cellPaddingV: cellPaddingV),
       if (showGst)
         buildTableCell('HSN/SAC',
+            isHeader: true,
+            textColor: textColor,
+            fontSize: tableFontSize,
+            cellPaddingH: cellPaddingH,
+            cellPaddingV: cellPaddingV),
+      for (final k in metaKeys)
+        buildTableCell(_metaHeaderText(k),
             isHeader: true,
             textColor: textColor,
             fontSize: tableFontSize,
@@ -877,6 +966,11 @@ pw.Widget buildInvoiceTable(Invoice invoice,
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
               cellPaddingV: cellPaddingV),
+        for (final k in metaKeys)
+          buildTableCell(_metaCellValue(item, k, metadataDatePattern),
+              fontSize: tableFontSize,
+              cellPaddingH: cellPaddingH,
+              cellPaddingV: cellPaddingV),
         if (showQuantity)
           buildTableCell(
               '${item.quantity == item.quantity.roundToDouble() ? item.quantity.toInt().toString() : item.quantity.toString()}'
@@ -997,6 +1091,11 @@ pw.Widget buildInvoiceTable(Invoice invoice,
                 cellPaddingH: cellPaddingH,
                 cellPaddingV: cellPaddingV),
             if (showGst)
+              buildTableCell('',
+                  fontSize: tableFontSize,
+                  cellPaddingH: cellPaddingH,
+                  cellPaddingV: cellPaddingV),
+            for (final _ in metaKeys)
               buildTableCell('',
                   fontSize: tableFontSize,
                   cellPaddingH: cellPaddingH,
