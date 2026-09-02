@@ -111,11 +111,15 @@ pw.MultiPage buildGridClassicTemplate(
   final gstLabel = taxLabel(company?.country);
   final panNumber = company?.panNumber ?? '';
   final fssaiCode = company?.fssaiCode ?? '';
-  final companyIdLine = [
+  final companyIdParts = <String>[
     if (showGst && gstin.isNotEmpty) '$gstLabel: $gstin',
     if (showPan && panNumber.isNotEmpty) 'PAN: $panNumber',
     if (showFssai && fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
-  ].join('   ');
+  ];
+  // All three present → one joined line above the divider (current look).
+  // Fewer → fold each into the company-details block, line by line.
+  final allCompanyIds = companyIdParts.length == 3;
+  final companyIdLine = companyIdParts.join('   ');
   final hasPreviousBalance = previousBalanceDue > 0;
   final hasPaid = invoice.amountPaid > 0;
 
@@ -208,13 +212,18 @@ pw.MultiPage buildGridClassicTemplate(
                           pw.Text('Ph: ${company!.phone}',
                               textAlign: pw.TextAlign.left,
                               style: pw.TextStyle(fontSize: subFont)),
+                        if (!allCompanyIds)
+                          for (final id in companyIdParts)
+                            pw.Text(id,
+                                textAlign: pw.TextAlign.left,
+                                style: pw.TextStyle(fontSize: subFont)),
                       ],
                     ),
                     if(logoPosition == LogoPosition.right)
                       buildCompanyLogo(logoImage, size: logoSize),
                   ]
               ),
-              if (companyIdLine.isNotEmpty)
+              if (allCompanyIds && companyIdLine.isNotEmpty)
                 pw.Center(child: pw.Text(companyIdLine,
                     textAlign: pw.TextAlign.left,
                     style: pw.TextStyle(
@@ -238,11 +247,16 @@ pw.MultiPage buildGridClassicTemplate(
                       pw.Text('Ph: ${company!.phone}',
                           textAlign: pw.TextAlign.center,
                           style: pw.TextStyle(fontSize: subFont)),
-                    if (companyIdLine.isNotEmpty)
+                    if (allCompanyIds && companyIdLine.isNotEmpty)
                       pw.Text(companyIdLine,
                           textAlign: pw.TextAlign.center,
                           style: pw.TextStyle(
-                              fontSize: subFont, fontWeight: pw.FontWeight.normal)),
+                              fontSize: subFont, fontWeight: pw.FontWeight.normal))
+                    else
+                      for (final id in companyIdParts)
+                        pw.Text(id,
+                            textAlign: pw.TextAlign.center,
+                            style: pw.TextStyle(fontSize: subFont)),
                   ],
                 ),
               ),

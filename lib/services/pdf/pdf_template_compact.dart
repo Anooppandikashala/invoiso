@@ -97,11 +97,14 @@ pw.MultiPage buildCompactTemplate(
   final gstLabel = taxLabel(company?.country);
   final panNumber = company?.panNumber ?? '';
   final fssaiCode = company?.fssaiCode ?? '';
-  final companyIdLine = [
+  final companyIdParts = <String>[
     if (showGst && gstin.isNotEmpty) '$gstLabel: $gstin',
     if (showPan && panNumber.isNotEmpty) '${panLabel(company?.country)}: $panNumber',
     if (showFssai && fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
-  ].join('   ');
+  ];
+  // GSTIN + PAN + FSSAI all present → one joined line; fewer → line by line.
+  final allCompanyIds = companyIdParts.length == 3;
+  final companyIdLine = companyIdParts.join('   ');
 
   return pw.MultiPage(
     pageFormat: pageFormat,
@@ -164,8 +167,9 @@ pw.MultiPage buildCompactTemplate(
                                 style: pw.TextStyle(
                                     fontSize: addressFont,
                                     color: PdfColors.grey700)),
-                          if (companyIdLine.isNotEmpty)
-                            pw.Text(companyIdLine,
+                          for (final line
+                              in allCompanyIds ? [companyIdLine] : companyIdParts)
+                            pw.Text(line,
                                 style: pw.TextStyle(
                                     fontSize: addressFont,
                                     color: PdfColors.grey700)),
@@ -173,90 +177,6 @@ pw.MultiPage buildCompactTemplate(
                       ),
                     ),
                   ],
-                ),
-                pw.SizedBox(height: 4),
-                pw.Container(
-                  decoration: pw.BoxDecoration(
-                    border:
-                        pw.Border.all(color: PdfColors.grey400, width: 0.5),
-                  ),
-                  child: pw.Row(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Expanded(
-                        child: pw.Container(
-                          padding: pw.EdgeInsets.all(
-                              compactPdfLayoutStyle.headerPadding),
-                          decoration: const pw.BoxDecoration(
-                            border: pw.Border(
-                              right: pw.BorderSide(
-                                  color: PdfColors.grey400, width: 0.5),
-                            ),
-                          ),
-                          child: pw.Column(
-                            crossAxisAlignment: pw.CrossAxisAlignment.start,
-                            children: [
-                              pw.Text('Bill To:',
-                                  style: pw.TextStyle(
-                                      fontSize: sectionHeaderFont,
-                                      fontWeight: pw.FontWeight.bold)),
-                              pw.SizedBox(height: 1),
-                              pw.Text(invoice.customer.name,
-                                  style: pw.TextStyle(fontSize: bodyFont)),
-                              if (showCustomerBusinessName &&
-                                  invoice.customer.businessName.isNotEmpty)
-                                pw.Text(invoice.customer.businessName,
-                                    style: pw.TextStyle(
-                                        fontSize: addressFont,
-                                        color: PdfColors.grey700)),
-                              if (showCustomerAddress &&
-                                  invoice.customer.address.isNotEmpty)
-                                pw.Text(invoice.customer.address,
-                                    style: pw.TextStyle(
-                                        fontSize: addressFont,
-                                        color: PdfColors.grey700)),
-                              if (showGst &&
-                                  showCustomerGstin &&
-                                  invoice.customer.gstin.isNotEmpty)
-                                pw.Text(
-                                    '${taxLabel(company?.country)}: ${invoice.customer.gstin}',
-                                    style: pw.TextStyle(
-                                        fontSize: addressFont,
-                                        color: PdfColors.grey700)),
-                            ],
-                          ),
-                        ),
-                      ),
-                      pw.Expanded(
-                        child: pw.Padding(
-                          padding: pw.EdgeInsets.all(
-                              compactPdfLayoutStyle.headerPadding),
-                          child: pw.Column(
-                            crossAxisAlignment: pw.CrossAxisAlignment.start,
-                            children: [
-                              pw.Text('Invoice Details:',
-                                  style: pw.TextStyle(
-                                      fontSize: sectionHeaderFont,
-                                      fontWeight: pw.FontWeight.bold)),
-                              pw.SizedBox(height: 1),
-                              if (invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros) != null)
-                                pw.Text(
-                                    'No: ${invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros)}',
-                                    style: pw.TextStyle(fontSize: addressFont)),
-                              pw.Text(
-                                  'Date: ${formatPdfDateTime(invoice.date, datePattern, showTime: showTimeInPdf, timeFormat: pdfTimeFormat)}',
-                                  style: pw.TextStyle(fontSize: addressFont)),
-                              if (invoice.dueDate != null)
-                                pw.Text(
-                                    'Due: ${formatPdfDate(invoice.dueDate!, datePattern)}',
-                                    style:
-                                        pw.TextStyle(fontSize: addressFont)),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
               ],
             ),
@@ -266,6 +186,90 @@ pw.MultiPage buildCompactTemplate(
             buildCompanyLogo(logoImage, size: compactLogoSize),
           ],
         ],
+      ),
+      pw.SizedBox(height: 4),
+
+      // ── Bill To / Invoice Details — full width, below the logo + company
+      // block (A6 is too narrow to split it three ways beside the logo) ──
+      pw.Container(
+        decoration: pw.BoxDecoration(
+          border: pw.Border.all(color: PdfColors.grey400, width: 0.5),
+        ),
+        child: pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Expanded(
+              child: pw.Container(
+                padding:
+                    pw.EdgeInsets.all(compactPdfLayoutStyle.headerPadding),
+                decoration: const pw.BoxDecoration(
+                  border: pw.Border(
+                    right: pw.BorderSide(color: PdfColors.grey400, width: 0.5),
+                  ),
+                ),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text('Bill To:',
+                        style: pw.TextStyle(
+                            fontSize: sectionHeaderFont,
+                            fontWeight: pw.FontWeight.bold)),
+                    pw.SizedBox(height: 1),
+                    pw.Text(invoice.customer.name,
+                        style: pw.TextStyle(fontSize: bodyFont)),
+                    if (showCustomerBusinessName &&
+                        invoice.customer.businessName.isNotEmpty)
+                      pw.Text(invoice.customer.businessName,
+                          style: pw.TextStyle(
+                              fontSize: addressFont,
+                              color: PdfColors.grey700)),
+                    if (showCustomerAddress &&
+                        invoice.customer.address.isNotEmpty)
+                      pw.Text(invoice.customer.address,
+                          style: pw.TextStyle(
+                              fontSize: addressFont,
+                              color: PdfColors.grey700)),
+                    if (showGst &&
+                        showCustomerGstin &&
+                        invoice.customer.gstin.isNotEmpty)
+                      pw.Text(
+                          '${taxLabel(company?.country)}: ${invoice.customer.gstin}',
+                          style: pw.TextStyle(
+                              fontSize: addressFont,
+                              color: PdfColors.grey700)),
+                  ],
+                ),
+              ),
+            ),
+            pw.Expanded(
+              child: pw.Padding(
+                padding:
+                    pw.EdgeInsets.all(compactPdfLayoutStyle.headerPadding),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text('Invoice Details:',
+                        style: pw.TextStyle(
+                            fontSize: sectionHeaderFont,
+                            fontWeight: pw.FontWeight.bold)),
+                    pw.SizedBox(height: 1),
+                    if (invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros) != null)
+                      pw.Text(
+                          'No: ${invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros)}',
+                          style: pw.TextStyle(fontSize: addressFont)),
+                    pw.Text(
+                        'Date: ${formatPdfDateTime(invoice.date, datePattern, showTime: showTimeInPdf, timeFormat: pdfTimeFormat)}',
+                        style: pw.TextStyle(fontSize: addressFont)),
+                    if (invoice.dueDate != null)
+                      pw.Text(
+                          'Due: ${formatPdfDate(invoice.dueDate!, datePattern)}',
+                          style: pw.TextStyle(fontSize: addressFont)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
       pw.SizedBox(height: 6),
 
