@@ -21,6 +21,8 @@ abstract class SettingsRepository {
   Future<void> setBankAccounts(List<BankAccount> accounts);
   Future<ProductColumnsConfig> getProductColumnsConfig();
   Future<void> setProductColumnsConfig(ProductColumnsConfig config);
+  Future<Map<String, bool>> getProductListColumns();
+  Future<void> setProductListColumns(Map<String, bool> cols);
   Future<bool> getShowBankDetails();
   Future<void> setShowBankDetails(bool show);
   Future<bool> getShowPhone();
@@ -53,6 +55,10 @@ abstract class SettingsRepository {
   Future<void> setShowTimeInPdf(bool show);
   Future<String> getPdfTimeFormat();
   Future<void> setPdfTimeFormat(String format);
+  Future<bool> getShowSlNoInPdf();
+  Future<void> setShowSlNoInPdf(bool show);
+  Future<bool> getPdfLandscape();
+  Future<void> setPdfLandscape(bool landscape);
   Future<bool> getShowGstFields();
   Future<bool> getShowInvoiceFooterBranding();
   Future<bool> getFractionalQuantity();

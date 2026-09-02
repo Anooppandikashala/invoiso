@@ -155,11 +155,37 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     if (!mounted) return;
     setState(() => _datePattern = fmt.key);
     _loadColumnsConfig();
+    _loadListColumnsV2();
     _loadColumnsBannerDismissed();
   }
 
   ProductColumnsConfig _columnsConfig = const ProductColumnsConfig();
   bool _showColumnsBanner = false;
+
+  // Which optional columns show in the list table. Independent of the
+  // form-field config above; a column still needs its form field on too.
+  // 'aliasName' is not a column — it shows "(alias)" under the product name —
+  // so it is excluded from the max-columns count.
+  static const int _maxVisibleListColumns = 10;
+  static const Map<String, bool> _listColumnDefaults = {
+    'aliasName': true,
+    'description': false,
+    'hsncode': true,
+    'purchasePrice': true,
+    'stock': true,
+    'taxRate': true,
+    'unit': false,
+    'defaultDiscount': false,
+    'storageLocation': false,
+    'containerNumber': false,
+    'batchNumber': false,
+    'expiryDate': true,
+    'manufactureDate': false,
+    'supplierName': false,
+    'skuCode': false,
+    'notes': false,
+  };
+  Map<String, bool> _listColumnsV2 = Map.of(_listColumnDefaults);
 
   Future<void> _loadColumnsConfig() async {
     final config = await ref.read(settingsRepositoryProvider).getProductColumnsConfig();
@@ -168,6 +194,74 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
       _columnsConfig = config;
       if (!config.stock) _unlimitedStock = true;
     });
+  }
+
+  Future<void> _loadListColumnsV2() async {
+    final saved =
+        await ref.read(settingsRepositoryProvider).getProductListColumns();
+    if (!mounted) return;
+    setState(() => _listColumnsV2 = {..._listColumnDefaults, ...saved});
+  }
+
+  // A form field being disabled hides its list column entirely (as before).
+  bool _listColumnFieldEnabled(String key) {
+    final c = _columnsConfig;
+    switch (key) {
+      case 'aliasName':
+        return c.aliasName;
+      case 'description':
+        return c.description;
+      case 'hsncode':
+        return c.hsncode;
+      case 'purchasePrice':
+        return c.purchasePrice;
+      case 'stock':
+        return c.stock;
+      case 'taxRate':
+        return c.taxRate;
+      case 'unit':
+        return c.unit;
+      case 'defaultDiscount':
+        return c.defaultDiscount;
+      case 'storageLocation':
+        return c.productMetadata && c.metaStorageLocation;
+      case 'containerNumber':
+        return c.productMetadata && c.metaContainerNumber;
+      case 'batchNumber':
+        return c.productMetadata && c.metaBatchNumber;
+      case 'expiryDate':
+        return c.productMetadata && c.metaExpiryDate;
+      case 'manufactureDate':
+        return c.productMetadata && c.metaManufactureDate;
+      case 'supplierName':
+        return c.productMetadata && c.metaSupplierName;
+      case 'skuCode':
+        return c.productMetadata && c.metaSkuCode;
+      case 'notes':
+        return c.productMetadata && c.metaNotes;
+      default:
+        return false;
+    }
+  }
+
+  bool _showListCol(String key) =>
+      _listColumnFieldEnabled(key) && (_listColumnsV2[key] ?? false);
+
+  // 'aliasName' is a name-cell subtitle, not a table column — excluded here.
+  int get _visibleListColumnCount => _listColumnDefaults.keys
+      .where((k) => k != 'aliasName' && _showListCol(k))
+      .length;
+
+  Future<void> _toggleListColumnV2(String key) async {
+    final currentlyOn = _showListCol(key);
+    if (key != 'aliasName' &&
+        !currentlyOn &&
+        _visibleListColumnCount >= _maxVisibleListColumns) {
+      return;
+    }
+    final next = {..._listColumnsV2, key: !(_listColumnsV2[key] ?? false)};
+    setState(() => _listColumnsV2 = next);
+    await ref.read(settingsRepositoryProvider).setProductListColumns(next);
   }
 
   Future<void> _loadColumnsBannerDismissed() async {
@@ -1650,6 +1744,198 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     );
   }
 
+  String _listColLabel(AppLocalizations l10n, String key) {
+    switch (key) {
+      case 'aliasName':
+        return l10n.productColumnsAliasNameLabel;
+      case 'description':
+        return l10n.productColumnsDescriptionLabel;
+      case 'hsncode':
+        return l10n.productColumnsHsnSacLabel;
+      case 'purchasePrice':
+        return l10n.productColumnsPurchasePriceLabel;
+      case 'stock':
+        return l10n.productColumnsStockLabel;
+      case 'taxRate':
+        return l10n.productColumnsTaxRateLabel;
+      case 'unit':
+        return l10n.productColumnsUnitLabel;
+      case 'defaultDiscount':
+        return l10n.productColumnsDefaultDiscountLabel;
+      case 'storageLocation':
+        return l10n.productColumnsMetaStorageLocationLabel;
+      case 'containerNumber':
+        return l10n.productColumnsMetaContainerNumberLabel;
+      case 'batchNumber':
+        return l10n.productColumnsMetaBatchNumberLabel;
+      case 'expiryDate':
+        return l10n.productColumnsMetaExpiryDateLabel;
+      case 'manufactureDate':
+        return l10n.productColumnsMetaManufactureDateLabel;
+      case 'supplierName':
+        return l10n.productColumnsMetaSupplierNameLabel;
+      case 'skuCode':
+        return l10n.productColumnsMetaSkuCodeLabel;
+      case 'notes':
+        return l10n.productColumnsMetaNotesLabel;
+      default:
+        return key;
+    }
+  }
+
+  int _listColFlex(String key) {
+    switch (key) {
+      case 'stock':
+      case 'taxRate':
+      case 'unit':
+      case 'defaultDiscount':
+        return 1;
+      case 'description':
+      case 'notes':
+        return 3;
+      default:
+        return 2;
+    }
+  }
+
+  String _fmtMetaDateV2(String? raw) {
+    if (raw == null || raw.isEmpty) return '';
+    final d = DateTime.tryParse(raw);
+    return d == null ? raw : DateFormat(_datePattern).format(d);
+  }
+
+  // Header cells for the optional list columns, in _listColumnDefaults order.
+  List<Widget> _optionalHeaderCellsV2(TextStyle style) {
+    final l10n = AppLocalizations.of(context)!;
+    final cells = <Widget>[];
+    for (final key in _listColumnDefaults.keys) {
+      if (key == 'aliasName' || !_showListCol(key)) continue;
+      cells.add(Expanded(
+        flex: _listColFlex(key),
+        child: Text(_listColLabel(l10n, key).toUpperCase(), style: style),
+      ));
+    }
+    return cells;
+  }
+
+  // Row cells matching _optionalHeaderCellsV2, same order/flex.
+  List<Widget> _optionalRowCellsV2(Product p) {
+    final meta = _productMetadataV2[p.id];
+    final muted =
+        TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant);
+    Widget text(String v) => Text(v.isEmpty ? '—' : v,
+        maxLines: 1, overflow: TextOverflow.ellipsis, style: muted);
+
+    final cells = <Widget>[];
+    for (final key in _listColumnDefaults.keys) {
+      if (key == 'aliasName' || !_showListCol(key)) continue;
+      Widget child;
+      switch (key) {
+        case 'description':
+          child = text(p.description);
+          break;
+        case 'hsncode':
+          child = text(p.hsncode);
+          break;
+        case 'purchasePrice':
+          child = text(p.purchasePrice > 0
+              ? '$_currencySymbol${p.purchasePrice.toStringAsFixed(2)}'
+              : '');
+          break;
+        case 'stock':
+          child = _stockCellV2(p);
+          break;
+        case 'taxRate':
+          child = Text('${p.tax_rate}%');
+          break;
+        case 'unit':
+          child = text(p.unit);
+          break;
+        case 'defaultDiscount':
+          child = text(p.defaultDiscount > 0
+              ? p.defaultDiscount.toStringAsFixed(2)
+              : '');
+          break;
+        case 'storageLocation':
+          child = text(meta?.storageLocation ?? '');
+          break;
+        case 'containerNumber':
+          child = text(meta?.containerNumber ?? '');
+          break;
+        case 'batchNumber':
+          child = text(meta?.batchNumber ?? '');
+          break;
+        case 'expiryDate':
+          child = _expiryCellV2(p);
+          break;
+        case 'manufactureDate':
+          child = text(_fmtMetaDateV2(meta?.manufactureDate));
+          break;
+        case 'supplierName':
+          child = text(meta?.supplierName ?? '');
+          break;
+        case 'skuCode':
+          child = text(meta?.skuCode ?? '');
+          break;
+        case 'notes':
+          child = text(meta?.notes ?? '');
+          break;
+        default:
+          continue;
+      }
+      cells.add(Expanded(flex: _listColFlex(key), child: child));
+    }
+    return cells;
+  }
+
+  Widget _expiryCellV2(Product p) {
+    final expiryDate = _expiryDateOfV2(p);
+    if (expiryDate == null) {
+      return Text('—',
+          style:
+              TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant));
+    }
+    final isExpired = expiryDate.isBefore(DateTime.now());
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (isExpired)
+          const Padding(
+            padding: EdgeInsets.only(right: 4),
+            child: Icon(Icons.error_outline, size: 14, color: Colors.red),
+          ),
+        Text(DateFormat(_datePattern).format(expiryDate),
+            style: TextStyle(
+                fontWeight: isExpired ? FontWeight.bold : FontWeight.normal,
+                color: isExpired
+                    ? Colors.red
+                    : Theme.of(context).colorScheme.onSurface)),
+      ],
+    );
+  }
+
+  PopupMenuItem<String> _listColMenuItemV2(String key, String label) {
+    final visible = _showListCol(key);
+    final canToggle = key == 'aliasName' ||
+        visible ||
+        _visibleListColumnCount < _maxVisibleListColumns;
+    return PopupMenuItem<String>(
+      value: key,
+      enabled: canToggle,
+      child: Row(
+        children: [
+          Icon(visible ? Icons.check_box : Icons.check_box_outline_blank,
+              size: 18,
+              color: canToggle
+                  ? null
+                  : Theme.of(context).colorScheme.onSurfaceVariant),
+          const SizedBox(width: 8),
+          Text(label),
+        ],
+      ),
+    );
+  }
+
   Widget _statCardV2({
     required String label,
     required String value,
@@ -1951,8 +2237,30 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
               ),
               OutlinedButton.icon(
                 onPressed: _openColumnsSettingsV2,
-                icon: const Icon(Icons.view_column_outlined, size: 16),
-                label: Text(l10n.customerMgmtColumnsLabel),
+                icon: const Icon(Icons.tune, size: 16),
+                label: Text(l10n.productMgmtCustomizeColumnsLabel),
+              ),
+              PopupMenuButton<String>(
+                tooltip: l10n.productMgmtShowColumnsLabel,
+                onSelected: _toggleListColumnV2,
+                itemBuilder: (ctx) => [
+                  PopupMenuItem<String>(
+                    enabled: false,
+                    child: Text(
+                        l10n.productMgmtShowColumnsMaxHint(
+                            _maxVisibleListColumns),
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant)),
+                  ),
+                  for (final key in _listColumnDefaults.keys)
+                    if (_listColumnFieldEnabled(key))
+                      _listColMenuItemV2(key, _listColLabel(l10n, key)),
+                ],
+                child: _menuButtonLookV2(
+                    Icons.view_column_outlined, l10n.productMgmtShowColumnsLabel),
               ),
               IconButton(
                 tooltip: _showStatsCardsV2
@@ -2043,9 +2351,6 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
 
   Widget _tableRowV2(Product p, int index) {
     final serial = _currentPage * _pageSize + index + 1;
-    final showExpiry = _columnsConfig.productMetadata && _columnsConfig.metaExpiryDate;
-    final expiryDate = showExpiry ? _expiryDateOfV2(p) : null;
-    final isExpired = expiryDate != null && expiryDate.isBefore(DateTime.now());
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 12, 4, 12),
       decoration: BoxDecoration(
@@ -2072,77 +2377,29 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                 Text(p.name,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontWeight: FontWeight.w600)),
-                if ((p.aliasName ?? '').isNotEmpty || _columnsConfig.type)
+                if (_businessType == BusinessType.both && _columnsConfig.type)
                   Padding(
                     padding: const EdgeInsets.only(top: 2),
-                    child: Row(
-                      children: [
-                        if (_businessType == BusinessType.both && _columnsConfig.type)
-                          _typeTagV2(p.type),
-                        if ((p.aliasName ?? '').isNotEmpty) ...[
-                          if (_businessType == BusinessType.both && _columnsConfig.type)
-                            const SizedBox(width: 6),
-                          Flexible(
-                            child: Text(p.aliasName!,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                    fontSize: 12,
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                          ),
-                        ],
-                      ],
-                    ),
+                    child: _typeTagV2(p.type),
+                  ),
+                if (_showListCol('aliasName') && (p.aliasName ?? '').isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text('(${p.aliasName})',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant)),
                   ),
               ],
             ),
           ),
-          if (_columnsConfig.hsncode)
-            Expanded(
-              flex: 2,
-              child: Text(p.hsncode.isEmpty ? '—' : p.hsncode,
-                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
-            ),
           Expanded(
             flex: 2,
             child: Text('$_currencySymbol${p.price.toStringAsFixed(2)}',
                 style: const TextStyle(fontWeight: FontWeight.w600)),
           ),
-          if (_columnsConfig.purchasePrice)
-            Expanded(
-              flex: 2,
-              child: Text(
-                  p.purchasePrice > 0
-                      ? '$_currencySymbol${p.purchasePrice.toStringAsFixed(2)}'
-                      : '—',
-                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
-            ),
-          if (_columnsConfig.stock)
-            Expanded(flex: 1, child: _stockCellV2(p)),
-          if (_columnsConfig.taxRate)
-            Expanded(flex: 1, child: Text('${p.tax_rate}%')),
-          if (showExpiry)
-            Expanded(
-              flex: 2,
-              child: expiryDate == null
-                  ? Text('—',
-                      style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))
-                  : Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (isExpired)
-                          const Padding(
-                            padding: EdgeInsets.only(right: 4),
-                            child: Icon(Icons.error_outline, size: 14, color: Colors.red),
-                          ),
-                        Text(DateFormat(_datePattern).format(expiryDate),
-                            style: TextStyle(
-                                fontWeight: isExpired ? FontWeight.bold : FontWeight.normal,
-                                color: isExpired
-                                    ? Colors.red
-                                    : Theme.of(context).colorScheme.onSurface)),
-                      ],
-                    ),
-            ),
+          ..._optionalRowCellsV2(p),
           SizedBox(
             width: 116,
             child: Row(
@@ -2193,14 +2450,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         children: [
           SizedBox(width: 56, child: Text(l10n.productMgmtColSlNo, style: style)),
           Expanded(flex: 3, child: Text(l10n.productMgmtColNameAlias, style: style)),
-          if (_columnsConfig.hsncode) Expanded(flex: 2, child: Text(l10n.productMgmtColHsnSac, style: style)),
           Expanded(flex: 2, child: Text(l10n.productMgmtColPrice, style: style)),
-          if (_columnsConfig.purchasePrice)
-            Expanded(flex: 2, child: Text(l10n.productMgmtColPurchase, style: style)),
-          if (_columnsConfig.stock) Expanded(flex: 1, child: Text(l10n.productMgmtColStock, style: style)),
-          if (_columnsConfig.taxRate) Expanded(flex: 1, child: Text(l10n.productMgmtColTaxPercent, style: style)),
-          if (_columnsConfig.productMetadata && _columnsConfig.metaExpiryDate)
-            Expanded(flex: 2, child: Text(l10n.productMgmtColExpiryDate, style: style)),
+          ..._optionalHeaderCellsV2(style),
           SizedBox(width: 116, child: Text('', style: style)),
         ],
       ),

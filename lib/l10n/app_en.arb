@@ -1461,6 +1461,16 @@
   "productMgmtColStock": "STOCK",
   "productMgmtColTaxPercent": "TAX %",
   "productMgmtColExpiryDate": "EXPIRY DATE",
+  "productMgmtCustomizeColumnsLabel": "Customize Product Columns",
+  "productMgmtShowColumnsLabel": "Show Columns",
+  "productMgmtShowColumnsMaxHint": "Show up to {max} columns",
+  "@productMgmtShowColumnsMaxHint": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "productMgmtShowingRangeLabel": "Showing {from} to {to} of {total} products",
   "@productMgmtShowingRangeLabel": {
     "placeholders": {
@@ -1879,6 +1889,18 @@
   "invoiceSettingsSectionTax": "Tax & GST",
   "invoiceSettingsSectionItems": "Invoice Items",
   "invoiceSettingsSectionCustomer": "Customer Details",
+  "invoiceSettingsSectionColumns": "Invoice Columns",
+  "invoiceSettingsColumnsSectionHint": "Choose which columns appear in the invoice PDF items table. Item Name, Price and Total are always shown.",
+  "invoiceSettingsShowSlNoLabel": "Sl No column",
+  "invoiceSettingsShowSlNoSubtitle": "Print the serial-number column on A4/Letter invoices",
+  "invoiceSettingsColumnHsnLabel": "HSN/SAC column",
+  "invoiceSettingsColumnHsnSubtitle": "Print the HSN/SAC code column (tied to Show GST Fields)",
+  "invoiceSettingsColumnTaxLabel": "Tax column",
+  "invoiceSettingsColumnTaxSubtitle": "Print the per-item CGST/SGST, IGST % column",
+  "invoiceSettingsColumnRequiredSubtitle": "Always shown",
+  "invoiceSettingsColumnItemNameLabel": "Item Name column",
+  "invoiceSettingsColumnPriceLabel": "Price / Rate column",
+  "invoiceSettingsColumnTotalLabel": "Total column",
   "invoiceSettingsCustomerSectionHint": "Choose which customer details print on invoice PDFs and thermal receipts. A field only shows when it's enabled and the customer has a value for it. Customer name is always shown.",
   "invoiceSettingsShowCustomerBusinessNameLabel": "Show Business Name",
   "invoiceSettingsShowCustomerBusinessNameSubtitle": "Print the customer's business name under their name",
@@ -1993,6 +2015,9 @@
   "commonUnavailableLabel": "Unavailable",
   "pdfSettingsDisplayOptionsLabel": "Display Options",
   "pdfSettingsShowTotalQtyRowLabel": "Show total quantity row",
+  "pdfSettingsOrientationLabel": "Orientation",
+  "pdfSettingsOrientationPortrait": "Portrait",
+  "pdfSettingsOrientationLandscape": "Landscape",
   "pdfSettingsItemLayoutLabel": "Item layout",
   "pdfSettingsItemLayoutTableLabel": "Table",
   "pdfSettingsItemLayoutDetailedLabel": "Detailed",

@@ -126,6 +126,8 @@ class PDFService {
       BackendServices.settings.getShowCustomerGstin(), // 46
       BackendServices.settings.getShowTimeInPdf(), // 47
       BackendServices.settings.getPdfTimeFormat(), // 48
+      BackendServices.settings.getShowSlNoInPdf(), // 49
+      BackendServices.settings.getPdfLandscape(), // 50
     ]);
 
     final rawPrefix = (results[2] as String?) ?? 'INV';
@@ -196,6 +198,8 @@ class PDFService {
       showCustomerGstin: results[46] as bool,
       showTimeInPdf: results[47] as bool,
       pdfTimeFormat: results[48] as String,
+      showSlNo: results[49] as bool,
+      landscape: results[50] as bool,
     );
   }
 
@@ -256,6 +260,7 @@ class PDFService {
           upiId: effectiveUpiId,
           showUpiQr: showUpiQr,
           showGst: s.showGst,
+          showSlNo: s.showSlNo,
           showQuantity: s.showQuantity,
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
@@ -308,6 +313,7 @@ class PDFService {
           upiId: effectiveUpiId,
           showUpiQr: showUpiQr,
           showGst: s.showGst,
+          showSlNo: s.showSlNo,
           showQuantity: s.showQuantity,
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
@@ -360,6 +366,7 @@ class PDFService {
           upiId: effectiveUpiId,
           showUpiQr: showUpiQr,
           showGst: s.showGst,
+          showSlNo: s.showSlNo,
           showQuantity: s.showQuantity,
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
@@ -412,6 +419,7 @@ class PDFService {
           upiId: effectiveUpiId,
           showUpiQr: showUpiQr,
           showGst: s.showGst,
+          showSlNo: s.showSlNo,
           showQuantity: s.showQuantity,
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
@@ -462,6 +470,7 @@ class PDFService {
           upiId: effectiveUpiId,
           showUpiQr: showUpiQr,
           showGst: s.showGst,
+          showSlNo: s.showSlNo,
           showQuantity: s.showQuantity,
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
@@ -544,6 +553,7 @@ class PDFService {
           upiId: effectiveUpiId,
           showUpiQr: showUpiQr,
           showGst: s.showGst,
+          showSlNo: s.showSlNo,
           showQuantity: s.showQuantity,
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
@@ -564,6 +574,7 @@ class PDFService {
           signatureSizePx: s.signatureSizePx,
           previousBalanceDue: effectivePreviousBalance,
           pageFormat: s.pageFormat,
+          landscape: s.landscape,
           pdfTheme: pdfTheme,
           logoPosition: s.logoPosition,
           watermarkBytes: s.watermarkBytes,

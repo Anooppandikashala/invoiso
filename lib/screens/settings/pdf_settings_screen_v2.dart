@@ -29,6 +29,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
   bool _themeColorInputValid = true;
   PageSize _savedPageSize = PageSize.a4;
   PageSize _previewedPageSize = PageSize.a4;
+  bool _savedLandscape = false;
+  bool _previewedLandscape = false;
   bool _savedShowTotalQuantity = false;
   bool _previewedShowTotalQuantity = false;
   final _thermalWidthMarginController = TextEditingController();
@@ -69,6 +71,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       ref
           .read(settingsRepositoryProvider)
           .getSetting(SettingKey.thermalCompanyNameSize),
+      ref.read(settingsRepositoryProvider).getPdfLandscape(),
     ]);
     final saved = results[0] as InvoiceTemplate;
     final savedThemeColor = results[1] as String?;
@@ -77,6 +80,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
     final savedThermalWidthMargin = results[4] as String?;
     final savedThermalItemLayout = results[5] as String?;
     final savedThermalCompanyNameSize = results[6] as String?;
+    final savedLandscape = results[7] as bool;
     final previewedTemplate =
         effectiveInvoiceTemplateForPageSize(saved, savedPageSize);
     setState(() {
@@ -87,6 +91,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       _themeColorController.text = savedThemeColor ?? '';
       _savedPageSize = savedPageSize;
       _previewedPageSize = savedPageSize;
+      _savedLandscape = savedLandscape;
+      _previewedLandscape = savedLandscape;
       _savedShowTotalQuantity = savedShowTotalQty;
       _previewedShowTotalQuantity = savedShowTotalQty;
       _savedThermalWidthMargin = savedThermalWidthMargin ?? '1';
@@ -114,6 +120,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
               .read(settingsRepositoryProvider)
               .setPdfThemeColor(_previewedThemeColorHex!),
         ref.read(settingsRepositoryProvider).setPageSize(_previewedPageSize),
+        ref.read(settingsRepositoryProvider).setPdfLandscape(_previewedLandscape),
         ref
             .read(settingsRepositoryProvider)
             .setShowTotalQuantity(_previewedShowTotalQuantity),
@@ -132,6 +139,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
         _savedTemplate = _previewedTemplate;
         _savedThemeColorHex = _previewedThemeColorHex;
         _savedPageSize = _previewedPageSize;
+        _savedLandscape = _previewedLandscape;
         _savedShowTotalQuantity = _previewedShowTotalQuantity;
         _savedThermalWidthMargin = _previewedThermalWidthMargin;
         _savedThermalItemLayout = _previewedThermalItemLayout;
@@ -271,6 +279,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       (_previewedTemplate != _savedTemplate ||
           _previewedThemeColorHex != _savedThemeColorHex ||
           _previewedPageSize != _savedPageSize ||
+          _previewedLandscape != _savedLandscape ||
           _previewedShowTotalQuantity != _savedShowTotalQuantity ||
           _previewedThermalWidthMargin != _savedThermalWidthMargin ||
           _previewedThermalItemLayout != _savedThermalItemLayout ||
@@ -280,6 +289,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
     setState(() {
       _previewedTemplate = InvoiceTemplate.classic;
       _previewedPageSize = PageSize.a4;
+      _previewedLandscape = false;
       _previewedThemeColorHex = null;
       _themeColorController.clear();
       _themeColorInputValid = true;
@@ -532,6 +542,10 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
               if (_previewedTemplate == InvoiceTemplate.compact ||
                   _previewedTemplate == InvoiceTemplate.gridClassic)
                 _buildTotalQuantityToggle(),
+              if (_previewedTemplate == InvoiceTemplate.gridClassic) ...[
+                const SizedBox(height: 8),
+                _buildOrientationField(),
+              ],
               if (_previewedTemplate == InvoiceTemplate.thermal) ...[
                 _buildThermalItemLayoutField(),
                 const SizedBox(height: 8),
@@ -685,6 +699,45 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
         fontWeight: FontWeight.w700,
         color: Theme.of(context).colorScheme.onSurfaceVariant,
         letterSpacing: 0.9,
+      ),
+    );
+  }
+
+  Widget _buildOrientationField() {
+    final l10n = AppLocalizations.of(context)!;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(AppBorderRadius.small),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.pdfSettingsOrientationLabel,
+            style: TextStyle(
+              fontSize: AppFontSize.small,
+              fontWeight: FontWeight.w500,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          SegmentedButton<bool>(
+            segments: [
+              ButtonSegment<bool>(
+                  value: false,
+                  label: Text(l10n.pdfSettingsOrientationPortrait)),
+              ButtonSegment<bool>(
+                  value: true,
+                  label: Text(l10n.pdfSettingsOrientationLandscape)),
+            ],
+            selected: {_previewedLandscape},
+            onSelectionChanged: (s) =>
+                setState(() => _previewedLandscape = s.first),
+          ),
+        ],
       ),
     );
   }

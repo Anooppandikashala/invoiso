@@ -39,6 +39,7 @@ class _InvoiceSettingsScreenV2State
   bool _showTimeInPdf = true;
   String _pdfTimeFormat = '24';
   bool _showGstFields = true;
+  bool _showSlNoInPdf = true;
   bool _fractionalQuantity = false;
   bool _showQuantity = true;
   bool _showDiscount = true;
@@ -123,6 +124,7 @@ class _InvoiceSettingsScreenV2State
       settingsRepo.getShowCustomerGstin(),
       settingsRepo.getShowTimeInPdf(),
       settingsRepo.getPdfTimeFormat(),
+      settingsRepo.getShowSlNoInPdf(),
     ]);
 
     if (!mounted) return;
@@ -169,6 +171,7 @@ class _InvoiceSettingsScreenV2State
       _showCustomerGstin = results[37] as bool;
       _showTimeInPdf = results[38] as bool;
       _pdfTimeFormat = results[39] as String;
+      _showSlNoInPdf = results[40] as bool;
       _isLoading = false;
     });
   }
@@ -240,6 +243,7 @@ class _InvoiceSettingsScreenV2State
         settingsRepo.setShowCustomerGstin(_showCustomerGstin),
         settingsRepo.setShowTimeInPdf(_showTimeInPdf),
         settingsRepo.setPdfTimeFormat(_pdfTimeFormat),
+        settingsRepo.setShowSlNoInPdf(_showSlNoInPdf),
       ]);
 
       if (!mounted) return;
@@ -357,6 +361,7 @@ class _InvoiceSettingsScreenV2State
     Icons.percent_rounded,
     Icons.view_list_rounded,
     Icons.person_outline,
+    Icons.table_chart_outlined,
   ];
 
   String _navSectionLabelV2(BuildContext context, int index) {
@@ -366,7 +371,8 @@ class _InvoiceSettingsScreenV2State
       1 => l10n.invoiceSettingsSectionBranding,
       2 => l10n.invoiceSettingsSectionTax,
       3 => l10n.invoiceSettingsSectionItems,
-      _ => l10n.invoiceSettingsSectionCustomer,
+      4 => l10n.invoiceSettingsSectionCustomer,
+      _ => l10n.invoiceSettingsSectionColumns,
     };
   }
 
@@ -489,7 +495,7 @@ class _InvoiceSettingsScreenV2State
     required String subtitle,
     required IconData icon,
     required bool value,
-    required ValueChanged<bool> onChanged,
+    required ValueChanged<bool>? onChanged,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -507,10 +513,12 @@ class _InvoiceSettingsScreenV2State
               : Theme.of(context).colorScheme.onSurfaceVariant,
         ),
         value: value,
-        onChanged: (val) {
-          if (!mounted) return;
-          onChanged(val);
-        },
+        onChanged: onChanged == null
+            ? null
+            : (val) {
+                if (!mounted) return;
+                onChanged(val);
+              },
         activeColor: Theme.of(context).primaryColor,
       ),
     );
@@ -769,13 +777,6 @@ class _InvoiceSettingsScreenV2State
           value: _showGstFields,
           onChanged: (val) => setState(() => _showGstFields = val),
         ),
-        _toggleCardV2(
-          title: l10n.invoiceSettingsShowCgstSgstLabel,
-          subtitle: l10n.invoiceSettingsShowCgstSgstSubtitle,
-          icon: Icons.percent_rounded,
-          value: _showCgstSgst,
-          onChanged: (val) => setState(() => _showCgstSgst = val),
-        ),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -904,27 +905,12 @@ class _InvoiceSettingsScreenV2State
           value: _showAliasNameInPdf,
           onChanged: (val) => setState(() => _showAliasNameInPdf = val),
         ),
-        _descriptionGroupV2(l10n),
         _toggleCardV2(
           title: l10n.invoiceSettingsAllowFractionalQtyLabel,
           subtitle: l10n.invoiceSettingsAllowFractionalQtySubtitle,
           icon: Icons.pin_outlined,
           value: _fractionalQuantity,
           onChanged: (val) => setState(() => _fractionalQuantity = val),
-        ),
-        _toggleCardV2(
-          title: l10n.invoiceSettingsShowQuantityLabel,
-          subtitle: l10n.invoiceSettingsShowQuantitySubtitle,
-          icon: Icons.onetwothree_rounded,
-          value: _showQuantity,
-          onChanged: (val) => setState(() => _showQuantity = val),
-        ),
-        _toggleCardV2(
-          title: l10n.invoiceSettingsShowDiscountLabel,
-          subtitle: l10n.invoiceSettingsShowDiscountSubtitle,
-          icon: Icons.discount_outlined,
-          value: _showDiscount,
-          onChanged: (val) => setState(() => _showDiscount = val),
         ),
         _toggleCardV2(
           title: l10n.invoiceSettingsShowTypeTagLabel,
@@ -1173,10 +1159,78 @@ class _InvoiceSettingsScreenV2State
     );
   }
 
-  Widget _sectionLanguageV2() {
+  // The invoice PDF items-table columns, all in one checklist. Item Name,
+  // Price and Total are structural and always print, so they show as locked
+  // rows. HSN/SAC mirrors the Show GST Fields toggle (which also controls the
+  // GSTIN header fields, so it stays in the Tax section too).
+  Widget _sectionColumnsV2() {
+    final l10n = AppLocalizations.of(context)!;
     return _fieldWrapV2(
       [],
-      [],
+      [
+        Text(l10n.invoiceSettingsColumnsSectionHint,
+            style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant)),
+        const SizedBox(height: 4),
+        _toggleCardV2(
+          title: l10n.invoiceSettingsShowSlNoLabel,
+          subtitle: l10n.invoiceSettingsShowSlNoSubtitle,
+          icon: Icons.format_list_numbered,
+          value: _showSlNoInPdf,
+          onChanged: (val) => setState(() => _showSlNoInPdf = val),
+        ),
+        _toggleCardV2(
+          title: l10n.invoiceSettingsColumnItemNameLabel,
+          subtitle: l10n.invoiceSettingsColumnRequiredSubtitle,
+          icon: Icons.check_circle_outline,
+          value: true,
+          onChanged: null,
+        ),
+        _descriptionGroupV2(l10n),
+        _toggleCardV2(
+          title: l10n.invoiceSettingsColumnHsnLabel,
+          subtitle: l10n.invoiceSettingsColumnHsnSubtitle,
+          icon: Icons.receipt_long_rounded,
+          value: _showGstFields,
+          onChanged: (val) => setState(() => _showGstFields = val),
+        ),
+        _toggleCardV2(
+          title: l10n.invoiceSettingsShowQuantityLabel,
+          subtitle: l10n.invoiceSettingsShowQuantitySubtitle,
+          icon: Icons.onetwothree_rounded,
+          value: _showQuantity,
+          onChanged: (val) => setState(() => _showQuantity = val),
+        ),
+        _toggleCardV2(
+          title: l10n.invoiceSettingsColumnPriceLabel,
+          subtitle: l10n.invoiceSettingsColumnRequiredSubtitle,
+          icon: Icons.check_circle_outline,
+          value: true,
+          onChanged: null,
+        ),
+        _toggleCardV2(
+          title: l10n.invoiceSettingsColumnTaxLabel,
+          subtitle: l10n.invoiceSettingsColumnTaxSubtitle,
+          icon: Icons.percent_rounded,
+          value: _showCgstSgst,
+          onChanged: (val) => setState(() => _showCgstSgst = val),
+        ),
+        _toggleCardV2(
+          title: l10n.invoiceSettingsShowDiscountLabel,
+          subtitle: l10n.invoiceSettingsShowDiscountSubtitle,
+          icon: Icons.discount_outlined,
+          value: _showDiscount,
+          onChanged: (val) => setState(() => _showDiscount = val),
+        ),
+        _toggleCardV2(
+          title: l10n.invoiceSettingsColumnTotalLabel,
+          subtitle: l10n.invoiceSettingsColumnRequiredSubtitle,
+          icon: Icons.check_circle_outline,
+          value: true,
+          onChanged: null,
+        ),
+      ],
     );
   }
 
@@ -1193,7 +1247,7 @@ class _InvoiceSettingsScreenV2State
       case 4:
         return _sectionCustomerV2();
       default:
-        return _sectionLanguageV2();
+        return _sectionColumnsV2();
     }
   }
 

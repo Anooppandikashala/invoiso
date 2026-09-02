@@ -75,6 +75,14 @@ double logoSizePx(String sizeKey) => logoSizeFromKey(sizeKey).pixelSize;
 
 double signatureSizePx(String sizeKey) => signatureSizeFromKey(sizeKey).pixelHeight;
 
+double getSlNumberFlex(PdfPageFormat format, InvoiceTemplate template, bool isLandscape)
+{
+   if(template != InvoiceTemplate.gridClassic) return 0.9;
+   if(format == PdfPageFormat.a4) return isLandscape ? 0.5 : 0.6;
+   if(format == PdfPageFormat.a5) return isLandscape ? 0.6 : 0.7;
+   return isLandscape ? 0.6 : 0.8;
+}
+
 pw.Widget buildSignatureWidget(
   pw.ImageProvider signatureImage,
   String position, {
@@ -411,8 +419,8 @@ pw.Widget buildEnhancedTotals(
             color: totalHighlightColor,
             borderRadius: hasPaid || hasPreviousBalance
                 ? pw.BorderRadius.zero
-                : const pw.BorderRadius.vertical(
-                    bottom: pw.Radius.circular(5)),
+                : pw.BorderRadius.vertical(
+                    bottom: pw.Radius.circular(borderRadius)),
           ),
           child: pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -448,8 +456,8 @@ pw.Widget buildEnhancedTotals(
               color: PdfColors.orange800,
               borderRadius: hasPaid
                   ? pw.BorderRadius.zero
-                  : const pw.BorderRadius.vertical(
-                      bottom: pw.Radius.circular(5)),
+                  : pw.BorderRadius.vertical(
+                      bottom: pw.Radius.circular(borderRadius)),
             ),
             child: pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -485,7 +493,8 @@ pw.Widget buildEnhancedTotals(
               color: totalHighlightColor,
               borderRadius: hasPaid
                   ? pw.BorderRadius.zero
-                  : const pw.BorderRadius.vertical(bottom: pw.Radius.circular(5)),
+                  : pw.BorderRadius.vertical(
+                      bottom: pw.Radius.circular(borderRadius)),
             ),
             child: pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -519,8 +528,8 @@ pw.Widget buildEnhancedTotals(
             ),
             decoration: pw.BoxDecoration(
               color: isPaidInFull ? PdfColors.green700 : PdfColors.orange,
-              borderRadius: const pw.BorderRadius.vertical(
-                  bottom: pw.Radius.circular(5)),
+              borderRadius: pw.BorderRadius.vertical(
+                  bottom: pw.Radius.circular(borderRadius)),
             ),
             child: pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -605,9 +614,11 @@ pw.Widget pdfTotalRow(String label, String value,
 
 pw.Widget buildInvoiceTable(Invoice invoice,
     InvoiceTemplate template,
+    PdfPageFormat pageFormat,
     {PdfColor headerColor = PdfColors.grey200,
     PdfColor textColor = PdfColors.black,
     bool showGst = true,
+    bool showSlNo = true,
     bool showQuantity = true,
     bool showDiscount = true,
     bool showTypeTag = true,
@@ -623,7 +634,8 @@ pw.Widget buildInvoiceTable(Invoice invoice,
     Uint8List? watermarkBytes,
     double watermarkOpacity = 0.12,
     bool showCgstSgst = false,
-    bool showIgst = false,}) {
+    bool showIgst = false,
+    bool isLandscape = false}) {
   final bool showItemTax = invoice.taxMode == TaxMode.perItem;
   final bool isGlobalTaxMode = invoice.taxMode == TaxMode.global;
   final bool splitCgstSgst =
@@ -637,7 +649,7 @@ pw.Widget buildInvoiceTable(Invoice invoice,
 
   int col = 0;
   final Map<int, pw.TableColumnWidth> colWidths = {
-    col++: const pw.FlexColumnWidth(1),
+    if (showSlNo) col++: pw.FlexColumnWidth(getSlNumberFlex(pageFormat,template,isLandscape)),
     col++: showGst ? const pw.FlexColumnWidth(3) : const pw.FlexColumnWidth(4),
     if (showGst) col: const pw.FlexColumnWidth(1.4),
   };
@@ -685,7 +697,11 @@ pw.Widget buildInvoiceTable(Invoice invoice,
   // Sl No column's flex vs. the rest, ×10 so one-decimal FlexColumnWidth
   // values (e.g. 1.4) stay exact as ints. Used to indent the new-line
   // description under "Item Name" while keeping the grid border aligned.
-  final slNoFlex = ((colWidths[0]! as pw.FlexColumnWidth).flex * 10).round();
+  // When the Sl No column is hidden, slNoFlex is 0 and the description row is
+  // rendered as a single full-width column instead.
+  final slNoFlex = showSlNo
+      ? ((colWidths[0]! as pw.FlexColumnWidth).flex * 10).round()
+      : 0;
   final restFlex = colWidths.values.fold<int>(
           0, (sum, w) => sum + ((w as pw.FlexColumnWidth).flex * 10).round()) -
       slNoFlex;
@@ -709,12 +725,13 @@ pw.Widget buildInvoiceTable(Invoice invoice,
   final headerRow = pw.TableRow(
     decoration: (template == InvoiceTemplate.gridClassic) ? null : pw.BoxDecoration(color: headerColor),
     children: [
-      buildTableCell('Sl No',
-          isHeader: true,
-          textColor: textColor,
-          fontSize: tableFontSize,
-          cellPaddingH: cellPaddingH,
-          cellPaddingV: cellPaddingV),
+      if (showSlNo)
+        buildTableCell('Sl No',
+            isHeader: true,
+            textColor: textColor,
+            fontSize: tableFontSize,
+            cellPaddingH: cellPaddingH,
+            cellPaddingV: cellPaddingV),
       buildTableCell('Item Name',
           isHeader: true,
           textColor: textColor,
@@ -802,10 +819,11 @@ pw.Widget buildInvoiceTable(Invoice invoice,
     itemWidgets.add(rowTable(pw.TableRow(
       decoration: rowDecoration(rowColor),
       children: [
-        buildTableCell('${index + 1}',
-            fontSize: tableFontSize,
-            cellPaddingH: cellPaddingH,
-            cellPaddingV: cellPaddingV),
+        if (showSlNo)
+          buildTableCell('${index + 1}',
+              fontSize: tableFontSize,
+              cellPaddingH: cellPaddingH,
+              cellPaddingV: cellPaddingV),
         pw.Padding(
           padding: pw.EdgeInsets.symmetric(
             horizontal: cellPaddingH,
@@ -925,16 +943,18 @@ pw.Widget buildInvoiceTable(Invoice invoice,
               bottom: isLastItem ? border.bottom : pw.BorderSide.none,
             );
       itemWidgets.add(pw.Table(
-        columnWidths: {
-          0: pw.FlexColumnWidth(slNoFlex.toDouble()),
-          1: pw.FlexColumnWidth(restFlex.toDouble()),
-        },
+        columnWidths: showSlNo
+            ? {
+                0: pw.FlexColumnWidth(slNoFlex.toDouble()),
+                1: pw.FlexColumnWidth(restFlex.toDouble()),
+              }
+            : {0: pw.FlexColumnWidth(restFlex.toDouble())},
         border: descBorder,
         children: [
           pw.TableRow(
             decoration: rowDecoration(rowColor),
             children: [
-              pw.SizedBox(),
+              if (showSlNo) pw.SizedBox(),
               pw.Container(
                 decoration: border == null
                     ? null
@@ -966,10 +986,11 @@ pw.Widget buildInvoiceTable(Invoice invoice,
       if (totalQuantityText != null)
         rowTable(pw.TableRow(
           children: [
-            buildTableCell('',
-                fontSize: tableFontSize,
-                cellPaddingH: cellPaddingH,
-                cellPaddingV: cellPaddingV),
+            if (showSlNo)
+              buildTableCell('',
+                  fontSize: tableFontSize,
+                  cellPaddingH: cellPaddingH,
+                  cellPaddingV: cellPaddingV),
             buildTableCell('Total',
                 isHeader: true,
                 fontSize: tableFontSize,

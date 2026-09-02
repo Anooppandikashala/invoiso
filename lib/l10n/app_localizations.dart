@@ -3762,6 +3762,24 @@ abstract class AppLocalizations {
   /// **'EXPIRY DATE'**
   String get productMgmtColExpiryDate;
 
+  /// No description provided for @productMgmtCustomizeColumnsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Customize Product Columns'**
+  String get productMgmtCustomizeColumnsLabel;
+
+  /// No description provided for @productMgmtShowColumnsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Columns'**
+  String get productMgmtShowColumnsLabel;
+
+  /// No description provided for @productMgmtShowColumnsMaxHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Show up to {max} columns'**
+  String productMgmtShowColumnsMaxHint(int max);
+
   /// No description provided for @productMgmtShowingRangeLabel.
   ///
   /// In en, this message translates to:
@@ -5004,6 +5022,78 @@ abstract class AppLocalizations {
   /// **'Customer Details'**
   String get invoiceSettingsSectionCustomer;
 
+  /// No description provided for @invoiceSettingsSectionColumns.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice Columns'**
+  String get invoiceSettingsSectionColumns;
+
+  /// No description provided for @invoiceSettingsColumnsSectionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose which columns appear in the invoice PDF items table. Item Name, Price and Total are always shown.'**
+  String get invoiceSettingsColumnsSectionHint;
+
+  /// No description provided for @invoiceSettingsShowSlNoLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sl No column'**
+  String get invoiceSettingsShowSlNoLabel;
+
+  /// No description provided for @invoiceSettingsShowSlNoSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Print the serial-number column on A4/Letter invoices'**
+  String get invoiceSettingsShowSlNoSubtitle;
+
+  /// No description provided for @invoiceSettingsColumnHsnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'HSN/SAC column'**
+  String get invoiceSettingsColumnHsnLabel;
+
+  /// No description provided for @invoiceSettingsColumnHsnSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Print the HSN/SAC code column (tied to Show GST Fields)'**
+  String get invoiceSettingsColumnHsnSubtitle;
+
+  /// No description provided for @invoiceSettingsColumnTaxLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax column'**
+  String get invoiceSettingsColumnTaxLabel;
+
+  /// No description provided for @invoiceSettingsColumnTaxSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Print the per-item CGST/SGST, IGST % column'**
+  String get invoiceSettingsColumnTaxSubtitle;
+
+  /// No description provided for @invoiceSettingsColumnRequiredSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Always shown'**
+  String get invoiceSettingsColumnRequiredSubtitle;
+
+  /// No description provided for @invoiceSettingsColumnItemNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Item Name column'**
+  String get invoiceSettingsColumnItemNameLabel;
+
+  /// No description provided for @invoiceSettingsColumnPriceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Price / Rate column'**
+  String get invoiceSettingsColumnPriceLabel;
+
+  /// No description provided for @invoiceSettingsColumnTotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total column'**
+  String get invoiceSettingsColumnTotalLabel;
+
   /// No description provided for @invoiceSettingsCustomerSectionHint.
   ///
   /// In en, this message translates to:
@@ -5561,6 +5651,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show total quantity row'**
   String get pdfSettingsShowTotalQtyRowLabel;
+
+  /// No description provided for @pdfSettingsOrientationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Orientation'**
+  String get pdfSettingsOrientationLabel;
+
+  /// No description provided for @pdfSettingsOrientationPortrait.
+  ///
+  /// In en, this message translates to:
+  /// **'Portrait'**
+  String get pdfSettingsOrientationPortrait;
+
+  /// No description provided for @pdfSettingsOrientationLandscape.
+  ///
+  /// In en, this message translates to:
+  /// **'Landscape'**
+  String get pdfSettingsOrientationLandscape;
 
   /// No description provided for @pdfSettingsItemLayoutLabel.
   ///

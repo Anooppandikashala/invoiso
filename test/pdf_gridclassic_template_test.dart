@@ -83,32 +83,37 @@ void main() {
   for (final pageFormat in [PdfPageFormat.a4, PdfPageFormat.a5, PdfPageFormat.a6])
   {
     for (final showQuantity in [true, false]) {
-      test(
-          'gridClassic template renders on ${pageFormat == PdfPageFormat.a4 ? 'A4' : pageFormat == PdfPageFormat.a5 ? 'A5' : 'A6'} '
-          '(showQuantity=$showQuantity)', () async {
-        final doc = pw.Document();
+      for (final landscape in [false, true]) {
+        test(
+            'gridClassic template renders on ${pageFormat == PdfPageFormat.a4 ? 'A4' : pageFormat == PdfPageFormat.a5 ? 'A5' : 'A6'} '
+            '${landscape ? 'landscape' : 'portrait'} (showQuantity=$showQuantity)',
+            () async {
+          final doc = pw.Document();
 
-        pw.MultiPage w = buildGridClassicTemplate(
-          _sampleInvoice(),
-          _company,
-          'Rs.',
-          '',
-          showQuantity: showQuantity,
-          pageFormat: pageFormat,
-          showFooterBranding: true,
-          showTypeTag: false,
-          showTotalQuantity: true,
-        );
+          pw.MultiPage w = buildGridClassicTemplate(
+            _sampleInvoice(),
+            _company,
+            'Rs.',
+            '',
+            showQuantity: showQuantity,
+            pageFormat: pageFormat,
+            landscape: landscape,
+            showFooterBranding: true,
+            showTypeTag: false,
+            showTotalQuantity: true,
+          );
 
-        doc.addPage(w);
-        final bytes = await doc.save();
-        expect(bytes, isNotEmpty);
-        final name = pageFormat == PdfPageFormat.a4 ? 'a4' : pageFormat == PdfPageFormat.a5 ? "a5" : "a6";
-        final outputPath = 'output/invoiso_grid_pdf_$name$showQuantity.pdf';
-        final outputFile = File(outputPath);
-        await outputFile.parent.create(recursive: true);
-        await outputFile.writeAsBytes(await doc.save());
-      });
+          doc.addPage(w);
+          final bytes = await doc.save();
+          expect(bytes, isNotEmpty);
+          final name = pageFormat == PdfPageFormat.a4 ? 'a4' : pageFormat == PdfPageFormat.a5 ? "a5" : "a6";
+          final orient = landscape ? '_landscape' : '';
+          final outputPath = 'output/invoiso_grid_pdf_$name$showQuantity$orient.pdf';
+          final outputFile = File(outputPath);
+          await outputFile.parent.create(recursive: true);
+          await outputFile.writeAsBytes(await doc.save());
+        });
+      }
     }
   }
 

@@ -2273,6 +2273,17 @@ class AppLocalizationsHi extends AppLocalizations {
   String get productMgmtColExpiryDate => 'समाप्ति तिथि';
 
   @override
+  String get productMgmtCustomizeColumnsLabel => 'Customize Product Columns';
+
+  @override
+  String get productMgmtShowColumnsLabel => 'Show Columns';
+
+  @override
+  String productMgmtShowColumnsMaxHint(int max) {
+    return 'Show up to $max columns';
+  }
+
+  @override
   String productMgmtShowingRangeLabel(int from, int to, int total) {
     return '$total उत्पादों में से $from से $to दिखाया जा रहा है';
   }
@@ -3024,6 +3035,46 @@ class AppLocalizationsHi extends AppLocalizations {
   String get invoiceSettingsSectionCustomer => 'Customer Details';
 
   @override
+  String get invoiceSettingsSectionColumns => 'Invoice Columns';
+
+  @override
+  String get invoiceSettingsColumnsSectionHint =>
+      'Choose which columns appear in the invoice PDF items table. Item Name, Price and Total are always shown.';
+
+  @override
+  String get invoiceSettingsShowSlNoLabel => 'Sl No column';
+
+  @override
+  String get invoiceSettingsShowSlNoSubtitle =>
+      'Print the serial-number column on A4/Letter invoices';
+
+  @override
+  String get invoiceSettingsColumnHsnLabel => 'HSN/SAC column';
+
+  @override
+  String get invoiceSettingsColumnHsnSubtitle =>
+      'Print the HSN/SAC code column (tied to Show GST Fields)';
+
+  @override
+  String get invoiceSettingsColumnTaxLabel => 'Tax column';
+
+  @override
+  String get invoiceSettingsColumnTaxSubtitle =>
+      'Print the per-item CGST/SGST, IGST % column';
+
+  @override
+  String get invoiceSettingsColumnRequiredSubtitle => 'Always shown';
+
+  @override
+  String get invoiceSettingsColumnItemNameLabel => 'Item Name column';
+
+  @override
+  String get invoiceSettingsColumnPriceLabel => 'Price / Rate column';
+
+  @override
+  String get invoiceSettingsColumnTotalLabel => 'Total column';
+
+  @override
   String get invoiceSettingsCustomerSectionHint =>
       'Choose which customer details print on invoice PDFs and thermal receipts. A field only shows when it\'s enabled and the customer has a value for it. Customer name is always shown.';
 
@@ -3343,6 +3394,15 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get pdfSettingsShowTotalQtyRowLabel => 'कुल मात्रा पंक्ति दिखाएं';
+
+  @override
+  String get pdfSettingsOrientationLabel => 'Orientation';
+
+  @override
+  String get pdfSettingsOrientationPortrait => 'Portrait';
+
+  @override
+  String get pdfSettingsOrientationLandscape => 'Landscape';
 
   @override
   String get pdfSettingsItemLayoutLabel => 'आइटम लेआउट';

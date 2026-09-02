@@ -216,6 +216,19 @@ class SettingsService {
     await setSetting(SettingKey.productColumnsConfig, jsonEncode(config.toJson()));
   }
 
+  /// Which optional columns are visible in the product list table.
+  /// Stored keys only; absent keys fall back to the screen's defaults.
+  static Future<Map<String, bool>> getProductListColumns() async {
+    final json = await getSetting(SettingKey.productListColumnsConfig);
+    if (json == null || json.isEmpty) return const {};
+    final m = jsonDecode(json) as Map<String, dynamic>;
+    return m.map((k, v) => MapEntry(k, v == true));
+  }
+
+  static Future<void> setProductListColumns(Map<String, bool> cols) async {
+    await setSetting(SettingKey.productListColumnsConfig, jsonEncode(cols));
+  }
+
   static Future<bool> getShowBankDetails() async {
     final val = await getSetting(SettingKey.showBankDetails);
     return val == 'true';
@@ -374,6 +387,26 @@ class SettingsService {
 
   static Future<void> setPdfTimeFormat(String format) async {
     await setSetting(SettingKey.pdfTimeFormat, format == '12' ? '12' : '24');
+  }
+
+  /// Whether the Sl No column prints in the A4/Letter items table. Defaults to true.
+  static Future<bool> getShowSlNoInPdf() async {
+    final val = await getSetting(SettingKey.showSlNoInPdf);
+    return val != 'false';
+  }
+
+  static Future<void> setShowSlNoInPdf(bool show) async {
+    await setSetting(SettingKey.showSlNoInPdf, show.toString());
+  }
+
+  /// Whether the Grid Classic invoice PDF renders in landscape. Defaults to false.
+  static Future<bool> getPdfLandscape() async {
+    final val = await getSetting(SettingKey.pdfLandscape);
+    return val == 'true';
+  }
+
+  static Future<void> setPdfLandscape(bool landscape) async {
+    await setSetting(SettingKey.pdfLandscape, landscape.toString());
   }
 
   static Future<bool> getShowDiscount() async {

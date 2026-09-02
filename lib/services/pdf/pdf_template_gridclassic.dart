@@ -23,6 +23,7 @@ pw.MultiPage buildGridClassicTemplate(
   String? upiId,
   bool showUpiQr = false,
   bool showGst = true,
+  bool showSlNo = true,
   bool showQuantity = true,
   bool showDiscount = true,
   bool showTypeTag = true,
@@ -44,6 +45,7 @@ pw.MultiPage buildGridClassicTemplate(
   double signatureSizePx = 50,
   double previousBalanceDue = 0.0,
   PdfPageFormat pageFormat = PdfPageFormat.a4,
+  bool landscape = false,
   pw.ThemeData? pdfTheme,
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
@@ -71,11 +73,23 @@ pw.MultiPage buildGridClassicTemplate(
       signatureBytes != null ? pw.MemoryImage(signatureBytes) : null;
   final borderColor = PdfColors.grey800;
 
+  // `pageFormat` stays portrait here so the isA6/isA5 checks below keep working;
+  // the actual page just swaps width/height for landscape (pdf pkg keeps margins).
   final bool isA6 = pageFormat == PdfPageFormat.a6;
   final bool isA5 = pageFormat == PdfPageFormat.a5;
-  final double fontScale = isA6 ? 0.60 : (isA5 ? 0.88 : 1.0);
-  final double pageMarginH = isA6 ? 10.0 : (isA5 ? 15.0 : PdfLayout.defaultHMargin);
-  final double pageMarginV = isA6 ? 5.0 : (isA5 ? 8.0 : PdfLayout.defaultVMargin);
+  final PdfPageFormat pageFmt = landscape ? pageFormat.landscape : pageFormat;
+  final double fontScale = landscape
+      ? (isA6 ? 0.72 : (isA5 ? 1.0 : 1.0))
+      : (isA6 ? 0.60 : (isA5 ? 0.88 : 1.0));
+  final double pageMarginH = landscape
+      ? (isA6 ? 12.0 : (isA5 ? 18.0 : PdfLayout.defaultHMargin))
+      : (isA6 ? 10.0 : (isA5 ? 15.0 : PdfLayout.defaultHMargin));
+  final double pageMarginV = landscape
+      ? (isA6 ? 6.0 : (isA5 ? 8.0 : 10.0))
+      : (isA6 ? 5.0 : (isA5 ? 8.0 : PdfLayout.defaultVMargin));
+  final double contentWidth = pageFmt.width - pageMarginH * 2;
+  final double totalsBoxWidth =
+      landscape ? (contentWidth * 0.32).clamp(180.0, 340.0) : 200 * fontScale;
   final double innerPad = gridClassicPdfStyle.sectionPadding * fontScale;
   final double titleFont = gridClassicPdfStyle.titleFontSize * fontScale;
   final double subFont = gridClassicPdfStyle.subtitleFontSize * fontScale;
@@ -85,6 +99,12 @@ pw.MultiPage buildGridClassicTemplate(
   final double netAmountFont = gridClassicPdfStyle.totalsHighlightFontSize * fontScale;
   final double cellPadH = (gridClassicPdfStyle.cellPaddingH * fontScale).clamp(3.0, 6.0);
   final double cellPadV = (gridClassicPdfStyle.cellPaddingV * fontScale).clamp(3.0, 6.0);
+  // Logo height gets its own per-page-size scale (independent of fontScale) so
+  // A5/A6 don't get an A4-sized logo swallowing the header.
+  final double logoScale = landscape
+      ? (isA6 ? 0.6 : (isA5 ? 0.9 : 1.0))
+      : (isA6 ? 0.4 : (isA5 ? 0.68 : 1.0));
+  final double logoSize = logoSizePx * logoScale;
 
   final gstin = company?.gstin ?? '';
   final gstLabel = taxLabel(company?.country);
@@ -110,9 +130,14 @@ pw.MultiPage buildGridClassicTemplate(
   //final qtyLabel =
   //    (invoice.quantityLabel?.isNotEmpty == true) ? invoice.quantityLabel! : 'Qty';
 
-  pw.Widget infoRow(String k, String v) => pw.Padding(
+  // alignEnd: shrink the row to its content so the enclosing right-hand column
+  // can sit against the page's right edge while the labels stay left-aligned
+  // with each other.
+  pw.Widget infoRow(String k, String v, {bool alignEnd = false}) => pw.Padding(
         padding: pw.EdgeInsets.symmetric(vertical: 1.5 * fontScale),
         child: pw.Row(
+          mainAxisSize:
+              alignEnd ? pw.MainAxisSize.min : pw.MainAxisSize.max,
           children: [
             pw.SizedBox(
                 width: 58 * fontScale,
@@ -163,7 +188,7 @@ pw.MultiPage buildGridClassicTemplate(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
                     if(logoPosition == LogoPosition.left)
-                      buildCompanyLogo(logoImage, size: logoSizePx),
+                      buildCompanyLogo(logoImage, size: logoSize),
                     pw.Column(
                       mainAxisAlignment: pw.MainAxisAlignment.start,
                       crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -185,7 +210,7 @@ pw.MultiPage buildGridClassicTemplate(
                       ],
                     ),
                     if(logoPosition == LogoPosition.right)
-                      buildCompanyLogo(logoImage, size: logoSizePx),
+                      buildCompanyLogo(logoImage, size: logoSize),
                   ]
               ),
               if (companyIdLine.isNotEmpty)
@@ -271,21 +296,32 @@ pw.MultiPage buildGridClassicTemplate(
                 ),
                 pw.Expanded(
                   flex: 2,
-                  child: pw.Column(
+                  child: pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.end,
+                    children: [
+                    pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    mainAxisSize: pw.MainAxisSize.min,
                     children: [
                       if (invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros) != null)
                         infoRow('${invoice.invoiceTitle ?? invoice.type} No',
-                            invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros)!),
-                      infoRow('Date', formatPdfDate(invoice.date, datePattern)),
+                            invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros)!,
+                            alignEnd: true),
+                      infoRow('Date', formatPdfDate(invoice.date, datePattern),
+                          alignEnd: true),
                       if (showTimeInPdf)
                         infoRow(
                             'Time',
                             DateFormat(pdfTimeFormat == '12' ? 'h:mm a' : 'HH:mm',
                                     'en_US')
-                                .format(invoice.date)),
+                                .format(invoice.date),
+                            alignEnd: true),
                       if (invoice.dueDate != null)
-                        infoRow('Due Date', formatPdfDate(invoice.dueDate!, datePattern)),
+                        infoRow('Due Date',
+                            formatPdfDate(invoice.dueDate!, datePattern),
+                            alignEnd: true),
+                    ],
+                    ),
                     ],
                   ),
                 ),
@@ -318,7 +354,7 @@ pw.MultiPage buildGridClassicTemplate(
               pw.Expanded(child: buildAdditionalNotes(invoice,fontSize: gridClassicPdfStyle.bodyFontSize*fontScale, accentColor: accentColor)),
               pw.SizedBox(width: 5 * fontScale),
               pw.SizedBox(
-                width: 200 * fontScale,
+                width: totalsBoxWidth,
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.end,
                   children: [
@@ -459,7 +495,7 @@ pw.MultiPage buildGridClassicTemplate(
   }
 
   return pw.MultiPage(
-    pageFormat: pageFormat,
+    pageFormat: pageFmt,
     theme: pdfTheme,
     margin: pw.EdgeInsets.symmetric(vertical: pageMarginV, horizontal: pageMarginH),
     header: (context) {
@@ -492,9 +528,11 @@ pw.MultiPage buildGridClassicTemplate(
       buildInvoiceTable(
         invoice,
         InvoiceTemplate.gridClassic,
+        pageFormat,
         headerColor: PdfColors.grey200,
         textColor: PdfColors.black,
         showGst: showGst,
+        showSlNo: showSlNo,
         showQuantity: showQuantity,
         showDiscount: showDiscount,
         showTypeTag: showTypeTag,
@@ -513,6 +551,7 @@ pw.MultiPage buildGridClassicTemplate(
         watermarkOpacity: watermarkOpacity,
         showCgstSgst: showCgstSgst,
         showIgst: showIgst,
+        isLandscape: landscape,
       ),
       // ── Notes, totals, signature, footer (inset again) ──
       buildInvoiceFooter()

@@ -1,13 +1,13 @@
 class CompactPdfTotalsStyle {
   const CompactPdfTotalsStyle({
-    this.width = 128,
-    this.rowFontSize = 5.5,
-    this.highlightFontSize = 6.0,
-    this.rowHorizontalPadding = 4,
+    this.width = 108,
+    this.rowFontSize = 4.5,
+    this.highlightFontSize = 5.0,
+    this.rowHorizontalPadding = 3,
     this.rowVerticalPadding = 2,
     this.highlightHorizontalPadding = 4,
     this.highlightVerticalPadding = 3,
-    this.borderRadius = 4,
+    this.borderRadius = 2,
   });
 
   final double width;
@@ -24,22 +24,22 @@ const compactPdfTotalsStyle = CompactPdfTotalsStyle();
 
 class CompactPdfLayoutStyle {
   const CompactPdfLayoutStyle({
-    this.logoScale = 0.6,
-    this.tableFontSize = 6.4,
-    this.tableHorizontalPadding = 4,
-    this.tableVerticalPadding = 2.2,
-    this.headerGap = 5,
-    this.headerPadding = 4,
+    this.logoScale = 0.5,
+    this.tableFontSize = 4.0,
+    this.tableHorizontalPadding = 2,
+    this.tableVerticalPadding = 1.2,
+    this.headerGap = 3,
+    this.headerPadding = 2,
     this.signatureTopGap = 5,
-    this.signatureImageHeight = 24,
+    this.signatureImageHeight = 22,
     this.signatureLabelGap = 1.5,
-    this.signatureLabelFontSize = 5.8,
-    this.footerBrandingFontSize = 5.6,
+    this.signatureLabelFontSize = 3.8,
+    this.footerBrandingFontSize = 3.8,
     this.footerTopMargin = 4,
-    this.titleFontSize = 13,
-    this.subtitleFontSize = 8,
-    this.bodyFontSize = 9,
-    this.totalsFontSize = 10,
+    this.titleFontSize = 8,
+    this.subtitleFontSize = 5,
+    this.bodyFontSize = 5,
+    this.totalsFontSize = 7,
   });
 
   final double logoScale;

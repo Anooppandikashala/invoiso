@@ -59,6 +59,8 @@ class PdfGenerationSettings {
   final bool showCgstSgst;
   final bool showRoundOff;
   final bool showLeadingZeros;
+  final bool showSlNo;
+  final bool landscape;
 
   const PdfGenerationSettings({
     required this.company,
@@ -113,5 +115,7 @@ class PdfGenerationSettings {
     this.showTimeInPdf = true,
     this.pdfTimeFormat = '24',
     this.showLeadingZeros = true,
+    this.showSlNo = true,
+    this.landscape = false,
   });
 }

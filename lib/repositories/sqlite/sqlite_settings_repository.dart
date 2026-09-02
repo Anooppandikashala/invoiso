@@ -44,6 +44,10 @@ class SqliteSettingsRepository implements SettingsRepository {
   @override
   Future<void> setProductColumnsConfig(ProductColumnsConfig config) => SettingsService.setProductColumnsConfig(config);
   @override
+  Future<Map<String, bool>> getProductListColumns() => SettingsService.getProductListColumns();
+  @override
+  Future<void> setProductListColumns(Map<String, bool> cols) => SettingsService.setProductListColumns(cols);
+  @override
   Future<bool> getShowBankDetails() => SettingsService.getShowBankDetails();
   @override
   Future<void> setShowBankDetails(bool show) => SettingsService.setShowBankDetails(show);
@@ -119,6 +123,16 @@ class SqliteSettingsRepository implements SettingsRepository {
   @override
   Future<void> setPdfTimeFormat(String format) =>
       SettingsService.setPdfTimeFormat(format);
+  @override
+  Future<bool> getShowSlNoInPdf() => SettingsService.getShowSlNoInPdf();
+  @override
+  Future<void> setShowSlNoInPdf(bool show) =>
+      SettingsService.setShowSlNoInPdf(show);
+  @override
+  Future<bool> getPdfLandscape() => SettingsService.getPdfLandscape();
+  @override
+  Future<void> setPdfLandscape(bool landscape) =>
+      SettingsService.setPdfLandscape(landscape);
   @override
   Future<bool> getShowGstFields() => SettingsService.getShowGstFields();
   @override
