@@ -91,7 +91,7 @@ double _metaColFlex(String key) =>
         : (key == 'notes') ? 2.2
         : 1.4;
 
-String _metaHeaderText(String key) {
+String _metaHeaderText(String key, {bool short = false}) {
   switch (key) {
     case 'storageLocation':
       return 'Storage';
@@ -103,6 +103,8 @@ String _metaHeaderText(String key) {
       return 'Expiry';
     case 'manufactureDate':
       return 'Mfg. Date';
+    case 'manufactureName':
+      return short ? 'Mfr.' : 'Mfr. Name';
     case 'supplierName':
       return 'Supplier';
     case 'skuCode':
@@ -134,6 +136,8 @@ String _metaCellValue(InvoiceItem item, String key, String datePattern) {
       return fmtDate(m.expiryDate);
     case 'manufactureDate':
       return fmtDate(m.manufactureDate);
+    case 'manufactureName':
+      return m.manufactureName ?? '';
     case 'supplierName':
       return m.supplierName ?? '';
     case 'skuCode':
@@ -708,6 +712,7 @@ pw.Widget buildInvoiceTable(Invoice invoice,
           'storageLocation',
           'containerNumber',
           'batchNumber',
+          'manufactureName',
           'manufactureDate',
           'expiryDate',
           'supplierName',
@@ -715,6 +720,9 @@ pw.Widget buildInvoiceTable(Invoice invoice,
           'notes',
         ].where((k) => metadataColumns[k] == true).toList()
       : const <String>[];
+  // Grid Classic is the space-constrained template (extra metadata columns,
+  // portrait). Shorten the Discount header there to claw back width.
+  final bool shortDiscountHeader = template == InvoiceTemplate.gridClassic && !isLandscape &&  metaKeys.isNotEmpty;
   final bool showItemTax = invoice.taxMode == TaxMode.perItem;
   final bool isGlobalTaxMode = invoice.taxMode == TaxMode.global;
   final bool splitCgstSgst =
@@ -788,7 +796,7 @@ pw.Widget buildInvoiceTable(Invoice invoice,
           0, (sum, w) => sum + ((w as pw.FlexColumnWidth).flex * 10).round()) -
       slNoFlex;
 
-  pw.Widget dividerLine() => pw.Container(height: 1, color: PdfColors.grey400);
+  pw.Widget dividerLine({bool isCompact = false}) => pw.Container(height: isCompact ? 0.5 : 1, color: PdfColors.grey400);
 
   pw.BoxDecoration? rowDecoration(PdfColor? rowColor) {
     if (rowColor == null && watermarkImage == null) return null;
@@ -828,7 +836,7 @@ pw.Widget buildInvoiceTable(Invoice invoice,
             cellPaddingH: cellPaddingH,
             cellPaddingV: cellPaddingV),
       for (final k in metaKeys)
-        buildTableCell(_metaHeaderText(k),
+        buildTableCell(_metaHeaderText(k, short: !isLandscape),
             isHeader: true,
             textColor: textColor,
             fontSize: tableFontSize,
@@ -878,7 +886,7 @@ pw.Widget buildInvoiceTable(Invoice invoice,
             cellPaddingH: cellPaddingH,
             cellPaddingV: cellPaddingV),
       if (showDiscount)
-        buildTableCell('Discount',
+        buildTableCell(shortDiscountHeader ? 'Disc.' : 'Discount',
             isHeader: true,
             textColor: textColor,
             fontSize: tableFontSize,
@@ -1076,7 +1084,8 @@ pw.Widget buildInvoiceTable(Invoice invoice,
     children: [
       rowTable(headerRow),
       ...itemWidgets,
-      if (template != InvoiceTemplate.gridClassic) dividerLine(),
+      if (template != InvoiceTemplate.gridClassic)
+        dividerLine(isCompact: template == InvoiceTemplate.compact),
       if (totalQuantityText != null)
         rowTable(pw.TableRow(
           children: [
@@ -1135,7 +1144,7 @@ pw.Widget buildInvoiceTable(Invoice invoice,
                 cellPaddingV: cellPaddingV),
           ],
         )),
-      if (totalQuantityText != null && template != InvoiceTemplate.gridClassic) dividerLine(),
+      if (totalQuantityText != null && template != InvoiceTemplate.gridClassic) dividerLine(isCompact: (template == InvoiceTemplate.compact)),
     ],
   );
 }

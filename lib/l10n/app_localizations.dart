@@ -3336,6 +3336,12 @@ abstract class AppLocalizations {
   /// **'Manufacture Date'**
   String get productMgmtManufactureDateLabel;
 
+  /// No description provided for @productMgmtManufactureNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Manufacturer Name'**
+  String get productMgmtManufactureNameLabel;
+
   /// No description provided for @productMgmtSupplierNameLabel.
   ///
   /// In en, this message translates to:
@@ -3485,6 +3491,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Manufacture date'**
   String get productMgmtCsvDescManufactureDate;
+
+  /// No description provided for @productMgmtCsvDescManufactureName.
+  ///
+  /// In en, this message translates to:
+  /// **'Manufacturer name'**
+  String get productMgmtCsvDescManufactureName;
 
   /// No description provided for @productMgmtCsvDescSupplierName.
   ///
@@ -6531,7 +6543,7 @@ abstract class AppLocalizations {
   /// No description provided for @productColumnsMetadataSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Storage location, container/batch number, expiry, manufacture date, supplier, SKU, notes.'**
+  /// **'Storage location, container/batch number, expiry, manufacture date, manufacturer, supplier, SKU, notes.'**
   String get productColumnsMetadataSubtitle;
 
   /// No description provided for @productColumnsMetaStorageLocationLabel.
@@ -6563,6 +6575,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Manufacture Date'**
   String get productColumnsMetaManufactureDateLabel;
+
+  /// No description provided for @productColumnsMetaManufactureNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Manufacturer Name'**
+  String get productColumnsMetaManufactureNameLabel;
 
   /// No description provided for @productColumnsMetaSupplierNameLabel.
   ///

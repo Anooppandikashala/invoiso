@@ -1949,6 +1949,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get productMgmtManufactureDateLabel => '生产日期';
 
   @override
+  String get productMgmtManufactureNameLabel => 'Manufacturer Name';
+
+  @override
   String get productMgmtSupplierNameLabel => '供应商名称';
 
   @override
@@ -2022,6 +2025,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get productMgmtCsvDescManufactureDate => '生产日期';
+
+  @override
+  String get productMgmtCsvDescManufactureName => 'Manufacturer name';
 
   @override
   String get productMgmtCsvDescSupplierName => '供应商名称';
@@ -3738,6 +3744,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get productColumnsMetaManufactureDateLabel => '生产日期';
+
+  @override
+  String get productColumnsMetaManufactureNameLabel => 'Manufacturer Name';
 
   @override
   String get productColumnsMetaSupplierNameLabel => '供应商名称';

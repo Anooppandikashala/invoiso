@@ -2022,6 +2022,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get productMgmtManufactureDateLabel => 'निर्माण तिथि';
 
   @override
+  String get productMgmtManufactureNameLabel => 'Manufacturer Name';
+
+  @override
   String get productMgmtSupplierNameLabel => 'आपूर्तिकर्ता का नाम';
 
   @override
@@ -2102,6 +2105,9 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get productMgmtCsvDescManufactureDate => 'निर्माण तिथि';
+
+  @override
+  String get productMgmtCsvDescManufactureName => 'Manufacturer name';
 
   @override
   String get productMgmtCsvDescSupplierName => 'आपूर्तिकर्ता का नाम';
@@ -3902,6 +3908,9 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get productColumnsMetaManufactureDateLabel => 'निर्माण तिथि';
+
+  @override
+  String get productColumnsMetaManufactureNameLabel => 'Manufacturer Name';
 
   @override
   String get productColumnsMetaSupplierNameLabel => 'आपूर्तिकर्ता नाम';

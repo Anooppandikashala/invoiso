@@ -109,6 +109,7 @@ class ProductMetadata {
   String? batchNumber;
   String? expiryDate;
   String? manufactureDate;
+  String? manufactureName;
   String? supplierName;
   String? skuCode;
   String? notes;
@@ -120,6 +121,7 @@ class ProductMetadata {
     this.batchNumber,
     this.expiryDate,
     this.manufactureDate,
+    this.manufactureName,
     this.supplierName,
     this.skuCode,
     this.notes,
@@ -131,6 +133,7 @@ class ProductMetadata {
       (batchNumber?.isEmpty ?? true) &&
       (expiryDate?.isEmpty ?? true) &&
       (manufactureDate?.isEmpty ?? true) &&
+      (manufactureName?.isEmpty ?? true) &&
       (supplierName?.isEmpty ?? true) &&
       (skuCode?.isEmpty ?? true) &&
       (notes?.isEmpty ?? true);
@@ -143,6 +146,7 @@ class ProductMetadata {
       batchNumber: map['batch_number'] as String?,
       expiryDate: map['expiry_date'] as String?,
       manufactureDate: map['manufacture_date'] as String?,
+      manufactureName: map['manufacture_name'] as String?,
       supplierName: map['supplier_name'] as String?,
       skuCode: map['sku_code'] as String?,
       notes: map['notes'] as String?,
@@ -157,6 +161,7 @@ class ProductMetadata {
       'batch_number': batchNumber,
       'expiry_date': expiryDate,
       'manufacture_date': manufactureDate,
+      'manufacture_name': manufactureName,
       'supplier_name': supplierName,
       'sku_code': skuCode,
       'notes': notes,

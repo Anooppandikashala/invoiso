@@ -2043,6 +2043,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get productMgmtManufactureDateLabel => 'Date de fabrication';
 
   @override
+  String get productMgmtManufactureNameLabel => 'Manufacturer Name';
+
+  @override
   String get productMgmtSupplierNameLabel => 'Nom du fournisseur';
 
   @override
@@ -2126,6 +2129,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get productMgmtCsvDescManufactureDate => 'Date de fabrication';
+
+  @override
+  String get productMgmtCsvDescManufactureName => 'Manufacturer name';
 
   @override
   String get productMgmtCsvDescSupplierName => 'Nom du fournisseur';
@@ -3972,6 +3978,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get productColumnsMetaManufactureDateLabel => 'Date de fabrication';
+
+  @override
+  String get productColumnsMetaManufactureNameLabel => 'Manufacturer Name';
 
   @override
   String get productColumnsMetaSupplierNameLabel => 'Nom du fournisseur';

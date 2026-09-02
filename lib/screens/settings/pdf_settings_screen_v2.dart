@@ -41,6 +41,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
     'batchNumber',
     'expiryDate',
     'manufactureDate',
+    'manufactureName',
     'supplierName',
     'skuCode',
     'notes',
@@ -789,6 +790,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
         return l10n.productColumnsMetaExpiryDateLabel;
       case 'manufactureDate':
         return l10n.productColumnsMetaManufactureDateLabel;
+      case 'manufactureName':
+        return l10n.productColumnsMetaManufactureNameLabel;
       case 'supplierName':
         return l10n.productColumnsMetaSupplierNameLabel;
       case 'skuCode':

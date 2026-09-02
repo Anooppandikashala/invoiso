@@ -15,7 +15,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 44;
+  final dbVersion = 45;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -82,6 +82,7 @@ class DatabaseHelper {
         batch_number TEXT,
         expiry_date TEXT,
         manufacture_date TEXT,
+        manufacture_name TEXT,
         supplier_name TEXT,
         sku_code TEXT,
         notes TEXT
@@ -738,6 +739,17 @@ class DatabaseHelper {
           db, 44, 'add_line_metadata_to_invoice_items', () async {
         await db.execute(
           'ALTER TABLE invoice_items ADD COLUMN line_metadata TEXT',
+        );
+      });
+    }
+
+    if (oldVersion < 45) {
+      // Manufacturer name for a product (alongside manufacture date). NULL on
+      // every pre-v45 row.
+      await _runMigrationStep(
+          db, 45, 'add_manufacture_name_to_product_metadata', () async {
+        await db.execute(
+          'ALTER TABLE product_metadata ADD COLUMN manufacture_name TEXT',
         );
       });
     }

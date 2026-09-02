@@ -2011,6 +2011,9 @@ class AppLocalizationsBo extends AppLocalizations {
   String get productMgmtManufactureDateLabel => 'བཟོ་སྐྲུན་ཉིན་ཚེས།';
 
   @override
+  String get productMgmtManufactureNameLabel => 'Manufacturer Name';
+
+  @override
   String get productMgmtSupplierNameLabel => 'སྐྱེལ་འདྲེན་པའི་མིང་།';
 
   @override
@@ -2089,6 +2092,9 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get productMgmtCsvDescManufactureDate => 'བཟོ་སྐྲུན་ཉིན་ཚེས།';
+
+  @override
+  String get productMgmtCsvDescManufactureName => 'Manufacturer name';
 
   @override
   String get productMgmtCsvDescSupplierName => 'སྐྱེལ་འདྲེན་པའི་མིང་།';
@@ -3890,6 +3896,9 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get productColumnsMetaManufactureDateLabel => 'བཟོ་བསྐྲུན་ཚེས་གྲངས།';
+
+  @override
+  String get productColumnsMetaManufactureNameLabel => 'Manufacturer Name';
 
   @override
   String get productColumnsMetaSupplierNameLabel => 'སྤྲོད་མཁན་མིང་།';

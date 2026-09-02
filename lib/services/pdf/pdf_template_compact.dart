@@ -77,7 +77,7 @@ pw.MultiPage buildCompactTemplate(
   final double addressFont = compactPdfLayoutStyle.subtitleFontSize * fontScale;
   final double sectionHeaderFont = compactPdfLayoutStyle.subtitleFontSize * fontScale;
   final double bodyFont = compactPdfLayoutStyle.bodyFontSize * fontScale;
-  final double pageMargin = pageFormat == PdfPageFormat.a6 ? 16.0 : 20.0;
+  final double pageMargin = pageFormat == PdfPageFormat.a6 ? 12.0 : 20.0;
 
   final title = (invoice.invoiceTitle?.trim().isNotEmpty ?? false)
       ? invoice.invoiceTitle!.toUpperCase()
@@ -296,7 +296,7 @@ pw.MultiPage buildCompactTemplate(
         watermarkOpacity: watermarkOpacity,
       ),
 
-      pw.SizedBox(height: 6),
+      pw.SizedBox(height: 2),
 
       // ── Totals ──
       pw.Align(
