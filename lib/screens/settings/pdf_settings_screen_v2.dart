@@ -581,6 +581,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       savedTemplate: _savedTemplate,
       themeColor: _activePreviewColor,
       thermalDetailedTemplate: _previewedThermalItemLayout != "table",
+      landscape: _previewedLandscape &&
+          _previewedTemplate == InvoiceTemplate.gridClassic,
     );
 
     return Container(
@@ -969,12 +971,14 @@ class _PreviewPanel extends StatelessWidget {
   final InvoiceTemplate savedTemplate;
   final Color themeColor;
   final bool thermalDetailedTemplate;
+  final bool landscape;
 
   const _PreviewPanel(
       {required this.previewedTemplate,
       required this.savedTemplate,
       required this.themeColor,
-      required this.thermalDetailedTemplate});
+      required this.thermalDetailedTemplate,
+      this.landscape = false});
 
   @override
   Widget build(BuildContext context) {
@@ -1056,7 +1060,7 @@ class _PreviewPanel extends StatelessWidget {
                   duration: const Duration(milliseconds: 250),
                   child: FittedBox(
                     key: ValueKey(
-                        '${previewedTemplate.name}-${_colorToHex(themeColor)}'),
+                        '${previewedTemplate.name}-${_colorToHex(themeColor)}-$landscape'),
                     fit: BoxFit.contain,
                     child: Container(
                       decoration: BoxDecoration(
@@ -1071,8 +1075,8 @@ class _PreviewPanel extends StatelessWidget {
                       child: TemplatePreviewSketch(
                         template: previewedTemplate,
                         themeColor: themeColor,
-                        width: 390,
-                        height: 520,
+                        width: landscape ? 520 : 390,
+                        height: landscape ? 390 : 520,
                         showDetails: true,
                         thermalDetailedTemplate: thermalDetailedTemplate,
                       ),
