@@ -19,6 +19,10 @@ class AppTheme {
       scaffoldBackgroundColor: Colors.white,
       //cardColor: Colors.grey[50],
       cardTheme: const CardThemeData(surfaceTintColor: Colors.transparent),
+      // App-wide dismiss (X) button on every SnackBar so users don't have
+      // to wait one out.
+      snackBarTheme: const SnackBarThemeData(
+          showCloseIcon: true, closeIconColor: Colors.white),
       colorScheme: base.colorScheme.copyWith(
         surfaceContainer: Colors.grey[50]!,
         surface: Colors.grey[50]!,
@@ -53,6 +57,8 @@ class AppTheme {
         ),
         cardColor: const Color(0xFF1E1E1E),
         cardTheme: const CardThemeData(surfaceTintColor: Colors.transparent),
+        snackBarTheme: const SnackBarThemeData(
+            showCloseIcon: true, closeIconColor: Colors.white),
         dialogTheme: const DialogThemeData(
           backgroundColor: Color(0xFF262626),
         ),

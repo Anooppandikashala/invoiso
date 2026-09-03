@@ -2759,6 +2759,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get userMgmtCantDeleteOwnAccountMessage => '您不能删除自己的账户';
 
   @override
+  String get userMgmtCantDemoteLastAdminMessage => '您不能更改唯一管理员的角色';
+
+  @override
+  String get userMgmtCantChangeOwnRoleMessage => '您不能更改自己的角色';
+
+  @override
+  String get userMgmtUsernameTakenMessage => '该用户名已被使用';
+
+  @override
   String get userMgmtDeleteSelectedTitle => '删除选中的用户？';
 
   @override

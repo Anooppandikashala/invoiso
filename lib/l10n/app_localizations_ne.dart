@@ -2885,6 +2885,18 @@ class AppLocalizationsNe extends AppLocalizations {
       'तपाईं आफ्नो खाता मेटाउन सक्नुहुन्न';
 
   @override
+  String get userMgmtCantDemoteLastAdminMessage =>
+      'तपाईं एक मात्र एडमिनको भूमिका परिवर्तन गर्न सक्नुहुन्न';
+
+  @override
+  String get userMgmtCantChangeOwnRoleMessage =>
+      'तपाईं आफ्नै भूमिका परिवर्तन गर्न सक्नुहुन्न';
+
+  @override
+  String get userMgmtUsernameTakenMessage =>
+      'यो प्रयोगकर्ता नाम पहिले नै लिइएको छ';
+
+  @override
   String get userMgmtDeleteSelectedTitle => 'चयनित प्रयोगकर्ताहरू मेटाउने हो?';
 
   @override

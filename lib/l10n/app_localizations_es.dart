@@ -2911,6 +2911,18 @@ class AppLocalizationsEs extends AppLocalizations {
       'No puede eliminar su propia cuenta';
 
   @override
+  String get userMgmtCantDemoteLastAdminMessage =>
+      'No puede cambiar el rol del único administrador';
+
+  @override
+  String get userMgmtCantChangeOwnRoleMessage =>
+      'No puede cambiar su propio rol';
+
+  @override
+  String get userMgmtUsernameTakenMessage =>
+      'Ese nombre de usuario ya está en uso';
+
+  @override
   String get userMgmtDeleteSelectedTitle =>
       '¿Eliminar los usuarios seleccionados?';
 

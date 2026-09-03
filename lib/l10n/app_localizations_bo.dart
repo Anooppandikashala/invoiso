@@ -2858,6 +2858,17 @@ class AppLocalizationsBo extends AppLocalizations {
       'ཁྱེད་རང་གི་ཁ་ཡིག་བསུབ་མི་ཐུབ།';
 
   @override
+  String get userMgmtCantDemoteLastAdminMessage =>
+      'You can\'t change the role of the only admin';
+
+  @override
+  String get userMgmtCantChangeOwnRoleMessage =>
+      'You can\'t change your own role';
+
+  @override
+  String get userMgmtUsernameTakenMessage => 'That username is already taken';
+
+  @override
   String get userMgmtDeleteSelectedTitle => 'འདེམས་ཟིན་པའི་སྤྱོད་མཁན་བསུབ་ངམ།';
 
   @override

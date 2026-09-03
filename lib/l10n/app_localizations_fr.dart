@@ -2916,6 +2916,18 @@ class AppLocalizationsFr extends AppLocalizations {
       'Vous ne pouvez pas supprimer votre propre compte';
 
   @override
+  String get userMgmtCantDemoteLastAdminMessage =>
+      'Vous ne pouvez pas modifier le rôle du seul administrateur';
+
+  @override
+  String get userMgmtCantChangeOwnRoleMessage =>
+      'Vous ne pouvez pas modifier votre propre rôle';
+
+  @override
+  String get userMgmtUsernameTakenMessage =>
+      'Ce nom d\'utilisateur est déjà pris';
+
+  @override
   String get userMgmtDeleteSelectedTitle =>
       'Supprimer les utilisateurs sélectionnés ?';
 

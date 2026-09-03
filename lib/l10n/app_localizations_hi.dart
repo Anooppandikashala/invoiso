@@ -2873,6 +2873,18 @@ class AppLocalizationsHi extends AppLocalizations {
       'आप अपना खुद का खाता नहीं हटा सकते';
 
   @override
+  String get userMgmtCantDemoteLastAdminMessage =>
+      'आप एकमात्र एडमिन की भूमिका नहीं बदल सकते';
+
+  @override
+  String get userMgmtCantChangeOwnRoleMessage =>
+      'आप अपनी खुद की भूमिका नहीं बदल सकते';
+
+  @override
+  String get userMgmtUsernameTakenMessage =>
+      'यह उपयोगकर्ता नाम पहले से मौजूद है';
+
+  @override
   String get userMgmtDeleteSelectedTitle => 'चयनित उपयोगकर्ताओं को हटाएं?';
 
   @override

@@ -2860,6 +2860,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'You can\'t delete your own account';
 
   @override
+  String get userMgmtCantDemoteLastAdminMessage =>
+      'You can\'t change the role of the only admin';
+
+  @override
+  String get userMgmtCantChangeOwnRoleMessage =>
+      'You can\'t change your own role';
+
+  @override
+  String get userMgmtUsernameTakenMessage => 'That username is already taken';
+
+  @override
   String get userMgmtDeleteSelectedTitle => 'Delete selected users?';
 
   @override

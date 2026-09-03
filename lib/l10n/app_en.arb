@@ -1804,6 +1804,9 @@
   "userMgmtActionCannotBeUndoneMessage": "This action cannot be undone.",
   "userMgmtDeletedMessage": "User deleted successfully",
   "userMgmtCantDeleteOwnAccountMessage": "You can't delete your own account",
+  "userMgmtCantDemoteLastAdminMessage": "You can't change the role of the only admin",
+  "userMgmtCantChangeOwnRoleMessage": "You can't change your own role",
+  "userMgmtUsernameTakenMessage": "That username is already taken",
   "userMgmtDeleteSelectedTitle": "Delete selected users?",
   "userMgmtBulkDeleteBody": "{count, plural, =1{This will permanently delete 1 user. This action cannot be undone.} other{This will permanently delete {count} users. This action cannot be undone.}}",
   "@userMgmtBulkDeleteBody": {

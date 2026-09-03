@@ -4758,6 +4758,24 @@ abstract class AppLocalizations {
   /// **'You can\'t delete your own account'**
   String get userMgmtCantDeleteOwnAccountMessage;
 
+  /// No description provided for @userMgmtCantDemoteLastAdminMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You can\'t change the role of the only admin'**
+  String get userMgmtCantDemoteLastAdminMessage;
+
+  /// No description provided for @userMgmtCantChangeOwnRoleMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You can\'t change your own role'**
+  String get userMgmtCantChangeOwnRoleMessage;
+
+  /// No description provided for @userMgmtUsernameTakenMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'That username is already taken'**
+  String get userMgmtUsernameTakenMessage;
+
   /// No description provided for @userMgmtDeleteSelectedTitle.
   ///
   /// In en, this message translates to:
