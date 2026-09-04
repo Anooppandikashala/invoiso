@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:invoiso/models/invoice_item.dart';
 import 'package:invoiso/models/product.dart';
 import 'package:invoiso/utils/app_logger.dart';
@@ -30,6 +32,8 @@ class InvoiceItemService {
       'product_unit': item.product.unit,
       'unit': item.unit,
       'description': item.description,
+      'line_metadata':
+          item.metadata == null ? null : jsonEncode(item.metadata!.toMap()),
     });
   }
 
@@ -63,6 +67,7 @@ class InvoiceItemService {
             extraCost: extraCost,
             unit: map['unit'] as String?,
             description: map['description'] as String?,
+            metadata: ProductMetadata.fromJsonString(map['line_metadata']),
             discountPerUnit: (map['discount_per_unit'] as int? ?? 0) == 1,
             isProductSaved: (map['is_product_saved'] as int? ?? 0) == 1,
           ),

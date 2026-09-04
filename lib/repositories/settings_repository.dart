@@ -23,6 +23,8 @@ abstract class SettingsRepository {
   Future<void> setProductColumnsConfig(ProductColumnsConfig config);
   Future<Map<String, bool>> getProductListColumns();
   Future<void> setProductListColumns(Map<String, bool> cols);
+  Future<Map<String, bool>> getInvoicePdfMetadataColumns();
+  Future<void> setInvoicePdfMetadataColumns(Map<String, bool> cols);
   Future<bool> getShowBankDetails();
   Future<void> setShowBankDetails(bool show);
   Future<bool> getShowPhone();

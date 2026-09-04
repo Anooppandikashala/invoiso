@@ -1,4 +1,5 @@
 import 'package:flex_color_picker/flex_color_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -31,6 +32,24 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
   PageSize _previewedPageSize = PageSize.a4;
   bool _savedLandscape = false;
   bool _previewedLandscape = false;
+
+  // Grid Classic A4 product-metadata columns. Keys match buildInvoiceTable's
+  // metaKeys / ProductMetadata fields; all off by default.
+  static const List<String> _metadataColumnKeys = [
+    'storageLocation',
+    'containerNumber',
+    'batchNumber',
+    'expiryDate',
+    'manufactureDate',
+    'manufactureName',
+    'supplierName',
+    'skuCode',
+    'notes',
+  ];
+  Map<String, bool> _savedMetaCols = {for (final k in _metadataColumnKeys) k: false};
+  Map<String, bool> _previewedMetaCols = {
+    for (final k in _metadataColumnKeys) k: false
+  };
   bool _savedShowTotalQuantity = false;
   bool _previewedShowTotalQuantity = false;
   final _thermalWidthMarginController = TextEditingController();
@@ -72,6 +91,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
           .read(settingsRepositoryProvider)
           .getSetting(SettingKey.thermalCompanyNameSize),
       ref.read(settingsRepositoryProvider).getPdfLandscape(),
+      ref.read(settingsRepositoryProvider).getInvoicePdfMetadataColumns(),
     ]);
     final saved = results[0] as InvoiceTemplate;
     final savedThemeColor = results[1] as String?;
@@ -81,6 +101,10 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
     final savedThermalItemLayout = results[5] as String?;
     final savedThermalCompanyNameSize = results[6] as String?;
     final savedLandscape = results[7] as bool;
+    final savedMetaCols = {
+      for (final k in _metadataColumnKeys)
+        k: (results[8] as Map<String, bool>)[k] ?? false
+    };
     final previewedTemplate =
         effectiveInvoiceTemplateForPageSize(saved, savedPageSize);
     setState(() {
@@ -93,6 +117,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       _previewedPageSize = savedPageSize;
       _savedLandscape = savedLandscape;
       _previewedLandscape = savedLandscape;
+      _savedMetaCols = savedMetaCols;
+      _previewedMetaCols = Map.of(savedMetaCols);
       _savedShowTotalQuantity = savedShowTotalQty;
       _previewedShowTotalQuantity = savedShowTotalQty;
       _savedThermalWidthMargin = savedThermalWidthMargin ?? '1';
@@ -123,6 +149,9 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
         ref.read(settingsRepositoryProvider).setPdfLandscape(_previewedLandscape),
         ref
             .read(settingsRepositoryProvider)
+            .setInvoicePdfMetadataColumns(_previewedMetaCols),
+        ref
+            .read(settingsRepositoryProvider)
             .setShowTotalQuantity(_previewedShowTotalQuantity),
         ref.read(settingsRepositoryProvider).setSetting(
             SettingKey.thermalWidthMargin,
@@ -140,6 +169,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
         _savedThemeColorHex = _previewedThemeColorHex;
         _savedPageSize = _previewedPageSize;
         _savedLandscape = _previewedLandscape;
+        _savedMetaCols = Map.of(_previewedMetaCols);
         _savedShowTotalQuantity = _previewedShowTotalQuantity;
         _savedThermalWidthMargin = _previewedThermalWidthMargin;
         _savedThermalItemLayout = _previewedThermalItemLayout;
@@ -280,6 +310,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
           _previewedThemeColorHex != _savedThemeColorHex ||
           _previewedPageSize != _savedPageSize ||
           _previewedLandscape != _savedLandscape ||
+          !mapEquals(_previewedMetaCols, _savedMetaCols) ||
           _previewedShowTotalQuantity != _savedShowTotalQuantity ||
           _previewedThermalWidthMargin != _savedThermalWidthMargin ||
           _previewedThermalItemLayout != _savedThermalItemLayout ||
@@ -290,6 +321,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       _previewedTemplate = InvoiceTemplate.classic;
       _previewedPageSize = PageSize.a4;
       _previewedLandscape = false;
+      _previewedMetaCols = {for (final k in _metadataColumnKeys) k: false};
       _previewedThemeColorHex = null;
       _themeColorController.clear();
       _themeColorInputValid = true;
@@ -545,6 +577,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
               if (_previewedTemplate == InvoiceTemplate.gridClassic) ...[
                 const SizedBox(height: 8),
                 _buildOrientationField(),
+                const SizedBox(height: 8),
+                _buildMetadataColumnsField(),
               ],
               if (_previewedTemplate == InvoiceTemplate.thermal) ...[
                 _buildThermalItemLayoutField(),
@@ -739,6 +773,102 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
             onSelectionChanged: (s) =>
                 setState(() => _previewedLandscape = s.first),
           ),
+        ],
+      ),
+    );
+  }
+
+  String _metaColLabel(AppLocalizations l10n, String key) {
+    switch (key) {
+      case 'storageLocation':
+        return l10n.productColumnsMetaStorageLocationLabel;
+      case 'containerNumber':
+        return l10n.productColumnsMetaContainerNumberLabel;
+      case 'batchNumber':
+        return l10n.productColumnsMetaBatchNumberLabel;
+      case 'expiryDate':
+        return l10n.productColumnsMetaExpiryDateLabel;
+      case 'manufactureDate':
+        return l10n.productColumnsMetaManufactureDateLabel;
+      case 'manufactureName':
+        return l10n.productColumnsMetaManufactureNameLabel;
+      case 'supplierName':
+        return l10n.productColumnsMetaSupplierNameLabel;
+      case 'skuCode':
+        return l10n.productColumnsMetaSkuCodeLabel;
+      case 'notes':
+        return l10n.productColumnsMetaNotesLabel;
+      default:
+        return key;
+    }
+  }
+
+  Widget _buildMetadataColumnsField() {
+    final l10n = AppLocalizations.of(context)!;
+    final anyOn = _previewedMetaCols.values.any((v) => v);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(AppBorderRadius.small),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.pdfSettingsMetadataColumnsLabel,
+            style: TextStyle(
+              fontSize: AppFontSize.small,
+              fontWeight: FontWeight.w500,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            l10n.pdfSettingsMetadataColumnsHint,
+            style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: 4),
+          for (final k in _metadataColumnKeys)
+            SwitchListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+              title: Text(_metaColLabel(l10n, k),
+                  style: const TextStyle(fontSize: 13.5)),
+              value: _previewedMetaCols[k] ?? false,
+              onChanged: (v) =>
+                  setState(() => _previewedMetaCols = {..._previewedMetaCols, k: v}),
+            ),
+          if (anyOn) ...[
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.orange[50],
+                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                border: Border.all(color: Colors.orange[200]!),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.warning_amber_rounded,
+                      size: 16, color: Colors.orange[700]),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(l10n.pdfSettingsMetadataColumnsWarning,
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.orange[800],
+                            height: 1.4)),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

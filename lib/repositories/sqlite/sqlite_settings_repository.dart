@@ -48,6 +48,10 @@ class SqliteSettingsRepository implements SettingsRepository {
   @override
   Future<void> setProductListColumns(Map<String, bool> cols) => SettingsService.setProductListColumns(cols);
   @override
+  Future<Map<String, bool>> getInvoicePdfMetadataColumns() => SettingsService.getInvoicePdfMetadataColumns();
+  @override
+  Future<void> setInvoicePdfMetadataColumns(Map<String, bool> cols) => SettingsService.setInvoicePdfMetadataColumns(cols);
+  @override
   Future<bool> getShowBankDetails() => SettingsService.getShowBankDetails();
   @override
   Future<void> setShowBankDetails(bool show) => SettingsService.setShowBankDetails(show);

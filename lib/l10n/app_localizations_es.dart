@@ -2039,6 +2039,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get productMgmtManufactureDateLabel => 'Fecha de fabricación';
 
   @override
+  String get productMgmtManufactureNameLabel => 'Manufacturer Name';
+
+  @override
   String get productMgmtSupplierNameLabel => 'Nombre del proveedor';
 
   @override
@@ -2122,6 +2125,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get productMgmtCsvDescManufactureDate => 'Fecha de fabricación';
+
+  @override
+  String get productMgmtCsvDescManufactureName => 'Manufacturer name';
 
   @override
   String get productMgmtCsvDescSupplierName => 'Nombre del proveedor';
@@ -3470,6 +3476,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get pdfSettingsOrientationLandscape => 'Landscape';
 
   @override
+  String get pdfSettingsMetadataColumnsLabel => 'Product metadata columns';
+
+  @override
+  String get pdfSettingsMetadataColumnsHint =>
+      'Print product metadata as extra columns in the items table.';
+
+  @override
+  String get pdfSettingsMetadataColumnsWarning =>
+      'Metadata columns print only on Grid Classic at A4. Each one narrows the others — if the table looks cramped, switch to Landscape above. Values are captured when an item is added; editing the product later won\'t change past invoices.';
+
+  @override
   String get pdfSettingsItemLayoutLabel => 'Diseño de artículos';
 
   @override
@@ -3968,6 +3985,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get productColumnsMetaManufactureDateLabel => 'Fecha de fabricación';
+
+  @override
+  String get productColumnsMetaManufactureNameLabel => 'Manufacturer Name';
 
   @override
   String get productColumnsMetaSupplierNameLabel => 'Nombre del proveedor';

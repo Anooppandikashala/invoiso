@@ -73,11 +73,14 @@ pw.MultiPage buildModernTemplate(
   final gstLabel = taxLabel(company?.country);
   final panNumber = company?.panNumber ?? '';
   final fssaiCode = company?.fssaiCode ?? '';
-  final companyIdLine = [
+  final companyIdParts = <String>[
     if (showGst && gstin.isNotEmpty) '$gstLabel: $gstin',
     if (showPan && panNumber.isNotEmpty) '${panLabel(company?.country)}: $panNumber',
     if (showFssai && fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
-  ].join('   ');
+  ];
+  // GSTIN + PAN + FSSAI all present → one joined line; fewer → line by line.
+  final allCompanyIds = companyIdParts.length == 3;
+  final companyIdLine = companyIdParts.join('   ');
 
   return pw.MultiPage(
     pageFormat: pageFormat,
@@ -155,16 +158,18 @@ pw.MultiPage buildModernTemplate(
             right: PdfLayout.defaultHMargin,
             top: 0,
             bottom: PdfLayout.defaultVMargin-5),
-        child: pw.Row(
-            mainAxisSize: pw.MainAxisSize.max,
-            mainAxisAlignment: pw.MainAxisAlignment.center,
+        child: pw.Center(
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.center,
             children: [
-                pw.Text(companyIdLine,
+              for (final line in allCompanyIds ? [companyIdLine] : companyIdParts)
+                pw.Text(line,
                     style: pw.TextStyle(
                         color: PdfColors.white,
                         fontStyle: pw.FontStyle.italic,
                         fontSize: modernPdfStyle.subtitleFontSize)),
-            ]
+            ],
+          ),
         ),
       ),
       pw.SizedBox(height: 2),
