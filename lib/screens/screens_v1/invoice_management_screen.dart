@@ -430,6 +430,7 @@ class _InvoiceManagementScreenState
       );
       final path = await ExportService.exportInvoicesToCsv(invoices,
           type: widget.filterType);
+      if (path == null) return;
       if (mounted) {
         AppError.showSuccess(context,
             'Exported ${invoices.length} record${invoices.length == 1 ? '' : 's'} to: $path');
@@ -495,6 +496,7 @@ class _InvoiceManagementScreenState
     setState(() => _isBulkLoading = true);
     try {
       final path = await ExportService.exportInvoicesToCsv(selected);
+      if (path == null) return;
       if (mounted) {
         AppError.showSuccess(context,
             'Exported ${selected.length} invoice${selected.length == 1 ? '' : 's'} to CSV');
