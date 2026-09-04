@@ -260,41 +260,42 @@ class BackupManager {
     });
   }
 
-  // Get list of available backups
+  // Get list of available backups (current store + legacy Documents store,
+  // so users upgrading from a build that saved into Documents still see them).
   Future<List<BackupInfo>> getBackupList() async {
-    final backupDir = await _getBackupDirectory();
-    final directory = Directory(backupDir);
+    final backups = <String, BackupInfo>{};
 
-    if (!await directory.exists()) {
-      return [];
-    }
+    for (final dirPath in {
+      await _getBackupDirectory(),
+      await _legacyBackupDirectory(),
+    }) {
+      final directory = Directory(dirPath);
+      if (!await directory.exists()) continue;
 
-    final files = await directory.list().toList();
-    final backups = <BackupInfo>[];
-
-    for (final file in files) {
-      if (file is File) {
+      for (final file in await directory.list().toList()) {
+        if (file is! File) continue;
         final fileName = basename(file.path);
-        if (fileName.endsWith(_backupExtension) || fileName.endsWith(_jsonExtension)) {
-          final stat = await file.stat();
-          final type = fileName.endsWith(_backupExtension)
-              ? BackupType.database
-              : BackupType.json;
-
-          backups.add(BackupInfo(
-            fileName: fileName,
-            filePath: file.path,
-            size: stat.size,
-            createdAt: stat.modified,
-            type: type,
-          ));
+        if (!fileName.endsWith(_backupExtension) &&
+            !fileName.endsWith(_jsonExtension)) {
+          continue;
         }
+        if (backups.containsKey(fileName)) continue;
+        final stat = await file.stat();
+        backups[fileName] = BackupInfo(
+          fileName: fileName,
+          filePath: file.path,
+          size: stat.size,
+          createdAt: stat.modified,
+          type: fileName.endsWith(_backupExtension)
+              ? BackupType.database
+              : BackupType.json,
+        );
       }
     }
 
-    backups.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-    return backups;
+    final list = backups.values.toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return list;
   }
 
   // Delete backup file
@@ -416,11 +417,20 @@ class BackupManager {
     }
   }
 
-  // Get backup directory
+  // App-managed store for the rolling automatic backups. Lives beside the
+  // database (getApplicationSupportDirectory) — a directory the app already
+  // created and can always write to — so it never fails even when the user's
+  // Documents folder is missing or redirected (Windows + OneDrive). Users get
+  // a copy elsewhere via the Download / Share actions on each backup.
   Future<String> _getBackupDirectory() async {
-    final appDir = await getApplicationDocumentsDirectory();
-    final backupDir = await ensureDirectory(join(appDir.path, 'backups'));
-    return backupDir.path;
+    final supportDir = await getApplicationSupportDirectory();
+    return (await ensureDirectory(join(supportDir.path, 'backups'))).path;
+  }
+
+  // Where older builds saved backups; kept only for [getBackupList].
+  Future<String> _legacyBackupDirectory() async {
+    final docsDir = await getApplicationDocumentsDirectory();
+    return join(docsDir.path, 'backups');
   }
 
   Future<Directory> _getDownloadsDirectory() async {
@@ -431,10 +441,10 @@ class BackupManager {
 
     if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
       final path = (await getDownloadsDirectory())?.path ?? '';
-      final dir = Directory(path);
-      if (await dir.exists()) return dir;
+      if (path.isNotEmpty) return ensureDirectory(path);
     }
 
-    return await getApplicationDocumentsDirectory();
+    final docs = await getApplicationDocumentsDirectory();
+    return ensureDirectory(docs.path);
   }
 }
