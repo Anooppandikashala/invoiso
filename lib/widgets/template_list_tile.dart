@@ -33,6 +33,9 @@ final templateCatalog = [
   {
     "template": InvoiceTemplate.gridClassic,
   },
+  {
+    "template": InvoiceTemplate.elegantDark,
+  },
 ];
 
 String templateName(BuildContext context, InvoiceTemplate template) {
@@ -45,6 +48,7 @@ String templateName(BuildContext context, InvoiceTemplate template) {
     InvoiceTemplate.compact => l10n.pdfTemplateCompactName,
     InvoiceTemplate.thermal => l10n.pdfTemplateThermalName,
     InvoiceTemplate.gridClassic => l10n.pdfTemplateGridClassicName,
+    InvoiceTemplate.elegantDark => l10n.pdfTemplateElegantDarkName,
   };
 }
 
@@ -58,6 +62,7 @@ String templateDescription(BuildContext context, InvoiceTemplate template) {
     InvoiceTemplate.compact => l10n.pdfTemplateCompactDescription,
     InvoiceTemplate.thermal => l10n.pdfTemplateThermalDescription,
     InvoiceTemplate.gridClassic => l10n.pdfTemplateGridClassicDescription,
+    InvoiceTemplate.elegantDark => l10n.pdfTemplateElegantDarkDescription,
   };
 }
 
@@ -75,6 +80,7 @@ class TemplateListTile extends StatelessWidget {
   final String? disabledLabel;
   final VoidCallback onTap;
   final bool thermalDetailedTemplate;
+  final bool elegantLightMode;
 
   const TemplateListTile({
     super.key,
@@ -88,7 +94,8 @@ class TemplateListTile extends StatelessWidget {
     required this.onTap,
     this.isDisabled = false,
     this.disabledLabel,
-    required this.thermalDetailedTemplate
+    required this.thermalDetailedTemplate,
+    this.elegantLightMode = false,
   });
 
   @override
@@ -125,6 +132,7 @@ class TemplateListTile extends StatelessWidget {
                   width: 64,
                   height: 74,
                   thermalDetailedTemplate: thermalDetailedTemplate,
+                  elegantLightMode: elegantLightMode,
                 ),
               ),
               const SizedBox(width: 10),
@@ -220,6 +228,7 @@ class TemplatePreviewSketch extends StatelessWidget {
   final double height;
   final bool showDetails;
   final bool thermalDetailedTemplate;
+  final bool elegantLightMode;
 
   const TemplatePreviewSketch({
     super.key,
@@ -229,14 +238,20 @@ class TemplatePreviewSketch extends StatelessWidget {
     required this.height,
     this.showDetails = false,
     required this.thermalDetailedTemplate,
+    this.elegantLightMode = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isElegant = template == InvoiceTemplate.elegantDark;
     return Container(
       width: width,
       height: height,
-      color: Colors.white,
+      color: isElegant
+          ? (elegantLightMode
+              ? const Color(0xFFFBF9F4)
+              : const Color(0xFF14161A))
+          : Colors.white,
       padding: EdgeInsets.all(showDetails ? 24 : 4),
       child: switch (template) {
         InvoiceTemplate.classic => _classic(),
@@ -246,7 +261,89 @@ class TemplatePreviewSketch extends StatelessWidget {
         InvoiceTemplate.compact => _compact(),
         InvoiceTemplate.thermal => _thermal(detailed: thermalDetailedTemplate),
         InvoiceTemplate.gridClassic => _gridClassic(),
+        InvoiceTemplate.elegantDark => _elegantDark(),
       },
+    );
+  }
+
+  Widget _elegantDark() {
+    final light = elegantLightMode;
+    final ink = light ? const Color(0xFF1E1B14) : const Color(0xFFF3EFE6);
+    final muted = light ? const Color(0xFF9C968A) : const Color(0xFF6A6862);
+    final surface = light ? const Color(0xFFF1ECE0) : const Color(0xFF1E2127);
+    Widget bar(double w, {double? h, Color? color}) => _fixedLine(w,
+        height: h ?? (showDetails ? 6 : 3), color: color ?? muted);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: bar(showDetails ? 90 : 22,
+                  h: showDetails ? 9 : 3, color: ink),
+            ),
+            SizedBox(width: showDetails ? 12 : 3),
+            bar(showDetails ? 96 : 24,
+                h: showDetails ? 14 : 5, color: themeColor),
+          ],
+        ),
+        SizedBox(height: showDetails ? 6 : 2),
+        Container(height: showDetails ? 2 : 1, color: themeColor),
+        SizedBox(height: showDetails ? 16 : 4),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                bar(showDetails ? 30 : 8,
+                    h: showDetails ? 4 : 2, color: themeColor),
+                SizedBox(height: showDetails ? 4 : 1),
+                _line(.8, height: showDetails ? 4 : 2, color: muted),
+                SizedBox(height: showDetails ? 2 : 1),
+                _line(.6, height: showDetails ? 4 : 2, color: muted),
+              ]),
+            ),
+            SizedBox(width: showDetails ? 12 : 3),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                bar(showDetails ? 30 : 8,
+                    h: showDetails ? 4 : 2, color: themeColor),
+                SizedBox(height: showDetails ? 4 : 1),
+                _line(.8, height: showDetails ? 4 : 2, color: muted),
+                SizedBox(height: showDetails ? 2 : 1),
+                _line(.6, height: showDetails ? 4 : 2, color: muted),
+              ]),
+            ),
+          ],
+        ),
+        SizedBox(height: showDetails ? 14 : 4),
+        Container(height: showDetails ? 16 : 5, color: surface),
+        ...List.generate(showDetails ? 5 : 3, (i) {
+          return Container(
+            height: showDetails ? 20 : 4,
+            margin: EdgeInsets.only(top: showDetails ? 2 : 1),
+            color: i.isOdd ? surface : Colors.transparent,
+          );
+        }),
+        const Spacer(),
+        Align(
+          alignment: Alignment.centerRight,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              _fixedLine(showDetails ? 90 : 22,
+                  height: showDetails ? 4 : 2, color: muted),
+              SizedBox(height: showDetails ? 3 : 1),
+              _fixedLine(showDetails ? 90 : 22,
+                  height: showDetails ? 4 : 2, color: muted),
+              SizedBox(height: showDetails ? 5 : 2),
+              _fixedLine(showDetails ? 120 : 30,
+                  height: showDetails ? 12 : 4, color: themeColor),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

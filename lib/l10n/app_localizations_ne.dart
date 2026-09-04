@@ -3530,6 +3530,22 @@ class AppLocalizationsNe extends AppLocalizations {
       'A4, A5 र A6 का लागि पुरानो शैलीको बर्डर भएको ट्याबुलर बिल';
 
   @override
+  String get pdfTemplateElegantDarkName => 'Elegant Dark';
+
+  @override
+  String get pdfTemplateElegantDarkDescription =>
+      'Premium charcoal & gold layout for on-screen and PDF; switch to a light palette in settings';
+
+  @override
+  String get pdfSettingsElegantPaletteLabel => 'Palette';
+
+  @override
+  String get pdfSettingsElegantPaletteDark => 'Dark';
+
+  @override
+  String get pdfSettingsElegantPaletteLight => 'Light';
+
+  @override
   String get companyInfoAppBarTitle => 'कम्पनी जानकारी';
 
   @override

@@ -3492,6 +3492,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'Old-style bordered tabular bill, for A4, A5 and A6';
 
   @override
+  String get pdfTemplateElegantDarkName => 'Elegant Dark';
+
+  @override
+  String get pdfTemplateElegantDarkDescription =>
+      'Premium charcoal & gold layout for on-screen and PDF; switch to a light palette in settings';
+
+  @override
+  String get pdfSettingsElegantPaletteLabel => 'Palette';
+
+  @override
+  String get pdfSettingsElegantPaletteDark => 'Dark';
+
+  @override
+  String get pdfSettingsElegantPaletteLight => 'Light';
+
+  @override
   String get companyInfoAppBarTitle => 'Company Information';
 
   @override

@@ -89,6 +89,8 @@ extension InvoiceTemplateExtension on InvoiceTemplate {
         return 'Thermal Receipt';
       case InvoiceTemplate.gridClassic:
         return 'Grid Classic';
+      case InvoiceTemplate.elegantDark:
+        return 'Elegant Dark';
     }
   }
 }
@@ -177,7 +179,58 @@ void main() {
         final outputFile = File(outputPath);
         await outputFile.parent.create(recursive: true);
         await outputFile.writeAsBytes(await pdf.save());
+
+        // Elegant Dark also renders in its light palette.
+        if (template == InvoiceTemplate.elegantDark) {
+          final lightPdf = PDFService.generateInvoicePDFWithSettings(
+            _sampleInvoice(),
+            settings.copyWithElegantLight(),
+            previousBalanceDue: 50.0,
+          );
+          final lightBytes = await lightPdf.save();
+          expect(lightBytes, isNotEmpty);
+          await File(
+                  'output/all_pdfs_test/invoiso_Elegant Light_${logoVariant.key}.pdf')
+              .writeAsBytes(lightBytes);
+        }
       });
     }
   }
+}
+
+extension on PdfGenerationSettings {
+  PdfGenerationSettings copyWithElegantLight() => PdfGenerationSettings(
+        company: company,
+        template: template,
+        invoicePrefix: invoicePrefix,
+        showGst: showGst,
+        showQuantity: showQuantity,
+        showDiscount: showDiscount,
+        showTypeTag: showTypeTag,
+        businessType: businessType,
+        upiEntries: upiEntries,
+        showQrStr: showQrStr,
+        showBankDetails: showBankDetails,
+        bankAccounts: bankAccounts,
+        logoPosition: logoPosition,
+        logoSizePx: logoSizePx,
+        logoBytes: logoBytes,
+        signatureBytes: signatureBytes,
+        thankYouNote: thankYouNote,
+        datePattern: datePattern,
+        showFooterBranding: showFooterBranding,
+        themeColor: themeColor,
+        showPreviousBalance: showPreviousBalance,
+        pageFormat: pageFormat,
+        pageSize: pageSize,
+        showTotalQuantity: showTotalQuantity,
+        pdfTheme: pdfTheme,
+        watermarkBytes: watermarkBytes,
+        watermarkOpacity: watermarkOpacity,
+        signaturePosition: signaturePosition,
+        descriptionNewLine: descriptionNewLine,
+        showCgstSgst: showCgstSgst,
+        showDescription: showDescription,
+        elegantPalette: 'light',
+      );
 }

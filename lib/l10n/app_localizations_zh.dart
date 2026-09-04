@@ -3357,6 +3357,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pdfTemplateGridClassicDescription => '旧式带边框表格账单，适用于 A4、A5 和 A6';
 
   @override
+  String get pdfTemplateElegantDarkName => 'Elegant Dark';
+
+  @override
+  String get pdfTemplateElegantDarkDescription =>
+      'Premium charcoal & gold layout for on-screen and PDF; switch to a light palette in settings';
+
+  @override
+  String get pdfSettingsElegantPaletteLabel => 'Palette';
+
+  @override
+  String get pdfSettingsElegantPaletteDark => 'Dark';
+
+  @override
+  String get pdfSettingsElegantPaletteLight => 'Light';
+
+  @override
   String get companyInfoAppBarTitle => '公司信息';
 
   @override

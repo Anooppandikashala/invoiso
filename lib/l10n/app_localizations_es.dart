@@ -3563,6 +3563,22 @@ class AppLocalizationsEs extends AppLocalizations {
       'Factura tabular con bordes al estilo antiguo, para A4, A5 y A6';
 
   @override
+  String get pdfTemplateElegantDarkName => 'Elegant Dark';
+
+  @override
+  String get pdfTemplateElegantDarkDescription =>
+      'Premium charcoal & gold layout for on-screen and PDF; switch to a light palette in settings';
+
+  @override
+  String get pdfSettingsElegantPaletteLabel => 'Palette';
+
+  @override
+  String get pdfSettingsElegantPaletteDark => 'Dark';
+
+  @override
+  String get pdfSettingsElegantPaletteLight => 'Light';
+
+  @override
   String get companyInfoAppBarTitle => 'Información de la empresa';
 
   @override

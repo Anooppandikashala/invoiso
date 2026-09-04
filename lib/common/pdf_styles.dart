@@ -134,6 +134,22 @@ const modernPdfStyle = PdfTemplateStyle(
   tableFontSize: 8,
   typeFont: 10
 );
+const elegantPdfStyle = PdfTemplateStyle(
+  titleFontSize: 26,
+  subtitleFontSize: 8.5,
+  labelFontSize: 8,
+  bodyFontSize: 8.5,
+  tableHeaderFontSize: 8,
+  tableFontSize: 8.5,
+  totalsFontSize: 9,
+  totalsHighlightFontSize: 11,
+  footerFontSize: 7.5,
+  cellPaddingH: 7,
+  cellPaddingV: 7,
+  sectionPadding: 12,
+  headerGap: 6,
+  typeFont: 26,
+);
 const gridClassicPdfStyle = PdfTemplateStyle(
   titleFontSize: 12,
   subtitleFontSize: 8,

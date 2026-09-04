@@ -40,6 +40,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
   String _previewedThermalItemLayout = 'table';
   String _savedThermalCompanyNameSize = 'medium';
   String _previewedThermalCompanyNameSize = 'medium';
+  String _savedElegantPalette = 'dark';
+  String _previewedElegantPalette = 'dark';
   bool _isSaving = false;
 
   static const _presetThemeColors = [
@@ -48,6 +50,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
     Color(0xFF047857),
     Color(0xFF7C2D12),
     Color(0xFF6D28D9),
+    Color(0xFFC9A227), // Elegant — Gold
+    Color(0xFFAEB4BC), // Elegant — Silver
   ];
 
   @override
@@ -72,6 +76,9 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
           .read(settingsRepositoryProvider)
           .getSetting(SettingKey.thermalCompanyNameSize),
       ref.read(settingsRepositoryProvider).getPdfLandscape(),
+      ref
+          .read(settingsRepositoryProvider)
+          .getSetting(SettingKey.elegantTemplatePalette),
     ]);
     final saved = results[0] as InvoiceTemplate;
     final savedThemeColor = results[1] as String?;
@@ -81,6 +88,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
     final savedThermalItemLayout = results[5] as String?;
     final savedThermalCompanyNameSize = results[6] as String?;
     final savedLandscape = results[7] as bool;
+    final savedElegantPalette = results[8] as String?;
     final previewedTemplate =
         effectiveInvoiceTemplateForPageSize(saved, savedPageSize);
     setState(() {
@@ -102,6 +110,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       _previewedThermalItemLayout = _savedThermalItemLayout;
       _savedThermalCompanyNameSize = savedThermalCompanyNameSize ?? 'medium';
       _previewedThermalCompanyNameSize = _savedThermalCompanyNameSize;
+      _savedElegantPalette = savedElegantPalette ?? 'dark';
+      _previewedElegantPalette = _savedElegantPalette;
     });
   }
 
@@ -134,6 +144,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
         ref.read(settingsRepositoryProvider).setSetting(
             SettingKey.thermalCompanyNameSize,
             _previewedThermalCompanyNameSize),
+        ref.read(settingsRepositoryProvider).setSetting(
+            SettingKey.elegantTemplatePalette, _previewedElegantPalette),
       ]);
       setState(() {
         _savedTemplate = _previewedTemplate;
@@ -144,6 +156,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
         _savedThermalWidthMargin = _previewedThermalWidthMargin;
         _savedThermalItemLayout = _previewedThermalItemLayout;
         _savedThermalCompanyNameSize = _previewedThermalCompanyNameSize;
+        _savedElegantPalette = _previewedElegantPalette;
       });
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -283,7 +296,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
           _previewedShowTotalQuantity != _savedShowTotalQuantity ||
           _previewedThermalWidthMargin != _savedThermalWidthMargin ||
           _previewedThermalItemLayout != _savedThermalItemLayout ||
-          _previewedThermalCompanyNameSize != _savedThermalCompanyNameSize);
+          _previewedThermalCompanyNameSize != _savedThermalCompanyNameSize ||
+          _previewedElegantPalette != _savedElegantPalette);
 
   void _resetToDefaultV2() {
     setState(() {
@@ -298,6 +312,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       _thermalWidthMarginController.text = '1';
       _previewedThermalItemLayout = 'table';
       _previewedThermalCompanyNameSize = 'medium';
+      _previewedElegantPalette = 'dark';
     });
   }
 
@@ -436,6 +451,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
                           isSaved: _savedTemplate == template,
                           thermalDetailedTemplate:
                               _previewedThermalItemLayout != "table",
+                          elegantLightMode: _previewedElegantPalette == 'light',
                           isDefault: template == InvoiceTemplate.classic,
                           onTap: () => _setPreviewedTemplate(template),
                           isDisabled: false,
@@ -552,6 +568,12 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
                 _buildThermalCompanyNameSizeField(),
               ],
             ],
+            if (_previewedTemplate == InvoiceTemplate.elegantDark) ...[
+              const SizedBox(height: 18),
+              _sectionLabel(l10n.pdfSettingsDisplayOptionsLabel),
+              const SizedBox(height: 8),
+              _buildElegantPaletteField(),
+            ],
             const SizedBox(height: 18),
             _sectionLabel(l10n.pdfSettingsThemeColorLabel),
             const SizedBox(height: 8),
@@ -581,6 +603,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       savedTemplate: _savedTemplate,
       themeColor: _activePreviewColor,
       thermalDetailedTemplate: _previewedThermalItemLayout != "table",
+      elegantLightMode: _previewedElegantPalette == 'light',
       landscape: _previewedLandscape &&
           _previewedTemplate == InvoiceTemplate.gridClassic,
     );
@@ -738,6 +761,45 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
             selected: {_previewedLandscape},
             onSelectionChanged: (s) =>
                 setState(() => _previewedLandscape = s.first),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildElegantPaletteField() {
+    final l10n = AppLocalizations.of(context)!;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(AppBorderRadius.small),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.pdfSettingsElegantPaletteLabel,
+            style: TextStyle(
+              fontSize: AppFontSize.small,
+              fontWeight: FontWeight.w500,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          SegmentedButton<String>(
+            segments: [
+              ButtonSegment<String>(
+                  value: 'dark',
+                  label: Text(l10n.pdfSettingsElegantPaletteDark)),
+              ButtonSegment<String>(
+                  value: 'light',
+                  label: Text(l10n.pdfSettingsElegantPaletteLight)),
+            ],
+            selected: {_previewedElegantPalette},
+            onSelectionChanged: (s) =>
+                setState(() => _previewedElegantPalette = s.first),
           ),
         ],
       ),
@@ -961,6 +1023,7 @@ Color _defaultThemeColor(InvoiceTemplate template) {
     InvoiceTemplate.compact => const Color(0xFF000000),
     InvoiceTemplate.thermal => const Color(0xFF000000),
     InvoiceTemplate.gridClassic => const Color(0xFF000000),
+    InvoiceTemplate.elegantDark => const Color(0xFFC9A227),
   };
 }
 
@@ -971,6 +1034,7 @@ class _PreviewPanel extends StatelessWidget {
   final InvoiceTemplate savedTemplate;
   final Color themeColor;
   final bool thermalDetailedTemplate;
+  final bool elegantLightMode;
   final bool landscape;
 
   const _PreviewPanel(
@@ -978,6 +1042,7 @@ class _PreviewPanel extends StatelessWidget {
       required this.savedTemplate,
       required this.themeColor,
       required this.thermalDetailedTemplate,
+      this.elegantLightMode = false,
       this.landscape = false});
 
   @override
@@ -1060,7 +1125,7 @@ class _PreviewPanel extends StatelessWidget {
                   duration: const Duration(milliseconds: 250),
                   child: FittedBox(
                     key: ValueKey(
-                        '${previewedTemplate.name}-${_colorToHex(themeColor)}-$landscape'),
+                        '${previewedTemplate.name}-${_colorToHex(themeColor)}-$landscape-$elegantLightMode'),
                     fit: BoxFit.contain,
                     child: Container(
                       decoration: BoxDecoration(
@@ -1079,6 +1144,7 @@ class _PreviewPanel extends StatelessWidget {
                         height: landscape ? 390 : 520,
                         showDetails: true,
                         thermalDetailedTemplate: thermalDetailedTemplate,
+                        elegantLightMode: elegantLightMode,
                       ),
                     ),
                   ),

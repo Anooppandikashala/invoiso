@@ -82,6 +82,7 @@ enum SettingKey {
   pdfTimeFormat, // time format used when showTimeInPdf is on: '24' (HH:mm) | '12' (h:mm a); default '24'
   showSlNoInPdf, // whether to print the Sl No column in the A4/Letter invoice items table (default true)
   pdfLandscape, // whether the Grid Classic invoice PDF renders in landscape orientation (default false)
+  elegantTemplatePalette, // Elegant Dark template palette: 'dark' (default) | 'light'
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -253,6 +254,8 @@ extension SettingKeyExtension on SettingKey {
         return 'show_sl_no_in_pdf';
       case SettingKey.pdfLandscape:
         return 'pdf_landscape';
+      case SettingKey.elegantTemplatePalette:
+        return 'elegant_template_palette';
 
     }
   }

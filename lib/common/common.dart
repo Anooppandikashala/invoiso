@@ -29,6 +29,7 @@ enum InvoiceTemplate {
   compact, // A6-optimized compact/receipt template
   thermal, // 80mm/58mm thermal receipt template
   gridClassic, // Bordered grid "old style" bill, adaptive A4/A5/A6
+  elegantDark, // Premium charcoal/gold A4 template (dark or light palette), A4 only
 }
 
 class ProductUnits {

@@ -5850,6 +5850,36 @@ abstract class AppLocalizations {
   /// **'Old-style bordered tabular bill, for A4, A5 and A6'**
   String get pdfTemplateGridClassicDescription;
 
+  /// No description provided for @pdfTemplateElegantDarkName.
+  ///
+  /// In en, this message translates to:
+  /// **'Elegant Dark'**
+  String get pdfTemplateElegantDarkName;
+
+  /// No description provided for @pdfTemplateElegantDarkDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium charcoal & gold layout for on-screen and PDF; switch to a light palette in settings'**
+  String get pdfTemplateElegantDarkDescription;
+
+  /// No description provided for @pdfSettingsElegantPaletteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Palette'**
+  String get pdfSettingsElegantPaletteLabel;
+
+  /// No description provided for @pdfSettingsElegantPaletteDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get pdfSettingsElegantPaletteDark;
+
+  /// No description provided for @pdfSettingsElegantPaletteLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get pdfSettingsElegantPaletteLight;
+
   /// No description provided for @companyInfoAppBarTitle.
   ///
   /// In en, this message translates to:

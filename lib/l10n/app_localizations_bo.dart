@@ -3494,6 +3494,22 @@ class AppLocalizationsBo extends AppLocalizations {
       'A4, A5 དང་ A6 ལ་འོས་པའི་རྙིང་གནས་མཚམས་ཐིག་ཅན་གྱི་ཐིག་ཁྲམ་ཁྲལ་ཤོག';
 
   @override
+  String get pdfTemplateElegantDarkName => 'Elegant Dark';
+
+  @override
+  String get pdfTemplateElegantDarkDescription =>
+      'Premium charcoal & gold layout for on-screen and PDF; switch to a light palette in settings';
+
+  @override
+  String get pdfSettingsElegantPaletteLabel => 'Palette';
+
+  @override
+  String get pdfSettingsElegantPaletteDark => 'Dark';
+
+  @override
+  String get pdfSettingsElegantPaletteLight => 'Light';
+
+  @override
   String get companyInfoAppBarTitle => 'ཚོང་ལས་ཆ་འཕྲིན།';
 
   @override

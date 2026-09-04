@@ -61,6 +61,7 @@ class PdfGenerationSettings {
   final bool showLeadingZeros;
   final bool showSlNo;
   final bool landscape;
+  final String elegantPalette; // 'dark' | 'light' — Elegant Dark template only
 
   const PdfGenerationSettings({
     required this.company,
@@ -117,5 +118,6 @@ class PdfGenerationSettings {
     this.showLeadingZeros = true,
     this.showSlNo = true,
     this.landscape = false,
+    this.elegantPalette = 'dark',
   });
 }
