@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:invoiso/common/app_config.dart';
 import 'package:invoiso/database/database_helper.dart';
+import 'package:invoiso/utils/fs_utils.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
@@ -69,7 +70,9 @@ class BackupManager {
       String? customPath,
       ) async {
     final dbPath = DatabaseHelper.path!;
-    final backupDir = customPath ?? await _getBackupDirectory();
+    final backupDir = customPath != null
+        ? (await ensureDirectory(customPath)).path
+        : await _getBackupDirectory();
     final backupPath = join(backupDir, '$backupName$_backupExtension');
 
     await File(dbPath).copy(backupPath);
@@ -82,7 +85,9 @@ class BackupManager {
       String backupName,
       String? customPath,
       ) async {
-    final backupDir = customPath ?? await _getBackupDirectory();
+    final backupDir = customPath != null
+        ? (await ensureDirectory(customPath)).path
+        : await _getBackupDirectory();
     final backupPath = join(backupDir, '$backupName$_jsonExtension');
 
     final backupData = await _exportDataToJson(await DatabaseHelper().database);
@@ -414,12 +419,7 @@ class BackupManager {
   // Get backup directory
   Future<String> _getBackupDirectory() async {
     final appDir = await getApplicationDocumentsDirectory();
-    final backupDir = Directory(join(appDir.path, 'backups'));
-
-    if (!await backupDir.exists()) {
-      await backupDir.create(recursive: true);
-    }
-
+    final backupDir = await ensureDirectory(join(appDir.path, 'backups'));
     return backupDir.path;
   }
 
