@@ -846,6 +846,7 @@ Color _defaultThemeColor(InvoiceTemplate template) {
     InvoiceTemplate.thermal => const Color(0xFF000000),
     InvoiceTemplate.gridClassic => const Color(0xFF000000),
     InvoiceTemplate.elegantDark => const Color(0xFFC9A227),
+    InvoiceTemplate.corporate => const Color(0xFF1F3864),
   };
 }
 
@@ -1320,6 +1321,7 @@ class _TemplatePreviewSketch extends StatelessWidget {
         InvoiceTemplate.thermal => _thermal(detailed: thermalDetailedTemplate),
         InvoiceTemplate.gridClassic => _gridClassic(),
         InvoiceTemplate.elegantDark => _executive(),
+        InvoiceTemplate.corporate => _executive(),
       },
     );
   }

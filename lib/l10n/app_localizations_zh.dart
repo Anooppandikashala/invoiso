@@ -3364,6 +3364,13 @@ class AppLocalizationsZh extends AppLocalizations {
       'Premium charcoal & gold layout for on-screen and PDF; switch to a light palette in settings';
 
   @override
+  String get pdfTemplateCorporateName => 'Corporate';
+
+  @override
+  String get pdfTemplateCorporateDescription =>
+      'Clean corporate layout — navy header bar, contact block, terms and signature';
+
+  @override
   String get pdfSettingsElegantPaletteLabel => 'Palette';
 
   @override

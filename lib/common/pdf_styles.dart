@@ -150,6 +150,22 @@ const elegantPdfStyle = PdfTemplateStyle(
   headerGap: 6,
   typeFont: 26,
 );
+const corporatePdfStyle = PdfTemplateStyle(
+  titleFontSize: 22,
+  subtitleFontSize: 8.5,
+  labelFontSize: 8,
+  bodyFontSize: 8.5,
+  tableHeaderFontSize: 8.5,
+  tableFontSize: 8.5,
+  totalsFontSize: 9,
+  totalsHighlightFontSize: 11,
+  footerFontSize: 7.5,
+  cellPaddingH: 8,
+  cellPaddingV: 8,
+  sectionPadding: 12,
+  headerGap: 6,
+  typeFont: 22,
+);
 const gridClassicPdfStyle = PdfTemplateStyle(
   titleFontSize: 12,
   subtitleFontSize: 8,

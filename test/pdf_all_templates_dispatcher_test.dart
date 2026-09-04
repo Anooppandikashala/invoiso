@@ -91,6 +91,8 @@ extension InvoiceTemplateExtension on InvoiceTemplate {
         return 'Grid Classic';
       case InvoiceTemplate.elegantDark:
         return 'Elegant Dark';
+      case InvoiceTemplate.corporate:
+        return 'Corporate';
     }
   }
 }

@@ -36,6 +36,9 @@ final templateCatalog = [
   {
     "template": InvoiceTemplate.elegantDark,
   },
+  {
+    "template": InvoiceTemplate.corporate,
+  },
 ];
 
 String templateName(BuildContext context, InvoiceTemplate template) {
@@ -49,6 +52,7 @@ String templateName(BuildContext context, InvoiceTemplate template) {
     InvoiceTemplate.thermal => l10n.pdfTemplateThermalName,
     InvoiceTemplate.gridClassic => l10n.pdfTemplateGridClassicName,
     InvoiceTemplate.elegantDark => l10n.pdfTemplateElegantDarkName,
+    InvoiceTemplate.corporate => l10n.pdfTemplateCorporateName,
   };
 }
 
@@ -63,6 +67,7 @@ String templateDescription(BuildContext context, InvoiceTemplate template) {
     InvoiceTemplate.thermal => l10n.pdfTemplateThermalDescription,
     InvoiceTemplate.gridClassic => l10n.pdfTemplateGridClassicDescription,
     InvoiceTemplate.elegantDark => l10n.pdfTemplateElegantDarkDescription,
+    InvoiceTemplate.corporate => l10n.pdfTemplateCorporateDescription,
   };
 }
 
@@ -262,7 +267,87 @@ class TemplatePreviewSketch extends StatelessWidget {
         InvoiceTemplate.thermal => _thermal(detailed: thermalDetailedTemplate),
         InvoiceTemplate.gridClassic => _gridClassic(),
         InvoiceTemplate.elegantDark => _elegantDark(),
+        InvoiceTemplate.corporate => _corporate(),
       },
+    );
+  }
+
+  Widget _corporate() {
+    const ink = Color(0xFF1F2430);
+    const muted = Color(0xFF9AA1AD);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Container(
+                  width: showDetails ? 46 : 12,
+                  height: showDetails ? 30 : 9,
+                  color: themeColor),
+              SizedBox(height: showDetails ? 4 : 1),
+              _fixedLine(showDetails ? 70 : 18,
+                  height: showDetails ? 6 : 2, color: ink),
+            ]),
+            const Spacer(),
+            Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              _fixedLine(showDetails ? 90 : 22, height: showDetails ? 4 : 2, color: muted),
+              SizedBox(height: showDetails ? 3 : 1),
+              _fixedLine(showDetails ? 70 : 18, height: showDetails ? 4 : 2, color: muted),
+              SizedBox(height: showDetails ? 3 : 1),
+              _fixedLine(showDetails ? 60 : 15, height: showDetails ? 4 : 2, color: muted),
+            ]),
+          ],
+        ),
+        SizedBox(height: showDetails ? 14 : 4),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                _line(.35, height: showDetails ? 4 : 2, color: themeColor),
+                SizedBox(height: showDetails ? 4 : 1),
+                _line(.8, height: showDetails ? 4 : 2, color: muted),
+                SizedBox(height: showDetails ? 2 : 1),
+                _line(.6, height: showDetails ? 4 : 2, color: muted),
+              ]),
+            ),
+            SizedBox(width: showDetails ? 10 : 3),
+            Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              _fixedLine(showDetails ? 60 : 15, height: showDetails ? 8 : 3, color: themeColor),
+              SizedBox(height: showDetails ? 4 : 1),
+              _fixedLine(showDetails ? 80 : 20, height: showDetails ? 4 : 2, color: muted),
+            ]),
+          ],
+        ),
+        SizedBox(height: showDetails ? 12 : 4),
+        _table(),
+        SizedBox(height: showDetails ? 10 : 3),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Container(
+                    width: showDetails ? 50 : 12,
+                    height: showDetails ? 40 : 10,
+                    color: const Color(0xFFEDEEF0)),
+              ]),
+            ),
+            _totals(),
+          ],
+        ),
+        const Spacer(),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            _fixedLine(showDetails ? 90 : 22, height: showDetails ? 4 : 2, color: muted),
+            _fixedLine(showDetails ? 50 : 13, height: showDetails ? 8 : 3, color: ink),
+          ],
+        ),
+      ],
     );
   }
 

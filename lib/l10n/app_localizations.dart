@@ -5862,6 +5862,18 @@ abstract class AppLocalizations {
   /// **'Premium charcoal & gold layout for on-screen and PDF; switch to a light palette in settings'**
   String get pdfTemplateElegantDarkDescription;
 
+  /// No description provided for @pdfTemplateCorporateName.
+  ///
+  /// In en, this message translates to:
+  /// **'Corporate'**
+  String get pdfTemplateCorporateName;
+
+  /// No description provided for @pdfTemplateCorporateDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Clean corporate layout — navy header bar, contact block, terms and signature'**
+  String get pdfTemplateCorporateDescription;
+
   /// No description provided for @pdfSettingsElegantPaletteLabel.
   ///
   /// In en, this message translates to:

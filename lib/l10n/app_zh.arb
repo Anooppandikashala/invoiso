@@ -921,6 +921,8 @@
   "pdfTemplateGridClassicDescription": "旧式带边框表格账单，适用于 A4、A5 和 A6",
   "pdfTemplateElegantDarkName": "Elegant Dark",
   "pdfTemplateElegantDarkDescription": "Premium charcoal & gold layout for on-screen and PDF; switch to a light palette in settings",
+  "pdfTemplateCorporateName": "Corporate",
+  "pdfTemplateCorporateDescription": "Clean corporate layout — navy header bar, contact block, terms and signature",
   "pdfSettingsElegantPaletteLabel": "Palette",
   "pdfSettingsElegantPaletteDark": "Dark",
   "pdfSettingsElegantPaletteLight": "Light",

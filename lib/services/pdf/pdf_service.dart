@@ -27,6 +27,7 @@ import 'pdf_template_compact.dart';
 import 'pdf_template_thermal.dart';
 import 'pdf_template_gridclassic.dart';
 import 'pdf_template_elegant_dark.dart';
+import 'pdf_template_corporate.dart';
 
 class PDFService {
   static Uint8List? _logoBytesCache;
@@ -646,6 +647,59 @@ class PDFService {
           showAddress: s.showAddress,
           showLogo: s.showLogo,
           elegantPalette: s.elegantPalette,
+        ));
+      case InvoiceTemplate.corporate:
+        pdf.addPage(buildCorporateTemplate(
+          invoice,
+          s.company,
+          currencySymbol,
+          s.invoicePrefix,
+          showCustomerBusinessName: s.showCustomerBusinessName,
+          showCustomerAddress: s.showCustomerAddress,
+          showCustomerPhone: s.showCustomerPhone,
+          showCustomerEmail: s.showCustomerEmail,
+          showCustomerGstin: s.showCustomerGstin,
+          showTimeInPdf: s.showTimeInPdf,
+          pdfTimeFormat: s.pdfTimeFormat,
+          upiId: effectiveUpiId,
+          showUpiQr: showUpiQr,
+          showGst: s.showGst,
+          showSlNo: s.showSlNo,
+          showQuantity: s.showQuantity,
+          showDiscount: s.showDiscount,
+          showTypeTag: s.showTypeTag,
+          showAliasName: s.showAliasName,
+          showDescription: s.showDescription,
+          descriptionNewLine: s.descriptionNewLine,
+          businessType: s.businessType,
+          bankAccount: effectiveBank,
+          datePattern: s.datePattern,
+          logoPosition: s.logoPosition,
+          logoSizePx: s.logoSizePx,
+          logoBytes: s.logoBytes,
+          thankYouNote: s.thankYouNote,
+          showFooterBranding: s.showFooterBranding,
+          themeColor: s.themeColor,
+          signatureBytes: s.signatureBytes,
+          signaturePosition: s.signaturePosition,
+          signatureSizePx: s.signatureSizePx,
+          previousBalanceDue: effectivePreviousBalance,
+          pageFormat: s.pageFormat,
+          pdfTheme: pdfTheme,
+          watermarkBytes: s.watermarkBytes,
+          watermarkOpacity: s.watermarkOpacity,
+          showCgstSgst: effectiveShowCgstSgst,
+          showIgst: showIgst,
+          showRoundOff: s.showRoundOff,
+          showLeadingZeros: s.showLeadingZeros,
+          showPhone: s.showPhone,
+          showEmail: s.showEmail,
+          showCompanyName: s.showCompanyName,
+          showPan: s.showPan,
+          showFssai: s.showFssai,
+          showWebsite: s.showWebsite,
+          showAddress: s.showAddress,
+          showLogo: s.showLogo,
         ));
     }
     return pdf;

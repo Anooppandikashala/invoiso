@@ -1024,6 +1024,7 @@ Color _defaultThemeColor(InvoiceTemplate template) {
     InvoiceTemplate.thermal => const Color(0xFF000000),
     InvoiceTemplate.gridClassic => const Color(0xFF000000),
     InvoiceTemplate.elegantDark => const Color(0xFFC9A227),
+    InvoiceTemplate.corporate => const Color(0xFF1F3864),
   };
 }
 

@@ -921,6 +921,8 @@
   "pdfTemplateGridClassicDescription": "A4, A5 དང་ A6 ལ་འོས་པའི་རྙིང་གནས་མཚམས་ཐིག་ཅན་གྱི་ཐིག་ཁྲམ་ཁྲལ་ཤོག",
   "pdfTemplateElegantDarkName": "Elegant Dark",
   "pdfTemplateElegantDarkDescription": "Premium charcoal & gold layout for on-screen and PDF; switch to a light palette in settings",
+  "pdfTemplateCorporateName": "Corporate",
+  "pdfTemplateCorporateDescription": "Clean corporate layout — navy header bar, contact block, terms and signature",
   "pdfSettingsElegantPaletteLabel": "Palette",
   "pdfSettingsElegantPaletteDark": "Dark",
   "pdfSettingsElegantPaletteLight": "Light",

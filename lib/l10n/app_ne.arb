@@ -921,6 +921,8 @@
   "pdfTemplateGridClassicDescription": "A4, A5 र A6 का लागि पुरानो शैलीको बर्डर भएको ट्याबुलर बिल",
   "pdfTemplateElegantDarkName": "Elegant Dark",
   "pdfTemplateElegantDarkDescription": "Premium charcoal & gold layout for on-screen and PDF; switch to a light palette in settings",
+  "pdfTemplateCorporateName": "Corporate",
+  "pdfTemplateCorporateDescription": "Clean corporate layout — navy header bar, contact block, terms and signature",
   "pdfSettingsElegantPaletteLabel": "Palette",
   "pdfSettingsElegantPaletteDark": "Dark",
   "pdfSettingsElegantPaletteLight": "Light",

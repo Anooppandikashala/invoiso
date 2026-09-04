@@ -921,6 +921,8 @@
   "pdfTemplateGridClassicDescription": "Facture tabulaire bordée à l'ancienne, pour A4, A5 et A6",
   "pdfTemplateElegantDarkName": "Elegant Dark",
   "pdfTemplateElegantDarkDescription": "Premium charcoal & gold layout for on-screen and PDF; switch to a light palette in settings",
+  "pdfTemplateCorporateName": "Corporate",
+  "pdfTemplateCorporateDescription": "Clean corporate layout — navy header bar, contact block, terms and signature",
   "pdfSettingsElegantPaletteLabel": "Palette",
   "pdfSettingsElegantPaletteDark": "Dark",
   "pdfSettingsElegantPaletteLight": "Light",
