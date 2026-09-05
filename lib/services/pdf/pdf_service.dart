@@ -706,7 +706,10 @@ class PDFService {
                         await ThermalPrinterService.printInvoice(
                             dialogContext, invoice);
                       } else {
+                        final pageSize =
+                            await BackendServices.settings.getPageSize();
                         await Printing.layoutPdf(
+                            format: pageSizeToFormat(pageSize),
                             onLayout: (_) async => pdfBytes);
                       }
                     },
