@@ -21,7 +21,9 @@ class InvoicePdfServices {
         final dateFmt = await BackendServices.settings.getDateFormat();
         final pdf = await PDFService.generateInvoicePDF(invoice,
             datePattern: dateFmt.key);
+        final pageSize = await BackendServices.settings.getPageSize();
         await Printing.layoutPdf(
+            format: PDFService.pageSizeToFormat(pageSize),
             onLayout: (PdfPageFormat format) async => pdf.save());
       }
     } catch (e) {
