@@ -2,6 +2,7 @@ import 'package:invoiso/common/common.dart';
 import 'package:invoiso/domain/invoice_calculator.dart';
 import 'package:invoiso/domain/invoice_totals_calculator.dart';
 import 'additional_cost.dart';
+import 'custom_field_value.dart';
 import 'customer.dart';
 import 'invoice_item.dart';
 import 'invoice_payment.dart';
@@ -33,6 +34,7 @@ class Invoice {
   double invoiceDiscountValue;
   bool hideInvoiceNumber; // hide real invoice number in PDF output only
   String? customInvoiceNumber; // shown instead of invoiceNumber in PDF when hideInvoiceNumber is true
+  List<CustomFieldValue> customFields; // user-defined per-invoice fields (e.g. Vehicle No, Delivery Note)
 
   Invoice({
     required this.id,
@@ -59,6 +61,7 @@ class Invoice {
     this.invoiceDiscountValue = 0.0,
     this.hideInvoiceNumber = false,
     this.customInvoiceNumber,
+    this.customFields = const [],
   });
 
   /// Text to render for the invoice number in PDF/receipt output, or null to omit the line entirely.

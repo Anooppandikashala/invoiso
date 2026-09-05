@@ -5,6 +5,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/models/company_info.dart';
+import 'package:invoiso/models/custom_field_value.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/utils/amount_in_words.dart';
 import 'pdf_widgets.dart';
@@ -327,6 +328,49 @@ pw.MultiPage buildGridClassicTemplate(
                 ),
               ],
             ),
+            if (invoice.customFields.any((f) => f.value.trim().isNotEmpty)) ...[
+              pw.SizedBox(height: 4 * fontScale),
+              () {
+                final filled = invoice.customFields
+                    .where((f) => f.value.trim().isNotEmpty)
+                    .toList();
+
+                pw.Widget fieldCell(CustomFieldValue? f) => pw.Container(
+                      padding: pw.EdgeInsets.all(3 * fontScale),
+                      child: f == null
+                          ? null
+                          : pw.Column(
+                              crossAxisAlignment: pw.CrossAxisAlignment.start,
+                              children: [
+                                pw.Text(f.label,
+                                    style: pw.TextStyle(
+                                        fontSize: labelFont - 1,
+                                        fontWeight: pw.FontWeight.bold)),
+                                pw.SizedBox(height: 1),
+                                pw.Text(f.value,
+                                    style: pw.TextStyle(fontSize: labelFont)),
+                              ],
+                            ),
+                    );
+
+                return pw.Table(
+                  border: pw.TableBorder.all(width: 0.5, color: borderColor),
+                  columnWidths: const {
+                    0: pw.FlexColumnWidth(1),
+                    1: pw.FlexColumnWidth(1),
+                    2: pw.FlexColumnWidth(1),
+                  },
+                  children: [
+                    for (var i = 0; i < filled.length; i += 3)
+                      pw.TableRow(children: [
+                        fieldCell(filled[i]),
+                        fieldCell(i + 1 < filled.length ? filled[i + 1] : null),
+                        fieldCell(i + 2 < filled.length ? filled[i + 2] : null),
+                      ]),
+                  ],
+                );
+              }(),
+            ],
           ],
         ),
       ),

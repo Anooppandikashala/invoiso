@@ -5,6 +5,7 @@ import 'package:invoiso/domain/invoice_calculator.dart';
 import 'package:invoiso/domain/invoice_totals_calculator.dart';
 import 'package:invoiso/database/product_service.dart';
 import 'package:invoiso/models/additional_cost.dart';
+import 'package:invoiso/models/custom_field_value.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/product.dart';
 import 'package:invoiso/models/customer.dart';
@@ -53,6 +54,7 @@ class InvoiceService {
         'invoice_discount_value': invoice.invoiceDiscountValue,
         'hide_invoice_number': invoice.hideInvoiceNumber ? 1 : 0,
         'custom_invoice_number': invoice.customInvoiceNumber,
+        'custom_fields': CustomFieldValue.listToJson(invoice.customFields),
       });
 
       for (var item in invoice.items) {
@@ -129,6 +131,7 @@ class InvoiceService {
           'invoice_discount_value': invoice.invoiceDiscountValue,
           'hide_invoice_number': invoice.hideInvoiceNumber ? 1 : 0,
           'custom_invoice_number': invoice.customInvoiceNumber,
+          'custom_fields': CustomFieldValue.listToJson(invoice.customFields),
         },
         where: 'id = ?',
         whereArgs: [invoice.id],
@@ -402,6 +405,7 @@ class InvoiceService {
           (i['invoice_discount_value'] as num?)?.toDouble() ?? 0.0,
       hideInvoiceNumber: (i['hide_invoice_number'] as int?) == 1,
       customInvoiceNumber: i['custom_invoice_number'] as String?,
+      customFields: CustomFieldValue.listFromJson(i['custom_fields'] as String?),
       payments: payments,
     );
   }
@@ -693,6 +697,8 @@ class InvoiceService {
               (map['invoice_discount_value'] as num?)?.toDouble() ?? 0.0,
           hideInvoiceNumber: (map['hide_invoice_number'] as int?) == 1,
           customInvoiceNumber: map['custom_invoice_number'] as String?,
+          customFields:
+              CustomFieldValue.listFromJson(map['custom_fields'] as String?),
         ),
       );
     }
