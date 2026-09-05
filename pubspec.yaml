@@ -51,6 +51,15 @@ dev_dependencies:
   package_rename: ^1.10.0
   flutter_launcher_icons: ^0.13.1
 
+# Vendored fix for Windows direct-print clipping: upstream printing package
+# always requests a custom paper size (dmPaperSize = 0) even for standard
+# ISO sizes like A5, which many printer drivers don't honor. Patched copy
+# maps known standard sizes to their DMPAPER_* id instead. See
+# third_party/printing/windows/print_job.cpp and PRINTING_ISSUES.md.
+dependency_overrides:
+  printing:
+    path: third_party/printing
+
 flutter:
   uses-material-design: true
   generate: true

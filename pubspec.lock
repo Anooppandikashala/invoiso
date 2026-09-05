@@ -728,10 +728,9 @@ packages:
   printing:
     dependency: "direct main"
     description:
-      name: printing
-      sha256: "689170c9ddb1bda85826466ba80378aa8993486d3c959a71cd7d2d80cb606692"
-      url: "https://pub.dev"
-    source: hosted
+      path: "third_party/printing"
+      relative: true
+    source: path
     version: "5.14.3"
   qr:
     dependency: "direct main"

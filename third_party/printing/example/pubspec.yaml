@@ -1,0 +1,27 @@
+name: printing_example
+description: Pdf Printing Example
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  pdf:
+  printing:
+  vector_math: ^2.1.0
+  xml: ">=5.1.0 <7.0.0"
+
+_dependency_overrides:
+  pdf:
+    path: ../../pdf
+  printing:
+    path: ../
+
+dev_dependencies:
+  flutter_lints:
+
+flutter:
+  uses-material-design: true
