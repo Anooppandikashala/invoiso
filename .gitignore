@@ -65,6 +65,7 @@ output/
 email_builder/
 *.pdf
 *.txt
+!third_party/**/CMakeLists.txt
 *.csv
 *.pickle
 video/
