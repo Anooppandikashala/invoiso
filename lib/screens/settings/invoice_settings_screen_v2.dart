@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/supported_currencies.dart';
+import 'package:invoiso/models/custom_field_def.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/common/constants.dart';
@@ -69,6 +70,10 @@ class _InvoiceSettingsScreenV2State
   int _invoiceCount = 0;
   bool _isLoading = true;
   bool _isSaving = false;
+  bool _customFieldsEnabled = false;
+  List<CustomFieldDef> _customFieldDefs = [];
+  final TextEditingController _newCustomFieldController =
+      TextEditingController();
 
   // ── V2 state: which settings section is currently shown ──────────────
   int _selectedSectionV2 = 0;
@@ -129,6 +134,11 @@ class _InvoiceSettingsScreenV2State
 
     if (!mounted) return;
 
+    final customFieldsEnabledStr =
+        await settingsRepo.getSetting(SettingKey.customFieldsEnabled);
+    final customFieldDefs = await settingsRepo.getCustomFieldDefs();
+    if (!mounted) return;
+
     setState(() {
       _selectedLogoPosition = (results[0] as String?) ?? 'left';
       invoicePrefixController.text = (results[1] as String?) ?? 'INV';
@@ -172,6 +182,8 @@ class _InvoiceSettingsScreenV2State
       _showTimeInPdf = results[38] as bool;
       _pdfTimeFormat = results[39] as String;
       _showSlNoInPdf = results[40] as bool;
+      _customFieldsEnabled = customFieldsEnabledStr == 'true';
+      _customFieldDefs = customFieldDefs;
       _isLoading = false;
     });
   }
@@ -244,6 +256,9 @@ class _InvoiceSettingsScreenV2State
         settingsRepo.setShowTimeInPdf(_showTimeInPdf),
         settingsRepo.setPdfTimeFormat(_pdfTimeFormat),
         settingsRepo.setShowSlNoInPdf(_showSlNoInPdf),
+        settingsRepo.setSetting(
+            SettingKey.customFieldsEnabled, _customFieldsEnabled.toString()),
+        settingsRepo.setCustomFieldDefs(_customFieldDefs),
       ]);
 
       if (!mounted) return;
@@ -362,6 +377,7 @@ class _InvoiceSettingsScreenV2State
     Icons.view_list_rounded,
     Icons.person_outline,
     Icons.table_chart_outlined,
+    Icons.dashboard_customize_outlined,
   ];
 
   String _navSectionLabelV2(BuildContext context, int index) {
@@ -372,7 +388,8 @@ class _InvoiceSettingsScreenV2State
       2 => l10n.invoiceSettingsSectionTax,
       3 => l10n.invoiceSettingsSectionItems,
       4 => l10n.invoiceSettingsSectionCustomer,
-      _ => l10n.invoiceSettingsSectionColumns,
+      5 => l10n.invoiceSettingsSectionColumns,
+      _ => 'Custom Fields',
     };
   }
 
@@ -1246,9 +1263,137 @@ class _InvoiceSettingsScreenV2State
         return _sectionItemsV2();
       case 4:
         return _sectionCustomerV2();
-      default:
+      case 5:
         return _sectionColumnsV2();
+      default:
+        return _sectionCustomFieldsV2();
     }
+  }
+
+  // User-defined per-invoice fields (e.g. Vehicle No, Delivery Note) — not
+  // tied to the customer. Off by default; when on, seeded with a starting
+  // set of fields matching a typical GST transport invoice, all freely
+  // renameable/deletable. Rename/reorder mutate _customFieldDefs directly
+  // without setState — nothing else on screen reflects a label mid-edit, so
+  // there's no need to rebuild (and TextFormField keeps its own text/cursor
+  // state via the ValueKey below). Add/remove/reorder do call setState since
+  // the list itself changes shape.
+  void _addCustomField() {
+    final label = _newCustomFieldController.text.trim();
+    if (label.isEmpty) return;
+    setState(() {
+      _customFieldDefs.add(CustomFieldDef(
+        id: 'cf-${DateTime.now().microsecondsSinceEpoch}',
+        label: label,
+        sortOrder: _customFieldDefs.length,
+      ));
+      _newCustomFieldController.clear();
+    });
+  }
+
+  void _removeCustomField(int index) {
+    setState(() => _customFieldDefs.removeAt(index));
+  }
+
+  void _renameCustomField(int index, String label) {
+    final def = _customFieldDefs[index];
+    _customFieldDefs[index] =
+        CustomFieldDef(id: def.id, label: label, sortOrder: def.sortOrder);
+  }
+
+  void _moveCustomField(int oldIndex, int newIndex) {
+    setState(() {
+      final item = _customFieldDefs.removeAt(oldIndex);
+      _customFieldDefs.insert(newIndex, item);
+      for (var i = 0; i < _customFieldDefs.length; i++) {
+        final def = _customFieldDefs[i];
+        _customFieldDefs[i] =
+            CustomFieldDef(id: def.id, label: def.label, sortOrder: i);
+      }
+    });
+  }
+
+  Widget _sectionCustomFieldsV2() {
+    return _fieldWrapV2(
+      [],
+      [
+        Text(
+          'Define fields once here (e.g. Vehicle No, Delivery Note), then fill their values on each invoice. Not tied to the customer.',
+          style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurfaceVariant),
+        ),
+        const SizedBox(height: 4),
+        _toggleCardV2(
+          title: 'Enable Custom Fields',
+          subtitle:
+              'Show a Custom Fields section on the create-invoice screen',
+          icon: Icons.dashboard_customize_outlined,
+          value: _customFieldsEnabled,
+          onChanged: (val) => setState(() => _customFieldsEnabled = val),
+        ),
+        if (_customFieldsEnabled) ...[
+          const SizedBox(height: 12),
+          for (var index = 0; index < _customFieldDefs.length; index++)
+            Padding(
+              key: ValueKey(_customFieldDefs[index].id),
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_upward, size: 18),
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'Move up',
+                    onPressed: index == 0
+                        ? null
+                        : () => _moveCustomField(index, index - 1),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.arrow_downward, size: 18),
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'Move down',
+                    onPressed: index == _customFieldDefs.length - 1
+                        ? null
+                        : () => _moveCustomField(index, index + 1),
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: TextFormField(
+                      initialValue: _customFieldDefs[index].label,
+                      decoration: _fieldDecorationV2(context, label: 'Field label'),
+                      onChanged: (val) => _renameCustomField(index, val),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, color: Colors.red),
+                    tooltip: 'Delete field',
+                    onPressed: () => _removeCustomField(index),
+                  ),
+                ],
+              ),
+            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _newCustomFieldController,
+                  decoration: _fieldDecorationV2(context,
+                      label: 'New field label', hint: 'e.g. Vehicle No'),
+                  onSubmitted: (_) => _addCustomField(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              FilledButton.icon(
+                onPressed: _addCustomField,
+                icon: const Icon(Icons.add),
+                label: const Text('Add'),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
   }
 
   // Customer details visibility on PDFs / thermal receipts. Each field is only

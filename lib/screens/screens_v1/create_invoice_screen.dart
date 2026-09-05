@@ -16,6 +16,8 @@ import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/invoice_item.dart';
 import 'package:invoiso/models/product.dart';
 import 'package:invoiso/models/additional_cost.dart';
+import 'package:invoiso/models/custom_field_def.dart';
+import 'package:invoiso/models/custom_field_value.dart';
 import 'package:invoiso/services/invoice_pdf_services.dart';
 import 'package:invoiso/services/pdf_service.dart';
 import 'package:invoiso/common/constants.dart';
@@ -87,6 +89,11 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   final List<({TextEditingController label, TextEditingController amount})>
       _additionalCostControllers = [];
   bool _showAdditionalCosts = false;
+  bool _customFieldsEnabled = false;
+  List<CustomFieldDef> _customFieldDefs = [];
+  Map<String, String> _customFieldValues = {}; // defId -> value, from invoice at init, before defs load
+  final Map<String, TextEditingController> _customFieldControllers = {};
+  bool _showCustomFieldsSection = false;
   InvoiceDiscountType _invoiceDiscountType = InvoiceDiscountType.percent;
   final _invoiceDiscountController = TextEditingController();
 
@@ -196,6 +203,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         ));
       }
       if (_additionalCostControllers.isNotEmpty) _showAdditionalCosts = true;
+      _customFieldValues = {
+        for (final cf in _invoice!.customFields) cf.defId: cf.value,
+      };
       _invoiceDiscountType = _invoice!.invoiceDiscountType;
       if (_invoice!.invoiceDiscountValue > 0) {
         _invoiceDiscountController.text =
@@ -234,6 +244,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       invoiceTitle = invoiceType == src.type ? src.invoiceTitle : null;
       _quantityLabel = src.quantityLabel ?? '';
       // Custom PDF number is invoice-specific; don't carry it into a clone.
+      // Same reasoning for custom fields (Vehicle No, Delivery Note, etc.) —
+      // shipment-specific, left blank for the user to fill fresh.
       for (final c in src.additionalCosts) {
         _additionalCostControllers.add((
           label: TextEditingController(text: c.label),
@@ -465,6 +477,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         settingsRepo.getAllowDuplicateInvoiceItems(), // 16
         settingsRepo.getDefaultTaxMode(), // 17
         settingsRepo.getHideInvoiceNumberByDefault(), // 18
+        settingsRepo.getSetting(SettingKey.customFieldsEnabled), // 19
+        settingsRepo.getCustomFieldDefs(), // 20
       ]);
 
       final c = results[0] as List<Customer>;
@@ -509,6 +523,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       final allowDuplicateInvoiceItems = results[16] as bool;
       final defaultTaxMode = results[17] as String;
       final hideInvoiceNumberByDefault = results[18] as bool;
+      final customFieldsEnabled = (results[19] as String?) == 'true';
+      final customFieldDefs = results[20] as List<CustomFieldDef>;
 
       // Determine which UPI to pre-select.
       String? existingUpiId;
@@ -576,6 +592,13 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           _isTaxEnabled = showTaxButtonInInvoicePage;
           _isPerItem = defaultTaxMode == 'perItem';
           _hideInvoiceNumber = hideInvoiceNumberByDefault;
+        }
+        _customFieldsEnabled = customFieldsEnabled;
+        _customFieldDefs = customFieldDefs;
+        _customFieldControllers.clear();
+        for (final def in customFieldDefs) {
+          _customFieldControllers[def.id] =
+              TextEditingController(text: _customFieldValues[def.id] ?? '');
         }
         _businessType = businessType;
         _adHocItemType =
@@ -1216,6 +1239,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         quantityLabel:
             _quantityLabel.trim().isEmpty ? null : _quantityLabel.trim(),
         additionalCosts: _buildAdditionalCosts(),
+        customFields: _buildCustomFields(),
         invoiceDiscountType: _invoiceDiscountType,
         invoiceDiscountValue: _invoiceDiscountValue,
         hideInvoiceNumber: _hideInvoiceNumber,
@@ -3474,6 +3498,86 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   double get _invoiceDiscountValue =>
       double.tryParse(_invoiceDiscountController.text) ?? 0.0;
 
+  List<CustomFieldValue> _buildCustomFields() {
+    final values = <CustomFieldValue>[];
+    for (final def in _customFieldDefs) {
+      final value = (_customFieldControllers[def.id]?.text ?? '').trim();
+      if (value.isNotEmpty) {
+        values.add(CustomFieldValue(defId: def.id, label: def.label, value: value));
+      }
+    }
+    return values;
+  }
+
+  // Collapsible card matching _pdfNumberOverrideSection's shell, placed
+  // right below it. One TextField per defined field, stacked — the set of
+  // fields itself is fixed by Settings, not editable here.
+  Widget _customFieldsSectionV1() {
+    if (!_customFieldsEnabled || _customFieldDefs.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final filledCount = _customFieldDefs
+        .where((d) => (_customFieldControllers[d.id]?.text ?? '').trim().isNotEmpty)
+        .length;
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(AppPadding.medium),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            InkWell(
+              onTap: () {
+                if (!mounted) return;
+                setState(() =>
+                    _showCustomFieldsSection = !_showCustomFieldsSection);
+              },
+              child: Row(
+                children: [
+                  Icon(Icons.dashboard_customize_outlined,
+                      color: Theme.of(context).primaryColor),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Custom Fields ($filledCount/${_customFieldDefs.length} filled)',
+                      style: const TextStyle(
+                          fontSize: AppFontSize.small, fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Icon(_showCustomFieldsSection
+                      ? Icons.expand_less
+                      : Icons.expand_more),
+                ],
+              ),
+            ),
+            if (_showCustomFieldsSection) ...[
+              const SizedBox(height: 12),
+              for (final def in _customFieldDefs)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: TextField(
+                    controller: _customFieldControllers[def.id],
+                    onChanged: (_) => setState(() {}),
+                    style: TextStyle(fontSize: AppFontSize.medium),
+                    decoration: InputDecoration(
+                      labelText: def.label,
+                      labelStyle: TextStyle(fontSize: AppFontSize.medium),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                      filled: true,
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    ),
+                  ),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   List<AdditionalCost> _buildAdditionalCosts() {
     final costs = <AdditionalCost>[];
     for (final row in _additionalCostControllers) {
@@ -5057,6 +5161,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         quantityLabel:
             _quantityLabel.trim().isEmpty ? null : _quantityLabel.trim(),
         additionalCosts: _buildAdditionalCosts(),
+        customFields: _buildCustomFields(),
         invoiceDiscountType: _invoiceDiscountType,
         invoiceDiscountValue: _invoiceDiscountValue,
         hideInvoiceNumber: _hideInvoiceNumber,
@@ -5622,6 +5727,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           child: Column(
             children: [
               _pdfNumberOverrideSection(),
+              if (_customFieldsEnabled && _customFieldDefs.isNotEmpty) ...[
+                AppSpacing.hMedium,
+                _customFieldsSectionV1(),
+              ],
               AppSpacing.hMedium,
               _customerSearchView(),
               AppSpacing.hMedium,
@@ -5668,6 +5777,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
               child: Column(
                 children: [
                   _pdfNumberOverrideSection(),
+                  if (_customFieldsEnabled && _customFieldDefs.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    _customFieldsSectionV1(),
+                  ],
                   const SizedBox(height: 16),
                   _customerSearchView(),
                   const SizedBox(height: 16),
@@ -5707,6 +5820,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     return Column(
       children: [
         _pdfNumberOverrideSection(),
+        if (_customFieldsEnabled && _customFieldDefs.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          _customFieldsSectionV1(),
+        ],
         const SizedBox(height: 16),
         _customerSearchView(),
         const SizedBox(height: 16),

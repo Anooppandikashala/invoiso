@@ -15,7 +15,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 43;
+  final dbVersion = 44;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -118,7 +118,8 @@ class DatabaseHelper {
         invoice_title TEXT,
         hide_invoice_number INTEGER DEFAULT 0,
         custom_invoice_number TEXT,
-        is_interstate INTEGER DEFAULT 0
+        is_interstate INTEGER DEFAULT 0,
+        custom_fields TEXT
       )
     ''');
 
@@ -724,6 +725,17 @@ class DatabaseHelper {
       await _runMigrationStep(db, 43, 'add_is_interstate_to_invoices', () async {
         await db.execute(
           'ALTER TABLE invoices ADD COLUMN is_interstate INTEGER DEFAULT 0',
+        );
+      });
+    }
+
+    if (oldVersion < 44) {
+      // User-defined custom fields (e.g. Vehicle No, Delivery Note), filled
+      // per invoice. JSON list of CustomFieldValue. NULL on every pre-v44
+      // row = none filled, prints exactly as before.
+      await _runMigrationStep(db, 44, 'add_custom_fields_to_invoices', () async {
+        await db.execute(
+          'ALTER TABLE invoices ADD COLUMN custom_fields TEXT',
         );
       });
     }

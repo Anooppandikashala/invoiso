@@ -1,4 +1,5 @@
 import 'package:invoiso/common/common.dart';
+import 'package:invoiso/models/custom_field_def.dart';
 
 abstract class SettingsRepository {
   Future<void> setSetting(SettingKey key, String value);
@@ -17,6 +18,8 @@ abstract class SettingsRepository {
   Future<CurrencyOption> getCurrency();
   Future<List<UpiEntry>> getUpiIds();
   Future<void> setUpiIds(List<UpiEntry> entries);
+  Future<List<CustomFieldDef>> getCustomFieldDefs();
+  Future<void> setCustomFieldDefs(List<CustomFieldDef> defs);
   Future<List<BankAccount>> getBankAccounts();
   Future<void> setBankAccounts(List<BankAccount> accounts);
   Future<ProductColumnsConfig> getProductColumnsConfig();
