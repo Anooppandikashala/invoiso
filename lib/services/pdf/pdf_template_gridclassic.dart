@@ -422,7 +422,9 @@ pw.MultiPage buildGridClassicTemplate(
                     ],
                     ...invoice.additionalCosts.map((c) => totalsRow(
                         c.label.isEmpty ? 'Extra Cost' : c.label,
-                        '$currencySymbol ${c.amount.toStringAsFixed(2)}')),
+                        c.amount < 0
+                            ? '-$currencySymbol ${(-c.amount).toStringAsFixed(2)}'
+                            : '$currencySymbol ${c.amount.toStringAsFixed(2)}')),
                     if (invoice.invoiceDiscountAmount > 0)
                       totalsRow(invoice.invoiceDiscountType == InvoiceDiscountType.percent
                           ? "Extra Discount (${invoice.invoiceDiscountValue.toStringAsFixed(1)}%)"
