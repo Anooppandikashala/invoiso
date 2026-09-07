@@ -2663,7 +2663,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     for (final row in _additionalCostControllers) {
       final label = row.label.text.trim();
       final amount = double.tryParse(row.amount.text) ?? 0.0;
-      if (label.isNotEmpty && amount > 0) {
+      if (label.isNotEmpty && amount != 0) {
         costs.add(AdditionalCost(label: label, amount: amount));
       }
     }
@@ -2697,7 +2697,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                       size: 18, color: Colors.teal[700]),
                   const SizedBox(width: 8),
                   Text(
-                    'Additional Costs',
+                    'Charges & Adjustments',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -2742,6 +2742,16 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               padding: const EdgeInsets.all(12),
               child: Column(
                 children: [
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        'Use a minus sign for deductions (e.g. freight paid by buyer).',
+                        style: TextStyle(fontSize: 11, color: Colors.teal[700]),
+                      ),
+                    ),
+                  ),
                   ..._additionalCostControllers.asMap().entries.map((entry) {
                     final i = entry.key;
                     final row = entry.value;
@@ -2761,6 +2771,18 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                                 labelText: AppLocalizations.of(context)!.fieldLabelLabel,
                                 hintText: AppLocalizations.of(context)!.hintLabelExample,
                                 isDense: true,
+                                suffixIcon: PopupMenuButton<String>(
+                                  icon: const Icon(Icons.arrow_drop_down),
+                                  tooltip: '',
+                                  onSelected: (v) {
+                                    if (!mounted) return;
+                                    setState(() => row.label.text = v);
+                                  },
+                                  itemBuilder: (_) => AdjustmentLabels.presets
+                                      .map((l) => PopupMenuItem(
+                                          value: l, child: Text(l)))
+                                      .toList(),
+                                ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(
                                       AppBorderRadius.xsmall),
@@ -2781,7 +2803,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                               },
                               keyboardType:
                                   const TextInputType.numberWithOptions(
-                                      decimal: true),
+                                      decimal: true, signed: true),
                               decoration: InputDecoration(
                                 labelText: AppLocalizations.of(context)!.labelAmount,
                                 prefixText: '$_currencySymbol ',
@@ -5586,7 +5608,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         ),
         AppSpacing.wSmall,
         SizedBox(
-          width: Platform.isAndroid ? 300 : 360,
+          width: Platform.isAndroid ? 300 : 420,
           child: _rightPanelV2(tax, subtotal, total, grossSubtotal,
               totalDiscount, invoiceDiscountAmount),
         ),
