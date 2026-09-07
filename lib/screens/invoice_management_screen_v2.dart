@@ -469,6 +469,7 @@ class _InvoiceManagementScreenV2State
       );
       final path = await ExportService.exportInvoicesToCsv(invoices,
           type: widget.filterType);
+      if (path == null) return; // user cancelled the save dialog
       if (mounted) {
         AppError.showSuccess(context,
             AppLocalizations.of(context)!.invoiceMgmtExportedRecordsMessage(invoices.length, path));
@@ -539,6 +540,7 @@ class _InvoiceManagementScreenV2State
     setState(() => _isBulkLoading = true);
     try {
       final path = await ExportService.exportInvoicesToCsv(selected);
+      if (path == null) return; // user cancelled the save dialog
       if (mounted) {
         AppError.showSuccess(context,
             AppLocalizations.of(context)!.invoiceMgmtBulkExportedCsvMessage(selected.length));

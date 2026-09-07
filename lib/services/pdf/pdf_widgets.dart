@@ -460,7 +460,9 @@ pw.Widget buildEnhancedTotals(
         ],
         ...invoice.additionalCosts.map((c) => pdfTotalRow(
               c.label.isEmpty ? 'Extra Cost' : c.label,
-              "$currencySymbol ${c.amount.toStringAsFixed(2)}",
+              c.amount < 0
+                  ? "-$currencySymbol ${(-c.amount).toStringAsFixed(2)}"
+                  : "$currencySymbol ${c.amount.toStringAsFixed(2)}",
               fontSize: rowFontSize,
               horizontalPadding: rowHorizontalPadding,
               verticalPadding: rowVerticalPadding,

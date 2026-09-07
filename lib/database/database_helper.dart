@@ -15,7 +15,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 45;
+  final dbVersion = 46;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -119,7 +119,8 @@ class DatabaseHelper {
         invoice_title TEXT,
         hide_invoice_number INTEGER DEFAULT 0,
         custom_invoice_number TEXT,
-        is_interstate INTEGER DEFAULT 0
+        is_interstate INTEGER DEFAULT 0,
+        custom_fields TEXT
       )
     ''');
 
@@ -744,10 +745,21 @@ class DatabaseHelper {
     }
 
     if (oldVersion < 45) {
+      // User-defined custom fields (e.g. Vehicle No, Delivery Note), filled
+      // per invoice. JSON list of CustomFieldValue. NULL on every pre-v45
+      // row = none filled, prints exactly as before.
+      await _runMigrationStep(db, 45, 'add_custom_fields_to_invoices', () async {
+        await db.execute(
+          'ALTER TABLE invoices ADD COLUMN custom_fields TEXT',
+        );
+      });
+    }
+
+    if (oldVersion < 46) {
       // Manufacturer name for a product (alongside manufacture date). NULL on
-      // every pre-v45 row.
+      // every pre-v46 row.
       await _runMigrationStep(
-          db, 45, 'add_manufacture_name_to_product_metadata', () async {
+          db, 46, 'add_manufacture_name_to_product_metadata', () async {
         await db.execute(
           'ALTER TABLE product_metadata ADD COLUMN manufacture_name TEXT',
         );

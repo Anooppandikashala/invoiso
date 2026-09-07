@@ -280,8 +280,11 @@ class ThermalPrinterService {
       twoCol(invoiceTaxLabel(invoice), '$currency ${invoice.tax.toStringAsFixed(2)}');
     }
     for (final c in invoice.additionalCosts) {
-      twoCol(c.label.isEmpty ? 'Extra Cost' : c.label,
-          '$currency ${c.amount.toStringAsFixed(2)}');
+      twoCol(
+          c.label.isEmpty ? 'Extra Cost' : c.label,
+          c.amount < 0
+              ? '-$currency ${(-c.amount).toStringAsFixed(2)}'
+              : '$currency ${c.amount.toStringAsFixed(2)}');
     }
     if (effectivePreviousBalance > 0) {
       twoCol('Prev Balance:',

@@ -95,12 +95,46 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
   Future<void> _saveUser() async {
     if (_formKey.currentState!.validate()) {
       final l10n = AppLocalizations.of(context)!;
+
+      // Role changes that can lock someone out of user management:
+      //  - nobody may change their own role
+      //  - the only remaining admin may not be demoted
+      if (_editingUserId != null) {
+        final original = _users.firstWhere(
+          (u) => u.id == _editingUserId,
+          orElse: () => widget.currentUser,
+        );
+        final roleChanged = _userTypeController.text != original.userType;
+        if (roleChanged && _editingUserId == widget.currentUser.id) {
+          _showSnackBar(l10n.userMgmtCantChangeOwnRoleMessage, Colors.red);
+          return;
+        }
+        if (roleChanged &&
+            original.userType == 'admin' &&
+            _userTypeController.text != 'admin' &&
+            _adminCountV2 <= 1) {
+          _showSnackBar(l10n.userMgmtCantDemoteLastAdminMessage, Colors.red);
+          return;
+        }
+      }
+
+      // Reject a username already taken by another user before hitting the
+      // DB's UNIQUE constraint (which would surface as a raw sqlite error).
+      final trimmedName = _usernameController.text.trim();
+      final existing =
+          await ref.read(authRepositoryProvider).getUserByUsername(trimmedName);
+      if (existing != null && existing.id != _editingUserId) {
+        if (!mounted) return;
+        _showSnackBar(l10n.userMgmtUsernameTakenMessage, Colors.red);
+        return;
+      }
+
       setState(() => _isLoading = true);
 
       try {
         final user = User(
           id: _editingUserId ?? UniqueKey().toString(),
-          username: _usernameController.text.trim(),
+          username: trimmedName,
           password: _passwordController.text,
           userType: _userTypeController.text,
         );
@@ -119,7 +153,10 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
         await _loadUsers();
       } catch (e) {
         setState(() => _isLoading = false);
-        _showSnackBar(l10n.userMgmtSaveErrorMessage(e.toString()), Colors.red);
+        final msg = e.toString().toLowerCase().contains('unique')
+            ? l10n.userMgmtUsernameTakenMessage
+            : l10n.userMgmtSaveErrorMessage(e.toString());
+        _showSnackBar(msg, Colors.red);
       }
     }
   }
@@ -391,7 +428,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
           title: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.red.shade50,
+              color: Theme.of(context).colorScheme.errorContainer,
               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
             ),
             child: Row(
@@ -399,14 +436,17 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.red,
+                    color: Theme.of(context).colorScheme.error,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child:
-                  const Icon(Icons.warning, color: Colors.white, size: 24),
+                  child: Icon(Icons.warning,
+                      color: Theme.of(context).colorScheme.onError, size: 24),
                 ),
                 const SizedBox(width: 12),
-                Text(l10n.userMgmtDeleteUserTitle, style: const TextStyle(fontSize: 20)),
+                Text(l10n.userMgmtDeleteUserTitle,
+                    style: TextStyle(
+                        fontSize: 20,
+                        color: Theme.of(context).colorScheme.onErrorContainer)),
               ],
             ),
           ),
@@ -639,6 +679,12 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
   }
 
   Future<void> _deleteUserV2(User user) async {
+    if (user.id == widget.currentUser.id) {
+      _showSnackBar(
+          AppLocalizations.of(context)!.userMgmtCantDeleteOwnAccountMessage,
+          Colors.red);
+      return;
+    }
     await _confirmDeleteUser(user);
   }
 
@@ -1128,7 +1174,7 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                   onPressed: () =>
                       _showChangePasswordDialog(user.id, user.username),
                 ),
-                if (widget.currentUser.isAdmin()) ...[
+                if (widget.currentUser.isAdmin() && !isYou) ...[
                   const SizedBox(width: 6),
                   _buildActionButton(
                     icon: Icons.delete_outline,
@@ -1384,23 +1430,38 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                       ),
                     ],
                     const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      value: _userTypeController.text.isNotEmpty
-                          ? _userTypeController.text
-                          : null,
-                      decoration: InputDecoration(
-                        labelText: l10n.userMgmtRoleRequiredLabel,
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
-                      ),
-                      items: [
-                        DropdownMenuItem(value: 'admin', child: Text(l10n.dashboardRoleAdmin)),
-                        DropdownMenuItem(value: 'user', child: Text(l10n.dashboardRoleUser)),
-                      ],
-                      onChanged: (value) => _userTypeController.text = value!,
-                      validator: (value) =>
-                          value == null ? l10n.userMgmtRoleRequiredMessage : null,
-                    ),
+                    Builder(builder: (context) {
+                      final editingSelf =
+                          !isAdding && _editingUserId == widget.currentUser.id;
+                      final lockLastAdmin = !isAdding &&
+                          _userTypeController.text == 'admin' &&
+                          _adminCountV2 <= 1;
+                      final roleLocked = editingSelf || lockLastAdmin;
+                      return DropdownButtonFormField<String>(
+                        value: _userTypeController.text.isNotEmpty
+                            ? _userTypeController.text
+                            : null,
+                        decoration: InputDecoration(
+                          labelText: l10n.userMgmtRoleRequiredLabel,
+                          helperText: editingSelf
+                              ? l10n.userMgmtCantChangeOwnRoleMessage
+                              : lockLastAdmin
+                                  ? l10n.userMgmtCantDemoteLastAdminMessage
+                                  : null,
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                        ),
+                        items: [
+                          DropdownMenuItem(value: 'admin', child: Text(l10n.dashboardRoleAdmin)),
+                          DropdownMenuItem(value: 'user', child: Text(l10n.dashboardRoleUser)),
+                        ],
+                        onChanged: roleLocked
+                            ? null
+                            : (value) => _userTypeController.text = value!,
+                        validator: (value) =>
+                            value == null ? l10n.userMgmtRoleRequiredMessage : null,
+                      );
+                    }),
                   ],
                 ),
               ),

@@ -4,6 +4,7 @@ import 'package:sqflite/sqflite.dart';
 
 import 'package:invoiso/common/common.dart';
 import '../common/supported_currencies.dart';
+import '../models/custom_field_def.dart';
 import 'database_helper.dart';
 
 class SettingsService {
@@ -141,6 +142,46 @@ class SettingsService {
   static Future<void> setUpiIds(List<UpiEntry> entries) async {
     final encoded = jsonEncode(entries.map((e) => e.toJson()).toList());
     await setSetting(SettingKey.upiIds, encoded);
+  }
+
+  /// Default custom-field definitions, matching the reference Tally-style
+  /// GST invoice grid — seeded once so users get a working starting point
+  /// instead of a blank list. Freely deletable/renameable afterward.
+  static const List<String> _defaultCustomFieldLabels = [
+    'Delivery Note',
+    'Mode/Terms of Payment',
+    'Reference No. & Date',
+    'Other References',
+    "Buyer's Order No.",
+    "Buyer's Order Date",
+    'Dispatch Doc No.',
+    'Delivery Note Date',
+    'Dispatched Through',
+    'Destination',
+    'Bill of Lading/LR-RR No.',
+    'Motor Vehicle No.',
+    'Terms of Delivery',
+  ];
+
+  /// Returns the saved custom-field definitions. On first-ever call (no
+  /// settings row yet — distinct from an explicitly saved empty list after
+  /// the user deletes every default) seeds and persists the default list.
+  static Future<List<CustomFieldDef>> getCustomFieldDefs() async {
+    final json = await getSetting(SettingKey.customFieldDefs);
+    if (json == null) {
+      final defaults = [
+        for (var i = 0; i < _defaultCustomFieldLabels.length; i++)
+          CustomFieldDef(
+              id: 'cf-${i + 1}', label: _defaultCustomFieldLabels[i], sortOrder: i),
+      ];
+      await setCustomFieldDefs(defaults);
+      return defaults;
+    }
+    return CustomFieldDef.listFromJson(json);
+  }
+
+  static Future<void> setCustomFieldDefs(List<CustomFieldDef> defs) async {
+    await setSetting(SettingKey.customFieldDefs, CustomFieldDef.listToJson(defs));
   }
 
   /// Returns whether GST/GSTIN fields should be shown.

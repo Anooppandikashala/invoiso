@@ -1,5 +1,6 @@
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/database/settings_service.dart';
+import 'package:invoiso/models/custom_field_def.dart';
 import 'package:invoiso/repositories/settings_repository.dart';
 
 class SqliteSettingsRepository implements SettingsRepository {
@@ -35,6 +36,10 @@ class SqliteSettingsRepository implements SettingsRepository {
   Future<List<UpiEntry>> getUpiIds() => SettingsService.getUpiIds();
   @override
   Future<void> setUpiIds(List<UpiEntry> entries) => SettingsService.setUpiIds(entries);
+  @override
+  Future<List<CustomFieldDef>> getCustomFieldDefs() => SettingsService.getCustomFieldDefs();
+  @override
+  Future<void> setCustomFieldDefs(List<CustomFieldDef> defs) => SettingsService.setCustomFieldDefs(defs);
   @override
   Future<List<BankAccount>> getBankAccounts() => SettingsService.getBankAccounts();
   @override
