@@ -39,6 +39,7 @@ pw.MultiPage buildModernTemplate(
   pw.ThemeData? pdfTheme,
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
+  bool watermarkFullPage = false,
   bool showCgstSgst = false,
   bool showIgst = false,
   bool showRoundOff = false,
@@ -79,10 +80,17 @@ pw.MultiPage buildModernTemplate(
     if (showFssai && fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
   ].join('   ');
 
+  final fullPageWatermark = watermarkFullPage && watermarkBytes != null;
   return pw.MultiPage(
-    pageFormat: pageFormat,
-    theme: pdfTheme,
-    margin: const pw.EdgeInsets.all(0),
+    pageTheme: pw.PageTheme(
+      pageFormat: pageFormat,
+      theme: pdfTheme,
+      margin: const pw.EdgeInsets.all(0),
+      buildBackground: fullPageWatermark
+          ? (context) =>
+              buildFullPageWatermark(watermarkBytes, watermarkOpacity)
+          : null,
+    ),
     footer: (context) => pw.Container(
       padding: const pw.EdgeInsets.symmetric(horizontal: 30, vertical: 8),
       alignment: pw.Alignment.centerRight,
@@ -254,7 +262,7 @@ pw.MultiPage buildModernTemplate(
             showDescription: showDescription,
             descriptionNewLine: descriptionNewLine,
             businessType: businessType,
-            watermarkBytes: watermarkBytes,
+            watermarkBytes: fullPageWatermark ? null : watermarkBytes,
             watermarkOpacity: watermarkOpacity,
             tableFontSize: modernPdfStyle.tableFontSize,
             cellPaddingH: modernPdfStyle.cellPaddingH,

@@ -1407,6 +1407,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String invoiceMgmtNewDocumentButton(String type) {
+    return 'New $type';
+  }
+
+  @override
   String get invoiceMgmtOverdueBadge => 'Overdue';
 
   @override
@@ -3328,13 +3333,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get invoiceSettingsWatermarkImageSubtitle =>
-      'Shown behind the items table on invoice PDFs (not printed on thermal receipts)';
+      'Shown on invoice PDFs (not printed on thermal receipts)';
 
   @override
   String get invoiceSettingsChangeWatermarkButton => 'Change Watermark';
 
   @override
   String get invoiceSettingsUploadWatermarkButton => 'Upload Watermark';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementLabel => 'Watermark placement';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementItemsTable => 'Items table';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementFullPage => 'Full page';
 
   @override
   String invoiceSettingsOpacityLabel(int value) {

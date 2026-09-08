@@ -2430,6 +2430,12 @@ abstract class AppLocalizations {
   /// **'{type} Management'**
   String invoiceMgmtManagementTitle(String type);
 
+  /// No description provided for @invoiceMgmtNewDocumentButton.
+  ///
+  /// In en, this message translates to:
+  /// **'New {type}'**
+  String invoiceMgmtNewDocumentButton(String type);
+
   /// No description provided for @invoiceMgmtOverdueBadge.
   ///
   /// In en, this message translates to:
@@ -5559,7 +5565,7 @@ abstract class AppLocalizations {
   /// No description provided for @invoiceSettingsWatermarkImageSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Shown behind the items table on invoice PDFs (not printed on thermal receipts)'**
+  /// **'Shown on invoice PDFs (not printed on thermal receipts)'**
   String get invoiceSettingsWatermarkImageSubtitle;
 
   /// No description provided for @invoiceSettingsChangeWatermarkButton.
@@ -5573,6 +5579,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Upload Watermark'**
   String get invoiceSettingsUploadWatermarkButton;
+
+  /// No description provided for @invoiceSettingsWatermarkPlacementLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Watermark placement'**
+  String get invoiceSettingsWatermarkPlacementLabel;
+
+  /// No description provided for @invoiceSettingsWatermarkPlacementItemsTable.
+  ///
+  /// In en, this message translates to:
+  /// **'Items table'**
+  String get invoiceSettingsWatermarkPlacementItemsTable;
+
+  /// No description provided for @invoiceSettingsWatermarkPlacementFullPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Full page'**
+  String get invoiceSettingsWatermarkPlacementFullPage;
 
   /// No description provided for @invoiceSettingsOpacityLabel.
   ///

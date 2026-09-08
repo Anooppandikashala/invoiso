@@ -1412,6 +1412,11 @@ class AppLocalizationsHi extends AppLocalizations {
   }
 
   @override
+  String invoiceMgmtNewDocumentButton(String type) {
+    return 'नया $type';
+  }
+
+  @override
   String get invoiceMgmtOverdueBadge => 'अतिदेय';
 
   @override
@@ -3343,13 +3348,22 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get invoiceSettingsWatermarkImageSubtitle =>
-      'इनवॉइस PDF पर आइटम तालिका के पीछे दिखाया जाता है (थर्मल रसीदों पर मुद्रित नहीं)';
+      'इनवॉइस PDF पर दिखाया जाता है (थर्मल रसीदों पर मुद्रित नहीं)';
 
   @override
   String get invoiceSettingsChangeWatermarkButton => 'वॉटरमार्क बदलें';
 
   @override
   String get invoiceSettingsUploadWatermarkButton => 'वॉटरमार्क अपलोड करें';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementLabel => 'वॉटरमार्क स्थान';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementItemsTable => 'आइटम तालिका';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementFullPage => 'पूरा पृष्ठ';
 
   @override
   String invoiceSettingsOpacityLabel(int value) {

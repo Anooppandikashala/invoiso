@@ -74,6 +74,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Invoice? invoiceToEdit;
   Invoice? _invoiceToClone;
   String _cloneType = 'Invoice';
+  // Document type preselected on the create form for a brand-new doc, set by
+  // the "New {type}" button on each management screen. Reset to 'Invoice' by
+  // the nav-rail New Invoice action.
+  String _newInvoiceType = 'Invoice';
   bool _hasUpdate = false;
   String _createInvoiceLayout = 'v2';
   int? _accessibilityJumpToken;
@@ -163,13 +167,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             onCloneInvoice: cloneInvoice,
             user: _currentUser);
       case 1:
+        final isNewDoc = invoiceToEdit == null && _invoiceToClone == null;
         final createInvoiceKey = ValueKey(
-            'create_invoice_${invoiceToEdit?.id ?? 'new'}_${_invoiceToClone?.id ?? ''}');
+            'create_invoice_${invoiceToEdit?.id ?? 'new'}_${_invoiceToClone?.id ?? ''}_${isNewDoc ? _newInvoiceType : ''}');
         void onCreateNewInvoice() {
           if (!mounted) return;
           setState(() {
             invoiceToEdit = null;
             _invoiceToClone = null;
+            _newInvoiceType = 'Invoice';
           });
         }
         return _createInvoiceLayout == 'v1'
@@ -178,6 +184,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 invoiceToEdit: invoiceToEdit,
                 cloneFrom: _invoiceToClone,
                 cloneType: _invoiceToClone != null ? _cloneType : null,
+                initialType: isNewDoc ? _newInvoiceType : null,
                 guard: _invoiceFormGuardV1,
                 onCreateNewInvoice: onCreateNewInvoice,
               )
@@ -186,6 +193,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 invoiceToEdit: invoiceToEdit,
                 cloneFrom: _invoiceToClone,
                 cloneType: _invoiceToClone != null ? _cloneType : null,
+                initialType: isNewDoc ? _newInvoiceType : null,
                 guard: _invoiceFormGuard,
                 onCreateNewInvoice: onCreateNewInvoice,
               );
@@ -194,6 +202,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           key: const ValueKey('invoice_list'),
           onEditInvoice: editInvoice,
           onCloneInvoice: cloneInvoice,
+          onCreateNew: _createDocumentOfType,
           user: _currentUser,
           filterType: 'Invoice',
         );
@@ -202,6 +211,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           key: const ValueKey('quotation_list'),
           onEditInvoice: editInvoice,
           onCloneInvoice: cloneInvoice,
+          onCreateNew: _createDocumentOfType,
           user: _currentUser,
           filterType: 'Quotation',
         );
@@ -210,6 +220,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           key: const ValueKey('receipt_list'),
           onEditInvoice: editInvoice,
           onCloneInvoice: cloneInvoice,
+          onCreateNew: _createDocumentOfType,
           user: _currentUser,
           filterType: 'Receipt',
         );
@@ -322,6 +333,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     _shortcutsFocusNode.unfocus();
   }
 
+  // "New {type}" button on the Invoice / Quotation / Receipt management screens
+  // — opens the create form with that document type preselected.
+  Future<void> _createDocumentOfType(String type) async {
+    if (!await _canLeaveInvoiceForm()) return;
+    await _loadCreateInvoiceLayout();
+    if (!mounted) return;
+    setState(() {
+      _selectedIndex = 1;
+      invoiceToEdit = null;
+      _invoiceToClone = null;
+      _newInvoiceType = type;
+    });
+    _shortcutsFocusNode.unfocus();
+  }
+
   Future<bool> _canLeaveInvoiceForm() async {
     if (_createInvoiceLayout == 'v1') {
       return await _invoiceFormGuardV1.canLeave?.call() ?? true;
@@ -340,6 +366,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       if (index != 1) {
         invoiceToEdit = null;
         _invoiceToClone = null;
+      } else {
+        // Nav-rail "New Invoice" always means a plain invoice.
+        _newInvoiceType = 'Invoice';
       }
     });
     // See initState: only hold shortcuts focus for non-create-invoice tabs.

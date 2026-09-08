@@ -1425,6 +1425,11 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String invoiceMgmtNewDocumentButton(String type) {
+    return 'Crear $type';
+  }
+
+  @override
   String get invoiceMgmtOverdueBadge => 'Vencida';
 
   @override
@@ -3393,13 +3398,24 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get invoiceSettingsWatermarkImageSubtitle =>
-      'Se muestra detrás de la tabla de artículos en los PDF de factura (no se imprime en recibos térmicos)';
+      'Se muestra en los PDF de factura (no se imprime en recibos térmicos)';
 
   @override
   String get invoiceSettingsChangeWatermarkButton => 'Cambiar marca de agua';
 
   @override
   String get invoiceSettingsUploadWatermarkButton => 'Subir marca de agua';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementLabel =>
+      'Ubicación de la marca de agua';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementItemsTable =>
+      'Tabla de artículos';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementFullPage => 'Página completa';
 
   @override
   String invoiceSettingsOpacityLabel(int value) {

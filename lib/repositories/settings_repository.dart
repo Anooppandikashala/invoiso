@@ -82,6 +82,8 @@ abstract class SettingsRepository {
   Future<String?> getWatermarkImage();
   Future<void> setWatermarkOpacity(double opacity);
   Future<double> getWatermarkOpacity();
+  Future<void> setWatermarkFullPage(bool fullPage);
+  Future<bool> getWatermarkFullPage();
   Future<void> setDefaultInvoiceTitle(String? title);
   Future<String?> getDefaultInvoiceTitle();
   Future<String> getSignaturePosition();

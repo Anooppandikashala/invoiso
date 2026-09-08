@@ -59,6 +59,24 @@ class _WatermarkStripeImage extends pw.DecorationGraphic {
   }
 }
 
+/// Full-page watermark: one copy of [bytes] scaled to fit the page,
+/// centered, at [opacity]. Used when watermark mode is "full page"
+/// instead of the per-row items-table strip above.
+pw.Widget buildFullPageWatermark(Uint8List bytes, double opacity) {
+  return pw.FullPage(
+    ignoreMargins: true,
+    child: pw.Opacity(
+      opacity: opacity,
+      child: pw.Padding(
+        padding: const pw.EdgeInsets.all(48),
+        child: pw.Center(
+          child: pw.Image(pw.MemoryImage(bytes), fit: pw.BoxFit.contain),
+        ),
+      ),
+    ),
+  );
+}
+
 pw.Widget buildCompanyLogo(pw.MemoryImage image, {double size = 90}) {
   final iw = image.width;
   final ih = image.height;

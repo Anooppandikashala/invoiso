@@ -39,6 +39,10 @@ class CreateInvoiceScreenV2 extends ConsumerStatefulWidget {
   /// Defaults to the source invoice type when null.
   final String? cloneType;
 
+  /// Document type to preselect for a brand-new form ('Invoice' | 'Quotation'
+  /// | 'Receipt'). Ignored when editing or cloning.
+  final String? initialType;
+
   /// Called when the user taps "New Invoice" while in edit mode.
   /// The parent (DashboardScreen) resets invoiceToEdit to null.
   final VoidCallback? onCreateNewInvoice;
@@ -49,6 +53,7 @@ class CreateInvoiceScreenV2 extends ConsumerStatefulWidget {
     this.invoiceToEdit,
     this.cloneFrom,
     this.cloneType,
+    this.initialType,
     this.onCreateNewInvoice,
     this.guard,
   });
@@ -185,6 +190,16 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       }
     });
     taxRateController.text = (taxRate * 100).toStringAsFixed(1);
+    // Resolve the document type before the first load so the previewed number
+    // uses the right series — Invoice and Quotation have separate sequences,
+    // and _loadCustomersAndProducts peeks the next number using invoiceType.
+    if (widget.invoiceToEdit == null) {
+      if (widget.cloneFrom != null) {
+        invoiceType = widget.cloneType ?? widget.cloneFrom!.type;
+      } else if (widget.initialType != null) {
+        invoiceType = widget.initialType!;
+      }
+    }
     _loadCustomersAndProducts(widget.invoiceToEdit != null);
     _loadColumnsConfig();
     _selectedOrderDate = DateTime.now();

@@ -128,6 +128,7 @@ class PDFService {
       BackendServices.settings.getPdfTimeFormat(), // 48
       BackendServices.settings.getShowSlNoInPdf(), // 49
       BackendServices.settings.getPdfLandscape(), // 50
+      BackendServices.settings.getWatermarkFullPage(), // 51
     ]);
 
     final rawPrefix = (results[2] as String?) ?? 'INV';
@@ -200,6 +201,7 @@ class PDFService {
       pdfTimeFormat: results[48] as String,
       showSlNo: results[49] as bool,
       landscape: results[50] as bool,
+      watermarkFullPage: results[51] as bool,
     );
   }
 
@@ -284,6 +286,7 @@ class PDFService {
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
+          watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
           showRoundOff: s.showRoundOff,
@@ -337,6 +340,7 @@ class PDFService {
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
+          watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
           showRoundOff: s.showRoundOff,
@@ -390,6 +394,7 @@ class PDFService {
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
+          watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
           showRoundOff: s.showRoundOff,
@@ -443,6 +448,7 @@ class PDFService {
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
+          watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
           showRoundOff: s.showRoundOff,
@@ -495,6 +501,7 @@ class PDFService {
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
+          watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
           showRoundOff: s.showRoundOff,
@@ -579,6 +586,7 @@ class PDFService {
           logoPosition: s.logoPosition,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
+          watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
           showRoundOff: s.showRoundOff,

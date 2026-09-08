@@ -493,6 +493,14 @@ class SettingsService {
     return val != null ? double.tryParse(val) ?? 0.12 : 0.12;
   }
 
+  static Future<void> setWatermarkFullPage(bool fullPage) async {
+    await setSetting(SettingKey.watermarkFullPage, fullPage.toString());
+  }
+
+  static Future<bool> getWatermarkFullPage() async {
+    return await getSetting(SettingKey.watermarkFullPage) == 'true';
+  }
+
   static Future<void> setDefaultInvoiceTitle(String? title) async {
     await setSetting(SettingKey.defaultInvoiceTitle, title ?? '');
   }

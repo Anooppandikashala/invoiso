@@ -1419,6 +1419,11 @@ class AppLocalizationsNe extends AppLocalizations {
   }
 
   @override
+  String invoiceMgmtNewDocumentButton(String type) {
+    return 'नयाँ $type';
+  }
+
+  @override
   String get invoiceMgmtOverdueBadge => 'म्याद नाघेको';
 
   @override
@@ -3361,7 +3366,7 @@ class AppLocalizationsNe extends AppLocalizations {
 
   @override
   String get invoiceSettingsWatermarkImageSubtitle =>
-      'बीजक PDF मा वस्तु तालिका पछाडि देखाइन्छ (थर्मल रसिदमा छापिँदैन)';
+      'बीजक PDF मा देखाइन्छ (थर्मल रसिदमा छापिँदैन)';
 
   @override
   String get invoiceSettingsChangeWatermarkButton =>
@@ -3370,6 +3375,15 @@ class AppLocalizationsNe extends AppLocalizations {
   @override
   String get invoiceSettingsUploadWatermarkButton =>
       'वाटरमार्क अपलोड गर्नुहोस्';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementLabel => 'वाटरमार्क स्थान';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementItemsTable => 'वस्तु तालिका';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementFullPage => 'पूरा पृष्ठ';
 
   @override
   String invoiceSettingsOpacityLabel(int value) {

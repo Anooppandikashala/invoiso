@@ -1404,6 +1404,11 @@ class AppLocalizationsBo extends AppLocalizations {
   }
 
   @override
+  String invoiceMgmtNewDocumentButton(String type) {
+    return '$type གསར་བཟོ།';
+  }
+
+  @override
   String get invoiceMgmtOverdueBadge => 'དུས་འགོར།';
 
   @override
@@ -3328,13 +3333,22 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get invoiceSettingsWatermarkImageSubtitle =>
-      'ཁྲལ་ཤོག PDF ནང་རས་ཆས་ཐིག་ཁྲམ་རྒྱབ་ཏུ་སྟོན (མེ་འཁོར་ལག་དེབ་ཐོག་མི་འཁོད)';
+      'ཁྲལ་ཤོག PDF ཐོག་སྟོན (མེ་འཁོར་ལག་དེབ་ཐོག་མི་འཁོད)';
 
   @override
   String get invoiceSettingsChangeWatermarkButton => 'ཆུ་རྟགས་བརྗེ་བ།';
 
   @override
   String get invoiceSettingsUploadWatermarkButton => 'ཆུ་རྟགས་སྤར་གཞུག';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementLabel => 'ཆུ་རྟགས་འཇོག་ས།';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementItemsTable => 'རས་ཆས་ཐིག་ཁྲམ།';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementFullPage => 'ཤོག་ངོས་ཧྲིལ་པོ།';
 
   @override
   String invoiceSettingsOpacityLabel(int value) {

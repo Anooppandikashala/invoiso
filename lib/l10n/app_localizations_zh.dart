@@ -1364,6 +1364,11 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String invoiceMgmtNewDocumentButton(String type) {
+    return '新建$type';
+  }
+
+  @override
   String get invoiceMgmtOverdueBadge => '已逾期';
 
   @override
@@ -3202,14 +3207,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get invoiceSettingsWatermarkImageLabel => '水印图片';
 
   @override
-  String get invoiceSettingsWatermarkImageSubtitle =>
-      '显示在发票 PDF 的项目表格后面（不会打印在热敏小票上）';
+  String get invoiceSettingsWatermarkImageSubtitle => '显示在发票 PDF 上（不会打印在热敏小票上）';
 
   @override
   String get invoiceSettingsChangeWatermarkButton => '更换水印';
 
   @override
   String get invoiceSettingsUploadWatermarkButton => '上传水印';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementLabel => '水印位置';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementItemsTable => '商品表格';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementFullPage => '整页';
 
   @override
   String invoiceSettingsOpacityLabel(int value) {

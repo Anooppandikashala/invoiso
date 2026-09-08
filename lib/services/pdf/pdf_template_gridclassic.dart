@@ -50,6 +50,7 @@ pw.MultiPage buildGridClassicTemplate(
   pw.ThemeData? pdfTheme,
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
+  bool watermarkFullPage = false,
   bool showCgstSgst = false,
   bool showIgst = false,
   bool showRoundOff = false,
@@ -540,10 +541,18 @@ pw.MultiPage buildGridClassicTemplate(
     );
   }
 
+  final fullPageWatermark = watermarkFullPage && watermarkBytes != null;
   return pw.MultiPage(
-    pageFormat: pageFmt,
-    theme: pdfTheme,
-    margin: pw.EdgeInsets.symmetric(vertical: pageMarginV, horizontal: pageMarginH),
+    pageTheme: pw.PageTheme(
+      pageFormat: pageFmt,
+      theme: pdfTheme,
+      margin: pw.EdgeInsets.symmetric(
+          vertical: pageMarginV, horizontal: pageMarginH),
+      buildBackground: fullPageWatermark
+          ? (context) =>
+              buildFullPageWatermark(watermarkBytes, watermarkOpacity)
+          : null,
+    ),
     header: (context) {
       if (context.pageNumber != 1) {
         return pw.SizedBox(); // Remove this if you want header on every page
@@ -593,7 +602,7 @@ pw.MultiPage buildGridClassicTemplate(
         totalQuantityText: showTotalQuantity && showQuantity
             ? '${totalQty == totalQty.roundToDouble() ? totalQty.toInt() : totalQty}'
             : null,
-        watermarkBytes: watermarkBytes,
+        watermarkBytes: fullPageWatermark ? null : watermarkBytes,
         watermarkOpacity: watermarkOpacity,
         showCgstSgst: showCgstSgst,
         showIgst: showIgst,

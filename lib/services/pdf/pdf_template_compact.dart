@@ -40,6 +40,7 @@ pw.MultiPage buildCompactTemplate(
   pw.ThemeData? pdfTheme,
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
+  bool watermarkFullPage = false,
   bool showCgstSgst = false,
   bool showIgst = false,
   bool showRoundOff = false,
@@ -103,10 +104,17 @@ pw.MultiPage buildCompactTemplate(
     if (showFssai && fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
   ].join('   ');
 
+  final fullPageWatermark = watermarkFullPage && watermarkBytes != null;
   return pw.MultiPage(
-    pageFormat: pageFormat,
-    theme: pdfTheme,
-    margin: pw.EdgeInsets.all(pageMargin),
+    pageTheme: pw.PageTheme(
+      pageFormat: pageFormat,
+      theme: pdfTheme,
+      margin: pw.EdgeInsets.all(pageMargin),
+      buildBackground: fullPageWatermark
+          ? (context) =>
+              buildFullPageWatermark(watermarkBytes, watermarkOpacity)
+          : null,
+    ),
     footer: (context) => pw.Container(
       alignment: pw.Alignment.centerRight,
       margin: pw.EdgeInsets.only(top: compactPdfLayoutStyle.footerTopMargin),
@@ -292,7 +300,7 @@ pw.MultiPage buildCompactTemplate(
         totalQuantityText: showTotalQuantity && showQuantity
             ? '${totalQty == totalQty.roundToDouble() ? totalQty.toInt() : totalQty}'
             : null,
-        watermarkBytes: watermarkBytes,
+        watermarkBytes: fullPageWatermark ? null : watermarkBytes,
         watermarkOpacity: watermarkOpacity,
       ),
 

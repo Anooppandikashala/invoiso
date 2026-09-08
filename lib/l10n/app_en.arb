@@ -886,6 +886,14 @@
       }
     }
   },
+  "invoiceMgmtNewDocumentButton": "New {type}",
+  "@invoiceMgmtNewDocumentButton": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
   "invoiceMgmtOverdueBadge": "Overdue",
   "invoiceMgmtTodayBadge": "Today",
   "invoiceMgmtTrashIsEmptyLabel": "Trash is empty",
@@ -1978,9 +1986,12 @@
   "invoiceSettingsSignatureSizeLabel": "Signature Size",
   "invoiceSettingsSignaturePositionLabel": "Signature Position",
   "invoiceSettingsWatermarkImageLabel": "Watermark Image",
-  "invoiceSettingsWatermarkImageSubtitle": "Shown behind the items table on invoice PDFs (not printed on thermal receipts)",
+  "invoiceSettingsWatermarkImageSubtitle": "Shown on invoice PDFs (not printed on thermal receipts)",
   "invoiceSettingsChangeWatermarkButton": "Change Watermark",
   "invoiceSettingsUploadWatermarkButton": "Upload Watermark",
+  "invoiceSettingsWatermarkPlacementLabel": "Watermark placement",
+  "invoiceSettingsWatermarkPlacementItemsTable": "Items table",
+  "invoiceSettingsWatermarkPlacementFullPage": "Full page",
   "invoiceSettingsOpacityLabel": "Opacity: {value}%",
   "@invoiceSettingsOpacityLabel": {
     "placeholders": {

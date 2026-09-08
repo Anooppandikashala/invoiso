@@ -1429,6 +1429,11 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String invoiceMgmtNewDocumentButton(String type) {
+    return 'Créer $type';
+  }
+
+  @override
   String get invoiceMgmtOverdueBadge => 'En retard';
 
   @override
@@ -3399,13 +3404,24 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get invoiceSettingsWatermarkImageSubtitle =>
-      'Affiché derrière le tableau des articles sur les PDF de facture (non imprimé sur les reçus thermiques)';
+      'Affiché sur les PDF de facture (non imprimé sur les reçus thermiques)';
 
   @override
   String get invoiceSettingsChangeWatermarkButton => 'Changer le filigrane';
 
   @override
   String get invoiceSettingsUploadWatermarkButton => 'Téléverser un filigrane';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementLabel =>
+      'Emplacement du filigrane';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementItemsTable =>
+      'Tableau des articles';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementFullPage => 'Page entière';
 
   @override
   String invoiceSettingsOpacityLabel(int value) {
