@@ -4035,4 +4035,8 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get shortcutPrintPdfDescription => '生成／打印发票 PDF';
+
+  @override
+  String get invoiceSettingsCustomFieldsGridClassicNote =>
+      '注意：自定义字段仅在“经典网格”PDF 模板中打印。';
 }

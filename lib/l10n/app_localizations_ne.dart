@@ -4237,4 +4237,8 @@ class AppLocalizationsNe extends AppLocalizations {
   @override
   String get shortcutPrintPdfDescription =>
       'बीजक PDF जेनेरेट/प्रिन्ट गर्नुहोस्';
+
+  @override
+  String get invoiceSettingsCustomFieldsGridClassicNote =>
+      'नोट: कस्टम फिल्डहरू ग्रिड क्लासिक PDF टेम्प्लेटमा मात्र छापिन्छन्।';
 }

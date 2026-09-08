@@ -1130,5 +1130,6 @@
   "shortcutAddProductDescription": "向发票添加产品",
   "shortcutAddCustomItemDescription": "添加自定义项目",
   "shortcutPreviewPdfDescription": "预览发票 PDF",
-  "shortcutPrintPdfDescription": "生成／打印发票 PDF"
+  "shortcutPrintPdfDescription": "生成／打印发票 PDF",
+  "invoiceSettingsCustomFieldsGridClassicNote": "注意：自定义字段仅在“经典网格”PDF 模板中打印。"
 }

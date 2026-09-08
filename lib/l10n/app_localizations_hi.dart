@@ -4213,4 +4213,8 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get shortcutPrintPdfDescription => 'इनवॉइस PDF जनरेट/प्रिंट करें';
+
+  @override
+  String get invoiceSettingsCustomFieldsGridClassicNote =>
+      'ध्यान दें: कस्टम फ़ील्ड केवल ग्रिड क्लासिक PDF टेम्पलेट पर प्रिंट होते हैं।';
 }

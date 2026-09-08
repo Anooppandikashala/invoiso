@@ -4196,4 +4196,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shortcutPrintPdfDescription => 'Generate / print invoice PDF';
+
+  @override
+  String get invoiceSettingsCustomFieldsGridClassicNote =>
+      'Note: Custom fields are only printed on the Grid Classic PDF template.';
 }

@@ -1130,5 +1130,6 @@
   "shortcutAddProductDescription": "Agregar producto a la factura",
   "shortcutAddCustomItemDescription": "Agregar artículo personalizado",
   "shortcutPreviewPdfDescription": "Vista previa del PDF de la factura",
-  "shortcutPrintPdfDescription": "Generar / imprimir el PDF de la factura"
+  "shortcutPrintPdfDescription": "Generar / imprimir el PDF de la factura",
+  "invoiceSettingsCustomFieldsGridClassicNote": "Nota: Los campos personalizados solo se imprimen en la plantilla PDF Cuadrícula clásica."
 }

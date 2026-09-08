@@ -1130,5 +1130,6 @@
   "shortcutAddProductDescription": "ཁྲལ་ཤོག་ལ་ཐོན་རྫས་སྣོན་པ།",
   "shortcutAddCustomItemDescription": "རང་སྒྲིག་ཅ་ལག་སྣོན་པ།",
   "shortcutPreviewPdfDescription": "ཁྲལ་ཤོག PDF སྔོན་བལྟ།",
-  "shortcutPrintPdfDescription": "ཁྲལ་ཤོག PDF བཟོ/པར་སྐྲུན།"
+  "shortcutPrintPdfDescription": "ཁྲལ་ཤོག PDF བཟོ/པར་སྐྲུན།",
+  "invoiceSettingsCustomFieldsGridClassicNote": "བརྡ་འཕྲིན: སྒེར་སྒྲིག་ཡིག་ཆ་ནི་རེའུ་མིག་སྲོལ་རྒྱུན་གྱི་ PDF ནང་གཞི་ཁོ་ནར་པར་སྐྲུན་བྱེད།"
 }

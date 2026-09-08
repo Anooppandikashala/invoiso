@@ -4198,4 +4198,8 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get shortcutPrintPdfDescription => 'ཁྲལ་ཤོག PDF བཟོ/པར་སྐྲུན།';
+
+  @override
+  String get invoiceSettingsCustomFieldsGridClassicNote =>
+      'བརྡ་འཕྲིན: སྒེར་སྒྲིག་ཡིག་ཆ་ནི་རེའུ་མིག་སྲོལ་རྒྱུན་གྱི་ PDF ནང་གཞི་ཁོ་ནར་པར་སྐྲུན་བྱེད།';
 }

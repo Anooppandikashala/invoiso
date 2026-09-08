@@ -2393,5 +2393,6 @@
   "shortcutAddProductDescription": "Add product to invoice",
   "shortcutAddCustomItemDescription": "Add custom (ad-hoc) item",
   "shortcutPreviewPdfDescription": "Preview invoice PDF",
-  "shortcutPrintPdfDescription": "Generate / print invoice PDF"
+  "shortcutPrintPdfDescription": "Generate / print invoice PDF",
+  "invoiceSettingsCustomFieldsGridClassicNote": "Note: Custom fields are only printed on the Grid Classic PDF template."
 }

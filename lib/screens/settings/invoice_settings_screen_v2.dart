@@ -1187,7 +1187,7 @@ class _InvoiceSettingsScreenV2State
       [
         Text(l10n.invoiceSettingsColumnsSectionHint,
             style: TextStyle(
-                fontSize: 12,
+                fontSize: 14,
                 color: Theme.of(context).colorScheme.onSurfaceVariant)),
         const SizedBox(height: 4),
         _toggleCardV2(
@@ -1320,8 +1320,16 @@ class _InvoiceSettingsScreenV2State
         Text(
           'Define fields once here (e.g. Vehicle No, Delivery Note), then fill their values on each invoice. Not tied to the customer.',
           style: TextStyle(
-              fontSize: 12,
+              fontSize: 14,
               color: Theme.of(context).colorScheme.onSurfaceVariant),
+        ),
+        Text(
+          AppLocalizations.of(context)!
+              .invoiceSettingsCustomFieldsGridClassicNote,
+          style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.error),
         ),
         const SizedBox(height: 4),
         _toggleCardV2(
@@ -1406,7 +1414,7 @@ class _InvoiceSettingsScreenV2State
       [
         Text(l10n.invoiceSettingsCustomerSectionHint,
             style: TextStyle(
-                fontSize: 12,
+                fontSize: 14,
                 color: Theme.of(context).colorScheme.onSurfaceVariant)),
         const SizedBox(height: 4),
         _toggleCardV2(

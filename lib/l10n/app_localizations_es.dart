@@ -4282,4 +4282,8 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get shortcutPrintPdfDescription =>
       'Generar / imprimir el PDF de la factura';
+
+  @override
+  String get invoiceSettingsCustomFieldsGridClassicNote =>
+      'Nota: Los campos personalizados solo se imprimen en la plantilla PDF Cuadrícula clásica.';
 }
