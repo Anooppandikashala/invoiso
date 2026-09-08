@@ -300,10 +300,16 @@ class AppLocalizationsNe extends AppLocalizations {
   }
 
   @override
-  String get dashboardRecentInvoicesTitle => 'भर्खरका बीजकहरू';
+  String get dashboardRecentInvoicesTitle => 'भर्खरका कागजातहरू';
 
   @override
-  String get dashboardLastFiveInvoicesLabel => 'पछिल्लो ५ बीजकहरू';
+  String get dashboardLastFiveInvoicesLabel => 'पछिल्लो ५ कागजातहरू';
+
+  @override
+  String get dashboardColDocumentNo => 'कागजात नं.';
+
+  @override
+  String get dashboardColType => 'प्रकार';
 
   @override
   String get dashboardNoInvoicesYetTitle => 'अझै बीजक छैन';
@@ -1422,6 +1428,56 @@ class AppLocalizationsNe extends AppLocalizations {
   String invoiceMgmtNewDocumentButton(String type) {
     return 'नयाँ $type';
   }
+
+  @override
+  String get invoiceMgmtConvertToInvoiceAction => 'बीजकमा रूपान्तरण गर्नुहोस्';
+
+  @override
+  String get invoiceMgmtConvertAgainTitle => 'फेरि रूपान्तरण गर्ने?';
+
+  @override
+  String invoiceMgmtConvertAgainBody(String number) {
+    return 'उद्धरण $number पहिले नै बीजकमा रूपान्तरण भइसकेको छ। यसबाट अर्को बीजक बनाउने?';
+  }
+
+  @override
+  String get invoiceMgmtMarkAsSent => 'पठाइएको रूपमा चिन्ह लगाउनुहोस्';
+
+  @override
+  String get invoiceMgmtMarkAsAccepted => 'स्वीकृत रूपमा चिन्ह लगाउनुहोस्';
+
+  @override
+  String get invoiceMgmtMarkAsDeclined => 'अस्वीकृत रूपमा चिन्ह लगाउनुहोस्';
+
+  @override
+  String get quotationStatusDraft => 'मस्यौदा';
+
+  @override
+  String get quotationStatusSent => 'पठाइयो';
+
+  @override
+  String get quotationStatusAccepted => 'स्वीकृत';
+
+  @override
+  String get quotationStatusDeclined => 'अस्वीकृत';
+
+  @override
+  String get quotationStatusConverted => 'रूपान्तरित';
+
+  @override
+  String get createInvoiceConvertTitle => 'बीजकमा रूपान्तरण गर्नुहोस्';
+
+  @override
+  String createInvoiceConvertedSuccessMessage(String invoiceNumber) {
+    return 'बीजक #$invoiceNumber मा रूपान्तरण गरियो';
+  }
+
+  @override
+  String get createInvoiceTrashQuotationAction => 'उद्धरण मेटाउनुहोस्';
+
+  @override
+  String get createInvoiceQuotationTrashedMessage =>
+      'उद्धरण रद्दीटोकरीमा सारियो';
 
   @override
   String get invoiceMgmtOverdueBadge => 'म्याद नाघेको';

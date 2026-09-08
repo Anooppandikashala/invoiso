@@ -15,7 +15,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 44;
+  final dbVersion = 45;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -119,7 +119,10 @@ class DatabaseHelper {
         hide_invoice_number INTEGER DEFAULT 0,
         custom_invoice_number TEXT,
         is_interstate INTEGER DEFAULT 0,
-        custom_fields TEXT
+        custom_fields TEXT,
+        status TEXT,
+        converted_to_invoice_id TEXT,
+        converted_from_invoice_id TEXT
       )
     ''');
 
@@ -737,6 +740,20 @@ class DatabaseHelper {
         await db.execute(
           'ALTER TABLE invoices ADD COLUMN custom_fields TEXT',
         );
+      });
+    }
+
+    if (oldVersion < 45) {
+      // Quotation lifecycle status + quote<->invoice links. NULL on every
+      // pre-v45 row = no status (read as 'draft') and no link, behaves
+      // exactly as before.
+      await _runMigrationStep(
+          db, 45, 'add_quotation_status_and_links', () async {
+        await db.execute('ALTER TABLE invoices ADD COLUMN status TEXT');
+        await db.execute(
+            'ALTER TABLE invoices ADD COLUMN converted_to_invoice_id TEXT');
+        await db.execute(
+            'ALTER TABLE invoices ADD COLUMN converted_from_invoice_id TEXT');
       });
     }
   }

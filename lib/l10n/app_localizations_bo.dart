@@ -300,10 +300,16 @@ class AppLocalizationsBo extends AppLocalizations {
   }
 
   @override
-  String get dashboardRecentInvoicesTitle => 'ད་ལྟའི་ཁྲལ་ཤོག';
+  String get dashboardRecentInvoicesTitle => 'ད་ལྟའི་ཡིག་ཆ།';
 
   @override
-  String get dashboardLastFiveInvoicesLabel => 'མཐའ་མའི་ཁྲལ་ཤོག 5';
+  String get dashboardLastFiveInvoicesLabel => 'མཐའ་མའི་ཡིག་ཆ 5';
+
+  @override
+  String get dashboardColDocumentNo => 'ཡིག་ཆའི་ཨང་།';
+
+  @override
+  String get dashboardColType => 'རིགས།';
 
   @override
   String get dashboardNoInvoicesYetTitle => 'ད་དུང་ཁྲལ་ཤོག་མེད།';
@@ -1407,6 +1413,56 @@ class AppLocalizationsBo extends AppLocalizations {
   String invoiceMgmtNewDocumentButton(String type) {
     return '$type གསར་བཟོ།';
   }
+
+  @override
+  String get invoiceMgmtConvertToInvoiceAction => 'ཁྲལ་ཤོག་ཏུ་བསྒྱུར།';
+
+  @override
+  String get invoiceMgmtConvertAgainTitle => 'ཡང་བསྐྱར་བསྒྱུར་རམ།';
+
+  @override
+  String invoiceMgmtConvertAgainBody(String number) {
+    return 'འབོར་ཚད་ $number སྔོན་ནས་ཁྲལ་ཤོག་ཏུ་བསྒྱུར་ཟིན། དེ་ནས་ཁྲལ་ཤོག་གཞན་ཞིག་བཟོ་དགོས་སམ།';
+  }
+
+  @override
+  String get invoiceMgmtMarkAsSent => 'བཏང་ཟིན་པར་རྟགས་རྒྱོབ།';
+
+  @override
+  String get invoiceMgmtMarkAsAccepted => 'ངོས་ལེན་བྱས་པར་རྟགས་རྒྱོབ།';
+
+  @override
+  String get invoiceMgmtMarkAsDeclined => 'ཁས་མི་ལེན་པར་རྟགས་རྒྱོབ།';
+
+  @override
+  String get quotationStatusDraft => 'ཟིན་བྲིས།';
+
+  @override
+  String get quotationStatusSent => 'བཏང་ཟིན།';
+
+  @override
+  String get quotationStatusAccepted => 'ངོས་ལེན་བྱས།';
+
+  @override
+  String get quotationStatusDeclined => 'ཁས་མ་བླངས།';
+
+  @override
+  String get quotationStatusConverted => 'བསྒྱུར་ཟིན།';
+
+  @override
+  String get createInvoiceConvertTitle => 'ཁྲལ་ཤོག་ཏུ་བསྒྱུར།';
+
+  @override
+  String createInvoiceConvertedSuccessMessage(String invoiceNumber) {
+    return 'ཁྲལ་ཤོག་ #$invoiceNumber ཏུ་བསྒྱུར་ཟིན།';
+  }
+
+  @override
+  String get createInvoiceTrashQuotationAction => 'འབོར་ཚད་གནས་སྤོ།';
+
+  @override
+  String get createInvoiceQuotationTrashedMessage =>
+      'འབོར་ཚད་སྙིགས་སྣོད་དུ་སྤོས་ཟིན།';
 
   @override
   String get invoiceMgmtOverdueBadge => 'དུས་འགོར།';

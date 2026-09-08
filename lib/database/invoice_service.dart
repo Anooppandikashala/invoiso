@@ -55,6 +55,9 @@ class InvoiceService {
         'hide_invoice_number': invoice.hideInvoiceNumber ? 1 : 0,
         'custom_invoice_number': invoice.customInvoiceNumber,
         'custom_fields': CustomFieldValue.listToJson(invoice.customFields),
+        'status': invoice.status,
+        'converted_to_invoice_id': invoice.convertedToInvoiceId,
+        'converted_from_invoice_id': invoice.convertedFromInvoiceId,
       });
 
       for (var item in invoice.items) {
@@ -406,6 +409,9 @@ class InvoiceService {
       hideInvoiceNumber: (i['hide_invoice_number'] as int?) == 1,
       customInvoiceNumber: i['custom_invoice_number'] as String?,
       customFields: CustomFieldValue.listFromJson(i['custom_fields'] as String?),
+      status: i['status'] as String?,
+      convertedToInvoiceId: i['converted_to_invoice_id'] as String?,
+      convertedFromInvoiceId: i['converted_from_invoice_id'] as String?,
       payments: payments,
     );
   }
@@ -609,6 +615,30 @@ class InvoiceService {
     );
   }
 
+  // ─────────────────────────────────────────────
+  // Quotation lifecycle
+  static Future<void> setInvoiceStatus(String id, String status) async {
+    final db = await dbHelper.database;
+    await db.update(
+      'invoices',
+      {'status': status},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  /// Marks [quotationId] as converted and links it to the invoice it became.
+  static Future<void> markQuotationConverted(
+      String quotationId, String invoiceId) async {
+    final db = await dbHelper.database;
+    await db.update(
+      'invoices',
+      {'status': 'converted', 'converted_to_invoice_id': invoiceId},
+      where: 'id = ?',
+      whereArgs: [quotationId],
+    );
+  }
+
   static Future<void> permanentDeleteInvoice(String id) async {
     final db = await dbHelper.database;
     await db.transaction((txn) async {
@@ -699,6 +729,9 @@ class InvoiceService {
           customInvoiceNumber: map['custom_invoice_number'] as String?,
           customFields:
               CustomFieldValue.listFromJson(map['custom_fields'] as String?),
+          status: map['status'] as String?,
+          convertedToInvoiceId: map['converted_to_invoice_id'] as String?,
+          convertedFromInvoiceId: map['converted_from_invoice_id'] as String?,
         ),
       );
     }

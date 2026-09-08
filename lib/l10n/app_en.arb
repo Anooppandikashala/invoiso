@@ -140,8 +140,10 @@
       }
     }
   },
-  "dashboardRecentInvoicesTitle": "Recent Invoices",
-  "dashboardLastFiveInvoicesLabel": "Last 5 invoices",
+  "dashboardRecentInvoicesTitle": "Recent Documents",
+  "dashboardLastFiveInvoicesLabel": "Last 5 documents",
+  "dashboardColDocumentNo": "Document no.",
+  "dashboardColType": "Type",
   "dashboardNoInvoicesYetTitle": "No invoices yet",
   "dashboardNoInvoicesYetSubtitle": "Create your first invoice to see it here",
   "actionView": "View",
@@ -894,6 +896,35 @@
       }
     }
   },
+  "invoiceMgmtConvertToInvoiceAction": "Convert to Invoice",
+  "invoiceMgmtConvertAgainTitle": "Convert again?",
+  "invoiceMgmtConvertAgainBody": "Quotation {number} was already converted to an invoice. Create another invoice from it?",
+  "@invoiceMgmtConvertAgainBody": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtMarkAsSent": "Mark as sent",
+  "invoiceMgmtMarkAsAccepted": "Mark as accepted",
+  "invoiceMgmtMarkAsDeclined": "Mark as declined",
+  "quotationStatusDraft": "Draft",
+  "quotationStatusSent": "Sent",
+  "quotationStatusAccepted": "Accepted",
+  "quotationStatusDeclined": "Declined",
+  "quotationStatusConverted": "Converted",
+  "createInvoiceConvertTitle": "Convert to Invoice",
+  "createInvoiceConvertedSuccessMessage": "Converted to Invoice #{invoiceNumber}",
+  "@createInvoiceConvertedSuccessMessage": {
+    "placeholders": {
+      "invoiceNumber": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceTrashQuotationAction": "Trash quote",
+  "createInvoiceQuotationTrashedMessage": "Quotation moved to trash",
   "invoiceMgmtOverdueBadge": "Overdue",
   "invoiceMgmtTodayBadge": "Today",
   "invoiceMgmtTrashIsEmptyLabel": "Trash is empty",

@@ -31,6 +31,8 @@ class InvoiceManagementScreenV2 extends ConsumerStatefulWidget {
   final String filterType; // 'Invoice' | 'Quotation' | 'Receipt'
   // Opens the create form with [filterType] preselected. Null hides the button.
   final void Function(String type)? onCreateNew;
+  // Converts a quotation to an invoice. Only wired for the Quotation list.
+  final void Function(Invoice quotation)? onConvertToInvoice;
 
   const InvoiceManagementScreenV2({
     super.key,
@@ -39,6 +41,7 @@ class InvoiceManagementScreenV2 extends ConsumerStatefulWidget {
     required this.user,
     this.filterType = 'Invoice',
     this.onCreateNew,
+    this.onConvertToInvoice,
   });
 
   @override
@@ -322,6 +325,42 @@ class _InvoiceManagementScreenV2State
     if (type != null) {
       widget.onCloneInvoice(invoice, type);
     }
+  }
+
+  Future<void> _setQuotationStatus(Invoice quotation, String status) async {
+    await ref
+        .read(invoiceRepositoryProvider)
+        .setInvoiceStatus(quotation.id, status);
+    ref.read(invoicesProvider.notifier).refresh();
+    if (!mounted) return;
+    _currentPage = 0;
+    await _loadPage();
+  }
+
+  Future<void> _confirmAndConvert(Invoice quotation) async {
+    if (widget.onConvertToInvoice == null) return;
+    if (quotation.status == 'converted') {
+      final l10n = AppLocalizations.of(context)!;
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(l10n.invoiceMgmtConvertAgainTitle),
+          content: Text(l10n.invoiceMgmtConvertAgainBody(
+              quotation.invoiceNumber ?? quotation.id)),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(l10n.actionCancel)),
+            FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: Text(l10n.invoiceMgmtConvertToInvoiceAction)),
+          ],
+        ),
+      );
+      if (proceed != true) return;
+    }
+    widget.onConvertToInvoice!(quotation);
   }
 
   Future<void> _softDelete(Invoice invoice) async {
@@ -1729,6 +1768,27 @@ class _InvoiceManagementScreenV2State
                 invoice.paymentStatus == PaymentStatus.paid ? Colors.green : Colors.purple),
           ),
       ],
+      if (widget.filterType == 'Quotation') ...[
+        if (widget.onConvertToInvoice != null)
+          PopupMenuItem(
+              value: 'convert',
+              child: _MenuRow(Icons.swap_horiz, l10n.invoiceMgmtConvertToInvoiceAction, Colors.indigo)),
+        if ((invoice.status ?? 'draft') != 'converted') ...[
+          if ((invoice.status ?? 'draft') != 'sent')
+            PopupMenuItem(
+                value: 'mark_sent',
+                child: _MenuRow(Icons.send_outlined, l10n.invoiceMgmtMarkAsSent, Colors.blue)),
+          if ((invoice.status ?? 'draft') != 'accepted')
+            PopupMenuItem(
+                value: 'mark_accepted',
+                child: _MenuRow(Icons.check_circle_outline, l10n.invoiceMgmtMarkAsAccepted, Colors.green)),
+          if ((invoice.status ?? 'draft') != 'declined')
+            PopupMenuItem(
+                value: 'mark_declined',
+                child: _MenuRow(Icons.cancel_outlined, l10n.invoiceMgmtMarkAsDeclined, Colors.red)),
+        ],
+        const PopupMenuDivider(),
+      ],
       PopupMenuItem(value: 'duplicate', child: _MenuRow(Icons.copy_all_outlined, l10n.actionDuplicate, Colors.teal)),
       if (!isWide) ...[
         PopupMenuItem(
@@ -1751,6 +1811,14 @@ class _InvoiceManagementScreenV2State
         widget.onEditInvoice(invoice);
       case 'pay':
         _showApplyPaymentDialog(invoice);
+      case 'convert':
+        _confirmAndConvert(invoice);
+      case 'mark_sent':
+        _setQuotationStatus(invoice, 'sent');
+      case 'mark_accepted':
+        _setQuotationStatus(invoice, 'accepted');
+      case 'mark_declined':
+        _setQuotationStatus(invoice, 'declined');
       case 'duplicate':
         _showCloneDialog(invoice);
       case 'preview':
@@ -1835,6 +1903,8 @@ class _InvoiceManagementScreenV2State
             SizedBox(width: 76, child: Text(l10n.invoiceMgmtColStatus, style: style)),
             Expanded(child: Text(l10n.invoiceMgmtColOutstanding, style: style)),
           ],
+          if (widget.filterType == 'Quotation')
+            SizedBox(width: 96, child: Text(l10n.invoiceMgmtColStatus, style: style)),
           SizedBox(width: isWide ? 300 : 48, child: Text(l10n.invoiceMgmtColActions, style: style)),
         ],
       ),
@@ -1974,6 +2044,14 @@ class _InvoiceManagementScreenV2State
                     ),
             ),
           ],
+          if (widget.filterType == 'Quotation')
+            SizedBox(
+              width: 96,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: _buildQuotationStatusChip(invoice.status),
+              ),
+            ),
           SizedBox(width: isWide ? 300 : 48, child: _rowActionsV2(invoice, isWide)),
         ],
       ),
@@ -2371,6 +2449,35 @@ class _InvoiceManagementScreenV2State
         color = Colors.red;
         label = l10n.paymentStatusUnpaid;
     }
+    return _statusPill(label, color);
+  }
+
+  // Quotation lifecycle chip. status null -> 'draft'.
+  Widget _buildQuotationStatusChip(String? status) {
+    final l10n = AppLocalizations.of(context)!;
+    final Color color;
+    final String label;
+    switch (status ?? 'draft') {
+      case 'sent':
+        color = Colors.blue;
+        label = l10n.quotationStatusSent;
+      case 'accepted':
+        color = Colors.green;
+        label = l10n.quotationStatusAccepted;
+      case 'declined':
+        color = Colors.red;
+        label = l10n.quotationStatusDeclined;
+      case 'converted':
+        color = Colors.indigo;
+        label = l10n.quotationStatusConverted;
+      default:
+        color = Colors.blueGrey;
+        label = l10n.quotationStatusDraft;
+    }
+    return _statusPill(label, color);
+  }
+
+  Widget _statusPill(String label, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
       decoration: BoxDecoration(

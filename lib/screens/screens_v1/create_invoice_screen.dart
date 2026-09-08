@@ -41,6 +41,10 @@ class CreateInvoiceScreen extends ConsumerStatefulWidget {
   /// | 'Receipt'). Ignored when editing or cloning.
   final String? initialType;
 
+  /// Set for a quotation→invoice conversion: id of the source quotation.
+  /// On save the quotation is stamped 'converted' and linked.
+  final String? convertFromQuotationId;
+
   /// Called when the user taps "New Invoice" while in edit mode.
   /// The parent (DashboardScreen) resets invoiceToEdit to null.
   final VoidCallback? onCreateNewInvoice;
@@ -52,6 +56,7 @@ class CreateInvoiceScreen extends ConsumerStatefulWidget {
     this.cloneFrom,
     this.cloneType,
     this.initialType,
+    this.convertFromQuotationId,
     this.onCreateNewInvoice,
     this.guard,
   });
@@ -1261,9 +1266,15 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         customInvoiceNumber: customInvoiceNumberController.text.trim().isEmpty
             ? null
             : customInvoiceNumberController.text.trim(),
+        convertedFromInvoiceId: widget.convertFromQuotationId,
       );
 
       await ref.read(invoiceRepositoryProvider).insertInvoice(invoice);
+      if (widget.convertFromQuotationId != null) {
+        await ref
+            .read(invoiceRepositoryProvider)
+            .markQuotationConverted(widget.convertFromQuotationId!, invoice.id);
+      }
 
       if (!mounted) return true;
       setState(() {
@@ -2821,7 +2832,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                           child: Text('Receipt',
                               style: TextStyle(fontSize: AppFontSize.medium))),
                     ],
-                    onChanged: isEditing
+                    onChanged: (isEditing ||
+                            widget.convertFromQuotationId != null)
                         ? null
                         : (value) {
                             if (value != null) resetInvoiceType(value);

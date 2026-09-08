@@ -297,10 +297,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get dashboardRecentInvoicesTitle => 'Recent Invoices';
+  String get dashboardRecentInvoicesTitle => 'Recent Documents';
 
   @override
-  String get dashboardLastFiveInvoicesLabel => 'Last 5 invoices';
+  String get dashboardLastFiveInvoicesLabel => 'Last 5 documents';
+
+  @override
+  String get dashboardColDocumentNo => 'Document no.';
+
+  @override
+  String get dashboardColType => 'Type';
 
   @override
   String get dashboardNoInvoicesYetTitle => 'No invoices yet';
@@ -1410,6 +1416,55 @@ class AppLocalizationsEn extends AppLocalizations {
   String invoiceMgmtNewDocumentButton(String type) {
     return 'New $type';
   }
+
+  @override
+  String get invoiceMgmtConvertToInvoiceAction => 'Convert to Invoice';
+
+  @override
+  String get invoiceMgmtConvertAgainTitle => 'Convert again?';
+
+  @override
+  String invoiceMgmtConvertAgainBody(String number) {
+    return 'Quotation $number was already converted to an invoice. Create another invoice from it?';
+  }
+
+  @override
+  String get invoiceMgmtMarkAsSent => 'Mark as sent';
+
+  @override
+  String get invoiceMgmtMarkAsAccepted => 'Mark as accepted';
+
+  @override
+  String get invoiceMgmtMarkAsDeclined => 'Mark as declined';
+
+  @override
+  String get quotationStatusDraft => 'Draft';
+
+  @override
+  String get quotationStatusSent => 'Sent';
+
+  @override
+  String get quotationStatusAccepted => 'Accepted';
+
+  @override
+  String get quotationStatusDeclined => 'Declined';
+
+  @override
+  String get quotationStatusConverted => 'Converted';
+
+  @override
+  String get createInvoiceConvertTitle => 'Convert to Invoice';
+
+  @override
+  String createInvoiceConvertedSuccessMessage(String invoiceNumber) {
+    return 'Converted to Invoice #$invoiceNumber';
+  }
+
+  @override
+  String get createInvoiceTrashQuotationAction => 'Trash quote';
+
+  @override
+  String get createInvoiceQuotationTrashedMessage => 'Quotation moved to trash';
 
   @override
   String get invoiceMgmtOverdueBadge => 'Overdue';

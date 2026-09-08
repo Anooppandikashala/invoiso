@@ -78,6 +78,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   // the "New {type}" button on each management screen. Reset to 'Invoice' by
   // the nav-rail New Invoice action.
   String _newInvoiceType = 'Invoice';
+  // Id of the quotation being converted to an invoice (drives the create
+  // form's convert mode). Null unless a conversion is in flight.
+  String? _convertSourceQuotationId;
   bool _hasUpdate = false;
   String _createInvoiceLayout = 'v2';
   int? _accessibilityJumpToken;
@@ -169,13 +172,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       case 1:
         final isNewDoc = invoiceToEdit == null && _invoiceToClone == null;
         final createInvoiceKey = ValueKey(
-            'create_invoice_${invoiceToEdit?.id ?? 'new'}_${_invoiceToClone?.id ?? ''}_${isNewDoc ? _newInvoiceType : ''}');
+            'create_invoice_${invoiceToEdit?.id ?? 'new'}_${_invoiceToClone?.id ?? ''}_${isNewDoc ? _newInvoiceType : ''}_${_convertSourceQuotationId ?? ''}');
         void onCreateNewInvoice() {
           if (!mounted) return;
           setState(() {
             invoiceToEdit = null;
             _invoiceToClone = null;
             _newInvoiceType = 'Invoice';
+            _convertSourceQuotationId = null;
           });
         }
         return _createInvoiceLayout == 'v1'
@@ -185,6 +189,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 cloneFrom: _invoiceToClone,
                 cloneType: _invoiceToClone != null ? _cloneType : null,
                 initialType: isNewDoc ? _newInvoiceType : null,
+                convertFromQuotationId: _convertSourceQuotationId,
                 guard: _invoiceFormGuardV1,
                 onCreateNewInvoice: onCreateNewInvoice,
               )
@@ -194,6 +199,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 cloneFrom: _invoiceToClone,
                 cloneType: _invoiceToClone != null ? _cloneType : null,
                 initialType: isNewDoc ? _newInvoiceType : null,
+                convertFromQuotationId: _convertSourceQuotationId,
                 guard: _invoiceFormGuard,
                 onCreateNewInvoice: onCreateNewInvoice,
               );
@@ -212,6 +218,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           onEditInvoice: editInvoice,
           onCloneInvoice: cloneInvoice,
           onCreateNew: _createDocumentOfType,
+          onConvertToInvoice: _convertQuotationToInvoice,
           user: _currentUser,
           filterType: 'Quotation',
         );
@@ -313,6 +320,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       _selectedIndex = 1;
       invoiceToEdit = invoice;
       _invoiceToClone = null;
+      _convertSourceQuotationId = null;
     });
     _shortcutsFocusNode.unfocus();
   }
@@ -329,6 +337,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       invoiceToEdit = null;
       _invoiceToClone = invoice;
       _cloneType = type;
+      _convertSourceQuotationId = null;
     });
     _shortcutsFocusNode.unfocus();
   }
@@ -344,6 +353,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       invoiceToEdit = null;
       _invoiceToClone = null;
       _newInvoiceType = type;
+      _convertSourceQuotationId = null;
+    });
+    _shortcutsFocusNode.unfocus();
+  }
+
+  // "Convert to Invoice" action on a quotation row — opens the create form
+  // pre-filled from the quotation, locked to Invoice type; on save the
+  // quotation is stamped 'converted' and the two are linked.
+  Future<void> _convertQuotationToInvoice(Invoice quotation) async {
+    if (!await _canLeaveInvoiceForm()) return;
+    await _loadCreateInvoiceLayout();
+    if (!mounted) return;
+    setState(() {
+      _selectedIndex = 1;
+      invoiceToEdit = null;
+      _invoiceToClone = quotation;
+      _cloneType = 'Invoice';
+      _convertSourceQuotationId = quotation.id;
     });
     _shortcutsFocusNode.unfocus();
   }
@@ -366,9 +393,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       if (index != 1) {
         invoiceToEdit = null;
         _invoiceToClone = null;
+        _convertSourceQuotationId = null;
       } else {
-        // Nav-rail "New Invoice" always means a plain invoice.
+        // Nav-rail "New Invoice" always means a plain, blank invoice.
         _newInvoiceType = 'Invoice';
+        _invoiceToClone = null;
+        _convertSourceQuotationId = null;
       }
     });
     // See initState: only hold shortcuts focus for non-create-invoice tabs.
@@ -3494,8 +3524,17 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
             child: Row(
               children: [
                 Expanded(
+                    flex: 3,
+                    child: Text(
+                        AppLocalizations.of(context)!.dashboardColDocumentNo,
+                        style: TextStyle(
+                            fontSize: 11,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600))),
+                Expanded(
                     flex: 2,
-                    child: Text(AppLocalizations.of(context)!.labelInvoice,
+                    child: Text(AppLocalizations.of(context)!.dashboardColType,
                         style: TextStyle(
                             fontSize: 11,
                             color:
@@ -3510,7 +3549,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                 Theme.of(context).colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w600))),
                 Expanded(
-                    flex: 2,
+                    flex: 3,
                     child: Text(AppLocalizations.of(context)!.labelAmount,
                         textAlign: TextAlign.right,
                         style: TextStyle(
@@ -3572,11 +3611,20 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
       child: Row(
         children: [
           Expanded(
-            flex: 2,
+            flex: 3,
             child: Text(
-                '#${inv.id.length > 8 ? inv.id.substring(inv.id.length - 8) : inv.id}',
+                '#${inv.invoiceNumber ?? inv.id}',
                 style:
                     const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis),
+          ),
+          Expanded(
+            flex: 2,
+            child: Text(_invoiceTypeLabel(context, inv.type),
+                style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis),
           ),
@@ -3590,7 +3638,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                 overflow: TextOverflow.ellipsis),
           ),
           Expanded(
-            flex: 2,
+            flex: 3,
             child: Text('$_currencySymbol ${_fmtAmt(inv.total)}',
                 style:
                     const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
