@@ -2452,6 +2452,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get reportsAllCurrenciesLabel => 'सभी मुद्राएं';
 
   @override
+  String get reportsArAgingSummaryTitle => 'प्राप्य आयु सारांश';
+
+  @override
   String get reportsAvgInvoiceValueLabel => 'औसत इनवॉइस मूल्य';
 
   @override
@@ -2591,6 +2594,15 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get reportsMonthlyRevenueTrendTitle => 'मासिक राजस्व रुझान';
+
+  @override
+  String get reportsMonthlyBreakdownTitle => 'मासिक विवरण';
+
+  @override
+  String get reportsMonthColumnLabel => 'महीना';
+
+  @override
+  String get reportsTotalRowLabel => 'कुल';
 
   @override
   String get reportsNavDailyReportLabel => 'दैनिक रिपोर्ट';
@@ -2750,6 +2762,16 @@ class AppLocalizationsHi extends AppLocalizations {
   String get reportsTaxCollectedLabel => 'एकत्रित कर';
 
   @override
+  String get reportsTaxableAmountLabel => 'कर योग्य राशि';
+
+  @override
+  String get reportsGrossAmountLabel => 'सकल';
+
+  @override
+  String get reportsTaxAccrualNote =>
+      'इस अवधि की तारीख वाले चालानों पर लगाया गया कर — प्रोद्भवन आधार, भुगतान से पहले।';
+
+  @override
   String get reportsTaxRateBucketsLabel => 'कर दर समूह';
 
   @override
@@ -2788,6 +2810,9 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get reportsTotalInvoicesLabel => 'कुल इनवॉइस';
+
+  @override
+  String get reportsRealizedProfitLabel => 'प्राप्त लाभ';
 
   @override
   String get reportsTotalProfitLabel => 'कुल लाभ';

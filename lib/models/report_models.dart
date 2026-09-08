@@ -5,6 +5,9 @@ class RevenueKpi {
   final double outstanding;
   final double avgInvoiceValue;
   final double profit;
+  // Profit scaled by each invoice's collected fraction — the realized
+  // (cash-basis) counterpart to [profit].
+  final double realizedProfit;
 
   const RevenueKpi({
     required this.invoiceCount,
@@ -13,6 +16,7 @@ class RevenueKpi {
     required this.outstanding,
     required this.avgInvoiceValue,
     this.profit = 0.0,
+    this.realizedProfit = 0.0,
   });
 
   static const RevenueKpi empty = RevenueKpi(
@@ -29,13 +33,24 @@ class MonthlyPoint {
   final double billed;
   final double collected;
   final double profit;
+  final int invoiceCount;
+  final double netSales;
+  final double cogs;
+  final double outstanding;
 
   const MonthlyPoint({
     required this.month,
     required this.billed,
     required this.collected,
     this.profit = 0.0,
+    this.invoiceCount = 0,
+    this.netSales = 0.0,
+    this.cogs = 0.0,
+    this.outstanding = 0.0,
   });
+
+  double get marginPercent =>
+      netSales == 0 ? 0.0 : (profit / netSales) * 100;
 }
 
 class DailyPoint {
@@ -89,11 +104,43 @@ class AgedReceivable {
   });
 }
 
+/// One customer's outstanding balance split into aging buckets, for the
+/// A/R Aging Summary. Bucket boundaries match [AgedReceivable]'s detail rows.
+class AgedReceivableSummaryRow {
+  final String customerName;
+  final double current;
+  final double d0to30;
+  final double d31to60;
+  final double d61to90;
+  final double d90plus;
+  final double noDueDate;
+
+  const AgedReceivableSummaryRow({
+    required this.customerName,
+    this.current = 0.0,
+    this.d0to30 = 0.0,
+    this.d31to60 = 0.0,
+    this.d61to90 = 0.0,
+    this.d90plus = 0.0,
+    this.noDueDate = 0.0,
+  });
+
+  double get total =>
+      current + d0to30 + d31to60 + d61to90 + d90plus + noDueDate;
+}
+
 class TaxBucket {
   final double rate;
   final double taxCollected;
+  final double taxableAmount;
 
-  const TaxBucket({required this.rate, required this.taxCollected});
+  const TaxBucket({
+    required this.rate,
+    required this.taxCollected,
+    this.taxableAmount = 0.0,
+  });
+
+  double get gross => taxableAmount + taxCollected;
 }
 
 class TopCustomer {

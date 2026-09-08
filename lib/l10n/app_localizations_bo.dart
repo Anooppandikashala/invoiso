@@ -2439,6 +2439,9 @@ class AppLocalizationsBo extends AppLocalizations {
   String get reportsAllCurrenciesLabel => 'དངུལ་རིགས་ཚང་མ།';
 
   @override
+  String get reportsArAgingSummaryTitle => 'A/R Aging Summary';
+
+  @override
   String get reportsAvgInvoiceValueLabel => 'ཁྲལ་ཤོག་ཐུན་མོང་གོང་ཚད།';
 
   @override
@@ -2578,6 +2581,15 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get reportsMonthlyRevenueTrendTitle => 'ཟླ་རེའི་འབབ་འོང་འགྱུར་རིམ།';
+
+  @override
+  String get reportsMonthlyBreakdownTitle => 'Monthly Breakdown';
+
+  @override
+  String get reportsMonthColumnLabel => 'Month';
+
+  @override
+  String get reportsTotalRowLabel => 'Total';
 
   @override
   String get reportsNavDailyReportLabel => 'ཉིན་རེའི་སྙན་ཞུ།';
@@ -2737,6 +2749,16 @@ class AppLocalizationsBo extends AppLocalizations {
   String get reportsTaxCollectedLabel => 'བསྡུས་པའི་ཁྲལ།';
 
   @override
+  String get reportsTaxableAmountLabel => 'Taxable Amount';
+
+  @override
+  String get reportsGrossAmountLabel => 'Gross';
+
+  @override
+  String get reportsTaxAccrualNote =>
+      'Tax charged on invoices dated in this period — accrual basis, before payment.';
+
+  @override
   String get reportsTaxRateBucketsLabel => 'ཁྲལ་ཐང་སྡེ་ཚན།';
 
   @override
@@ -2775,6 +2797,9 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get reportsTotalInvoicesLabel => 'ཁྲལ་ཤོག་སྤྱིའི་གྲངས།';
+
+  @override
+  String get reportsRealizedProfitLabel => 'Realized Profit';
 
   @override
   String get reportsTotalProfitLabel => 'ཁེ་སྐྱེད་སྤྱི།';

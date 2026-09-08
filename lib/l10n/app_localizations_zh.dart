@@ -2359,6 +2359,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get reportsAllCurrenciesLabel => '所有货币';
 
   @override
+  String get reportsArAgingSummaryTitle => '应收账款账龄摘要';
+
+  @override
   String get reportsAvgInvoiceValueLabel => '平均发票金额';
 
   @override
@@ -2492,6 +2495,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get reportsMonthlyRevenueTrendTitle => '月度收入趋势';
+
+  @override
+  String get reportsMonthlyBreakdownTitle => '月度明细';
+
+  @override
+  String get reportsMonthColumnLabel => '月份';
+
+  @override
+  String get reportsTotalRowLabel => '合计';
 
   @override
   String get reportsNavDailyReportLabel => '每日报告';
@@ -2644,6 +2656,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get reportsTaxCollectedLabel => '已收税款';
 
   @override
+  String get reportsTaxableAmountLabel => '应税金额';
+
+  @override
+  String get reportsGrossAmountLabel => '总额';
+
+  @override
+  String get reportsTaxAccrualNote => '按本期开票日期计提的税款 — 权责发生制，付款前。';
+
+  @override
   String get reportsTaxRateBucketsLabel => '税率分组';
 
   @override
@@ -2681,6 +2702,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get reportsTotalInvoicesLabel => '发票总数';
+
+  @override
+  String get reportsRealizedProfitLabel => '已实现利润';
 
   @override
   String get reportsTotalProfitLabel => '总利润';

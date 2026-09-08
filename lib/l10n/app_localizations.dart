@@ -4062,6 +4062,12 @@ abstract class AppLocalizations {
   /// **'All currencies'**
   String get reportsAllCurrenciesLabel;
 
+  /// No description provided for @reportsArAgingSummaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A/R Aging Summary'**
+  String get reportsArAgingSummaryTitle;
+
   /// No description provided for @reportsAvgInvoiceValueLabel.
   ///
   /// In en, this message translates to:
@@ -4277,6 +4283,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Monthly Revenue Trend'**
   String get reportsMonthlyRevenueTrendTitle;
+
+  /// No description provided for @reportsMonthlyBreakdownTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly Breakdown'**
+  String get reportsMonthlyBreakdownTitle;
+
+  /// No description provided for @reportsMonthColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get reportsMonthColumnLabel;
+
+  /// No description provided for @reportsTotalRowLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get reportsTotalRowLabel;
 
   /// No description provided for @reportsNavDailyReportLabel.
   ///
@@ -4557,14 +4581,32 @@ abstract class AppLocalizations {
   /// No description provided for @reportsTaxCollectedByRateTitle.
   ///
   /// In en, this message translates to:
-  /// **'Tax Collected by Rate'**
+  /// **'Tax by Rate'**
   String get reportsTaxCollectedByRateTitle;
 
   /// No description provided for @reportsTaxCollectedLabel.
   ///
   /// In en, this message translates to:
-  /// **'Tax Collected'**
+  /// **'Tax'**
   String get reportsTaxCollectedLabel;
+
+  /// No description provided for @reportsTaxableAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Taxable Amount'**
+  String get reportsTaxableAmountLabel;
+
+  /// No description provided for @reportsGrossAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Gross'**
+  String get reportsGrossAmountLabel;
+
+  /// No description provided for @reportsTaxAccrualNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax charged on invoices dated in this period — accrual basis, before payment.'**
+  String get reportsTaxAccrualNote;
 
   /// No description provided for @reportsTaxRateBucketsLabel.
   ///
@@ -4614,6 +4656,12 @@ abstract class AppLocalizations {
   /// **'Total Invoices'**
   String get reportsTotalInvoicesLabel;
 
+  /// No description provided for @reportsRealizedProfitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Realized Profit'**
+  String get reportsRealizedProfitLabel;
+
   /// No description provided for @reportsTotalProfitLabel.
   ///
   /// In en, this message translates to:
@@ -4623,7 +4671,7 @@ abstract class AppLocalizations {
   /// No description provided for @reportsTotalTaxCollectedLabel.
   ///
   /// In en, this message translates to:
-  /// **'Total Tax Collected'**
+  /// **'Total Tax Charged'**
   String get reportsTotalTaxCollectedLabel;
 
   /// No description provided for @reportsTypeColumnLabel.

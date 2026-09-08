@@ -78,6 +78,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   int _missingCostItemCount = 0;
   StatusBreakdown _status = StatusBreakdown.empty;
   List<AgedReceivable> _aged = [];
+  List<AgedReceivableSummaryRow> _agedSummary = [];
   List<TaxBucket> _taxBuckets = [];
   List<TopCustomer> _topCustomers = [];
   List<TopProduct> _topProducts = [];
@@ -90,6 +91,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   // Table pagination state
   int _agedPage = 0;
   int _agedPageSize = 10;
+  int _agedSummaryPage = 0;
+  int _agedSummaryPageSize = 10;
   int _customersPage = 0;
   int _customersPageSize = 10;
   int _productsPage = 0;
@@ -319,12 +322,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             ref
                 .read(reportRepositoryProvider)
                 .getAgedReceivables(currencyCode: _reportCurrencyCode),
+            ref
+                .read(reportRepositoryProvider)
+                .getAgedReceivableSummary(currencyCode: _reportCurrencyCode),
           ]);
           if (!mounted) return;
           setState(() {
             _status = r[0] as StatusBreakdown;
             _aged = (r[1] as List).cast<AgedReceivable>();
+            _agedSummary = (r[2] as List).cast<AgedReceivableSummaryRow>();
             _agedPage = 0;
+            _agedSummaryPage = 0;
           });
         case 2:
           final buckets = await ref
@@ -1240,48 +1248,68 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               // KPI cards
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                child: IntrinsicHeight(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(
-                          child: _kpiCard(
-                              l10n.reportsTotalBilledLabel,
-                              _money(_kpi.billed),
-                              const Color(0xFF002E78),
-                              Icons.receipt_long)),
-                      const SizedBox(width: 12),
-                      Expanded(
-                          child: _kpiCard(
-                              l10n.reportsTotalCollectedLabel,
-                              _money(_kpi.collected),
-                              const Color(0xFF16A34A),
-                              Icons.check_circle_outline)),
-                      const SizedBox(width: 12),
-                      Expanded(
-                          child: _kpiCard(
-                              l10n.dashboardOutstandingLabel,
-                              _money(_kpi.outstanding),
-                              const Color(0xFFDC2626),
-                              Icons.schedule)),
-                      const SizedBox(width: 12),
-                      Expanded(
-                          child: _kpiCard(
-                              l10n.reportsAvgInvoiceValueLabel,
-                              _money(_kpi.avgInvoiceValue),
-                              const Color(0xFF7C3AED),
-                              Icons.trending_up)),
-                      const SizedBox(width: 12),
-                      Expanded(
-                          child: _kpiCard(
-                              l10n.reportsTotalProfitLabel,
-                              _money(_kpi.profit),
-                              _kpi.profit < 0
-                                  ? const Color(0xFFDC2626)
-                                  : const Color(0xFF16A34A),
-                              Icons.savings_outlined)),
-                    ],
-                  ),
+                child: Column(
+                  children: [
+                    IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                              child: _kpiCard(
+                                  l10n.reportsTotalBilledLabel,
+                                  _money(_kpi.billed),
+                                  const Color(0xFF002E78),
+                                  Icons.receipt_long)),
+                          const SizedBox(width: 12),
+                          Expanded(
+                              child: _kpiCard(
+                                  l10n.reportsTotalCollectedLabel,
+                                  _money(_kpi.collected),
+                                  const Color(0xFF16A34A),
+                                  Icons.check_circle_outline)),
+                          const SizedBox(width: 12),
+                          Expanded(
+                              child: _kpiCard(
+                                  l10n.dashboardOutstandingLabel,
+                                  _money(_kpi.outstanding),
+                                  const Color(0xFFDC2626),
+                                  Icons.schedule)),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                              child: _kpiCard(
+                                  l10n.reportsAvgInvoiceValueLabel,
+                                  _money(_kpi.avgInvoiceValue),
+                                  const Color(0xFF7C3AED),
+                                  Icons.trending_up)),
+                          const SizedBox(width: 12),
+                          Expanded(
+                              child: _kpiCard(
+                                  l10n.reportsTotalProfitLabel,
+                                  _money(_kpi.profit),
+                                  _kpi.profit < 0
+                                      ? const Color(0xFFDC2626)
+                                      : const Color(0xFF16A34A),
+                                  Icons.savings_outlined)),
+                          const SizedBox(width: 12),
+                          Expanded(
+                              child: _kpiCard(
+                                  l10n.reportsRealizedProfitLabel,
+                                  _money(_kpi.realizedProfit),
+                                  _kpi.realizedProfit < 0
+                                      ? const Color(0xFFDC2626)
+                                      : const Color(0xFF16A34A),
+                                  Icons.payments_outlined)),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
               if (_missingCostItemCount > 0)
@@ -1297,11 +1325,30 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   children: [
                     _cardTitle(
                       l10n.reportsMonthlyRevenueTrendTitle,
-                      trailing:
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
                           _exportBtn(l10n.reportsExportCsvLabel, () async {
-                        final csv = ReportService.exportTrendCsv(_trend);
-                        await _saveCsv(csv, 'revenue_trend_$ts.csv');
-                      }),
+                            final csv = ReportService.exportTrendCsv(_trend);
+                            await _saveCsv(csv, 'revenue_report_$ts.csv');
+                          }),
+                          const SizedBox(width: 4),
+                          _exportBtn(l10n.customerMgmtExportPdfMenuLabel,
+                              () async {
+                            final (from, to) = _range;
+                            final bytes =
+                                await ReportService.exportRevenueReportPdf(
+                              _trend,
+                              _kpi,
+                              currencySymbol: _sym,
+                              showFooterBranding: _showFooterBranding,
+                              dateRangeLabel:
+                                  '${_formatDate(from)} – ${_formatDate(to)}  •  $_currencyScopeLabel',
+                            );
+                            await _savePdf(bytes, 'revenue_report_$ts.pdf');
+                          }),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -1339,11 +1386,154 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   ],
                 ),
               ),
+
+              // Monthly breakdown table
+              if (_trend.isNotEmpty)
+                _sectionCard(
+                  padding: EdgeInsets.zero,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+                        child: _cardTitle(l10n.reportsMonthlyBreakdownTitle),
+                      ),
+                      _revenueTableHeader(),
+                      ..._trend.map(_revenueRow),
+                      _revenueTotalsRow(),
+                    ],
+                  ),
+                ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Widget _revenueTableHeader() {
+    final l10n = AppLocalizations.of(context)!;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: Row(
+        children: [
+          Expanded(flex: 2, child: _TableHead(l10n.reportsMonthColumnLabel)),
+          Expanded(
+              flex: 1, child: _TableHead(l10n.navInvoices, right: true)),
+          Expanded(
+              flex: 2, child: _TableHead(l10n.reportsBilledLabel, right: true)),
+          Expanded(
+              flex: 2,
+              child: _TableHead(l10n.dashboardCollectedLabel, right: true)),
+          Expanded(
+              flex: 2,
+              child: _TableHead(l10n.dashboardOutstandingLabel, right: true)),
+          Expanded(
+              flex: 2,
+              child: _TableHead(l10n.reportsCogsColumnLabel, right: true)),
+          Expanded(
+              flex: 2,
+              child: _TableHead(l10n.reportsProfitLabel, right: true)),
+          Expanded(
+              flex: 1,
+              child: _TableHead(l10n.reportsMarginColumnLabel, right: true)),
+        ],
+      ),
+    );
+  }
+
+  Widget _revenueCell(String text,
+          {int flex = 2, Color? color, FontWeight? weight}) =>
+      Expanded(
+        flex: flex,
+        child: Text(text,
+            textAlign: TextAlign.right,
+            style: TextStyle(
+                fontSize: 13,
+                fontWeight: weight,
+                color: color ??
+                    Theme.of(context).colorScheme.onSurfaceVariant)),
+      );
+
+  Widget _revenueRow(MonthlyPoint p) {
+    return Container(
+      decoration: BoxDecoration(
+          border: Border(
+              top: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant))),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      child: Row(
+        children: [
+          Expanded(
+              flex: 2,
+              child: Text(_formatMonthKey(p.month),
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurface))),
+          _revenueCell(_fmtInt.format(p.invoiceCount), flex: 1),
+          _revenueCell(_money(p.billed),
+              color: const Color(0xFF1D4ED8), weight: FontWeight.w600),
+          _revenueCell(_money(p.collected)),
+          _revenueCell(_money(p.outstanding)),
+          _revenueCell(_money(p.cogs)),
+          _revenueCell(_money(p.profit),
+              color: p.profit < 0
+                  ? const Color(0xFFDC2626)
+                  : const Color(0xFF16A34A),
+              weight: FontWeight.w600),
+          _revenueCell('${p.marginPercent.toStringAsFixed(0)}%', flex: 1),
+        ],
+      ),
+    );
+  }
+
+  Widget _revenueTotalsRow() {
+    final l10n = AppLocalizations.of(context)!;
+    final invoices = _trend.fold<int>(0, (a, p) => a + p.invoiceCount);
+    final billed = _trend.fold<double>(0, (a, p) => a + p.billed);
+    final collected = _trend.fold<double>(0, (a, p) => a + p.collected);
+    final outstanding = _trend.fold<double>(0, (a, p) => a + p.outstanding);
+    final cogs = _trend.fold<double>(0, (a, p) => a + p.cogs);
+    final profit = _trend.fold<double>(0, (a, p) => a + p.profit);
+    final net = _trend.fold<double>(0, (a, p) => a + p.netSales);
+    final margin = net == 0 ? 0.0 : (profit / net) * 100;
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        border: Border(
+            top: BorderSide(
+                color: Theme.of(context).colorScheme.outlineVariant)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      child: Row(
+        children: [
+          Expanded(
+              flex: 2,
+              child: Text(l10n.reportsTotalRowLabel,
+                  style: const TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w700))),
+          _revenueCell(_fmtInt.format(invoices),
+              flex: 1, weight: FontWeight.w700),
+          _revenueCell(_money(billed), weight: FontWeight.w700),
+          _revenueCell(_money(collected), weight: FontWeight.w700),
+          _revenueCell(_money(outstanding), weight: FontWeight.w700),
+          _revenueCell(_money(cogs), weight: FontWeight.w700),
+          _revenueCell(_money(profit),
+              weight: FontWeight.w700,
+              color: profit < 0
+                  ? const Color(0xFFDC2626)
+                  : const Color(0xFF16A34A)),
+          _revenueCell('${margin.toStringAsFixed(0)}%',
+              flex: 1, weight: FontWeight.w700),
+        ],
+      ),
+    );
+  }
+
+  String _formatMonthKey(String key) {
+    final d = DateTime.tryParse('$key-01');
+    return d == null ? key : DateFormat('MMM yyyy').format(d);
   }
 
   Widget _legend(Color color, String label) {
@@ -1559,6 +1749,60 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 ),
               ),
 
+              // A/R aging summary by customer
+              if (_agedSummary.isNotEmpty)
+                _sectionCard(
+                  padding: EdgeInsets.zero,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                        child: _cardTitle(
+                          l10n.reportsArAgingSummaryTitle,
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _exportBtn(l10n.reportsExportCsvLabel, () async {
+                                final csv = ReportService
+                                    .exportAgedReceivableSummaryCsv(
+                                        _agedSummary);
+                                await _saveCsv(
+                                    csv, 'ar_aging_summary_$ts.csv');
+                              }),
+                              const SizedBox(width: 4),
+                              _exportBtn(l10n.customerMgmtExportPdfMenuLabel,
+                                  () => _exportArAgingPdf(ts)),
+                            ],
+                          ),
+                        ),
+                      ),
+                      _agedSummaryHeader(),
+                      ..._agedSummary
+                          .skip(_agedSummaryPage * _agedSummaryPageSize)
+                          .take(_agedSummaryPageSize)
+                          .map(_agedSummaryRow),
+                      _agedSummaryTotalsRow(),
+                      _buildReportPagination(
+                        currentPage: _agedSummaryPage,
+                        pageSize: _agedSummaryPageSize,
+                        total: _agedSummary.length,
+                        onPageChange: (p) {
+                          if (!mounted) return;
+                          setState(() => _agedSummaryPage = p);
+                        },
+                        onSizeChange: (s) {
+                          if (!mounted) return;
+                          setState(() {
+                            _agedSummaryPageSize = s;
+                            _agedSummaryPage = 0;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+
               // Aged receivables table
               _sectionCard(
                 padding: EdgeInsets.zero,
@@ -1569,12 +1813,20 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                       padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
                       child: _cardTitle(
                         l10n.reportsAgedReceivablesTitle(_aged.length),
-                        trailing:
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
                             _exportBtn(l10n.reportsExportCsvLabel, () async {
-                          final csv =
-                              ReportService.exportAgedReceivablesCsv(_aged);
-                          await _saveCsv(csv, 'aged_receivables_$ts.csv');
-                        }),
+                              final csv =
+                                  ReportService.exportAgedReceivablesCsv(_aged);
+                              await _saveCsv(
+                                  csv, 'aged_receivables_$ts.csv');
+                            }),
+                            const SizedBox(width: 4),
+                            _exportBtn(l10n.customerMgmtExportPdfMenuLabel,
+                                () => _exportArAgingPdf(ts)),
+                          ],
+                        ),
                       ),
                     ),
                     if (_aged.isEmpty)
@@ -1589,6 +1841,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           .skip(_agedPage * _agedPageSize)
                           .take(_agedPageSize)
                           .map(_agedRow),
+                      _agedDetailTotalsRow(),
                       _buildReportPagination(
                         currentPage: _agedPage,
                         pageSize: _agedPageSize,
@@ -1614,6 +1867,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _exportArAgingPdf(int ts) async {
+    final bytes = await ReportService.exportAgedReceivablesPdf(
+      _agedSummary,
+      _aged,
+      currencySymbol: _sym,
+      showFooterBranding: _showFooterBranding,
+      asOfLabel: '${_formatDate(DateTime.now())}  •  $_currencyScopeLabel',
+    );
+    await _savePdf(bytes, 'ar_aging_$ts.pdf');
   }
 
   Widget _buildDonut() {
@@ -1786,6 +2050,156 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     );
   }
 
+  Widget _agedSummaryHeader() {
+    final l10n = AppLocalizations.of(context)!;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: Row(
+        children: [
+          Expanded(flex: 3, child: _TableHead(l10n.labelCustomer)),
+          Expanded(
+              flex: 2,
+              child: _TableHead(l10n.reportsCurrentBucketLabel, right: true)),
+          Expanded(
+              flex: 2,
+              child: _TableHead(l10n.reportsBucket0to30Label, right: true)),
+          Expanded(
+              flex: 2,
+              child: _TableHead(l10n.reportsBucket31to60Label, right: true)),
+          Expanded(
+              flex: 2,
+              child: _TableHead(l10n.reportsBucket61to90Label, right: true)),
+          Expanded(
+              flex: 2,
+              child: _TableHead(l10n.reportsBucket90PlusLabel, right: true)),
+          Expanded(
+              flex: 2,
+              child: _TableHead(l10n.reportsNoDueDateLabel, right: true)),
+          Expanded(
+              flex: 2,
+              child: _TableHead(l10n.reportsTotalRowLabel, right: true)),
+        ],
+      ),
+    );
+  }
+
+  Widget _agedMoneyCell(double v, {Color? color, FontWeight? weight}) => Expanded(
+        flex: 2,
+        child: Text(v == 0 ? '—' : _money(v),
+            textAlign: TextAlign.right,
+            style: TextStyle(
+                fontSize: 13,
+                fontWeight: weight,
+                color: color ??
+                    Theme.of(context).colorScheme.onSurfaceVariant)),
+      );
+
+  Widget _agedSummaryRow(AgedReceivableSummaryRow r) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(
+            top: BorderSide(
+                color: Theme.of(context).colorScheme.outlineVariant)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      child: Row(
+        children: [
+          Expanded(
+              flex: 3,
+              child: Text(r.customerName,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurface))),
+          _agedMoneyCell(r.current),
+          _agedMoneyCell(r.d0to30),
+          _agedMoneyCell(r.d31to60),
+          _agedMoneyCell(r.d61to90),
+          _agedMoneyCell(r.d90plus,
+              color: r.d90plus > 0 ? const Color(0xFF991B1B) : null),
+          _agedMoneyCell(r.noDueDate),
+          _agedMoneyCell(r.total,
+              color: const Color(0xFFDC2626), weight: FontWeight.w600),
+        ],
+      ),
+    );
+  }
+
+  Widget _agedSummaryTotalsRow() {
+    final l10n = AppLocalizations.of(context)!;
+    double c = 0, a30 = 0, a60 = 0, a90 = 0, a90p = 0, nd = 0, t = 0;
+    for (final r in _agedSummary) {
+      c += r.current;
+      a30 += r.d0to30;
+      a60 += r.d31to60;
+      a90 += r.d61to90;
+      a90p += r.d90plus;
+      nd += r.noDueDate;
+      t += r.total;
+    }
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        border: Border(
+            top: BorderSide(
+                color: Theme.of(context).colorScheme.outlineVariant)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      child: Row(
+        children: [
+          Expanded(
+              flex: 3,
+              child: Text(l10n.reportsTotalRowLabel,
+                  style: const TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w700))),
+          _agedMoneyCell(c, weight: FontWeight.w700),
+          _agedMoneyCell(a30, weight: FontWeight.w700),
+          _agedMoneyCell(a60, weight: FontWeight.w700),
+          _agedMoneyCell(a90, weight: FontWeight.w700),
+          _agedMoneyCell(a90p, weight: FontWeight.w700),
+          _agedMoneyCell(nd, weight: FontWeight.w700),
+          _agedMoneyCell(t,
+              weight: FontWeight.w700, color: const Color(0xFFDC2626)),
+        ],
+      ),
+    );
+  }
+
+  Widget _agedDetailTotalsRow() {
+    final l10n = AppLocalizations.of(context)!;
+    final total = _aged.fold<double>(0, (a, r) => a + r.outstanding);
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        border: Border(
+            top: BorderSide(
+                color: Theme.of(context).colorScheme.outlineVariant)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      child: Row(
+        children: [
+          Expanded(
+              flex: 3,
+              child: Text(l10n.reportsTotalRowLabel,
+                  style: const TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w700))),
+          const Expanded(flex: 3, child: SizedBox()),
+          Expanded(
+              flex: 2,
+              child: Text(_money(total),
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFDC2626)))),
+          const Expanded(flex: 2, child: SizedBox()),
+          const Expanded(flex: 2, child: SizedBox()),
+        ],
+      ),
+    );
+  }
+
   // ─── Section 3: Tax ─────────────────────────────────────────────────────────
 
   Widget _buildTax() {
@@ -1838,14 +2252,43 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
                       child: _cardTitle(
                         l10n.reportsTaxCollectedByRateTitle,
-                        trailing:
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
                             _exportBtn(l10n.reportsExportCsvLabel, () async {
-                          final csv = ReportService.exportTaxCsv(_taxBuckets);
-                          await _saveCsv(csv, 'tax_report_$ts.csv');
-                        }),
+                              final csv =
+                                  ReportService.exportTaxCsv(_taxBuckets);
+                              await _saveCsv(csv, 'tax_report_$ts.csv');
+                            }),
+                            const SizedBox(width: 4),
+                            _exportBtn(l10n.customerMgmtExportPdfMenuLabel,
+                                () async {
+                              final (from, to) = _range;
+                              final bytes =
+                                  await ReportService.exportTaxReportPdf(
+                                _taxBuckets,
+                                currencySymbol: _sym,
+                                showFooterBranding: _showFooterBranding,
+                                dateRangeLabel:
+                                    '${_formatDate(from)} – ${_formatDate(to)}  •  $_currencyScopeLabel',
+                              );
+                              await _savePdf(bytes, 'tax_report_$ts.pdf');
+                            }),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                      child: Text(
+                        l10n.reportsTaxAccrualNote,
+                        style: TextStyle(
+                            fontSize: 12,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant),
                       ),
                     ),
                     if (_taxBuckets.isEmpty)
@@ -1878,7 +2321,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           Expanded(flex: 2, child: _TableHead(l10n.fieldTaxRateLabel)),
           Expanded(
               flex: 3,
+              child:
+                  _TableHead(l10n.reportsTaxableAmountLabel, right: true)),
+          Expanded(
+              flex: 3,
               child: _TableHead(l10n.reportsTaxCollectedLabel, right: true)),
+          Expanded(
+              flex: 3,
+              child: _TableHead(l10n.reportsGrossAmountLabel, right: true)),
           Expanded(
               flex: 2, child: _TableHead(l10n.reportsShareLabel, right: true)),
         ],
@@ -1889,6 +2339,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   Widget _taxRow(TaxBucket b, double total) {
     final share =
         total == 0 ? '0' : (b.taxCollected / total * 100).toStringAsFixed(1);
+    final rateStr = b.rate % 1 == 0
+        ? b.rate.toStringAsFixed(0)
+        : b.rate.toStringAsFixed(1);
     return Container(
       decoration: BoxDecoration(
         border: Border(
@@ -1900,18 +2353,35 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         children: [
           Expanded(
               flex: 2,
-              child: Text('${b.rate.toStringAsFixed(0)}%',
+              child: Text('$rateStr%',
                   style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: Theme.of(context).colorScheme.onSurface))),
           Expanded(
               flex: 3,
+              child: Text(_money(b.taxableAmount),
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                      fontSize: 14,
+                      color:
+                          Theme.of(context).colorScheme.onSurfaceVariant))),
+          Expanded(
+              flex: 3,
               child: Text(_money(b.taxCollected),
                   textAlign: TextAlign.right,
                   style: TextStyle(
                       fontSize: 14,
+                      fontWeight: FontWeight.w600,
                       color: Theme.of(context).colorScheme.onSurface))),
+          Expanded(
+              flex: 3,
+              child: Text(_money(b.gross),
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                      fontSize: 14,
+                      color:
+                          Theme.of(context).colorScheme.onSurfaceVariant))),
           Expanded(
               flex: 2,
               child: Text('$share%',
@@ -1925,6 +2395,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   Widget _taxTotalRow(double total) {
+    final taxable = _taxBuckets.fold<double>(0, (a, b) => a + b.taxableAmount);
+    final gross = _taxBuckets.fold<double>(0, (a, b) => a + b.gross);
+    TextStyle bold() => TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+        color: Theme.of(context).colorScheme.onSurface);
     return Container(
       decoration: BoxDecoration(
         border: Border(
@@ -1939,18 +2415,19 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           Expanded(
               flex: 2,
               child: Text(AppLocalizations.of(context)!.fieldTotalLabel,
-                  style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onSurface))),
+                  style: bold())),
+          Expanded(
+              flex: 3,
+              child: Text(_money(taxable),
+                  textAlign: TextAlign.right, style: bold())),
           Expanded(
               flex: 3,
               child: Text(_money(total),
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onSurface))),
+                  textAlign: TextAlign.right, style: bold())),
+          Expanded(
+              flex: 3,
+              child: Text(_money(gross),
+                  textAlign: TextAlign.right, style: bold())),
           Expanded(
               flex: 2,
               child: Text('100%',
@@ -2041,12 +2518,32 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             child: _cardTitle(
               AppLocalizations.of(context)!
                   .reportsTopCustomersByRevenueTitle(_topCustomers.length),
-              trailing: _exportBtn(
-                  AppLocalizations.of(context)!.reportsExportCsvLabel,
-                  () async {
-                final csv = ReportService.exportTopCustomersCsv(_topCustomers);
-                await _saveCsv(csv, 'top_customers_$ts.csv');
-              }),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _exportBtn(
+                      AppLocalizations.of(context)!.reportsExportCsvLabel,
+                      () async {
+                    final csv =
+                        ReportService.exportTopCustomersCsv(_topCustomers);
+                    await _saveCsv(csv, 'top_customers_$ts.csv');
+                  }),
+                  const SizedBox(width: 4),
+                  _exportBtn(
+                      AppLocalizations.of(context)!
+                          .customerMgmtExportPdfMenuLabel, () async {
+                    final (from, to) = _range;
+                    final bytes = await ReportService.exportTopCustomersPdf(
+                      _topCustomers,
+                      currencySymbol: _sym,
+                      showFooterBranding: _showFooterBranding,
+                      dateRangeLabel:
+                          '${_formatDate(from)} – ${_formatDate(to)}  •  $_currencyScopeLabel',
+                    );
+                    await _savePdf(bytes, 'top_customers_$ts.pdf');
+                  }),
+                ],
+              ),
             ),
           ),
           if (_topCustomers.isEmpty)
@@ -2624,6 +3121,24 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                                         ReportService.exportTopProductsCsv(
                                             _topProducts);
                                     await _saveCsv(csv, 'top_products_$ts.csv');
+                                  }),
+                                  const SizedBox(width: 4),
+                                  _exportBtn(
+                                      AppLocalizations.of(context)!
+                                          .customerMgmtExportPdfMenuLabel,
+                                      () async {
+                                    final (from, to) = _range;
+                                    final bytes = await ReportService
+                                        .exportTopProductsPdf(
+                                      _topProducts,
+                                      currencySymbol: _sym,
+                                      rankByProfit: _rankProductsByProfit,
+                                      showFooterBranding: _showFooterBranding,
+                                      dateRangeLabel:
+                                          '${_formatDate(from)} – ${_formatDate(to)}  •  $_currencyScopeLabel',
+                                    );
+                                    await _savePdf(
+                                        bytes, 'top_products_$ts.pdf');
                                   }),
                                 ],
                               ),
@@ -3423,11 +3938,42 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                               ],
                             ),
                           ),
-                          _exportBtn(l10n.reportsExportCsvLabel, () async {
-                            final csv =
-                                ReportService.exportInvoiceStatusCsv(filtered);
-                            await _saveCsv(csv, 'invoice_status_$ts.csv');
-                          }),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _exportBtn(l10n.reportsExportCsvLabel, () async {
+                                final csv = ReportService
+                                    .exportInvoiceStatusCsv(filtered);
+                                await _saveCsv(
+                                    csv, 'invoice_status_$ts.csv');
+                              }),
+                              const SizedBox(width: 4),
+                              _exportBtn(l10n.customerMgmtExportPdfMenuLabel,
+                                  () async {
+                                final filterName = switch (_invoiceFilter) {
+                                  _InvoiceFilter.all =>
+                                    l10n.invoiceMgmtStatusAllLabel,
+                                  _InvoiceFilter.paid => l10n.paymentStatusPaid,
+                                  _InvoiceFilter.partial =>
+                                    l10n.paymentStatusPartial,
+                                  _InvoiceFilter.unpaid =>
+                                    l10n.paymentStatusUnpaid,
+                                  _InvoiceFilter.overdue =>
+                                    l10n.dashboardOverdueSectionTitle,
+                                };
+                                final bytes = await ReportService
+                                    .exportInvoiceStatusPdf(
+                                  filtered,
+                                  currencySymbol: _sym,
+                                  showFooterBranding: _showFooterBranding,
+                                  dateRangeLabel:
+                                      '$_invoiceStatusRangeLabel  •  $filterName  •  $_currencyScopeLabel',
+                                );
+                                await _savePdf(
+                                    bytes, 'invoice_status_$ts.pdf');
+                              }),
+                            ],
+                          ),
                         ],
                       ),
                     ),

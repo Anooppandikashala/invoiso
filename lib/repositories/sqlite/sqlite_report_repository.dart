@@ -18,6 +18,9 @@ class SqliteReportRepository implements ReportRepository {
   Future<List<AgedReceivable>> getAgedReceivables({String? currencyCode}) =>
       ReportService.getAgedReceivables(currencyCode: currencyCode);
   @override
+  Future<List<AgedReceivableSummaryRow>> getAgedReceivableSummary({String? currencyCode}) =>
+      ReportService.getAgedReceivableSummary(currencyCode: currencyCode);
+  @override
   Future<Map<String, double>> getOutstandingByCustomer({String? currencyCode}) =>
       ReportService.getOutstandingByCustomer(currencyCode: currencyCode);
   @override

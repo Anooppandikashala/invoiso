@@ -2485,6 +2485,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get reportsAllCurrenciesLabel => 'Toutes les devises';
 
   @override
+  String get reportsArAgingSummaryTitle => 'Résumé des créances par ancienneté';
+
+  @override
   String get reportsAvgInvoiceValueLabel => 'Valeur moyenne des factures';
 
   @override
@@ -2624,6 +2627,15 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get reportsMonthlyRevenueTrendTitle => 'Tendance des revenus mensuels';
+
+  @override
+  String get reportsMonthlyBreakdownTitle => 'Répartition mensuelle';
+
+  @override
+  String get reportsMonthColumnLabel => 'Mois';
+
+  @override
+  String get reportsTotalRowLabel => 'Total';
 
   @override
   String get reportsNavDailyReportLabel => 'Rapport quotidien';
@@ -2789,6 +2801,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get reportsTaxCollectedLabel => 'Taxe collectée';
 
   @override
+  String get reportsTaxableAmountLabel => 'Montant imposable';
+
+  @override
+  String get reportsGrossAmountLabel => 'Brut';
+
+  @override
+  String get reportsTaxAccrualNote =>
+      'Taxe facturée sur les factures datées de cette période — comptabilité d\'engagement, avant paiement.';
+
+  @override
   String get reportsTaxRateBucketsLabel => 'Tranches de taux de taxe';
 
   @override
@@ -2827,6 +2849,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get reportsTotalInvoicesLabel => 'Total des factures';
+
+  @override
+  String get reportsRealizedProfitLabel => 'Bénéfice réalisé';
 
   @override
   String get reportsTotalProfitLabel => 'Bénéfice total';
