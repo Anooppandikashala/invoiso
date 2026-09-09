@@ -1419,6 +1419,11 @@ class AppLocalizationsNe extends AppLocalizations {
   }
 
   @override
+  String invoiceMgmtNewDocumentButton(String type) {
+    return 'नयाँ $type';
+  }
+
+  @override
   String get invoiceMgmtOverdueBadge => 'म्याद नाघेको';
 
   @override
@@ -2466,6 +2471,9 @@ class AppLocalizationsNe extends AppLocalizations {
   String get reportsAllCurrenciesLabel => 'सबै मुद्राहरू';
 
   @override
+  String get reportsArAgingSummaryTitle => 'प्राप्य आयु सारांश';
+
+  @override
   String get reportsAvgInvoiceValueLabel => 'औसत बीजक मूल्य';
 
   @override
@@ -2605,6 +2613,15 @@ class AppLocalizationsNe extends AppLocalizations {
 
   @override
   String get reportsMonthlyRevenueTrendTitle => 'मासिक राजस्व प्रवृत्ति';
+
+  @override
+  String get reportsMonthlyBreakdownTitle => 'मासिक विवरण';
+
+  @override
+  String get reportsMonthColumnLabel => 'महिना';
+
+  @override
+  String get reportsTotalRowLabel => 'जम्मा';
 
   @override
   String get reportsNavDailyReportLabel => 'दैनिक प्रतिवेदन';
@@ -2764,6 +2781,16 @@ class AppLocalizationsNe extends AppLocalizations {
   String get reportsTaxCollectedLabel => 'संकलित कर';
 
   @override
+  String get reportsTaxableAmountLabel => 'करयोग्य रकम';
+
+  @override
+  String get reportsGrossAmountLabel => 'कुल';
+
+  @override
+  String get reportsTaxAccrualNote =>
+      'यस अवधिको मिति भएका बिजकहरूमा लगाइएको कर — प्रोद्भवन आधार, भुक्तानीअघि।';
+
+  @override
   String get reportsTaxRateBucketsLabel => 'कर दर समूहहरू';
 
   @override
@@ -2802,6 +2829,9 @@ class AppLocalizationsNe extends AppLocalizations {
 
   @override
   String get reportsTotalInvoicesLabel => 'कुल बीजकहरू';
+
+  @override
+  String get reportsRealizedProfitLabel => 'प्राप्त नाफा';
 
   @override
   String get reportsTotalProfitLabel => 'कुल नाफा';
@@ -3367,7 +3397,7 @@ class AppLocalizationsNe extends AppLocalizations {
 
   @override
   String get invoiceSettingsWatermarkImageSubtitle =>
-      'बीजक PDF मा वस्तु तालिका पछाडि देखाइन्छ (थर्मल रसिदमा छापिँदैन)';
+      'बीजक PDF मा देखाइन्छ (थर्मल रसिदमा छापिँदैन)';
 
   @override
   String get invoiceSettingsChangeWatermarkButton =>
@@ -3376,6 +3406,15 @@ class AppLocalizationsNe extends AppLocalizations {
   @override
   String get invoiceSettingsUploadWatermarkButton =>
       'वाटरमार्क अपलोड गर्नुहोस्';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementLabel => 'वाटरमार्क स्थान';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementItemsTable => 'वस्तु तालिका';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementFullPage => 'पूरा पृष्ठ';
 
   @override
   String invoiceSettingsOpacityLabel(int value) {
@@ -4257,4 +4296,8 @@ class AppLocalizationsNe extends AppLocalizations {
   @override
   String get shortcutPrintPdfDescription =>
       'बीजक PDF जेनेरेट/प्रिन्ट गर्नुहोस्';
+
+  @override
+  String get invoiceSettingsCustomFieldsGridClassicNote =>
+      'नोट: कस्टम फिल्डहरू ग्रिड क्लासिक PDF टेम्प्लेटमा मात्र छापिन्छन्।';
 }

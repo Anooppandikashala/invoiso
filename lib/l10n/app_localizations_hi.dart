@@ -1412,6 +1412,11 @@ class AppLocalizationsHi extends AppLocalizations {
   }
 
   @override
+  String invoiceMgmtNewDocumentButton(String type) {
+    return 'नया $type';
+  }
+
+  @override
   String get invoiceMgmtOverdueBadge => 'अतिदेय';
 
   @override
@@ -2453,6 +2458,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get reportsAllCurrenciesLabel => 'सभी मुद्राएं';
 
   @override
+  String get reportsArAgingSummaryTitle => 'प्राप्य आयु सारांश';
+
+  @override
   String get reportsAvgInvoiceValueLabel => 'औसत इनवॉइस मूल्य';
 
   @override
@@ -2592,6 +2600,15 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get reportsMonthlyRevenueTrendTitle => 'मासिक राजस्व रुझान';
+
+  @override
+  String get reportsMonthlyBreakdownTitle => 'मासिक विवरण';
+
+  @override
+  String get reportsMonthColumnLabel => 'महीना';
+
+  @override
+  String get reportsTotalRowLabel => 'कुल';
 
   @override
   String get reportsNavDailyReportLabel => 'दैनिक रिपोर्ट';
@@ -2751,6 +2768,16 @@ class AppLocalizationsHi extends AppLocalizations {
   String get reportsTaxCollectedLabel => 'एकत्रित कर';
 
   @override
+  String get reportsTaxableAmountLabel => 'कर योग्य राशि';
+
+  @override
+  String get reportsGrossAmountLabel => 'सकल';
+
+  @override
+  String get reportsTaxAccrualNote =>
+      'इस अवधि की तारीख वाले चालानों पर लगाया गया कर — प्रोद्भवन आधार, भुगतान से पहले।';
+
+  @override
   String get reportsTaxRateBucketsLabel => 'कर दर समूह';
 
   @override
@@ -2789,6 +2816,9 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get reportsTotalInvoicesLabel => 'कुल इनवॉइस';
+
+  @override
+  String get reportsRealizedProfitLabel => 'प्राप्त लाभ';
 
   @override
   String get reportsTotalProfitLabel => 'कुल लाभ';
@@ -3349,13 +3379,22 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get invoiceSettingsWatermarkImageSubtitle =>
-      'इनवॉइस PDF पर आइटम तालिका के पीछे दिखाया जाता है (थर्मल रसीदों पर मुद्रित नहीं)';
+      'इनवॉइस PDF पर दिखाया जाता है (थर्मल रसीदों पर मुद्रित नहीं)';
 
   @override
   String get invoiceSettingsChangeWatermarkButton => 'वॉटरमार्क बदलें';
 
   @override
   String get invoiceSettingsUploadWatermarkButton => 'वॉटरमार्क अपलोड करें';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementLabel => 'वॉटरमार्क स्थान';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementItemsTable => 'आइटम तालिका';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementFullPage => 'पूरा पृष्ठ';
 
   @override
   String invoiceSettingsOpacityLabel(int value) {
@@ -4233,4 +4272,8 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get shortcutPrintPdfDescription => 'इनवॉइस PDF जनरेट/प्रिंट करें';
+
+  @override
+  String get invoiceSettingsCustomFieldsGridClassicNote =>
+      'ध्यान दें: कस्टम फ़ील्ड केवल ग्रिड क्लासिक PDF टेम्पलेट पर प्रिंट होते हैं।';
 }

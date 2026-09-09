@@ -39,6 +39,10 @@ class CreateInvoiceScreenV2 extends ConsumerStatefulWidget {
   /// Defaults to the source invoice type when null.
   final String? cloneType;
 
+  /// Document type to preselect for a brand-new form ('Invoice' | 'Quotation'
+  /// | 'Receipt'). Ignored when editing or cloning.
+  final String? initialType;
+
   /// Called when the user taps "New Invoice" while in edit mode.
   /// The parent (DashboardScreen) resets invoiceToEdit to null.
   final VoidCallback? onCreateNewInvoice;
@@ -49,6 +53,7 @@ class CreateInvoiceScreenV2 extends ConsumerStatefulWidget {
     this.invoiceToEdit,
     this.cloneFrom,
     this.cloneType,
+    this.initialType,
     this.onCreateNewInvoice,
     this.guard,
   });
@@ -167,6 +172,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   bool _customFieldsEnabled = false;
   List<CustomFieldDef> _customFieldDefs = [];
   Map<String, String> _customFieldValues = {}; // defId -> value, filled via _showCustomFieldsDialogV2
+  bool _customFieldsCollapsed = false;
 
   TaxMode get _taxMode {
     if (!_isTaxEnabled) return TaxMode.none;
@@ -193,6 +199,16 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       }
     });
     taxRateController.text = (taxRate * 100).toStringAsFixed(1);
+    // Resolve the document type before the first load so the previewed number
+    // uses the right series — Invoice and Quotation have separate sequences,
+    // and _loadCustomersAndProducts peeks the next number using invoiceType.
+    if (widget.invoiceToEdit == null) {
+      if (widget.cloneFrom != null) {
+        invoiceType = widget.cloneType ?? widget.cloneFrom!.type;
+      } else if (widget.initialType != null) {
+        invoiceType = widget.initialType!;
+      }
+    }
     _loadCustomersAndProducts(widget.invoiceToEdit != null);
     _loadColumnsConfig();
     _selectedOrderDate = DateTime.now();
@@ -2474,27 +2490,51 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     // sits in should still line up with the Customer form, not balloon out
     // or shrink to almost nothing. Overflow scrolls internally.
     return Container(
-      height: 165,
+      height: _customFieldsCollapsed ? null : 165,
       decoration: _flatCardDecorationV2(context),
       padding: const EdgeInsets.all(AppPadding.medium),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.max,
+        mainAxisSize:
+            _customFieldsCollapsed ? MainAxisSize.min : MainAxisSize.max,
         children: [
           Row(
             children: [
-              Icon(Icons.dashboard_customize_outlined,
-                  size: 16,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant),
-              const SizedBox(width: 8),
               Expanded(
-                child: Text(
-                  'CUSTOM FIELDS',
-                  style: const TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.6),
-                  overflow: TextOverflow.ellipsis,
+                child: InkWell(
+                  onTap: () {
+                    if (!mounted) return;
+                    setState(() =>
+                        _customFieldsCollapsed = !_customFieldsCollapsed);
+                  },
+                  child: Row(
+                    children: [
+                      Icon(
+                          _customFieldsCollapsed
+                              ? Icons.chevron_right
+                              : Icons.expand_more,
+                          size: 18,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      const SizedBox(width: 4),
+                      Icon(Icons.dashboard_customize_outlined,
+                          size: 16,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          'CUSTOM FIELDS',
+                          style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.6),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
@@ -2521,34 +2561,39 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: filled.isEmpty
-                ? Align(
-                    alignment: Alignment.topLeft,
-                    child: Text(
-                      'No custom fields filled yet.',
-                      style: TextStyle(
-                          fontSize: 12,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant),
+          if (!_customFieldsCollapsed) ...[
+            const SizedBox(height: 12),
+            Expanded(
+              child: filled.isEmpty
+                  ? Align(
+                      alignment: Alignment.topLeft,
+                      child: Text(
+                        'No custom fields filled yet.',
+                        style: TextStyle(
+                            fontSize: 12,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant),
+                      ),
+                    )
+                  : SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          for (var i = 0; i < filled.length; i += 2)
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                tile(filled[i]),
+                                tile(i + 1 < filled.length
+                                    ? filled[i + 1]
+                                    : null),
+                              ],
+                            ),
+                        ],
+                      ),
                     ),
-                  )
-                : SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        for (var i = 0; i < filled.length; i += 2)
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              tile(filled[i]),
-                              tile(i + 1 < filled.length ? filled[i + 1] : null),
-                            ],
-                          ),
-                      ],
-                    ),
-                  ),
-          ),
+            ),
+          ],
         ],
       ),
     );

@@ -64,6 +64,7 @@ class _InvoiceSettingsScreenV2State
   String _selectedSignatureSize = 'medium';
   String? _watermarkBase64;
   double _watermarkOpacity = 0.12;
+  bool _watermarkFullPage = false;
   String? _defaultInvoiceTitle;
   bool _allowDuplicateInvoiceItems = false;
   bool _invoiceLeadingZeros = true;
@@ -130,6 +131,7 @@ class _InvoiceSettingsScreenV2State
       settingsRepo.getShowTimeInPdf(),
       settingsRepo.getPdfTimeFormat(),
       settingsRepo.getShowSlNoInPdf(),
+      settingsRepo.getWatermarkFullPage(),
     ]);
 
     if (!mounted) return;
@@ -182,6 +184,7 @@ class _InvoiceSettingsScreenV2State
       _showTimeInPdf = results[38] as bool;
       _pdfTimeFormat = results[39] as String;
       _showSlNoInPdf = results[40] as bool;
+      _watermarkFullPage = results[41] as bool;
       _customFieldsEnabled = customFieldsEnabledStr == 'true';
       _customFieldDefs = customFieldDefs;
       _isLoading = false;
@@ -338,6 +341,13 @@ class _InvoiceSettingsScreenV2State
 
   Future<void> _setWatermarkOpacity(double opacity) async {
     await ref.read(settingsRepositoryProvider).setWatermarkOpacity(opacity);
+  }
+
+  Future<void> _setWatermarkFullPage(bool fullPage) async {
+    setState(() => _watermarkFullPage = fullPage);
+    await ref
+        .read(settingsRepositoryProvider)
+        .setWatermarkFullPage(fullPage);
   }
 
   Future<void> _setDefaultInvoiceTitle(String? title) async {
@@ -1168,6 +1178,27 @@ class _InvoiceSettingsScreenV2State
                   },
                   onChangeEnd: _setWatermarkOpacity,
                 ),
+                const SizedBox(height: 12),
+                Text(l10n.invoiceSettingsWatermarkPlacementLabel,
+                    style: const TextStyle(fontSize: 13)),
+                const SizedBox(height: 8),
+                SegmentedButton<bool>(
+                  segments: [
+                    ButtonSegment<bool>(
+                        value: false,
+                        icon: const Icon(Icons.table_rows_outlined, size: 16),
+                        label: Text(l10n
+                            .invoiceSettingsWatermarkPlacementItemsTable)),
+                    ButtonSegment<bool>(
+                        value: true,
+                        icon: const Icon(Icons.crop_portrait, size: 16),
+                        label: Text(
+                            l10n.invoiceSettingsWatermarkPlacementFullPage)),
+                  ],
+                  selected: {_watermarkFullPage},
+                  onSelectionChanged: (selection) =>
+                      _setWatermarkFullPage(selection.first),
+                ),
               ],
             ],
           ),
@@ -1187,7 +1218,7 @@ class _InvoiceSettingsScreenV2State
       [
         Text(l10n.invoiceSettingsColumnsSectionHint,
             style: TextStyle(
-                fontSize: 12,
+                fontSize: 14,
                 color: Theme.of(context).colorScheme.onSurfaceVariant)),
         const SizedBox(height: 4),
         _toggleCardV2(
@@ -1320,8 +1351,16 @@ class _InvoiceSettingsScreenV2State
         Text(
           'Define fields once here (e.g. Vehicle No, Delivery Note), then fill their values on each invoice. Not tied to the customer.',
           style: TextStyle(
-              fontSize: 12,
+              fontSize: 14,
               color: Theme.of(context).colorScheme.onSurfaceVariant),
+        ),
+        Text(
+          AppLocalizations.of(context)!
+              .invoiceSettingsCustomFieldsGridClassicNote,
+          style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.error),
         ),
         const SizedBox(height: 4),
         _toggleCardV2(
@@ -1406,7 +1445,7 @@ class _InvoiceSettingsScreenV2State
       [
         Text(l10n.invoiceSettingsCustomerSectionHint,
             style: TextStyle(
-                fontSize: 12,
+                fontSize: 14,
                 color: Theme.of(context).colorScheme.onSurfaceVariant)),
         const SizedBox(height: 4),
         _toggleCardV2(

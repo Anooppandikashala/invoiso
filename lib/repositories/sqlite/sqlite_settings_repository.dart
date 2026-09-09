@@ -182,6 +182,10 @@ class SqliteSettingsRepository implements SettingsRepository {
   Future<void> setWatermarkOpacity(double opacity) => SettingsService.setWatermarkOpacity(opacity);
   @override
   Future<double> getWatermarkOpacity() => SettingsService.getWatermarkOpacity();
+  @override
+  Future<void> setWatermarkFullPage(bool fullPage) => SettingsService.setWatermarkFullPage(fullPage);
+  @override
+  Future<bool> getWatermarkFullPage() => SettingsService.getWatermarkFullPage();
 
   @override
   Future<void> setDefaultInvoiceTitle(String? title) => SettingsService.setDefaultInvoiceTitle(title);

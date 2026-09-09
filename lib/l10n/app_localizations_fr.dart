@@ -1429,6 +1429,11 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String invoiceMgmtNewDocumentButton(String type) {
+    return 'Créer $type';
+  }
+
+  @override
   String get invoiceMgmtOverdueBadge => 'En retard';
 
   @override
@@ -2486,6 +2491,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get reportsAllCurrenciesLabel => 'Toutes les devises';
 
   @override
+  String get reportsArAgingSummaryTitle => 'Résumé des créances par ancienneté';
+
+  @override
   String get reportsAvgInvoiceValueLabel => 'Valeur moyenne des factures';
 
   @override
@@ -2625,6 +2633,15 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get reportsMonthlyRevenueTrendTitle => 'Tendance des revenus mensuels';
+
+  @override
+  String get reportsMonthlyBreakdownTitle => 'Répartition mensuelle';
+
+  @override
+  String get reportsMonthColumnLabel => 'Mois';
+
+  @override
+  String get reportsTotalRowLabel => 'Total';
 
   @override
   String get reportsNavDailyReportLabel => 'Rapport quotidien';
@@ -2790,6 +2807,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get reportsTaxCollectedLabel => 'Taxe collectée';
 
   @override
+  String get reportsTaxableAmountLabel => 'Montant imposable';
+
+  @override
+  String get reportsGrossAmountLabel => 'Brut';
+
+  @override
+  String get reportsTaxAccrualNote =>
+      'Taxe facturée sur les factures datées de cette période — comptabilité d\'engagement, avant paiement.';
+
+  @override
   String get reportsTaxRateBucketsLabel => 'Tranches de taux de taxe';
 
   @override
@@ -2828,6 +2855,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get reportsTotalInvoicesLabel => 'Total des factures';
+
+  @override
+  String get reportsRealizedProfitLabel => 'Bénéfice réalisé';
 
   @override
   String get reportsTotalProfitLabel => 'Bénéfice total';
@@ -3405,13 +3435,24 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get invoiceSettingsWatermarkImageSubtitle =>
-      'Affiché derrière le tableau des articles sur les PDF de facture (non imprimé sur les reçus thermiques)';
+      'Affiché sur les PDF de facture (non imprimé sur les reçus thermiques)';
 
   @override
   String get invoiceSettingsChangeWatermarkButton => 'Changer le filigrane';
 
   @override
   String get invoiceSettingsUploadWatermarkButton => 'Téléverser un filigrane';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementLabel =>
+      'Emplacement du filigrane';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementItemsTable =>
+      'Tableau des articles';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementFullPage => 'Page entière';
 
   @override
   String invoiceSettingsOpacityLabel(int value) {
@@ -4307,4 +4348,8 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get shortcutPrintPdfDescription =>
       'Générer / imprimer le PDF de la facture';
+
+  @override
+  String get invoiceSettingsCustomFieldsGridClassicNote =>
+      'Remarque : les champs personnalisés ne sont imprimés que sur le modèle PDF Grille classique.';
 }

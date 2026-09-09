@@ -1425,6 +1425,11 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String invoiceMgmtNewDocumentButton(String type) {
+    return 'Crear $type';
+  }
+
+  @override
   String get invoiceMgmtOverdueBadge => 'Vencida';
 
   @override
@@ -2481,6 +2486,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get reportsAllCurrenciesLabel => 'Todas las monedas';
 
   @override
+  String get reportsArAgingSummaryTitle =>
+      'Resumen de antigüedad de cuentas por cobrar';
+
+  @override
   String get reportsAvgInvoiceValueLabel => 'Valor promedio de factura';
 
   @override
@@ -2621,6 +2630,15 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get reportsMonthlyRevenueTrendTitle =>
       'Tendencia de ingresos mensuales';
+
+  @override
+  String get reportsMonthlyBreakdownTitle => 'Desglose mensual';
+
+  @override
+  String get reportsMonthColumnLabel => 'Mes';
+
+  @override
+  String get reportsTotalRowLabel => 'Total';
 
   @override
   String get reportsNavDailyReportLabel => 'Informe diario';
@@ -2786,6 +2804,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get reportsTaxCollectedLabel => 'Impuesto recaudado';
 
   @override
+  String get reportsTaxableAmountLabel => 'Base imponible';
+
+  @override
+  String get reportsGrossAmountLabel => 'Bruto';
+
+  @override
+  String get reportsTaxAccrualNote =>
+      'Impuesto cargado en facturas con fecha de este período — base devengo, antes del pago.';
+
+  @override
   String get reportsTaxRateBucketsLabel => 'Rangos de tasa de impuesto';
 
   @override
@@ -2824,6 +2852,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get reportsTotalInvoicesLabel => 'Total de facturas';
+
+  @override
+  String get reportsRealizedProfitLabel => 'Ganancia realizada';
 
   @override
   String get reportsTotalProfitLabel => 'Ganancia total';
@@ -3399,13 +3430,24 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get invoiceSettingsWatermarkImageSubtitle =>
-      'Se muestra detrás de la tabla de artículos en los PDF de factura (no se imprime en recibos térmicos)';
+      'Se muestra en los PDF de factura (no se imprime en recibos térmicos)';
 
   @override
   String get invoiceSettingsChangeWatermarkButton => 'Cambiar marca de agua';
 
   @override
   String get invoiceSettingsUploadWatermarkButton => 'Subir marca de agua';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementLabel =>
+      'Ubicación de la marca de agua';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementItemsTable =>
+      'Tabla de artículos';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementFullPage => 'Página completa';
 
   @override
   String invoiceSettingsOpacityLabel(int value) {
@@ -4302,4 +4344,8 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get shortcutPrintPdfDescription =>
       'Generar / imprimir el PDF de la factura';
+
+  @override
+  String get invoiceSettingsCustomFieldsGridClassicNote =>
+      'Nota: Los campos personalizados solo se imprimen en la plantilla PDF Cuadrícula clásica.';
 }

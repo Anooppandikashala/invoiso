@@ -1364,6 +1364,11 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String invoiceMgmtNewDocumentButton(String type) {
+    return '新建$type';
+  }
+
+  @override
   String get invoiceMgmtOverdueBadge => '已逾期';
 
   @override
@@ -2360,6 +2365,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get reportsAllCurrenciesLabel => '所有货币';
 
   @override
+  String get reportsArAgingSummaryTitle => '应收账款账龄摘要';
+
+  @override
   String get reportsAvgInvoiceValueLabel => '平均发票金额';
 
   @override
@@ -2493,6 +2501,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get reportsMonthlyRevenueTrendTitle => '月度收入趋势';
+
+  @override
+  String get reportsMonthlyBreakdownTitle => '月度明细';
+
+  @override
+  String get reportsMonthColumnLabel => '月份';
+
+  @override
+  String get reportsTotalRowLabel => '合计';
 
   @override
   String get reportsNavDailyReportLabel => '每日报告';
@@ -2645,6 +2662,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get reportsTaxCollectedLabel => '已收税款';
 
   @override
+  String get reportsTaxableAmountLabel => '应税金额';
+
+  @override
+  String get reportsGrossAmountLabel => '总额';
+
+  @override
+  String get reportsTaxAccrualNote => '按本期开票日期计提的税款 — 权责发生制，付款前。';
+
+  @override
   String get reportsTaxRateBucketsLabel => '税率分组';
 
   @override
@@ -2682,6 +2708,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get reportsTotalInvoicesLabel => '发票总数';
+
+  @override
+  String get reportsRealizedProfitLabel => '已实现利润';
 
   @override
   String get reportsTotalProfitLabel => '总利润';
@@ -3208,14 +3237,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get invoiceSettingsWatermarkImageLabel => '水印图片';
 
   @override
-  String get invoiceSettingsWatermarkImageSubtitle =>
-      '显示在发票 PDF 的项目表格后面（不会打印在热敏小票上）';
+  String get invoiceSettingsWatermarkImageSubtitle => '显示在发票 PDF 上（不会打印在热敏小票上）';
 
   @override
   String get invoiceSettingsChangeWatermarkButton => '更换水印';
 
   @override
   String get invoiceSettingsUploadWatermarkButton => '上传水印';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementLabel => '水印位置';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementItemsTable => '商品表格';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementFullPage => '整页';
 
   @override
   String invoiceSettingsOpacityLabel(int value) {
@@ -4055,4 +4092,8 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get shortcutPrintPdfDescription => '生成／打印发票 PDF';
+
+  @override
+  String get invoiceSettingsCustomFieldsGridClassicNote =>
+      '注意：自定义字段仅在“经典网格”PDF 模板中打印。';
 }

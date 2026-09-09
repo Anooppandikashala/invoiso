@@ -56,6 +56,7 @@ class PdfGenerationSettings {
   final String thermalCompanyNameSize;
   final Uint8List? watermarkBytes;
   final double watermarkOpacity;
+  final bool watermarkFullPage;
   final bool showCgstSgst;
   final bool showRoundOff;
   final bool showLeadingZeros;
@@ -100,6 +101,7 @@ class PdfGenerationSettings {
     this.descriptionNewLine = false,
     this.watermarkBytes,
     this.watermarkOpacity = 0.12,
+    this.watermarkFullPage = false,
     this.showRoundOff = false,
     this.showPhone = true,
     this.showEmail = true,

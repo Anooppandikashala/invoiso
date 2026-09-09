@@ -48,6 +48,7 @@ enum SettingKey {
   themeMode, // app theme: 'light' | 'dark' | 'system'
   watermarkImage, // base64-encoded watermark image shown behind invoice items table
   watermarkOpacity, // watermark opacity 0.0-1.0 as string; default '0.12'
+  watermarkFullPage, // 'true' to render watermark across the whole page instead of only behind the items table (default false)
   defaultInvoiceTitle, // GST document title preselected on new invoices: 'Tax Invoice' | 'Bill of Supply' | etc; null/empty = plain 'Invoice'
   allowDuplicateInvoiceItems, // whether the same product can be added twice to one invoice (default false)
   showCgstSgst, // whether to split tax into CGST/SGST (India, 50/50)
@@ -188,6 +189,8 @@ extension SettingKeyExtension on SettingKey {
         return 'watermark_image';
       case SettingKey.watermarkOpacity:
         return 'watermark_opacity';
+      case SettingKey.watermarkFullPage:
+        return 'watermark_full_page';
       case SettingKey.defaultInvoiceTitle:
         return 'default_invoice_title';
       case SettingKey.allowDuplicateInvoiceItems:

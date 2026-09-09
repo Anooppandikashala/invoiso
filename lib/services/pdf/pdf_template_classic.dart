@@ -39,6 +39,7 @@ pw.MultiPage buildClassicTemplate(
   pw.ThemeData? pdfTheme,
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
+  bool watermarkFullPage = false,
   bool showCgstSgst = false,
   bool showIgst = false,
   bool showRoundOff = false,
@@ -80,10 +81,17 @@ pw.MultiPage buildClassicTemplate(
   final allCompanyIds = companyIdParts.length == 3;
   final companyIdLine = companyIdParts.join('   ');
 
+  final fullPageWatermark = watermarkFullPage && watermarkBytes != null;
   return pw.MultiPage(
-    pageFormat: pageFormat,
-    theme: pdfTheme,
-    margin: pw.EdgeInsets.all(PdfLayout.defaultHMargin),
+    pageTheme: pw.PageTheme(
+      pageFormat: pageFormat,
+      theme: pdfTheme,
+      margin: pw.EdgeInsets.all(PdfLayout.defaultHMargin),
+      buildBackground: fullPageWatermark
+          ? (context) =>
+              buildFullPageWatermark(watermarkBytes, watermarkOpacity)
+          : null,
+    ),
     footer: (context) => pw.Container(
       alignment: pw.Alignment.centerRight,
       margin: const pw.EdgeInsets.only(top: 20),
@@ -235,7 +243,7 @@ pw.MultiPage buildClassicTemplate(
           showDescription: showDescription,
           descriptionNewLine: descriptionNewLine,
           businessType: businessType,
-          watermarkBytes: watermarkBytes,
+          watermarkBytes: fullPageWatermark ? null : watermarkBytes,
           watermarkOpacity: watermarkOpacity,
           showCgstSgst: showCgstSgst, showIgst: showIgst,
           tableFontSize: classicPdfStyle.tableFontSize,

@@ -1407,6 +1407,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String invoiceMgmtNewDocumentButton(String type) {
+    return 'New $type';
+  }
+
+  @override
   String get invoiceMgmtOverdueBadge => 'Overdue';
 
   @override
@@ -2441,6 +2446,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportsAllCurrenciesLabel => 'All currencies';
 
   @override
+  String get reportsArAgingSummaryTitle => 'A/R Aging Summary';
+
+  @override
   String get reportsAvgInvoiceValueLabel => 'Avg Invoice Value';
 
   @override
@@ -2580,6 +2588,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reportsMonthlyRevenueTrendTitle => 'Monthly Revenue Trend';
+
+  @override
+  String get reportsMonthlyBreakdownTitle => 'Monthly Breakdown';
+
+  @override
+  String get reportsMonthColumnLabel => 'Month';
+
+  @override
+  String get reportsTotalRowLabel => 'Total';
 
   @override
   String get reportsNavDailyReportLabel => 'Daily Report';
@@ -2732,10 +2749,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportsStatementsLabel => 'Statements';
 
   @override
-  String get reportsTaxCollectedByRateTitle => 'Tax Collected by Rate';
+  String get reportsTaxCollectedByRateTitle => 'Tax by Rate';
 
   @override
-  String get reportsTaxCollectedLabel => 'Tax Collected';
+  String get reportsTaxCollectedLabel => 'Tax';
+
+  @override
+  String get reportsTaxableAmountLabel => 'Taxable Amount';
+
+  @override
+  String get reportsGrossAmountLabel => 'Gross';
+
+  @override
+  String get reportsTaxAccrualNote =>
+      'Tax charged on invoices dated in this period — accrual basis, before payment.';
 
   @override
   String get reportsTaxRateBucketsLabel => 'Tax Rate Buckets';
@@ -2778,10 +2805,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportsTotalInvoicesLabel => 'Total Invoices';
 
   @override
+  String get reportsRealizedProfitLabel => 'Realized Profit';
+
+  @override
   String get reportsTotalProfitLabel => 'Total Profit';
 
   @override
-  String get reportsTotalTaxCollectedLabel => 'Total Tax Collected';
+  String get reportsTotalTaxCollectedLabel => 'Total Tax Charged';
 
   @override
   String get reportsTypeColumnLabel => 'Type';
@@ -3334,13 +3364,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get invoiceSettingsWatermarkImageSubtitle =>
-      'Shown behind the items table on invoice PDFs (not printed on thermal receipts)';
+      'Shown on invoice PDFs (not printed on thermal receipts)';
 
   @override
   String get invoiceSettingsChangeWatermarkButton => 'Change Watermark';
 
   @override
   String get invoiceSettingsUploadWatermarkButton => 'Upload Watermark';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementLabel => 'Watermark placement';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementItemsTable => 'Items table';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementFullPage => 'Full page';
 
   @override
   String invoiceSettingsOpacityLabel(int value) {
@@ -4216,4 +4255,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shortcutPrintPdfDescription => 'Generate / print invoice PDF';
+
+  @override
+  String get invoiceSettingsCustomFieldsGridClassicNote =>
+      'Note: Custom fields are only printed on the Grid Classic PDF template.';
 }

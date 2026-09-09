@@ -1404,6 +1404,11 @@ class AppLocalizationsBo extends AppLocalizations {
   }
 
   @override
+  String invoiceMgmtNewDocumentButton(String type) {
+    return '$type གསར་བཟོ།';
+  }
+
+  @override
   String get invoiceMgmtOverdueBadge => 'དུས་འགོར།';
 
   @override
@@ -2440,6 +2445,9 @@ class AppLocalizationsBo extends AppLocalizations {
   String get reportsAllCurrenciesLabel => 'དངུལ་རིགས་ཚང་མ།';
 
   @override
+  String get reportsArAgingSummaryTitle => 'A/R Aging Summary';
+
+  @override
   String get reportsAvgInvoiceValueLabel => 'ཁྲལ་ཤོག་ཐུན་མོང་གོང་ཚད།';
 
   @override
@@ -2579,6 +2587,15 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get reportsMonthlyRevenueTrendTitle => 'ཟླ་རེའི་འབབ་འོང་འགྱུར་རིམ།';
+
+  @override
+  String get reportsMonthlyBreakdownTitle => 'Monthly Breakdown';
+
+  @override
+  String get reportsMonthColumnLabel => 'Month';
+
+  @override
+  String get reportsTotalRowLabel => 'Total';
 
   @override
   String get reportsNavDailyReportLabel => 'ཉིན་རེའི་སྙན་ཞུ།';
@@ -2738,6 +2755,16 @@ class AppLocalizationsBo extends AppLocalizations {
   String get reportsTaxCollectedLabel => 'བསྡུས་པའི་ཁྲལ།';
 
   @override
+  String get reportsTaxableAmountLabel => 'Taxable Amount';
+
+  @override
+  String get reportsGrossAmountLabel => 'Gross';
+
+  @override
+  String get reportsTaxAccrualNote =>
+      'Tax charged on invoices dated in this period — accrual basis, before payment.';
+
+  @override
   String get reportsTaxRateBucketsLabel => 'ཁྲལ་ཐང་སྡེ་ཚན།';
 
   @override
@@ -2776,6 +2803,9 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get reportsTotalInvoicesLabel => 'ཁྲལ་ཤོག་སྤྱིའི་གྲངས།';
+
+  @override
+  String get reportsRealizedProfitLabel => 'Realized Profit';
 
   @override
   String get reportsTotalProfitLabel => 'ཁེ་སྐྱེད་སྤྱི།';
@@ -3334,13 +3364,22 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get invoiceSettingsWatermarkImageSubtitle =>
-      'ཁྲལ་ཤོག PDF ནང་རས་ཆས་ཐིག་ཁྲམ་རྒྱབ་ཏུ་སྟོན (མེ་འཁོར་ལག་དེབ་ཐོག་མི་འཁོད)';
+      'ཁྲལ་ཤོག PDF ཐོག་སྟོན (མེ་འཁོར་ལག་དེབ་ཐོག་མི་འཁོད)';
 
   @override
   String get invoiceSettingsChangeWatermarkButton => 'ཆུ་རྟགས་བརྗེ་བ།';
 
   @override
   String get invoiceSettingsUploadWatermarkButton => 'ཆུ་རྟགས་སྤར་གཞུག';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementLabel => 'ཆུ་རྟགས་འཇོག་ས།';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementItemsTable => 'རས་ཆས་ཐིག་ཁྲམ།';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementFullPage => 'ཤོག་ངོས་ཧྲིལ་པོ།';
 
   @override
   String invoiceSettingsOpacityLabel(int value) {
@@ -4218,4 +4257,8 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get shortcutPrintPdfDescription => 'ཁྲལ་ཤོག PDF བཟོ/པར་སྐྲུན།';
+
+  @override
+  String get invoiceSettingsCustomFieldsGridClassicNote =>
+      'བརྡ་འཕྲིན: སྒེར་སྒྲིག་ཡིག་ཆ་ནི་རེའུ་མིག་སྲོལ་རྒྱུན་གྱི་ PDF ནང་གཞི་ཁོ་ནར་པར་སྐྲུན་བྱེད།';
 }
