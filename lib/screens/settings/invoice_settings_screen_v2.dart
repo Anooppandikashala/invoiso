@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/supported_currencies.dart';
+import 'package:invoiso/models/custom_field_def.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/common/constants.dart';
@@ -39,6 +40,7 @@ class _InvoiceSettingsScreenV2State
   bool _showTimeInPdf = true;
   String _pdfTimeFormat = '24';
   bool _showGstFields = true;
+  bool _showSlNoInPdf = true;
   bool _fractionalQuantity = false;
   bool _showQuantity = true;
   bool _showDiscount = true;
@@ -62,12 +64,34 @@ class _InvoiceSettingsScreenV2State
   String _selectedSignatureSize = 'medium';
   String? _watermarkBase64;
   double _watermarkOpacity = 0.12;
+  bool _watermarkFullPage = false;
   String? _defaultInvoiceTitle;
   bool _allowDuplicateInvoiceItems = false;
   bool _invoiceLeadingZeros = true;
+
+  // Grid Classic A4 product-metadata columns. Keys match buildInvoiceTable's
+  // metaKeys / ProductMetadata fields; all off by default. Grid Classic only.
+  static const List<String> _metadataColumnKeys = [
+    'storageLocation',
+    'containerNumber',
+    'batchNumber',
+    'expiryDate',
+    'manufactureDate',
+    'manufactureName',
+    'supplierName',
+    'skuCode',
+    'notes',
+  ];
+  Map<String, bool> _metadataColumns = {
+    for (final k in _metadataColumnKeys) k: false
+  };
   int _invoiceCount = 0;
   bool _isLoading = true;
   bool _isSaving = false;
+  bool _customFieldsEnabled = false;
+  List<CustomFieldDef> _customFieldDefs = [];
+  final TextEditingController _newCustomFieldController =
+      TextEditingController();
 
   // ── V2 state: which settings section is currently shown ──────────────
   int _selectedSectionV2 = 0;
@@ -123,8 +147,16 @@ class _InvoiceSettingsScreenV2State
       settingsRepo.getShowCustomerGstin(),
       settingsRepo.getShowTimeInPdf(),
       settingsRepo.getPdfTimeFormat(),
+      settingsRepo.getShowSlNoInPdf(),
+      settingsRepo.getWatermarkFullPage(),
+      settingsRepo.getInvoicePdfMetadataColumns(),
     ]);
 
+    if (!mounted) return;
+
+    final customFieldsEnabledStr =
+        await settingsRepo.getSetting(SettingKey.customFieldsEnabled);
+    final customFieldDefs = await settingsRepo.getCustomFieldDefs();
     if (!mounted) return;
 
     setState(() {
@@ -169,6 +201,14 @@ class _InvoiceSettingsScreenV2State
       _showCustomerGstin = results[37] as bool;
       _showTimeInPdf = results[38] as bool;
       _pdfTimeFormat = results[39] as String;
+      _showSlNoInPdf = results[40] as bool;
+      _watermarkFullPage = results[41] as bool;
+      _metadataColumns = {
+        for (final k in _metadataColumnKeys)
+          k: (results[42] as Map<String, bool>)[k] ?? false
+      };
+      _customFieldsEnabled = customFieldsEnabledStr == 'true';
+      _customFieldDefs = customFieldDefs;
       _isLoading = false;
     });
   }
@@ -240,6 +280,11 @@ class _InvoiceSettingsScreenV2State
         settingsRepo.setShowCustomerGstin(_showCustomerGstin),
         settingsRepo.setShowTimeInPdf(_showTimeInPdf),
         settingsRepo.setPdfTimeFormat(_pdfTimeFormat),
+        settingsRepo.setShowSlNoInPdf(_showSlNoInPdf),
+        settingsRepo.setInvoicePdfMetadataColumns(_metadataColumns),
+        settingsRepo.setSetting(
+            SettingKey.customFieldsEnabled, _customFieldsEnabled.toString()),
+        settingsRepo.setCustomFieldDefs(_customFieldDefs),
       ]);
 
       if (!mounted) return;
@@ -321,6 +366,13 @@ class _InvoiceSettingsScreenV2State
     await ref.read(settingsRepositoryProvider).setWatermarkOpacity(opacity);
   }
 
+  Future<void> _setWatermarkFullPage(bool fullPage) async {
+    setState(() => _watermarkFullPage = fullPage);
+    await ref
+        .read(settingsRepositoryProvider)
+        .setWatermarkFullPage(fullPage);
+  }
+
   Future<void> _setDefaultInvoiceTitle(String? title) async {
     await ref.read(settingsRepositoryProvider).setDefaultInvoiceTitle(title);
     setState(() => _defaultInvoiceTitle = title);
@@ -357,6 +409,8 @@ class _InvoiceSettingsScreenV2State
     Icons.percent_rounded,
     Icons.view_list_rounded,
     Icons.person_outline,
+    Icons.table_chart_outlined,
+    Icons.dashboard_customize_outlined,
   ];
 
   String _navSectionLabelV2(BuildContext context, int index) {
@@ -366,7 +420,9 @@ class _InvoiceSettingsScreenV2State
       1 => l10n.invoiceSettingsSectionBranding,
       2 => l10n.invoiceSettingsSectionTax,
       3 => l10n.invoiceSettingsSectionItems,
-      _ => l10n.invoiceSettingsSectionCustomer,
+      4 => l10n.invoiceSettingsSectionCustomer,
+      5 => l10n.invoiceSettingsSectionColumns,
+      _ => 'Custom Fields',
     };
   }
 
@@ -489,7 +545,7 @@ class _InvoiceSettingsScreenV2State
     required String subtitle,
     required IconData icon,
     required bool value,
-    required ValueChanged<bool> onChanged,
+    required ValueChanged<bool>? onChanged,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -507,10 +563,12 @@ class _InvoiceSettingsScreenV2State
               : Theme.of(context).colorScheme.onSurfaceVariant,
         ),
         value: value,
-        onChanged: (val) {
-          if (!mounted) return;
-          onChanged(val);
-        },
+        onChanged: onChanged == null
+            ? null
+            : (val) {
+                if (!mounted) return;
+                onChanged(val);
+              },
         activeColor: Theme.of(context).primaryColor,
       ),
     );
@@ -769,13 +827,6 @@ class _InvoiceSettingsScreenV2State
           value: _showGstFields,
           onChanged: (val) => setState(() => _showGstFields = val),
         ),
-        _toggleCardV2(
-          title: l10n.invoiceSettingsShowCgstSgstLabel,
-          subtitle: l10n.invoiceSettingsShowCgstSgstSubtitle,
-          icon: Icons.percent_rounded,
-          value: _showCgstSgst,
-          onChanged: (val) => setState(() => _showCgstSgst = val),
-        ),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -904,27 +955,12 @@ class _InvoiceSettingsScreenV2State
           value: _showAliasNameInPdf,
           onChanged: (val) => setState(() => _showAliasNameInPdf = val),
         ),
-        _descriptionGroupV2(l10n),
         _toggleCardV2(
           title: l10n.invoiceSettingsAllowFractionalQtyLabel,
           subtitle: l10n.invoiceSettingsAllowFractionalQtySubtitle,
           icon: Icons.pin_outlined,
           value: _fractionalQuantity,
           onChanged: (val) => setState(() => _fractionalQuantity = val),
-        ),
-        _toggleCardV2(
-          title: l10n.invoiceSettingsShowQuantityLabel,
-          subtitle: l10n.invoiceSettingsShowQuantitySubtitle,
-          icon: Icons.onetwothree_rounded,
-          value: _showQuantity,
-          onChanged: (val) => setState(() => _showQuantity = val),
-        ),
-        _toggleCardV2(
-          title: l10n.invoiceSettingsShowDiscountLabel,
-          subtitle: l10n.invoiceSettingsShowDiscountSubtitle,
-          icon: Icons.discount_outlined,
-          value: _showDiscount,
-          onChanged: (val) => setState(() => _showDiscount = val),
         ),
         _toggleCardV2(
           title: l10n.invoiceSettingsShowTypeTagLabel,
@@ -1165,6 +1201,27 @@ class _InvoiceSettingsScreenV2State
                   },
                   onChangeEnd: _setWatermarkOpacity,
                 ),
+                const SizedBox(height: 12),
+                Text(l10n.invoiceSettingsWatermarkPlacementLabel,
+                    style: const TextStyle(fontSize: 13)),
+                const SizedBox(height: 8),
+                SegmentedButton<bool>(
+                  segments: [
+                    ButtonSegment<bool>(
+                        value: false,
+                        icon: const Icon(Icons.table_rows_outlined, size: 16),
+                        label: Text(l10n
+                            .invoiceSettingsWatermarkPlacementItemsTable)),
+                    ButtonSegment<bool>(
+                        value: true,
+                        icon: const Icon(Icons.crop_portrait, size: 16),
+                        label: Text(
+                            l10n.invoiceSettingsWatermarkPlacementFullPage)),
+                  ],
+                  selected: {_watermarkFullPage},
+                  onSelectionChanged: (selection) =>
+                      _setWatermarkFullPage(selection.first),
+                ),
               ],
             ],
           ),
@@ -1173,10 +1230,175 @@ class _InvoiceSettingsScreenV2State
     );
   }
 
-  Widget _sectionLanguageV2() {
+  // The invoice PDF items-table columns, all in one checklist. Item Name,
+  // Price and Total are structural and always print, so they show as locked
+  // rows. HSN/SAC mirrors the Show GST Fields toggle (which also controls the
+  // GSTIN header fields, so it stays in the Tax section too).
+  Widget _sectionColumnsV2() {
+    final l10n = AppLocalizations.of(context)!;
     return _fieldWrapV2(
       [],
-      [],
+      [
+        Text(l10n.invoiceSettingsColumnsSectionHint,
+            style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.onSurfaceVariant)),
+        const SizedBox(height: 4),
+        _toggleCardV2(
+          title: l10n.invoiceSettingsShowSlNoLabel,
+          subtitle: l10n.invoiceSettingsShowSlNoSubtitle,
+          icon: Icons.format_list_numbered,
+          value: _showSlNoInPdf,
+          onChanged: (val) => setState(() => _showSlNoInPdf = val),
+        ),
+        _toggleCardV2(
+          title: l10n.invoiceSettingsColumnItemNameLabel,
+          subtitle: l10n.invoiceSettingsColumnRequiredSubtitle,
+          icon: Icons.check_circle_outline,
+          value: true,
+          onChanged: null,
+        ),
+        _descriptionGroupV2(l10n),
+        _toggleCardV2(
+          title: l10n.invoiceSettingsColumnHsnLabel,
+          subtitle: l10n.invoiceSettingsColumnHsnSubtitle,
+          icon: Icons.receipt_long_rounded,
+          value: _showGstFields,
+          onChanged: (val) => setState(() => _showGstFields = val),
+        ),
+        _toggleCardV2(
+          title: l10n.invoiceSettingsShowQuantityLabel,
+          subtitle: l10n.invoiceSettingsShowQuantitySubtitle,
+          icon: Icons.onetwothree_rounded,
+          value: _showQuantity,
+          onChanged: (val) => setState(() => _showQuantity = val),
+        ),
+        _toggleCardV2(
+          title: l10n.invoiceSettingsColumnPriceLabel,
+          subtitle: l10n.invoiceSettingsColumnRequiredSubtitle,
+          icon: Icons.check_circle_outline,
+          value: true,
+          onChanged: null,
+        ),
+        _toggleCardV2(
+          title: l10n.invoiceSettingsColumnTaxLabel,
+          subtitle: l10n.invoiceSettingsColumnTaxSubtitle,
+          icon: Icons.percent_rounded,
+          value: _showCgstSgst,
+          onChanged: (val) => setState(() => _showCgstSgst = val),
+        ),
+        _toggleCardV2(
+          title: l10n.invoiceSettingsShowDiscountLabel,
+          subtitle: l10n.invoiceSettingsShowDiscountSubtitle,
+          icon: Icons.discount_outlined,
+          value: _showDiscount,
+          onChanged: (val) => setState(() => _showDiscount = val),
+        ),
+        _toggleCardV2(
+          title: l10n.invoiceSettingsColumnTotalLabel,
+          subtitle: l10n.invoiceSettingsColumnRequiredSubtitle,
+          icon: Icons.check_circle_outline,
+          value: true,
+          onChanged: null,
+        ),
+        _metadataColumnsCardV2(l10n),
+      ],
+    );
+  }
+
+  String _metaColLabel(AppLocalizations l10n, String key) {
+    switch (key) {
+      case 'storageLocation':
+        return l10n.productColumnsMetaStorageLocationLabel;
+      case 'containerNumber':
+        return l10n.productColumnsMetaContainerNumberLabel;
+      case 'batchNumber':
+        return l10n.productColumnsMetaBatchNumberLabel;
+      case 'expiryDate':
+        return l10n.productColumnsMetaExpiryDateLabel;
+      case 'manufactureDate':
+        return l10n.productColumnsMetaManufactureDateLabel;
+      case 'manufactureName':
+        return l10n.productColumnsMetaManufactureNameLabel;
+      case 'supplierName':
+        return l10n.productColumnsMetaSupplierNameLabel;
+      case 'skuCode':
+        return l10n.productColumnsMetaSkuCodeLabel;
+      case 'notes':
+        return l10n.productColumnsMetaNotesLabel;
+      default:
+        return key;
+    }
+  }
+
+  // Product-metadata columns for the Grid Classic A4 items table. Moved here
+  // from PDF settings so all invoice-column choices live in one place.
+  Widget _metadataColumnsCardV2(AppLocalizations l10n) {
+    final anyOn = _metadataColumns.values.any((v) => v);
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.pdfSettingsMetadataColumnsLabel,
+              style:
+                  const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+          const SizedBox(height: 2),
+          Text(l10n.pdfSettingsMetadataColumnsHint,
+              style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          const SizedBox(height: 2),
+          Text(l10n.invoiceSettingsMetadataColumnsGridClassicNote,
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.error)),
+          const SizedBox(height: 4),
+          for (final k in _metadataColumnKeys)
+            SwitchListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+              title: Text(_metaColLabel(l10n, k),
+                  style: const TextStyle(fontSize: 13.5)),
+              value: _metadataColumns[k] ?? false,
+              onChanged: (v) => setState(
+                  () => _metadataColumns = {..._metadataColumns, k: v}),
+            ),
+          if (anyOn) ...[
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.orange[50],
+                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                border: Border.all(color: Colors.orange[200]!),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.warning_amber_rounded,
+                      size: 16, color: Colors.orange[700]),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(l10n.pdfSettingsMetadataColumnsWarning,
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.orange[800],
+                            height: 1.4)),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -1192,9 +1414,145 @@ class _InvoiceSettingsScreenV2State
         return _sectionItemsV2();
       case 4:
         return _sectionCustomerV2();
+      case 5:
+        return _sectionColumnsV2();
       default:
-        return _sectionLanguageV2();
+        return _sectionCustomFieldsV2();
     }
+  }
+
+  // User-defined per-invoice fields (e.g. Vehicle No, Delivery Note) — not
+  // tied to the customer. Off by default; when on, seeded with a starting
+  // set of fields matching a typical GST transport invoice, all freely
+  // renameable/deletable. Rename/reorder mutate _customFieldDefs directly
+  // without setState — nothing else on screen reflects a label mid-edit, so
+  // there's no need to rebuild (and TextFormField keeps its own text/cursor
+  // state via the ValueKey below). Add/remove/reorder do call setState since
+  // the list itself changes shape.
+  void _addCustomField() {
+    final label = _newCustomFieldController.text.trim();
+    if (label.isEmpty) return;
+    setState(() {
+      _customFieldDefs.add(CustomFieldDef(
+        id: 'cf-${DateTime.now().microsecondsSinceEpoch}',
+        label: label,
+        sortOrder: _customFieldDefs.length,
+      ));
+      _newCustomFieldController.clear();
+    });
+  }
+
+  void _removeCustomField(int index) {
+    setState(() => _customFieldDefs.removeAt(index));
+  }
+
+  void _renameCustomField(int index, String label) {
+    final def = _customFieldDefs[index];
+    _customFieldDefs[index] =
+        CustomFieldDef(id: def.id, label: label, sortOrder: def.sortOrder);
+  }
+
+  void _moveCustomField(int oldIndex, int newIndex) {
+    setState(() {
+      final item = _customFieldDefs.removeAt(oldIndex);
+      _customFieldDefs.insert(newIndex, item);
+      for (var i = 0; i < _customFieldDefs.length; i++) {
+        final def = _customFieldDefs[i];
+        _customFieldDefs[i] =
+            CustomFieldDef(id: def.id, label: def.label, sortOrder: i);
+      }
+    });
+  }
+
+  Widget _sectionCustomFieldsV2() {
+    return _fieldWrapV2(
+      [],
+      [
+        Text(
+          'Define fields once here (e.g. Vehicle No, Delivery Note), then fill their values on each invoice. Not tied to the customer.',
+          style: TextStyle(
+              fontSize: 14,
+              color: Theme.of(context).colorScheme.onSurfaceVariant),
+        ),
+        Text(
+          AppLocalizations.of(context)!
+              .invoiceSettingsCustomFieldsGridClassicNote,
+          style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.error),
+        ),
+        const SizedBox(height: 4),
+        _toggleCardV2(
+          title: 'Enable Custom Fields',
+          subtitle:
+              'Show a Custom Fields section on the create-invoice screen',
+          icon: Icons.dashboard_customize_outlined,
+          value: _customFieldsEnabled,
+          onChanged: (val) => setState(() => _customFieldsEnabled = val),
+        ),
+        if (_customFieldsEnabled) ...[
+          const SizedBox(height: 12),
+          for (var index = 0; index < _customFieldDefs.length; index++)
+            Padding(
+              key: ValueKey(_customFieldDefs[index].id),
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_upward, size: 18),
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'Move up',
+                    onPressed: index == 0
+                        ? null
+                        : () => _moveCustomField(index, index - 1),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.arrow_downward, size: 18),
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'Move down',
+                    onPressed: index == _customFieldDefs.length - 1
+                        ? null
+                        : () => _moveCustomField(index, index + 1),
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: TextFormField(
+                      initialValue: _customFieldDefs[index].label,
+                      decoration: _fieldDecorationV2(context, label: 'Field label'),
+                      onChanged: (val) => _renameCustomField(index, val),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, color: Colors.red),
+                    tooltip: 'Delete field',
+                    onPressed: () => _removeCustomField(index),
+                  ),
+                ],
+              ),
+            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _newCustomFieldController,
+                  decoration: _fieldDecorationV2(context,
+                      label: 'New field label', hint: 'e.g. Vehicle No'),
+                  onSubmitted: (_) => _addCustomField(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              FilledButton.icon(
+                onPressed: _addCustomField,
+                icon: const Icon(Icons.add),
+                label: const Text('Add'),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
   }
 
   // Customer details visibility on PDFs / thermal receipts. Each field is only
@@ -1207,7 +1565,7 @@ class _InvoiceSettingsScreenV2State
       [
         Text(l10n.invoiceSettingsCustomerSectionHint,
             style: TextStyle(
-                fontSize: 12,
+                fontSize: 14,
                 color: Theme.of(context).colorScheme.onSurfaceVariant)),
         const SizedBox(height: 4),
         _toggleCardV2(

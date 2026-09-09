@@ -1,5 +1,6 @@
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/database/settings_service.dart';
+import 'package:invoiso/models/custom_field_def.dart';
 import 'package:invoiso/repositories/settings_repository.dart';
 
 class SqliteSettingsRepository implements SettingsRepository {
@@ -36,6 +37,10 @@ class SqliteSettingsRepository implements SettingsRepository {
   @override
   Future<void> setUpiIds(List<UpiEntry> entries) => SettingsService.setUpiIds(entries);
   @override
+  Future<List<CustomFieldDef>> getCustomFieldDefs() => SettingsService.getCustomFieldDefs();
+  @override
+  Future<void> setCustomFieldDefs(List<CustomFieldDef> defs) => SettingsService.setCustomFieldDefs(defs);
+  @override
   Future<List<BankAccount>> getBankAccounts() => SettingsService.getBankAccounts();
   @override
   Future<void> setBankAccounts(List<BankAccount> accounts) => SettingsService.setBankAccounts(accounts);
@@ -43,6 +48,14 @@ class SqliteSettingsRepository implements SettingsRepository {
   Future<ProductColumnsConfig> getProductColumnsConfig() => SettingsService.getProductColumnsConfig();
   @override
   Future<void> setProductColumnsConfig(ProductColumnsConfig config) => SettingsService.setProductColumnsConfig(config);
+  @override
+  Future<Map<String, bool>> getProductListColumns() => SettingsService.getProductListColumns();
+  @override
+  Future<void> setProductListColumns(Map<String, bool> cols) => SettingsService.setProductListColumns(cols);
+  @override
+  Future<Map<String, bool>> getInvoicePdfMetadataColumns() => SettingsService.getInvoicePdfMetadataColumns();
+  @override
+  Future<void> setInvoicePdfMetadataColumns(Map<String, bool> cols) => SettingsService.setInvoicePdfMetadataColumns(cols);
   @override
   Future<bool> getShowBankDetails() => SettingsService.getShowBankDetails();
   @override
@@ -120,6 +133,16 @@ class SqliteSettingsRepository implements SettingsRepository {
   Future<void> setPdfTimeFormat(String format) =>
       SettingsService.setPdfTimeFormat(format);
   @override
+  Future<bool> getShowSlNoInPdf() => SettingsService.getShowSlNoInPdf();
+  @override
+  Future<void> setShowSlNoInPdf(bool show) =>
+      SettingsService.setShowSlNoInPdf(show);
+  @override
+  Future<bool> getPdfLandscape() => SettingsService.getPdfLandscape();
+  @override
+  Future<void> setPdfLandscape(bool landscape) =>
+      SettingsService.setPdfLandscape(landscape);
+  @override
   Future<bool> getShowGstFields() => SettingsService.getShowGstFields();
   @override
   Future<bool> getShowInvoiceFooterBranding() => SettingsService.getShowInvoiceFooterBranding();
@@ -159,6 +182,10 @@ class SqliteSettingsRepository implements SettingsRepository {
   Future<void> setWatermarkOpacity(double opacity) => SettingsService.setWatermarkOpacity(opacity);
   @override
   Future<double> getWatermarkOpacity() => SettingsService.getWatermarkOpacity();
+  @override
+  Future<void> setWatermarkFullPage(bool fullPage) => SettingsService.setWatermarkFullPage(fullPage);
+  @override
+  Future<bool> getWatermarkFullPage() => SettingsService.getWatermarkFullPage();
 
   @override
   Future<void> setDefaultInvoiceTitle(String? title) => SettingsService.setDefaultInvoiceTitle(title);

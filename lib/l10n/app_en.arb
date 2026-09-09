@@ -886,6 +886,14 @@
       }
     }
   },
+  "invoiceMgmtNewDocumentButton": "New {type}",
+  "@invoiceMgmtNewDocumentButton": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
   "invoiceMgmtOverdueBadge": "Overdue",
   "invoiceMgmtTodayBadge": "Today",
   "invoiceMgmtTrashIsEmptyLabel": "Trash is empty",
@@ -1349,6 +1357,7 @@
   "productMgmtBatchNumberLabel": "Batch Number",
   "productMgmtExpiryDateLabel": "Expiry Date",
   "productMgmtManufactureDateLabel": "Manufacture Date",
+  "productMgmtManufactureNameLabel": "Manufacturer Name",
   "productMgmtSupplierNameLabel": "Supplier Name",
   "productMgmtSkuCodeLabel": "SKU Code",
   "productMgmtNotesLabel": "Notes",
@@ -1374,6 +1383,7 @@
   "productMgmtCsvDescBatchNumber": "Batch/lot number",
   "productMgmtCsvDescExpiryDate": "Expiry date",
   "productMgmtCsvDescManufactureDate": "Manufacture date",
+  "productMgmtCsvDescManufactureName": "Manufacturer name",
   "productMgmtCsvDescSupplierName": "Supplier name",
   "productMgmtCsvDescSkuCode": "SKU code",
   "productMgmtCsvDescNotes": "Free-text notes",
@@ -1461,6 +1471,16 @@
   "productMgmtColStock": "STOCK",
   "productMgmtColTaxPercent": "TAX %",
   "productMgmtColExpiryDate": "EXPIRY DATE",
+  "productMgmtCustomizeColumnsLabel": "Customize Product Columns",
+  "productMgmtShowColumnsLabel": "Show Columns",
+  "productMgmtShowColumnsMaxHint": "Show up to {max} columns",
+  "@productMgmtShowColumnsMaxHint": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "productMgmtShowingRangeLabel": "Showing {from} to {to} of {total} products",
   "@productMgmtShowingRangeLabel": {
     "placeholders": {
@@ -1555,6 +1575,7 @@
     }
   },
   "reportsAllCurrenciesLabel": "All currencies",
+  "reportsArAgingSummaryTitle": "A/R Aging Summary",
   "reportsAvgInvoiceValueLabel": "Avg Invoice Value",
   "reportsBalanceColumnLabel": "Balance",
   "reportsBilledLabel": "Billed",
@@ -1640,6 +1661,9 @@
   },
   "reportsMonthYearLabel": "Month & Year",
   "reportsMonthlyRevenueTrendTitle": "Monthly Revenue Trend",
+  "reportsMonthlyBreakdownTitle": "Monthly Breakdown",
+  "reportsMonthColumnLabel": "Month",
+  "reportsTotalRowLabel": "Total",
   "reportsNavDailyReportLabel": "Daily Report",
   "reportsNavInvoiceStatusLabel": "Invoice Status",
   "reportsNavReceivablesLabel": "Receivables",
@@ -1713,8 +1737,11 @@
   },
   "reportsSlColumnLabel": "SL",
   "reportsStatementsLabel": "Statements",
-  "reportsTaxCollectedByRateTitle": "Tax Collected by Rate",
-  "reportsTaxCollectedLabel": "Tax Collected",
+  "reportsTaxCollectedByRateTitle": "Tax by Rate",
+  "reportsTaxCollectedLabel": "Tax",
+  "reportsTaxableAmountLabel": "Taxable Amount",
+  "reportsGrossAmountLabel": "Gross",
+  "reportsTaxAccrualNote": "Tax charged on invoices dated in this period — accrual basis, before payment.",
   "reportsTaxRateBucketsLabel": "Tax Rate Buckets",
   "reportsTodayLabel": "Today",
   "reportsTopCustomersByRevenueTitle": "Top {count} Customers by Revenue",
@@ -1748,8 +1775,9 @@
     }
   },
   "reportsTotalInvoicesLabel": "Total Invoices",
+  "reportsRealizedProfitLabel": "Realized Profit",
   "reportsTotalProfitLabel": "Total Profit",
-  "reportsTotalTaxCollectedLabel": "Total Tax Collected",
+  "reportsTotalTaxCollectedLabel": "Total Tax Charged",
   "reportsTypeColumnLabel": "Type",
   "reportsUnitsSoldColumnLabel": "Units Sold",
   "userMgmtLoadErrorMessage": "Error loading users: {error}",
@@ -1794,6 +1822,9 @@
   "userMgmtActionCannotBeUndoneMessage": "This action cannot be undone.",
   "userMgmtDeletedMessage": "User deleted successfully",
   "userMgmtCantDeleteOwnAccountMessage": "You can't delete your own account",
+  "userMgmtCantDemoteLastAdminMessage": "You can't change the role of the only admin",
+  "userMgmtCantChangeOwnRoleMessage": "You can't change your own role",
+  "userMgmtUsernameTakenMessage": "That username is already taken",
   "userMgmtDeleteSelectedTitle": "Delete selected users?",
   "userMgmtBulkDeleteBody": "{count, plural, =1{This will permanently delete 1 user. This action cannot be undone.} other{This will permanently delete {count} users. This action cannot be undone.}}",
   "@userMgmtBulkDeleteBody": {
@@ -1879,6 +1910,18 @@
   "invoiceSettingsSectionTax": "Tax & GST",
   "invoiceSettingsSectionItems": "Invoice Items",
   "invoiceSettingsSectionCustomer": "Customer Details",
+  "invoiceSettingsSectionColumns": "Invoice Columns",
+  "invoiceSettingsColumnsSectionHint": "Choose which columns appear in the invoice PDF items table. Item Name, Price and Total are always shown.",
+  "invoiceSettingsShowSlNoLabel": "Sl No column",
+  "invoiceSettingsShowSlNoSubtitle": "Print the serial-number column on A4/Letter invoices",
+  "invoiceSettingsColumnHsnLabel": "HSN/SAC column",
+  "invoiceSettingsColumnHsnSubtitle": "Print the HSN/SAC code column (tied to Show GST Fields)",
+  "invoiceSettingsColumnTaxLabel": "Tax column",
+  "invoiceSettingsColumnTaxSubtitle": "Print the per-item CGST/SGST, IGST % column",
+  "invoiceSettingsColumnRequiredSubtitle": "Always shown",
+  "invoiceSettingsColumnItemNameLabel": "Item Name column",
+  "invoiceSettingsColumnPriceLabel": "Price / Rate column",
+  "invoiceSettingsColumnTotalLabel": "Total column",
   "invoiceSettingsCustomerSectionHint": "Choose which customer details print on invoice PDFs and thermal receipts. A field only shows when it's enabled and the customer has a value for it. Customer name is always shown.",
   "invoiceSettingsShowCustomerBusinessNameLabel": "Show Business Name",
   "invoiceSettingsShowCustomerBusinessNameSubtitle": "Print the customer's business name under their name",
@@ -1953,9 +1996,12 @@
   "invoiceSettingsSignatureSizeLabel": "Signature Size",
   "invoiceSettingsSignaturePositionLabel": "Signature Position",
   "invoiceSettingsWatermarkImageLabel": "Watermark Image",
-  "invoiceSettingsWatermarkImageSubtitle": "Shown behind the items table on invoice PDFs (not printed on thermal receipts)",
+  "invoiceSettingsWatermarkImageSubtitle": "Shown on invoice PDFs (not printed on thermal receipts)",
   "invoiceSettingsChangeWatermarkButton": "Change Watermark",
   "invoiceSettingsUploadWatermarkButton": "Upload Watermark",
+  "invoiceSettingsWatermarkPlacementLabel": "Watermark placement",
+  "invoiceSettingsWatermarkPlacementItemsTable": "Items table",
+  "invoiceSettingsWatermarkPlacementFullPage": "Full page",
   "invoiceSettingsOpacityLabel": "Opacity: {value}%",
   "@invoiceSettingsOpacityLabel": {
     "placeholders": {
@@ -1993,6 +2039,12 @@
   "commonUnavailableLabel": "Unavailable",
   "pdfSettingsDisplayOptionsLabel": "Display Options",
   "pdfSettingsShowTotalQtyRowLabel": "Show total quantity row",
+  "pdfSettingsOrientationLabel": "Orientation",
+  "pdfSettingsOrientationPortrait": "Portrait",
+  "pdfSettingsOrientationLandscape": "Landscape",
+  "pdfSettingsMetadataColumnsLabel": "Product metadata columns",
+  "pdfSettingsMetadataColumnsHint": "Print product metadata as extra columns in the items table.",
+  "pdfSettingsMetadataColumnsWarning": "Metadata columns print only on Grid Classic at A4. Each one narrows the others — if the table looks cramped, switch to Landscape above. Values are captured when an item is added; editing the product later won't change past invoices.",
   "pdfSettingsItemLayoutLabel": "Item layout",
   "pdfSettingsItemLayoutTableLabel": "Table",
   "pdfSettingsItemLayoutDetailedLabel": "Detailed",
@@ -2209,12 +2261,13 @@
   "productColumnsProductServiceTypeLabel": "Product/Service Type",
   "productColumnsProductServiceTypeSubtitle": "Segmented Product vs Service selector.",
   "productColumnsMetadataLabel": "Product Metadata",
-  "productColumnsMetadataSubtitle": "Storage location, container/batch number, expiry, manufacture date, supplier, SKU, notes.",
+  "productColumnsMetadataSubtitle": "Storage location, container/batch number, expiry, manufacture date, manufacturer, supplier, SKU, notes.",
   "productColumnsMetaStorageLocationLabel": "Storage Location",
   "productColumnsMetaContainerNumberLabel": "Container Number",
   "productColumnsMetaBatchNumberLabel": "Batch Number",
   "productColumnsMetaExpiryDateLabel": "Expiry Date",
   "productColumnsMetaManufactureDateLabel": "Manufacture Date",
+  "productColumnsMetaManufactureNameLabel": "Manufacturer Name",
   "productColumnsMetaSupplierNameLabel": "Supplier Name",
   "productColumnsMetaSkuCodeLabel": "SKU Code",
   "productColumnsMetaNotesLabel": "Notes",
@@ -2365,5 +2418,7 @@
   "shortcutAddProductDescription": "Add product to invoice",
   "shortcutAddCustomItemDescription": "Add custom (ad-hoc) item",
   "shortcutPreviewPdfDescription": "Preview invoice PDF",
-  "shortcutPrintPdfDescription": "Generate / print invoice PDF"
+  "shortcutPrintPdfDescription": "Generate / print invoice PDF",
+  "invoiceSettingsCustomFieldsGridClassicNote": "Note: Custom fields are only printed on the Grid Classic PDF template.",
+  "invoiceSettingsMetadataColumnsGridClassicNote": "Note: Metadata columns are only applied to the Grid Classic PDF template."
 }

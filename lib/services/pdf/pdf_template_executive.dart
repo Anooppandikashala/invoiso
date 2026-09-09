@@ -15,6 +15,7 @@ pw.MultiPage buildExecutiveTemplate(
   String? upiId,
   bool showUpiQr = false,
   bool showGst = true,
+  bool showSlNo = true,
   bool showQuantity = true,
   bool showDiscount = true,
   bool showTypeTag = true,
@@ -38,6 +39,7 @@ pw.MultiPage buildExecutiveTemplate(
   pw.ThemeData? pdfTheme,
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
+  bool watermarkFullPage = false,
   bool showCgstSgst = false,
   bool showIgst = false,
   bool showRoundOff = false,
@@ -94,11 +96,14 @@ pw.MultiPage buildExecutiveTemplate(
   final gstLabel = taxLabel(company?.country);
   final panNumber = company?.panNumber ?? '';
   final fssaiCode = company?.fssaiCode ?? '';
-  final companyIdLine = [
+  final companyIdParts = <String>[
     if (showGst && gstin.isNotEmpty) '$gstLabel: $gstin',
     if (showPan && panNumber.isNotEmpty) '${panLabel(company?.country)}: $panNumber',
     if (showFssai && fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
-  ].join('   ');
+  ];
+  // GSTIN + PAN + FSSAI all present → one joined line; fewer → line by line.
+  final allCompanyIds = companyIdParts.length == 3;
+  final companyIdLine = companyIdParts.join('   ');
 
   final customerLines = [
     invoice.customer.name,
@@ -114,10 +119,17 @@ pw.MultiPage buildExecutiveTemplate(
       '${taxLabel(company?.country)}: ${invoice.customer.gstin}',
   ];
 
+  final fullPageWatermark = watermarkFullPage && watermarkBytes != null;
   return pw.MultiPage(
-    pageFormat: pageFormat,
-    theme: pdfTheme,
-    margin: pw.EdgeInsets.all(PdfLayout.defaultHMargin),
+    pageTheme: pw.PageTheme(
+      pageFormat: pageFormat,
+      theme: pdfTheme,
+      margin: pw.EdgeInsets.all(PdfLayout.defaultHMargin),
+      buildBackground: fullPageWatermark
+          ? (context) =>
+              buildFullPageWatermark(watermarkBytes, watermarkOpacity)
+          : null,
+    ),
     footer: (context) => pw.Container(
       alignment: pw.Alignment.centerRight,
       margin: const pw.EdgeInsets.only(top: 16),
@@ -163,8 +175,9 @@ pw.MultiPage buildExecutiveTemplate(
                 if (showWebsite && (company?.website ?? '').isNotEmpty)
                   pw.Text(company!.website,
                       style: pw.TextStyle(fontSize: executivePdfStyle.subtitleFontSize)),
-                if (companyIdLine.isNotEmpty)
-                  pw.Text(companyIdLine, style: pw.TextStyle(fontSize: executivePdfStyle.subtitleFontSize)),
+                for (final line
+                    in allCompanyIds ? [companyIdLine] : companyIdParts)
+                  pw.Text(line, style: pw.TextStyle(fontSize: executivePdfStyle.subtitleFontSize)),
               ],
             ),
           ),
@@ -214,9 +227,11 @@ pw.MultiPage buildExecutiveTemplate(
       buildInvoiceTable(
         invoice,
         InvoiceTemplate.executive,
+        pageFormat,
         headerColor: accentColor,
         textColor: PdfColors.white,
         showGst: showGst,
+        showSlNo: showSlNo,
         showQuantity: showQuantity,
         showDiscount: showDiscount,
         showTypeTag: showTypeTag,
@@ -224,7 +239,7 @@ pw.MultiPage buildExecutiveTemplate(
         showDescription: showDescription,
         descriptionNewLine: descriptionNewLine,
         businessType: businessType,
-        watermarkBytes: watermarkBytes,
+        watermarkBytes: fullPageWatermark ? null : watermarkBytes,
         watermarkOpacity: watermarkOpacity,
         showCgstSgst: showCgstSgst, showIgst: showIgst,
         tableFontSize: executivePdfStyle.tableFontSize

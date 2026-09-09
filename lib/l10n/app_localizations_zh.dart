@@ -1364,6 +1364,11 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String invoiceMgmtNewDocumentButton(String type) {
+    return '新建$type';
+  }
+
+  @override
   String get invoiceMgmtOverdueBadge => '已逾期';
 
   @override
@@ -1949,6 +1954,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get productMgmtManufactureDateLabel => '生产日期';
 
   @override
+  String get productMgmtManufactureNameLabel => 'Manufacturer Name';
+
+  @override
   String get productMgmtSupplierNameLabel => '供应商名称';
 
   @override
@@ -2022,6 +2030,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get productMgmtCsvDescManufactureDate => '生产日期';
+
+  @override
+  String get productMgmtCsvDescManufactureName => 'Manufacturer name';
 
   @override
   String get productMgmtCsvDescSupplierName => '供应商名称';
@@ -2185,6 +2196,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String get productMgmtColExpiryDate => '有效期';
 
   @override
+  String get productMgmtCustomizeColumnsLabel => 'Customize Product Columns';
+
+  @override
+  String get productMgmtShowColumnsLabel => 'Show Columns';
+
+  @override
+  String productMgmtShowColumnsMaxHint(int max) {
+    return 'Show up to $max columns';
+  }
+
+  @override
   String productMgmtShowingRangeLabel(int from, int to, int total) {
     return '显示第 $from 至 $to 项，共 $total 个产品';
   }
@@ -2343,6 +2365,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get reportsAllCurrenciesLabel => '所有货币';
 
   @override
+  String get reportsArAgingSummaryTitle => '应收账款账龄摘要';
+
+  @override
   String get reportsAvgInvoiceValueLabel => '平均发票金额';
 
   @override
@@ -2476,6 +2501,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get reportsMonthlyRevenueTrendTitle => '月度收入趋势';
+
+  @override
+  String get reportsMonthlyBreakdownTitle => '月度明细';
+
+  @override
+  String get reportsMonthColumnLabel => '月份';
+
+  @override
+  String get reportsTotalRowLabel => '合计';
 
   @override
   String get reportsNavDailyReportLabel => '每日报告';
@@ -2628,6 +2662,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get reportsTaxCollectedLabel => '已收税款';
 
   @override
+  String get reportsTaxableAmountLabel => '应税金额';
+
+  @override
+  String get reportsGrossAmountLabel => '总额';
+
+  @override
+  String get reportsTaxAccrualNote => '按本期开票日期计提的税款 — 权责发生制，付款前。';
+
+  @override
   String get reportsTaxRateBucketsLabel => '税率分组';
 
   @override
@@ -2665,6 +2708,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get reportsTotalInvoicesLabel => '发票总数';
+
+  @override
+  String get reportsRealizedProfitLabel => '已实现利润';
 
   @override
   String get reportsTotalProfitLabel => '总利润';
@@ -2746,6 +2792,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get userMgmtCantDeleteOwnAccountMessage => '您不能删除自己的账户';
+
+  @override
+  String get userMgmtCantDemoteLastAdminMessage => '您不能更改唯一管理员的角色';
+
+  @override
+  String get userMgmtCantChangeOwnRoleMessage => '您不能更改自己的角色';
+
+  @override
+  String get userMgmtUsernameTakenMessage => '该用户名已被使用';
 
   @override
   String get userMgmtDeleteSelectedTitle => '删除选中的用户？';
@@ -2900,6 +2955,46 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get invoiceSettingsSectionCustomer => 'Customer Details';
+
+  @override
+  String get invoiceSettingsSectionColumns => 'Invoice Columns';
+
+  @override
+  String get invoiceSettingsColumnsSectionHint =>
+      'Choose which columns appear in the invoice PDF items table. Item Name, Price and Total are always shown.';
+
+  @override
+  String get invoiceSettingsShowSlNoLabel => 'Sl No column';
+
+  @override
+  String get invoiceSettingsShowSlNoSubtitle =>
+      'Print the serial-number column on A4/Letter invoices';
+
+  @override
+  String get invoiceSettingsColumnHsnLabel => 'HSN/SAC column';
+
+  @override
+  String get invoiceSettingsColumnHsnSubtitle =>
+      'Print the HSN/SAC code column (tied to Show GST Fields)';
+
+  @override
+  String get invoiceSettingsColumnTaxLabel => 'Tax column';
+
+  @override
+  String get invoiceSettingsColumnTaxSubtitle =>
+      'Print the per-item CGST/SGST, IGST % column';
+
+  @override
+  String get invoiceSettingsColumnRequiredSubtitle => 'Always shown';
+
+  @override
+  String get invoiceSettingsColumnItemNameLabel => 'Item Name column';
+
+  @override
+  String get invoiceSettingsColumnPriceLabel => 'Price / Rate column';
+
+  @override
+  String get invoiceSettingsColumnTotalLabel => 'Total column';
 
   @override
   String get invoiceSettingsCustomerSectionHint =>
@@ -3142,14 +3237,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get invoiceSettingsWatermarkImageLabel => '水印图片';
 
   @override
-  String get invoiceSettingsWatermarkImageSubtitle =>
-      '显示在发票 PDF 的项目表格后面（不会打印在热敏小票上）';
+  String get invoiceSettingsWatermarkImageSubtitle => '显示在发票 PDF 上（不会打印在热敏小票上）';
 
   @override
   String get invoiceSettingsChangeWatermarkButton => '更换水印';
 
   @override
   String get invoiceSettingsUploadWatermarkButton => '上传水印';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementLabel => '水印位置';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementItemsTable => '商品表格';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementFullPage => '整页';
 
   @override
   String invoiceSettingsOpacityLabel(int value) {
@@ -3204,6 +3307,26 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get pdfSettingsShowTotalQtyRowLabel => '显示总数量行';
+
+  @override
+  String get pdfSettingsOrientationLabel => 'Orientation';
+
+  @override
+  String get pdfSettingsOrientationPortrait => 'Portrait';
+
+  @override
+  String get pdfSettingsOrientationLandscape => 'Landscape';
+
+  @override
+  String get pdfSettingsMetadataColumnsLabel => 'Product metadata columns';
+
+  @override
+  String get pdfSettingsMetadataColumnsHint =>
+      'Print product metadata as extra columns in the items table.';
+
+  @override
+  String get pdfSettingsMetadataColumnsWarning =>
+      'Metadata columns print only on Grid Classic at A4. Each one narrows the others — if the table looks cramped, switch to Landscape above. Values are captured when an item is added; editing the product later won\'t change past invoices.';
 
   @override
   String get pdfSettingsItemLayoutLabel => '项目布局';
@@ -3669,6 +3792,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get productColumnsMetaManufactureDateLabel => '生产日期';
 
   @override
+  String get productColumnsMetaManufactureNameLabel => 'Manufacturer Name';
+
+  @override
   String get productColumnsMetaSupplierNameLabel => '供应商名称';
 
   @override
@@ -3966,4 +4092,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get shortcutPrintPdfDescription => '生成／打印发票 PDF';
+
+  @override
+  String get invoiceSettingsCustomFieldsGridClassicNote =>
+      '注意：自定义字段仅在“经典网格”PDF 模板中打印。';
+
+  @override
+  String get invoiceSettingsMetadataColumnsGridClassicNote =>
+      'Note: Metadata columns are only applied to the Grid Classic PDF template.';
 }

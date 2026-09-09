@@ -6,6 +6,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:qr/qr.dart';
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/models/invoice.dart';
+import 'package:invoiso/models/invoice_item.dart';
 import 'package:invoiso/utils/amount_in_words.dart';
 
 /// Tracks how much table-row height has been painted so far, so the
@@ -59,6 +60,24 @@ class _WatermarkStripeImage extends pw.DecorationGraphic {
   }
 }
 
+/// Full-page watermark: one copy of [bytes] scaled to fit the page,
+/// centered, at [opacity]. Used when watermark mode is "full page"
+/// instead of the per-row items-table strip above.
+pw.Widget buildFullPageWatermark(Uint8List bytes, double opacity) {
+  return pw.FullPage(
+    ignoreMargins: true,
+    child: pw.Opacity(
+      opacity: opacity,
+      child: pw.Padding(
+        padding: const pw.EdgeInsets.all(48),
+        child: pw.Center(
+          child: pw.Image(pw.MemoryImage(bytes), fit: pw.BoxFit.contain),
+        ),
+      ),
+    ),
+  );
+}
+
 pw.Widget buildCompanyLogo(pw.MemoryImage image, {double size = 90}) {
   final iw = image.width;
   final ih = image.height;
@@ -74,6 +93,79 @@ pw.Widget buildCompanyLogo(pw.MemoryImage image, {double size = 90}) {
 double logoSizePx(String sizeKey) => logoSizeFromKey(sizeKey).pixelSize;
 
 double signatureSizePx(String sizeKey) => signatureSizeFromKey(sizeKey).pixelHeight;
+
+double getSlNumberFlex(PdfPageFormat format, InvoiceTemplate template, bool isLandscape)
+{
+   if(template != InvoiceTemplate.gridClassic) return 0.9;
+   if(format == PdfPageFormat.a4) return isLandscape ? 0.5 : 0.6;
+   if(format == PdfPageFormat.a5) return isLandscape ? 0.6 : 0.7;
+   return isLandscape ? 0.6 : 0.8;
+}
+
+// ── Product-metadata snapshot columns (Grid Classic A4 only) ──────────────
+
+double _metaColFlex(String key) =>
+    (key == 'expiryDate' || key == 'manufactureDate') ? 1.6
+        : (key == 'notes') ? 2.2
+        : 1.4;
+
+String _metaHeaderText(String key, {bool short = false}) {
+  switch (key) {
+    case 'storageLocation':
+      return 'Storage';
+    case 'containerNumber':
+      return 'Container No.';
+    case 'batchNumber':
+      return 'Batch No.';
+    case 'expiryDate':
+      return 'Expiry';
+    case 'manufactureDate':
+      return 'Mfg. Date';
+    case 'manufactureName':
+      return short ? 'Mfr.' : 'Mfr. Name';
+    case 'supplierName':
+      return 'Supplier';
+    case 'skuCode':
+      return 'SKU';
+    case 'notes':
+      return 'Notes';
+    default:
+      return key;
+  }
+}
+
+String _metaCellValue(InvoiceItem item, String key, String datePattern) {
+  final m = item.metadata;
+  if (m == null) return '';
+  String fmtDate(String? raw) {
+    if (raw == null || raw.isEmpty) return '';
+    final d = DateTime.tryParse(raw);
+    return d == null ? raw : DateFormat(datePattern).format(d);
+  }
+
+  switch (key) {
+    case 'storageLocation':
+      return m.storageLocation ?? '';
+    case 'containerNumber':
+      return m.containerNumber ?? '';
+    case 'batchNumber':
+      return m.batchNumber ?? '';
+    case 'expiryDate':
+      return fmtDate(m.expiryDate);
+    case 'manufactureDate':
+      return fmtDate(m.manufactureDate);
+    case 'manufactureName':
+      return m.manufactureName ?? '';
+    case 'supplierName':
+      return m.supplierName ?? '';
+    case 'skuCode':
+      return m.skuCode ?? '';
+    case 'notes':
+      return m.notes ?? '';
+    default:
+      return '';
+  }
+}
 
 pw.Widget buildSignatureWidget(
   pw.ImageProvider signatureImage,
@@ -386,7 +478,9 @@ pw.Widget buildEnhancedTotals(
         ],
         ...invoice.additionalCosts.map((c) => pdfTotalRow(
               c.label.isEmpty ? 'Extra Cost' : c.label,
-              "$currencySymbol ${c.amount.toStringAsFixed(2)}",
+              c.amount < 0
+                  ? "-$currencySymbol ${(-c.amount).toStringAsFixed(2)}"
+                  : "$currencySymbol ${c.amount.toStringAsFixed(2)}",
               fontSize: rowFontSize,
               horizontalPadding: rowHorizontalPadding,
               verticalPadding: rowVerticalPadding,
@@ -411,8 +505,8 @@ pw.Widget buildEnhancedTotals(
             color: totalHighlightColor,
             borderRadius: hasPaid || hasPreviousBalance
                 ? pw.BorderRadius.zero
-                : const pw.BorderRadius.vertical(
-                    bottom: pw.Radius.circular(5)),
+                : pw.BorderRadius.vertical(
+                    bottom: pw.Radius.circular(borderRadius)),
           ),
           child: pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -448,8 +542,8 @@ pw.Widget buildEnhancedTotals(
               color: PdfColors.orange800,
               borderRadius: hasPaid
                   ? pw.BorderRadius.zero
-                  : const pw.BorderRadius.vertical(
-                      bottom: pw.Radius.circular(5)),
+                  : pw.BorderRadius.vertical(
+                      bottom: pw.Radius.circular(borderRadius)),
             ),
             child: pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -485,7 +579,8 @@ pw.Widget buildEnhancedTotals(
               color: totalHighlightColor,
               borderRadius: hasPaid
                   ? pw.BorderRadius.zero
-                  : const pw.BorderRadius.vertical(bottom: pw.Radius.circular(5)),
+                  : pw.BorderRadius.vertical(
+                      bottom: pw.Radius.circular(borderRadius)),
             ),
             child: pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -519,8 +614,8 @@ pw.Widget buildEnhancedTotals(
             ),
             decoration: pw.BoxDecoration(
               color: isPaidInFull ? PdfColors.green700 : PdfColors.orange,
-              borderRadius: const pw.BorderRadius.vertical(
-                  bottom: pw.Radius.circular(5)),
+              borderRadius: pw.BorderRadius.vertical(
+                  bottom: pw.Radius.circular(borderRadius)),
             ),
             child: pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -605,9 +700,11 @@ pw.Widget pdfTotalRow(String label, String value,
 
 pw.Widget buildInvoiceTable(Invoice invoice,
     InvoiceTemplate template,
+    PdfPageFormat pageFormat,
     {PdfColor headerColor = PdfColors.grey200,
     PdfColor textColor = PdfColors.black,
     bool showGst = true,
+    bool showSlNo = true,
     bool showQuantity = true,
     bool showDiscount = true,
     bool showTypeTag = true,
@@ -623,7 +720,29 @@ pw.Widget buildInvoiceTable(Invoice invoice,
     Uint8List? watermarkBytes,
     double watermarkOpacity = 0.12,
     bool showCgstSgst = false,
-    bool showIgst = false,}) {
+    bool showIgst = false,
+    bool isLandscape = false,
+    Map<String, bool> metadataColumns = const {},
+    String metadataDatePattern = 'dd/MM/yyyy'}) {
+  // Optional product-metadata snapshot columns — Grid Classic A4 only. Order is
+  // fixed; only the keys the user enabled are kept.
+  final List<String> metaKeys = (template == InvoiceTemplate.gridClassic &&
+          pageFormat == PdfPageFormat.a4)
+      ? const [
+          'storageLocation',
+          'containerNumber',
+          'batchNumber',
+          'manufactureName',
+          'manufactureDate',
+          'expiryDate',
+          'supplierName',
+          'skuCode',
+          'notes',
+        ].where((k) => metadataColumns[k] == true).toList()
+      : const <String>[];
+  // Grid Classic is the space-constrained template (extra metadata columns,
+  // portrait). Shorten the Discount header there to claw back width.
+  final bool shortDiscountHeader = template == InvoiceTemplate.gridClassic && !isLandscape &&  metaKeys.isNotEmpty;
   final bool showItemTax = invoice.taxMode == TaxMode.perItem;
   final bool isGlobalTaxMode = invoice.taxMode == TaxMode.global;
   final bool splitCgstSgst =
@@ -637,11 +756,14 @@ pw.Widget buildInvoiceTable(Invoice invoice,
 
   int col = 0;
   final Map<int, pw.TableColumnWidth> colWidths = {
-    col++: const pw.FlexColumnWidth(1),
+    if (showSlNo) col++: pw.FlexColumnWidth(getSlNumberFlex(pageFormat,template,isLandscape)),
     col++: showGst ? const pw.FlexColumnWidth(3) : const pw.FlexColumnWidth(4),
     if (showGst) col: const pw.FlexColumnWidth(1.4),
   };
   if (showGst) col++;
+  for (final k in metaKeys) {
+    colWidths[col++] = pw.FlexColumnWidth(_metaColFlex(k));
+  }
   if (showQuantity) colWidths[col++] = const pw.FlexColumnWidth(1);
   colWidths[col++] = const pw.FlexColumnWidth(1.5);
   if (splitCgstSgst) {
@@ -685,12 +807,16 @@ pw.Widget buildInvoiceTable(Invoice invoice,
   // Sl No column's flex vs. the rest, ×10 so one-decimal FlexColumnWidth
   // values (e.g. 1.4) stay exact as ints. Used to indent the new-line
   // description under "Item Name" while keeping the grid border aligned.
-  final slNoFlex = ((colWidths[0]! as pw.FlexColumnWidth).flex * 10).round();
+  // When the Sl No column is hidden, slNoFlex is 0 and the description row is
+  // rendered as a single full-width column instead.
+  final slNoFlex = showSlNo
+      ? ((colWidths[0]! as pw.FlexColumnWidth).flex * 10).round()
+      : 0;
   final restFlex = colWidths.values.fold<int>(
           0, (sum, w) => sum + ((w as pw.FlexColumnWidth).flex * 10).round()) -
       slNoFlex;
 
-  pw.Widget dividerLine() => pw.Container(height: 1, color: PdfColors.grey400);
+  pw.Widget dividerLine({bool isCompact = false}) => pw.Container(height: isCompact ? 0.5 : 1, color: PdfColors.grey400);
 
   pw.BoxDecoration? rowDecoration(PdfColor? rowColor) {
     if (rowColor == null && watermarkImage == null) return null;
@@ -709,12 +835,13 @@ pw.Widget buildInvoiceTable(Invoice invoice,
   final headerRow = pw.TableRow(
     decoration: (template == InvoiceTemplate.gridClassic) ? null : pw.BoxDecoration(color: headerColor),
     children: [
-      buildTableCell('Sl No',
-          isHeader: true,
-          textColor: textColor,
-          fontSize: tableFontSize,
-          cellPaddingH: cellPaddingH,
-          cellPaddingV: cellPaddingV),
+      if (showSlNo)
+        buildTableCell('Sl No',
+            isHeader: true,
+            textColor: textColor,
+            fontSize: tableFontSize,
+            cellPaddingH: cellPaddingH,
+            cellPaddingV: cellPaddingV),
       buildTableCell('Item Name',
           isHeader: true,
           textColor: textColor,
@@ -723,6 +850,13 @@ pw.Widget buildInvoiceTable(Invoice invoice,
           cellPaddingV: cellPaddingV),
       if (showGst)
         buildTableCell('HSN/SAC',
+            isHeader: true,
+            textColor: textColor,
+            fontSize: tableFontSize,
+            cellPaddingH: cellPaddingH,
+            cellPaddingV: cellPaddingV),
+      for (final k in metaKeys)
+        buildTableCell(_metaHeaderText(k, short: !isLandscape),
             isHeader: true,
             textColor: textColor,
             fontSize: tableFontSize,
@@ -772,7 +906,7 @@ pw.Widget buildInvoiceTable(Invoice invoice,
             cellPaddingH: cellPaddingH,
             cellPaddingV: cellPaddingV),
       if (showDiscount)
-        buildTableCell('Discount',
+        buildTableCell(shortDiscountHeader ? 'Disc.' : 'Discount',
             isHeader: true,
             textColor: textColor,
             fontSize: tableFontSize,
@@ -802,10 +936,11 @@ pw.Widget buildInvoiceTable(Invoice invoice,
     itemWidgets.add(rowTable(pw.TableRow(
       decoration: rowDecoration(rowColor),
       children: [
-        buildTableCell('${index + 1}',
-            fontSize: tableFontSize,
-            cellPaddingH: cellPaddingH,
-            cellPaddingV: cellPaddingV),
+        if (showSlNo)
+          buildTableCell('${index + 1}',
+              fontSize: tableFontSize,
+              cellPaddingH: cellPaddingH,
+              cellPaddingV: cellPaddingV),
         pw.Padding(
           padding: pw.EdgeInsets.symmetric(
             horizontal: cellPaddingH,
@@ -856,6 +991,11 @@ pw.Widget buildInvoiceTable(Invoice invoice,
         ),
         if (showGst)
           buildTableCell(item.product.hsncode,
+              fontSize: tableFontSize,
+              cellPaddingH: cellPaddingH,
+              cellPaddingV: cellPaddingV),
+        for (final k in metaKeys)
+          buildTableCell(_metaCellValue(item, k, metadataDatePattern),
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
               cellPaddingV: cellPaddingV),
@@ -925,16 +1065,18 @@ pw.Widget buildInvoiceTable(Invoice invoice,
               bottom: isLastItem ? border.bottom : pw.BorderSide.none,
             );
       itemWidgets.add(pw.Table(
-        columnWidths: {
-          0: pw.FlexColumnWidth(slNoFlex.toDouble()),
-          1: pw.FlexColumnWidth(restFlex.toDouble()),
-        },
+        columnWidths: showSlNo
+            ? {
+                0: pw.FlexColumnWidth(slNoFlex.toDouble()),
+                1: pw.FlexColumnWidth(restFlex.toDouble()),
+              }
+            : {0: pw.FlexColumnWidth(restFlex.toDouble())},
         border: descBorder,
         children: [
           pw.TableRow(
             decoration: rowDecoration(rowColor),
             children: [
-              pw.SizedBox(),
+              if (showSlNo) pw.SizedBox(),
               pw.Container(
                 decoration: border == null
                     ? null
@@ -962,20 +1104,27 @@ pw.Widget buildInvoiceTable(Invoice invoice,
     children: [
       rowTable(headerRow),
       ...itemWidgets,
-      if (template != InvoiceTemplate.gridClassic) dividerLine(),
+      if (template != InvoiceTemplate.gridClassic)
+        dividerLine(isCompact: template == InvoiceTemplate.compact),
       if (totalQuantityText != null)
         rowTable(pw.TableRow(
           children: [
-            buildTableCell('',
-                fontSize: tableFontSize,
-                cellPaddingH: cellPaddingH,
-                cellPaddingV: cellPaddingV),
+            if (showSlNo)
+              buildTableCell('',
+                  fontSize: tableFontSize,
+                  cellPaddingH: cellPaddingH,
+                  cellPaddingV: cellPaddingV),
             buildTableCell('Total',
                 isHeader: true,
                 fontSize: tableFontSize,
                 cellPaddingH: cellPaddingH,
                 cellPaddingV: cellPaddingV),
             if (showGst)
+              buildTableCell('',
+                  fontSize: tableFontSize,
+                  cellPaddingH: cellPaddingH,
+                  cellPaddingV: cellPaddingV),
+            for (final _ in metaKeys)
               buildTableCell('',
                   fontSize: tableFontSize,
                   cellPaddingH: cellPaddingH,
@@ -1015,7 +1164,7 @@ pw.Widget buildInvoiceTable(Invoice invoice,
                 cellPaddingV: cellPaddingV),
           ],
         )),
-      if (totalQuantityText != null && template != InvoiceTemplate.gridClassic) dividerLine(),
+      if (totalQuantityText != null && template != InvoiceTemplate.gridClassic) dividerLine(isCompact: (template == InvoiceTemplate.compact)),
     ],
   );
 }

@@ -28,7 +28,9 @@ class InvoiceManagementScreenV2 extends ConsumerStatefulWidget {
   final Function(Invoice) onEditInvoice;
   final Function(Invoice, String) onCloneInvoice;
   final User user;
-  final String filterType; // 'Invoice' | 'Quotation'
+  final String filterType; // 'Invoice' | 'Quotation' | 'Receipt'
+  // Opens the create form with [filterType] preselected. Null hides the button.
+  final void Function(String type)? onCreateNew;
 
   const InvoiceManagementScreenV2({
     super.key,
@@ -36,6 +38,7 @@ class InvoiceManagementScreenV2 extends ConsumerStatefulWidget {
     required this.onCloneInvoice,
     required this.user,
     this.filterType = 'Invoice',
+    this.onCreateNew,
   });
 
   @override
@@ -45,6 +48,19 @@ class InvoiceManagementScreenV2 extends ConsumerStatefulWidget {
 
 class _InvoiceManagementScreenV2State
     extends ConsumerState<InvoiceManagementScreenV2> {
+  // Localized label for widget.filterType ('Invoice' | 'Quotation' | 'Receipt').
+  String get _typeLabel {
+    final l10n = AppLocalizations.of(context)!;
+    switch (widget.filterType) {
+      case 'Quotation':
+        return l10n.labelQuotation;
+      case 'Receipt':
+        return l10n.labelReceipt;
+      default:
+        return l10n.labelInvoice;
+    }
+  }
+
   int _currentPage = 0;
   int _pageSize = 10;
   String _searchQuery = '';
@@ -469,6 +485,7 @@ class _InvoiceManagementScreenV2State
       );
       final path = await ExportService.exportInvoicesToCsv(invoices,
           type: widget.filterType);
+      if (path == null) return; // user cancelled the save dialog
       if (mounted) {
         AppError.showSuccess(context,
             AppLocalizations.of(context)!.invoiceMgmtExportedRecordsMessage(invoices.length, path));
@@ -539,6 +556,7 @@ class _InvoiceManagementScreenV2State
     setState(() => _isBulkLoading = true);
     try {
       final path = await ExportService.exportInvoicesToCsv(selected);
+      if (path == null) return; // user cancelled the save dialog
       if (mounted) {
         AppError.showSuccess(context,
             AppLocalizations.of(context)!.invoiceMgmtBulkExportedCsvMessage(selected.length));
@@ -1569,6 +1587,15 @@ class _InvoiceManagementScreenV2State
       label: Text(AppLocalizations.of(context)!.invoiceMgmtSortLabel),
     );
 
+    final newButton = widget.onCreateNew == null
+        ? null
+        : FilledButton.icon(
+            onPressed: () => widget.onCreateNew!(widget.filterType),
+            icon: const Icon(Icons.add, size: 18),
+            label: Text(AppLocalizations.of(context)!
+                .invoiceMgmtNewDocumentButton(_typeLabel)),
+          );
+
     final statText = Text(
       AppLocalizations.of(context)!.invoiceMgmtTotalPageStatusLabel(
           _totalCount, _currentPage + 1, _totalPages > 0 ? _totalPages : 1),
@@ -1581,6 +1608,7 @@ class _InvoiceManagementScreenV2State
     if (isWide) {
       return Row(
         children: [
+          if (newButton != null) ...[newButton, const SizedBox(width: 12)],
           Expanded(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 480), child: searchField)),
           const SizedBox(width: 12),
           customerButton,
@@ -1596,6 +1624,10 @@ class _InvoiceManagementScreenV2State
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (newButton != null) ...[
+          Align(alignment: Alignment.centerLeft, child: newButton),
+          const SizedBox(height: 10),
+        ],
         searchField,
         const SizedBox(height: 10),
         Row(
@@ -2044,6 +2076,14 @@ class _InvoiceManagementScreenV2State
                 : l10n.invoiceMgmtTryAdjustingFiltersMessage,
             style: TextStyle(fontSize: 13.5, color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
+          if (_searchQuery.isEmpty && widget.onCreateNew != null) ...[
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: () => widget.onCreateNew!(widget.filterType),
+              icon: const Icon(Icons.add, size: 18),
+              label: Text(l10n.invoiceMgmtNewDocumentButton(_typeLabel)),
+            ),
+          ],
         ],
       ),
     );

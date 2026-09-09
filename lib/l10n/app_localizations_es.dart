@@ -1425,6 +1425,11 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String invoiceMgmtNewDocumentButton(String type) {
+    return 'Crear $type';
+  }
+
+  @override
   String get invoiceMgmtOverdueBadge => 'Vencida';
 
   @override
@@ -2039,6 +2044,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get productMgmtManufactureDateLabel => 'Fecha de fabricación';
 
   @override
+  String get productMgmtManufactureNameLabel => 'Manufacturer Name';
+
+  @override
   String get productMgmtSupplierNameLabel => 'Nombre del proveedor';
 
   @override
@@ -2122,6 +2130,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get productMgmtCsvDescManufactureDate => 'Fecha de fabricación';
+
+  @override
+  String get productMgmtCsvDescManufactureName => 'Manufacturer name';
 
   @override
   String get productMgmtCsvDescSupplierName => 'Nombre del proveedor';
@@ -2296,6 +2307,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get productMgmtColExpiryDate => 'FECHA DE CADUCIDAD';
 
   @override
+  String get productMgmtCustomizeColumnsLabel => 'Customize Product Columns';
+
+  @override
+  String get productMgmtShowColumnsLabel => 'Show Columns';
+
+  @override
+  String productMgmtShowColumnsMaxHint(int max) {
+    return 'Show up to $max columns';
+  }
+
+  @override
   String productMgmtShowingRangeLabel(int from, int to, int total) {
     return 'Mostrando $from a $to de $total productos';
   }
@@ -2464,6 +2486,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get reportsAllCurrenciesLabel => 'Todas las monedas';
 
   @override
+  String get reportsArAgingSummaryTitle =>
+      'Resumen de antigüedad de cuentas por cobrar';
+
+  @override
   String get reportsAvgInvoiceValueLabel => 'Valor promedio de factura';
 
   @override
@@ -2604,6 +2630,15 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get reportsMonthlyRevenueTrendTitle =>
       'Tendencia de ingresos mensuales';
+
+  @override
+  String get reportsMonthlyBreakdownTitle => 'Desglose mensual';
+
+  @override
+  String get reportsMonthColumnLabel => 'Mes';
+
+  @override
+  String get reportsTotalRowLabel => 'Total';
 
   @override
   String get reportsNavDailyReportLabel => 'Informe diario';
@@ -2769,6 +2804,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get reportsTaxCollectedLabel => 'Impuesto recaudado';
 
   @override
+  String get reportsTaxableAmountLabel => 'Base imponible';
+
+  @override
+  String get reportsGrossAmountLabel => 'Bruto';
+
+  @override
+  String get reportsTaxAccrualNote =>
+      'Impuesto cargado en facturas con fecha de este período — base devengo, antes del pago.';
+
+  @override
   String get reportsTaxRateBucketsLabel => 'Rangos de tasa de impuesto';
 
   @override
@@ -2807,6 +2852,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get reportsTotalInvoicesLabel => 'Total de facturas';
+
+  @override
+  String get reportsRealizedProfitLabel => 'Ganancia realizada';
 
   @override
   String get reportsTotalProfitLabel => 'Ganancia total';
@@ -2898,6 +2946,18 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get userMgmtCantDeleteOwnAccountMessage =>
       'No puede eliminar su propia cuenta';
+
+  @override
+  String get userMgmtCantDemoteLastAdminMessage =>
+      'No puede cambiar el rol del único administrador';
+
+  @override
+  String get userMgmtCantChangeOwnRoleMessage =>
+      'No puede cambiar su propio rol';
+
+  @override
+  String get userMgmtUsernameTakenMessage =>
+      'Ese nombre de usuario ya está en uso';
 
   @override
   String get userMgmtDeleteSelectedTitle =>
@@ -3062,6 +3122,46 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get invoiceSettingsSectionCustomer => 'Customer Details';
+
+  @override
+  String get invoiceSettingsSectionColumns => 'Invoice Columns';
+
+  @override
+  String get invoiceSettingsColumnsSectionHint =>
+      'Choose which columns appear in the invoice PDF items table. Item Name, Price and Total are always shown.';
+
+  @override
+  String get invoiceSettingsShowSlNoLabel => 'Sl No column';
+
+  @override
+  String get invoiceSettingsShowSlNoSubtitle =>
+      'Print the serial-number column on A4/Letter invoices';
+
+  @override
+  String get invoiceSettingsColumnHsnLabel => 'HSN/SAC column';
+
+  @override
+  String get invoiceSettingsColumnHsnSubtitle =>
+      'Print the HSN/SAC code column (tied to Show GST Fields)';
+
+  @override
+  String get invoiceSettingsColumnTaxLabel => 'Tax column';
+
+  @override
+  String get invoiceSettingsColumnTaxSubtitle =>
+      'Print the per-item CGST/SGST, IGST % column';
+
+  @override
+  String get invoiceSettingsColumnRequiredSubtitle => 'Always shown';
+
+  @override
+  String get invoiceSettingsColumnItemNameLabel => 'Item Name column';
+
+  @override
+  String get invoiceSettingsColumnPriceLabel => 'Price / Rate column';
+
+  @override
+  String get invoiceSettingsColumnTotalLabel => 'Total column';
 
   @override
   String get invoiceSettingsCustomerSectionHint =>
@@ -3330,13 +3430,24 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get invoiceSettingsWatermarkImageSubtitle =>
-      'Se muestra detrás de la tabla de artículos en los PDF de factura (no se imprime en recibos térmicos)';
+      'Se muestra en los PDF de factura (no se imprime en recibos térmicos)';
 
   @override
   String get invoiceSettingsChangeWatermarkButton => 'Cambiar marca de agua';
 
   @override
   String get invoiceSettingsUploadWatermarkButton => 'Subir marca de agua';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementLabel =>
+      'Ubicación de la marca de agua';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementItemsTable =>
+      'Tabla de artículos';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementFullPage => 'Página completa';
 
   @override
   String invoiceSettingsOpacityLabel(int value) {
@@ -3396,6 +3507,26 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get pdfSettingsShowTotalQtyRowLabel =>
       'Mostrar fila de cantidad total';
+
+  @override
+  String get pdfSettingsOrientationLabel => 'Orientation';
+
+  @override
+  String get pdfSettingsOrientationPortrait => 'Portrait';
+
+  @override
+  String get pdfSettingsOrientationLandscape => 'Landscape';
+
+  @override
+  String get pdfSettingsMetadataColumnsLabel => 'Product metadata columns';
+
+  @override
+  String get pdfSettingsMetadataColumnsHint =>
+      'Print product metadata as extra columns in the items table.';
+
+  @override
+  String get pdfSettingsMetadataColumnsWarning =>
+      'Metadata columns print only on Grid Classic at A4. Each one narrows the others — if the table looks cramped, switch to Landscape above. Values are captured when an item is added; editing the product later won\'t change past invoices.';
 
   @override
   String get pdfSettingsItemLayoutLabel => 'Diseño de artículos';
@@ -3898,6 +4029,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get productColumnsMetaManufactureDateLabel => 'Fecha de fabricación';
 
   @override
+  String get productColumnsMetaManufactureNameLabel => 'Manufacturer Name';
+
+  @override
   String get productColumnsMetaSupplierNameLabel => 'Nombre del proveedor';
 
   @override
@@ -4210,4 +4344,12 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get shortcutPrintPdfDescription =>
       'Generar / imprimir el PDF de la factura';
+
+  @override
+  String get invoiceSettingsCustomFieldsGridClassicNote =>
+      'Nota: Los campos personalizados solo se imprimen en la plantilla PDF Cuadrícula clásica.';
+
+  @override
+  String get invoiceSettingsMetadataColumnsGridClassicNote =>
+      'Note: Metadata columns are only applied to the Grid Classic PDF template.';
 }

@@ -5,14 +5,42 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:archive/archive_io.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/services/pdf_service.dart';
 import 'package:invoiso/utils/formatters.dart';
+import 'package:invoiso/utils/fs_utils.dart';
 
 class ExportService {
-  static Future<String> exportInvoicesToCsv(List<Invoice> invoices,
+  /// Builds the invoice CSV, prompts the user for a save location (a native
+  /// "Save As" dialog on desktop; the platform save flow on Android), writes
+  /// the file there and returns its path. Returns null if the user cancels.
+  static Future<String?> exportInvoicesToCsv(List<Invoice> invoices,
+      {String type = 'Invoice'}) async {
+    final csv = await _buildInvoicesCsv(invoices, type: type);
+    // Prepend UTF-8 BOM so Excel and other apps render Unicode correctly.
+    final bytes = Uint8List.fromList(utf8.encode('\uFEFF$csv'));
+    final prefix = '${type.toLowerCase()}s'; // 'invoices' or 'quotations'
+    final filename = '${prefix}_${DateTime.now().millisecondsSinceEpoch}.csv';
+
+    final savePath = await FilePicker.platform.saveFile(
+      dialogTitle: 'Save $type CSV',
+      fileName: filename,
+      type: FileType.custom,
+      allowedExtensions: ['csv'],
+      bytes: Platform.isAndroid ? bytes : null,
+    );
+    if (savePath == null) return null;
+    if (!Platform.isAndroid) {
+      await File(savePath).writeAsBytes(bytes);
+    }
+    return savePath;
+  }
+
+  static Future<String> _buildInvoicesCsv(List<Invoice> invoices,
       {String type = 'Invoice'}) async {
     final showGst = await BackendServices.settings.getShowGstFields();
 
@@ -66,14 +94,7 @@ class ExportService {
     }).toList();
 
     final rows = <List<dynamic>>[header, ...dataRows];
-    final csv = buildQuotedCsv(rows);
-    // Prepend UTF-8 BOM so Excel and other apps render Unicode correctly
-    final dir = await getApplicationDocumentsDirectory();
-    final prefix = '${type.toLowerCase()}s'; // 'invoices' or 'quotations'
-    final filename = '${prefix}_${DateTime.now().millisecondsSinceEpoch}.csv';
-    final file = File('${dir.path}/$filename');
-    await file.writeAsBytes(utf8.encode('\uFEFF$csv'));
-    return file.path;
+    return buildQuotedCsv(rows);
   }
 
   /// Generates a PDF for each invoice in [invoices], saves them into
@@ -86,15 +107,15 @@ class ExportService {
     String? outputDirectory,
     PdfGenerationSettings? settings,
   }) async {
-    final Directory exportDir;
+    final String exportPath;
     if (outputDirectory != null) {
-      exportDir = Directory(outputDirectory);
+      exportPath = outputDirectory;
     } else {
       final docsDir = await getApplicationDocumentsDirectory();
       final timestamp = DateFormat('yyyyMMdd_HHmmss', 'en_US').format(DateTime.now());
-      exportDir = Directory('${docsDir.path}/invoice_pdfs_$timestamp');
+      exportPath = p.join(docsDir.path, 'invoice_pdfs_$timestamp');
     }
-    await exportDir.create(recursive: true);
+    final exportDir = await ensureDirectory(exportPath);
 
     final s = settings ?? await PDFService.fetchPdfSettings(datePattern: (await BackendServices.settings.getDateFormat()).key);
     for (int i = 0; i < invoices.length; i++) {
@@ -109,7 +130,7 @@ class ExportService {
       );
       final bytes = await pdf.save();
       final filename = PDFService.buildPdfFilename(invoice);
-      await File('${exportDir.path}/$filename').writeAsBytes(bytes);
+      await File(p.join(exportDir.path, filename)).writeAsBytes(bytes);
       onProgress?.call(i + 1, invoices.length);
     }
 

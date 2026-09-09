@@ -5,6 +5,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/models/company_info.dart';
+import 'package:invoiso/models/custom_field_value.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/utils/amount_in_words.dart';
 import 'pdf_widgets.dart';
@@ -23,6 +24,7 @@ pw.MultiPage buildGridClassicTemplate(
   String? upiId,
   bool showUpiQr = false,
   bool showGst = true,
+  bool showSlNo = true,
   bool showQuantity = true,
   bool showDiscount = true,
   bool showTypeTag = true,
@@ -44,9 +46,12 @@ pw.MultiPage buildGridClassicTemplate(
   double signatureSizePx = 50,
   double previousBalanceDue = 0.0,
   PdfPageFormat pageFormat = PdfPageFormat.a4,
+  bool landscape = false,
+  Map<String, bool> metadataColumns = const {},
   pw.ThemeData? pdfTheme,
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
+  bool watermarkFullPage = false,
   bool showCgstSgst = false,
   bool showIgst = false,
   bool showRoundOff = false,
@@ -71,11 +76,23 @@ pw.MultiPage buildGridClassicTemplate(
       signatureBytes != null ? pw.MemoryImage(signatureBytes) : null;
   final borderColor = PdfColors.grey800;
 
+  // `pageFormat` stays portrait here so the isA6/isA5 checks below keep working;
+  // the actual page just swaps width/height for landscape (pdf pkg keeps margins).
   final bool isA6 = pageFormat == PdfPageFormat.a6;
   final bool isA5 = pageFormat == PdfPageFormat.a5;
-  final double fontScale = isA6 ? 0.60 : (isA5 ? 0.88 : 1.0);
-  final double pageMarginH = isA6 ? 10.0 : (isA5 ? 15.0 : PdfLayout.defaultHMargin);
-  final double pageMarginV = isA6 ? 5.0 : (isA5 ? 8.0 : PdfLayout.defaultVMargin);
+  final PdfPageFormat pageFmt = landscape ? pageFormat.landscape : pageFormat;
+  final double fontScale = landscape
+      ? (isA6 ? 0.72 : (isA5 ? 1.0 : 1.0))
+      : (isA6 ? 0.60 : (isA5 ? 0.88 : 1.0));
+  final double pageMarginH = landscape
+      ? (isA6 ? 12.0 : (isA5 ? 18.0 : PdfLayout.defaultHMargin))
+      : (isA6 ? 10.0 : (isA5 ? 15.0 : PdfLayout.defaultHMargin));
+  final double pageMarginV = landscape
+      ? (isA6 ? 6.0 : (isA5 ? 8.0 : 10.0))
+      : (isA6 ? 5.0 : (isA5 ? 8.0 : PdfLayout.defaultVMargin));
+  final double contentWidth = pageFmt.width - pageMarginH * 2;
+  final double totalsBoxWidth =
+      landscape ? (contentWidth * 0.32).clamp(180.0, 340.0) : 200 * fontScale;
   final double innerPad = gridClassicPdfStyle.sectionPadding * fontScale;
   final double titleFont = gridClassicPdfStyle.titleFontSize * fontScale;
   final double subFont = gridClassicPdfStyle.subtitleFontSize * fontScale;
@@ -85,16 +102,26 @@ pw.MultiPage buildGridClassicTemplate(
   final double netAmountFont = gridClassicPdfStyle.totalsHighlightFontSize * fontScale;
   final double cellPadH = (gridClassicPdfStyle.cellPaddingH * fontScale).clamp(3.0, 6.0);
   final double cellPadV = (gridClassicPdfStyle.cellPaddingV * fontScale).clamp(3.0, 6.0);
+  // Logo height gets its own per-page-size scale (independent of fontScale) so
+  // A5/A6 don't get an A4-sized logo swallowing the header.
+  final double logoScale = landscape
+      ? (isA6 ? 0.6 : (isA5 ? 0.9 : 1.0))
+      : (isA6 ? 0.4 : (isA5 ? 0.68 : 1.0));
+  final double logoSize = logoSizePx * logoScale;
 
   final gstin = company?.gstin ?? '';
   final gstLabel = taxLabel(company?.country);
   final panNumber = company?.panNumber ?? '';
   final fssaiCode = company?.fssaiCode ?? '';
-  final companyIdLine = [
+  final companyIdParts = <String>[
     if (showGst && gstin.isNotEmpty) '$gstLabel: $gstin',
     if (showPan && panNumber.isNotEmpty) 'PAN: $panNumber',
     if (showFssai && fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
-  ].join('   ');
+  ];
+  // All three present → one joined line above the divider (current look).
+  // Fewer → fold each into the company-details block, line by line.
+  final allCompanyIds = companyIdParts.length == 3;
+  final companyIdLine = companyIdParts.join('   ');
   final hasPreviousBalance = previousBalanceDue > 0;
   final hasPaid = invoice.amountPaid > 0;
 
@@ -110,9 +137,14 @@ pw.MultiPage buildGridClassicTemplate(
   //final qtyLabel =
   //    (invoice.quantityLabel?.isNotEmpty == true) ? invoice.quantityLabel! : 'Qty';
 
-  pw.Widget infoRow(String k, String v) => pw.Padding(
+  // alignEnd: shrink the row to its content so the enclosing right-hand column
+  // can sit against the page's right edge while the labels stay left-aligned
+  // with each other.
+  pw.Widget infoRow(String k, String v, {bool alignEnd = false}) => pw.Padding(
         padding: pw.EdgeInsets.symmetric(vertical: 1.5 * fontScale),
         child: pw.Row(
+          mainAxisSize:
+              alignEnd ? pw.MainAxisSize.min : pw.MainAxisSize.max,
           children: [
             pw.SizedBox(
                 width: 58 * fontScale,
@@ -163,7 +195,7 @@ pw.MultiPage buildGridClassicTemplate(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
                     if(logoPosition == LogoPosition.left)
-                      buildCompanyLogo(logoImage, size: logoSizePx),
+                      buildCompanyLogo(logoImage, size: logoSize),
                     pw.Column(
                       mainAxisAlignment: pw.MainAxisAlignment.start,
                       crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -182,13 +214,18 @@ pw.MultiPage buildGridClassicTemplate(
                           pw.Text('Ph: ${company!.phone}',
                               textAlign: pw.TextAlign.left,
                               style: pw.TextStyle(fontSize: subFont)),
+                        if (!allCompanyIds)
+                          for (final id in companyIdParts)
+                            pw.Text(id,
+                                textAlign: pw.TextAlign.left,
+                                style: pw.TextStyle(fontSize: subFont)),
                       ],
                     ),
                     if(logoPosition == LogoPosition.right)
-                      buildCompanyLogo(logoImage, size: logoSizePx),
+                      buildCompanyLogo(logoImage, size: logoSize),
                   ]
               ),
-              if (companyIdLine.isNotEmpty)
+              if (allCompanyIds && companyIdLine.isNotEmpty)
                 pw.Center(child: pw.Text(companyIdLine,
                     textAlign: pw.TextAlign.left,
                     style: pw.TextStyle(
@@ -212,11 +249,16 @@ pw.MultiPage buildGridClassicTemplate(
                       pw.Text('Ph: ${company!.phone}',
                           textAlign: pw.TextAlign.center,
                           style: pw.TextStyle(fontSize: subFont)),
-                    if (companyIdLine.isNotEmpty)
+                    if (allCompanyIds && companyIdLine.isNotEmpty)
                       pw.Text(companyIdLine,
                           textAlign: pw.TextAlign.center,
                           style: pw.TextStyle(
-                              fontSize: subFont, fontWeight: pw.FontWeight.normal)),
+                              fontSize: subFont, fontWeight: pw.FontWeight.normal))
+                    else
+                      for (final id in companyIdParts)
+                        pw.Text(id,
+                            textAlign: pw.TextAlign.center,
+                            style: pw.TextStyle(fontSize: subFont)),
                   ],
                 ),
               ),
@@ -271,26 +313,80 @@ pw.MultiPage buildGridClassicTemplate(
                 ),
                 pw.Expanded(
                   flex: 2,
-                  child: pw.Column(
+                  child: pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.end,
+                    children: [
+                    pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    mainAxisSize: pw.MainAxisSize.min,
                     children: [
                       if (invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros) != null)
                         infoRow('${invoice.invoiceTitle ?? invoice.type} No',
-                            invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros)!),
-                      infoRow('Date', formatPdfDate(invoice.date, datePattern)),
+                            invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros)!,
+                            alignEnd: true),
+                      infoRow('Date', formatPdfDate(invoice.date, datePattern),
+                          alignEnd: true),
                       if (showTimeInPdf)
                         infoRow(
                             'Time',
                             DateFormat(pdfTimeFormat == '12' ? 'h:mm a' : 'HH:mm',
                                     'en_US')
-                                .format(invoice.date)),
+                                .format(invoice.date),
+                            alignEnd: true),
                       if (invoice.dueDate != null)
-                        infoRow('Due Date', formatPdfDate(invoice.dueDate!, datePattern)),
+                        infoRow('Due Date',
+                            formatPdfDate(invoice.dueDate!, datePattern),
+                            alignEnd: true),
+                    ],
+                    ),
                     ],
                   ),
                 ),
               ],
             ),
+            if (invoice.customFields.any((f) => f.value.trim().isNotEmpty)) ...[
+              pw.SizedBox(height: 4 * fontScale),
+              () {
+                final filled = invoice.customFields
+                    .where((f) => f.value.trim().isNotEmpty)
+                    .toList();
+
+                pw.Widget fieldCell(CustomFieldValue? f) => pw.Container(
+                      padding: pw.EdgeInsets.all(3 * fontScale),
+                      child: f == null
+                          ? null
+                          : pw.Column(
+                              crossAxisAlignment: pw.CrossAxisAlignment.start,
+                              children: [
+                                pw.Text(f.label,
+                                    style: pw.TextStyle(
+                                        fontSize: labelFont - 1,
+                                        fontWeight: pw.FontWeight.bold)),
+                                pw.SizedBox(height: 1),
+                                pw.Text(f.value,
+                                    style: pw.TextStyle(fontSize: labelFont)),
+                              ],
+                            ),
+                    );
+
+                return pw.Table(
+                  border: pw.TableBorder.all(width: 0.5, color: borderColor),
+                  columnWidths: const {
+                    0: pw.FlexColumnWidth(1),
+                    1: pw.FlexColumnWidth(1),
+                    2: pw.FlexColumnWidth(1),
+                  },
+                  children: [
+                    for (var i = 0; i < filled.length; i += 3)
+                      pw.TableRow(children: [
+                        fieldCell(filled[i]),
+                        fieldCell(i + 1 < filled.length ? filled[i + 1] : null),
+                        fieldCell(i + 2 < filled.length ? filled[i + 2] : null),
+                      ]),
+                  ],
+                );
+              }(),
+            ],
           ],
         ),
       ),
@@ -318,7 +414,7 @@ pw.MultiPage buildGridClassicTemplate(
               pw.Expanded(child: buildAdditionalNotes(invoice,fontSize: gridClassicPdfStyle.bodyFontSize*fontScale, accentColor: accentColor)),
               pw.SizedBox(width: 5 * fontScale),
               pw.SizedBox(
-                width: 200 * fontScale,
+                width: totalsBoxWidth,
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.end,
                   children: [
@@ -342,7 +438,9 @@ pw.MultiPage buildGridClassicTemplate(
                     ],
                     ...invoice.additionalCosts.map((c) => totalsRow(
                         c.label.isEmpty ? 'Extra Cost' : c.label,
-                        '$currencySymbol ${c.amount.toStringAsFixed(2)}')),
+                        c.amount < 0
+                            ? '-$currencySymbol ${(-c.amount).toStringAsFixed(2)}'
+                            : '$currencySymbol ${c.amount.toStringAsFixed(2)}')),
                     if (invoice.invoiceDiscountAmount > 0)
                       totalsRow(invoice.invoiceDiscountType == InvoiceDiscountType.percent
                           ? "Extra Discount (${invoice.invoiceDiscountValue.toStringAsFixed(1)}%)"
@@ -458,10 +556,18 @@ pw.MultiPage buildGridClassicTemplate(
     );
   }
 
+  final fullPageWatermark = watermarkFullPage && watermarkBytes != null;
   return pw.MultiPage(
-    pageFormat: pageFormat,
-    theme: pdfTheme,
-    margin: pw.EdgeInsets.symmetric(vertical: pageMarginV, horizontal: pageMarginH),
+    pageTheme: pw.PageTheme(
+      pageFormat: pageFmt,
+      theme: pdfTheme,
+      margin: pw.EdgeInsets.symmetric(
+          vertical: pageMarginV, horizontal: pageMarginH),
+      buildBackground: fullPageWatermark
+          ? (context) =>
+              buildFullPageWatermark(watermarkBytes, watermarkOpacity)
+          : null,
+    ),
     header: (context) {
       if (context.pageNumber != 1) {
         return pw.SizedBox(); // Remove this if you want header on every page
@@ -492,9 +598,11 @@ pw.MultiPage buildGridClassicTemplate(
       buildInvoiceTable(
         invoice,
         InvoiceTemplate.gridClassic,
+        pageFormat,
         headerColor: PdfColors.grey200,
         textColor: PdfColors.black,
         showGst: showGst,
+        showSlNo: showSlNo,
         showQuantity: showQuantity,
         showDiscount: showDiscount,
         showTypeTag: showTypeTag,
@@ -509,10 +617,13 @@ pw.MultiPage buildGridClassicTemplate(
         totalQuantityText: showTotalQuantity && showQuantity
             ? '${totalQty == totalQty.roundToDouble() ? totalQty.toInt() : totalQty}'
             : null,
-        watermarkBytes: watermarkBytes,
+        watermarkBytes: fullPageWatermark ? null : watermarkBytes,
         watermarkOpacity: watermarkOpacity,
         showCgstSgst: showCgstSgst,
         showIgst: showIgst,
+        isLandscape: landscape,
+        metadataColumns: metadataColumns,
+        metadataDatePattern: datePattern,
       ),
       // ── Notes, totals, signature, footer (inset again) ──
       buildInvoiceFooter()

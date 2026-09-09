@@ -56,9 +56,14 @@ class PdfGenerationSettings {
   final String thermalCompanyNameSize;
   final Uint8List? watermarkBytes;
   final double watermarkOpacity;
+  final bool watermarkFullPage;
   final bool showCgstSgst;
   final bool showRoundOff;
   final bool showLeadingZeros;
+  final bool showSlNo;
+  final bool landscape;
+  // Which product-metadata columns print in the Grid Classic A4 items table.
+  final Map<String, bool> metadataColumns;
 
   const PdfGenerationSettings({
     required this.company,
@@ -96,6 +101,7 @@ class PdfGenerationSettings {
     this.descriptionNewLine = false,
     this.watermarkBytes,
     this.watermarkOpacity = 0.12,
+    this.watermarkFullPage = false,
     this.showRoundOff = false,
     this.showPhone = true,
     this.showEmail = true,
@@ -113,5 +119,8 @@ class PdfGenerationSettings {
     this.showTimeInPdf = true,
     this.pdfTimeFormat = '24',
     this.showLeadingZeros = true,
+    this.showSlNo = true,
+    this.landscape = false,
+    this.metadataColumns = const {},
   });
 }

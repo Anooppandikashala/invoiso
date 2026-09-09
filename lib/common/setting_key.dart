@@ -48,6 +48,7 @@ enum SettingKey {
   themeMode, // app theme: 'light' | 'dark' | 'system'
   watermarkImage, // base64-encoded watermark image shown behind invoice items table
   watermarkOpacity, // watermark opacity 0.0-1.0 as string; default '0.12'
+  watermarkFullPage, // 'true' to render watermark across the whole page instead of only behind the items table (default false)
   defaultInvoiceTitle, // GST document title preselected on new invoices: 'Tax Invoice' | 'Bill of Supply' | etc; null/empty = plain 'Invoice'
   allowDuplicateInvoiceItems, // whether the same product can be added twice to one invoice (default false)
   showCgstSgst, // whether to split tax into CGST/SGST (India, 50/50)
@@ -63,6 +64,8 @@ enum SettingKey {
   thermalCompanyNameSize, // 'xsmall' | 'small' | 'medium' | 'large' — company name font size on thermal receipts; default 'medium'
   lastUsedThermalPrinter, // JSON-encoded Printer of the last device successfully printed to, used to skip a full rescan on next open
   productColumnsConfig, // JSON ProductColumnsConfig — which optional product fields (and invoice extra cost) are visible/editable
+  productListColumnsConfig, // JSON Map<String,bool> — which optional columns show in the product list table
+  invoicePdfMetadataColumns, // JSON Map<String,bool> — which product-metadata columns print in the Grid Classic A4 invoice PDF
   shortcutsBannerDismissed, // '1' once user dismisses the keyboard-shortcuts discovery banner
   createInvoiceLayout, // which create-invoice screen layout to use: 'v1' | 'v2'
   showCustomerStatsCards, // whether the stat cards row is shown on customer management v2 (default true)
@@ -79,6 +82,10 @@ enum SettingKey {
   showCustomerGstinInPdf, // whether to show the customer's GSTIN/tax id on PDFs/thermal receipts (default true; only shown when non-empty and GST fields are on)
   showTimeInPdf, // whether the invoice creation time is appended to the date on PDFs/thermal receipts (default true)
   pdfTimeFormat, // time format used when showTimeInPdf is on: '24' (HH:mm) | '12' (h:mm a); default '24'
+  showSlNoInPdf, // whether to print the Sl No column in the A4/Letter invoice items table (default true)
+  pdfLandscape, // whether the Grid Classic invoice PDF renders in landscape orientation (default false)
+  customFieldsEnabled, // whether the user-defined Custom Fields feature is on (default false)
+  customFieldDefs, // JSON list of CustomFieldDef objects
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -182,6 +189,8 @@ extension SettingKeyExtension on SettingKey {
         return 'watermark_image';
       case SettingKey.watermarkOpacity:
         return 'watermark_opacity';
+      case SettingKey.watermarkFullPage:
+        return 'watermark_full_page';
       case SettingKey.defaultInvoiceTitle:
         return 'default_invoice_title';
       case SettingKey.allowDuplicateInvoiceItems:
@@ -212,6 +221,10 @@ extension SettingKeyExtension on SettingKey {
         return 'last_used_thermal_printer';
       case SettingKey.productColumnsConfig:
         return 'product_columns_config';
+      case SettingKey.productListColumnsConfig:
+        return 'product_list_columns_config';
+      case SettingKey.invoicePdfMetadataColumns:
+        return 'invoice_pdf_metadata_columns';
       case SettingKey.shortcutsBannerDismissed:
         return 'shortcuts_banner_dismissed';
       case SettingKey.createInvoiceLayout:
@@ -244,6 +257,14 @@ extension SettingKeyExtension on SettingKey {
         return 'show_time_in_pdf';
       case SettingKey.pdfTimeFormat:
         return 'pdf_time_format';
+      case SettingKey.showSlNoInPdf:
+        return 'show_sl_no_in_pdf';
+      case SettingKey.pdfLandscape:
+        return 'pdf_landscape';
+      case SettingKey.customFieldsEnabled:
+        return 'custom_fields_enabled';
+      case SettingKey.customFieldDefs:
+        return 'custom_field_defs';
 
     }
   }

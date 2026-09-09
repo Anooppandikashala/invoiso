@@ -2430,6 +2430,12 @@ abstract class AppLocalizations {
   /// **'{type} Management'**
   String invoiceMgmtManagementTitle(String type);
 
+  /// No description provided for @invoiceMgmtNewDocumentButton.
+  ///
+  /// In en, this message translates to:
+  /// **'New {type}'**
+  String invoiceMgmtNewDocumentButton(String type);
+
   /// No description provided for @invoiceMgmtOverdueBadge.
   ///
   /// In en, this message translates to:
@@ -3336,6 +3342,12 @@ abstract class AppLocalizations {
   /// **'Manufacture Date'**
   String get productMgmtManufactureDateLabel;
 
+  /// No description provided for @productMgmtManufactureNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Manufacturer Name'**
+  String get productMgmtManufactureNameLabel;
+
   /// No description provided for @productMgmtSupplierNameLabel.
   ///
   /// In en, this message translates to:
@@ -3485,6 +3497,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Manufacture date'**
   String get productMgmtCsvDescManufactureDate;
+
+  /// No description provided for @productMgmtCsvDescManufactureName.
+  ///
+  /// In en, this message translates to:
+  /// **'Manufacturer name'**
+  String get productMgmtCsvDescManufactureName;
 
   /// No description provided for @productMgmtCsvDescSupplierName.
   ///
@@ -3762,6 +3780,24 @@ abstract class AppLocalizations {
   /// **'EXPIRY DATE'**
   String get productMgmtColExpiryDate;
 
+  /// No description provided for @productMgmtCustomizeColumnsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Customize Product Columns'**
+  String get productMgmtCustomizeColumnsLabel;
+
+  /// No description provided for @productMgmtShowColumnsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Columns'**
+  String get productMgmtShowColumnsLabel;
+
+  /// No description provided for @productMgmtShowColumnsMaxHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Show up to {max} columns'**
+  String productMgmtShowColumnsMaxHint(int max);
+
   /// No description provided for @productMgmtShowingRangeLabel.
   ///
   /// In en, this message translates to:
@@ -4038,6 +4074,12 @@ abstract class AppLocalizations {
   /// **'All currencies'**
   String get reportsAllCurrenciesLabel;
 
+  /// No description provided for @reportsArAgingSummaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A/R Aging Summary'**
+  String get reportsArAgingSummaryTitle;
+
   /// No description provided for @reportsAvgInvoiceValueLabel.
   ///
   /// In en, this message translates to:
@@ -4253,6 +4295,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Monthly Revenue Trend'**
   String get reportsMonthlyRevenueTrendTitle;
+
+  /// No description provided for @reportsMonthlyBreakdownTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly Breakdown'**
+  String get reportsMonthlyBreakdownTitle;
+
+  /// No description provided for @reportsMonthColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get reportsMonthColumnLabel;
+
+  /// No description provided for @reportsTotalRowLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get reportsTotalRowLabel;
 
   /// No description provided for @reportsNavDailyReportLabel.
   ///
@@ -4533,14 +4593,32 @@ abstract class AppLocalizations {
   /// No description provided for @reportsTaxCollectedByRateTitle.
   ///
   /// In en, this message translates to:
-  /// **'Tax Collected by Rate'**
+  /// **'Tax by Rate'**
   String get reportsTaxCollectedByRateTitle;
 
   /// No description provided for @reportsTaxCollectedLabel.
   ///
   /// In en, this message translates to:
-  /// **'Tax Collected'**
+  /// **'Tax'**
   String get reportsTaxCollectedLabel;
+
+  /// No description provided for @reportsTaxableAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Taxable Amount'**
+  String get reportsTaxableAmountLabel;
+
+  /// No description provided for @reportsGrossAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Gross'**
+  String get reportsGrossAmountLabel;
+
+  /// No description provided for @reportsTaxAccrualNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax charged on invoices dated in this period — accrual basis, before payment.'**
+  String get reportsTaxAccrualNote;
 
   /// No description provided for @reportsTaxRateBucketsLabel.
   ///
@@ -4590,6 +4668,12 @@ abstract class AppLocalizations {
   /// **'Total Invoices'**
   String get reportsTotalInvoicesLabel;
 
+  /// No description provided for @reportsRealizedProfitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Realized Profit'**
+  String get reportsRealizedProfitLabel;
+
   /// No description provided for @reportsTotalProfitLabel.
   ///
   /// In en, this message translates to:
@@ -4599,7 +4683,7 @@ abstract class AppLocalizations {
   /// No description provided for @reportsTotalTaxCollectedLabel.
   ///
   /// In en, this message translates to:
-  /// **'Total Tax Collected'**
+  /// **'Total Tax Charged'**
   String get reportsTotalTaxCollectedLabel;
 
   /// No description provided for @reportsTypeColumnLabel.
@@ -4739,6 +4823,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You can\'t delete your own account'**
   String get userMgmtCantDeleteOwnAccountMessage;
+
+  /// No description provided for @userMgmtCantDemoteLastAdminMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You can\'t change the role of the only admin'**
+  String get userMgmtCantDemoteLastAdminMessage;
+
+  /// No description provided for @userMgmtCantChangeOwnRoleMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You can\'t change your own role'**
+  String get userMgmtCantChangeOwnRoleMessage;
+
+  /// No description provided for @userMgmtUsernameTakenMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'That username is already taken'**
+  String get userMgmtUsernameTakenMessage;
 
   /// No description provided for @userMgmtDeleteSelectedTitle.
   ///
@@ -5003,6 +5105,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Customer Details'**
   String get invoiceSettingsSectionCustomer;
+
+  /// No description provided for @invoiceSettingsSectionColumns.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice Columns'**
+  String get invoiceSettingsSectionColumns;
+
+  /// No description provided for @invoiceSettingsColumnsSectionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose which columns appear in the invoice PDF items table. Item Name, Price and Total are always shown.'**
+  String get invoiceSettingsColumnsSectionHint;
+
+  /// No description provided for @invoiceSettingsShowSlNoLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sl No column'**
+  String get invoiceSettingsShowSlNoLabel;
+
+  /// No description provided for @invoiceSettingsShowSlNoSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Print the serial-number column on A4/Letter invoices'**
+  String get invoiceSettingsShowSlNoSubtitle;
+
+  /// No description provided for @invoiceSettingsColumnHsnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'HSN/SAC column'**
+  String get invoiceSettingsColumnHsnLabel;
+
+  /// No description provided for @invoiceSettingsColumnHsnSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Print the HSN/SAC code column (tied to Show GST Fields)'**
+  String get invoiceSettingsColumnHsnSubtitle;
+
+  /// No description provided for @invoiceSettingsColumnTaxLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax column'**
+  String get invoiceSettingsColumnTaxLabel;
+
+  /// No description provided for @invoiceSettingsColumnTaxSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Print the per-item CGST/SGST, IGST % column'**
+  String get invoiceSettingsColumnTaxSubtitle;
+
+  /// No description provided for @invoiceSettingsColumnRequiredSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Always shown'**
+  String get invoiceSettingsColumnRequiredSubtitle;
+
+  /// No description provided for @invoiceSettingsColumnItemNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Item Name column'**
+  String get invoiceSettingsColumnItemNameLabel;
+
+  /// No description provided for @invoiceSettingsColumnPriceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Price / Rate column'**
+  String get invoiceSettingsColumnPriceLabel;
+
+  /// No description provided for @invoiceSettingsColumnTotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total column'**
+  String get invoiceSettingsColumnTotalLabel;
 
   /// No description provided for @invoiceSettingsCustomerSectionHint.
   ///
@@ -5451,7 +5625,7 @@ abstract class AppLocalizations {
   /// No description provided for @invoiceSettingsWatermarkImageSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Shown behind the items table on invoice PDFs (not printed on thermal receipts)'**
+  /// **'Shown on invoice PDFs (not printed on thermal receipts)'**
   String get invoiceSettingsWatermarkImageSubtitle;
 
   /// No description provided for @invoiceSettingsChangeWatermarkButton.
@@ -5465,6 +5639,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Upload Watermark'**
   String get invoiceSettingsUploadWatermarkButton;
+
+  /// No description provided for @invoiceSettingsWatermarkPlacementLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Watermark placement'**
+  String get invoiceSettingsWatermarkPlacementLabel;
+
+  /// No description provided for @invoiceSettingsWatermarkPlacementItemsTable.
+  ///
+  /// In en, this message translates to:
+  /// **'Items table'**
+  String get invoiceSettingsWatermarkPlacementItemsTable;
+
+  /// No description provided for @invoiceSettingsWatermarkPlacementFullPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Full page'**
+  String get invoiceSettingsWatermarkPlacementFullPage;
 
   /// No description provided for @invoiceSettingsOpacityLabel.
   ///
@@ -5561,6 +5753,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show total quantity row'**
   String get pdfSettingsShowTotalQtyRowLabel;
+
+  /// No description provided for @pdfSettingsOrientationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Orientation'**
+  String get pdfSettingsOrientationLabel;
+
+  /// No description provided for @pdfSettingsOrientationPortrait.
+  ///
+  /// In en, this message translates to:
+  /// **'Portrait'**
+  String get pdfSettingsOrientationPortrait;
+
+  /// No description provided for @pdfSettingsOrientationLandscape.
+  ///
+  /// In en, this message translates to:
+  /// **'Landscape'**
+  String get pdfSettingsOrientationLandscape;
+
+  /// No description provided for @pdfSettingsMetadataColumnsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Product metadata columns'**
+  String get pdfSettingsMetadataColumnsLabel;
+
+  /// No description provided for @pdfSettingsMetadataColumnsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Print product metadata as extra columns in the items table.'**
+  String get pdfSettingsMetadataColumnsHint;
+
+  /// No description provided for @pdfSettingsMetadataColumnsWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Metadata columns print only on Grid Classic at A4. Each one narrows the others — if the table looks cramped, switch to Landscape above. Values are captured when an item is added; editing the product later won\'t change past invoices.'**
+  String get pdfSettingsMetadataColumnsWarning;
 
   /// No description provided for @pdfSettingsItemLayoutLabel.
   ///
@@ -6405,7 +6633,7 @@ abstract class AppLocalizations {
   /// No description provided for @productColumnsMetadataSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Storage location, container/batch number, expiry, manufacture date, supplier, SKU, notes.'**
+  /// **'Storage location, container/batch number, expiry, manufacture date, manufacturer, supplier, SKU, notes.'**
   String get productColumnsMetadataSubtitle;
 
   /// No description provided for @productColumnsMetaStorageLocationLabel.
@@ -6437,6 +6665,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Manufacture Date'**
   String get productColumnsMetaManufactureDateLabel;
+
+  /// No description provided for @productColumnsMetaManufactureNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Manufacturer Name'**
+  String get productColumnsMetaManufactureNameLabel;
 
   /// No description provided for @productColumnsMetaSupplierNameLabel.
   ///
@@ -6995,6 +7229,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Generate / print invoice PDF'**
   String get shortcutPrintPdfDescription;
+
+  /// No description provided for @invoiceSettingsCustomFieldsGridClassicNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note: Custom fields are only printed on the Grid Classic PDF template.'**
+  String get invoiceSettingsCustomFieldsGridClassicNote;
+
+  /// No description provided for @invoiceSettingsMetadataColumnsGridClassicNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note: Metadata columns are only applied to the Grid Classic PDF template.'**
+  String get invoiceSettingsMetadataColumnsGridClassicNote;
 }
 
 class _AppLocalizationsDelegate

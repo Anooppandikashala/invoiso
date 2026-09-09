@@ -15,6 +15,7 @@ pw.MultiPage buildMinimalTemplate(
   String? upiId,
   bool showUpiQr = false,
   bool showGst = true,
+  bool showSlNo = true,
   bool showQuantity = true,
   bool showDiscount = true,
   bool showTypeTag = true,
@@ -38,6 +39,7 @@ pw.MultiPage buildMinimalTemplate(
   pw.ThemeData? pdfTheme,
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
+  bool watermarkFullPage = false,
   bool showCgstSgst = false,
   bool showIgst = false,
   bool showRoundOff = false,
@@ -72,16 +74,26 @@ pw.MultiPage buildMinimalTemplate(
   final gstLabel = taxLabel(company?.country);
   final panNumber = company?.panNumber ?? '';
   final fssaiCode = company?.fssaiCode ?? '';
-  final companyIdLine = [
+  final companyIdParts = <String>[
     if (showGst && gstin.isNotEmpty) '$gstLabel: $gstin',
     if (showPan && panNumber.isNotEmpty) '${panLabel(company?.country)}: $panNumber',
     if (showFssai && fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
-  ].join('   ');
+  ];
+  // GSTIN + PAN + FSSAI all present → one joined line; fewer → line by line.
+  final allCompanyIds = companyIdParts.length == 3;
+  final companyIdLine = companyIdParts.join('   ');
 
+  final fullPageWatermark = watermarkFullPage && watermarkBytes != null;
   return pw.MultiPage(
-    pageFormat: pageFormat,
-    theme: pdfTheme,
-    margin: pw.EdgeInsets.all(PdfLayout.defaultHMargin),
+    pageTheme: pw.PageTheme(
+      pageFormat: pageFormat,
+      theme: pdfTheme,
+      margin: pw.EdgeInsets.all(PdfLayout.defaultHMargin),
+      buildBackground: fullPageWatermark
+          ? (context) =>
+              buildFullPageWatermark(watermarkBytes, watermarkOpacity)
+          : null,
+    ),
     footer: (context) => pw.Container(
       alignment: pw.Alignment.centerRight,
       margin: const pw.EdgeInsets.only(top: 20),
@@ -216,8 +228,9 @@ pw.MultiPage buildMinimalTemplate(
               if (showAddress)
                 pw.Text(company?.address ?? '',
                     style: pw.TextStyle(fontSize: minimalPdfStyle.bodyFontSize)),
-              if (companyIdLine.isNotEmpty)
-                pw.Text(companyIdLine,
+              for (final line
+                  in allCompanyIds ? [companyIdLine] : companyIdParts)
+                pw.Text(line,
                     style: pw.TextStyle(
                         fontStyle: pw.FontStyle.italic, fontSize: minimalPdfStyle.bodyFontSize)),
             ],
@@ -260,9 +273,11 @@ pw.MultiPage buildMinimalTemplate(
 
       buildInvoiceTable(invoice,
           InvoiceTemplate.minimal,
+          pageFormat,
           headerColor: PdfColors.grey100,
           textColor: PdfColors.black,
           showGst: showGst,
+          showSlNo: showSlNo,
           showQuantity: showQuantity,
           showDiscount: showDiscount,
           showTypeTag: showTypeTag,
@@ -270,7 +285,7 @@ pw.MultiPage buildMinimalTemplate(
           showDescription: showDescription,
           descriptionNewLine: descriptionNewLine,
           businessType: businessType,
-          watermarkBytes: watermarkBytes,
+          watermarkBytes: fullPageWatermark ? null : watermarkBytes,
           watermarkOpacity: watermarkOpacity,
           tableFontSize: minimalPdfStyle.tableFontSize,
           showCgstSgst: showCgstSgst, showIgst: showIgst),

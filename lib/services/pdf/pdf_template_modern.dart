@@ -15,6 +15,7 @@ pw.MultiPage buildModernTemplate(
   String? upiId,
   bool showUpiQr = false,
   bool showGst = true,
+  bool showSlNo = true,
   bool showQuantity = true,
   bool showDiscount = true,
   bool showTypeTag = true,
@@ -38,6 +39,7 @@ pw.MultiPage buildModernTemplate(
   pw.ThemeData? pdfTheme,
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
+  bool watermarkFullPage = false,
   bool showCgstSgst = false,
   bool showIgst = false,
   bool showRoundOff = false,
@@ -72,16 +74,26 @@ pw.MultiPage buildModernTemplate(
   final gstLabel = taxLabel(company?.country);
   final panNumber = company?.panNumber ?? '';
   final fssaiCode = company?.fssaiCode ?? '';
-  final companyIdLine = [
+  final companyIdParts = <String>[
     if (showGst && gstin.isNotEmpty) '$gstLabel: $gstin',
     if (showPan && panNumber.isNotEmpty) '${panLabel(company?.country)}: $panNumber',
     if (showFssai && fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
-  ].join('   ');
+  ];
+  // GSTIN + PAN + FSSAI all present → one joined line; fewer → line by line.
+  final allCompanyIds = companyIdParts.length == 3;
+  final companyIdLine = companyIdParts.join('   ');
 
+  final fullPageWatermark = watermarkFullPage && watermarkBytes != null;
   return pw.MultiPage(
-    pageFormat: pageFormat,
-    theme: pdfTheme,
-    margin: const pw.EdgeInsets.all(0),
+    pageTheme: pw.PageTheme(
+      pageFormat: pageFormat,
+      theme: pdfTheme,
+      margin: const pw.EdgeInsets.all(0),
+      buildBackground: fullPageWatermark
+          ? (context) =>
+              buildFullPageWatermark(watermarkBytes, watermarkOpacity)
+          : null,
+    ),
     footer: (context) => pw.Container(
       padding: const pw.EdgeInsets.symmetric(horizontal: 30, vertical: 8),
       alignment: pw.Alignment.centerRight,
@@ -154,16 +166,18 @@ pw.MultiPage buildModernTemplate(
             right: PdfLayout.defaultHMargin,
             top: 0,
             bottom: PdfLayout.defaultVMargin-5),
-        child: pw.Row(
-            mainAxisSize: pw.MainAxisSize.max,
-            mainAxisAlignment: pw.MainAxisAlignment.center,
+        child: pw.Center(
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.center,
             children: [
-                pw.Text(companyIdLine,
+              for (final line in allCompanyIds ? [companyIdLine] : companyIdParts)
+                pw.Text(line,
                     style: pw.TextStyle(
                         color: PdfColors.white,
                         fontStyle: pw.FontStyle.italic,
                         fontSize: modernPdfStyle.subtitleFontSize)),
-            ]
+            ],
+          ),
         ),
       ),
       pw.SizedBox(height: 2),
@@ -241,9 +255,11 @@ pw.MultiPage buildModernTemplate(
         padding: pw.EdgeInsets.symmetric(horizontal: PdfLayout.defaultHMargin),
         child: buildInvoiceTable(invoice,
             InvoiceTemplate.modern,
+            pageFormat,
             headerColor: accentColor,
             textColor: PdfColors.white,
             showGst: showGst,
+            showSlNo: showSlNo,
             showQuantity: showQuantity,
             showDiscount: showDiscount,
             showTypeTag: showTypeTag,
@@ -251,7 +267,7 @@ pw.MultiPage buildModernTemplate(
             showDescription: showDescription,
             descriptionNewLine: descriptionNewLine,
             businessType: businessType,
-            watermarkBytes: watermarkBytes,
+            watermarkBytes: fullPageWatermark ? null : watermarkBytes,
             watermarkOpacity: watermarkOpacity,
             tableFontSize: modernPdfStyle.tableFontSize,
             cellPaddingH: modernPdfStyle.cellPaddingH,

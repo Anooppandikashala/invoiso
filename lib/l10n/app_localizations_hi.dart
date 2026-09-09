@@ -1412,6 +1412,11 @@ class AppLocalizationsHi extends AppLocalizations {
   }
 
   @override
+  String invoiceMgmtNewDocumentButton(String type) {
+    return 'नया $type';
+  }
+
+  @override
   String get invoiceMgmtOverdueBadge => 'अतिदेय';
 
   @override
@@ -2022,6 +2027,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get productMgmtManufactureDateLabel => 'निर्माण तिथि';
 
   @override
+  String get productMgmtManufactureNameLabel => 'Manufacturer Name';
+
+  @override
   String get productMgmtSupplierNameLabel => 'आपूर्तिकर्ता का नाम';
 
   @override
@@ -2102,6 +2110,9 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get productMgmtCsvDescManufactureDate => 'निर्माण तिथि';
+
+  @override
+  String get productMgmtCsvDescManufactureName => 'Manufacturer name';
 
   @override
   String get productMgmtCsvDescSupplierName => 'आपूर्तिकर्ता का नाम';
@@ -2273,6 +2284,17 @@ class AppLocalizationsHi extends AppLocalizations {
   String get productMgmtColExpiryDate => 'समाप्ति तिथि';
 
   @override
+  String get productMgmtCustomizeColumnsLabel => 'Customize Product Columns';
+
+  @override
+  String get productMgmtShowColumnsLabel => 'Show Columns';
+
+  @override
+  String productMgmtShowColumnsMaxHint(int max) {
+    return 'Show up to $max columns';
+  }
+
+  @override
   String productMgmtShowingRangeLabel(int from, int to, int total) {
     return '$total उत्पादों में से $from से $to दिखाया जा रहा है';
   }
@@ -2436,6 +2458,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get reportsAllCurrenciesLabel => 'सभी मुद्राएं';
 
   @override
+  String get reportsArAgingSummaryTitle => 'प्राप्य आयु सारांश';
+
+  @override
   String get reportsAvgInvoiceValueLabel => 'औसत इनवॉइस मूल्य';
 
   @override
@@ -2575,6 +2600,15 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get reportsMonthlyRevenueTrendTitle => 'मासिक राजस्व रुझान';
+
+  @override
+  String get reportsMonthlyBreakdownTitle => 'मासिक विवरण';
+
+  @override
+  String get reportsMonthColumnLabel => 'महीना';
+
+  @override
+  String get reportsTotalRowLabel => 'कुल';
 
   @override
   String get reportsNavDailyReportLabel => 'दैनिक रिपोर्ट';
@@ -2734,6 +2768,16 @@ class AppLocalizationsHi extends AppLocalizations {
   String get reportsTaxCollectedLabel => 'एकत्रित कर';
 
   @override
+  String get reportsTaxableAmountLabel => 'कर योग्य राशि';
+
+  @override
+  String get reportsGrossAmountLabel => 'सकल';
+
+  @override
+  String get reportsTaxAccrualNote =>
+      'इस अवधि की तारीख वाले चालानों पर लगाया गया कर — प्रोद्भवन आधार, भुगतान से पहले।';
+
+  @override
   String get reportsTaxRateBucketsLabel => 'कर दर समूह';
 
   @override
@@ -2772,6 +2816,9 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get reportsTotalInvoicesLabel => 'कुल इनवॉइस';
+
+  @override
+  String get reportsRealizedProfitLabel => 'प्राप्त लाभ';
 
   @override
   String get reportsTotalProfitLabel => 'कुल लाभ';
@@ -2860,6 +2907,18 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get userMgmtCantDeleteOwnAccountMessage =>
       'आप अपना खुद का खाता नहीं हटा सकते';
+
+  @override
+  String get userMgmtCantDemoteLastAdminMessage =>
+      'आप एकमात्र एडमिन की भूमिका नहीं बदल सकते';
+
+  @override
+  String get userMgmtCantChangeOwnRoleMessage =>
+      'आप अपनी खुद की भूमिका नहीं बदल सकते';
+
+  @override
+  String get userMgmtUsernameTakenMessage =>
+      'यह उपयोगकर्ता नाम पहले से मौजूद है';
 
   @override
   String get userMgmtDeleteSelectedTitle => 'चयनित उपयोगकर्ताओं को हटाएं?';
@@ -3022,6 +3081,46 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get invoiceSettingsSectionCustomer => 'Customer Details';
+
+  @override
+  String get invoiceSettingsSectionColumns => 'Invoice Columns';
+
+  @override
+  String get invoiceSettingsColumnsSectionHint =>
+      'Choose which columns appear in the invoice PDF items table. Item Name, Price and Total are always shown.';
+
+  @override
+  String get invoiceSettingsShowSlNoLabel => 'Sl No column';
+
+  @override
+  String get invoiceSettingsShowSlNoSubtitle =>
+      'Print the serial-number column on A4/Letter invoices';
+
+  @override
+  String get invoiceSettingsColumnHsnLabel => 'HSN/SAC column';
+
+  @override
+  String get invoiceSettingsColumnHsnSubtitle =>
+      'Print the HSN/SAC code column (tied to Show GST Fields)';
+
+  @override
+  String get invoiceSettingsColumnTaxLabel => 'Tax column';
+
+  @override
+  String get invoiceSettingsColumnTaxSubtitle =>
+      'Print the per-item CGST/SGST, IGST % column';
+
+  @override
+  String get invoiceSettingsColumnRequiredSubtitle => 'Always shown';
+
+  @override
+  String get invoiceSettingsColumnItemNameLabel => 'Item Name column';
+
+  @override
+  String get invoiceSettingsColumnPriceLabel => 'Price / Rate column';
+
+  @override
+  String get invoiceSettingsColumnTotalLabel => 'Total column';
 
   @override
   String get invoiceSettingsCustomerSectionHint =>
@@ -3280,13 +3379,22 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get invoiceSettingsWatermarkImageSubtitle =>
-      'इनवॉइस PDF पर आइटम तालिका के पीछे दिखाया जाता है (थर्मल रसीदों पर मुद्रित नहीं)';
+      'इनवॉइस PDF पर दिखाया जाता है (थर्मल रसीदों पर मुद्रित नहीं)';
 
   @override
   String get invoiceSettingsChangeWatermarkButton => 'वॉटरमार्क बदलें';
 
   @override
   String get invoiceSettingsUploadWatermarkButton => 'वॉटरमार्क अपलोड करें';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementLabel => 'वॉटरमार्क स्थान';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementItemsTable => 'आइटम तालिका';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementFullPage => 'पूरा पृष्ठ';
 
   @override
   String invoiceSettingsOpacityLabel(int value) {
@@ -3343,6 +3451,26 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get pdfSettingsShowTotalQtyRowLabel => 'कुल मात्रा पंक्ति दिखाएं';
+
+  @override
+  String get pdfSettingsOrientationLabel => 'Orientation';
+
+  @override
+  String get pdfSettingsOrientationPortrait => 'Portrait';
+
+  @override
+  String get pdfSettingsOrientationLandscape => 'Landscape';
+
+  @override
+  String get pdfSettingsMetadataColumnsLabel => 'Product metadata columns';
+
+  @override
+  String get pdfSettingsMetadataColumnsHint =>
+      'Print product metadata as extra columns in the items table.';
+
+  @override
+  String get pdfSettingsMetadataColumnsWarning =>
+      'Metadata columns print only on Grid Classic at A4. Each one narrows the others — if the table looks cramped, switch to Landscape above. Values are captured when an item is added; editing the product later won\'t change past invoices.';
 
   @override
   String get pdfSettingsItemLayoutLabel => 'आइटम लेआउट';
@@ -3833,6 +3961,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get productColumnsMetaManufactureDateLabel => 'निर्माण तिथि';
 
   @override
+  String get productColumnsMetaManufactureNameLabel => 'Manufacturer Name';
+
+  @override
   String get productColumnsMetaSupplierNameLabel => 'आपूर्तिकर्ता नाम';
 
   @override
@@ -4141,4 +4272,12 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get shortcutPrintPdfDescription => 'इनवॉइस PDF जनरेट/प्रिंट करें';
+
+  @override
+  String get invoiceSettingsCustomFieldsGridClassicNote =>
+      'ध्यान दें: कस्टम फ़ील्ड केवल ग्रिड क्लासिक PDF टेम्पलेट पर प्रिंट होते हैं।';
+
+  @override
+  String get invoiceSettingsMetadataColumnsGridClassicNote =>
+      'Note: Metadata columns are only applied to the Grid Classic PDF template.';
 }

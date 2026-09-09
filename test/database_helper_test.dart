@@ -82,6 +82,9 @@ void main() {
     // invoice time. Both must exist — the first falls back to the second.
     expect(colNames, containsAll(['description', 'product_description']));
 
+    // v44: JSON snapshot of the product's metadata for the Grid Classic PDF.
+    expect(colNames, contains('line_metadata'));
+
     await db.close();
   });
 

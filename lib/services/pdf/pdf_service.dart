@@ -126,6 +126,10 @@ class PDFService {
       BackendServices.settings.getShowCustomerGstin(), // 46
       BackendServices.settings.getShowTimeInPdf(), // 47
       BackendServices.settings.getPdfTimeFormat(), // 48
+      BackendServices.settings.getShowSlNoInPdf(), // 49
+      BackendServices.settings.getPdfLandscape(), // 50
+      BackendServices.settings.getWatermarkFullPage(), // 51
+      BackendServices.settings.getInvoicePdfMetadataColumns(), // 52
     ]);
 
     final rawPrefix = (results[2] as String?) ?? 'INV';
@@ -196,6 +200,10 @@ class PDFService {
       showCustomerGstin: results[46] as bool,
       showTimeInPdf: results[47] as bool,
       pdfTimeFormat: results[48] as String,
+      showSlNo: results[49] as bool,
+      landscape: results[50] as bool,
+      watermarkFullPage: results[51] as bool,
+      metadataColumns: results[52] as Map<String, bool>,
     );
   }
 
@@ -256,6 +264,7 @@ class PDFService {
           upiId: effectiveUpiId,
           showUpiQr: showUpiQr,
           showGst: s.showGst,
+          showSlNo: s.showSlNo,
           showQuantity: s.showQuantity,
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
@@ -279,6 +288,7 @@ class PDFService {
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
+          watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
           showRoundOff: s.showRoundOff,
@@ -308,6 +318,7 @@ class PDFService {
           upiId: effectiveUpiId,
           showUpiQr: showUpiQr,
           showGst: s.showGst,
+          showSlNo: s.showSlNo,
           showQuantity: s.showQuantity,
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
@@ -331,6 +342,7 @@ class PDFService {
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
+          watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
           showRoundOff: s.showRoundOff,
@@ -360,6 +372,7 @@ class PDFService {
           upiId: effectiveUpiId,
           showUpiQr: showUpiQr,
           showGst: s.showGst,
+          showSlNo: s.showSlNo,
           showQuantity: s.showQuantity,
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
@@ -383,6 +396,7 @@ class PDFService {
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
+          watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
           showRoundOff: s.showRoundOff,
@@ -412,6 +426,7 @@ class PDFService {
           upiId: effectiveUpiId,
           showUpiQr: showUpiQr,
           showGst: s.showGst,
+          showSlNo: s.showSlNo,
           showQuantity: s.showQuantity,
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
@@ -435,6 +450,7 @@ class PDFService {
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
+          watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
           showRoundOff: s.showRoundOff,
@@ -462,6 +478,7 @@ class PDFService {
           upiId: effectiveUpiId,
           showUpiQr: showUpiQr,
           showGst: s.showGst,
+          showSlNo: s.showSlNo,
           showQuantity: s.showQuantity,
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
@@ -486,6 +503,7 @@ class PDFService {
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
+          watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
           showRoundOff: s.showRoundOff,
@@ -544,6 +562,7 @@ class PDFService {
           upiId: effectiveUpiId,
           showUpiQr: showUpiQr,
           showGst: s.showGst,
+          showSlNo: s.showSlNo,
           showQuantity: s.showQuantity,
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
@@ -564,10 +583,13 @@ class PDFService {
           signatureSizePx: s.signatureSizePx,
           previousBalanceDue: effectivePreviousBalance,
           pageFormat: s.pageFormat,
+          landscape: s.landscape,
+          metadataColumns: s.metadataColumns,
           pdfTheme: pdfTheme,
           logoPosition: s.logoPosition,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
+          watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
           showRoundOff: s.showRoundOff,
@@ -695,7 +717,10 @@ class PDFService {
                         await ThermalPrinterService.printInvoice(
                             dialogContext, invoice);
                       } else {
+                        final pageSize =
+                            await BackendServices.settings.getPageSize();
                         await Printing.layoutPdf(
+                            format: pageSizeToFormat(pageSize),
                             onLayout: (_) async => pdfBytes);
                       }
                     },
