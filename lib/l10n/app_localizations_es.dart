@@ -4348,4 +4348,8 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get invoiceSettingsCustomFieldsGridClassicNote =>
       'Nota: Los campos personalizados solo se imprimen en la plantilla PDF Cuadrícula clásica.';
+
+  @override
+  String get invoiceSettingsMetadataColumnsGridClassicNote =>
+      'Note: Metadata columns are only applied to the Grid Classic PDF template.';
 }

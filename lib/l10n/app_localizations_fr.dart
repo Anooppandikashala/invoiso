@@ -4352,4 +4352,8 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get invoiceSettingsCustomFieldsGridClassicNote =>
       'Remarque : les champs personnalisés ne sont imprimés que sur le modèle PDF Grille classique.';
+
+  @override
+  String get invoiceSettingsMetadataColumnsGridClassicNote =>
+      'Note: Metadata columns are only applied to the Grid Classic PDF template.';
 }

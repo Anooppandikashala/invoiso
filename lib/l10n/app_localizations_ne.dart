@@ -4300,4 +4300,8 @@ class AppLocalizationsNe extends AppLocalizations {
   @override
   String get invoiceSettingsCustomFieldsGridClassicNote =>
       'नोट: कस्टम फिल्डहरू ग्रिड क्लासिक PDF टेम्प्लेटमा मात्र छापिन्छन्।';
+
+  @override
+  String get invoiceSettingsMetadataColumnsGridClassicNote =>
+      'Note: Metadata columns are only applied to the Grid Classic PDF template.';
 }

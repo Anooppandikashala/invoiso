@@ -68,6 +68,23 @@ class _InvoiceSettingsScreenV2State
   String? _defaultInvoiceTitle;
   bool _allowDuplicateInvoiceItems = false;
   bool _invoiceLeadingZeros = true;
+
+  // Grid Classic A4 product-metadata columns. Keys match buildInvoiceTable's
+  // metaKeys / ProductMetadata fields; all off by default. Grid Classic only.
+  static const List<String> _metadataColumnKeys = [
+    'storageLocation',
+    'containerNumber',
+    'batchNumber',
+    'expiryDate',
+    'manufactureDate',
+    'manufactureName',
+    'supplierName',
+    'skuCode',
+    'notes',
+  ];
+  Map<String, bool> _metadataColumns = {
+    for (final k in _metadataColumnKeys) k: false
+  };
   int _invoiceCount = 0;
   bool _isLoading = true;
   bool _isSaving = false;
@@ -132,6 +149,7 @@ class _InvoiceSettingsScreenV2State
       settingsRepo.getPdfTimeFormat(),
       settingsRepo.getShowSlNoInPdf(),
       settingsRepo.getWatermarkFullPage(),
+      settingsRepo.getInvoicePdfMetadataColumns(),
     ]);
 
     if (!mounted) return;
@@ -185,6 +203,10 @@ class _InvoiceSettingsScreenV2State
       _pdfTimeFormat = results[39] as String;
       _showSlNoInPdf = results[40] as bool;
       _watermarkFullPage = results[41] as bool;
+      _metadataColumns = {
+        for (final k in _metadataColumnKeys)
+          k: (results[42] as Map<String, bool>)[k] ?? false
+      };
       _customFieldsEnabled = customFieldsEnabledStr == 'true';
       _customFieldDefs = customFieldDefs;
       _isLoading = false;
@@ -259,6 +281,7 @@ class _InvoiceSettingsScreenV2State
         settingsRepo.setShowTimeInPdf(_showTimeInPdf),
         settingsRepo.setPdfTimeFormat(_pdfTimeFormat),
         settingsRepo.setShowSlNoInPdf(_showSlNoInPdf),
+        settingsRepo.setInvoicePdfMetadataColumns(_metadataColumns),
         settingsRepo.setSetting(
             SettingKey.customFieldsEnabled, _customFieldsEnabled.toString()),
         settingsRepo.setCustomFieldDefs(_customFieldDefs),
@@ -1278,7 +1301,104 @@ class _InvoiceSettingsScreenV2State
           value: true,
           onChanged: null,
         ),
+        _metadataColumnsCardV2(l10n),
       ],
+    );
+  }
+
+  String _metaColLabel(AppLocalizations l10n, String key) {
+    switch (key) {
+      case 'storageLocation':
+        return l10n.productColumnsMetaStorageLocationLabel;
+      case 'containerNumber':
+        return l10n.productColumnsMetaContainerNumberLabel;
+      case 'batchNumber':
+        return l10n.productColumnsMetaBatchNumberLabel;
+      case 'expiryDate':
+        return l10n.productColumnsMetaExpiryDateLabel;
+      case 'manufactureDate':
+        return l10n.productColumnsMetaManufactureDateLabel;
+      case 'manufactureName':
+        return l10n.productColumnsMetaManufactureNameLabel;
+      case 'supplierName':
+        return l10n.productColumnsMetaSupplierNameLabel;
+      case 'skuCode':
+        return l10n.productColumnsMetaSkuCodeLabel;
+      case 'notes':
+        return l10n.productColumnsMetaNotesLabel;
+      default:
+        return key;
+    }
+  }
+
+  // Product-metadata columns for the Grid Classic A4 items table. Moved here
+  // from PDF settings so all invoice-column choices live in one place.
+  Widget _metadataColumnsCardV2(AppLocalizations l10n) {
+    final anyOn = _metadataColumns.values.any((v) => v);
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.pdfSettingsMetadataColumnsLabel,
+              style:
+                  const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+          const SizedBox(height: 2),
+          Text(l10n.pdfSettingsMetadataColumnsHint,
+              style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          const SizedBox(height: 2),
+          Text(l10n.invoiceSettingsMetadataColumnsGridClassicNote,
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.error)),
+          const SizedBox(height: 4),
+          for (final k in _metadataColumnKeys)
+            SwitchListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+              title: Text(_metaColLabel(l10n, k),
+                  style: const TextStyle(fontSize: 13.5)),
+              value: _metadataColumns[k] ?? false,
+              onChanged: (v) => setState(
+                  () => _metadataColumns = {..._metadataColumns, k: v}),
+            ),
+          if (anyOn) ...[
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.orange[50],
+                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                border: Border.all(color: Colors.orange[200]!),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.warning_amber_rounded,
+                      size: 16, color: Colors.orange[700]),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(l10n.pdfSettingsMetadataColumnsWarning,
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.orange[800],
+                            height: 1.4)),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 

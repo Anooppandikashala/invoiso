@@ -4096,4 +4096,8 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get invoiceSettingsCustomFieldsGridClassicNote =>
       '注意：自定义字段仅在“经典网格”PDF 模板中打印。';
+
+  @override
+  String get invoiceSettingsMetadataColumnsGridClassicNote =>
+      'Note: Metadata columns are only applied to the Grid Classic PDF template.';
 }

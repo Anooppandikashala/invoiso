@@ -7235,6 +7235,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Note: Custom fields are only printed on the Grid Classic PDF template.'**
   String get invoiceSettingsCustomFieldsGridClassicNote;
+
+  /// No description provided for @invoiceSettingsMetadataColumnsGridClassicNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note: Metadata columns are only applied to the Grid Classic PDF template.'**
+  String get invoiceSettingsMetadataColumnsGridClassicNote;
 }
 
 class _AppLocalizationsDelegate

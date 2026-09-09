@@ -4261,4 +4261,8 @@ class AppLocalizationsBo extends AppLocalizations {
   @override
   String get invoiceSettingsCustomFieldsGridClassicNote =>
       'བརྡ་འཕྲིན: སྒེར་སྒྲིག་ཡིག་ཆ་ནི་རེའུ་མིག་སྲོལ་རྒྱུན་གྱི་ PDF ནང་གཞི་ཁོ་ནར་པར་སྐྲུན་བྱེད།';
+
+  @override
+  String get invoiceSettingsMetadataColumnsGridClassicNote =>
+      'Note: Metadata columns are only applied to the Grid Classic PDF template.';
 }

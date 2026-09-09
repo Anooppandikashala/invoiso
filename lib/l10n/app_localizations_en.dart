@@ -4259,4 +4259,8 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get invoiceSettingsCustomFieldsGridClassicNote =>
       'Note: Custom fields are only printed on the Grid Classic PDF template.';
+
+  @override
+  String get invoiceSettingsMetadataColumnsGridClassicNote =>
+      'Note: Metadata columns are only applied to the Grid Classic PDF template.';
 }
