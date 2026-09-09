@@ -129,6 +129,7 @@ class PDFService {
       BackendServices.settings.getShowSlNoInPdf(), // 49
       BackendServices.settings.getPdfLandscape(), // 50
       BackendServices.settings.getWatermarkFullPage(), // 51
+      BackendServices.settings.getInvoicePdfMetadataColumns(), // 52
     ]);
 
     final rawPrefix = (results[2] as String?) ?? 'INV';
@@ -202,6 +203,7 @@ class PDFService {
       showSlNo: results[49] as bool,
       landscape: results[50] as bool,
       watermarkFullPage: results[51] as bool,
+      metadataColumns: results[52] as Map<String, bool>,
     );
   }
 
@@ -582,6 +584,7 @@ class PDFService {
           previousBalanceDue: effectivePreviousBalance,
           pageFormat: s.pageFormat,
           landscape: s.landscape,
+          metadataColumns: s.metadataColumns,
           pdfTheme: pdfTheme,
           logoPosition: s.logoPosition,
           watermarkBytes: s.watermarkBytes,

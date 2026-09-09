@@ -72,11 +72,14 @@ pw.MultiPage buildClassicTemplate(
   final gstLabel = taxLabel(company?.country);
   final panNumber = company?.panNumber ?? '';
   final fssaiCode = company?.fssaiCode ?? '';
-  final companyIdLine = [
+  final companyIdParts = <String>[
     if (showGst && gstin.isNotEmpty) '$gstLabel: $gstin',
     if (showPan && panNumber.isNotEmpty) '${panLabel(company?.country)}: $panNumber',
     if (showFssai && fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
-  ].join('   ');
+  ];
+  // GSTIN + PAN + FSSAI all present → one joined line; fewer → line by line.
+  final allCompanyIds = companyIdParts.length == 3;
+  final companyIdLine = companyIdParts.join('   ');
 
   final fullPageWatermark = watermarkFullPage && watermarkBytes != null;
   return pw.MultiPage(
@@ -144,12 +147,18 @@ pw.MultiPage buildClassicTemplate(
       ),
 
       pw.SizedBox(height: 6),
-      if (companyIdLine.isNotEmpty)
+      if (allCompanyIds && companyIdLine.isNotEmpty)
         pw.Center(child: pw.Text(companyIdLine,
             style: pw.TextStyle(
                 fontStyle: pw.FontStyle.normal,
                 fontSize: classicPdfStyle.subtitleFontSize,
-                color: PdfColors.grey700)),),
+                color: PdfColors.grey700)),)
+      else
+        for (final id in companyIdParts)
+          pw.Center(child: pw.Text(id,
+              style: pw.TextStyle(
+                  fontSize: classicPdfStyle.subtitleFontSize,
+                  color: PdfColors.grey700))),
       pw.Divider(thickness: 1, color: accentColor),
       //pw.SizedBox(height: classicPdfStyle.headerGap),
       pw.Center(child: pw.Text(title,

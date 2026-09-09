@@ -13,6 +13,8 @@ class InvoiceItem {
   double? extraCost; // optional flat fee added on top of the line total
   String? unit; // overrides product.unit when set
   String? description; // optional per-line note typed on the invoice
+  ProductMetadata?
+      metadata; // snapshot of the product's metadata at add time (frozen, print-only)
   bool
       discountPerUnit; // true  → (price − discount) × qty  (discount multiplied by qty)
   // false → (price × qty) − discount   (flat discount off line total)
@@ -28,6 +30,7 @@ class InvoiceItem {
     this.extraCost,
     this.unit,
     this.description,
+    this.metadata,
     this.discountPerUnit = false,
     this.isProductSaved = false,
   }) : id = id ?? const Uuid().v4();

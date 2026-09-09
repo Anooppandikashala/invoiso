@@ -66,6 +66,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
   final _storageLocationController = TextEditingController();
   final _containerNumberController = TextEditingController();
   final _batchNumberController = TextEditingController();
+  final _manufactureNameController = TextEditingController();
   final _supplierNameController = TextEditingController();
   final _skuCodeController = TextEditingController();
   final _notesController = TextEditingController();
@@ -115,6 +116,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     'batch_number',
     'expiry_date',
     'manufacture_date',
+    'manufacture_name',
     'supplier_name',
     'sku_code',
     'notes',
@@ -181,6 +183,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     'batchNumber': false,
     'expiryDate': true,
     'manufactureDate': false,
+    'manufactureName': false,
     'supplierName': false,
     'skuCode': false,
     'notes': false,
@@ -233,6 +236,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         return c.productMetadata && c.metaExpiryDate;
       case 'manufactureDate':
         return c.productMetadata && c.metaManufactureDate;
+      case 'manufactureName':
+        return c.productMetadata && c.metaManufactureName;
       case 'supplierName':
         return c.productMetadata && c.metaSupplierName;
       case 'skuCode':
@@ -379,6 +384,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     _storageLocationController.dispose();
     _containerNumberController.dispose();
     _batchNumberController.dispose();
+    _manufactureNameController.dispose();
     _supplierNameController.dispose();
     _skuCodeController.dispose();
     _notesController.dispose();
@@ -462,6 +468,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
               batchNumber: _batchNumberController.text.trim(),
               expiryDate: _isoDate(_expiryDate),
               manufactureDate: _isoDate(_manufactureDate),
+              manufactureName: _manufactureNameController.text.trim(),
               supplierName: _supplierNameController.text.trim(),
               skuCode: _skuCodeController.text.trim(),
               notes: _notesController.text.trim(),
@@ -493,6 +500,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     _storageLocationController.clear();
     _containerNumberController.clear();
     _batchNumberController.clear();
+    _manufactureNameController.clear();
     _supplierNameController.clear();
     _skuCodeController.clear();
     _notesController.clear();
@@ -571,6 +579,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     required TextEditingController storageLocationCtrl,
     required TextEditingController containerNumberCtrl,
     required TextEditingController batchNumberCtrl,
+    required TextEditingController manufactureNameCtrl,
     required TextEditingController supplierNameCtrl,
     required TextEditingController skuCodeCtrl,
     required TextEditingController notesCtrl,
@@ -658,6 +667,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
             dateField(l10n.productMgmtExpiryDateLabel, expiryDate, onExpiryChanged),
           if (_columnsConfig.metaManufactureDate)
             dateField(l10n.productMgmtManufactureDateLabel, manufactureDate, onManufactureChanged),
+          if (_columnsConfig.metaManufactureName)
+            field(manufactureNameCtrl, l10n.productMgmtManufactureNameLabel, Icons.factory_outlined),
           if (_columnsConfig.metaSupplierName)
             field(supplierNameCtrl, l10n.productMgmtSupplierNameLabel, Icons.local_shipping_outlined),
           if (_columnsConfig.metaSkuCode)
@@ -785,7 +796,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
 
   Future<void> _downloadSampleCSV() async {
     const sample =
-        '"name","hsn_code","description","price","tax_rate","stock","type","default_discount","purchase_price","alias_name","unit","unlimited_stock","price_includes_tax","storage_location","container_number","batch_number","expiry_date","manufacture_date","supplier_name","sku_code","notes"\n'
+        '"name","hsn_code","description","price","tax_rate","stock","type","default_discount","purchase_price","alias_name","unit","unlimited_stock","price_includes_tax","storage_location","container_number","batch_number","expiry_date","manufacture_date","manufacture_name","supplier_name","sku_code","notes"\n'
         '"Wireless Mouse","84716010","Ergonomic wireless mouse","599.00","18","50","product","5.00","400.00","","pcs","0","0","Rack A1","","","","","","",""\n'
         '"USB Hub","84734000","4-port USB 3.0 hub","299.00","18","100","product","0","180.00","","pcs","0","0","","CNT-1023","","","","","",""\n'
         '"Annual Support","998314","Annual technical support plan","4999.00","18","0","service","10.00","0","","unit","1","1","","","","","","","",""\n';
@@ -866,6 +877,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                     _csvRuleRow(context, 'batch_number', false, l10n.productMgmtCsvDescBatchNumber),
                     _csvRuleRow(context, 'expiry_date', false, l10n.productMgmtCsvDescExpiryDate),
                     _csvRuleRow(context, 'manufacture_date', false, l10n.productMgmtCsvDescManufactureDate),
+                    _csvRuleRow(context, 'manufacture_name', false, l10n.productMgmtCsvDescManufactureName),
                     _csvRuleRow(context, 'supplier_name', false, l10n.productMgmtCsvDescSupplierName),
                     _csvRuleRow(context, 'sku_code', false, l10n.productMgmtCsvDescSkuCode),
                     _csvRuleRow(context, 'notes', false, l10n.productMgmtCsvDescNotes),
@@ -1121,6 +1133,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
           batchNumber: getField(row, 'batch_number'),
           expiryDate: getField(row, 'expiry_date'),
           manufactureDate: getField(row, 'manufacture_date'),
+          manufactureName: getField(row, 'manufacture_name'),
           supplierName: getField(row, 'supplier_name'),
           skuCode: getField(row, 'sku_code'),
           notes: getField(row, 'notes'),
@@ -1377,7 +1390,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
       final allProducts = await repo.getAllProducts();
       final allMetadata = await repo.getAllProductMetadata();
       final List<List<dynamic>> rows = [
-        ['name', 'hsn_code', 'description', 'price', 'tax_rate', 'stock', 'type', 'default_discount', 'purchase_price', 'alias_name', 'unit', 'unlimited_stock', 'price_includes_tax', 'storage_location', 'container_number', 'batch_number', 'expiry_date', 'manufacture_date', 'supplier_name', 'sku_code', 'notes'],
+        ['name', 'hsn_code', 'description', 'price', 'tax_rate', 'stock', 'type', 'default_discount', 'purchase_price', 'alias_name', 'unit', 'unlimited_stock', 'price_includes_tax', 'storage_location', 'container_number', 'batch_number', 'expiry_date', 'manufacture_date', 'manufacture_name', 'supplier_name', 'sku_code', 'notes'],
         ...allProducts.map((p) {
           final meta = allMetadata[p.id];
           return [
@@ -1399,6 +1412,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
               meta?.batchNumber ?? '',
               meta?.expiryDate ?? '',
               meta?.manufactureDate ?? '',
+              meta?.manufactureName ?? '',
               meta?.supplierName ?? '',
               meta?.skuCode ?? '',
               meta?.notes ?? '',
@@ -1772,6 +1786,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         return l10n.productColumnsMetaExpiryDateLabel;
       case 'manufactureDate':
         return l10n.productColumnsMetaManufactureDateLabel;
+      case 'manufactureName':
+        return l10n.productColumnsMetaManufactureNameLabel;
       case 'supplierName':
         return l10n.productColumnsMetaSupplierNameLabel;
       case 'skuCode':
@@ -1870,6 +1886,9 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
           break;
         case 'manufactureDate':
           child = text(_fmtMetaDateV2(meta?.manufactureDate));
+          break;
+        case 'manufactureName':
+          child = text(meta?.manufactureName ?? '');
           break;
         case 'supplierName':
           child = text(meta?.supplierName ?? '');
@@ -2740,6 +2759,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
             storageLocationCtrl: _storageLocationController,
             containerNumberCtrl: _containerNumberController,
             batchNumberCtrl: _batchNumberController,
+            manufactureNameCtrl: _manufactureNameController,
             supplierNameCtrl: _supplierNameController,
             skuCodeCtrl: _skuCodeController,
             notesCtrl: _notesController,
@@ -2946,6 +2966,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     final storageCtrl = TextEditingController(text: metadata?.storageLocation ?? '');
     final containerCtrl = TextEditingController(text: metadata?.containerNumber ?? '');
     final batchCtrl = TextEditingController(text: metadata?.batchNumber ?? '');
+    final manufactureNameCtrl =
+        TextEditingController(text: metadata?.manufactureName ?? '');
     final supplierCtrl = TextEditingController(text: metadata?.supplierName ?? '');
     final skuCtrl = TextEditingController(text: metadata?.skuCode ?? '');
     final notesCtrl = TextEditingController(text: metadata?.notes ?? '');
@@ -2974,6 +2996,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
       storageCtrl.dispose();
       containerCtrl.dispose();
       batchCtrl.dispose();
+      manufactureNameCtrl.dispose();
       supplierCtrl.dispose();
       skuCtrl.dispose();
       notesCtrl.dispose();
@@ -3060,6 +3083,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                       batchNumber: batchCtrl.text.trim(),
                       expiryDate: _isoDate(expiryDate),
                       manufactureDate: _isoDate(manufactureDate),
+                      manufactureName: manufactureNameCtrl.text.trim(),
                       supplierName: supplierCtrl.text.trim(),
                       skuCode: skuCtrl.text.trim(),
                       notes: notesCtrl.text.trim(),
@@ -3310,6 +3334,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                                 storageLocationCtrl: storageCtrl,
                                 containerNumberCtrl: containerCtrl,
                                 batchNumberCtrl: batchCtrl,
+                                manufactureNameCtrl: manufactureNameCtrl,
                                 supplierNameCtrl: supplierCtrl,
                                 skuCodeCtrl: skuCtrl,
                                 notesCtrl: notesCtrl,

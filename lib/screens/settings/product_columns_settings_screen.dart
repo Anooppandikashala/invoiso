@@ -343,6 +343,13 @@ class _ProductColumnsSettingsScreenState
                                   _config.copyWith(metaManufactureDate: v)),
                             ),
                             _subTile(
+                              title:
+                                  l10n.productColumnsMetaManufactureNameLabel,
+                              value: _config.metaManufactureName,
+                              onChanged: (v) => setState(() => _config =
+                                  _config.copyWith(metaManufactureName: v)),
+                            ),
+                            _subTile(
                               title: l10n.productColumnsMetaSupplierNameLabel,
                               value: _config.metaSupplierName,
                               onChanged: (v) => setState(() => _config =

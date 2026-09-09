@@ -84,6 +84,14 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   List<Product> products = [];
   List<Product> filteredProducts = [];
   Map<String, ProductMetadata> _productMetadata = {};
+
+  // Freeze a detached copy of the product's current metadata onto a new line so
+  // it can print on the PDF and never shift if the catalogue product is edited.
+  ProductMetadata? _snapshotMetadata(String productId) {
+    final m = _productMetadata[productId];
+    return (m == null || m.isEmpty) ? null : m.copy();
+  }
+
   Timer? _productSearchDebounce;
   int _productSearchRequestId = 0;
   static const int _productFetchLimit = 30;
@@ -264,6 +272,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                 extraCost: i.extraCost,
                 unit: i.unit,
                 description: i.description,
+                metadata: i.metadata,
                 discountPerUnit: i.discountPerUnit,
                 isProductSaved: i.isProductSaved,
               ))
@@ -760,6 +769,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   extraCost: extraCost,
                   unit: dialogUnit.trim(),
                   description: descriptionController.text.trim(),
+                  metadata: _snapshotMetadata(product.id),
                   discountPerUnit: discountPerUnit),
               insertAt: insertAt);
         }
@@ -796,6 +806,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   extraCost: extraCost,
                   unit: dialogUnit.trim(),
                   description: descriptionController.text.trim(),
+                  metadata: _snapshotMetadata(product.id),
                   discountPerUnit: discountPerUnit),
               insertAt: insertAt);
         }
@@ -810,6 +821,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                 extraCost: extraCost,
                 unit: dialogUnit.trim(),
                 description: descriptionController.text.trim(),
+                metadata: _snapshotMetadata(product.id),
                 discountPerUnit: discountPerUnit),
             insertAt: insertAt);
       }
@@ -1605,6 +1617,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   extraCost: extraCost,
                   unit: dialogUnit.trim(),
                   description: descriptionController.text.trim(),
+                  metadata: item.metadata,
                   discountPerUnit: discountPerUnit,
                 );
                 if(!mounted) return;
