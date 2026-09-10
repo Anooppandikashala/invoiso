@@ -79,6 +79,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   // the nav-rail New Invoice action.
   String _newInvoiceType = 'Invoice';
   bool _hasUpdate = false;
+  bool _returnsEnabled = false;
   String _createInvoiceLayout = 'v2';
   int? _accessibilityJumpToken;
   final InvoiceFormGuard _invoiceFormGuard = InvoiceFormGuard();
@@ -104,11 +105,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Future<void> _loadCreateInvoiceLayout() async {
-    final layout = await ref
-        .read(settingsRepositoryProvider)
-        .getSetting(SettingKey.createInvoiceLayout);
+    final settingsRepo = ref.read(settingsRepositoryProvider);
+    final layout = await settingsRepo.getSetting(SettingKey.createInvoiceLayout);
+    final returns = await settingsRepo.getSetting(SettingKey.returnsEnabled);
     if (!mounted) return;
-    setState(() => _createInvoiceLayout = layout ?? 'v2');
+    setState(() {
+      _createInvoiceLayout = layout ?? 'v2';
+      _returnsEnabled = returns == 'true';
+    });
   }
 
   Future<void> _checkForUpdates() async {
@@ -246,6 +250,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           currentUser: _currentUser,
           openAccessibilityToken: _accessibilityJumpToken,
         );
+      case 9:
+        return InvoiceManagementScreenV2(
+          key: const ValueKey('credit_note_list'),
+          onEditInvoice: editInvoice,
+          onCloneInvoice: cloneInvoice,
+          onCreateNew: _createDocumentOfType,
+          user: _currentUser,
+          filterType: 'Credit Note',
+        );
+      case 10:
+        return InvoiceManagementScreenV2(
+          key: const ValueKey('debit_note_list'),
+          onEditInvoice: editInvoice,
+          onCloneInvoice: cloneInvoice,
+          onCreateNew: _createDocumentOfType,
+          user: _currentUser,
+          filterType: 'Debit Note',
+        );
       default:
         return Center(
             child:
@@ -359,6 +381,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     if (_selectedIndex == index) return;
     if (_selectedIndex == 1 && !await _canLeaveInvoiceForm()) return;
     if (_selectedIndex == 7 && index != 7) await _refreshUser();
+    // Leaving Settings — pick up toggles that change the nav (e.g. Returns).
+    if (_selectedIndex == 8 && index != 8) await _loadCreateInvoiceLayout();
     if (index == 1) await _loadCreateInvoiceLayout();
     if (!mounted) return;
     setState(() {
@@ -554,6 +578,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         Icons.point_of_sale_outlined,
                         Icons.point_of_sale,
                         AppLocalizations.of(context)!.navReceipts),
+                    if (_returnsEnabled) ...[
+                      _buildNavItem(
+                          9,
+                          Icons.assignment_return_outlined,
+                          Icons.assignment_return,
+                          AppLocalizations.of(context)!.navCreditNotes),
+                      _buildNavItem(
+                          10,
+                          Icons.assignment_late_outlined,
+                          Icons.assignment_late,
+                          AppLocalizations.of(context)!.navDebitNotes),
+                    ],
                     _buildNavItem(5, Icons.people_outline, Icons.people,
                         AppLocalizations.of(context)!.navCustomers),
                     _buildNavItem(

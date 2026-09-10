@@ -32,6 +32,12 @@ class _InvoiceSettingsScreenV2State
   final TextEditingController quantityLabelController = TextEditingController();
   final TextEditingController defaultTaxRateController =
       TextEditingController();
+  final TextEditingController creditNotePrefixController =
+      TextEditingController();
+  final TextEditingController debitNotePrefixController =
+      TextEditingController();
+
+  bool _returnsEnabled = false;
 
   String _selectedLogoPosition = 'left';
   String _selectedCurrencyCode = 'INR';
@@ -157,6 +163,12 @@ class _InvoiceSettingsScreenV2State
     final customFieldsEnabledStr =
         await settingsRepo.getSetting(SettingKey.customFieldsEnabled);
     final customFieldDefs = await settingsRepo.getCustomFieldDefs();
+    final returnsEnabledStr =
+        await settingsRepo.getSetting(SettingKey.returnsEnabled);
+    final creditNotePrefix =
+        await settingsRepo.getSetting(SettingKey.creditNotePrefix);
+    final debitNotePrefix =
+        await settingsRepo.getSetting(SettingKey.debitNotePrefix);
     if (!mounted) return;
 
     setState(() {
@@ -209,6 +221,15 @@ class _InvoiceSettingsScreenV2State
       };
       _customFieldsEnabled = customFieldsEnabledStr == 'true';
       _customFieldDefs = customFieldDefs;
+      _returnsEnabled = returnsEnabledStr == 'true';
+      creditNotePrefixController.text =
+          (creditNotePrefix == null || creditNotePrefix.isEmpty)
+              ? 'CN-'
+              : creditNotePrefix;
+      debitNotePrefixController.text =
+          (debitNotePrefix == null || debitNotePrefix.isEmpty)
+              ? 'DN-'
+              : debitNotePrefix;
       _isLoading = false;
     });
   }
@@ -285,6 +306,18 @@ class _InvoiceSettingsScreenV2State
         settingsRepo.setSetting(
             SettingKey.customFieldsEnabled, _customFieldsEnabled.toString()),
         settingsRepo.setCustomFieldDefs(_customFieldDefs),
+        settingsRepo.setSetting(
+            SettingKey.returnsEnabled, _returnsEnabled.toString()),
+        settingsRepo.setSetting(
+            SettingKey.creditNotePrefix,
+            creditNotePrefixController.text.trim().isEmpty
+                ? 'CN-'
+                : creditNotePrefixController.text.trim()),
+        settingsRepo.setSetting(
+            SettingKey.debitNotePrefix,
+            debitNotePrefixController.text.trim().isEmpty
+                ? 'DN-'
+                : debitNotePrefixController.text.trim()),
       ]);
 
       if (!mounted) return;
@@ -652,6 +685,29 @@ class _InvoiceSettingsScreenV2State
           value: _invoiceLeadingZeros,
           onChanged: (val) => setState(() => _invoiceLeadingZeros = val),
         ),
+        _toggleCardV2(
+          title: l10n.returnsSettingTitle,
+          subtitle: l10n.returnsSettingSubtitle,
+          icon: Icons.assignment_return_outlined,
+          value: _returnsEnabled,
+          onChanged: (val) => setState(() => _returnsEnabled = val),
+        ),
+        if (_returnsEnabled) ...[
+          TextField(
+            controller: creditNotePrefixController,
+            maxLength: 25,
+            decoration: _fieldDecorationV2(context,
+                label: l10n.creditNotePrefixLabel,
+                prefixIcon: const Icon(Icons.confirmation_number_outlined)),
+          ),
+          TextField(
+            controller: debitNotePrefixController,
+            maxLength: 25,
+            decoration: _fieldDecorationV2(context,
+                label: l10n.debitNotePrefixLabel,
+                prefixIcon: const Icon(Icons.confirmation_number_outlined)),
+          ),
+        ],
         _buildCurrencyField(),
         DropdownButtonFormField<DateFormatOption>(
           isExpanded: true,

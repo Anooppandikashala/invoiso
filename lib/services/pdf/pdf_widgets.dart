@@ -1191,7 +1191,8 @@ pw.Widget buildTableCell(String text,
 pw.Widget buildAdditionalNotes(Invoice invoice,
     {double fontSize = 10, PdfColor accentColor = PdfColors.grey700}) {
   final notes = invoice.notes ?? '';
-  if (notes.isEmpty) return pw.SizedBox();
+  final returnLines = returnInfoLines(invoice);
+  if (notes.isEmpty && returnLines.isEmpty) return pw.SizedBox();
   return pw.Container(
     padding: const pw.EdgeInsets.all(8),
     decoration: pw.BoxDecoration(
@@ -1202,24 +1203,64 @@ pw.Widget buildAdditionalNotes(Invoice invoice,
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       mainAxisSize: pw.MainAxisSize.min,
       children: [
-        pw.Text('NOTES',
+        for (final line in returnLines) ...[
+          pw.Text(line,
+              style: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: fontSize,
+                  color: PdfColors.grey700)),
+          pw.SizedBox(height: 2),
+        ],
+        if (notes.isNotEmpty) ...[
+          if (returnLines.isNotEmpty) pw.SizedBox(height: 4),
+          pw.Text('NOTES',
+              style: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: fontSize - 1,
+                  letterSpacing: 0.8,
+                  color: accentColor)),
+          pw.SizedBox(height: 3),
+          pw.Text(
+            notes,
             style: pw.TextStyle(
-                fontWeight: pw.FontWeight.bold,
-                fontSize: fontSize - 1,
-                letterSpacing: 0.8,
-                color: accentColor)),
-        pw.SizedBox(height: 3),
-        pw.Text(
-          notes,
-          style: pw.TextStyle(
-              fontStyle: pw.FontStyle.italic,
-              fontWeight: pw.FontWeight.normal,
-              fontSize: fontSize,
-              color: PdfColors.grey700),
-        ),
+                fontStyle: pw.FontStyle.italic,
+                fontWeight: pw.FontWeight.normal,
+                fontSize: fontSize,
+                color: PdfColors.grey700),
+          ),
+        ],
       ],
     ),
   );
+}
+
+/// Reference lines printed on a Credit / Debit Note PDF — original invoice
+/// link, reason, and (credit notes) how the value was settled. Empty for a
+/// plain invoice / quotation / receipt.
+List<String> returnInfoLines(Invoice invoice) {
+  if (invoice.type != 'Credit Note' && invoice.type != 'Debit Note') {
+    return const [];
+  }
+  final lines = <String>[];
+  if ((invoice.originalInvoiceNumber ?? '').isNotEmpty) {
+    final date = invoice.originalInvoiceDate;
+    lines.add('Against Invoice: ${invoice.originalInvoiceNumber}'
+        '${date != null ? ' dated ${formatPdfDate(date, 'dd MMM yyyy')}' : ''}');
+  }
+  if ((invoice.returnReason ?? '').trim().isNotEmpty) {
+    lines.add('Reason: ${invoice.returnReason!.trim()}');
+  }
+  switch (invoice.creditSettlement) {
+    case CreditSettlement.reduceInvoice:
+      lines.add('Adjusted against the invoice balance');
+    case CreditSettlement.refund:
+      lines.add('Refunded to the customer');
+    case CreditSettlement.customerCredit:
+      lines.add('Credited to the customer account');
+    case null:
+      break;
+  }
+  return lines;
 }
 
 // Locale pinned to 'en_US' regardless of the app's UI language: PDF dates

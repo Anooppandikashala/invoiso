@@ -36,6 +36,13 @@ class Invoice {
   String? customInvoiceNumber; // shown instead of invoiceNumber in PDF when hideInvoiceNumber is true
   List<CustomFieldValue> customFields; // user-defined per-invoice fields (e.g. Vehicle No, Delivery Note)
 
+  // Return management — set only when type is 'Credit Note' or 'Debit Note'.
+  String? originalInvoiceId; // linked invoice; null for a standalone note
+  String? originalInvoiceNumber; // snapshot of the linked invoice's number
+  DateTime? originalInvoiceDate; // snapshot of the linked invoice's date
+  String? returnReason; // e.g. "Damaged", "Wrong item", "Price revision"
+  CreditSettlement? creditSettlement; // credit note only; how its value is settled
+
   Invoice({
     required this.id,
     this.invoiceNumber,
@@ -62,6 +69,11 @@ class Invoice {
     this.hideInvoiceNumber = false,
     this.customInvoiceNumber,
     this.customFields = const [],
+    this.originalInvoiceId,
+    this.originalInvoiceNumber,
+    this.originalInvoiceDate,
+    this.returnReason,
+    this.creditSettlement,
   });
 
   /// Text to render for the invoice number in PDF/receipt output, or null to omit the line entirely.

@@ -57,6 +57,8 @@
   "navInvoices": "发票",
   "navQuotations": "报价单",
   "navReceipts": "收据",
+  "navCreditNotes": "贷记单",
+  "navDebitNotes": "借记单",
   "navCustomers": "客户",
   "navProducts": "产品",
   "navReports": "报表",

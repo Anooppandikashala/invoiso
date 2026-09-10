@@ -237,13 +237,72 @@ class ReportService {
     }).toList();
   }
 
+  // ── Return adjustments (shared by the money reports) ───────────────────────
+
+  /// Period totals for credit notes (to subtract) and debit notes (to add),
+  /// plus refunds paid out (to subtract from collected). Same date/currency
+  /// filters as [_loadRows]. `refunds` are matched to their credit note's
+  /// currency.
+  static Future<
+      ({
+        double cnTotal,
+        double cnMargin,
+        double dnTotal,
+        double dnMargin,
+        double dnPaid,
+        double refunds,
+      })> _returnAdjustments(DateTime from, DateTime to,
+      {String? currencyCode}) async {
+    final cn = await _loadRows(
+        type: 'Credit Note', from: from, to: to, currencyCode: currencyCode);
+    final dn = await _loadRows(
+        type: 'Debit Note', from: from, to: to, currencyCode: currencyCode);
+    double cnTotal = 0, cnMargin = 0, dnTotal = 0, dnMargin = 0, dnPaid = 0;
+    for (final r in cn) {
+      cnTotal += r.total;
+      cnMargin += r.netRevenue - r.cogs;
+    }
+    for (final r in dn) {
+      dnTotal += r.total;
+      dnMargin += r.netRevenue - r.cogs;
+      dnPaid += r.paid;
+    }
+
+    final db = await _db.database;
+    final f = AppDate.dateKeyStart(from);
+    final t = AppDate.dateKeyEnd(to);
+    final cc = currencyCode != null
+        ? 'AND (i.currency_code = ? OR i.currency_code IS NULL) '
+        : '';
+    final refRows = await db.rawQuery(
+      'SELECT COALESCE(SUM(r.amount), 0.0) AS s '
+      'FROM refunds r JOIN invoices i ON i.id = r.credit_note_id '
+      'WHERE r.date_refunded >= ? AND r.date_refunded <= ? $cc',
+      [f, t, if (currencyCode != null) currencyCode],
+    );
+    final refunds = (refRows.first['s'] as num).toDouble();
+
+    return (
+      cnTotal: cnTotal,
+      cnMargin: cnMargin,
+      dnTotal: dnTotal,
+      dnMargin: dnMargin,
+      dnPaid: dnPaid,
+      refunds: refunds,
+    );
+  }
+
   // ── 1. Revenue KPIs ────────────────────────────────────────────────────────
 
   static Future<RevenueKpi> getRevenueSummary(DateTime from, DateTime to,
       {String? currencyCode}) async {
     final rows =
         await _loadRows(from: from, to: to, currencyCode: currencyCode);
-    if (rows.isEmpty) return RevenueKpi.empty;
+    final adj =
+        await _returnAdjustments(from, to, currencyCode: currencyCode);
+    if (rows.isEmpty && adj.cnTotal == 0 && adj.dnTotal == 0) {
+      return RevenueKpi.empty;
+    }
 
     double billed = 0,
         collected = 0,
@@ -260,12 +319,41 @@ class ReportService {
           r.total > 0 ? (r.paid / r.total).clamp(0.0, 1.0) : 0.0;
       realizedProfit += margin * collectedRatio;
     }
+
+    // Net off returns. "collected" is cash — back out the synthetic credit-note
+    // / customer-credit payments (paper settlements, not money in) and the
+    // refunds paid out.
+    final db = await _db.database;
+    final cc = currencyCode != null
+        ? 'AND (i.currency_code = ? OR i.currency_code IS NULL) '
+        : '';
+    final synthRows = await db.rawQuery(
+      "SELECT COALESCE(SUM(ip.amount_paid), 0.0) AS s "
+      "FROM invoice_payments ip JOIN invoices i ON i.id = ip.invoice_id "
+      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "AND ip.payment_method IN ('Credit Note', 'Customer Credit') $cc"
+      "AND ip.date_paid >= ? AND ip.date_paid <= ?",
+      [
+        if (currencyCode != null) currencyCode,
+        AppDate.dateKeyStart(from),
+        AppDate.dateKeyEnd(to),
+      ],
+    );
+    final syntheticPaid = (synthRows.first['s'] as num).toDouble();
+
+    billed += adj.dnTotal - adj.cnTotal;
+    collected -= syntheticPaid + adj.refunds;
+    if (collected < 0) collected = 0;
+    profit += adj.dnMargin - adj.cnMargin;
+    realizedProfit += adj.dnMargin - adj.cnMargin;
+
+    final count = rows.length;
     return RevenueKpi(
-      invoiceCount: rows.length,
+      invoiceCount: count,
       billed: billed,
       collected: collected,
       outstanding: outstanding,
-      avgInvoiceValue: billed / rows.length,
+      avgInvoiceValue: count > 0 ? billed / count : 0,
       profit: profit,
       realizedProfit: realizedProfit,
     );
@@ -321,16 +409,31 @@ class ReportService {
       t,
     ];
 
-    // Collected grouped by payment date (more accurate for cash-flow view)
+    // Collected grouped by payment date (more accurate for cash-flow view).
+    // Excludes synthetic credit-note / customer-credit settlements (not cash).
     final collectedRows = await db.rawQuery(
       "SELECT strftime('%Y-%m', ip.date_paid) AS month, "
       "COALESCE(SUM(ip.amount_paid), 0.0) AS collected "
       "FROM invoice_payments ip "
       "JOIN invoices i ON ip.invoice_id = i.id "
       "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "AND (ip.payment_method IS NULL "
+      "OR ip.payment_method NOT IN ('Credit Note', 'Customer Credit')) "
       "$currencyFilter"
       "AND ip.date_paid >= ? AND ip.date_paid <= ? "
       "GROUP BY month ORDER BY month",
+      args,
+    );
+
+    // Refunds paid out, grouped by refund month — reduce net cash collected.
+    final refundRows = await db.rawQuery(
+      "SELECT strftime('%Y-%m', r.date_refunded) AS month, "
+      "COALESCE(SUM(r.amount), 0.0) AS refunded "
+      "FROM refunds r JOIN invoices i ON i.id = r.credit_note_id "
+      "WHERE i.deleted_at IS NULL "
+      "$currencyFilter"
+      "AND r.date_refunded >= ? AND r.date_refunded <= ? "
+      "GROUP BY month",
       args,
     );
 
@@ -338,6 +441,11 @@ class ReportService {
       for (final r in collectedRows)
         r['month'] as String: (r['collected'] as num).toDouble()
     };
+    for (final r in refundRows) {
+      final m = r['month'] as String;
+      collectedByMonth[m] =
+          (collectedByMonth[m] ?? 0) - (r['refunded'] as num).toDouble();
+    }
 
     // Billed / net sales / COGS / outstanding / count grouped by invoice date
     final billedByMonth = <String, double>{};
@@ -353,6 +461,20 @@ class ReportService {
       cogsByMonth[m] = (cogsByMonth[m] ?? 0) + r.cogs;
       outstandingByMonth[m] = (outstandingByMonth[m] ?? 0) + r.outstanding;
       countByMonth[m] = (countByMonth[m] ?? 0) + 1;
+    }
+
+    // Net off credit notes (−) and debit notes (+) by their own date.
+    for (final entry in {'Credit Note': -1.0, 'Debit Note': 1.0}.entries) {
+      final sign = entry.value;
+      final noteRows = await _loadRows(
+          type: entry.key, from: from, to: to, currencyCode: currencyCode);
+      for (final r in noteRows) {
+        if (r.date.length < 7) continue;
+        final m = r.date.substring(0, 7);
+        billedByMonth[m] = (billedByMonth[m] ?? 0) + sign * r.total;
+        netByMonth[m] = (netByMonth[m] ?? 0) + sign * r.netRevenue;
+        cogsByMonth[m] = (cogsByMonth[m] ?? 0) + sign * r.cogs;
+      }
     }
 
     final allMonths = {...billedByMonth.keys, ...collectedByMonth.keys}.toList()
@@ -391,6 +513,20 @@ class ReportService {
       countByDay[d] = (countByDay[d] ?? 0) + 1;
       netByDay[d] = (netByDay[d] ?? 0) + r.netRevenue;
       cogsByDay[d] = (cogsByDay[d] ?? 0) + r.cogs;
+    }
+
+    // Net off credit notes (−) and debit notes (+) by their own date.
+    for (final entry in {'Credit Note': -1.0, 'Debit Note': 1.0}.entries) {
+      final sign = entry.value;
+      final noteRows = await _loadRows(
+          type: entry.key, from: from, to: to, currencyCode: currencyCode);
+      for (final r in noteRows) {
+        if (r.date.length < 10) continue;
+        final d = r.date.substring(0, 10);
+        netByDay[d] = (netByDay[d] ?? 0) + sign * r.netRevenue;
+        cogsByDay[d] = (cogsByDay[d] ?? 0) + sign * r.cogs;
+        countByDay.putIfAbsent(d, () => 0);
+      }
     }
 
     final days = countByDay.keys.toList()..sort();
@@ -549,19 +685,23 @@ class ReportService {
     final taxByRate = <double, double>{};
     final taxableByRate = <double, double>{};
 
+    // Returns net off tax: a credit note subtracts, a debit note adds.
+    const typeSign = "(CASE WHEN i.type = 'Credit Note' THEN -1 ELSE 1 END)";
+    const salesDocTypes = "i.type IN ('Invoice', 'Credit Note', 'Debit Note')";
+
     // Per-item mode: tax computed per line item's product_tax_rate
     final perItemRows = await db.rawQuery(
       "SELECT ii.product_tax_rate AS rate, "
-      "SUM(CASE WHEN ii.product_price_includes_tax = 1 "
+      "SUM($typeSign * CASE WHEN ii.product_price_includes_tax = 1 "
       "THEN $_invoiceItemNetSql * ii.product_tax_rate / (100 + ii.product_tax_rate) "
       "ELSE $_invoiceItemNetSql * ii.product_tax_rate / 100 "
       "END) AS tax_amount, "
-      "SUM(CASE WHEN ii.product_price_includes_tax = 1 "
+      "SUM($typeSign * CASE WHEN ii.product_price_includes_tax = 1 "
       "THEN $_invoiceItemNetSql * 100.0 / (100 + ii.product_tax_rate) "
       "ELSE $_invoiceItemNetSql END) AS taxable_amount "
       "FROM invoice_items ii "
       "JOIN invoices i ON i.id = ii.invoice_id "
-      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "WHERE i.deleted_at IS NULL AND $salesDocTypes "
       "AND i.tax_mode = 'per_item' "
       "$ccFilter"
       "AND i.date >= ? AND i.date <= ? "
@@ -579,9 +719,9 @@ class ReportService {
 
     // Global mode: single tax rate applied to the invoice subtotal
     final globalInvRows = await db.rawQuery(
-      "SELECT i.id, i.tax_rate, i.additional_costs "
+      "SELECT i.id, i.type, i.tax_rate, i.additional_costs "
       "FROM invoices i "
-      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "WHERE i.deleted_at IS NULL AND $salesDocTypes "
       "AND i.tax_mode = 'global' AND i.tax_rate > 0 "
       "$ccFilter"
       "AND i.date >= ? AND i.date <= ?",
@@ -604,6 +744,7 @@ class ReportService {
       }
       for (final inv in globalInvRows) {
         final id = inv['id'] as String;
+        final sign = (inv['type'] as String?) == 'Credit Note' ? -1.0 : 1.0;
         final taxRate = (inv['tax_rate'] as num?)?.toDouble() ?? 0.0;
         final totals = InvoiceTotalsCalculator.totals(
           lines: (itemsByInv[id] ?? []).map((r) =>
@@ -617,9 +758,9 @@ class ReportService {
         final tax = totals.tax;
         final ratePercent = taxRate * 100;
         if (tax > 0) {
-          taxByRate[ratePercent] = (taxByRate[ratePercent] ?? 0) + tax;
+          taxByRate[ratePercent] = (taxByRate[ratePercent] ?? 0) + sign * tax;
           taxableByRate[ratePercent] =
-              (taxableByRate[ratePercent] ?? 0) + totals.subtotal;
+              (taxableByRate[ratePercent] ?? 0) + sign * totals.subtotal;
         }
       }
     }
@@ -650,16 +791,35 @@ class ReportService {
       (byCustomer[r.customerKey] ??= []).add(r);
     }
 
-    final result = byCustomer.entries.map((e) {
+    // Net a customer's billed total: − credit notes, + debit notes.
+    final noteAdjByCustomer = <String, double>{};
+    final noteNameByCustomer = <String, String>{};
+    for (final entry in {'Credit Note': -1.0, 'Debit Note': 1.0}.entries) {
+      final sign = entry.value;
+      final noteRows = await _loadRows(
+          type: entry.key, from: from, to: to, currencyCode: currencyCode);
+      for (final r in noteRows) {
+        noteAdjByCustomer[r.customerKey] =
+            (noteAdjByCustomer[r.customerKey] ?? 0) + sign * r.total;
+        noteNameByCustomer[r.customerKey] = r.customerName;
+      }
+    }
+
+    final keys = {...byCustomer.keys, ...noteAdjByCustomer.keys};
+    final result = keys.map((key) {
+      final invRows = byCustomer[key] ?? const <_InvRow>[];
       double billed = 0, collected = 0, outstanding = 0;
-      for (final r in e.value) {
+      for (final r in invRows) {
         billed += r.total;
         collected += r.paid;
         outstanding += r.outstanding;
       }
+      billed += noteAdjByCustomer[key] ?? 0;
       return TopCustomer(
-        name: e.value.first.customerName,
-        invoiceCount: e.value.length,
+        name: invRows.isNotEmpty
+            ? invRows.first.customerName
+            : (noteNameByCustomer[key] ?? key),
+        invoiceCount: invRows.length,
         billed: billed,
         collected: collected,
         outstanding: outstanding,
@@ -725,6 +885,22 @@ class ReportService {
     final byCurrency = <String, List<_InvRow>>{};
     for (final row in rows) {
       (byCurrency[row.currencyCode] ??= []).add(row);
+    }
+
+    // Credit / Debit notes for this customer — same total/date shape as an
+    // invoice row, so they reuse the loader. A credit note lowers the balance
+    // (credit line), a debit note raises it (debit line).
+    final creditNotes = await _loadRows(
+        type: 'Credit Note', customerKey: customerKey, currencyCode: currencyCode);
+    final debitNotes = await _loadRows(
+        type: 'Debit Note', customerKey: customerKey, currencyCode: currencyCode);
+    final creditNotesByCurrency = <String, List<_InvRow>>{};
+    for (final r in creditNotes) {
+      (creditNotesByCurrency[r.currencyCode] ??= []).add(r);
+    }
+    final debitNotesByCurrency = <String, List<_InvRow>>{};
+    for (final r in debitNotes) {
+      (debitNotesByCurrency[r.currencyCode] ??= []).add(r);
     }
 
     final statements = <CustomerStatement>[];
@@ -795,6 +971,75 @@ class ReportService {
         }
       }
 
+      // Credit notes → credit lines (customer owes less)
+      final cnRows = creditNotesByCurrency[entry.key] ?? const <_InvRow>[];
+      for (final cn in cnRows) {
+        if (cn.date.compareTo(f) < 0) {
+          opening -= cn.total;
+        } else if (cn.date.compareTo(t) <= 0) {
+          drafts.add(_StatementLineDraft(
+            date: cn.date,
+            order: 2,
+            type: 'Credit Note',
+            reference: cn.id,
+            description: 'Credit note',
+            debit: 0,
+            credit: cn.total,
+          ));
+        }
+      }
+
+      // Debit notes → debit lines (customer owes more)
+      final dnRows = debitNotesByCurrency[entry.key] ?? const <_InvRow>[];
+      for (final dn in dnRows) {
+        if (dn.date.compareTo(f) < 0) {
+          opening += dn.total;
+        } else if (dn.date.compareTo(t) <= 0) {
+          invoiced += dn.total;
+          drafts.add(_StatementLineDraft(
+            date: dn.date,
+            order: 2,
+            type: 'Debit Note',
+            reference: dn.id,
+            description: 'Debit note',
+            debit: dn.total,
+            credit: 0,
+          ));
+        }
+      }
+
+      // Refunds against those credit notes → debit lines (cash paid back)
+      if (cnRows.isNotEmpty) {
+        final cnIds = cnRows.map((r) => r.id).toList();
+        final cnPh = List.filled(cnIds.length, '?').join(',');
+        final refundRows = await db.rawQuery(
+          'SELECT credit_note_id, amount, date_refunded, refund_method '
+          'FROM refunds WHERE credit_note_id IN ($cnPh) '
+          'ORDER BY date_refunded ASC, rowid ASC',
+          cnIds,
+        );
+        for (final r in refundRows) {
+          final date = r['date_refunded'] as String? ?? '';
+          final amount = (r['amount'] as num?)?.toDouble() ?? 0;
+          if (date.compareTo(f) < 0) {
+            opening += amount;
+          } else if (date.compareTo(t) <= 0) {
+            final method = r['refund_method'] as String?;
+            drafts.add(_StatementLineDraft(
+              date: date,
+              order: 3,
+              type: 'Refund',
+              reference: r['credit_note_id'] as String? ?? '',
+              description: method == null || method.isEmpty
+                  ? 'Refund'
+                  : 'Refund ($method)',
+              debit: amount,
+              credit: 0,
+            ));
+          }
+        }
+      }
+
       drafts.sort((a, b) {
         final byDate = a.date.compareTo(b.date);
         if (byDate != 0) return byDate;
@@ -854,18 +1099,21 @@ class ReportService {
       t,
       limit,
     ];
+    // A credit note's lines subtract from a product's totals; a debit note's add.
+    const s = "(CASE WHEN i.type = 'Credit Note' THEN -1 ELSE 1 END)";
     final orderBy = rankByProfit
-        ? '(SUM($_invoiceItemTaxableNetSql) - SUM(ii.quantity * ii.product_purchase_price))'
+        ? '(SUM($s * ($_invoiceItemTaxableNetSql)) - SUM($s * ii.quantity * ii.product_purchase_price))'
         : 'revenue';
     final rows = await db.rawQuery(
       "SELECT ii.product_name, "
-      "SUM(ii.quantity) AS units_sold, "
-      "SUM($_invoiceItemTaxableNetSql) AS revenue, "
-      "SUM($_invoiceItemDiscountSql) AS discount_given, "
-      "SUM(ii.quantity * ii.product_purchase_price) AS cogs "
+      "SUM($s * ii.quantity) AS units_sold, "
+      "SUM($s * ($_invoiceItemTaxableNetSql)) AS revenue, "
+      "SUM($s * ($_invoiceItemDiscountSql)) AS discount_given, "
+      "SUM($s * ii.quantity * ii.product_purchase_price) AS cogs "
       "FROM invoice_items ii "
       "JOIN invoices i ON i.id = ii.invoice_id "
-      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "WHERE i.deleted_at IS NULL "
+      "AND i.type IN ('Invoice', 'Credit Note', 'Debit Note') "
       "$ccFilter"
       "AND i.date >= ? AND i.date <= ? "
       "GROUP BY ii.product_name ORDER BY $orderBy DESC LIMIT ?",

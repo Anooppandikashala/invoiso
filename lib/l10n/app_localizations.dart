@@ -456,6 +456,18 @@ abstract class AppLocalizations {
   /// **'Receipts'**
   String get navReceipts;
 
+  /// No description provided for @navCreditNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit Notes'**
+  String get navCreditNotes;
+
+  /// No description provided for @navDebitNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Debit Notes'**
+  String get navDebitNotes;
+
   /// No description provided for @navCustomers.
   ///
   /// In en, this message translates to:
@@ -7241,6 +7253,354 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Note: Metadata columns are only applied to the Grid Classic PDF template.'**
   String get invoiceSettingsMetadataColumnsGridClassicNote;
+
+  /// No description provided for @docTypeCreditNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit Note'**
+  String get docTypeCreditNote;
+
+  /// No description provided for @docTypeDebitNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Debit Note'**
+  String get docTypeDebitNote;
+
+  /// No description provided for @returnDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Credit Note — {number}'**
+  String returnDialogTitle(String number);
+
+  /// No description provided for @returnCustomerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer: {name}'**
+  String returnCustomerLabel(String name);
+
+  /// No description provided for @returnLineSold.
+  ///
+  /// In en, this message translates to:
+  /// **'Sold {qty}'**
+  String returnLineSold(String qty);
+
+  /// No description provided for @returnLineReturned.
+  ///
+  /// In en, this message translates to:
+  /// **'returned {qty}'**
+  String returnLineReturned(String qty);
+
+  /// No description provided for @returnLineLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'left {qty}'**
+  String returnLineLeft(String qty);
+
+  /// No description provided for @returnFieldReturn.
+  ///
+  /// In en, this message translates to:
+  /// **'Return'**
+  String get returnFieldReturn;
+
+  /// No description provided for @returnToStockTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Return to stock'**
+  String get returnToStockTooltip;
+
+  /// No description provided for @returnSubtotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Return subtotal'**
+  String get returnSubtotalLabel;
+
+  /// No description provided for @returnTotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit note total'**
+  String get returnTotalLabel;
+
+  /// No description provided for @returnReasonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get returnReasonLabel;
+
+  /// No description provided for @returnReasonNoteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason note (optional)'**
+  String get returnReasonNoteLabel;
+
+  /// No description provided for @returnReasonDamaged.
+  ///
+  /// In en, this message translates to:
+  /// **'Damaged / defective'**
+  String get returnReasonDamaged;
+
+  /// No description provided for @returnReasonWrongItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong item delivered'**
+  String get returnReasonWrongItem;
+
+  /// No description provided for @returnReasonNotRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Not required'**
+  String get returnReasonNotRequired;
+
+  /// No description provided for @returnReasonQualityIssue.
+  ///
+  /// In en, this message translates to:
+  /// **'Quality issue'**
+  String get returnReasonQualityIssue;
+
+  /// No description provided for @returnReasonOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get returnReasonOther;
+
+  /// No description provided for @returnReasonPriceRevision.
+  ///
+  /// In en, this message translates to:
+  /// **'Price revision'**
+  String get returnReasonPriceRevision;
+
+  /// No description provided for @returnReasonGoodsReturned.
+  ///
+  /// In en, this message translates to:
+  /// **'Goods returned'**
+  String get returnReasonGoodsReturned;
+
+  /// No description provided for @returnReasonBillingCorrection.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing correction'**
+  String get returnReasonBillingCorrection;
+
+  /// No description provided for @returnReasonGoodwill.
+  ///
+  /// In en, this message translates to:
+  /// **'Goodwill / discount'**
+  String get returnReasonGoodwill;
+
+  /// No description provided for @returnSettlementLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Settlement'**
+  String get returnSettlementLabel;
+
+  /// No description provided for @returnSettlementReduceInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Reduce invoice balance (owes {amount})'**
+  String returnSettlementReduceInvoice(String amount);
+
+  /// No description provided for @returnSettlementRefundNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Refund now'**
+  String get returnSettlementRefundNow;
+
+  /// No description provided for @returnSettlementRefundCash.
+  ///
+  /// In en, this message translates to:
+  /// **'Refund now (cash)'**
+  String get returnSettlementRefundCash;
+
+  /// No description provided for @returnSettlementKeepCredit.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep as customer credit'**
+  String get returnSettlementKeepCredit;
+
+  /// No description provided for @returnRefundMethodLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Refund method'**
+  String get returnRefundMethodLabel;
+
+  /// No description provided for @returnValidationNoQty.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a quantity for at least one line.'**
+  String get returnValidationNoQty;
+
+  /// No description provided for @returnValidationMaxQty.
+  ///
+  /// In en, this message translates to:
+  /// **'{product}: cannot return more than {qty}.'**
+  String returnValidationMaxQty(String product, String qty);
+
+  /// No description provided for @returnCreatedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit note created for {amount}.'**
+  String returnCreatedMessage(String amount);
+
+  /// No description provided for @returnCreateError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not create credit note: {error}'**
+  String returnCreateError(String error);
+
+  /// No description provided for @returnPrintVoucher.
+  ///
+  /// In en, this message translates to:
+  /// **'Print voucher'**
+  String get returnPrintVoucher;
+
+  /// No description provided for @returnCreateButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get returnCreateButton;
+
+  /// No description provided for @returnAgainstInvoiceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Against invoice # (optional)'**
+  String get returnAgainstInvoiceLabel;
+
+  /// No description provided for @returnApplyCreditAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply {amount} credit'**
+  String returnApplyCreditAction(String amount);
+
+  /// No description provided for @returnCreditAppliedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer credit applied.'**
+  String get returnCreditAppliedMessage;
+
+  /// No description provided for @refundDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Refund — {number}'**
+  String refundDialogTitle(String number);
+
+  /// No description provided for @refundAvailableCredit.
+  ///
+  /// In en, this message translates to:
+  /// **'Available credit: {amount}'**
+  String refundAvailableCredit(String amount);
+
+  /// No description provided for @refundAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get refundAmountLabel;
+
+  /// No description provided for @refundMethodLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Method'**
+  String get refundMethodLabel;
+
+  /// No description provided for @refundNotesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes (optional)'**
+  String get refundNotesLabel;
+
+  /// No description provided for @refundRecordButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Record'**
+  String get refundRecordButton;
+
+  /// No description provided for @refundValidationRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an amount between 0 and {max}.'**
+  String refundValidationRange(String max);
+
+  /// No description provided for @refundRecordedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Refund of {amount} recorded.'**
+  String refundRecordedMessage(String amount);
+
+  /// No description provided for @refundRecordError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not record refund: {error}'**
+  String refundRecordError(String error);
+
+  /// No description provided for @returnsSettingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Returns (Credit / Debit Notes)'**
+  String get returnsSettingTitle;
+
+  /// No description provided for @returnsSettingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Adds a Credit / Debit Notes screen and a “Create Credit Note” action on invoices'**
+  String get returnsSettingSubtitle;
+
+  /// No description provided for @creditNotePrefixLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit note prefix'**
+  String get creditNotePrefixLabel;
+
+  /// No description provided for @debitNotePrefixLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Debit note prefix'**
+  String get debitNotePrefixLabel;
+
+  /// No description provided for @actionCreateCreditNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Credit Note'**
+  String get actionCreateCreditNote;
+
+  /// No description provided for @actionRefund.
+  ///
+  /// In en, this message translates to:
+  /// **'Refund'**
+  String get actionRefund;
+
+  /// No description provided for @actionCancelVoid.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel / Void'**
+  String get actionCancelVoid;
+
+  /// No description provided for @voidCreditNoteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this credit note?'**
+  String get voidCreditNoteTitle;
+
+  /// No description provided for @voidCreditNoteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Reverses the restock and settlement for {number} and moves it to trash. Blocked if any of its credit was already applied to an invoice.'**
+  String voidCreditNoteBody(String number);
+
+  /// No description provided for @voidCreditNoteKeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep'**
+  String get voidCreditNoteKeep;
+
+  /// No description provided for @creditNoteCancelledMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit note cancelled.'**
+  String get creditNoteCancelledMessage;
+
+  /// No description provided for @creditNoteCancelError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not cancel: {error}'**
+  String creditNoteCancelError(String error);
 }
 
 class _AppLocalizationsDelegate

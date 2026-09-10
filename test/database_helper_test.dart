@@ -36,6 +36,8 @@ void main() {
         'company_info',
         'settings',
         'invoice_payments',
+        'customer_credits',
+        'refunds',
       ]),
     );
 

@@ -198,6 +198,12 @@ class AppLocalizationsBo extends AppLocalizations {
   String get navReceipts => 'ལག་ཁྱེར།';
 
   @override
+  String get navCreditNotes => 'Credit Notes';
+
+  @override
+  String get navDebitNotes => 'Debit Notes';
+
+  @override
   String get navCustomers => 'ཉོ་མཁན།';
 
   @override
@@ -4265,4 +4271,213 @@ class AppLocalizationsBo extends AppLocalizations {
   @override
   String get invoiceSettingsMetadataColumnsGridClassicNote =>
       'Note: Metadata columns are only applied to the Grid Classic PDF template.';
+
+  @override
+  String get docTypeCreditNote => 'Credit Note';
+
+  @override
+  String get docTypeDebitNote => 'Debit Note';
+
+  @override
+  String returnDialogTitle(String number) {
+    return 'Create Credit Note — $number';
+  }
+
+  @override
+  String returnCustomerLabel(String name) {
+    return 'Customer: $name';
+  }
+
+  @override
+  String returnLineSold(String qty) {
+    return 'Sold $qty';
+  }
+
+  @override
+  String returnLineReturned(String qty) {
+    return 'returned $qty';
+  }
+
+  @override
+  String returnLineLeft(String qty) {
+    return 'left $qty';
+  }
+
+  @override
+  String get returnFieldReturn => 'Return';
+
+  @override
+  String get returnToStockTooltip => 'Return to stock';
+
+  @override
+  String get returnSubtotalLabel => 'Return subtotal';
+
+  @override
+  String get returnTotalLabel => 'Credit note total';
+
+  @override
+  String get returnReasonLabel => 'Reason';
+
+  @override
+  String get returnReasonNoteLabel => 'Reason note (optional)';
+
+  @override
+  String get returnReasonDamaged => 'Damaged / defective';
+
+  @override
+  String get returnReasonWrongItem => 'Wrong item delivered';
+
+  @override
+  String get returnReasonNotRequired => 'Not required';
+
+  @override
+  String get returnReasonQualityIssue => 'Quality issue';
+
+  @override
+  String get returnReasonOther => 'Other';
+
+  @override
+  String get returnReasonPriceRevision => 'Price revision';
+
+  @override
+  String get returnReasonGoodsReturned => 'Goods returned';
+
+  @override
+  String get returnReasonBillingCorrection => 'Billing correction';
+
+  @override
+  String get returnReasonGoodwill => 'Goodwill / discount';
+
+  @override
+  String get returnSettlementLabel => 'Settlement';
+
+  @override
+  String returnSettlementReduceInvoice(String amount) {
+    return 'Reduce invoice balance (owes $amount)';
+  }
+
+  @override
+  String get returnSettlementRefundNow => 'Refund now';
+
+  @override
+  String get returnSettlementRefundCash => 'Refund now (cash)';
+
+  @override
+  String get returnSettlementKeepCredit => 'Keep as customer credit';
+
+  @override
+  String get returnRefundMethodLabel => 'Refund method';
+
+  @override
+  String get returnValidationNoQty => 'Enter a quantity for at least one line.';
+
+  @override
+  String returnValidationMaxQty(String product, String qty) {
+    return '$product: cannot return more than $qty.';
+  }
+
+  @override
+  String returnCreatedMessage(String amount) {
+    return 'Credit note created for $amount.';
+  }
+
+  @override
+  String returnCreateError(String error) {
+    return 'Could not create credit note: $error';
+  }
+
+  @override
+  String get returnPrintVoucher => 'Print voucher';
+
+  @override
+  String get returnCreateButton => 'Create';
+
+  @override
+  String get returnAgainstInvoiceLabel => 'Against invoice # (optional)';
+
+  @override
+  String returnApplyCreditAction(String amount) {
+    return 'Apply $amount credit';
+  }
+
+  @override
+  String get returnCreditAppliedMessage => 'Customer credit applied.';
+
+  @override
+  String refundDialogTitle(String number) {
+    return 'Refund — $number';
+  }
+
+  @override
+  String refundAvailableCredit(String amount) {
+    return 'Available credit: $amount';
+  }
+
+  @override
+  String get refundAmountLabel => 'Amount';
+
+  @override
+  String get refundMethodLabel => 'Method';
+
+  @override
+  String get refundNotesLabel => 'Notes (optional)';
+
+  @override
+  String get refundRecordButton => 'Record';
+
+  @override
+  String refundValidationRange(String max) {
+    return 'Enter an amount between 0 and $max.';
+  }
+
+  @override
+  String refundRecordedMessage(String amount) {
+    return 'Refund of $amount recorded.';
+  }
+
+  @override
+  String refundRecordError(String error) {
+    return 'Could not record refund: $error';
+  }
+
+  @override
+  String get returnsSettingTitle => 'Enable Returns (Credit / Debit Notes)';
+
+  @override
+  String get returnsSettingSubtitle =>
+      'Adds a Credit / Debit Notes screen and a “Create Credit Note” action on invoices';
+
+  @override
+  String get creditNotePrefixLabel => 'Credit note prefix';
+
+  @override
+  String get debitNotePrefixLabel => 'Debit note prefix';
+
+  @override
+  String get actionCreateCreditNote => 'Create Credit Note';
+
+  @override
+  String get actionRefund => 'Refund';
+
+  @override
+  String get actionCancelVoid => 'Cancel / Void';
+
+  @override
+  String get voidCreditNoteTitle => 'Cancel this credit note?';
+
+  @override
+  String voidCreditNoteBody(String number) {
+    return 'Reverses the restock and settlement for $number and moves it to trash. Blocked if any of its credit was already applied to an invoice.';
+  }
+
+  @override
+  String get voidCreditNoteKeep => 'Keep';
+
+  @override
+  String get creditNoteCancelledMessage => 'Credit note cancelled.';
+
+  @override
+  String creditNoteCancelError(String error) {
+    return 'Could not cancel: $error';
+  }
 }

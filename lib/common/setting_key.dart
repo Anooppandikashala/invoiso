@@ -86,6 +86,9 @@ enum SettingKey {
   pdfLandscape, // whether the Grid Classic invoice PDF renders in landscape orientation (default false)
   customFieldsEnabled, // whether the user-defined Custom Fields feature is on (default false)
   customFieldDefs, // JSON list of CustomFieldDef objects
+  returnsEnabled, // whether the Credit / Debit Notes (returns) feature is on (default false)
+  creditNotePrefix, // number prefix for credit notes (default 'CN-')
+  debitNotePrefix, // number prefix for debit notes (default 'DN-')
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -265,6 +268,12 @@ extension SettingKeyExtension on SettingKey {
         return 'custom_fields_enabled';
       case SettingKey.customFieldDefs:
         return 'custom_field_defs';
+      case SettingKey.returnsEnabled:
+        return 'returns_enabled';
+      case SettingKey.creditNotePrefix:
+        return 'credit_note_prefix';
+      case SettingKey.debitNotePrefix:
+        return 'debit_note_prefix';
 
     }
   }

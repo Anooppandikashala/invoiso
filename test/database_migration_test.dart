@@ -217,6 +217,19 @@ void main() {
     expect(companyInfo['pan_number'], '');
     expect(companyInfo['fssai_code'], '');
 
+    // v47 — return management. New invoice columns are NULL on legacy rows,
+    // invoice_items.restocked defaults to 1, and the two new tables exist.
+    expect(invoice.containsKey('original_invoice_id'), isTrue);
+    expect(invoice['original_invoice_id'], isNull);
+    expect(invoice['credit_settlement'], isNull);
+    expect(item['restocked'], 1);
+    expect(await db.query('customer_credits'), isEmpty);
+    expect(await db.query('refunds'), isEmpty);
+    final cnPrefix = (await db.query('settings',
+            where: 'key = ?', whereArgs: ['credit_note_prefix']))
+        .first;
+    expect(cnPrefix['value'], 'CN-');
+
     await db.close();
   });
 }

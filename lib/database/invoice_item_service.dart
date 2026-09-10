@@ -34,6 +34,7 @@ class InvoiceItemService {
       'description': item.description,
       'line_metadata':
           item.metadata == null ? null : jsonEncode(item.metadata!.toMap()),
+      'restocked': item.restocked ? 1 : 0,
     });
   }
 
@@ -70,6 +71,7 @@ class InvoiceItemService {
             metadata: ProductMetadata.fromJsonString(map['line_metadata']),
             discountPerUnit: (map['discount_per_unit'] as int? ?? 0) == 1,
             isProductSaved: (map['is_product_saved'] as int? ?? 0) == 1,
+            restocked: (map['restocked'] as int? ?? 1) == 1,
           ),
         );
       } catch (e, stackTrace) {

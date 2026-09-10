@@ -89,6 +89,8 @@
   "navInvoices": "Invoices",
   "navQuotations": "Quotations",
   "navReceipts": "Receipts",
+  "navCreditNotes": "Credit Notes",
+  "navDebitNotes": "Debit Notes",
   "navCustomers": "Customers",
   "navProducts": "Products",
   "navReports": "Reports",
@@ -2420,5 +2422,185 @@
   "shortcutPreviewPdfDescription": "Preview invoice PDF",
   "shortcutPrintPdfDescription": "Generate / print invoice PDF",
   "invoiceSettingsCustomFieldsGridClassicNote": "Note: Custom fields are only printed on the Grid Classic PDF template.",
-  "invoiceSettingsMetadataColumnsGridClassicNote": "Note: Metadata columns are only applied to the Grid Classic PDF template."
+  "invoiceSettingsMetadataColumnsGridClassicNote": "Note: Metadata columns are only applied to the Grid Classic PDF template.",
+  "docTypeCreditNote": "Credit Note",
+  "docTypeDebitNote": "Debit Note",
+  "returnDialogTitle": "Create Credit Note — {number}",
+  "@returnDialogTitle": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "returnCustomerLabel": "Customer: {name}",
+  "@returnCustomerLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "returnLineSold": "Sold {qty}",
+  "@returnLineSold": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      }
+    }
+  },
+  "returnLineReturned": "returned {qty}",
+  "@returnLineReturned": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      }
+    }
+  },
+  "returnLineLeft": "left {qty}",
+  "@returnLineLeft": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      }
+    }
+  },
+  "returnFieldReturn": "Return",
+  "returnToStockTooltip": "Return to stock",
+  "returnSubtotalLabel": "Return subtotal",
+  "returnTotalLabel": "Credit note total",
+  "returnReasonLabel": "Reason",
+  "returnReasonNoteLabel": "Reason note (optional)",
+  "returnReasonDamaged": "Damaged / defective",
+  "returnReasonWrongItem": "Wrong item delivered",
+  "returnReasonNotRequired": "Not required",
+  "returnReasonQualityIssue": "Quality issue",
+  "returnReasonOther": "Other",
+  "returnReasonPriceRevision": "Price revision",
+  "returnReasonGoodsReturned": "Goods returned",
+  "returnReasonBillingCorrection": "Billing correction",
+  "returnReasonGoodwill": "Goodwill / discount",
+  "returnSettlementLabel": "Settlement",
+  "returnSettlementReduceInvoice": "Reduce invoice balance (owes {amount})",
+  "@returnSettlementReduceInvoice": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "returnSettlementRefundNow": "Refund now",
+  "returnSettlementRefundCash": "Refund now (cash)",
+  "returnSettlementKeepCredit": "Keep as customer credit",
+  "returnRefundMethodLabel": "Refund method",
+  "returnValidationNoQty": "Enter a quantity for at least one line.",
+  "returnValidationMaxQty": "{product}: cannot return more than {qty}.",
+  "@returnValidationMaxQty": {
+    "placeholders": {
+      "product": {
+        "type": "String"
+      },
+      "qty": {
+        "type": "String"
+      }
+    }
+  },
+  "returnCreatedMessage": "Credit note created for {amount}.",
+  "@returnCreatedMessage": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "returnCreateError": "Could not create credit note: {error}",
+  "@returnCreateError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "returnPrintVoucher": "Print voucher",
+  "returnCreateButton": "Create",
+  "returnAgainstInvoiceLabel": "Against invoice # (optional)",
+  "returnApplyCreditAction": "Apply {amount} credit",
+  "@returnApplyCreditAction": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "returnCreditAppliedMessage": "Customer credit applied.",
+  "refundDialogTitle": "Refund — {number}",
+  "@refundDialogTitle": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "refundAvailableCredit": "Available credit: {amount}",
+  "@refundAvailableCredit": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "refundAmountLabel": "Amount",
+  "refundMethodLabel": "Method",
+  "refundNotesLabel": "Notes (optional)",
+  "refundRecordButton": "Record",
+  "refundValidationRange": "Enter an amount between 0 and {max}.",
+  "@refundValidationRange": {
+    "placeholders": {
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "refundRecordedMessage": "Refund of {amount} recorded.",
+  "@refundRecordedMessage": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "refundRecordError": "Could not record refund: {error}",
+  "@refundRecordError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "returnsSettingTitle": "Enable Returns (Credit / Debit Notes)",
+  "returnsSettingSubtitle": "Adds a Credit / Debit Notes screen and a “Create Credit Note” action on invoices",
+  "creditNotePrefixLabel": "Credit note prefix",
+  "debitNotePrefixLabel": "Debit note prefix",
+  "actionCreateCreditNote": "Create Credit Note",
+  "actionRefund": "Refund",
+  "actionCancelVoid": "Cancel / Void",
+  "voidCreditNoteTitle": "Cancel this credit note?",
+  "voidCreditNoteBody": "Reverses the restock and settlement for {number} and moves it to trash. Blocked if any of its credit was already applied to an invoice.",
+  "@voidCreditNoteBody": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "voidCreditNoteKeep": "Keep",
+  "creditNoteCancelledMessage": "Credit note cancelled.",
+  "creditNoteCancelError": "Could not cancel: {error}",
+  "@creditNoteCancelError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  }
 }

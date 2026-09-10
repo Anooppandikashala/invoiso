@@ -30,6 +30,8 @@ class BackupManager {
     'invoices',
     'invoice_items',
     'invoice_payments',
+    'customer_credits',
+    'refunds',
   ];
 
   // Create backup of the entire database

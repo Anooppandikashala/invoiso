@@ -7,6 +7,7 @@ import 'package:invoiso/repositories/invoice_repository.dart';
 import 'package:invoiso/repositories/payment_repository.dart';
 import 'package:invoiso/repositories/product_repository.dart';
 import 'package:invoiso/repositories/report_repository.dart';
+import 'package:invoiso/repositories/return_repository.dart';
 import 'package:invoiso/repositories/settings_repository.dart';
 
 final customerRepositoryProvider = Provider<CustomerRepository>((ref) {
@@ -30,6 +31,12 @@ final productRepositoryProvider = Provider<ProductRepository>((ref) {
 final paymentRepositoryProvider = Provider<PaymentRepository>((ref) {
   throw UnimplementedError(
     'paymentRepositoryProvider must be overridden.',
+  );
+});
+
+final returnRepositoryProvider = Provider<ReturnRepository>((ref) {
+  throw UnimplementedError(
+    'returnRepositoryProvider must be overridden.',
   );
 });
 

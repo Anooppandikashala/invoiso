@@ -17,6 +17,8 @@ import 'package:invoiso/services/export_service.dart';
 import 'package:invoiso/services/invoice_pdf_services.dart';
 import 'package:invoiso/services/pdf_service.dart';
 import 'package:invoiso/widgets/apply_payment_dialog.dart';
+import 'package:invoiso/widgets/create_return_dialog.dart';
+import 'package:invoiso/widgets/record_refund_dialog.dart';
 import 'package:invoiso/utils/error_handler.dart';
 import 'package:intl/intl.dart';
 import 'package:open_file/open_file.dart';
@@ -56,10 +58,19 @@ class _InvoiceManagementScreenV2State
         return l10n.labelQuotation;
       case 'Receipt':
         return l10n.labelReceipt;
+      case 'Credit Note':
+        return l10n.docTypeCreditNote;
+      case 'Debit Note':
+        return l10n.docTypeDebitNote;
       default:
         return l10n.labelInvoice;
     }
   }
+
+  // Credit / Debit Notes: editing or cloning via the invoice form makes no
+  // sense, so those row actions are hidden and a Void action is offered.
+  bool get _isReturnType =>
+      widget.filterType == 'Credit Note' || widget.filterType == 'Debit Note';
 
   int _currentPage = 0;
   int _pageSize = 10;
@@ -1721,7 +1732,8 @@ class _InvoiceManagementScreenV2State
     return [
       if (!isWide) ...[
         PopupMenuItem(value: 'view', child: _MenuRow(Icons.visibility_outlined, l10n.actionView, Colors.green)),
-        PopupMenuItem(value: 'edit', child: _MenuRow(Icons.edit_outlined, l10n.actionEdit, Colors.blue)),
+        if (!_isReturnType)
+          PopupMenuItem(value: 'edit', child: _MenuRow(Icons.edit_outlined, l10n.actionEdit, Colors.blue)),
         if (widget.filterType == 'Invoice')
           PopupMenuItem(
             value: 'pay',
@@ -1729,13 +1741,30 @@ class _InvoiceManagementScreenV2State
                 invoice.paymentStatus == PaymentStatus.paid ? Colors.green : Colors.purple),
           ),
       ],
-      PopupMenuItem(value: 'duplicate', child: _MenuRow(Icons.copy_all_outlined, l10n.actionDuplicate, Colors.teal)),
+      if (!_isReturnType)
+        PopupMenuItem(value: 'duplicate', child: _MenuRow(Icons.copy_all_outlined, l10n.actionDuplicate, Colors.teal)),
+      if (widget.filterType == 'Invoice')
+        PopupMenuItem(
+            value: 'credit_note',
+            child: _MenuRow(Icons.assignment_return_outlined,
+                l10n.actionCreateCreditNote, Colors.brown)),
       if (!isWide) ...[
         PopupMenuItem(
             value: 'preview', child: _MenuRow(Icons.picture_as_pdf_outlined, l10n.actionPdfPreview, Colors.orange)),
         PopupMenuItem(
             value: 'download', child: _MenuRow(Icons.download_outlined, l10n.actionDownloadPdf, Colors.deepPurple)),
         PopupMenuItem(value: 'print', child: _MenuRow(Icons.print_outlined, l10n.actionPrint, Colors.blueGrey)),
+      ],
+      if (widget.filterType == 'Credit Note') ...[
+        PopupMenuItem(
+            value: 'refund',
+            child: _MenuRow(
+                Icons.currency_exchange_outlined, l10n.actionRefund, Colors.green)),
+        if (widget.user.isAdmin())
+          PopupMenuItem(
+              value: 'void',
+              child: _MenuRow(
+                  Icons.block_outlined, l10n.actionCancelVoid, Colors.red)),
       ],
       if (widget.user.isAdmin())
         PopupMenuItem(
@@ -1753,6 +1782,12 @@ class _InvoiceManagementScreenV2State
         _showApplyPaymentDialog(invoice);
       case 'duplicate':
         _showCloneDialog(invoice);
+      case 'credit_note':
+        _showCreateReturnDialog(invoice);
+      case 'void':
+        _voidCreditNote(invoice);
+      case 'refund':
+        _showRecordRefundDialog(invoice);
       case 'preview':
         InvoicePdfServices.previewPDF(context, invoice);
       case 'download':
@@ -1781,8 +1816,9 @@ class _InvoiceManagementScreenV2State
       children: [
         _buildActionButton(Icons.visibility_outlined, Colors.green, l10n.actionView,
             () => InvoicePdfServices.showInvoiceDetails(context, invoice)),
-        _buildActionButton(
-            Icons.edit_outlined, Colors.blue, l10n.actionEdit, () => widget.onEditInvoice(invoice)),
+        if (!_isReturnType)
+          _buildActionButton(
+              Icons.edit_outlined, Colors.blue, l10n.actionEdit, () => widget.onEditInvoice(invoice)),
         if (widget.filterType == 'Invoice')
           _buildActionButton(
             Icons.payments_outlined,
@@ -2393,6 +2429,73 @@ class _InvoiceManagementScreenV2State
       builder: (ctx) => ApplyPaymentDialog(
         invoice: invoice,
         onPaymentRecorded: () {
+          ref.read(invoicesProvider.notifier).refresh();
+          _loadPage();
+        },
+      ),
+    );
+  }
+
+  Future<void> _voidCreditNote(Invoice creditNote) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.voidCreditNoteTitle),
+        content: Text(l10n.voidCreditNoteBody(
+            creditNote.invoiceNumber ?? creditNote.id)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.voidCreditNoteKeep)),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(l10n.actionCancelVoid)),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await ref.read(returnRepositoryProvider).voidCreditNote(creditNote.id);
+      ref.read(invoicesProvider.notifier).refresh();
+      _loadPage();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.creditNoteCancelledMessage)));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.creditNoteCancelError('$e'))));
+      }
+    }
+  }
+
+  Future<void> _showRecordRefundDialog(Invoice creditNote) async {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => RecordRefundDialog(
+        creditNote: creditNote,
+        onRefunded: () {
+          ref.read(invoicesProvider.notifier).refresh();
+          _loadPage();
+        },
+      ),
+    );
+  }
+
+  Future<void> _showCreateReturnDialog(Invoice invoice) async {
+    final full = await ref
+        .read(invoiceRepositoryProvider)
+        .getInvoiceById(invoice.id);
+    if (!mounted || full == null) return;
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => CreateReturnDialog(
+        invoice: full,
+        onCreated: () {
           ref.read(invoicesProvider.notifier).refresh();
           _loadPage();
         },

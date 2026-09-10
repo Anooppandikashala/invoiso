@@ -20,6 +20,8 @@ class InvoiceItem {
   // false → (price × qty) − discount   (flat discount off line total)
   bool
       isProductSaved; // true → custom item was saved to product list; hides the save button
+  bool
+      restocked; // credit note line: returned qty went back to sellable stock (default true; ignored for other types)
 
   InvoiceItem({
     String? id,
@@ -33,6 +35,7 @@ class InvoiceItem {
     this.metadata,
     this.discountPerUnit = false,
     this.isProductSaved = false,
+    this.restocked = true,
   }) : id = id ?? const Uuid().v4();
 
   double get effectivePrice => unitPrice ?? product.price;

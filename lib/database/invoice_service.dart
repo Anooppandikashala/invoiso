@@ -57,6 +57,11 @@ class InvoiceService {
         'hide_invoice_number': invoice.hideInvoiceNumber ? 1 : 0,
         'custom_invoice_number': invoice.customInvoiceNumber,
         'custom_fields': CustomFieldValue.listToJson(invoice.customFields),
+        'original_invoice_id': invoice.originalInvoiceId,
+        'original_invoice_number': invoice.originalInvoiceNumber,
+        'original_invoice_date': invoice.originalInvoiceDate?.toIso8601String(),
+        'return_reason': invoice.returnReason,
+        'credit_settlement': invoice.creditSettlement?.key,
       });
 
       for (var item in invoice.items) {
@@ -85,6 +90,7 @@ class InvoiceService {
           'line_metadata': item.metadata == null
               ? null
               : jsonEncode(item.metadata!.toMap()),
+          'restocked': item.restocked ? 1 : 0,
         });
       }
     });
@@ -137,6 +143,12 @@ class InvoiceService {
           'hide_invoice_number': invoice.hideInvoiceNumber ? 1 : 0,
           'custom_invoice_number': invoice.customInvoiceNumber,
           'custom_fields': CustomFieldValue.listToJson(invoice.customFields),
+          'original_invoice_id': invoice.originalInvoiceId,
+          'original_invoice_number': invoice.originalInvoiceNumber,
+          'original_invoice_date':
+              invoice.originalInvoiceDate?.toIso8601String(),
+          'return_reason': invoice.returnReason,
+          'credit_settlement': invoice.creditSettlement?.key,
         },
         where: 'id = ?',
         whereArgs: [invoice.id],
@@ -176,6 +188,7 @@ class InvoiceService {
           'line_metadata': item.metadata == null
               ? null
               : jsonEncode(item.metadata!.toMap()),
+          'restocked': item.restocked ? 1 : 0,
         });
       }
     });
@@ -235,6 +248,9 @@ class InvoiceService {
         ? <Object>[invoiceDateKey]
         : <Object>[invoiceDateKey, invoiceDateKey, sameDayId];
 
+    // Debit Notes are supplementary charges — they raise what the customer owes
+    // and carry the same total/payment shape as an invoice, so they fold into
+    // this calculation exactly like an invoice row does.
     final invoiceRows = await db.query(
       'invoices',
       columns: [
@@ -246,17 +262,26 @@ class InvoiceService {
         'invoice_discount_value',
       ],
       where: 'customer_id = ? '
-          'AND type = ? '
+          "AND type IN ('Invoice', 'Debit Note') "
           'AND deleted_at IS NULL '
           'AND currency_code = ? '
           'AND $dateFilter',
       whereArgs: [
         normalizedCustomerId,
-        'Invoice',
         currencyCode,
         ...dateArgs,
       ],
     );
+
+    // Unused customer credit (from credit notes) offsets the balance.
+    final creditRow = await db.rawQuery(
+      'SELECT COALESCE(SUM(amount - applied_amount), 0.0) AS c '
+      'FROM customer_credits '
+      'WHERE customer_id = ? AND currency_code = ? '
+      'AND substr(created_at, 1, 10) <= ?',
+      [normalizedCustomerId, currencyCode, invoiceDateKey],
+    );
+    final unusedCredit = (creditRow.first['c'] as num).toDouble();
 
     if (invoiceRows.isEmpty) return 0.0;
 
@@ -314,7 +339,11 @@ class InvoiceService {
       );
     }
 
-    return previousBalanceDue;
+    // Net off unused customer credit; never report a negative carried balance
+    // here (a customer in overall credit shows as 0 on the invoice — the
+    // signed position lives in the customer statement).
+    final net = previousBalanceDue - unusedCredit;
+    return net > InvoiceCalculator.moneyEpsilon ? net : 0.0;
   }
 
   // ─────────────────────────────────────────────
@@ -374,6 +403,7 @@ class InvoiceService {
           unit: row['unit'] as String?,
           description: row['description'] as String?,
           metadata: ProductMetadata.fromJsonString(row['line_metadata']),
+          restocked: (row['restocked'] as int? ?? 1) == 1,
         ));
       } catch (e, stackTrace) {
         AppLogger.e(_tag, 'Error parsing invoice item row', e, stackTrace);
@@ -416,6 +446,14 @@ class InvoiceService {
       customInvoiceNumber: i['custom_invoice_number'] as String?,
       customFields: CustomFieldValue.listFromJson(i['custom_fields'] as String?),
       payments: payments,
+      originalInvoiceId: i['original_invoice_id'] as String?,
+      originalInvoiceNumber: i['original_invoice_number'] as String?,
+      originalInvoiceDate: i['original_invoice_date'] != null
+          ? DateTime.tryParse(i['original_invoice_date'] as String)
+          : null,
+      returnReason: i['return_reason'] as String?,
+      creditSettlement:
+          CreditSettlementExtension.fromKey(i['credit_settlement'] as String?),
     );
   }
 
@@ -708,6 +746,14 @@ class InvoiceService {
           customInvoiceNumber: map['custom_invoice_number'] as String?,
           customFields:
               CustomFieldValue.listFromJson(map['custom_fields'] as String?),
+          originalInvoiceId: map['original_invoice_id'] as String?,
+          originalInvoiceNumber: map['original_invoice_number'] as String?,
+          originalInvoiceDate: map['original_invoice_date'] != null
+              ? DateTime.tryParse(map['original_invoice_date'] as String)
+              : null,
+          returnReason: map['return_reason'] as String?,
+          creditSettlement: CreditSettlementExtension.fromKey(
+              map['credit_settlement'] as String?),
         ),
       );
     }
