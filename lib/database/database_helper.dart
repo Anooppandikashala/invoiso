@@ -15,7 +15,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 47;
+  final dbVersion = 48;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -770,11 +770,11 @@ class DatabaseHelper {
       });
     }
 
-    if (oldVersion < 47) {
+    if (oldVersion < 48) {
       // Save Draft: draft invoices skip the numbered sequence entirely (no
       // invoice_number until finalized) and are excluded from revenue/tax
-      // aggregates. NULL/0 on every pre-v47 row = final, prints as before.
-      await _runMigrationStep(db, 47, 'add_is_draft_to_invoices', () async {
+      // aggregates. NULL/0 on every pre-v48 row = final, prints as before.
+      await _runMigrationStep(db, 48, 'add_is_draft_to_invoices', () async {
         await db.execute(
           'ALTER TABLE invoices ADD COLUMN is_draft INTEGER DEFAULT 0',
         );
