@@ -15,7 +15,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 46;
+  final dbVersion = 47;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -120,7 +120,8 @@ class DatabaseHelper {
         hide_invoice_number INTEGER DEFAULT 0,
         custom_invoice_number TEXT,
         is_interstate INTEGER DEFAULT 0,
-        custom_fields TEXT
+        custom_fields TEXT,
+        is_draft INTEGER DEFAULT 0
       )
     ''');
 
@@ -762,6 +763,17 @@ class DatabaseHelper {
           db, 46, 'add_manufacture_name_to_product_metadata', () async {
         await db.execute(
           'ALTER TABLE product_metadata ADD COLUMN manufacture_name TEXT',
+        );
+      });
+    }
+
+    if (oldVersion < 47) {
+      // Save Draft: draft invoices skip the numbered sequence entirely (no
+      // invoice_number until finalized) and are excluded from revenue/tax
+      // aggregates. NULL/0 on every pre-v47 row = final, prints as before.
+      await _runMigrationStep(db, 47, 'add_is_draft_to_invoices', () async {
+        await db.execute(
+          'ALTER TABLE invoices ADD COLUMN is_draft INTEGER DEFAULT 0',
         );
       });
     }

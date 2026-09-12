@@ -57,6 +57,7 @@ class InvoiceService {
         'hide_invoice_number': invoice.hideInvoiceNumber ? 1 : 0,
         'custom_invoice_number': invoice.customInvoiceNumber,
         'custom_fields': CustomFieldValue.listToJson(invoice.customFields),
+        'is_draft': invoice.isDraft ? 1 : 0,
       });
 
       for (var item in invoice.items) {
@@ -89,12 +90,16 @@ class InvoiceService {
       }
     });
 
-    // Stock deduction happens outside the transaction to avoid nested DB calls
-    for (var item in invoice.items) {
-      final product = await ProductService.getProductById(item.product.id);
-      if (product != null && !product.unlimitedStock) {
-        final newStock = product.stock - item.quantity.round();
-        await ProductService.updateProductStock(product.id, newStock);
+    // Stock deduction happens outside the transaction to avoid nested DB
+    // calls. Drafts aren't a committed sale yet — stock is untouched until
+    // the draft is finalized (see updateInvoice).
+    if (!invoice.isDraft) {
+      for (var item in invoice.items) {
+        final product = await ProductService.getProductById(item.product.id);
+        if (product != null && !product.unlimitedStock) {
+          final newStock = product.stock - item.quantity.round();
+          await ProductService.updateProductStock(product.id, newStock);
+        }
       }
     }
   }
@@ -108,6 +113,10 @@ class InvoiceService {
       where: 'invoice_id = ?',
       whereArgs: [invoice.id],
     );
+    final oldInvoiceRow = await db.query('invoices',
+        columns: ['is_draft'], where: 'id = ?', whereArgs: [invoice.id]);
+    final oldWasDraft =
+        oldInvoiceRow.isNotEmpty && (oldInvoiceRow.first['is_draft'] as int? ?? 0) == 1;
 
     await db.transaction((txn) async {
       // 1. Update the main invoice row
@@ -137,6 +146,8 @@ class InvoiceService {
           'hide_invoice_number': invoice.hideInvoiceNumber ? 1 : 0,
           'custom_invoice_number': invoice.customInvoiceNumber,
           'custom_fields': CustomFieldValue.listToJson(invoice.customFields),
+          'invoice_number': invoice.invoiceNumber,
+          'is_draft': invoice.isDraft ? 1 : 0,
         },
         where: 'id = ?',
         whereArgs: [invoice.id],
@@ -180,24 +191,30 @@ class InvoiceService {
       }
     });
 
-    // Restore stock for old items (outside transaction)
-    for (var oldItem in oldItems) {
-      final product =
-          await ProductService.getProductById(oldItem['product_id'] as String);
-      if (product != null && !product.unlimitedStock) {
-        final rawQty = oldItem['quantity'];
-        final oldQty = rawQty is int ? rawQty : (rawQty as double).round();
-        final restoredStock = product.stock + oldQty;
-        await ProductService.updateProductStock(product.id, restoredStock);
+    // Stock was never touched while this row was a draft, so only restore
+    // old-item stock if it was actually deducted (i.e. it wasn't a draft).
+    if (!oldWasDraft) {
+      for (var oldItem in oldItems) {
+        final product = await ProductService.getProductById(
+            oldItem['product_id'] as String);
+        if (product != null && !product.unlimitedStock) {
+          final rawQty = oldItem['quantity'];
+          final oldQty = rawQty is int ? rawQty : (rawQty as double).round();
+          final restoredStock = product.stock + oldQty;
+          await ProductService.updateProductStock(product.id, restoredStock);
+        }
       }
     }
 
-    // Deduct stock for new items
-    for (var item in invoice.items) {
-      final product = await ProductService.getProductById(item.product.id);
-      if (product != null && !product.unlimitedStock) {
-        final newStock = product.stock - item.quantity.round();
-        await ProductService.updateProductStock(product.id, newStock);
+    // Deduct stock for new items — unless still a draft (finalizing a draft
+    // is the point stock actually gets committed for the first time).
+    if (!invoice.isDraft) {
+      for (var item in invoice.items) {
+        final product = await ProductService.getProductById(item.product.id);
+        if (product != null && !product.unlimitedStock) {
+          final newStock = product.stock - item.quantity.round();
+          await ProductService.updateProductStock(product.id, newStock);
+        }
       }
     }
   }
@@ -248,6 +265,7 @@ class InvoiceService {
       where: 'customer_id = ? '
           'AND type = ? '
           'AND deleted_at IS NULL '
+          'AND is_draft = 0 '
           'AND currency_code = ? '
           'AND $dateFilter',
       whereArgs: [
@@ -416,6 +434,7 @@ class InvoiceService {
       customInvoiceNumber: i['custom_invoice_number'] as String?,
       customFields: CustomFieldValue.listFromJson(i['custom_fields'] as String?),
       payments: payments,
+      isDraft: (i['is_draft'] as int?) == 1,
     );
   }
 
@@ -590,9 +609,13 @@ class InvoiceService {
     return (result.first.values.first as int?) ?? 0;
   }
 
+  // Used to gate whether numbering settings (prefix/starting number) can
+  // still be changed — drafts never consumed a number, so they don't count
+  // even though trashed (soft-deleted) rows deliberately do.
   static Future<int> getTotalInvoiceCountIncludingTrashed() async {
     final db = await dbHelper.database;
-    final result = await db.rawQuery('SELECT COUNT(*) FROM invoices');
+    final result =
+        await db.rawQuery('SELECT COUNT(*) FROM invoices WHERE is_draft = 0');
     return (result.first.values.first as int?) ?? 0;
   }
 
@@ -708,6 +731,7 @@ class InvoiceService {
           customInvoiceNumber: map['custom_invoice_number'] as String?,
           customFields:
               CustomFieldValue.listFromJson(map['custom_fields'] as String?),
+          isDraft: (map['is_draft'] as int?) == 1,
         ),
       );
     }
@@ -749,9 +773,9 @@ class InvoiceService {
       getDashboardFinancials() async {
     final db = await dbHelper.database;
 
-    // Count
+    // Count — drafts aren't a committed transaction yet.
     final countResult = await db.rawQuery(
-      'SELECT COUNT(*) as cnt FROM invoices WHERE type = ? AND deleted_at IS NULL',
+      'SELECT COUNT(*) as cnt FROM invoices WHERE type = ? AND deleted_at IS NULL AND is_draft = 0',
       ['Invoice'],
     );
     final count = (countResult.first['cnt'] as int?) ?? 0;
@@ -761,7 +785,7 @@ class InvoiceService {
       'SELECT COALESCE(SUM(ip.amount_paid), 0.0) as revenue '
       'FROM invoice_payments ip '
       'JOIN invoices i ON ip.invoice_id = i.id '
-      'WHERE i.type = ? AND i.deleted_at IS NULL',
+      'WHERE i.type = ? AND i.deleted_at IS NULL AND i.is_draft = 0',
       ['Invoice'],
     );
     final revenue = (revenueResult.first['revenue'] as num?)?.toDouble() ?? 0.0;
@@ -777,7 +801,7 @@ class InvoiceService {
         'invoice_discount_type',
         'invoice_discount_value',
       ],
-      where: 'type = ? AND deleted_at IS NULL',
+      where: 'type = ? AND deleted_at IS NULL AND is_draft = 0',
       whereArgs: ['Invoice'],
     );
 
@@ -953,7 +977,7 @@ class InvoiceService {
       "COALESCE(SUM(ip.amount_paid), 0.0) as revenue "
       "FROM invoice_payments ip "
       "JOIN invoices i ON ip.invoice_id = i.id "
-      "WHERE i.type = 'Invoice' AND i.deleted_at IS NULL "
+      "WHERE i.type = 'Invoice' AND i.deleted_at IS NULL AND i.is_draft = 0 "
       "AND substr(ip.date_paid, 1, 10) >= ? "
       "GROUP BY substr(ip.date_paid, 1, 7) "
       "ORDER BY month ASC",
@@ -977,7 +1001,7 @@ class InvoiceService {
       'COUNT(DISTINCT i.id) as invoice_count '
       'FROM invoices i '
       'LEFT JOIN invoice_payments ip ON i.id = ip.invoice_id '
-      "WHERE i.type = 'Invoice' AND i.deleted_at IS NULL "
+      "WHERE i.type = 'Invoice' AND i.deleted_at IS NULL AND i.is_draft = 0 "
       'GROUP BY i.customer_name '
       'ORDER BY total_paid DESC, invoice_count DESC '
       'LIMIT ?',
@@ -1000,7 +1024,7 @@ class InvoiceService {
       'SELECT ii.product_name, COALESCE(SUM(ii.quantity), 0) as total_qty '
       'FROM invoice_items ii '
       'JOIN invoices i ON ii.invoice_id = i.id '
-      "WHERE i.type = 'Invoice' AND i.deleted_at IS NULL "
+      "WHERE i.type = 'Invoice' AND i.deleted_at IS NULL AND i.is_draft = 0 "
       "AND ii.product_name IS NOT NULL AND ii.product_name != '' "
       'GROUP BY ii.product_name '
       'ORDER BY total_qty DESC '
@@ -1021,8 +1045,15 @@ class InvoiceService {
   /// be scoped by type.
   static Future<String> generateNextId() async {
     final db = await dbHelper.database;
-    final result =
-        await db.rawQuery("SELECT id FROM invoices ORDER BY id DESC LIMIT 1");
+    // Only consider purely-numeric ids — a non-numeric id (e.g. a UUID used
+    // by another document type such as Credit Note) sorts lexicographically
+    // above every digit character, so an unfiltered `ORDER BY id DESC` would
+    // pick it as "last", digit-strip it into a garbage number, and hand out
+    // that same garbage id forever after (it never changes, so every call
+    // re-derives it — colliding with whatever row used it last time).
+    final result = await db.rawQuery(
+        "SELECT id FROM invoices WHERE id GLOB '[0-9]*' AND id NOT GLOB '*[^0-9]*' "
+        "ORDER BY length(id) DESC, id DESC LIMIT 1");
 
     int nextNumber;
     if (result.isNotEmpty) {
@@ -1053,7 +1084,7 @@ class InvoiceService {
     final db = await dbHelper.database;
 
     final idResult = await db.rawQuery(
-        "SELECT id FROM invoices WHERE type = ? ORDER BY id DESC LIMIT 1",
+        "SELECT id FROM invoices WHERE type = ? AND is_draft = 0 ORDER BY id DESC LIMIT 1",
         [type]);
     final numResult = await db.rawQuery(
         "SELECT invoice_number FROM invoices WHERE type = ? AND invoice_number IS NOT NULL ORDER BY invoice_number DESC LIMIT 1",

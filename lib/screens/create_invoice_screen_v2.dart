@@ -1336,6 +1336,113 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     }
   }
 
+  /// Draft is a scratchpad: customer name still required, items are not, and
+  /// it never touches the numbered sequence (invoiceNumber stays null until
+  /// _updateInvoice(finalize: true) assigns one). Handles both the first
+  /// save (insert) and re-saving an already-existing draft (update).
+  Future<bool> _saveDraft() async {
+    if (nameController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error_outline, color: Colors.white),
+              const SizedBox(width: 12),
+              Text(AppLocalizations.of(context)!.createInvoiceCustomerNameRequiredMessage),
+            ],
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          showCloseIcon: true,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+        ),
+      );
+      return false;
+    }
+
+    if (!mounted) return false;
+    setState(() => isLoading = true);
+
+    try {
+      final bool isNewRow = _invoice == null;
+      final invoice = Invoice(
+        id: isNewRow ? await InvoicePdfServices.generateNextId() : _invoice!.id,
+        invoiceNumber: null,
+        customer: _resolveInvoiceCustomer(),
+        items: List.from(invoiceItems),
+        date: _selectedOrderDate,
+        dueDate: _selectedDueDate,
+        notes: notesController.text.isNotEmpty ? notesController.text : null,
+        taxRate: _taxMode == TaxMode.global ? taxRate : 0.0,
+        type: invoiceType,
+        invoiceTitle: invoiceType == 'Invoice' ? invoiceTitle : null,
+        currencyCode: _currencyCode,
+        currencySymbol: _currencySymbol,
+        taxMode: _taxMode,
+        isInterState: _isInterState,
+        upiId: _selectedUpi?.id,
+        bankAccountId: _selectedBankAccount?.accountNumber,
+        quantityLabel:
+            _quantityLabel.trim().isEmpty ? null : _quantityLabel.trim(),
+        additionalCosts: _buildAdditionalCosts(),
+        customFields: _buildCustomFields(),
+        invoiceDiscountType: _invoiceDiscountType,
+        invoiceDiscountValue: _invoiceDiscountValue,
+        hideInvoiceNumber: _hideInvoiceNumber,
+        customInvoiceNumber: customInvoiceNumberController.text.trim().isEmpty
+            ? null
+            : customInvoiceNumberController.text.trim(),
+        isDraft: true,
+      );
+
+      if (isNewRow) {
+        await ref.read(invoiceRepositoryProvider).insertInvoice(invoice);
+      } else {
+        await ref.read(invoiceRepositoryProvider).updateInvoice(invoice);
+      }
+
+      if (!mounted) return true;
+      setState(() {
+        _invoice = invoice;
+        // Keep the edit form on screen instead of falling through to the
+        // "invoice created" success screen (`!isEditing && _invoice != null`
+        // in build()) — a draft isn't done yet, the user likely wants to
+        // keep adding to it.
+        isEditing = true;
+        currentInvoiceNumber = 'DRAFT';
+        isLoading = false;
+      });
+      _markFormClean();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white),
+              const SizedBox(width: 12),
+              const Text('Draft saved'),
+            ],
+          ),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          showCloseIcon: true,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+        ),
+      );
+      return true;
+    } catch (e) {
+      if (!mounted) return false;
+      setState(() => isLoading = false);
+      if (kDebugMode) print(e);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.createInvoiceErrorCreatingMessage(e.toString())), showCloseIcon: true),
+      );
+      return false;
+    }
+  }
+
   void _editInvoiceItem(int index) {
     final item = invoiceItems[index];
     final quantityController = TextEditingController(
@@ -3251,7 +3358,12 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     );
   }
 
-  Future<bool> _updateInvoice() async {
+  /// finalize: true is how a draft leaves draft state — assigns the real
+  /// invoiceNumber (via generateNextInvoiceNumber, same as _createInvoice)
+  /// and flips isDraft off. Otherwise this just re-saves whatever
+  /// invoiceNumber/isDraft _invoice already had (plain edit, or "update
+  /// draft" which must stay unnumbered).
+  Future<bool> _updateInvoice({bool finalize = false}) async {
     if (_invoice == null) return false;
 
     if (nameController.text.isEmpty) {
@@ -3274,7 +3386,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       return false;
     }
 
-    if (invoiceItems.isEmpty) {
+    // A draft being re-saved as a draft (not finalized) doesn't need items
+    // yet — only finalizing (or editing an already-final invoice) does.
+    if (invoiceItems.isEmpty && (finalize || !_invoice!.isDraft)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -3297,9 +3411,12 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     setState(() => isLoading = true);
 
     try {
+      final invoiceNumber = finalize
+          ? await InvoicePdfServices.generateNextInvoiceNumber(invoiceType)
+          : _invoice!.invoiceNumber;
       final updatedInvoice = Invoice(
         id: _invoice!.id,
-        invoiceNumber: _invoice!.invoiceNumber,
+        invoiceNumber: invoiceNumber,
         customer: _resolveInvoiceCustomer(),
         items: List.from(invoiceItems),
         date: _selectedOrderDate,
@@ -3324,6 +3441,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         customInvoiceNumber: customInvoiceNumberController.text.trim().isEmpty
             ? null
             : customInvoiceNumberController.text.trim(),
+        isDraft: finalize ? false : _invoice!.isDraft,
       );
 
       await ref.read(invoiceRepositoryProvider).updateInvoice(updatedInvoice);
@@ -3334,6 +3452,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       if (!mounted) return true;
       setState(() {
         _invoice = refreshedInvoice ?? updatedInvoice;
+        currentInvoiceNumber = _invoice!.isDraft
+            ? 'DRAFT'
+            : (_invoice!.invoiceNumber ?? _invoice!.id);
         isLoading = false;
       });
       _markFormClean();
@@ -3344,7 +3465,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
             children: [
               const Icon(Icons.check_circle, color: Colors.white),
               const SizedBox(width: 12),
-              Text(AppLocalizations.of(context)!.createInvoiceUpdatedSuccessMessage(_invoiceTypeLabel(invoiceType))),
+              Text(finalize
+                  ? 'Finalized — $invoiceType #${updatedInvoice.invoiceNumber}'
+                  : AppLocalizations.of(context)!.createInvoiceUpdatedSuccessMessage(_invoiceTypeLabel(invoiceType))),
             ],
           ),
           backgroundColor: Colors.green,
@@ -3700,7 +3823,13 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         const SingleActivator(LogicalKeyboardKey.keyS, control: true): () {
           if (showingSuccessScreen) return;
           if (invoiceItems.isNotEmpty && !isLoading) {
-            widget.invoiceToEdit != null ? _updateInvoice() : _createInvoice();
+            if (_invoice == null) {
+              _createInvoice();
+            } else if (_invoice!.isDraft) {
+              _updateInvoice(finalize: true);
+            } else {
+              _updateInvoice();
+            }
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(AppLocalizations.of(context)!.createInvoiceAddItemBeforeCreatingMessage)),
@@ -5525,7 +5654,11 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   }
 
   Widget _actionButtonsV2() {
-    final isEditMode = widget.invoiceToEdit != null;
+    // NOT widget.invoiceToEdit != null — Save Draft can create a saved row
+    // (_invoice != null) within this same session without the widget ever
+    // being reconstructed in edit mode, so routing must key off _invoice.
+    final hasSavedRow = _invoice != null;
+    final isDraftRow = _invoice?.isDraft ?? false;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
       decoration: BoxDecoration(
@@ -5567,9 +5700,11 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                     _buildActionButton(
                       icon: Icons.picture_as_pdf_outlined,
                       label: AppLocalizations.of(context)!.createInvoicePreviewLabel,
-                      tooltip: AppLocalizations.of(context)!.createInvoicePreviewTooltip,
+                      tooltip: isDraftRow
+                          ? 'Finalize the draft to get an invoice number before previewing the PDF'
+                          : AppLocalizations.of(context)!.createInvoicePreviewTooltip,
                       color: Colors.purple,
-                      onPressed: _invoice != null
+                      onPressed: hasSavedRow && !isDraftRow
                           ? () => InvoicePdfServices.previewPDF(context, _invoice!)
                           : null,
                     ),
@@ -5577,29 +5712,56 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                       icon: Icons.download_outlined,
                       label: AppLocalizations.of(context)!.createInvoiceDownloadLabel,
                       color: Colors.deepPurple,
-                      onPressed: _invoice != null
+                      onPressed: hasSavedRow && !isDraftRow
                           ? () => PDFService.downloadPDF(context, _invoice!)
                           : null,
                     ),
                     _buildActionButton(
                       icon: Icons.print_outlined,
                       label: AppLocalizations.of(context)!.actionPrint,
-                      tooltip: AppLocalizations.of(context)!.createInvoicePrintTooltip,
+                      tooltip: isDraftRow
+                          ? 'Finalize the draft to get an invoice number before printing'
+                          : AppLocalizations.of(context)!.createInvoicePrintTooltip,
                       color: Colors.blue,
-                      onPressed: _invoice != null
+                      onPressed: hasSavedRow && !isDraftRow
                           ? () => InvoicePdfServices.generatePDF(context, _invoice!)
                           : null,
                     ),
                   ],
                 ),
               ),
+              if (!hasSavedRow || isDraftRow) ...[
+                const SizedBox(width: 12),
+                Flexible(
+                  child: OutlinedButton.icon(
+                    onPressed: !isLoading ? _saveDraft : null,
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 18, vertical: 16),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+                    ),
+                    icon: const Icon(Icons.drafts_outlined),
+                    label: Text(
+                      'Save Draft',
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(width: 12),
               Flexible(
                 child: Tooltip(
                   message: 'Shortcut: Ctrl+s',
                   child: ElevatedButton.icon(
                     onPressed: invoiceItems.isNotEmpty && !isLoading
-                        ? (isEditMode ? _updateInvoice : _createInvoice)
+                        ? (!hasSavedRow
+                            ? _createInvoice
+                            : isDraftRow
+                                ? () => _updateInvoice(finalize: true)
+                                : _updateInvoice)
                         : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).primaryColor,
@@ -5617,13 +5779,19 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                             child: CircularProgressIndicator(
                                 color: Colors.white, strokeWidth: 2),
                           )
-                        : Icon(isEditMode ? Icons.update : Icons.save_outlined),
+                        : Icon(!hasSavedRow
+                            ? Icons.save_outlined
+                            : isDraftRow
+                                ? Icons.task_alt
+                                : Icons.update),
                     label: Text(
                       isLoading
                           ? 'Processing...'
-                          : (isEditMode
-                              ? (compact ? 'Update $invoiceType' : 'Update $invoiceType (Ctrl+S)')
-                              : (compact ? 'Create $invoiceType' : 'Create $invoiceType (Ctrl+S)')),
+                          : (!hasSavedRow
+                              ? (compact ? 'Create $invoiceType' : 'Create $invoiceType (Ctrl+S)')
+                              : isDraftRow
+                                  ? (compact ? 'Finalize $invoiceType' : 'Finalize $invoiceType (Ctrl+S)')
+                                  : (compact ? 'Update $invoiceType' : 'Update $invoiceType (Ctrl+S)')),
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
                       style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),

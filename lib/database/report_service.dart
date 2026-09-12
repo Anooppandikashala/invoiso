@@ -106,7 +106,7 @@ class ReportService {
   }) async {
     final db = await _db.database;
 
-    final sb = StringBuffer('type = ? AND deleted_at IS NULL');
+    final sb = StringBuffer('type = ? AND deleted_at IS NULL AND is_draft = 0');
     final args = <dynamic>[type];
     if (from != null) {
       sb.write(' AND date >= ?');
@@ -292,7 +292,7 @@ class ReportService {
       "SELECT COUNT(*) AS cnt "
       "FROM invoice_items ii "
       "JOIN invoices i ON i.id = ii.invoice_id "
-      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' AND i.is_draft = 0 "
       "AND (ii.product_purchase_price IS NULL OR ii.product_purchase_price = 0) "
       "$ccFilter"
       "AND i.date >= ? AND i.date <= ?",
@@ -327,7 +327,7 @@ class ReportService {
       "COALESCE(SUM(ip.amount_paid), 0.0) AS collected "
       "FROM invoice_payments ip "
       "JOIN invoices i ON ip.invoice_id = i.id "
-      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' AND i.is_draft = 0 "
       "$currencyFilter"
       "AND ip.date_paid >= ? AND ip.date_paid <= ? "
       "GROUP BY month ORDER BY month",
@@ -523,7 +523,7 @@ class ReportService {
     final db = await _db.database;
     final rows = await db.rawQuery(
       "SELECT DISTINCT currency_code FROM invoices "
-      "WHERE deleted_at IS NULL AND type = 'Invoice' AND currency_code IS NOT NULL",
+      "WHERE deleted_at IS NULL AND type = 'Invoice' AND is_draft = 0 AND currency_code IS NOT NULL",
     );
     final codes = rows.map((r) => r['currency_code'] as String).toList();
     codes.sort();
@@ -561,7 +561,7 @@ class ReportService {
       "ELSE $_invoiceItemNetSql END) AS taxable_amount "
       "FROM invoice_items ii "
       "JOIN invoices i ON i.id = ii.invoice_id "
-      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' AND i.is_draft = 0 "
       "AND i.tax_mode = 'per_item' "
       "$ccFilter"
       "AND i.date >= ? AND i.date <= ? "
@@ -581,7 +581,7 @@ class ReportService {
     final globalInvRows = await db.rawQuery(
       "SELECT i.id, i.tax_rate, i.additional_costs "
       "FROM invoices i "
-      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' AND i.is_draft = 0 "
       "AND i.tax_mode = 'global' AND i.tax_rate > 0 "
       "$ccFilter"
       "AND i.date >= ? AND i.date <= ?",
@@ -675,7 +675,7 @@ class ReportService {
   }) async {
     final db = await _db.database;
     final sb = StringBuffer(
-      "type = 'Invoice' AND deleted_at IS NULL "
+      "type = 'Invoice' AND deleted_at IS NULL AND is_draft = 0 "
       "AND COALESCE(NULLIF(customer_id, ''), customer_name) IS NOT NULL",
     );
     final args = <Object?>[];
@@ -865,7 +865,7 @@ class ReportService {
       "SUM(ii.quantity * ii.product_purchase_price) AS cogs "
       "FROM invoice_items ii "
       "JOIN invoices i ON i.id = ii.invoice_id "
-      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' AND i.is_draft = 0 "
       "$ccFilter"
       "AND i.date >= ? AND i.date <= ? "
       "GROUP BY ii.product_name ORDER BY $orderBy DESC LIMIT ?",
@@ -903,7 +903,7 @@ class ReportService {
 
     final qr = await db.rawQuery(
       "SELECT COUNT(*) AS cnt FROM invoices "
-      "WHERE type = 'Quotation' AND deleted_at IS NULL "
+      "WHERE type = 'Quotation' AND deleted_at IS NULL AND is_draft = 0 "
       "$currencyFilter"
       "AND date >= ? AND date <= ?",
       args,
@@ -912,7 +912,7 @@ class ReportService {
 
     final ir = await db.rawQuery(
       "SELECT COUNT(*) AS cnt FROM invoices "
-      "WHERE type = 'Invoice' AND deleted_at IS NULL "
+      "WHERE type = 'Invoice' AND deleted_at IS NULL AND is_draft = 0 "
       "$currencyFilter"
       "AND date >= ? AND date <= ?",
       args,
