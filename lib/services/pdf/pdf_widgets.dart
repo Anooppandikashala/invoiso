@@ -97,9 +97,9 @@ double signatureSizePx(String sizeKey) => signatureSizeFromKey(sizeKey).pixelHei
 double getSlNumberFlex(PdfPageFormat format, InvoiceTemplate template, bool isLandscape)
 {
    if(template != InvoiceTemplate.gridClassic) return 0.9;
-   if(format == PdfPageFormat.a4) return isLandscape ? 0.5 : 0.6;
+   if(format == PdfPageFormat.a4) return isLandscape ? 0.9 : 0.6;
    if(format == PdfPageFormat.a5) return isLandscape ? 0.6 : 0.7;
-   return isLandscape ? 0.6 : 0.8;
+   return isLandscape ? 0.7 : 0.8;
 }
 
 // ── Product-metadata snapshot columns (Grid Classic A4 only) ──────────────
