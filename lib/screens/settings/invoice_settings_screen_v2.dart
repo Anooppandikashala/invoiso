@@ -1424,11 +1424,9 @@ class _InvoiceSettingsScreenV2State
   // User-defined per-invoice fields (e.g. Vehicle No, Delivery Note) — not
   // tied to the customer. Off by default; when on, seeded with a starting
   // set of fields matching a typical GST transport invoice, all freely
-  // renameable/deletable. Rename/reorder mutate _customFieldDefs directly
-  // without setState — nothing else on screen reflects a label mid-edit, so
-  // there's no need to rebuild (and TextFormField keeps its own text/cursor
-  // state via the ValueKey below). Add/remove/reorder do call setState since
-  // the list itself changes shape.
+  // renameable/deletable. Every mutation calls setState so the live preview
+  // table below stays in sync; TextFormField keeps its own text/cursor state
+  // via the ValueKey below, so a rebuild on rename doesn't reset it.
   void _addCustomField() {
     final label = _newCustomFieldController.text.trim();
     if (label.isEmpty) return;
@@ -1448,8 +1446,8 @@ class _InvoiceSettingsScreenV2State
 
   void _renameCustomField(int index, String label) {
     final def = _customFieldDefs[index];
-    _customFieldDefs[index] =
-        CustomFieldDef(id: def.id, label: label, sortOrder: def.sortOrder);
+    setState(() => _customFieldDefs[index] =
+        CustomFieldDef(id: def.id, label: label, sortOrder: def.sortOrder));
   }
 
   void _moveCustomField(int oldIndex, int newIndex) {
@@ -1462,6 +1460,128 @@ class _InvoiceSettingsScreenV2State
             CustomFieldDef(id: def.id, label: def.label, sortOrder: i);
       }
     });
+  }
+
+  void _showCustomFieldsPreview(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        insetPadding: const EdgeInsets.all(16),
+        child: Stack(
+          alignment: Alignment.topRight,
+          children: [
+            InteractiveViewer(
+              child: Image.asset('assets/images/grid_classic_additional_fields.png'),
+            ),
+            IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Mirrors the 3-per-row table pdf_template_gridclassic.dart renders for
+  // custom fields (fieldCell/pw.Table), so this stays a live preview of the
+  // real PDF layout rather than a separate look that can drift from it.
+  Widget _customFieldsPreviewCardV2() {
+    final outline = Theme.of(context).colorScheme.outlineVariant;
+    Widget cell(int index) {
+      if (index >= _customFieldDefs.length) return const SizedBox.shrink();
+      final def = _customFieldDefs[index];
+      return Padding(
+        padding: const EdgeInsets.all(6),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(def.label,
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 1),
+            Text('Sample value',
+                style: TextStyle(
+                    fontSize: 11.5,
+                    fontStyle: FontStyle.italic,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          ],
+        ),
+      );
+    }
+
+    final l10n = AppLocalizations.of(context)!;
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: outline),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(border: Border(bottom: BorderSide(color: outline))),
+            child: Row(
+              children: [
+                Icon(Icons.visibility_outlined,
+                    size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                const SizedBox(width: 6),
+                Text(l10n.createInvoicePreviewLabel,
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface)),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: _customFieldDefs.isEmpty
+                ? Text('Add a field to see the preview.',
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant))
+                : Table(
+                    border: TableBorder.all(width: 0.5, color: outline),
+                    columnWidths: const {
+                      0: FlexColumnWidth(1),
+                      1: FlexColumnWidth(1),
+                      2: FlexColumnWidth(1),
+                    },
+                    children: [
+                      for (var i = 0; i < _customFieldDefs.length; i += 3)
+                        TableRow(children: [cell(i), cell(i + 1), cell(i + 2)]),
+                    ],
+                  ),
+          ),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              border: Border(top: BorderSide(color: outline)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline,
+                    size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(l10n.pdfSettingsPreviewDisclaimer,
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _sectionCustomFieldsV2() {
@@ -1482,7 +1602,26 @@ class _InvoiceSettingsScreenV2State
               fontWeight: FontWeight.w600,
               color: Theme.of(context).colorScheme.error),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: () => _showCustomFieldsPreview(context),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+            child: Image.asset(
+              'assets/images/grid_classic_additional_fields.png',
+              height: 140,
+              fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
+            ),
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text('Tap to view full size',
+            style: TextStyle(
+                fontSize: 11,
+                fontStyle: FontStyle.italic,
+                color: Theme.of(context).colorScheme.onSurfaceVariant)),
+        const SizedBox(height: 8),
         _toggleCardV2(
           title: 'Enable Custom Fields',
           subtitle:
@@ -1493,64 +1632,89 @@ class _InvoiceSettingsScreenV2State
         ),
         if (_customFieldsEnabled) ...[
           const SizedBox(height: 12),
-          for (var index = 0; index < _customFieldDefs.length; index++)
-            Padding(
-              key: ValueKey(_customFieldDefs[index].id),
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_upward, size: 18),
-                    visualDensity: VisualDensity.compact,
-                    tooltip: 'Move up',
-                    onPressed: index == 0
-                        ? null
-                        : () => _moveCustomField(index, index - 1),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.arrow_downward, size: 18),
-                    visualDensity: VisualDensity.compact,
-                    tooltip: 'Move down',
-                    onPressed: index == _customFieldDefs.length - 1
-                        ? null
-                        : () => _moveCustomField(index, index + 1),
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: TextFormField(
-                      initialValue: _customFieldDefs[index].label,
-                      decoration: _fieldDecorationV2(context, label: 'Field label'),
-                      onChanged: (val) => _renameCustomField(index, val),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline, color: Colors.red),
-                    tooltip: 'Delete field',
-                    onPressed: () => _removeCustomField(index),
-                  ),
-                ],
-              ),
-            ),
+          LayoutBuilder(builder: (context, constraints) {
+            final editor = _customFieldsEditorColumnV2();
+            final preview = _customFieldsPreviewCardV2();
+            if (constraints.maxWidth < 700) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [editor, const SizedBox(height: 12), preview],
+              );
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(flex: 3, child: editor),
+                const SizedBox(width: 24),
+                Expanded(flex: 2, child: preview),
+              ],
+            );
+          }),
+        ],
+      ],
+    );
+  }
+
+  Widget _customFieldsEditorColumnV2() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var index = 0; index < _customFieldDefs.length; index++) ...[
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            key: ValueKey(_customFieldDefs[index].id),
             children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_upward, size: 18),
+                visualDensity: VisualDensity.compact,
+                tooltip: 'Move up',
+                onPressed: index == 0
+                    ? null
+                    : () => _moveCustomField(index, index - 1),
+              ),
+              IconButton(
+                icon: const Icon(Icons.arrow_downward, size: 18),
+                visualDensity: VisualDensity.compact,
+                tooltip: 'Move down',
+                onPressed: index == _customFieldDefs.length - 1
+                    ? null
+                    : () => _moveCustomField(index, index + 1),
+              ),
+              const SizedBox(width: 4),
               Expanded(
-                child: TextField(
-                  controller: _newCustomFieldController,
-                  decoration: _fieldDecorationV2(context,
-                      label: 'New field label', hint: 'e.g. Vehicle No'),
-                  onSubmitted: (_) => _addCustomField(),
+                child: TextFormField(
+                  initialValue: _customFieldDefs[index].label,
+                  decoration: _fieldDecorationV2(context, label: 'Field label'),
+                  onChanged: (val) => _renameCustomField(index, val),
                 ),
               ),
-              const SizedBox(width: 8),
-              FilledButton.icon(
-                onPressed: _addCustomField,
-                icon: const Icon(Icons.add),
-                label: const Text('Add'),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                tooltip: 'Delete field',
+                onPressed: () => _removeCustomField(index),
               ),
             ],
           ),
+          const SizedBox(height: 16),
         ],
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _newCustomFieldController,
+                decoration: _fieldDecorationV2(context,
+                    label: 'New field label', hint: 'e.g. Vehicle No'),
+                onSubmitted: (_) => _addCustomField(),
+              ),
+            ),
+            const SizedBox(width: 8),
+            FilledButton.icon(
+              onPressed: _addCustomField,
+              icon: const Icon(Icons.add),
+              label: const Text('Add'),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -1910,7 +2074,7 @@ class _InvoiceSettingsScreenV2State
                   child: Align(
                     alignment: Alignment.topCenter,
                     child: Container(
-                      constraints: const BoxConstraints(maxWidth: 900),
+                      constraints: const BoxConstraints(maxWidth: 1200),
                       padding: const EdgeInsets.symmetric(horizontal: 24),
                       child: _sectionCardV2(),
                     ),

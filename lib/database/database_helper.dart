@@ -15,7 +15,7 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 46;
+  final dbVersion = 47;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -731,35 +731,38 @@ class DatabaseHelper {
       });
     }
 
-    if (oldVersion < 44) {
+    if (oldVersion < 47) {
+      // Moved here from v44/v45/v46 — this client's deployed DB already had
+      // its own (different) migrations at those version numbers, so gating
+      // on oldVersion < 44/45/46 would silently never run for them (their
+      // oldVersion is already past those gates). Consolidated under a single
+      // fresh version so it actually applies on next upgrade regardless of
+      // what their v44-46 previously contained.
+
       // JSON snapshot of the product's metadata (storage location, batch/
       // container number, expiry/manufacture date, supplier, SKU, notes) taken
       // when the line is added, so it can print on the Grid Classic PDF and
-      // stay frozen. NULL on every pre-v44 row = no metadata, prints as before.
+      // stay frozen. NULL on every pre-v47 row = no metadata, prints as before.
       await _runMigrationStep(
-          db, 44, 'add_line_metadata_to_invoice_items', () async {
+          db, 47, 'add_line_metadata_to_invoice_items', () async {
         await db.execute(
           'ALTER TABLE invoice_items ADD COLUMN line_metadata TEXT',
         );
       });
-    }
 
-    if (oldVersion < 45) {
       // User-defined custom fields (e.g. Vehicle No, Delivery Note), filled
-      // per invoice. JSON list of CustomFieldValue. NULL on every pre-v45
+      // per invoice. JSON list of CustomFieldValue. NULL on every pre-v47
       // row = none filled, prints exactly as before.
-      await _runMigrationStep(db, 45, 'add_custom_fields_to_invoices', () async {
+      await _runMigrationStep(db, 47, 'add_custom_fields_to_invoices', () async {
         await db.execute(
           'ALTER TABLE invoices ADD COLUMN custom_fields TEXT',
         );
       });
-    }
 
-    if (oldVersion < 46) {
       // Manufacturer name for a product (alongside manufacture date). NULL on
-      // every pre-v46 row.
+      // every pre-v47 row.
       await _runMigrationStep(
-          db, 46, 'add_manufacture_name_to_product_metadata', () async {
+          db, 47, 'add_manufacture_name_to_product_metadata', () async {
         await db.execute(
           'ALTER TABLE product_metadata ADD COLUMN manufacture_name TEXT',
         );
