@@ -109,6 +109,50 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         .getSetting(SettingKey.createInvoiceLayout);
     if (!mounted) return;
     setState(() => _createInvoiceLayout = layout ?? 'v2');
+    if (_createInvoiceLayout == 'v1') {
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _showV1DeprecationNotice());
+    }
+  }
+
+  Future<void> _showV1DeprecationNotice() async {
+    if (!mounted) return;
+    final switchNow = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.info_outline, color: Theme.of(context).primaryColor),
+            const SizedBox(width: 12),
+            const Flexible(child: Text('Classic invoice layout is going away')),
+          ],
+        ),
+        content: const Text(
+          "You're using the classic Create Invoice layout. In an upcoming "
+          "release this will be removed and everyone moves to the new layout. "
+          "Try it now so you're comfortable with it before the switch — you "
+          "can always go back from Settings until then.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Maybe later'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Try new layout now'),
+          ),
+        ],
+      ),
+    );
+    if (switchNow == true && mounted) {
+      await ref
+          .read(settingsRepositoryProvider)
+          .setSetting(SettingKey.createInvoiceLayout, 'v2');
+      if (!mounted) return;
+      setState(() => _createInvoiceLayout = 'v2');
+    }
   }
 
   Future<void> _checkForUpdates() async {
