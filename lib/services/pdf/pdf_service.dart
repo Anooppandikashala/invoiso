@@ -234,7 +234,8 @@ class PDFService {
     }
     final showUpiQr = s.showQrStr == 'true' &&
         effectiveUpiId != null &&
-        effectiveUpiId.isNotEmpty;
+        effectiveUpiId.isNotEmpty &&
+        invoice.outstandingBalance > 0;
 
     BankAccount? effectiveBank;
     if (s.showBankDetails) {

@@ -4320,6 +4320,12 @@ abstract class AppLocalizations {
   /// **'Daily Report'**
   String get reportsNavDailyReportLabel;
 
+  /// No description provided for @reportsNavInventoryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory'**
+  String get reportsNavInventoryLabel;
+
   /// No description provided for @reportsNavInvoiceStatusLabel.
   ///
   /// In en, this message translates to:
@@ -4343,6 +4349,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tax'**
   String get reportsNavTaxLabel;
+
+  /// No description provided for @reportsInventoryBlockedValueLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory Value Blocked'**
+  String get reportsInventoryBlockedValueLabel;
+
+  /// No description provided for @reportsInventoryPotentialSaleValueLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Potential Sale Value'**
+  String get reportsInventoryPotentialSaleValueLabel;
+
+  /// No description provided for @reportsInventoryLockedProfitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Profit Locked in Stock'**
+  String get reportsInventoryLockedProfitLabel;
+
+  /// No description provided for @reportsInventoryTotalUnitsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Units'**
+  String get reportsInventoryTotalUnitsLabel;
+
+  /// No description provided for @reportsInventoryProductCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Products Tracked'**
+  String get reportsInventoryProductCountLabel;
+
+  /// No description provided for @reportsInventoryBreakdownTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Product Breakdown'**
+  String get reportsInventoryBreakdownTitle;
+
+  /// No description provided for @reportsNoInventoryDataMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No inventory data'**
+  String get reportsNoInventoryDataMessage;
+
+  /// No description provided for @reportsInventoryProductColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Product'**
+  String get reportsInventoryProductColumnLabel;
+
+  /// No description provided for @reportsInventoryStockColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock'**
+  String get reportsInventoryStockColumnLabel;
+
+  /// No description provided for @reportsInventoryPurchasePriceColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase Price'**
+  String get reportsInventoryPurchasePriceColumnLabel;
+
+  /// No description provided for @reportsInventoryStockValueColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock Value'**
+  String get reportsInventoryStockValueColumnLabel;
+
+  /// No description provided for @reportsInventorySaleValueColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sale Value'**
+  String get reportsInventorySaleValueColumnLabel;
+
+  /// No description provided for @reportsInventoryExcludedBannerMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item is excluded from inventory value — it\'s a service or has unlimited stock tracking on.} other{{count} items are excluded from inventory value — they\'re services or have unlimited stock tracking on.}}'**
+  String reportsInventoryExcludedBannerMessage(int count);
 
   /// No description provided for @reportsNoCustomerDataMessage.
   ///

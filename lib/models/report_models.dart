@@ -237,6 +237,54 @@ class TopProduct {
   double get marginPercent => revenue == 0 ? 0.0 : (profit / revenue) * 100;
 }
 
+class InventoryValuationSummary {
+  final double stockValue;
+  final double retailValue;
+  final int totalUnits;
+  final int productCount;
+  final int excludedCount;
+
+  const InventoryValuationSummary({
+    required this.stockValue,
+    required this.retailValue,
+    required this.totalUnits,
+    required this.productCount,
+    required this.excludedCount,
+  });
+
+  double get lockedProfit => retailValue - stockValue;
+
+  static const empty = InventoryValuationSummary(
+    stockValue: 0,
+    retailValue: 0,
+    totalUnits: 0,
+    productCount: 0,
+    excludedCount: 0,
+  );
+}
+
+class InventoryValuationRow {
+  final String productId;
+  final String name;
+  final int stock;
+  final double purchasePrice;
+  final double price;
+  final String unit;
+
+  const InventoryValuationRow({
+    required this.productId,
+    required this.name,
+    required this.stock,
+    required this.purchasePrice,
+    required this.price,
+    required this.unit,
+  });
+
+  double get stockValue => stock * purchasePrice;
+
+  double get retailValue => stock * price;
+}
+
 class QuotationStats {
   final int quotationsIssued;
   final int invoicesInPeriod;
