@@ -961,6 +961,7 @@
   "fieldTaxVatNoLabel": "कर/भ्याट नम्बर",
   "fieldPanLabel": "PAN",
   "fieldTinLabel": "TIN",
+  "fieldVatRegNoLabel": "भ्याट दर्ता नम्बर",
   "companyInfoFssaiCodeLabel": "FSSAI कोड",
   "companyInfoPhoneHelperText": "धेरै नम्बरहरू: अल्पविरामले छुट्याउनुहोस्",
   "fieldWebsiteLabel": "वेबसाइट",

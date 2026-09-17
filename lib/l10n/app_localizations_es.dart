@@ -3723,6 +3723,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get fieldTinLabel => 'TIN';
 
   @override
+  String get fieldVatRegNoLabel => 'Número de registro de IVA';
+
+  @override
   String get companyInfoFssaiCodeLabel => 'Código FSSAI';
 
   @override

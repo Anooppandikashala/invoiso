@@ -340,13 +340,17 @@ enum LogoPosition { left, right }
 /// Falls back to 'GSTIN' for India and for unset countries (backward compat).
 String taxLabel(String? country) {
   if (country == null || country.isEmpty || country == 'India') return 'GSTIN';
+  if (country == 'Nepal') return 'VAT Registration Number';
   return 'Tax/VAT No';
 }
 
 /// Returns the label for a personal tax ID field.
-/// India → 'PAN', everyone else → 'TIN'.
+/// India and Nepal → 'PAN' (Nepal's PAN, issued by the IRD, is also its VAT
+/// number once VAT-registered), everyone else → 'TIN'.
 String panLabel(String? country) {
-  if (country == null || country.isEmpty || country == 'India') return 'PAN';
+  if (country == null || country.isEmpty || country == 'India' || country == 'Nepal') {
+    return 'PAN';
+  }
   return 'TIN';
 }
 

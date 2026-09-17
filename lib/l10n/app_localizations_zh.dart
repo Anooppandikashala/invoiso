@@ -3512,6 +3512,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get fieldTinLabel => 'TIN';
 
   @override
+  String get fieldVatRegNoLabel => '增值税登记号';
+
+  @override
   String get companyInfoFssaiCodeLabel => 'FSSAI 代码';
 
   @override

@@ -285,26 +285,44 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 child: Column(
                   children: [
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          for (var i = 0; i < _stepCount; i++)
-                            AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              margin: const EdgeInsets.symmetric(horizontal: 4),
-                              height: 6,
-                              width: i == _currentStep ? 28 : 6,
-                              decoration: BoxDecoration(
-                                color: i <= _currentStep
-                                    ? primaryColor
-                                    : Theme.of(context)
-                                        .colorScheme
-                                        .outlineVariant,
-                                borderRadius: BorderRadius.circular(3),
-                              ),
+                      padding: const EdgeInsets.only(
+                          top: 8, bottom: 8, left: 16, right: 8),
+                      child: SizedBox(
+                        height: 44,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                for (var i = 0; i < _stepCount; i++)
+                                  AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    margin: const EdgeInsets.symmetric(
+                                        horizontal: 4),
+                                    height: 6,
+                                    width: i == _currentStep ? 28 : 6,
+                                    decoration: BoxDecoration(
+                                      color: i <= _currentStep
+                                          ? primaryColor
+                                          : Theme.of(context)
+                                              .colorScheme
+                                              .outlineVariant,
+                                      borderRadius: BorderRadius.circular(3),
+                                    ),
+                                  ),
+                              ],
                             ),
-                        ],
+                            if (_currentStep < 3)
+                              Positioned(
+                                right: 0,
+                                child: TextButton(
+                                  onPressed: _isBusy ? null : _handleSkip,
+                                  child: Text(l10n.actionSkip),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                     if (_currentStep < 3) ...[
@@ -394,12 +412,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                               label: Text(l10n.actionBack),
                             ),
                           const Spacer(),
-                          if (_currentStep < 3)
-                            TextButton(
-                              onPressed: _isBusy ? null : _handleSkip,
-                              child: Text(l10n.actionSkip),
-                            ),
-                          const SizedBox(width: 12),
                           FilledButton.icon(
                             onPressed: _isBusy
                                 ? null

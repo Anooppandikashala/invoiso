@@ -6132,6 +6132,12 @@ abstract class AppLocalizations {
   /// **'TIN'**
   String get fieldTinLabel;
 
+  /// No description provided for @fieldVatRegNoLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'VAT Registration Number'**
+  String get fieldVatRegNoLabel;
+
   /// No description provided for @companyInfoFssaiCodeLabel.
   ///
   /// In en, this message translates to:

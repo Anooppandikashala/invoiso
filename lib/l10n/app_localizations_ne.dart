@@ -3687,6 +3687,9 @@ class AppLocalizationsNe extends AppLocalizations {
   String get fieldTinLabel => 'TIN';
 
   @override
+  String get fieldVatRegNoLabel => 'भ्याट दर्ता नम्बर';
+
+  @override
   String get companyInfoFssaiCodeLabel => 'FSSAI कोड';
 
   @override

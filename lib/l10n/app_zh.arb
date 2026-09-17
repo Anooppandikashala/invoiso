@@ -961,6 +961,7 @@
   "fieldTaxVatNoLabel": "税号/增值税号",
   "fieldPanLabel": "PAN",
   "fieldTinLabel": "TIN",
+  "fieldVatRegNoLabel": "增值税登记号",
   "companyInfoFssaiCodeLabel": "FSSAI 代码",
   "companyInfoPhoneHelperText": "多个号码请用逗号分隔",
   "fieldWebsiteLabel": "网站",

@@ -2109,6 +2109,7 @@
   "fieldTaxVatNoLabel": "Tax/VAT No",
   "fieldPanLabel": "PAN",
   "fieldTinLabel": "TIN",
+  "fieldVatRegNoLabel": "VAT Registration Number",
   "companyInfoFssaiCodeLabel": "FSSAI Code",
   "companyInfoPhoneHelperText": "Multiple numbers: separate with comma",
   "fieldWebsiteLabel": "Website",

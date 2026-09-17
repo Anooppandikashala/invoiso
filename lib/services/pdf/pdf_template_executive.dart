@@ -99,7 +99,8 @@ pw.MultiPage buildExecutiveTemplate(
   final companyIdParts = <String>[
     if (showGst && gstin.isNotEmpty) '$gstLabel: $gstin',
     if (showPan && panNumber.isNotEmpty) '${panLabel(company?.country)}: $panNumber',
-    if (showFssai && fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
+    if (showFssai && fssaiCode.isNotEmpty && isIndiaCountry(company?.country))
+      'FSSAI: $fssaiCode',
   ];
   // GSTIN + PAN + FSSAI all present → one joined line; fewer → line by line.
   final allCompanyIds = companyIdParts.length == 3;
