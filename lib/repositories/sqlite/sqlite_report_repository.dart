@@ -50,4 +50,10 @@ class SqliteReportRepository implements ReportRepository {
   @override
   Future<int> getMissingCostItemCount(DateTime from, DateTime to, {String? currencyCode}) =>
       ReportService.getMissingCostItemCount(from, to, currencyCode: currencyCode);
+  @override
+  Future<InventoryValuationSummary> getInventoryValuationSummary() =>
+      ReportService.getInventoryValuationSummary();
+  @override
+  Future<List<InventoryValuationRow>> getInventoryValuationRows({int? limit = 500}) =>
+      ReportService.getInventoryValuationRows(limit: limit);
 }

@@ -129,7 +129,6 @@ pw.MultiPage buildGridClassicTemplate(
   final netTotal = roundNetTotal(rawNet);
   final roundedNet = netTotal.rounded;
   final roundOff = netTotal.roundOff;
-  final payableAmount = showRoundOff ? roundedNet : rawNet;
 
   final totalQty = showTotalQuantity
       ? invoice.items.fold<double>(0, (s, i) => s + i.quantity)
@@ -499,7 +498,7 @@ pw.MultiPage buildGridClassicTemplate(
                         showUpiQr: showUpiQr,
                         upiId: upiId,
                         companyName: company?.name ?? '',
-                        amount: payableAmount,
+                        amount: invoice.outstandingBalance,
                         currencyCode: invoice.currencyCode,
                         invoiceId: invoice.id,
                         accentColor: accentColor,
@@ -522,7 +521,7 @@ pw.MultiPage buildGridClassicTemplate(
                         showUpiQr: showUpiQr,
                         upiId: upiId,
                         companyName: company?.name ?? '',
-                        amount: payableAmount,
+                        amount: invoice.outstandingBalance,
                         currencyCode: invoice.currencyCode,
                         invoiceId: invoice.id,
                         accentColor: accentColor,

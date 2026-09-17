@@ -21,4 +21,6 @@ abstract class ReportRepository {
   Future<QuotationStats> getQuotationStats(DateTime from, DateTime to, {String? currencyCode});
   Future<List<InvoiceStatusRow>> getInvoiceStatusList(DateTime from, DateTime to, {String? currencyCode});
   Future<int> getMissingCostItemCount(DateTime from, DateTime to, {String? currencyCode});
+  Future<InventoryValuationSummary> getInventoryValuationSummary();
+  Future<List<InventoryValuationRow>> getInventoryValuationRows({int? limit = 500});
 }
