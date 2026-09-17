@@ -3651,6 +3651,9 @@ class AppLocalizationsBo extends AppLocalizations {
   String get fieldTinLabel => 'TIN';
 
   @override
+  String get fieldVatRegNoLabel => 'VAT ཐོ་འགོད་ཨང་གྲངས།';
+
+  @override
   String get companyInfoFssaiCodeLabel => 'FSSAI ཨང་རྟགས།';
 
   @override

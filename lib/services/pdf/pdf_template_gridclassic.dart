@@ -116,7 +116,8 @@ pw.MultiPage buildGridClassicTemplate(
   final companyIdParts = <String>[
     if (showGst && gstin.isNotEmpty) '$gstLabel: $gstin',
     if (showPan && panNumber.isNotEmpty) 'PAN: $panNumber',
-    if (showFssai && fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
+    if (showFssai && fssaiCode.isNotEmpty && isIndiaCountry(company?.country))
+      'FSSAI: $fssaiCode',
   ];
   // All three present → one joined line above the divider (current look).
   // Fewer → fold each into the company-details block, line by line.

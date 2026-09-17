@@ -961,6 +961,7 @@
   "fieldTaxVatNoLabel": "ཁྲལ/VAT ཨང་གྲངས།",
   "fieldPanLabel": "PAN",
   "fieldTinLabel": "TIN",
+  "fieldVatRegNoLabel": "VAT ཐོ་འགོད་ཨང་གྲངས།",
   "companyInfoFssaiCodeLabel": "FSSAI ཨང་རྟགས།",
   "companyInfoPhoneHelperText": "ཨང་གྲངས་མང་པོ: ཚེག་ཤད་ཀྱིས་དབྱེ་རོགས།",
   "fieldWebsiteLabel": "དྲྭ་ཚིགས།",

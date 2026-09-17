@@ -645,14 +645,21 @@ class PDFService {
       bytes: Platform.isAndroid ? pdfBytes : null,
     );
     if (savePath == null) return;
+    var finalPath = savePath;
     if (!Platform.isAndroid) {
-      await File(savePath).writeAsBytes(pdfBytes);
+      // file_picker's native save dialog doesn't reliably keep the .pdf
+      // extension on desktop (observed writing "Invoice.file") — enforce it
+      // before we write the bytes ourselves. Android writes via `bytes`
+      // above straight to the URI the picker returned, so it can't be
+      // renamed after the fact.
+      if (!finalPath.toLowerCase().endsWith('.pdf')) finalPath += '.pdf';
+      await File(finalPath).writeAsBytes(pdfBytes);
     }
-    await OpenFile.open(savePath);
+    await OpenFile.open(finalPath);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Saved: $savePath'),
+          content: Text('Saved: $finalPath'),
           behavior: SnackBarBehavior.floating,
         ),
       );

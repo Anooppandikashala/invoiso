@@ -961,6 +961,7 @@
   "fieldTaxVatNoLabel": "N.º de Impuesto/IVA",
   "fieldPanLabel": "PAN",
   "fieldTinLabel": "TIN",
+  "fieldVatRegNoLabel": "Número de registro de IVA",
   "companyInfoFssaiCodeLabel": "Código FSSAI",
   "companyInfoPhoneHelperText": "Varios números: sepárelos con una coma",
   "fieldWebsiteLabel": "Sitio web",
