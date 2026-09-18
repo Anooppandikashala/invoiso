@@ -1,10 +1,10 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:invoiso/backup/backup_manager.dart';
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/models/backup_info.dart';
+import 'package:invoiso/widgets/restart_required_dialog.dart';
 
 class BackupManagementScreen extends StatefulWidget {
   const BackupManagementScreen({super.key});
@@ -347,24 +347,9 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
 
   void _showRestartDialog() {
     final l10n = AppLocalizations.of(context)!;
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.backupRestoreSuccessTitle),
-        content: Text(l10n.backupRestoreSuccessBody),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(l10n.backupCloseLaterButton),
-          ),
-          TextButton(
-            onPressed: () => exit(0),
-            child: Text(l10n.backupCloseAppNowButton),
-          ),
-        ],
-      ),
-    );
+    showRestartRequiredDialog(context,
+        title: l10n.backupRestoreSuccessTitle,
+        body: l10n.backupRestoreSuccessBody);
   }
 
   void _showSuccessDialog(String message) {

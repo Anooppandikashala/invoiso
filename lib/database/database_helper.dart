@@ -15,7 +15,23 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
+  static String _dbFileName = 'invoice_manager.db';
   final dbVersion = 47;
+
+  /// Startup only, before anything has opened a connection yet — just points
+  /// at the right file for the first `_initDB()` call. No close/reopen, so
+  /// it's safe to call unconditionally even when the default filename is
+  /// already correct (the common single-company case).
+  void setActiveFileNameBeforeFirstOpen(String fileName) {
+    _dbFileName = fileName;
+  }
+
+  /// Runtime switch — a connection may already be open, so close it first.
+  /// Call this when switching the active company on an already-running app.
+  Future<Database> switchToFile(String fileName) async {
+    _dbFileName = fileName;
+    return reinitialize();
+  }
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -25,7 +41,7 @@ class DatabaseHelper {
 
   Future<Database> _initDB() async {
     final dbDir = await getApplicationSupportDirectory();
-    _path = join(dbDir.path, 'invoice_manager.db');
+    _path = join(dbDir.path, _dbFileName);
     return await openDatabase(
       _path!,
       version: dbVersion,

@@ -4109,6 +4109,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsNavCompanyInfoLabel => 'Info. de la empresa';
 
   @override
+  String get settingsNavCompaniesLabel => 'Empresas';
+
+  @override
   String get settingsNavTeamLabel => 'Equipo';
 
   @override
@@ -4128,6 +4131,84 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsNavSoftwareInfoLabel => 'Info. del software';
+
+  @override
+  String get companyMgmtTitle => 'Gestionar empresas';
+
+  @override
+  String get companyMgmtActiveBadge => 'Activa';
+
+  @override
+  String get companyMgmtSwitchButton => 'Cambiar';
+
+  @override
+  String get companyMgmtSwitchConfirmTitle => '¿Cambiar de empresa?';
+
+  @override
+  String companyMgmtSwitchConfirmBody(String name) {
+    return 'Invoiso se reiniciará para cambiar a \"$name\".';
+  }
+
+  @override
+  String get companyMgmtNewCompanyButton => '+ Nueva empresa';
+
+  @override
+  String get companyMgmtNewCompanyTitle => 'Nueva empresa';
+
+  @override
+  String get companyMgmtAdminAccountSectionLabel => 'Cuenta de administrador';
+
+  @override
+  String get companyMgmtCreateButton => 'Crear';
+
+  @override
+  String get companyMgmtDeleteButton => 'Eliminar esta empresa';
+
+  @override
+  String companyMgmtDeleteConfirmTitle(String name) {
+    return '¿Eliminar \"$name\"?';
+  }
+
+  @override
+  String get companyMgmtDeleteConfirmBody =>
+      'Esto elimina permanentemente todos los datos de esta empresa y no se puede deshacer. Escriba el nombre de la empresa para confirmar.';
+
+  @override
+  String get companyMgmtRenameTooltip => 'Renombrar';
+
+  @override
+  String get companyMgmtRenameTitle => 'Renombrar empresa';
+
+  @override
+  String get companyMgmtSwitchRestartTitle => 'Empresa cambiada';
+
+  @override
+  String get companyMgmtSwitchRestartBody =>
+      'Invoiso necesita reiniciarse para completar el cambio de empresa. Cierre y vuelva a abrir la aplicación.';
+
+  @override
+  String get companyMgmtCreateRestartTitle => 'Empresa creada';
+
+  @override
+  String get companyMgmtCreateRestartBody =>
+      'Su nueva empresa está lista. Cierre y vuelva a abrir la aplicación para continuar.';
+
+  @override
+  String get companyMgmtDeleteRestartTitle => 'Empresa eliminada';
+
+  @override
+  String get companyMgmtDeleteRestartBody =>
+      'La empresa fue eliminada e Invoiso cambió a otra. Cierre y vuelva a abrir la aplicación para continuar.';
+
+  @override
+  String get companyMgmtOnlyCompanyTooltip =>
+      'Necesita al menos otra empresa antes de poder eliminar esta';
+
+  @override
+  String get loginCompanyGearTooltip => 'Gestionar empresas';
+
+  @override
+  String get loginCompanySelectorLabel => 'Empresa';
 
   @override
   String get customizationEyebrowLabel => 'PERSONALIZACIÓN';

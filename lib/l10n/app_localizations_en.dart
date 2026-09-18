@@ -4026,6 +4026,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsNavCompanyInfoLabel => 'Company Info';
 
   @override
+  String get settingsNavCompaniesLabel => 'Companies';
+
+  @override
   String get settingsNavTeamLabel => 'Team';
 
   @override
@@ -4045,6 +4048,84 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsNavSoftwareInfoLabel => 'Software Info';
+
+  @override
+  String get companyMgmtTitle => 'Manage Companies';
+
+  @override
+  String get companyMgmtActiveBadge => 'Active';
+
+  @override
+  String get companyMgmtSwitchButton => 'Switch';
+
+  @override
+  String get companyMgmtSwitchConfirmTitle => 'Switch Company?';
+
+  @override
+  String companyMgmtSwitchConfirmBody(String name) {
+    return 'Invoiso will restart to switch to \"$name\".';
+  }
+
+  @override
+  String get companyMgmtNewCompanyButton => '+ New Company';
+
+  @override
+  String get companyMgmtNewCompanyTitle => 'New Company';
+
+  @override
+  String get companyMgmtAdminAccountSectionLabel => 'Admin Account';
+
+  @override
+  String get companyMgmtCreateButton => 'Create';
+
+  @override
+  String get companyMgmtDeleteButton => 'Delete This Company';
+
+  @override
+  String companyMgmtDeleteConfirmTitle(String name) {
+    return 'Delete \"$name\"?';
+  }
+
+  @override
+  String get companyMgmtDeleteConfirmBody =>
+      'This permanently deletes all of this company\'s data and cannot be undone. Type the company name to confirm.';
+
+  @override
+  String get companyMgmtRenameTooltip => 'Rename';
+
+  @override
+  String get companyMgmtRenameTitle => 'Rename Company';
+
+  @override
+  String get companyMgmtSwitchRestartTitle => 'Company Switched';
+
+  @override
+  String get companyMgmtSwitchRestartBody =>
+      'Invoiso needs to restart to finish switching companies. Please close and reopen the application.';
+
+  @override
+  String get companyMgmtCreateRestartTitle => 'Company Created';
+
+  @override
+  String get companyMgmtCreateRestartBody =>
+      'Your new company is ready. Please close and reopen the application to continue.';
+
+  @override
+  String get companyMgmtDeleteRestartTitle => 'Company Deleted';
+
+  @override
+  String get companyMgmtDeleteRestartBody =>
+      'The company was deleted and Invoiso switched to another one. Please close and reopen the application to continue.';
+
+  @override
+  String get companyMgmtOnlyCompanyTooltip =>
+      'You need at least one other company before you can delete this one';
+
+  @override
+  String get loginCompanyGearTooltip => 'Manage companies';
+
+  @override
+  String get loginCompanySelectorLabel => 'Company';
 
   @override
   String get customizationEyebrowLabel => 'CUSTOMIZATION';

@@ -1072,6 +1072,7 @@
   "productColumnsExtraCostSubtitle": "इनवॉइस लाइन आइटम पर वैकल्पिक फ्लैट अतिरिक्त शुल्क।",
   "settingsOptionsComingSoonMessage": "विकल्प जल्द आ रहे हैं...",
   "settingsNavCompanyInfoLabel": "कंपनी जानकारी",
+  "settingsNavCompaniesLabel": "कंपनियाँ",
   "settingsNavTeamLabel": "टीम",
   "settingsNavBackupLabel": "बैकअप",
   "settingsNavUsersLabel": "उपयोगकर्ता",
@@ -1079,6 +1080,39 @@
   "settingsNavCustomizeLabel": "कस्टमाइज़ करें",
   "settingsNavAccessibilityLabel": "सुगम्यता",
   "settingsNavSoftwareInfoLabel": "सॉफ़्टवेयर जानकारी",
+  "companyMgmtTitle": "कंपनियाँ प्रबंधित करें",
+  "companyMgmtActiveBadge": "सक्रिय",
+  "companyMgmtSwitchButton": "स्विच करें",
+  "companyMgmtSwitchConfirmTitle": "कंपनी स्विच करें?",
+  "companyMgmtSwitchConfirmBody": "\"{name}\" पर स्विच करने के लिए Invoiso पुनः आरंभ होगा।",
+  "@companyMgmtSwitchConfirmBody": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "companyMgmtNewCompanyButton": "+ नई कंपनी",
+  "companyMgmtNewCompanyTitle": "नई कंपनी",
+  "companyMgmtAdminAccountSectionLabel": "एडमिन खाता",
+  "companyMgmtCreateButton": "बनाएं",
+  "companyMgmtDeleteButton": "यह कंपनी हटाएं",
+  "companyMgmtDeleteConfirmTitle": "\"{name}\" हटाएं?",
+  "@companyMgmtDeleteConfirmTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "companyMgmtDeleteConfirmBody": "इससे इस कंपनी का सारा डेटा स्थायी रूप से हट जाएगा और इसे पूर्ववत नहीं किया जा सकता। पुष्टि के लिए कंपनी का नाम टाइप करें।",
+  "companyMgmtRenameTooltip": "नाम बदलें",
+  "companyMgmtRenameTitle": "कंपनी का नाम बदलें",
+  "companyMgmtSwitchRestartTitle": "कंपनी स्विच हो गई",
+  "companyMgmtSwitchRestartBody": "कंपनी स्विच पूरा करने के लिए Invoiso को पुनः आरंभ करना होगा। कृपया एप्लिकेशन बंद करके फिर से खोलें।",
+  "companyMgmtCreateRestartTitle": "कंपनी बन गई",
+  "companyMgmtCreateRestartBody": "आपकी नई कंपनी तैयार है। जारी रखने के लिए कृपया एप्लिकेशन बंद करके फिर से खोलें।",
+  "companyMgmtDeleteRestartTitle": "कंपनी हटा दी गई",
+  "companyMgmtDeleteRestartBody": "कंपनी हटा दी गई और Invoiso दूसरी कंपनी में स्विच हो गया। जारी रखने के लिए कृपया एप्लिकेशन बंद करके फिर से खोलें।",
+  "companyMgmtOnlyCompanyTooltip": "इसे हटाने से पहले आपके पास कम से कम एक और कंपनी होनी चाहिए",
+  "loginCompanyGearTooltip": "कंपनियाँ प्रबंधित करें",
+  "loginCompanySelectorLabel": "कंपनी",
   "customizationEyebrowLabel": "कस्टमाइज़ेशन",
   "customizationHeadline": "आपके व्यवसाय के लिए अनुकूलित",
   "customizationSubtitle": "जो चाहिए वह चुनें और अनुरोध भेजें। हम 24 घंटे के भीतर संपर्क करेंगे।",

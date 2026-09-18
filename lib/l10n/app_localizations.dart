@@ -6804,6 +6804,12 @@ abstract class AppLocalizations {
   /// **'Company Info'**
   String get settingsNavCompanyInfoLabel;
 
+  /// No description provided for @settingsNavCompaniesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Companies'**
+  String get settingsNavCompaniesLabel;
+
   /// No description provided for @settingsNavTeamLabel.
   ///
   /// In en, this message translates to:
@@ -6845,6 +6851,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Software Info'**
   String get settingsNavSoftwareInfoLabel;
+
+  /// No description provided for @companyMgmtTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage Companies'**
+  String get companyMgmtTitle;
+
+  /// No description provided for @companyMgmtActiveBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get companyMgmtActiveBadge;
+
+  /// No description provided for @companyMgmtSwitchButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch'**
+  String get companyMgmtSwitchButton;
+
+  /// No description provided for @companyMgmtSwitchConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch Company?'**
+  String get companyMgmtSwitchConfirmTitle;
+
+  /// No description provided for @companyMgmtSwitchConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoiso will restart to switch to \"{name}\".'**
+  String companyMgmtSwitchConfirmBody(String name);
+
+  /// No description provided for @companyMgmtNewCompanyButton.
+  ///
+  /// In en, this message translates to:
+  /// **'+ New Company'**
+  String get companyMgmtNewCompanyButton;
+
+  /// No description provided for @companyMgmtNewCompanyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New Company'**
+  String get companyMgmtNewCompanyTitle;
+
+  /// No description provided for @companyMgmtAdminAccountSectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin Account'**
+  String get companyMgmtAdminAccountSectionLabel;
+
+  /// No description provided for @companyMgmtCreateButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get companyMgmtCreateButton;
+
+  /// No description provided for @companyMgmtDeleteButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete This Company'**
+  String get companyMgmtDeleteButton;
+
+  /// No description provided for @companyMgmtDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete \"{name}\"?'**
+  String companyMgmtDeleteConfirmTitle(String name);
+
+  /// No description provided for @companyMgmtDeleteConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This permanently deletes all of this company\'s data and cannot be undone. Type the company name to confirm.'**
+  String get companyMgmtDeleteConfirmBody;
+
+  /// No description provided for @companyMgmtRenameTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get companyMgmtRenameTooltip;
+
+  /// No description provided for @companyMgmtRenameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename Company'**
+  String get companyMgmtRenameTitle;
+
+  /// No description provided for @companyMgmtSwitchRestartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Company Switched'**
+  String get companyMgmtSwitchRestartTitle;
+
+  /// No description provided for @companyMgmtSwitchRestartBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoiso needs to restart to finish switching companies. Please close and reopen the application.'**
+  String get companyMgmtSwitchRestartBody;
+
+  /// No description provided for @companyMgmtCreateRestartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Company Created'**
+  String get companyMgmtCreateRestartTitle;
+
+  /// No description provided for @companyMgmtCreateRestartBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your new company is ready. Please close and reopen the application to continue.'**
+  String get companyMgmtCreateRestartBody;
+
+  /// No description provided for @companyMgmtDeleteRestartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Company Deleted'**
+  String get companyMgmtDeleteRestartTitle;
+
+  /// No description provided for @companyMgmtDeleteRestartBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The company was deleted and Invoiso switched to another one. Please close and reopen the application to continue.'**
+  String get companyMgmtDeleteRestartBody;
+
+  /// No description provided for @companyMgmtOnlyCompanyTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'You need at least one other company before you can delete this one'**
+  String get companyMgmtOnlyCompanyTooltip;
+
+  /// No description provided for @loginCompanyGearTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage companies'**
+  String get loginCompanyGearTooltip;
+
+  /// No description provided for @loginCompanySelectorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Company'**
+  String get loginCompanySelectorLabel;
 
   /// No description provided for @customizationEyebrowLabel.
   ///

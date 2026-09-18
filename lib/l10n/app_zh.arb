@@ -1072,6 +1072,7 @@
   "productColumnsExtraCostSubtitle": "发票明细项上可选的固定额外费用。",
   "settingsOptionsComingSoonMessage": "更多选项即将推出...",
   "settingsNavCompanyInfoLabel": "公司信息",
+  "settingsNavCompaniesLabel": "公司",
   "settingsNavTeamLabel": "团队",
   "settingsNavBackupLabel": "备份",
   "settingsNavUsersLabel": "用户",
@@ -1079,6 +1080,39 @@
   "settingsNavCustomizeLabel": "自定义",
   "settingsNavAccessibilityLabel": "无障碍",
   "settingsNavSoftwareInfoLabel": "软件信息",
+  "companyMgmtTitle": "管理公司",
+  "companyMgmtActiveBadge": "当前",
+  "companyMgmtSwitchButton": "切换",
+  "companyMgmtSwitchConfirmTitle": "切换公司？",
+  "companyMgmtSwitchConfirmBody": "Invoiso 将重启以切换到“{name}”。",
+  "@companyMgmtSwitchConfirmBody": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "companyMgmtNewCompanyButton": "+ 新建公司",
+  "companyMgmtNewCompanyTitle": "新建公司",
+  "companyMgmtAdminAccountSectionLabel": "管理员账户",
+  "companyMgmtCreateButton": "创建",
+  "companyMgmtDeleteButton": "删除此公司",
+  "companyMgmtDeleteConfirmTitle": "删除“{name}”？",
+  "@companyMgmtDeleteConfirmTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "companyMgmtDeleteConfirmBody": "此操作将永久删除该公司的所有数据，且无法撤销。请输入公司名称以确认。",
+  "companyMgmtRenameTooltip": "重命名",
+  "companyMgmtRenameTitle": "重命名公司",
+  "companyMgmtSwitchRestartTitle": "公司已切换",
+  "companyMgmtSwitchRestartBody": "Invoiso 需要重启才能完成公司切换。请关闭并重新打开应用程序。",
+  "companyMgmtCreateRestartTitle": "公司已创建",
+  "companyMgmtCreateRestartBody": "您的新公司已准备就绪。请关闭并重新打开应用程序以继续。",
+  "companyMgmtDeleteRestartTitle": "公司已删除",
+  "companyMgmtDeleteRestartBody": "该公司已被删除，Invoiso 已切换到另一家公司。请关闭并重新打开应用程序以继续。",
+  "companyMgmtOnlyCompanyTooltip": "删除此公司前，您至少需要另一家公司",
+  "loginCompanyGearTooltip": "管理公司",
+  "loginCompanySelectorLabel": "公司",
   "customizationEyebrowLabel": "定制服务",
   "customizationHeadline": "为您的业务量身定制",
   "customizationSubtitle": "选择您需要的内容并发送请求。我们将在24小时内回复您。",

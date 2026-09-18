@@ -4064,6 +4064,9 @@ class AppLocalizationsNe extends AppLocalizations {
   String get settingsNavCompanyInfoLabel => 'कम्पनी जानकारी';
 
   @override
+  String get settingsNavCompaniesLabel => 'कम्पनीहरू';
+
+  @override
   String get settingsNavTeamLabel => 'टिम';
 
   @override
@@ -4083,6 +4086,84 @@ class AppLocalizationsNe extends AppLocalizations {
 
   @override
   String get settingsNavSoftwareInfoLabel => 'सफ्टवेयर जानकारी';
+
+  @override
+  String get companyMgmtTitle => 'कम्पनीहरू व्यवस्थापन गर्नुहोस्';
+
+  @override
+  String get companyMgmtActiveBadge => 'सक्रिय';
+
+  @override
+  String get companyMgmtSwitchButton => 'स्विच गर्नुहोस्';
+
+  @override
+  String get companyMgmtSwitchConfirmTitle => 'कम्पनी स्विच गर्ने हो?';
+
+  @override
+  String companyMgmtSwitchConfirmBody(String name) {
+    return '\"$name\" मा स्विच गर्न Invoiso पुनः सुरु हुनेछ।';
+  }
+
+  @override
+  String get companyMgmtNewCompanyButton => '+ नयाँ कम्पनी';
+
+  @override
+  String get companyMgmtNewCompanyTitle => 'नयाँ कम्पनी';
+
+  @override
+  String get companyMgmtAdminAccountSectionLabel => 'एडमिन खाता';
+
+  @override
+  String get companyMgmtCreateButton => 'सिर्जना गर्नुहोस्';
+
+  @override
+  String get companyMgmtDeleteButton => 'यो कम्पनी मेटाउनुहोस्';
+
+  @override
+  String companyMgmtDeleteConfirmTitle(String name) {
+    return '\"$name\" मेटाउने हो?';
+  }
+
+  @override
+  String get companyMgmtDeleteConfirmBody =>
+      'यसले यस कम्पनीको सम्पूर्ण डाटा स्थायी रूपमा मेटाउँछ र यो फिर्ता गर्न सकिँदैन। पुष्टि गर्न कम्पनीको नाम टाइप गर्नुहोस्।';
+
+  @override
+  String get companyMgmtRenameTooltip => 'नाम परिवर्तन गर्नुहोस्';
+
+  @override
+  String get companyMgmtRenameTitle => 'कम्पनीको नाम परिवर्तन गर्नुहोस्';
+
+  @override
+  String get companyMgmtSwitchRestartTitle => 'कम्पनी स्विच भयो';
+
+  @override
+  String get companyMgmtSwitchRestartBody =>
+      'कम्पनी स्विच पूरा गर्न Invoiso लाई पुनः सुरु गर्नुपर्छ। कृपया एप्लिकेसन बन्द गरी पुनः खोल्नुहोस्।';
+
+  @override
+  String get companyMgmtCreateRestartTitle => 'कम्पनी सिर्जना भयो';
+
+  @override
+  String get companyMgmtCreateRestartBody =>
+      'तपाईंको नयाँ कम्पनी तयार छ। जारी राख्न कृपया एप्लिकेसन बन्द गरी पुनः खोल्नुहोस्।';
+
+  @override
+  String get companyMgmtDeleteRestartTitle => 'कम्पनी मेटाइयो';
+
+  @override
+  String get companyMgmtDeleteRestartBody =>
+      'कम्पनी मेटाइयो र Invoiso अर्को कम्पनीमा स्विच भयो। जारी राख्न कृपया एप्लिकेसन बन्द गरी पुनः खोल्नुहोस्।';
+
+  @override
+  String get companyMgmtOnlyCompanyTooltip =>
+      'यो मेटाउनु अघि तपाईंलाई कम्तिमा अर्को एउटा कम्पनी चाहिन्छ';
+
+  @override
+  String get loginCompanyGearTooltip => 'कम्पनीहरू व्यवस्थापन गर्नुहोस्';
+
+  @override
+  String get loginCompanySelectorLabel => 'कम्पनी';
 
   @override
   String get customizationEyebrowLabel => 'अनुकूलन';

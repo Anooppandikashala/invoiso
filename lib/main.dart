@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/common/app_config.dart';
+import 'package:invoiso/database/company_registry_service.dart';
+import 'package:invoiso/database/database_helper.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/providers/locale_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
@@ -18,6 +20,7 @@ import 'package:invoiso/repositories/sqlite/sqlite_payment_repository.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_settings_repository.dart';
 import 'package:invoiso/screens/splash_screen.dart';
 import 'package:invoiso/services/backend_services.dart';
+import 'package:invoiso/utils/window_title.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -67,6 +70,9 @@ Future<void> main() async {
   }
   WidgetsFlutterBinding.ensureInitialized();
   registerFallbackNumberSymbols();
+  await CompanyRegistryService.ensureDefaultCompanyRegistered();
+  DatabaseHelper().setActiveFileNameBeforeFirstOpen(
+      await CompanyRegistryService.getActiveCompanyDbFileName());
   BackendServices.configure(
     settings: SqliteSettingsRepository(),
     companyInfo: SqliteCompanyInfoRepository(),
@@ -90,6 +96,8 @@ Future<void> main() async {
       await windowManager.show();
       await windowManager.focus();
     });
+
+    await refreshWindowTitle();
   }
 
   runApp(ProviderScope(

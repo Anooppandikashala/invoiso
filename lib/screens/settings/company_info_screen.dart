@@ -13,7 +13,9 @@ import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/providers/theme_provider.dart';
 import 'package:invoiso/widgets/language_picker.dart';
 import 'package:invoiso/common/invoiso_colors.dart';
+import 'package:invoiso/database/company_registry_service.dart';
 import 'package:invoiso/models/company_info.dart';
+import 'package:invoiso/utils/window_title.dart';
 
 import 'package:invoiso/common/app_countries.dart';
 
@@ -257,6 +259,18 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
         settingsRepo.setShowAddress(_showAddress),
         settingsRepo.setShowLogo(_showLogo),
       ]);
+
+      // Keep the device-level company registry's label in sync too — it's
+      // what the Login screen's selector and Settings > Companies list show
+      // for this company whenever it *isn't* the active one (the active
+      // company's own name is resolved live from `company_info`, but a
+      // non-active company's label is only ever as fresh as its last sync).
+      final activeCompanyId = await CompanyRegistryService.getActiveCompanyId();
+      if (activeCompanyId != null) {
+        await CompanyRegistryService.renameCompany(activeCompanyId, newInfo.name);
+      }
+
+      await refreshWindowTitle();
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
