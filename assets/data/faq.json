@@ -1,0 +1,188 @@
+{
+  "version": 4,
+  "updated_at": "2026-09-18",
+  "categories": [
+    { "id": "general", "label": "General" },
+    { "id": "data-privacy", "label": "Data & Privacy" },
+    { "id": "features", "label": "Features" },
+    { "id": "india", "label": "India / GST / UPI" },
+    { "id": "technical", "label": "Technical" }
+  ],
+  "items": [
+    {
+      "id": "faq_free",
+      "category": "general",
+      "question": "Is Invoiso completely free?",
+      "answer": "Yes — Invoiso is **100% free** and open source. No subscriptions, no hidden fees, and no premium tiers.\n\nDownload it, use it for as long as you like, and even contribute on GitHub if you want.",
+      "keywords": ["free", "subscription", "price", "cost", "premium"]
+    },
+    {
+      "id": "faq_offline",
+      "category": "general",
+      "question": "Does Invoiso work without an internet connection?",
+      "answer": "Absolutely. Invoiso works **entirely offline** — all your data (customers, products, invoices) is stored right on your device. No internet connection is needed at any point.",
+      "keywords": ["offline", "internet", "no wifi", "no connection"]
+    },
+    {
+      "id": "faq_os",
+      "category": "general",
+      "question": "Which operating systems does Invoiso support?",
+      "answer": "Invoiso runs on **Windows**, **Linux**, and **macOS**. Download the installer for your platform from the GitHub Releases page.",
+      "keywords": ["windows", "linux", "macos", "mac", "os", "platform"]
+    },
+    {
+      "id": "faq_account",
+      "category": "general",
+      "question": "Do I need to create an account to use Invoiso?",
+      "answer": "No account needed. Invoiso requires **no registration**, no email address, and no sign-up of any kind — install it and start creating invoices right away.",
+      "keywords": ["account", "signup", "register", "login required"]
+    },
+    {
+      "id": "faq_data_safe",
+      "category": "data-privacy",
+      "question": "Is my business data safe with Invoiso?",
+      "answer": "Your data **never leaves your device**. Invoiso stores everything in a local SQLite database — no cloud sync, no remote servers.\n\nYou're in full control, and the built-in **backup** feature keeps your data safe and portable.",
+      "keywords": ["data safe", "privacy", "security", "local", "sqlite"]
+    },
+    {
+      "id": "faq_backup",
+      "category": "data-privacy",
+      "question": "How do I back up my invoice data?",
+      "answer": "Go to **Settings → Backup**.\n\nCreate a backup file and save it anywhere on your computer. You can restore it any time from the same screen — no internet or cloud account needed.",
+      "keywords": ["backup", "restore", "export data", "settings"]
+    },
+    {
+      "id": "faq_migrate",
+      "category": "data-privacy",
+      "question": "Can I move my data to another computer?",
+      "answer": "Yes. Use the **Backup** feature to export your database file, copy it to the new machine, install Invoiso there, and restore the backup from Settings.\n\nAll your customers, products, and invoices transfer completely.",
+      "keywords": ["migrate", "transfer", "new computer", "move data"]
+    },
+    {
+      "id": "faq_pdf",
+      "category": "features",
+      "question": "Can I export invoices as PDF?",
+      "answer": "Yes. Generate professional PDF invoices with a single click.\n\nChoose from three templates — **Classic**, **Modern**, and **Minimal** — and add your own logo and branding.",
+      "keywords": ["pdf", "export invoice", "template", "print"]
+    },
+    {
+      "id": "faq_currency",
+      "category": "features",
+      "question": "Does Invoiso support multiple currencies?",
+      "answer": "Yes. Invoiso supports **USD, EUR, GBP, INR, JPY, AED, SGD, AUD, CAD**, and **JMD**. Set your preferred currency in the invoice settings.",
+      "keywords": ["currency", "usd", "inr", "eur", "money format"]
+    },
+    {
+      "id": "faq_language",
+      "category": "features",
+      "question": "Does Invoiso support multiple languages?",
+      "answer": "Yes. The app is available in **English, Hindi, Nepali, Tibetan, French, Spanish**, and **Chinese (Simplified)** — English is the default and fully reviewed.\n\nYou can also set a local-language **alias name** for each product and customer, which shows on invoice PDFs.",
+      "keywords": ["language", "hindi", "translation", "alias name", "locale"]
+    },
+    {
+      "id": "faq_quotation",
+      "category": "features",
+      "question": "Can I create quotations as well as invoices?",
+      "answer": "Yes. When creating a document, choose either **Invoice** or **Quotation** as the type.\n\nBoth generate professional PDFs and are tracked separately in the list with color-coded badges.",
+      "keywords": ["quotation", "quote", "estimate", "document type"]
+    },
+    {
+      "id": "faq_duplicate",
+      "category": "features",
+      "question": "Can I duplicate or clone an existing invoice?",
+      "answer": "Yes. Every invoice has a **Duplicate** button.\n\nClick it, choose Invoice or Quotation, and a new document opens pre-filled with the same customer, products, tax settings, and notes — with a fresh ID and today's date. Great for repeat or recurring work.",
+      "keywords": ["duplicate", "clone", "copy invoice", "recurring"]
+    },
+    {
+      "id": "faq_logo",
+      "category": "features",
+      "question": "How do I add my company logo to an invoice?",
+      "answer": "Go to **Settings → Company Info**, click the logo area, and choose a **PNG or JPG** image (max 512 × 512 px).\n\nYour logo then appears automatically on every generated PDF invoice.",
+      "keywords": ["logo", "company info", "branding", "image"]
+    },
+    {
+      "id": "faq_csv",
+      "category": "features",
+      "question": "Can I export invoice data to CSV or Excel?",
+      "answer": "Yes. The **Invoice Management** screen has an **Export CSV** button in the toolbar for all your invoices, plus a **bulk export** option for just the ones you select.\n\nThe CSV opens fine in Excel, Google Sheets, or any spreadsheet app.",
+      "keywords": ["csv", "excel", "export data", "spreadsheet", "bulk export"]
+    },
+    {
+      "id": "faq_dark_mode",
+      "category": "features",
+      "question": "Does Invoiso support dark mode?",
+      "answer": "Yes, **dark mode** is available in beta. Go to **Settings → Company Info** and toggle it on to switch the dashboard, login screen, and core modules to a dark theme.\n\nIt's still being polished, so let us know if anything looks off.",
+      "keywords": ["dark mode", "theme", "night mode"]
+    },
+    {
+      "id": "faq_gst",
+      "category": "india",
+      "question": "Does Invoiso support GST invoicing?",
+      "answer": "Yes. Invoiso supports **GST-ready invoices** — GSTIN fields for your company and customers, an HSN code per product, and tax rates set globally or per item. Built for Indian businesses filing GST returns.",
+      "keywords": ["gst", "gstin", "hsn", "tax", "india"]
+    },
+    {
+      "id": "faq_upi_qr",
+      "category": "india",
+      "question": "Can I add a UPI QR code to my invoice?",
+      "answer": "Yes. Go to **Settings → Company Info → Payment Settings**, enter your **UPI ID** (e.g. yourname@bank), and turn on the QR toggle.\n\nInvoiso then embeds a scannable UPI QR code in every PDF, so customers can pay instantly via GPay, PhonePe, or Paytm.",
+      "keywords": ["upi", "qr code", "payment settings", "gpay", "phonepe", "paytm"]
+    },
+    {
+      "id": "faq_upi_apps",
+      "category": "india",
+      "question": "Which UPI apps work with the Invoiso QR code?",
+      "answer": "The QR code uses the standard **upi://pay** link format, supported by all major UPI apps — **Google Pay, PhonePe, Paytm, BHIM, Amazon Pay**, and any other UPI-enabled banking app.",
+      "keywords": ["upi apps", "gpay", "phonepe", "paytm", "bhim"]
+    },
+    {
+      "id": "faq_portable",
+      "category": "technical",
+      "question": "Is Invoiso available as a portable version?",
+      "answer": "The **Linux** build is a portable **AppImage** — no installation needed. Download the file, mark it executable, and run it.\n\nThe **Windows** build uses a standard installer.",
+      "keywords": ["portable", "appimage", "installer", "linux"]
+    },
+    {
+      "id": "faq_data_location",
+      "category": "technical",
+      "question": "Where is my data stored on disk?",
+      "answer": "Your database lives in your OS's app-data folder — typically **~/.local/share/invoiso/** on Linux, and **%AppData%\\anoopp\\invoiso\\** on Windows.\n\nIn debug mode, the exact path is also shown on the splash screen at startup.",
+      "keywords": ["data location", "database path", "appdata", "storage"]
+    },
+    {
+      "id": "faq_forgot_password",
+      "category": "technical",
+      "question": "What do I do if I forgot my password?",
+      "answer": "Use the built-in self-service reset — no reinstalling and no losing your invoices, customers, or data. Click \"Forgot password?\" on the login screen, then copy the **Installation ID** shown there and send it to support. Support will send back a **one-time response code**; enter that code in the app and set a new password, and you're back in.",
+      "keywords": ["forgot password", "reset password", "login failed", "installation id", "one time code", "locked out", "admin admin"]
+    },
+    {
+      "id": "faq_source",
+      "category": "technical",
+      "question": "Is the source code available?",
+      "answer": "Yes. Invoiso is fully **open source** under the **MIT license**. The complete source code is on GitHub — contributions, bug reports, and feature requests are all welcome.",
+      "keywords": ["source code", "open source", "mit licence", "github"]
+    },
+    {
+      "id": "faq_vyapar",
+      "category": "technical",
+      "question": "Is Invoiso a free alternative to Vyapar?",
+      "answer": "Yes. Invoiso is a free, open-source alternative to **Vyapar** for Windows, Linux, and macOS.\n\nUnlike Vyapar, Invoiso needs **no account or phone signup**, is completely free with **no paid tier**, and is open source under the MIT license. Both apps support offline billing and GST-ready invoices with UPI QR codes — but Invoiso also runs on **Linux and macOS**, which Vyapar doesn't.",
+      "keywords": ["vyapar", "alternative", "comparison"]
+    },
+    {
+      "id": "faq_gst_india_business",
+      "category": "technical",
+      "question": "Can I use Invoiso as free GST billing software for my business in India?",
+      "answer": "Yes. Invoiso works well as **free GST billing software** for Indian businesses — GSTIN fields, HSN codes, **CGST/SGST/IGST** tax rates, and UPI QR payments on PDFs, all generated entirely offline.\n\nNo subscription, no account, no internet required.",
+      "keywords": ["gst billing software", "cgst", "sgst", "igst", "india business"]
+    },
+    {
+      "id": "faq_business_types",
+      "category": "technical",
+      "question": "Which types of businesses in India use Invoiso?",
+      "answer": "All kinds — **kirana shops, retailers, hardware stores, textile sellers, traders, wholesalers**, service businesses, repair shops, freelancers, consultants, and agencies.\n\nIf you need offline GST billing, PDF invoices, and payment tracking without a subscription, Invoiso fits.",
+      "keywords": ["business types", "kirana", "retailer", "wholesaler", "freelancer"]
+    }
+  ]
+}

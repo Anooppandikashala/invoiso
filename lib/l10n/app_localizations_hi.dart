@@ -281,6 +281,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get actionRefresh => 'रीफ्रेश करें';
 
   @override
+  String get helpSearchTooltip => 'Search Help & Settings';
+
+  @override
   String dashboardOutOfStockCountLabel(int count) {
     return '$count स्टॉक में नहीं';
   }

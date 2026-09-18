@@ -284,6 +284,9 @@ class AppLocalizationsNe extends AppLocalizations {
   String get actionRefresh => 'रिफ्रेस गर्नुहोस्';
 
   @override
+  String get helpSearchTooltip => 'Search Help & Settings';
+
+  @override
   String dashboardOutOfStockCountLabel(int count) {
     return '$count स्टकमा छैन';
   }

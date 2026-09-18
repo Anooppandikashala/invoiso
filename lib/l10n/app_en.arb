@@ -122,6 +122,7 @@
   "dashboardSupportAction": "Support",
   "dashboardOverviewTitle": "Dashboard Overview",
   "actionRefresh": "Refresh",
+  "helpSearchTooltip": "Search Help & Settings",
   "dashboardOutOfStockCountLabel": "{count} out of stock",
   "@dashboardOutOfStockCountLabel": {
     "placeholders": {

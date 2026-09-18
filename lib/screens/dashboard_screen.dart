@@ -8,7 +8,6 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:invoiso/common/app_config.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/providers/app_config_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
@@ -20,6 +19,7 @@ import 'package:invoiso/common/invoiso_colors.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/product.dart';
 import 'package:invoiso/common/common.dart';
+import 'package:invoiso/screens/help/help_search_screen.dart';
 import 'package:invoiso/screens/settings/settings_screen.dart';
 import 'package:invoiso/services/invoice_pdf_services.dart';
 import 'package:invoiso/services/pdf_service.dart';
@@ -615,6 +615,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
             ),
 
+            // ── Search Help & Settings ──────────────────
+            _buildSearchNavItem(),
+            const SizedBox(height: 4),
+
             // ── User Info ──────────────────────────────
             Divider(
                 color: Theme.of(context).colorScheme.outlineVariant,
@@ -680,9 +684,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               message: AppLocalizations.of(context)!
                                   .dashboardSupportTooltip,
                               child: InkWell(
-                                onTap: () => launchUrl(
-                                    Uri.parse(AppConfig.supportForm),
-                                    mode: LaunchMode.externalApplication),
+                                onTap: () => showHelpSearchDialog(context),
                                 borderRadius: BorderRadius.circular(6),
                                 child: Padding(
                                   padding: EdgeInsets.all(6),
@@ -779,9 +781,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           message: AppLocalizations.of(context)!
                               .dashboardSupportTooltip,
                           child: InkWell(
-                            onTap: () => launchUrl(
-                                Uri.parse(AppConfig.supportForm),
-                                mode: LaunchMode.externalApplication),
+                            onTap: () => showHelpSearchDialog(context),
                             borderRadius: BorderRadius.circular(6),
                             child: Padding(
                               padding: EdgeInsets.all(6),
@@ -1072,6 +1072,74 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSearchNavItem() {
+    final primary = Theme.of(context).primaryColor;
+    final label = AppLocalizations.of(context)!.helpSearchTooltip;
+    final onSurfaceVariant = Theme.of(context).colorScheme.onSurfaceVariant;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useExpanded = constraints.maxWidth > 110;
+
+        if (!useExpanded) {
+          return Tooltip(
+            message: label,
+            preferBelow: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+                child: InkWell(
+                  onTap: () => showHelpSearchDialog(context),
+                  borderRadius: BorderRadius.circular(8),
+                  hoverColor: primary.withValues(alpha: 0.06),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Icon(Icons.search, color: onSurfaceVariant, size: 20),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            child: InkWell(
+              onTap: () => showHelpSearchDialog(context),
+              borderRadius: BorderRadius.circular(8),
+              hoverColor: primary.withValues(alpha: 0.06),
+              splashColor: primary.withValues(alpha: 0.1),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                child: Row(
+                  children: [
+                    Icon(Icons.search, color: onSurfaceVariant, size: 18),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                          color: onSurfaceVariant,
+                          fontWeight: FontWeight.w400,
+                          fontSize: 13.5,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),

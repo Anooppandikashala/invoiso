@@ -612,6 +612,12 @@ abstract class AppLocalizations {
   /// **'Refresh'**
   String get actionRefresh;
 
+  /// No description provided for @helpSearchTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Help & Settings'**
+  String get helpSearchTooltip;
+
   /// No description provided for @dashboardOutOfStockCountLabel.
   ///
   /// In en, this message translates to:
