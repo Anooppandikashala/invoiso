@@ -14,6 +14,7 @@ import 'package:invoiso/screens/settings/pdf_settings_screen_v2.dart';
 import 'package:invoiso/screens/settings/product_columns_settings_screen.dart';
 import 'package:invoiso/screens/settings/app_info_screen.dart';
 import 'package:invoiso/screens/settings/company_info_screen.dart';
+import 'package:invoiso/screens/settings/company_management_screen.dart';
 import 'package:invoiso/screens/settings/customization_screen.dart';
 // import 'package:invoiso/screens/settings/user_management_screen.dart';
 import 'package:invoiso/screens/settings/user_management_screen_v2.dart';
@@ -159,14 +160,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     // Accessibility sits right before Software Info (its old slot); Software
     // Info itself shifts one further out.
     final int accessibilityPosition = customizeIndex + 1;
-    final int softwareInfoPosition = customizeIndex + 2;
+    // Companies is offline-edition-only (cloud manages multi-tenancy server
+    // side), so it only exists as a rail position at all when !cfg.isCloud —
+    // placed right above Software Info, same pattern as accessibility above,
+    // to avoid disturbing the protected 0-4 raw positions. Software Info
+    // shifts one further out only when Companies actually occupies a slot.
+    final int companiesPosition = customizeIndex + 2;
+    final int softwareInfoPosition =
+        cfg.isCloud ? customizeIndex + 2 : customizeIndex + 3;
     // When kIsCloud, Backup (1) and Users (2) tabs are hidden. If the edition
     // also supplies an extraSettingsTab (e.g. cloud's Team Management), it
     // takes rail slot 1 and maps to canonical case 7; everything after it
     // shifts down by 1 instead of 2. Offset back to match canonical case
     // numbers used below.
     final int idx;
-    if (_selectedIndex == productColumnsPosition) {
+    if (!cfg.isCloud && _selectedIndex == companiesPosition) {
+      idx = 10;
+    } else if (_selectedIndex == productColumnsPosition) {
       idx = 8;
     } else if (_selectedIndex == customizeIndex) {
       idx = 6;
@@ -221,6 +231,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         return const ProductColumnsSettingsScreen();
       case 9:
         return const AccessibilityScreen();
+      case 10:
+        return CompanyManagementScreen(currentUser: widget.currentUser);
       default:
         return _buildDummySection(
             AppLocalizations.of(context)!.invoiceSettingsAppBarTitle);
@@ -287,6 +299,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 icon: const Icon(Icons.accessibility_new_rounded),
                 label: Text(l10n.settingsNavAccessibilityLabel),
               ),
+              if (!cfg.isCloud)
+                NavigationRailDestination(
+                  icon: const Icon(Icons.corporate_fare),
+                  label: Text(l10n.settingsNavCompaniesLabel),
+                ),
               NavigationRailDestination(
                 icon: Stack(
                   clipBehavior: Clip.none,

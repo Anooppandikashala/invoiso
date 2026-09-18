@@ -1072,6 +1072,7 @@
   "productColumnsExtraCostSubtitle": "Cargo adicional fijo opcional en una línea de factura.",
   "settingsOptionsComingSoonMessage": "Opciones próximamente...",
   "settingsNavCompanyInfoLabel": "Info. de la empresa",
+  "settingsNavCompaniesLabel": "Empresas",
   "settingsNavTeamLabel": "Equipo",
   "settingsNavBackupLabel": "Copia de seguridad",
   "settingsNavUsersLabel": "Usuarios",
@@ -1079,6 +1080,39 @@
   "settingsNavCustomizeLabel": "Personalizar",
   "settingsNavAccessibilityLabel": "Accesibilidad",
   "settingsNavSoftwareInfoLabel": "Info. del software",
+  "companyMgmtTitle": "Gestionar empresas",
+  "companyMgmtActiveBadge": "Activa",
+  "companyMgmtSwitchButton": "Cambiar",
+  "companyMgmtSwitchConfirmTitle": "¿Cambiar de empresa?",
+  "companyMgmtSwitchConfirmBody": "Invoiso se reiniciará para cambiar a \"{name}\".",
+  "@companyMgmtSwitchConfirmBody": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "companyMgmtNewCompanyButton": "+ Nueva empresa",
+  "companyMgmtNewCompanyTitle": "Nueva empresa",
+  "companyMgmtAdminAccountSectionLabel": "Cuenta de administrador",
+  "companyMgmtCreateButton": "Crear",
+  "companyMgmtDeleteButton": "Eliminar esta empresa",
+  "companyMgmtDeleteConfirmTitle": "¿Eliminar \"{name}\"?",
+  "@companyMgmtDeleteConfirmTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "companyMgmtDeleteConfirmBody": "Esto elimina permanentemente todos los datos de esta empresa y no se puede deshacer. Escriba el nombre de la empresa para confirmar.",
+  "companyMgmtRenameTooltip": "Renombrar",
+  "companyMgmtRenameTitle": "Renombrar empresa",
+  "companyMgmtSwitchRestartTitle": "Empresa cambiada",
+  "companyMgmtSwitchRestartBody": "Invoiso necesita reiniciarse para completar el cambio de empresa. Cierre y vuelva a abrir la aplicación.",
+  "companyMgmtCreateRestartTitle": "Empresa creada",
+  "companyMgmtCreateRestartBody": "Su nueva empresa está lista. Cierre y vuelva a abrir la aplicación para continuar.",
+  "companyMgmtDeleteRestartTitle": "Empresa eliminada",
+  "companyMgmtDeleteRestartBody": "La empresa fue eliminada e Invoiso cambió a otra. Cierre y vuelva a abrir la aplicación para continuar.",
+  "companyMgmtOnlyCompanyTooltip": "Necesita al menos otra empresa antes de poder eliminar esta",
+  "loginCompanyGearTooltip": "Gestionar empresas",
+  "loginCompanySelectorLabel": "Empresa",
   "customizationEyebrowLabel": "PERSONALIZACIÓN",
   "customizationHeadline": "Adaptado a tu negocio",
   "customizationSubtitle": "Elige lo que necesitas y envía una solicitud. Te responderemos dentro de 24 horas.",

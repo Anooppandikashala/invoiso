@@ -2297,6 +2297,7 @@
   "productColumnsExtraCostSubtitle": "Optional flat extra charge on an invoice line item.",
   "settingsOptionsComingSoonMessage": "Options coming soon...",
   "settingsNavCompanyInfoLabel": "Company Info",
+  "settingsNavCompaniesLabel": "Companies",
   "settingsNavTeamLabel": "Team",
   "settingsNavBackupLabel": "Backup",
   "settingsNavUsersLabel": "Users",
@@ -2304,6 +2305,39 @@
   "settingsNavCustomizeLabel": "Customize",
   "settingsNavAccessibilityLabel": "Accessibility",
   "settingsNavSoftwareInfoLabel": "Software Info",
+  "companyMgmtTitle": "Manage Companies",
+  "companyMgmtActiveBadge": "Active",
+  "companyMgmtSwitchButton": "Switch",
+  "companyMgmtSwitchConfirmTitle": "Switch Company?",
+  "companyMgmtSwitchConfirmBody": "Invoiso will restart to switch to \"{name}\".",
+  "@companyMgmtSwitchConfirmBody": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "companyMgmtNewCompanyButton": "+ New Company",
+  "companyMgmtNewCompanyTitle": "New Company",
+  "companyMgmtAdminAccountSectionLabel": "Admin Account",
+  "companyMgmtCreateButton": "Create",
+  "companyMgmtDeleteButton": "Delete This Company",
+  "companyMgmtDeleteConfirmTitle": "Delete \"{name}\"?",
+  "@companyMgmtDeleteConfirmTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "companyMgmtDeleteConfirmBody": "This permanently deletes all of this company's data and cannot be undone. Type the company name to confirm.",
+  "companyMgmtRenameTooltip": "Rename",
+  "companyMgmtRenameTitle": "Rename Company",
+  "companyMgmtSwitchRestartTitle": "Company Switched",
+  "companyMgmtSwitchRestartBody": "Invoiso needs to restart to finish switching companies. Please close and reopen the application.",
+  "companyMgmtCreateRestartTitle": "Company Created",
+  "companyMgmtCreateRestartBody": "Your new company is ready. Please close and reopen the application to continue.",
+  "companyMgmtDeleteRestartTitle": "Company Deleted",
+  "companyMgmtDeleteRestartBody": "The company was deleted and Invoiso switched to another one. Please close and reopen the application to continue.",
+  "companyMgmtOnlyCompanyTooltip": "You need at least one other company before you can delete this one",
+  "loginCompanyGearTooltip": "Manage companies",
+  "loginCompanySelectorLabel": "Company",
   "customizationEyebrowLabel": "CUSTOMIZATION",
   "customizationHeadline": "Tailored just for your business",
   "customizationSubtitle": "Pick what you need and send a request. We'll get back to you within 24 hours.",

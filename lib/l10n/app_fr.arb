@@ -1072,6 +1072,7 @@
   "productColumnsExtraCostSubtitle": "Frais supplémentaires fixes facultatifs sur une ligne de facture.",
   "settingsOptionsComingSoonMessage": "Options bientôt disponibles...",
   "settingsNavCompanyInfoLabel": "Infos entreprise",
+  "settingsNavCompaniesLabel": "Entreprises",
   "settingsNavTeamLabel": "Équipe",
   "settingsNavBackupLabel": "Sauvegarde",
   "settingsNavUsersLabel": "Utilisateurs",
@@ -1079,6 +1080,39 @@
   "settingsNavCustomizeLabel": "Personnaliser",
   "settingsNavAccessibilityLabel": "Accessibilité",
   "settingsNavSoftwareInfoLabel": "Infos logiciel",
+  "companyMgmtTitle": "Gérer les entreprises",
+  "companyMgmtActiveBadge": "Active",
+  "companyMgmtSwitchButton": "Changer",
+  "companyMgmtSwitchConfirmTitle": "Changer d'entreprise ?",
+  "companyMgmtSwitchConfirmBody": "Invoiso va redémarrer pour passer à « {name} ».",
+  "@companyMgmtSwitchConfirmBody": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "companyMgmtNewCompanyButton": "+ Nouvelle entreprise",
+  "companyMgmtNewCompanyTitle": "Nouvelle entreprise",
+  "companyMgmtAdminAccountSectionLabel": "Compte administrateur",
+  "companyMgmtCreateButton": "Créer",
+  "companyMgmtDeleteButton": "Supprimer cette entreprise",
+  "companyMgmtDeleteConfirmTitle": "Supprimer « {name} » ?",
+  "@companyMgmtDeleteConfirmTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "companyMgmtDeleteConfirmBody": "Cela supprime définitivement toutes les données de cette entreprise et ne peut pas être annulé. Tapez le nom de l'entreprise pour confirmer.",
+  "companyMgmtRenameTooltip": "Renommer",
+  "companyMgmtRenameTitle": "Renommer l'entreprise",
+  "companyMgmtSwitchRestartTitle": "Entreprise changée",
+  "companyMgmtSwitchRestartBody": "Invoiso doit redémarrer pour terminer le changement d'entreprise. Veuillez fermer puis rouvrir l'application.",
+  "companyMgmtCreateRestartTitle": "Entreprise créée",
+  "companyMgmtCreateRestartBody": "Votre nouvelle entreprise est prête. Veuillez fermer puis rouvrir l'application pour continuer.",
+  "companyMgmtDeleteRestartTitle": "Entreprise supprimée",
+  "companyMgmtDeleteRestartBody": "L'entreprise a été supprimée et Invoiso est passé à une autre. Veuillez fermer puis rouvrir l'application pour continuer.",
+  "companyMgmtOnlyCompanyTooltip": "Il vous faut au moins une autre entreprise avant de pouvoir supprimer celle-ci",
+  "loginCompanyGearTooltip": "Gérer les entreprises",
+  "loginCompanySelectorLabel": "Entreprise",
   "customizationEyebrowLabel": "PERSONNALISATION",
   "customizationHeadline": "Adapté à votre entreprise",
   "customizationSubtitle": "Choisissez ce dont vous avez besoin et envoyez une demande. Nous vous répondrons sous 24 heures.",
