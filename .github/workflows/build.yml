@@ -20,7 +20,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -78,7 +78,7 @@ jobs:
           find dist -name "invoiso-*-windows-setup.exe"
 
       - name: Upload Windows Installer
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Invoiso-Windows-Installer
           path: dist/*/invoiso-*-windows-setup.exe
@@ -91,7 +91,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: subosito/flutter-action@v2
         with:
@@ -139,7 +139,7 @@ jobs:
           mv "$DEB_FILE" Invoiso-$VERSION-ubuntu22.deb
 
       - name: Upload .deb
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Invoiso-Ubuntu22.deb
           path: Invoiso-*-ubuntu22.deb
@@ -154,7 +154,7 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: subosito/flutter-action@v2
         with:
@@ -237,7 +237,7 @@ jobs:
           mv "$DEB_FILE" Invoiso-$VERSION-ubuntu24.deb
 
       - name: Upload .deb
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Invoiso-Ubuntu24.deb
           path: Invoiso-*-ubuntu24.deb
@@ -250,7 +250,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: subosito/flutter-action@v2
         with:
@@ -314,7 +314,7 @@ jobs:
           appimage-builder --recipe AppImageBuilder.yml --skip-test
 
       - name: Upload AppImage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Invoiso-AppImage
           path: "*.AppImage"
@@ -332,7 +332,7 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: subosito/flutter-action@v2
         with:
@@ -432,7 +432,7 @@ jobs:
             "Invoiso-${VERSION}-ubuntu24-x86_64.AppImage"
 
       - name: Upload AppImage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Invoiso-AppImage-Ubuntu24
           path: "Invoiso-*-ubuntu24-x86_64.AppImage"
@@ -447,7 +447,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -517,7 +517,7 @@ jobs:
           echo "Renamed to: $FINAL_DMG"
 
       - name: Upload macOS DMG
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Invoiso-macOS
           path: dist/invoiso-*-macos.dmg
@@ -533,7 +533,7 @@ jobs:
 
     steps:
       - name: Download Windows artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: Invoiso-Windows-Installer
           path: release-assets/
@@ -541,35 +541,35 @@ jobs:
 
 
       - name: Download Ubuntu22 .deb
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: Invoiso-Ubuntu22.deb
           path: release-assets/
         continue-on-error: true
 
       - name: Download AppImage
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: Invoiso-AppImage
           path: release-assets/
         continue-on-error: true
 
       - name: Download Ubuntu24 .deb
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: Invoiso-Ubuntu24.deb
           path: release-assets/
         continue-on-error: true
 
       - name: Download Ubuntu24 AppImage
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: Invoiso-AppImage-Ubuntu24
           path: release-assets/
         continue-on-error: true
 
       - name: Download macOS DMG
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: Invoiso-macOS
           path: release-assets/
@@ -579,7 +579,7 @@ jobs:
         run: find release-assets -type f
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
           name: Invoiso ${{ github.ref_name }}
