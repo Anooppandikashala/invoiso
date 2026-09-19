@@ -35,6 +35,7 @@ class Invoice {
   bool hideInvoiceNumber; // hide real invoice number in PDF output only
   String? customInvoiceNumber; // shown instead of invoiceNumber in PDF when hideInvoiceNumber is true
   List<CustomFieldValue> customFields; // user-defined per-invoice fields (e.g. Vehicle No, Delivery Note)
+  bool isDraft; // saved as a draft — no invoiceNumber yet, excluded from revenue/tax aggregates
 
   Invoice({
     required this.id,
@@ -62,10 +63,12 @@ class Invoice {
     this.hideInvoiceNumber = false,
     this.customInvoiceNumber,
     this.customFields = const [],
+    this.isDraft = false,
   });
 
   /// Text to render for the invoice number in PDF/receipt output, or null to omit the line entirely.
   String? pdfNumberText(String invoicePrefix, {bool showLeadingZeros = true}) {
+    if (isDraft) return null; // no real number assigned yet
     if (hideInvoiceNumber) {
       final c = customInvoiceNumber?.trim();
       return (c != null && c.isNotEmpty) ? c : null;
