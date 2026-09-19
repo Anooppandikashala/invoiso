@@ -91,6 +91,14 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   List<Product> products = [];
   List<Product> filteredProducts = [];
   Map<String, ProductMetadata> _productMetadata = {};
+
+  // Freeze a detached copy of the product's current metadata onto a new line so
+  // it can print on the PDF and never shift if the catalogue product is edited.
+  ProductMetadata? _snapshotMetadata(String productId) {
+    final m = _productMetadata[productId];
+    return (m == null || m.isEmpty) ? null : m.copy();
+  }
+
   Timer? _productSearchDebounce;
   int _productSearchRequestId = 0;
   static const int _productFetchLimit = 30;
@@ -162,6 +170,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   double _previousBalanceDue = 0.0;
   bool _isPreviousBalanceLoading = false;
   bool _isSavingCustomer = false;
+  bool _customerFieldsUnlocked = false;
+  bool get _customerFieldsLocked =>
+      selectedCustomer != null && !_customerFieldsUnlocked;
   int _previousBalanceRequestSerial = 0;
   BusinessType _businessType = BusinessType.both;
   String _datePattern = 'dd/MM/yyyy';
@@ -171,6 +182,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   bool _customFieldsEnabled = false;
   List<CustomFieldDef> _customFieldDefs = [];
   Map<String, String> _customFieldValues = {}; // defId -> value, filled via _showCustomFieldsDialogV2
+  bool _customFieldsCollapsed = false;
 
   TaxMode get _taxMode {
     if (!_isTaxEnabled) return TaxMode.none;
@@ -270,6 +282,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                 extraCost: i.extraCost,
                 unit: i.unit,
                 description: i.description,
+                metadata: i.metadata,
                 discountPerUnit: i.discountPerUnit,
                 isProductSaved: i.isProductSaved,
               ))
@@ -766,6 +779,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   extraCost: extraCost,
                   unit: dialogUnit.trim(),
                   description: descriptionController.text.trim(),
+                  metadata: _snapshotMetadata(product.id),
                   discountPerUnit: discountPerUnit),
               insertAt: insertAt);
         }
@@ -802,6 +816,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   extraCost: extraCost,
                   unit: dialogUnit.trim(),
                   description: descriptionController.text.trim(),
+                  metadata: _snapshotMetadata(product.id),
                   discountPerUnit: discountPerUnit),
               insertAt: insertAt);
         }
@@ -816,6 +831,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                 extraCost: extraCost,
                 unit: dialogUnit.trim(),
                 description: descriptionController.text.trim(),
+                metadata: _snapshotMetadata(product.id),
                 discountPerUnit: discountPerUnit),
             insertAt: insertAt);
       }
@@ -1182,15 +1198,18 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   /// customer's id — doing so would link invoiceId -> customerId while the
   /// snapshot's name/address/etc silently disagree with that customer's
   /// actual row. Falls back to a fresh, unlinked id in that case.
+  /// Address is excluded (edited often, not identity-bearing) and the rest
+  /// compare case-insensitively so minor casing/whitespace edits don't
+  /// fragment the same customer into a new id.
   bool get _customerFormMatchesSelected {
     final sel = selectedCustomer;
-    return sel != null &&
-        sel.name == nameController.text &&
-        sel.email == emailController.text &&
-        sel.phone == phoneController.text &&
-        sel.address == addressController.text &&
-        sel.gstin == gstinController.text &&
-        sel.businessName == businessNameController.text;
+    if (sel == null) return false;
+    bool eq(String a, String b) => a.trim().toLowerCase() == b.trim().toLowerCase();
+    return eq(sel.name, nameController.text) &&
+        eq(sel.email, emailController.text) &&
+        eq(sel.phone, phoneController.text) &&
+        eq(sel.gstin, gstinController.text) &&
+        eq(sel.businessName, businessNameController.text);
   }
 
   Customer _resolveInvoiceCustomer() {
@@ -1645,6 +1664,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   extraCost: extraCost,
                   unit: dialogUnit.trim(),
                   description: descriptionController.text.trim(),
+                  metadata: item.metadata,
                   discountPerUnit: discountPerUnit,
                 );
                 if(!mounted) return;
@@ -2057,6 +2077,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       addressController.text = customer?.address ?? '';
       gstinController.text = customer?.gstin ?? '';
       businessNameController.text = customer?.businessName ?? '';
+      _customerFieldsUnlocked = false;
     });
     await _loadPreviousBalanceDue(customer);
   }
@@ -2437,6 +2458,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       addressController.text = latest.address;
       gstinController.text = latest.gstin;
       businessNameController.text = latest.businessName;
+      _customerFieldsUnlocked = false;
     });
     if(!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -2458,6 +2480,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       businessNameController.clear();
       _previousBalanceDue = 0.0;
       _isPreviousBalanceLoading = false;
+      _customerFieldsUnlocked = false;
     });
   }
 
@@ -2517,81 +2540,130 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     // sits in should still line up with the Customer form, not balloon out
     // or shrink to almost nothing. Overflow scrolls internally.
     return Container(
-      height: 165,
+      height: _customFieldsCollapsed ? null : 165,
       decoration: _flatCardDecorationV2(context),
       padding: const EdgeInsets.all(AppPadding.medium),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.max,
+        mainAxisSize:
+            _customFieldsCollapsed ? MainAxisSize.min : MainAxisSize.max,
         children: [
-          Row(
-            children: [
-              Icon(Icons.dashboard_customize_outlined,
-                  size: 16,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'CUSTOM FIELDS',
-                  style: const TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.6),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  '${filled.length}/${_customFieldDefs.length}',
-                  style: const TextStyle(
-                      fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold),
-                ),
-              ),
-              const SizedBox(width: 8),
-              OutlinedButton.icon(
-                onPressed: _showCustomFieldsDialogV2,
-                icon: const Icon(Icons.edit_outlined, size: 16),
-                label: Text(filled.isEmpty ? 'Add' : 'Edit'),
-                style: OutlinedButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: filled.isEmpty
-                ? Align(
-                    alignment: Alignment.topLeft,
+          Builder(builder: (context) {
+            final title = InkWell(
+              onTap: () {
+                if (!mounted) return;
+                setState(
+                    () => _customFieldsCollapsed = !_customFieldsCollapsed);
+              },
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                      _customFieldsCollapsed
+                          ? Icons.chevron_right
+                          : Icons.expand_more,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  const SizedBox(width: 4),
+                  Icon(Icons.dashboard_customize_outlined,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  const SizedBox(width: 8),
+                  Flexible(
                     child: Text(
-                      'No custom fields filled yet.',
-                      style: TextStyle(
+                      'CUSTOM FIELDS',
+                      style: const TextStyle(
                           fontSize: 12,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant),
-                    ),
-                  )
-                : SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        for (var i = 0; i < filled.length; i += 2)
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              tile(filled[i]),
-                              tile(i + 1 < filled.length ? filled[i + 1] : null),
-                            ],
-                          ),
-                      ],
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.6),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-          ),
+                ],
+              ),
+            );
+            final controls = Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '${filled.length}/${_customFieldDefs.length}',
+                    style: const TextStyle(
+                        fontSize: 11,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                OutlinedButton.icon(
+                  onPressed: _showCustomFieldsDialogV2,
+                  icon: const Icon(Icons.edit_outlined, size: 16),
+                  label: Text(filled.isEmpty ? 'Add' : 'Edit'),
+                  style: OutlinedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    shape: RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.circular(AppBorderRadius.xsmall)),
+                  ),
+                ),
+              ],
+            );
+            // Original single-row header; falls back to title-above-controls
+            // once the column gets too narrow for both to fit side by side
+            // (e.g. the Custom Fields card in a 3-column desktop layout).
+            return LayoutBuilder(builder: (context, constraints) {
+              if (constraints.maxWidth < 260) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [title, const SizedBox(height: 6), controls],
+                );
+              }
+              return Row(
+                children: [Expanded(child: title), const SizedBox(width: 8), controls],
+              );
+            });
+          }),
+          if (!_customFieldsCollapsed) ...[
+            const SizedBox(height: 12),
+            Expanded(
+              child: filled.isEmpty
+                  ? Align(
+                      alignment: Alignment.topLeft,
+                      child: Text(
+                        'No custom fields filled yet.',
+                        style: TextStyle(
+                            fontSize: 12,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant),
+                      ),
+                    )
+                  : SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          for (var i = 0; i < filled.length; i += 2)
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                tile(filled[i]),
+                                tile(i + 1 < filled.length
+                                    ? filled[i + 1]
+                                    : null),
+                              ],
+                            ),
+                        ],
+                      ),
+                    ),
+            ),
+          ],
         ],
       ),
     );
@@ -4016,7 +4088,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   spacing: 4,
                   runSpacing: 4,
                   children: [
-                    if (selectedCustomer == null || !_customerFormMatchesSelected)
+                    if (nameController.text.trim().isNotEmpty &&
+                        (selectedCustomer == null || !_customerFormMatchesSelected))
                       TextButton.icon(
                         onPressed: _isSavingCustomer ? null : _saveCustomer,
                         icon: _isSavingCustomer
@@ -4048,6 +4121,14 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                     ),
                     if (selectedCustomer != null &&
                         selectedCustomer!.id.trim().isNotEmpty) ...[
+                      if (!_customerFieldsUnlocked)
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined, size: 18),
+                          tooltip: 'Edit customer details',
+                          visualDensity: VisualDensity.compact,
+                          onPressed: () =>
+                              setState(() => _customerFieldsUnlocked = true),
+                        ),
                       IconButton(
                         icon: const Icon(Icons.refresh, size: 18),
                         tooltip: AppLocalizations.of(context)!.createInvoiceRefreshCustomerTooltip,
@@ -4084,13 +4165,26 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
             ],
           ),
           if (_customerDetailsExpanded) ...[
-          const SizedBox(height: 14),
+          const SizedBox(height: 2),
+          if (selectedCustomer == null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Text(
+                'New or walk-in customer — enter their details below.',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontStyle: FontStyle.italic,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: TextField(
                   controller: nameController,
+                  readOnly: _customerFieldsLocked,
                   onChanged: (_) => setState(() {}),
                   decoration: _flatFieldDecorationV2(AppLocalizations.of(context)!.fieldCustomerNameRequiredLabel),
                 ),
@@ -4099,6 +4193,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               Expanded(
                 child: TextField(
                   controller: businessNameController,
+                  readOnly: _customerFieldsLocked,
                   onChanged: (_) => setState(() {}),
                   decoration: _flatFieldDecorationV2(AppLocalizations.of(context)!.fieldBusinessNameLabel),
                 ),
@@ -4107,6 +4202,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               Expanded(
                 child: TextField(
                   controller: phoneController,
+                  readOnly: _customerFieldsLocked,
                   onChanged: (_) => setState(() {}),
                   decoration: _flatFieldDecorationV2(AppLocalizations.of(context)!.fieldPhoneLabel),
                 ),
@@ -4120,6 +4216,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                 Expanded(
                   child: TextField(
                     controller: gstinController,
+                    readOnly: _customerFieldsLocked,
                     onChanged: (_) => setState(() {}),
                     decoration: _flatFieldDecorationV2(AppLocalizations.of(context)!.fieldGstinVatLabel),
                   ),
@@ -4129,6 +4226,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               Expanded(
                 child: TextField(
                   controller: emailController,
+                  readOnly: _customerFieldsLocked,
                   onChanged: (_) => setState(() {}),
                   decoration: _flatFieldDecorationV2(AppLocalizations.of(context)!.fieldEmailLabel),
                 ),

@@ -182,4 +182,54 @@ void main() {
     await outputFile.parent.create(recursive: true);
     await outputFile.writeAsBytes(await doc.save());
   });
+
+  for (final landscape in [false, true]) {
+    test(
+        'gridClassic A4 renders all metadata columns (${landscape ? 'landscape' : 'portrait'})',
+        () async {
+      final inv = _sampleInvoice();
+      for (final it in inv.items) {
+        it.metadata = ProductMetadata(
+          productId: it.product.id,
+          storageLocation: 'Rack B-3',
+          containerNumber: 'CN-90211',
+          batchNumber: 'B/2026/07',
+          expiryDate: '2027-01-31',
+          manufactureDate: '2026-01-31',
+          manufactureName: 'ACC Cements',
+          supplierName: 'ACC Ltd',
+          skuCode: 'SKU-CEM-50',
+          notes: 'handle dry',
+        );
+      }
+      final doc = pw.Document();
+      doc.addPage(buildGridClassicTemplate(
+        inv,
+        _company,
+        'Rs.',
+        '',
+        pageFormat: PdfPageFormat.a4,
+        landscape: landscape,
+        showTotalQuantity: true,
+        datePattern: 'dd MMM yyyy',
+        metadataColumns: const {
+          'storageLocation': true,
+          'containerNumber': true,
+          'batchNumber': true,
+          'expiryDate': true,
+          'manufactureDate': true,
+          'manufactureName': true,
+          'supplierName': true,
+          'skuCode': true,
+          'notes': true,
+        },
+      ));
+      final bytes = await doc.save();
+      expect(bytes, isNotEmpty);
+      final f = File(
+          'output/invoiso_grid_pdf_metadata_${landscape ? 'landscape' : 'portrait'}.pdf');
+      await f.parent.create(recursive: true);
+      await f.writeAsBytes(bytes);
+    });
+  }
 }

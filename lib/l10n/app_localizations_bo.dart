@@ -284,6 +284,9 @@ class AppLocalizationsBo extends AppLocalizations {
   String get actionRefresh => 'གསར་སྒྱུར།';
 
   @override
+  String get helpSearchTooltip => 'Search Help & Settings';
+
+  @override
   String dashboardOutOfStockCountLabel(int count) {
     return '$count ཚོང་ཟོག་ཟད་སོང་།';
   }
@@ -2072,6 +2075,9 @@ class AppLocalizationsBo extends AppLocalizations {
   String get productMgmtManufactureDateLabel => 'བཟོ་སྐྲུན་ཉིན་ཚེས།';
 
   @override
+  String get productMgmtManufactureNameLabel => 'Manufacturer Name';
+
+  @override
   String get productMgmtSupplierNameLabel => 'སྐྱེལ་འདྲེན་པའི་མིང་།';
 
   @override
@@ -2150,6 +2156,9 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get productMgmtCsvDescManufactureDate => 'བཟོ་སྐྲུན་ཉིན་ཚེས།';
+
+  @override
+  String get productMgmtCsvDescManufactureName => 'Manufacturer name';
 
   @override
   String get productMgmtCsvDescSupplierName => 'སྐྱེལ་འདྲེན་པའི་མིང་།';
@@ -2495,6 +2504,9 @@ class AppLocalizationsBo extends AppLocalizations {
   String get reportsAllCurrenciesLabel => 'དངུལ་རིགས་ཚང་མ།';
 
   @override
+  String get reportsArAgingSummaryTitle => 'A/R Aging Summary';
+
+  @override
   String get reportsAvgInvoiceValueLabel => 'ཁྲལ་ཤོག་ཐུན་མོང་གོང་ཚད།';
 
   @override
@@ -2636,7 +2648,19 @@ class AppLocalizationsBo extends AppLocalizations {
   String get reportsMonthlyRevenueTrendTitle => 'ཟླ་རེའི་འབབ་འོང་འགྱུར་རིམ།';
 
   @override
+  String get reportsMonthlyBreakdownTitle => 'Monthly Breakdown';
+
+  @override
+  String get reportsMonthColumnLabel => 'Month';
+
+  @override
+  String get reportsTotalRowLabel => 'Total';
+
+  @override
   String get reportsNavDailyReportLabel => 'ཉིན་རེའི་སྙན་ཞུ།';
+
+  @override
+  String get reportsNavInventoryLabel => 'Inventory';
 
   @override
   String get reportsNavInvoiceStatusLabel => 'ཁྲལ་ཤོག་གནས་ཚུལ།';
@@ -2649,6 +2673,55 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get reportsNavTaxLabel => 'ཁྲལ།';
+
+  @override
+  String get reportsInventoryBlockedValueLabel => 'Inventory Value Blocked';
+
+  @override
+  String get reportsInventoryPotentialSaleValueLabel => 'Potential Sale Value';
+
+  @override
+  String get reportsInventoryLockedProfitLabel => 'Profit Locked in Stock';
+
+  @override
+  String get reportsInventoryTotalUnitsLabel => 'Total Units';
+
+  @override
+  String get reportsInventoryProductCountLabel => 'Products Tracked';
+
+  @override
+  String get reportsInventoryBreakdownTitle => 'Product Breakdown';
+
+  @override
+  String get reportsNoInventoryDataMessage => 'No inventory data';
+
+  @override
+  String get reportsInventoryProductColumnLabel => 'Product';
+
+  @override
+  String get reportsInventoryStockColumnLabel => 'Stock';
+
+  @override
+  String get reportsInventoryPurchasePriceColumnLabel => 'Purchase Price';
+
+  @override
+  String get reportsInventoryStockValueColumnLabel => 'Stock Value';
+
+  @override
+  String get reportsInventorySaleValueColumnLabel => 'Sale Value';
+
+  @override
+  String reportsInventoryExcludedBannerMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count items are excluded from inventory value — they\'re services or have unlimited stock tracking on.',
+      one:
+          '1 item is excluded from inventory value — it\'s a service or has unlimited stock tracking on.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get reportsNoCustomerDataMessage => 'དུས་ཡུན་འདིར་ཉོ་མཁན་གནས་ཚུལ་མེད།';
@@ -2793,6 +2866,16 @@ class AppLocalizationsBo extends AppLocalizations {
   String get reportsTaxCollectedLabel => 'བསྡུས་པའི་ཁྲལ།';
 
   @override
+  String get reportsTaxableAmountLabel => 'Taxable Amount';
+
+  @override
+  String get reportsGrossAmountLabel => 'Gross';
+
+  @override
+  String get reportsTaxAccrualNote =>
+      'Tax charged on invoices dated in this period — accrual basis, before payment.';
+
+  @override
   String get reportsTaxRateBucketsLabel => 'ཁྲལ་ཐང་སྡེ་ཚན།';
 
   @override
@@ -2831,6 +2914,9 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get reportsTotalInvoicesLabel => 'ཁྲལ་ཤོག་སྤྱིའི་གྲངས།';
+
+  @override
+  String get reportsRealizedProfitLabel => 'Realized Profit';
 
   @override
   String get reportsTotalProfitLabel => 'ཁེ་སྐྱེད་སྤྱི།';
@@ -3474,6 +3560,17 @@ class AppLocalizationsBo extends AppLocalizations {
   String get pdfSettingsOrientationLandscape => 'Landscape';
 
   @override
+  String get pdfSettingsMetadataColumnsLabel => 'Product metadata columns';
+
+  @override
+  String get pdfSettingsMetadataColumnsHint =>
+      'Print product metadata as extra columns in the items table.';
+
+  @override
+  String get pdfSettingsMetadataColumnsWarning =>
+      'Metadata columns print only on Grid Classic at A4. Each one narrows the others — if the table looks cramped, switch to Landscape above. Values are captured when an item is added; editing the product later won\'t change past invoices.';
+
+  @override
   String get pdfSettingsItemLayoutLabel => 'རྣམ་གྲངས་བཀོད་པ།';
 
   @override
@@ -3611,6 +3708,9 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get fieldTinLabel => 'TIN';
+
+  @override
+  String get fieldVatRegNoLabel => 'VAT ཐོ་འགོད་ཨང་གྲངས།';
 
   @override
   String get companyInfoFssaiCodeLabel => 'FSSAI ཨང་རྟགས།';
@@ -3962,6 +4062,9 @@ class AppLocalizationsBo extends AppLocalizations {
   String get productColumnsMetaManufactureDateLabel => 'བཟོ་བསྐྲུན་ཚེས་གྲངས།';
 
   @override
+  String get productColumnsMetaManufactureNameLabel => 'Manufacturer Name';
+
+  @override
   String get productColumnsMetaSupplierNameLabel => 'སྤྲོད་མཁན་མིང་།';
 
   @override
@@ -4272,4 +4375,8 @@ class AppLocalizationsBo extends AppLocalizations {
   @override
   String get invoiceSettingsCustomFieldsGridClassicNote =>
       'བརྡ་འཕྲིན: སྒེར་སྒྲིག་ཡིག་ཆ་ནི་རེའུ་མིག་སྲོལ་རྒྱུན་གྱི་ PDF ནང་གཞི་ཁོ་ནར་པར་སྐྲུན་བྱེད།';
+
+  @override
+  String get invoiceSettingsMetadataColumnsGridClassicNote =>
+      'Note: Metadata columns are only applied to the Grid Classic PDF template.';
 }

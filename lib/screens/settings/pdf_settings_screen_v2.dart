@@ -31,6 +31,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
   PageSize _previewedPageSize = PageSize.a4;
   bool _savedLandscape = false;
   bool _previewedLandscape = false;
+
   bool _savedShowTotalQuantity = false;
   bool _previewedShowTotalQuantity = false;
   final _thermalWidthMarginController = TextEditingController();

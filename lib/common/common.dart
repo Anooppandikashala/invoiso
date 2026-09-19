@@ -340,13 +340,17 @@ enum LogoPosition { left, right }
 /// Falls back to 'GSTIN' for India and for unset countries (backward compat).
 String taxLabel(String? country) {
   if (country == null || country.isEmpty || country == 'India') return 'GSTIN';
+  if (country == 'Nepal') return 'VAT Registration Number';
   return 'Tax/VAT No';
 }
 
 /// Returns the label for a personal tax ID field.
-/// India → 'PAN', everyone else → 'TIN'.
+/// India and Nepal → 'PAN' (Nepal's PAN, issued by the IRD, is also its VAT
+/// number once VAT-registered), everyone else → 'TIN'.
 String panLabel(String? country) {
-  if (country == null || country.isEmpty || country == 'India') return 'PAN';
+  if (country == null || country.isEmpty || country == 'India' || country == 'Nepal') {
+    return 'PAN';
+  }
   return 'TIN';
 }
 
@@ -471,6 +475,7 @@ class ProductColumnsConfig {
   final bool metaBatchNumber;
   final bool metaExpiryDate;
   final bool metaManufactureDate;
+  final bool metaManufactureName;
   final bool metaSupplierName;
   final bool metaSkuCode;
   final bool metaNotes;
@@ -492,6 +497,7 @@ class ProductColumnsConfig {
     this.metaBatchNumber = true,
     this.metaExpiryDate = true,
     this.metaManufactureDate = true,
+    this.metaManufactureName = true,
     this.metaSupplierName = true,
     this.metaSkuCode = true,
     this.metaNotes = true,
@@ -514,6 +520,7 @@ class ProductColumnsConfig {
         'metaBatchNumber': metaBatchNumber,
         'metaExpiryDate': metaExpiryDate,
         'metaManufactureDate': metaManufactureDate,
+        'metaManufactureName': metaManufactureName,
         'metaSupplierName': metaSupplierName,
         'metaSkuCode': metaSkuCode,
         'metaNotes': metaNotes,
@@ -537,6 +544,7 @@ class ProductColumnsConfig {
         metaBatchNumber: json['metaBatchNumber'] as bool? ?? true,
         metaExpiryDate: json['metaExpiryDate'] as bool? ?? true,
         metaManufactureDate: json['metaManufactureDate'] as bool? ?? true,
+        metaManufactureName: json['metaManufactureName'] as bool? ?? true,
         metaSupplierName: json['metaSupplierName'] as bool? ?? true,
         metaSkuCode: json['metaSkuCode'] as bool? ?? true,
         metaNotes: json['metaNotes'] as bool? ?? true,
@@ -559,6 +567,7 @@ class ProductColumnsConfig {
     bool? metaBatchNumber,
     bool? metaExpiryDate,
     bool? metaManufactureDate,
+    bool? metaManufactureName,
     bool? metaSupplierName,
     bool? metaSkuCode,
     bool? metaNotes,
@@ -580,6 +589,7 @@ class ProductColumnsConfig {
         metaBatchNumber: metaBatchNumber ?? this.metaBatchNumber,
         metaExpiryDate: metaExpiryDate ?? this.metaExpiryDate,
         metaManufactureDate: metaManufactureDate ?? this.metaManufactureDate,
+        metaManufactureName: metaManufactureName ?? this.metaManufactureName,
         metaSupplierName: metaSupplierName ?? this.metaSupplierName,
         metaSkuCode: metaSkuCode ?? this.metaSkuCode,
         metaNotes: metaNotes ?? this.metaNotes,

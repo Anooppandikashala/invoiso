@@ -285,6 +285,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get actionRefresh => 'Actualiser';
 
   @override
+  String get helpSearchTooltip => 'Search Help & Settings';
+
+  @override
   String dashboardOutOfStockCountLabel(int count) {
     return '$count en rupture de stock';
   }
@@ -2104,6 +2107,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get productMgmtManufactureDateLabel => 'Date de fabrication';
 
   @override
+  String get productMgmtManufactureNameLabel => 'Manufacturer Name';
+
+  @override
   String get productMgmtSupplierNameLabel => 'Nom du fournisseur';
 
   @override
@@ -2187,6 +2193,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get productMgmtCsvDescManufactureDate => 'Date de fabrication';
+
+  @override
+  String get productMgmtCsvDescManufactureName => 'Manufacturer name';
 
   @override
   String get productMgmtCsvDescSupplierName => 'Nom du fournisseur';
@@ -2541,6 +2550,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get reportsAllCurrenciesLabel => 'Toutes les devises';
 
   @override
+  String get reportsArAgingSummaryTitle => 'Résumé des créances par ancienneté';
+
+  @override
   String get reportsAvgInvoiceValueLabel => 'Valeur moyenne des factures';
 
   @override
@@ -2682,7 +2694,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get reportsMonthlyRevenueTrendTitle => 'Tendance des revenus mensuels';
 
   @override
+  String get reportsMonthlyBreakdownTitle => 'Répartition mensuelle';
+
+  @override
+  String get reportsMonthColumnLabel => 'Mois';
+
+  @override
+  String get reportsTotalRowLabel => 'Total';
+
+  @override
   String get reportsNavDailyReportLabel => 'Rapport quotidien';
+
+  @override
+  String get reportsNavInventoryLabel => 'Inventory';
 
   @override
   String get reportsNavInvoiceStatusLabel => 'Statut des factures';
@@ -2695,6 +2719,55 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get reportsNavTaxLabel => 'Taxe';
+
+  @override
+  String get reportsInventoryBlockedValueLabel => 'Inventory Value Blocked';
+
+  @override
+  String get reportsInventoryPotentialSaleValueLabel => 'Potential Sale Value';
+
+  @override
+  String get reportsInventoryLockedProfitLabel => 'Profit Locked in Stock';
+
+  @override
+  String get reportsInventoryTotalUnitsLabel => 'Total Units';
+
+  @override
+  String get reportsInventoryProductCountLabel => 'Products Tracked';
+
+  @override
+  String get reportsInventoryBreakdownTitle => 'Product Breakdown';
+
+  @override
+  String get reportsNoInventoryDataMessage => 'No inventory data';
+
+  @override
+  String get reportsInventoryProductColumnLabel => 'Product';
+
+  @override
+  String get reportsInventoryStockColumnLabel => 'Stock';
+
+  @override
+  String get reportsInventoryPurchasePriceColumnLabel => 'Purchase Price';
+
+  @override
+  String get reportsInventoryStockValueColumnLabel => 'Stock Value';
+
+  @override
+  String get reportsInventorySaleValueColumnLabel => 'Sale Value';
+
+  @override
+  String reportsInventoryExcludedBannerMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count items are excluded from inventory value — they\'re services or have unlimited stock tracking on.',
+      one:
+          '1 item is excluded from inventory value — it\'s a service or has unlimited stock tracking on.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get reportsNoCustomerDataMessage =>
@@ -2845,6 +2918,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get reportsTaxCollectedLabel => 'Taxe collectée';
 
   @override
+  String get reportsTaxableAmountLabel => 'Montant imposable';
+
+  @override
+  String get reportsGrossAmountLabel => 'Brut';
+
+  @override
+  String get reportsTaxAccrualNote =>
+      'Taxe facturée sur les factures datées de cette période — comptabilité d\'engagement, avant paiement.';
+
+  @override
   String get reportsTaxRateBucketsLabel => 'Tranches de taux de taxe';
 
   @override
@@ -2883,6 +2966,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get reportsTotalInvoicesLabel => 'Total des factures';
+
+  @override
+  String get reportsRealizedProfitLabel => 'Bénéfice réalisé';
 
   @override
   String get reportsTotalProfitLabel => 'Bénéfice total';
@@ -3547,6 +3633,17 @@ class AppLocalizationsFr extends AppLocalizations {
   String get pdfSettingsOrientationLandscape => 'Landscape';
 
   @override
+  String get pdfSettingsMetadataColumnsLabel => 'Product metadata columns';
+
+  @override
+  String get pdfSettingsMetadataColumnsHint =>
+      'Print product metadata as extra columns in the items table.';
+
+  @override
+  String get pdfSettingsMetadataColumnsWarning =>
+      'Metadata columns print only on Grid Classic at A4. Each one narrows the others — if the table looks cramped, switch to Landscape above. Values are captured when an item is added; editing the product later won\'t change past invoices.';
+
+  @override
   String get pdfSettingsItemLayoutLabel => 'Disposition des articles';
 
   @override
@@ -3688,6 +3785,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get fieldTinLabel => 'TIN';
+
+  @override
+  String get fieldVatRegNoLabel => 'Numéro d\'immatriculation TVA';
 
   @override
   String get companyInfoFssaiCodeLabel => 'Code FSSAI';
@@ -4047,6 +4147,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get productColumnsMetaManufactureDateLabel => 'Date de fabrication';
 
   @override
+  String get productColumnsMetaManufactureNameLabel => 'Manufacturer Name';
+
+  @override
   String get productColumnsMetaSupplierNameLabel => 'Nom du fournisseur';
 
   @override
@@ -4363,4 +4466,8 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get invoiceSettingsCustomFieldsGridClassicNote =>
       'Remarque : les champs personnalisés ne sont imprimés que sur le modèle PDF Grille classique.';
+
+  @override
+  String get invoiceSettingsMetadataColumnsGridClassicNote =>
+      'Note: Metadata columns are only applied to the Grid Classic PDF template.';
 }

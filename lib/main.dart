@@ -66,6 +66,7 @@ Future<void> main() async {
     databaseFactory = databaseFactoryFfi;
   }
   WidgetsFlutterBinding.ensureInitialized();
+  registerFallbackNumberSymbols();
   BackendServices.configure(
     settings: SqliteSettingsRepository(),
     companyInfo: SqliteCompanyInfoRepository(),

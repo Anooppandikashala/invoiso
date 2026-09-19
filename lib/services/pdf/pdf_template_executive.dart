@@ -96,11 +96,15 @@ pw.MultiPage buildExecutiveTemplate(
   final gstLabel = taxLabel(company?.country);
   final panNumber = company?.panNumber ?? '';
   final fssaiCode = company?.fssaiCode ?? '';
-  final companyIdLine = [
+  final companyIdParts = <String>[
     if (showGst && gstin.isNotEmpty) '$gstLabel: $gstin',
     if (showPan && panNumber.isNotEmpty) '${panLabel(company?.country)}: $panNumber',
-    if (showFssai && fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
-  ].join('   ');
+    if (showFssai && fssaiCode.isNotEmpty && isIndiaCountry(company?.country))
+      'FSSAI: $fssaiCode',
+  ];
+  // GSTIN + PAN + FSSAI all present → one joined line; fewer → line by line.
+  final allCompanyIds = companyIdParts.length == 3;
+  final companyIdLine = companyIdParts.join('   ');
 
   final customerLines = [
     invoice.customer.name,
@@ -172,8 +176,9 @@ pw.MultiPage buildExecutiveTemplate(
                 if (showWebsite && (company?.website ?? '').isNotEmpty)
                   pw.Text(company!.website,
                       style: pw.TextStyle(fontSize: executivePdfStyle.subtitleFontSize)),
-                if (companyIdLine.isNotEmpty)
-                  pw.Text(companyIdLine, style: pw.TextStyle(fontSize: executivePdfStyle.subtitleFontSize)),
+                for (final line
+                    in allCompanyIds ? [companyIdLine] : companyIdParts)
+                  pw.Text(line, style: pw.TextStyle(fontSize: executivePdfStyle.subtitleFontSize)),
               ],
             ),
           ),
@@ -272,7 +277,7 @@ pw.MultiPage buildExecutiveTemplate(
                     showUpiQr: showUpiQr,
                     upiId: upiId,
                     companyName: company?.name ?? '',
-                    amount: invoice.total,
+                    amount: invoice.outstandingBalance,
                     currencyCode: invoice.currencyCode,
                     invoiceId: invoice.id,
                     accentColor: accentColor,
@@ -292,7 +297,7 @@ pw.MultiPage buildExecutiveTemplate(
                     showUpiQr: showUpiQr,
                     upiId: upiId,
                     companyName: company?.name ?? '',
-                    amount: invoice.total,
+                    amount: invoice.outstandingBalance,
                     currencyCode: invoice.currencyCode,
                     invoiceId: invoice.id,
                     accentColor: accentColor,

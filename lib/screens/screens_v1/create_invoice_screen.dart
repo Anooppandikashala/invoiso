@@ -155,6 +155,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   double _previousBalanceDue = 0.0;
   bool _isPreviousBalanceLoading = false;
   bool _isSavingCustomer = false;
+  bool _customerFieldsUnlocked = false;
+  bool get _customerFieldsLocked =>
+      selectedCustomer != null && !_customerFieldsUnlocked;
   int _previousBalanceRequestSerial = 0;
   BusinessType _businessType = BusinessType.both;
   String _datePattern = 'dd/MM/yyyy';
@@ -1158,15 +1161,18 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   /// customer's id — doing so would link invoiceId -> customerId while the
   /// snapshot's name/address/etc silently disagree with that customer's
   /// actual row. Falls back to a fresh, unlinked id in that case.
+  /// Address is excluded (edited often, not identity-bearing) and the rest
+  /// compare case-insensitively so minor casing/whitespace edits don't
+  /// fragment the same customer into a new id.
   bool get _customerFormMatchesSelected {
     final sel = selectedCustomer;
-    return sel != null &&
-        sel.name == nameController.text &&
-        sel.email == emailController.text &&
-        sel.phone == phoneController.text &&
-        sel.address == addressController.text &&
-        sel.gstin == gstinController.text &&
-        sel.businessName == businessNameController.text;
+    if (sel == null) return false;
+    bool eq(String a, String b) => a.trim().toLowerCase() == b.trim().toLowerCase();
+    return eq(sel.name, nameController.text) &&
+        eq(sel.email, emailController.text) &&
+        eq(sel.phone, phoneController.text) &&
+        eq(sel.gstin, gstinController.text) &&
+        eq(sel.businessName, businessNameController.text);
   }
 
   Customer _resolveInvoiceCustomer() {
@@ -2172,6 +2178,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       addressController.text = customer?.address ?? '';
       gstinController.text = customer?.gstin ?? '';
       businessNameController.text = customer?.businessName ?? '';
+      _customerFieldsUnlocked = false;
     });
     await _loadPreviousBalanceDue(customer);
   }
@@ -3262,6 +3269,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       addressController.text = latest.address;
       gstinController.text = latest.gstin;
       businessNameController.text = latest.businessName;
+      _customerFieldsUnlocked = false;
     });
     if(!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -3283,6 +3291,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       businessNameController.clear();
       _previousBalanceDue = 0.0;
       _isPreviousBalanceLoading = false;
+      _customerFieldsUnlocked = false;
     });
   }
 
@@ -3314,6 +3323,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
+                if (selectedCustomer != null || nameController.text.trim().isNotEmpty)
                 (selectedCustomer != null && _customerFormMatchesSelected)
                     ? Container(
                         padding: const EdgeInsets.symmetric(
@@ -3367,6 +3377,21 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                         ),
                       ),
                 if (selectedCustomer != null && selectedCustomer!.id.trim().isNotEmpty) ...[
+                  if (!_customerFieldsUnlocked)
+                    Tooltip(
+                      message: 'Edit customer details',
+                      child: OutlinedButton.icon(
+                        onPressed: () =>
+                            setState(() => _customerFieldsUnlocked = true),
+                        icon: const Icon(Icons.edit_outlined, size: 16),
+                        label: const Text('Edit',
+                            style: TextStyle(fontSize: AppFontSize.small)),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                        ),
+                      ),
+                    ),
                   Tooltip(
                     message: 'Reload this customer\'s latest saved details '
                         '(name, address, phone, etc.) — this invoice keeps its '
@@ -3402,12 +3427,25 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
               ],
             ),
             const SizedBox(height: 16),
+            if (selectedCustomer == null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Text(
+                  'New or walk-in customer — enter their details below.',
+                  style: TextStyle(
+                    fontSize: AppFontSize.small,
+                    fontStyle: FontStyle.italic,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
             // Row 1: Customer Name | Business Name | Phone
             Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: nameController,
+                    readOnly: _customerFieldsLocked,
                     onChanged: (_) => setState(() {}),
                     style: TextStyle(fontSize: AppFontSize.medium),
                     decoration: InputDecoration(
@@ -3425,6 +3463,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 Expanded(
                   child: TextField(
                     controller: businessNameController,
+                    readOnly: _customerFieldsLocked,
                     onChanged: (_) => setState(() {}),
                     style: TextStyle(fontSize: AppFontSize.medium),
                     decoration: InputDecoration(
@@ -3442,6 +3481,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 Expanded(
                   child: TextField(
                     controller: phoneController,
+                    readOnly: _customerFieldsLocked,
                     onChanged: (_) => setState(() {}),
                     style: TextStyle(fontSize: AppFontSize.medium),
                     decoration: InputDecoration(
@@ -3464,6 +3504,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 Expanded(
                   child: TextField(
                     controller: emailController,
+                    readOnly: _customerFieldsLocked,
                     onChanged: (_) => setState(() {}),
                     style: TextStyle(fontSize: AppFontSize.medium),
                     decoration: InputDecoration(
@@ -3499,6 +3540,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   Expanded(
                     child: TextField(
                       controller: gstinController,
+                      readOnly: _customerFieldsLocked,
                       onChanged: (_) => setState(() {}),
                       style: TextStyle(fontSize: AppFontSize.medium),
                       decoration: InputDecoration(

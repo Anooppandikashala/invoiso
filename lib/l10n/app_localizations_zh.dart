@@ -275,6 +275,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get actionRefresh => '刷新';
 
   @override
+  String get helpSearchTooltip => 'Search Help & Settings';
+
+  @override
   String dashboardOutOfStockCountLabel(int count) {
     return '$count 件缺货';
   }
@@ -2009,6 +2012,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get productMgmtManufactureDateLabel => '生产日期';
 
   @override
+  String get productMgmtManufactureNameLabel => 'Manufacturer Name';
+
+  @override
   String get productMgmtSupplierNameLabel => '供应商名称';
 
   @override
@@ -2082,6 +2088,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get productMgmtCsvDescManufactureDate => '生产日期';
+
+  @override
+  String get productMgmtCsvDescManufactureName => 'Manufacturer name';
 
   @override
   String get productMgmtCsvDescSupplierName => '供应商名称';
@@ -2414,6 +2423,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get reportsAllCurrenciesLabel => '所有货币';
 
   @override
+  String get reportsArAgingSummaryTitle => '应收账款账龄摘要';
+
+  @override
   String get reportsAvgInvoiceValueLabel => '平均发票金额';
 
   @override
@@ -2549,7 +2561,19 @@ class AppLocalizationsZh extends AppLocalizations {
   String get reportsMonthlyRevenueTrendTitle => '月度收入趋势';
 
   @override
+  String get reportsMonthlyBreakdownTitle => '月度明细';
+
+  @override
+  String get reportsMonthColumnLabel => '月份';
+
+  @override
+  String get reportsTotalRowLabel => '合计';
+
+  @override
   String get reportsNavDailyReportLabel => '每日报告';
+
+  @override
+  String get reportsNavInventoryLabel => 'Inventory';
 
   @override
   String get reportsNavInvoiceStatusLabel => '发票状态';
@@ -2562,6 +2586,55 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get reportsNavTaxLabel => '税';
+
+  @override
+  String get reportsInventoryBlockedValueLabel => 'Inventory Value Blocked';
+
+  @override
+  String get reportsInventoryPotentialSaleValueLabel => 'Potential Sale Value';
+
+  @override
+  String get reportsInventoryLockedProfitLabel => 'Profit Locked in Stock';
+
+  @override
+  String get reportsInventoryTotalUnitsLabel => 'Total Units';
+
+  @override
+  String get reportsInventoryProductCountLabel => 'Products Tracked';
+
+  @override
+  String get reportsInventoryBreakdownTitle => 'Product Breakdown';
+
+  @override
+  String get reportsNoInventoryDataMessage => 'No inventory data';
+
+  @override
+  String get reportsInventoryProductColumnLabel => 'Product';
+
+  @override
+  String get reportsInventoryStockColumnLabel => 'Stock';
+
+  @override
+  String get reportsInventoryPurchasePriceColumnLabel => 'Purchase Price';
+
+  @override
+  String get reportsInventoryStockValueColumnLabel => 'Stock Value';
+
+  @override
+  String get reportsInventorySaleValueColumnLabel => 'Sale Value';
+
+  @override
+  String reportsInventoryExcludedBannerMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count items are excluded from inventory value — they\'re services or have unlimited stock tracking on.',
+      one:
+          '1 item is excluded from inventory value — it\'s a service or has unlimited stock tracking on.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get reportsNoCustomerDataMessage => '此期间无客户数据';
@@ -2699,6 +2772,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get reportsTaxCollectedLabel => '已收税款';
 
   @override
+  String get reportsTaxableAmountLabel => '应税金额';
+
+  @override
+  String get reportsGrossAmountLabel => '总额';
+
+  @override
+  String get reportsTaxAccrualNote => '按本期开票日期计提的税款 — 权责发生制，付款前。';
+
+  @override
   String get reportsTaxRateBucketsLabel => '税率分组';
 
   @override
@@ -2736,6 +2818,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get reportsTotalInvoicesLabel => '发票总数';
+
+  @override
+  String get reportsRealizedProfitLabel => '已实现利润';
 
   @override
   String get reportsTotalProfitLabel => '总利润';
@@ -3343,6 +3428,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pdfSettingsOrientationLandscape => 'Landscape';
 
   @override
+  String get pdfSettingsMetadataColumnsLabel => 'Product metadata columns';
+
+  @override
+  String get pdfSettingsMetadataColumnsHint =>
+      'Print product metadata as extra columns in the items table.';
+
+  @override
+  String get pdfSettingsMetadataColumnsWarning =>
+      'Metadata columns print only on Grid Classic at A4. Each one narrows the others — if the table looks cramped, switch to Landscape above. Values are captured when an item is added; editing the product later won\'t change past invoices.';
+
+  @override
   String get pdfSettingsItemLayoutLabel => '项目布局';
 
   @override
@@ -3472,6 +3568,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get fieldTinLabel => 'TIN';
+
+  @override
+  String get fieldVatRegNoLabel => '增值税登记号';
 
   @override
   String get companyInfoFssaiCodeLabel => 'FSSAI 代码';
@@ -3806,6 +3905,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get productColumnsMetaManufactureDateLabel => '生产日期';
 
   @override
+  String get productColumnsMetaManufactureNameLabel => 'Manufacturer Name';
+
+  @override
   String get productColumnsMetaSupplierNameLabel => '供应商名称';
 
   @override
@@ -4107,4 +4209,8 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get invoiceSettingsCustomFieldsGridClassicNote =>
       '注意：自定义字段仅在“经典网格”PDF 模板中打印。';
+
+  @override
+  String get invoiceSettingsMetadataColumnsGridClassicNote =>
+      'Note: Metadata columns are only applied to the Grid Classic PDF template.';
 }

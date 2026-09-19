@@ -281,6 +281,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionRefresh => 'Refresh';
 
   @override
+  String get helpSearchTooltip => 'Search Help & Settings';
+
+  @override
   String dashboardOutOfStockCountLabel(int count) {
     return '$count out of stock';
   }
@@ -2072,6 +2075,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get productMgmtManufactureDateLabel => 'Manufacture Date';
 
   @override
+  String get productMgmtManufactureNameLabel => 'Manufacturer Name';
+
+  @override
   String get productMgmtSupplierNameLabel => 'Supplier Name';
 
   @override
@@ -2152,6 +2158,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get productMgmtCsvDescManufactureDate => 'Manufacture date';
+
+  @override
+  String get productMgmtCsvDescManufactureName => 'Manufacturer name';
 
   @override
   String get productMgmtCsvDescSupplierName => 'Supplier name';
@@ -2495,6 +2504,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportsAllCurrenciesLabel => 'All currencies';
 
   @override
+  String get reportsArAgingSummaryTitle => 'A/R Aging Summary';
+
+  @override
   String get reportsAvgInvoiceValueLabel => 'Avg Invoice Value';
 
   @override
@@ -2636,7 +2648,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportsMonthlyRevenueTrendTitle => 'Monthly Revenue Trend';
 
   @override
+  String get reportsMonthlyBreakdownTitle => 'Monthly Breakdown';
+
+  @override
+  String get reportsMonthColumnLabel => 'Month';
+
+  @override
+  String get reportsTotalRowLabel => 'Total';
+
+  @override
   String get reportsNavDailyReportLabel => 'Daily Report';
+
+  @override
+  String get reportsNavInventoryLabel => 'Inventory';
 
   @override
   String get reportsNavInvoiceStatusLabel => 'Invoice Status';
@@ -2649,6 +2673,55 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reportsNavTaxLabel => 'Tax';
+
+  @override
+  String get reportsInventoryBlockedValueLabel => 'Inventory Value Blocked';
+
+  @override
+  String get reportsInventoryPotentialSaleValueLabel => 'Potential Sale Value';
+
+  @override
+  String get reportsInventoryLockedProfitLabel => 'Profit Locked in Stock';
+
+  @override
+  String get reportsInventoryTotalUnitsLabel => 'Total Units';
+
+  @override
+  String get reportsInventoryProductCountLabel => 'Products Tracked';
+
+  @override
+  String get reportsInventoryBreakdownTitle => 'Product Breakdown';
+
+  @override
+  String get reportsNoInventoryDataMessage => 'No inventory data';
+
+  @override
+  String get reportsInventoryProductColumnLabel => 'Product';
+
+  @override
+  String get reportsInventoryStockColumnLabel => 'Stock';
+
+  @override
+  String get reportsInventoryPurchasePriceColumnLabel => 'Purchase Price';
+
+  @override
+  String get reportsInventoryStockValueColumnLabel => 'Stock Value';
+
+  @override
+  String get reportsInventorySaleValueColumnLabel => 'Sale Value';
+
+  @override
+  String reportsInventoryExcludedBannerMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count items are excluded from inventory value — they\'re services or have unlimited stock tracking on.',
+      one:
+          '1 item is excluded from inventory value — it\'s a service or has unlimited stock tracking on.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get reportsNoCustomerDataMessage => 'No customer data in this period';
@@ -2786,10 +2859,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportsStatementsLabel => 'Statements';
 
   @override
-  String get reportsTaxCollectedByRateTitle => 'Tax Collected by Rate';
+  String get reportsTaxCollectedByRateTitle => 'Tax by Rate';
 
   @override
-  String get reportsTaxCollectedLabel => 'Tax Collected';
+  String get reportsTaxCollectedLabel => 'Tax';
+
+  @override
+  String get reportsTaxableAmountLabel => 'Taxable Amount';
+
+  @override
+  String get reportsGrossAmountLabel => 'Gross';
+
+  @override
+  String get reportsTaxAccrualNote =>
+      'Tax charged on invoices dated in this period — accrual basis, before payment.';
 
   @override
   String get reportsTaxRateBucketsLabel => 'Tax Rate Buckets';
@@ -2832,10 +2915,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportsTotalInvoicesLabel => 'Total Invoices';
 
   @override
+  String get reportsRealizedProfitLabel => 'Realized Profit';
+
+  @override
   String get reportsTotalProfitLabel => 'Total Profit';
 
   @override
-  String get reportsTotalTaxCollectedLabel => 'Total Tax Collected';
+  String get reportsTotalTaxCollectedLabel => 'Total Tax Charged';
 
   @override
   String get reportsTypeColumnLabel => 'Type';
@@ -3471,6 +3557,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pdfSettingsOrientationLandscape => 'Landscape';
 
   @override
+  String get pdfSettingsMetadataColumnsLabel => 'Product metadata columns';
+
+  @override
+  String get pdfSettingsMetadataColumnsHint =>
+      'Print product metadata as extra columns in the items table.';
+
+  @override
+  String get pdfSettingsMetadataColumnsWarning =>
+      'Metadata columns print only on Grid Classic at A4. Each one narrows the others — if the table looks cramped, switch to Landscape above. Values are captured when an item is added; editing the product later won\'t change past invoices.';
+
+  @override
   String get pdfSettingsItemLayoutLabel => 'Item layout';
 
   @override
@@ -3608,6 +3705,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get fieldTinLabel => 'TIN';
+
+  @override
+  String get fieldVatRegNoLabel => 'VAT Registration Number';
 
   @override
   String get companyInfoFssaiCodeLabel => 'FSSAI Code';
@@ -3941,7 +4041,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get productColumnsMetadataSubtitle =>
-      'Storage location, container/batch number, expiry, manufacture date, supplier, SKU, notes.';
+      'Storage location, container/batch number, expiry, manufacture date, manufacturer, supplier, SKU, notes.';
 
   @override
   String get productColumnsMetaStorageLocationLabel => 'Storage Location';
@@ -3957,6 +4057,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get productColumnsMetaManufactureDateLabel => 'Manufacture Date';
+
+  @override
+  String get productColumnsMetaManufactureNameLabel => 'Manufacturer Name';
 
   @override
   String get productColumnsMetaSupplierNameLabel => 'Supplier Name';
@@ -4269,4 +4372,8 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get invoiceSettingsCustomFieldsGridClassicNote =>
       'Note: Custom fields are only printed on the Grid Classic PDF template.';
+
+  @override
+  String get invoiceSettingsMetadataColumnsGridClassicNote =>
+      'Note: Metadata columns are only applied to the Grid Classic PDF template.';
 }

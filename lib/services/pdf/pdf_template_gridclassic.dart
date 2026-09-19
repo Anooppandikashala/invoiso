@@ -47,6 +47,7 @@ pw.MultiPage buildGridClassicTemplate(
   double previousBalanceDue = 0.0,
   PdfPageFormat pageFormat = PdfPageFormat.a4,
   bool landscape = false,
+  Map<String, bool> metadataColumns = const {},
   pw.ThemeData? pdfTheme,
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
@@ -112,11 +113,16 @@ pw.MultiPage buildGridClassicTemplate(
   final gstLabel = taxLabel(company?.country);
   final panNumber = company?.panNumber ?? '';
   final fssaiCode = company?.fssaiCode ?? '';
-  final companyIdLine = [
+  final companyIdParts = <String>[
     if (showGst && gstin.isNotEmpty) '$gstLabel: $gstin',
     if (showPan && panNumber.isNotEmpty) 'PAN: $panNumber',
-    if (showFssai && fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
-  ].join('   ');
+    if (showFssai && fssaiCode.isNotEmpty && isIndiaCountry(company?.country))
+      'FSSAI: $fssaiCode',
+  ];
+  // All three present → one joined line above the divider (current look).
+  // Fewer → fold each into the company-details block, line by line.
+  final allCompanyIds = companyIdParts.length == 3;
+  final companyIdLine = companyIdParts.join('   ');
   final hasPreviousBalance = previousBalanceDue > 0;
   final hasPaid = invoice.amountPaid > 0;
 
@@ -124,7 +130,6 @@ pw.MultiPage buildGridClassicTemplate(
   final netTotal = roundNetTotal(rawNet);
   final roundedNet = netTotal.rounded;
   final roundOff = netTotal.roundOff;
-  final payableAmount = showRoundOff ? roundedNet : rawNet;
 
   final totalQty = showTotalQuantity
       ? invoice.items.fold<double>(0, (s, i) => s + i.quantity)
@@ -209,13 +214,18 @@ pw.MultiPage buildGridClassicTemplate(
                           pw.Text('Ph: ${company!.phone}',
                               textAlign: pw.TextAlign.left,
                               style: pw.TextStyle(fontSize: subFont)),
+                        if (!allCompanyIds)
+                          for (final id in companyIdParts)
+                            pw.Text(id,
+                                textAlign: pw.TextAlign.left,
+                                style: pw.TextStyle(fontSize: subFont)),
                       ],
                     ),
                     if(logoPosition == LogoPosition.right)
                       buildCompanyLogo(logoImage, size: logoSize),
                   ]
               ),
-              if (companyIdLine.isNotEmpty)
+              if (allCompanyIds && companyIdLine.isNotEmpty)
                 pw.Center(child: pw.Text(companyIdLine,
                     textAlign: pw.TextAlign.left,
                     style: pw.TextStyle(
@@ -239,11 +249,16 @@ pw.MultiPage buildGridClassicTemplate(
                       pw.Text('Ph: ${company!.phone}',
                           textAlign: pw.TextAlign.center,
                           style: pw.TextStyle(fontSize: subFont)),
-                    if (companyIdLine.isNotEmpty)
+                    if (allCompanyIds && companyIdLine.isNotEmpty)
                       pw.Text(companyIdLine,
                           textAlign: pw.TextAlign.center,
                           style: pw.TextStyle(
-                              fontSize: subFont, fontWeight: pw.FontWeight.normal)),
+                              fontSize: subFont, fontWeight: pw.FontWeight.normal))
+                    else
+                      for (final id in companyIdParts)
+                        pw.Text(id,
+                            textAlign: pw.TextAlign.center,
+                            style: pw.TextStyle(fontSize: subFont)),
                   ],
                 ),
               ),
@@ -484,7 +499,7 @@ pw.MultiPage buildGridClassicTemplate(
                         showUpiQr: showUpiQr,
                         upiId: upiId,
                         companyName: company?.name ?? '',
-                        amount: payableAmount,
+                        amount: invoice.outstandingBalance,
                         currencyCode: invoice.currencyCode,
                         invoiceId: invoice.id,
                         accentColor: accentColor,
@@ -507,7 +522,7 @@ pw.MultiPage buildGridClassicTemplate(
                         showUpiQr: showUpiQr,
                         upiId: upiId,
                         companyName: company?.name ?? '',
-                        amount: payableAmount,
+                        amount: invoice.outstandingBalance,
                         currencyCode: invoice.currencyCode,
                         invoiceId: invoice.id,
                         accentColor: accentColor,
@@ -607,6 +622,8 @@ pw.MultiPage buildGridClassicTemplate(
         showCgstSgst: showCgstSgst,
         showIgst: showIgst,
         isLandscape: landscape,
+        metadataColumns: metadataColumns,
+        metadataDatePattern: datePattern,
       ),
       // ── Notes, totals, signature, footer (inset again) ──
       buildInvoiceFooter()

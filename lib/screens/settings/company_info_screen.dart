@@ -615,10 +615,12 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                             Expanded(
                               child: _buildField(
                                 controller: gstinController,
-                                label: _selectedCountry == 'India' ||
-                                        _selectedCountry.isEmpty
+                                label: (_selectedCountry == 'India' ||
+                                        _selectedCountry.isEmpty)
                                     ? l10n.fieldGstinLabel
-                                    : l10n.fieldTaxVatNoLabel,
+                                    : _selectedCountry == 'Nepal'
+                                        ? l10n.fieldVatRegNoLabel
+                                        : l10n.fieldTaxVatNoLabel,
                                 icon: Icons.receipt_long_rounded,
                                 maxLength: 50,
                               ),
@@ -632,6 +634,7 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                               child: _buildField(
                                 controller: panController,
                                 label: (_selectedCountry == 'India' ||
+                                        _selectedCountry == 'Nepal' ||
                                         _selectedCountry.isEmpty)
                                     ? l10n.fieldPanLabel
                                     : l10n.fieldTinLabel,
@@ -640,23 +643,31 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                                 hint: (_selectedCountry == 'India' ||
                                         _selectedCountry.isEmpty)
                                     ? 'ABCDE1234F'
-                                    : null,
+                                    : _selectedCountry == 'Nepal'
+                                        ? '123456789'
+                                        : null,
                                 trailing: _pdfVisibilityToggle(_showPan,
                                     (val) => setState(() => _showPan = val)),
                               ),
                             ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: _buildField(
-                                controller: fssaiController,
-                                label: l10n.companyInfoFssaiCodeLabel,
-                                icon: Icons.verified_rounded,
-                                maxLength: 14,
-                                hint: '12345678901234',
-                                trailing: _pdfVisibilityToggle(_showFssai,
-                                    (val) => setState(() => _showFssai = val)),
+                            // FSSAI (Indian food-business license) has no
+                            // equivalent outside India — only shown there.
+                            if (_selectedCountry == 'India' ||
+                                _selectedCountry.isEmpty) ...[
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: _buildField(
+                                  controller: fssaiController,
+                                  label: l10n.companyInfoFssaiCodeLabel,
+                                  icon: Icons.verified_rounded,
+                                  maxLength: 14,
+                                  hint: '12345678901234',
+                                  trailing: _pdfVisibilityToggle(_showFssai,
+                                      (val) =>
+                                          setState(() => _showFssai = val)),
+                                ),
                               ),
-                            ),
+                            ],
                           ],
                         ),
                         const SizedBox(height: 16),

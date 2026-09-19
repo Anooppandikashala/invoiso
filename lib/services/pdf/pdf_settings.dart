@@ -62,6 +62,8 @@ class PdfGenerationSettings {
   final bool showLeadingZeros;
   final bool showSlNo;
   final bool landscape;
+  // Which product-metadata columns print in the Grid Classic A4 items table.
+  final Map<String, bool> metadataColumns;
 
   const PdfGenerationSettings({
     required this.company,
@@ -119,5 +121,6 @@ class PdfGenerationSettings {
     this.showLeadingZeros = true,
     this.showSlNo = true,
     this.landscape = false,
+    this.metadataColumns = const {},
   });
 }

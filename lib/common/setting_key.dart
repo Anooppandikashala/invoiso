@@ -65,6 +65,7 @@ enum SettingKey {
   lastUsedThermalPrinter, // JSON-encoded Printer of the last device successfully printed to, used to skip a full rescan on next open
   productColumnsConfig, // JSON ProductColumnsConfig — which optional product fields (and invoice extra cost) are visible/editable
   productListColumnsConfig, // JSON Map<String,bool> — which optional columns show in the product list table
+  invoicePdfMetadataColumns, // JSON Map<String,bool> — which product-metadata columns print in the Grid Classic A4 invoice PDF
   shortcutsBannerDismissed, // '1' once user dismisses the keyboard-shortcuts discovery banner
   createInvoiceLayout, // which create-invoice screen layout to use: 'v1' | 'v2'
   showCustomerStatsCards, // whether the stat cards row is shown on customer management v2 (default true)
@@ -85,6 +86,8 @@ enum SettingKey {
   pdfLandscape, // whether the Grid Classic invoice PDF renders in landscape orientation (default false)
   customFieldsEnabled, // whether the user-defined Custom Fields feature is on (default false)
   customFieldDefs, // JSON list of CustomFieldDef objects
+  faqCache, // cached JSON string of the last successfully fetched faq.json, used offline/on fetch failure
+  lastFaqFetch, // ISO timestamp of last successful faq.json fetch
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -222,6 +225,8 @@ extension SettingKeyExtension on SettingKey {
         return 'product_columns_config';
       case SettingKey.productListColumnsConfig:
         return 'product_list_columns_config';
+      case SettingKey.invoicePdfMetadataColumns:
+        return 'invoice_pdf_metadata_columns';
       case SettingKey.shortcutsBannerDismissed:
         return 'shortcuts_banner_dismissed';
       case SettingKey.createInvoiceLayout:
@@ -262,6 +267,10 @@ extension SettingKeyExtension on SettingKey {
         return 'custom_fields_enabled';
       case SettingKey.customFieldDefs:
         return 'custom_field_defs';
+      case SettingKey.faqCache:
+        return 'faq_cache';
+      case SettingKey.lastFaqFetch:
+        return 'last_faq_fetch';
 
     }
   }
