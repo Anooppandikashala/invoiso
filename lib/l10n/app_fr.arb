@@ -1157,6 +1157,5 @@
   "shortcutAddProductDescription": "Ajouter un produit à la facture",
   "shortcutAddCustomItemDescription": "Ajouter un article personnalisé",
   "shortcutPreviewPdfDescription": "Aperçu du PDF de la facture",
-  "shortcutPrintPdfDescription": "Générer / imprimer le PDF de la facture",
-  "invoiceSettingsCustomFieldsGridClassicNote": "Remarque : les champs personnalisés ne sont imprimés que sur le modèle PDF Grille classique."
+  "shortcutPrintPdfDescription": "Générer / imprimer le PDF de la facture"
 }

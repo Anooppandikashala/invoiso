@@ -1157,6 +1157,5 @@
   "shortcutAddProductDescription": "बीजकमा उत्पादन थप्नुहोस्",
   "shortcutAddCustomItemDescription": "कस्टम वस्तु थप्नुहोस्",
   "shortcutPreviewPdfDescription": "बीजक PDF पूर्वावलोकन गर्नुहोस्",
-  "shortcutPrintPdfDescription": "बीजक PDF जेनेरेट/प्रिन्ट गर्नुहोस्",
-  "invoiceSettingsCustomFieldsGridClassicNote": "नोट: कस्टम फिल्डहरू ग्रिड क्लासिक PDF टेम्प्लेटमा मात्र छापिन्छन्।"
+  "shortcutPrintPdfDescription": "बीजक PDF जेनेरेट/प्रिन्ट गर्नुहोस्"
 }

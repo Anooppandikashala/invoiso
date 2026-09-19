@@ -102,7 +102,7 @@ double getSlNumberFlex(PdfPageFormat format, InvoiceTemplate template, bool isLa
    return isLandscape ? 0.7 : 0.8;
 }
 
-// ── Product-metadata snapshot columns (Grid Classic A4 only) ──────────────
+// ── Product-metadata snapshot columns (A4 templates only) ─────────────────
 
 double _metaColFlex(String key) =>
     (key == 'expiryDate' || key == 'manufactureDate') ? 1.6
@@ -724,10 +724,9 @@ pw.Widget buildInvoiceTable(Invoice invoice,
     bool isLandscape = false,
     Map<String, bool> metadataColumns = const {},
     String metadataDatePattern = 'dd/MM/yyyy'}) {
-  // Optional product-metadata snapshot columns — Grid Classic A4 only. Order is
+  // Optional product-metadata snapshot columns — any A4 template. Order is
   // fixed; only the keys the user enabled are kept.
-  final List<String> metaKeys = (template == InvoiceTemplate.gridClassic &&
-          pageFormat == PdfPageFormat.a4)
+  final List<String> metaKeys = (pageFormat == PdfPageFormat.a4)
       ? const [
           'storageLocation',
           'containerNumber',
@@ -740,9 +739,9 @@ pw.Widget buildInvoiceTable(Invoice invoice,
           'notes',
         ].where((k) => metadataColumns[k] == true).toList()
       : const <String>[];
-  // Grid Classic is the space-constrained template (extra metadata columns,
-  // portrait). Shorten the Discount header there to claw back width.
-  final bool shortDiscountHeader = template == InvoiceTemplate.gridClassic && !isLandscape &&  metaKeys.isNotEmpty;
+  // Metadata columns eat into table width in portrait. Shorten the Discount
+  // header to claw back space whenever any are on.
+  final bool shortDiscountHeader = !isLandscape && metaKeys.isNotEmpty;
   final bool showItemTax = invoice.taxMode == TaxMode.perItem;
   final bool isGlobalTaxMode = invoice.taxMode == TaxMode.global;
   final bool splitCgstSgst =

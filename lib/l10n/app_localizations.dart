@@ -5877,7 +5877,7 @@ abstract class AppLocalizations {
   /// No description provided for @pdfSettingsMetadataColumnsWarning.
   ///
   /// In en, this message translates to:
-  /// **'Metadata columns print only on Grid Classic at A4. Each one narrows the others — if the table looks cramped, switch to Landscape above. Values are captured when an item is added; editing the product later won\'t change past invoices.'**
+  /// **'Metadata columns print on any A4 template (not A5/A6 or thermal receipts). Each one narrows the others — if the table looks cramped, turn a few off, or switch Grid Classic to Landscape above. Values are captured when an item is added; editing the product later won\'t change past invoices.'**
   String get pdfSettingsMetadataColumnsWarning;
 
   /// No description provided for @pdfSettingsItemLayoutLabel.
@@ -7326,17 +7326,17 @@ abstract class AppLocalizations {
   /// **'Generate / print invoice PDF'**
   String get shortcutPrintPdfDescription;
 
-  /// No description provided for @invoiceSettingsCustomFieldsGridClassicNote.
-  ///
-  /// In en, this message translates to:
-  /// **'Note: Custom fields are only printed on the Grid Classic PDF template.'**
-  String get invoiceSettingsCustomFieldsGridClassicNote;
-
   /// No description provided for @invoiceSettingsMetadataColumnsGridClassicNote.
   ///
   /// In en, this message translates to:
-  /// **'Note: Metadata columns are only applied to the Grid Classic PDF template.'**
+  /// **'Note: Metadata columns print on A4 PDF templates only (not A5/A6 or thermal receipts).'**
   String get invoiceSettingsMetadataColumnsGridClassicNote;
+
+  /// No description provided for @invoiceSettingsCustomFieldsPageSupportNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom fields print on every PDF template except thermal receipts.'**
+  String get invoiceSettingsCustomFieldsPageSupportNote;
 }
 
 class _AppLocalizationsDelegate

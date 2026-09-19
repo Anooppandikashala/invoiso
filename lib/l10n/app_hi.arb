@@ -1157,6 +1157,5 @@
   "shortcutAddProductDescription": "इनवॉइस में उत्पाद जोड़ें",
   "shortcutAddCustomItemDescription": "कस्टम आइटम जोड़ें",
   "shortcutPreviewPdfDescription": "इनवॉइस PDF पूर्वावलोकन करें",
-  "shortcutPrintPdfDescription": "इनवॉइस PDF जनरेट/प्रिंट करें",
-  "invoiceSettingsCustomFieldsGridClassicNote": "ध्यान दें: कस्टम फ़ील्ड केवल ग्रिड क्लासिक PDF टेम्पलेट पर प्रिंट होते हैं।"
+  "shortcutPrintPdfDescription": "इनवॉइस PDF जनरेट/प्रिंट करें"
 }

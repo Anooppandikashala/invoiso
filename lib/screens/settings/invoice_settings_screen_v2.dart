@@ -69,8 +69,8 @@ class _InvoiceSettingsScreenV2State
   bool _allowDuplicateInvoiceItems = false;
   bool _invoiceLeadingZeros = true;
 
-  // Grid Classic A4 product-metadata columns. Keys match buildInvoiceTable's
-  // metaKeys / ProductMetadata fields; all off by default. Grid Classic only.
+  // A4-template product-metadata columns. Keys match buildInvoiceTable's
+  // metaKeys / ProductMetadata fields; all off by default.
   static const List<String> _metadataColumnKeys = [
     'storageLocation',
     'containerNumber',
@@ -1331,7 +1331,7 @@ class _InvoiceSettingsScreenV2State
     }
   }
 
-  // Product-metadata columns for the Grid Classic A4 items table. Moved here
+  // Product-metadata columns for A4 templates' items table. Moved here
   // from PDF settings so all invoice-column choices live in one place.
   Widget _metadataColumnsCardV2(AppLocalizations l10n) {
     final anyOn = _metadataColumns.values.any((v) => v);
@@ -1594,13 +1594,13 @@ class _InvoiceSettingsScreenV2State
               fontSize: 14,
               color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
+        const SizedBox(height: 4),
         Text(
-          AppLocalizations.of(context)!
-              .invoiceSettingsCustomFieldsGridClassicNote,
+          AppLocalizations.of(context)!.invoiceSettingsCustomFieldsPageSupportNote,
           style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.error),
+              fontSize: 13,
+              fontStyle: FontStyle.italic,
+              color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
         const SizedBox(height: 8),
         GestureDetector(
