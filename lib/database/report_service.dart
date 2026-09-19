@@ -106,7 +106,8 @@ class ReportService {
   }) async {
     final db = await _db.database;
 
-    final sb = StringBuffer('type = ? AND deleted_at IS NULL');
+    final sb = StringBuffer(
+        "type = ? AND deleted_at IS NULL AND (status IS NULL OR status != 'declined')");
     final args = <dynamic>[type];
     if (from != null) {
       sb.write(' AND date >= ?');
@@ -293,6 +294,7 @@ class ReportService {
       "FROM invoice_items ii "
       "JOIN invoices i ON i.id = ii.invoice_id "
       "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "AND (i.status IS NULL OR i.status != 'declined') "
       "AND (ii.product_purchase_price IS NULL OR ii.product_purchase_price = 0) "
       "$ccFilter"
       "AND i.date >= ? AND i.date <= ?",
@@ -328,6 +330,7 @@ class ReportService {
       "FROM invoice_payments ip "
       "JOIN invoices i ON ip.invoice_id = i.id "
       "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "AND (i.status IS NULL OR i.status != 'declined') "
       "$currencyFilter"
       "AND ip.date_paid >= ? AND ip.date_paid <= ? "
       "GROUP BY month ORDER BY month",
@@ -562,6 +565,7 @@ class ReportService {
       "FROM invoice_items ii "
       "JOIN invoices i ON i.id = ii.invoice_id "
       "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "AND (i.status IS NULL OR i.status != 'declined') "
       "AND i.tax_mode = 'per_item' "
       "$ccFilter"
       "AND i.date >= ? AND i.date <= ? "
@@ -582,6 +586,7 @@ class ReportService {
       "SELECT i.id, i.tax_rate, i.additional_costs "
       "FROM invoices i "
       "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "AND (i.status IS NULL OR i.status != 'declined') "
       "AND i.tax_mode = 'global' AND i.tax_rate > 0 "
       "$ccFilter"
       "AND i.date >= ? AND i.date <= ?",
@@ -866,6 +871,7 @@ class ReportService {
       "FROM invoice_items ii "
       "JOIN invoices i ON i.id = ii.invoice_id "
       "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "AND (i.status IS NULL OR i.status != 'declined') "
       "$ccFilter"
       "AND i.date >= ? AND i.date <= ? "
       "GROUP BY ii.product_name ORDER BY $orderBy DESC LIMIT ?",

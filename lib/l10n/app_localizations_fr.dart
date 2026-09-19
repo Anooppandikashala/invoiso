@@ -1478,6 +1478,21 @@ class AppLocalizationsFr extends AppLocalizations {
   String get quotationStatusConverted => 'Convertie';
 
   @override
+  String get invoiceMgmtDeclineInvoiceTitle => 'Refuser la facture ?';
+
+  @override
+  String invoiceMgmtDeclineInvoiceBody(String number) {
+    return 'Cela marquera la facture #$number comme refusée et remettra ses articles en stock. Cette action est irréversible.';
+  }
+
+  @override
+  String get invoiceMgmtDeclinedSuccessMessage =>
+      'Facture refusée, stock restauré.';
+
+  @override
+  String get invoiceStatusDeclinedBadge => 'Refusée';
+
+  @override
   String get createInvoiceConvertTitle => 'Convertir en facture';
 
   @override

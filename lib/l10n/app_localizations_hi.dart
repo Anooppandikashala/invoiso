@@ -1461,6 +1461,21 @@ class AppLocalizationsHi extends AppLocalizations {
   String get quotationStatusConverted => 'परिवर्तित';
 
   @override
+  String get invoiceMgmtDeclineInvoiceTitle => 'इनवॉइस अस्वीकार करें?';
+
+  @override
+  String invoiceMgmtDeclineInvoiceBody(String number) {
+    return 'इससे इनवॉइस #$number को अस्वीकृत के रूप में चिह्नित किया जाएगा और इसके आइटम स्टॉक में वापस कर दिए जाएंगे। इसे पूर्ववत नहीं किया जा सकता।';
+  }
+
+  @override
+  String get invoiceMgmtDeclinedSuccessMessage =>
+      'इनवॉइस अस्वीकृत, स्टॉक वापस कर दिया गया।';
+
+  @override
+  String get invoiceStatusDeclinedBadge => 'अस्वीकृत';
+
+  @override
   String get createInvoiceConvertTitle => 'इनवॉइस में बदलें';
 
   @override

@@ -1413,6 +1413,20 @@ class AppLocalizationsZh extends AppLocalizations {
   String get quotationStatusConverted => '已转换';
 
   @override
+  String get invoiceMgmtDeclineInvoiceTitle => '拒绝此发票？';
+
+  @override
+  String invoiceMgmtDeclineInvoiceBody(String number) {
+    return '这将把发票 #$number 标记为已拒绝，并将其商品归还库存。此操作无法撤销。';
+  }
+
+  @override
+  String get invoiceMgmtDeclinedSuccessMessage => '发票已拒绝，库存已归还。';
+
+  @override
+  String get invoiceStatusDeclinedBadge => '已拒绝';
+
+  @override
   String get createInvoiceConvertTitle => '转换为发票';
 
   @override

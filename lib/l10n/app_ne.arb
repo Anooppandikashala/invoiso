@@ -398,6 +398,17 @@
   "quotationStatusAccepted": "स्वीकृत",
   "quotationStatusDeclined": "अस्वीकृत",
   "quotationStatusConverted": "रूपान्तरित",
+  "invoiceMgmtDeclineInvoiceTitle": "बीजक अस्वीकार गर्ने?",
+  "invoiceMgmtDeclineInvoiceBody": "यसले बीजक #{number} लाई अस्वीकृत चिन्ह लगाउनेछ र यसका वस्तुहरू स्टकमा फिर्ता गर्नेछ। यो पूर्ववत गर्न सकिँदैन।",
+  "@invoiceMgmtDeclineInvoiceBody": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtDeclinedSuccessMessage": "बीजक अस्वीकृत भयो, स्टक फिर्ता गरियो।",
+  "invoiceStatusDeclinedBadge": "अस्वीकृत",
   "createInvoiceConvertTitle": "बीजकमा रूपान्तरण गर्नुहोस्",
   "createInvoiceConvertedSuccessMessage": "बीजक #{invoiceNumber} मा रूपान्तरण गरियो",
   "createInvoiceTrashQuotationAction": "उद्धरण मेटाउनुहोस्",

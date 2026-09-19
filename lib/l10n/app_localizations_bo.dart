@@ -1453,6 +1453,21 @@ class AppLocalizationsBo extends AppLocalizations {
   String get quotationStatusConverted => 'བསྒྱུར་ཟིན།';
 
   @override
+  String get invoiceMgmtDeclineInvoiceTitle => 'ཁྲལ་ཤོག་ཁས་མི་ལེན་ནམ།';
+
+  @override
+  String invoiceMgmtDeclineInvoiceBody(String number) {
+    return 'འདིས་ཁྲལ་ཤོག་ #$number ཁས་མི་ལེན་པར་རྟགས་རྒྱོབ་ནས་དེའི་ནང་དོན་ཚང་མ་ཅ་དངོས་ལ་སློག་ཡོང་། འདི་ལོག་སྟེ་བཟོ་མི་ཐུབ།';
+  }
+
+  @override
+  String get invoiceMgmtDeclinedSuccessMessage =>
+      'ཁྲལ་ཤོག་ཁས་མི་ལེན་པར་བརྟགས་ཟིན་པ་དང་ཅ་དངོས་སློག་ཟིན།';
+
+  @override
+  String get invoiceStatusDeclinedBadge => 'ཁས་མི་ལེན་པ།';
+
+  @override
   String get createInvoiceConvertTitle => 'ཁྲལ་ཤོག་ཏུ་བསྒྱུར།';
 
   @override

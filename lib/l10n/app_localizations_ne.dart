@@ -1468,6 +1468,21 @@ class AppLocalizationsNe extends AppLocalizations {
   String get quotationStatusConverted => 'रूपान्तरित';
 
   @override
+  String get invoiceMgmtDeclineInvoiceTitle => 'बीजक अस्वीकार गर्ने?';
+
+  @override
+  String invoiceMgmtDeclineInvoiceBody(String number) {
+    return 'यसले बीजक #$number लाई अस्वीकृत चिन्ह लगाउनेछ र यसका वस्तुहरू स्टकमा फिर्ता गर्नेछ। यो पूर्ववत गर्न सकिँदैन।';
+  }
+
+  @override
+  String get invoiceMgmtDeclinedSuccessMessage =>
+      'बीजक अस्वीकृत भयो, स्टक फिर्ता गरियो।';
+
+  @override
+  String get invoiceStatusDeclinedBadge => 'अस्वीकृत';
+
+  @override
   String get createInvoiceConvertTitle => 'बीजकमा रूपान्तरण गर्नुहोस्';
 
   @override

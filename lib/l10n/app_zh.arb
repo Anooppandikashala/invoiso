@@ -398,6 +398,17 @@
   "quotationStatusAccepted": "已接受",
   "quotationStatusDeclined": "已拒绝",
   "quotationStatusConverted": "已转换",
+  "invoiceMgmtDeclineInvoiceTitle": "拒绝此发票？",
+  "invoiceMgmtDeclineInvoiceBody": "这将把发票 #{number} 标记为已拒绝，并将其商品归还库存。此操作无法撤销。",
+  "@invoiceMgmtDeclineInvoiceBody": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtDeclinedSuccessMessage": "发票已拒绝，库存已归还。",
+  "invoiceStatusDeclinedBadge": "已拒绝",
   "createInvoiceConvertTitle": "转换为发票",
   "createInvoiceConvertedSuccessMessage": "已转换为发票 #{invoiceNumber}",
   "createInvoiceTrashQuotationAction": "删除报价",

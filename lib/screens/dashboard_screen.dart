@@ -2027,8 +2027,10 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                               Colors.blue,
                                               AppLocalizations.of(context)!
                                                   .actionEdit,
-                                              () => widget
-                                                  .onEditInvoice(invoice)),
+                                              invoice.status == 'declined'
+                                                  ? null
+                                                  : () => widget
+                                                      .onEditInvoice(invoice)),
                                           _buildActionButton(
                                               Icons.copy_all_outlined,
                                               Colors.teal,
@@ -2063,7 +2065,9 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                               Colors.purple,
                                               AppLocalizations.of(context)!
                                                   .actionPayment,
-                                              invoice.type == 'Invoice'
+                                              invoice.type == 'Invoice' &&
+                                                      invoice.status !=
+                                                          'declined'
                                                   ? () => showDialog(
                                                         context: context,
                                                         barrierDismissible:
@@ -3700,23 +3704,28 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     final Color statusColor;
     final String statusLabel;
     final l10n = AppLocalizations.of(context)!;
-    switch (status) {
-      case PaymentStatus.paid:
-        statusColor = const Color(0xFF2E7D32);
-        statusLabel = l10n.paymentStatusPaid;
-        break;
-      case PaymentStatus.partial:
-        statusColor = const Color(0xFFF57C00);
-        statusLabel = l10n.paymentStatusPartial;
-        break;
-      default:
-        final isOver = InvoiceCalculator.isOverdue(
-            dueDate: inv.dueDate, outstanding: inv.outstandingBalance);
-        statusColor =
-            isOver ? const Color(0xFFC62828) : const Color(0xFF546E7A);
-        statusLabel = isOver
-            ? l10n.dashboardOverdueSectionTitle
-            : l10n.paymentStatusUnpaid;
+    if (inv.status == 'declined') {
+      statusColor = const Color(0xFFC62828);
+      statusLabel = l10n.invoiceStatusDeclinedBadge;
+    } else {
+      switch (status) {
+        case PaymentStatus.paid:
+          statusColor = const Color(0xFF2E7D32);
+          statusLabel = l10n.paymentStatusPaid;
+          break;
+        case PaymentStatus.partial:
+          statusColor = const Color(0xFFF57C00);
+          statusLabel = l10n.paymentStatusPartial;
+          break;
+        default:
+          final isOver = InvoiceCalculator.isOverdue(
+              dueDate: inv.dueDate, outstanding: inv.outstandingBalance);
+          statusColor =
+              isOver ? const Color(0xFFC62828) : const Color(0xFF546E7A);
+          statusLabel = isOver
+              ? l10n.dashboardOverdueSectionTitle
+              : l10n.paymentStatusUnpaid;
+      }
     }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 7),
@@ -3770,20 +3779,22 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                     fontWeight: FontWeight.w700)),
           ),
           const SizedBox(width: 8),
-          Tooltip(
-            message: 'Edit',
-            child: InkWell(
-              onTap: () => widget.onEditInvoice(inv),
-              borderRadius: BorderRadius.circular(6),
-              child: Padding(
-                padding: const EdgeInsets.all(4),
-                child: Icon(Icons.edit_outlined,
-                    size: 15,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant),
+          if (inv.status != 'declined') ...[
+            Tooltip(
+              message: 'Edit',
+              child: InkWell(
+                onTap: () => widget.onEditInvoice(inv),
+                borderRadius: BorderRadius.circular(6),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(Icons.edit_outlined,
+                      size: 15,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant),
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 2),
+            const SizedBox(width: 2),
+          ],
           Tooltip(
             message: 'Download PDF',
             child: InkWell(
@@ -4427,16 +4438,17 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
         }
       },
       itemBuilder: (ctx) => [
-        PopupMenuItem(
-          value: 'payment',
-          child: Row(children: [
-            const Icon(Icons.payments_outlined,
-                size: 16, color: Color(0xFF6A1B9A)),
-            const SizedBox(width: 10),
-            Text(AppLocalizations.of(context)!.actionRecordPayment,
-                style: const TextStyle(fontSize: 13)),
-          ]),
-        ),
+        if (inv.status != 'declined')
+          PopupMenuItem(
+            value: 'payment',
+            child: Row(children: [
+              const Icon(Icons.payments_outlined,
+                  size: 16, color: Color(0xFF6A1B9A)),
+              const SizedBox(width: 10),
+              Text(AppLocalizations.of(context)!.actionRecordPayment,
+                  style: const TextStyle(fontSize: 13)),
+            ]),
+          ),
         PopupMenuItem(
           value: 'preview',
           child: Row(children: [

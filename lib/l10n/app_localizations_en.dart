@@ -1456,6 +1456,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quotationStatusConverted => 'Converted';
 
   @override
+  String get invoiceMgmtDeclineInvoiceTitle => 'Decline invoice?';
+
+  @override
+  String invoiceMgmtDeclineInvoiceBody(String number) {
+    return 'This will mark invoice #$number as declined and return its items to stock. This can\'t be undone.';
+  }
+
+  @override
+  String get invoiceMgmtDeclinedSuccessMessage =>
+      'Invoice declined, stock restored.';
+
+  @override
+  String get invoiceStatusDeclinedBadge => 'Declined';
+
+  @override
   String get createInvoiceConvertTitle => 'Convert to Invoice';
 
   @override

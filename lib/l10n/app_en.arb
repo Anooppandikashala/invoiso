@@ -915,6 +915,17 @@
   "quotationStatusAccepted": "Accepted",
   "quotationStatusDeclined": "Declined",
   "quotationStatusConverted": "Converted",
+  "invoiceMgmtDeclineInvoiceTitle": "Decline invoice?",
+  "invoiceMgmtDeclineInvoiceBody": "This will mark invoice #{number} as declined and return its items to stock. This can't be undone.",
+  "@invoiceMgmtDeclineInvoiceBody": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtDeclinedSuccessMessage": "Invoice declined, stock restored.",
+  "invoiceStatusDeclinedBadge": "Declined",
   "createInvoiceConvertTitle": "Convert to Invoice",
   "createInvoiceConvertedSuccessMessage": "Converted to Invoice #{invoiceNumber}",
   "@createInvoiceConvertedSuccessMessage": {

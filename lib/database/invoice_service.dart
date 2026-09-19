@@ -92,7 +92,11 @@ class InvoiceService {
       }
     });
 
-    // Stock deduction happens outside the transaction to avoid nested DB calls
+    // Stock deduction happens outside the transaction to avoid nested DB calls.
+    // Quotations are estimates, not completed sales — stock is only deducted
+    // once a quotation is converted to a real Invoice (a fresh insertInvoice
+    // call with type == 'Invoice' at conversion time).
+    if (invoice.type == 'Quotation') return;
     for (var item in invoice.items) {
       final product = await ProductService.getProductById(item.product.id);
       if (product != null && !product.unlimitedStock) {
@@ -182,6 +186,10 @@ class InvoiceService {
         });
       }
     });
+
+    // Quotations never touched stock on creation, so editing one doesn't
+    // touch it either — only a real Invoice's edit restores/re-deducts.
+    if (invoice.type == 'Quotation') return;
 
     // Restore stock for old items (outside transaction)
     for (var oldItem in oldItems) {
@@ -636,6 +644,27 @@ class InvoiceService {
     );
   }
 
+  // ─────────────────────────────────────────────
+  // Invoice decline — voids an invoice and returns its stock. One-way: a
+  // 'declined' invoice can't be un-declined (would need to re-deduct stock
+  // that may no longer be available).
+  static Future<void> declineInvoice(String id) async {
+    final invoice = await getInvoiceById(id);
+    if (invoice == null || invoice.type != 'Invoice' || invoice.status == 'declined') {
+      return;
+    }
+
+    for (var item in invoice.items) {
+      final product = await ProductService.getProductById(item.product.id);
+      if (product != null && !product.unlimitedStock) {
+        final restoredStock = product.stock + item.quantity.round();
+        await ProductService.updateProductStock(product.id, restoredStock);
+      }
+    }
+
+    await setInvoiceStatus(id, 'declined');
+  }
+
   /// Marks [quotationId] as converted and links it to the invoice it became.
   static Future<void> markQuotationConverted(
       String quotationId, String invoiceId) async {
@@ -907,7 +936,9 @@ class InvoiceService {
     );
     final invoices = await _buildInvoiceList(rows);
     return invoices
-        .where((inv) => inv.outstandingBalance > InvoiceCalculator.moneyEpsilon)
+        .where((inv) =>
+            inv.status != 'declined' &&
+            inv.outstandingBalance > InvoiceCalculator.moneyEpsilon)
         .toList();
   }
 
@@ -926,7 +957,9 @@ class InvoiceService {
     );
     final invoices = await _buildInvoiceList(rows);
     final overdue = invoices
-        .where((inv) => InvoiceCalculator.isOverdue(
+        .where((inv) =>
+            inv.status != 'declined' &&
+            InvoiceCalculator.isOverdue(
               dueDate: inv.dueDate,
               outstanding: inv.outstandingBalance,
             ))
@@ -946,7 +979,9 @@ class InvoiceService {
     );
     final invoices = await _buildInvoiceList(rows);
     return invoices
-        .where((inv) => inv.outstandingBalance > InvoiceCalculator.moneyEpsilon)
+        .where((inv) =>
+            inv.status != 'declined' &&
+            inv.outstandingBalance > InvoiceCalculator.moneyEpsilon)
         .toList();
   }
 

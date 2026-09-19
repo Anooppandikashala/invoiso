@@ -382,6 +382,25 @@ class _InvoiceManagementScreenV2State
     }
   }
 
+  Future<void> _declineInvoice(Invoice invoice) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await AppError.confirm(
+      context,
+      title: l10n.invoiceMgmtDeclineInvoiceTitle,
+      message: l10n.invoiceMgmtDeclineInvoiceBody(invoice.invoiceNumber ?? invoice.id),
+      confirmLabel: l10n.invoiceMgmtMarkAsDeclined,
+      confirmColor: Colors.red,
+    );
+    if (!confirmed) return;
+
+    await ref.read(invoiceRepositoryProvider).declineInvoice(invoice.id);
+    ref.read(invoicesProvider.notifier).refresh();
+    await _loadPage();
+    if (mounted) {
+      AppError.showSuccess(context, l10n.invoiceMgmtDeclinedSuccessMessage);
+    }
+  }
+
   // ─── Toolbar actions ───────────────────────────────────────────────────────
 
   Future<void> _exportCsv() async {
@@ -1757,16 +1776,24 @@ class _InvoiceManagementScreenV2State
   // those are visible, so the menu carries all of them.
   List<PopupMenuEntry<String>> _rowActionMenuItemsV2(Invoice invoice, bool isWide) {
     final l10n = AppLocalizations.of(context)!;
+    final isDeclined = widget.filterType == 'Invoice' && invoice.status == 'declined';
     return [
       if (!isWide) ...[
         PopupMenuItem(value: 'view', child: _MenuRow(Icons.visibility_outlined, l10n.actionView, Colors.green)),
-        PopupMenuItem(value: 'edit', child: _MenuRow(Icons.edit_outlined, l10n.actionEdit, Colors.blue)),
-        if (widget.filterType == 'Invoice')
+        if (!isDeclined)
+          PopupMenuItem(value: 'edit', child: _MenuRow(Icons.edit_outlined, l10n.actionEdit, Colors.blue)),
+        if (widget.filterType == 'Invoice' && !isDeclined)
           PopupMenuItem(
             value: 'pay',
             child: _MenuRow(Icons.payments_outlined, l10n.actionApplyPayment,
                 invoice.paymentStatus == PaymentStatus.paid ? Colors.green : Colors.purple),
           ),
+      ],
+      if (widget.filterType == 'Invoice' && !isDeclined) ...[
+        PopupMenuItem(
+            value: 'decline_invoice',
+            child: _MenuRow(Icons.cancel_outlined, l10n.invoiceMgmtMarkAsDeclined, Colors.red)),
+        const PopupMenuDivider(),
       ],
       if (widget.filterType == 'Quotation') ...[
         if (widget.onConvertToInvoice != null)
@@ -1811,6 +1838,8 @@ class _InvoiceManagementScreenV2State
         widget.onEditInvoice(invoice);
       case 'pay':
         _showApplyPaymentDialog(invoice);
+      case 'decline_invoice':
+        _declineInvoice(invoice);
       case 'convert':
         _confirmAndConvert(invoice);
       case 'mark_sent':
@@ -1834,6 +1863,7 @@ class _InvoiceManagementScreenV2State
 
   Widget _rowActionsV2(Invoice invoice, bool isWide) {
     final l10n = AppLocalizations.of(context)!;
+    final isDeclined = widget.filterType == 'Invoice' && invoice.status == 'declined';
     final menu = PopupMenuButton<String>(
       icon: const Icon(Icons.more_vert, size: 20),
       tooltip: l10n.invoiceMgmtMoreActionsTooltip,
@@ -1849,9 +1879,10 @@ class _InvoiceManagementScreenV2State
       children: [
         _buildActionButton(Icons.visibility_outlined, Colors.green, l10n.actionView,
             () => InvoicePdfServices.showInvoiceDetails(context, invoice)),
-        _buildActionButton(
-            Icons.edit_outlined, Colors.blue, l10n.actionEdit, () => widget.onEditInvoice(invoice)),
-        if (widget.filterType == 'Invoice')
+        if (!isDeclined)
+          _buildActionButton(
+              Icons.edit_outlined, Colors.blue, l10n.actionEdit, () => widget.onEditInvoice(invoice)),
+        if (widget.filterType == 'Invoice' && !isDeclined)
           _buildActionButton(
             Icons.payments_outlined,
             invoice.paymentStatus == PaymentStatus.paid ? Colors.green : Colors.purple,
@@ -2025,11 +2056,13 @@ class _InvoiceManagementScreenV2State
               width: 76,
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: _buildPaymentStatusChip(invoice.paymentStatus),
+                child: invoice.status == 'declined'
+                    ? _statusPill(AppLocalizations.of(context)!.invoiceStatusDeclinedBadge, Colors.red)
+                    : _buildPaymentStatusChip(invoice.paymentStatus),
               ),
             ),
             Expanded(
-              child: invoice.paymentStatus == PaymentStatus.paid
+              child: invoice.status == 'declined' || invoice.paymentStatus == PaymentStatus.paid
                   ? Text('—', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))
                   : Text(
                       '${invoice.currencySymbol} ${invoice.outstandingBalance.toStringAsFixed(2)}',

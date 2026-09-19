@@ -398,6 +398,17 @@
   "quotationStatusAccepted": "Accepté",
   "quotationStatusDeclined": "Refusé",
   "quotationStatusConverted": "Convertie",
+  "invoiceMgmtDeclineInvoiceTitle": "Refuser la facture ?",
+  "invoiceMgmtDeclineInvoiceBody": "Cela marquera la facture #{number} comme refusée et remettra ses articles en stock. Cette action est irréversible.",
+  "@invoiceMgmtDeclineInvoiceBody": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtDeclinedSuccessMessage": "Facture refusée, stock restauré.",
+  "invoiceStatusDeclinedBadge": "Refusée",
   "createInvoiceConvertTitle": "Convertir en facture",
   "createInvoiceConvertedSuccessMessage": "Converti en facture n° {invoiceNumber}",
   "createInvoiceTrashQuotationAction": "Corbeille",

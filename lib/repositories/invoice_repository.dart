@@ -47,6 +47,8 @@ abstract class InvoiceRepository {
   Future<void> setInvoiceStatus(String id, String status);
   /// Marks [quotationId] converted and links it to the invoice it became.
   Future<void> markQuotationConverted(String quotationId, String invoiceId);
+  /// Voids invoice [id], returning its stock. One-way — no undo.
+  Future<void> declineInvoice(String id);
   Future<void> permanentDeleteInvoice(String id);
   Future<List<Invoice>> getDeletedInvoices();
   Future<void> deleteInvoice(String id);

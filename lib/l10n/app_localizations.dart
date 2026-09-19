@@ -2520,6 +2520,30 @@ abstract class AppLocalizations {
   /// **'Converted'**
   String get quotationStatusConverted;
 
+  /// No description provided for @invoiceMgmtDeclineInvoiceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline invoice?'**
+  String get invoiceMgmtDeclineInvoiceTitle;
+
+  /// No description provided for @invoiceMgmtDeclineInvoiceBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This will mark invoice #{number} as declined and return its items to stock. This can\'t be undone.'**
+  String invoiceMgmtDeclineInvoiceBody(String number);
+
+  /// No description provided for @invoiceMgmtDeclinedSuccessMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice declined, stock restored.'**
+  String get invoiceMgmtDeclinedSuccessMessage;
+
+  /// No description provided for @invoiceStatusDeclinedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Declined'**
+  String get invoiceStatusDeclinedBadge;
+
   /// No description provided for @createInvoiceConvertTitle.
   ///
   /// In en, this message translates to:
