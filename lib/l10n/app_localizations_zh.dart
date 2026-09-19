@@ -275,6 +275,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get actionRefresh => '刷新';
 
   @override
+  String get helpSearchTooltip => 'Search Help & Settings';
+
+  @override
   String dashboardOutOfStockCountLabel(int count) {
     return '$count 件缺货';
   }

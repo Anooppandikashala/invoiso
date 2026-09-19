@@ -285,6 +285,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get actionRefresh => 'Actualizar';
 
   @override
+  String get helpSearchTooltip => 'Search Help & Settings';
+
+  @override
   String dashboardOutOfStockCountLabel(int count) {
     return '$count sin stock';
   }

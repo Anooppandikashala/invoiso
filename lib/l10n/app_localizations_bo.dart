@@ -284,6 +284,9 @@ class AppLocalizationsBo extends AppLocalizations {
   String get actionRefresh => 'གསར་སྒྱུར།';
 
   @override
+  String get helpSearchTooltip => 'Search Help & Settings';
+
+  @override
   String dashboardOutOfStockCountLabel(int count) {
     return '$count ཚོང་ཟོག་ཟད་སོང་།';
   }
