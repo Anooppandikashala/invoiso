@@ -294,10 +294,16 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get dashboardRecentInvoicesTitle => '最近发票';
+  String get dashboardRecentInvoicesTitle => '最近文档';
 
   @override
-  String get dashboardLastFiveInvoicesLabel => '最近 5 张发票';
+  String get dashboardLastFiveInvoicesLabel => '最近 5 个文档';
+
+  @override
+  String get dashboardColDocumentNo => '单据编号';
+
+  @override
+  String get dashboardColType => '类型';
 
   @override
   String get dashboardNoInvoicesYetTitle => '暂无发票';
@@ -1370,6 +1376,69 @@ class AppLocalizationsZh extends AppLocalizations {
   String invoiceMgmtNewDocumentButton(String type) {
     return '新建$type';
   }
+
+  @override
+  String get invoiceMgmtConvertToInvoiceAction => '转换为发票';
+
+  @override
+  String get invoiceMgmtConvertAgainTitle => '再次转换？';
+
+  @override
+  String invoiceMgmtConvertAgainBody(String number) {
+    return '报价单 $number 已转换为发票。要从它再创建一张发票吗？';
+  }
+
+  @override
+  String get invoiceMgmtMarkAsSent => '标记为已发送';
+
+  @override
+  String get invoiceMgmtMarkAsAccepted => '标记为已接受';
+
+  @override
+  String get invoiceMgmtMarkAsDeclined => '标记为已拒绝';
+
+  @override
+  String get quotationStatusDraft => '草稿';
+
+  @override
+  String get quotationStatusSent => '已发送';
+
+  @override
+  String get quotationStatusAccepted => '已接受';
+
+  @override
+  String get quotationStatusDeclined => '已拒绝';
+
+  @override
+  String get quotationStatusConverted => '已转换';
+
+  @override
+  String get invoiceMgmtDeclineInvoiceTitle => '拒绝此发票？';
+
+  @override
+  String invoiceMgmtDeclineInvoiceBody(String number) {
+    return '这将把发票 #$number 标记为已拒绝，并将其商品归还库存。此操作无法撤销。';
+  }
+
+  @override
+  String get invoiceMgmtDeclinedSuccessMessage => '发票已拒绝，库存已归还。';
+
+  @override
+  String get invoiceStatusDeclinedBadge => '已拒绝';
+
+  @override
+  String get createInvoiceConvertTitle => '转换为发票';
+
+  @override
+  String createInvoiceConvertedSuccessMessage(String invoiceNumber) {
+    return '已转换为发票 #$invoiceNumber';
+  }
+
+  @override
+  String get createInvoiceTrashQuotationAction => '删除报价';
+
+  @override
+  String get createInvoiceQuotationTrashedMessage => '报价单已移至回收站';
 
   @override
   String get invoiceMgmtOverdueBadge => '已逾期';

@@ -57,6 +57,9 @@ class InvoiceService {
         'hide_invoice_number': invoice.hideInvoiceNumber ? 1 : 0,
         'custom_invoice_number': invoice.customInvoiceNumber,
         'custom_fields': CustomFieldValue.listToJson(invoice.customFields),
+        'status': invoice.status,
+        'converted_to_invoice_id': invoice.convertedToInvoiceId,
+        'converted_from_invoice_id': invoice.convertedFromInvoiceId,
       });
 
       for (var item in invoice.items) {
@@ -89,7 +92,11 @@ class InvoiceService {
       }
     });
 
-    // Stock deduction happens outside the transaction to avoid nested DB calls
+    // Stock deduction happens outside the transaction to avoid nested DB calls.
+    // Quotations are estimates, not completed sales — stock is only deducted
+    // once a quotation is converted to a real Invoice (a fresh insertInvoice
+    // call with type == 'Invoice' at conversion time).
+    if (invoice.type == 'Quotation') return;
     for (var item in invoice.items) {
       final product = await ProductService.getProductById(item.product.id);
       if (product != null && !product.unlimitedStock) {
@@ -179,6 +186,10 @@ class InvoiceService {
         });
       }
     });
+
+    // Quotations never touched stock on creation, so editing one doesn't
+    // touch it either — only a real Invoice's edit restores/re-deducts.
+    if (invoice.type == 'Quotation') return;
 
     // Restore stock for old items (outside transaction)
     for (var oldItem in oldItems) {
@@ -415,6 +426,9 @@ class InvoiceService {
       hideInvoiceNumber: (i['hide_invoice_number'] as int?) == 1,
       customInvoiceNumber: i['custom_invoice_number'] as String?,
       customFields: CustomFieldValue.listFromJson(i['custom_fields'] as String?),
+      status: i['status'] as String?,
+      convertedToInvoiceId: i['converted_to_invoice_id'] as String?,
+      convertedFromInvoiceId: i['converted_from_invoice_id'] as String?,
       payments: payments,
     );
   }
@@ -618,6 +632,51 @@ class InvoiceService {
     );
   }
 
+  // ─────────────────────────────────────────────
+  // Quotation lifecycle
+  static Future<void> setInvoiceStatus(String id, String status) async {
+    final db = await dbHelper.database;
+    await db.update(
+      'invoices',
+      {'status': status},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  // ─────────────────────────────────────────────
+  // Invoice decline — voids an invoice and returns its stock. One-way: a
+  // 'declined' invoice can't be un-declined (would need to re-deduct stock
+  // that may no longer be available).
+  static Future<void> declineInvoice(String id) async {
+    final invoice = await getInvoiceById(id);
+    if (invoice == null || invoice.type != 'Invoice' || invoice.status == 'declined') {
+      return;
+    }
+
+    for (var item in invoice.items) {
+      final product = await ProductService.getProductById(item.product.id);
+      if (product != null && !product.unlimitedStock) {
+        final restoredStock = product.stock + item.quantity.round();
+        await ProductService.updateProductStock(product.id, restoredStock);
+      }
+    }
+
+    await setInvoiceStatus(id, 'declined');
+  }
+
+  /// Marks [quotationId] as converted and links it to the invoice it became.
+  static Future<void> markQuotationConverted(
+      String quotationId, String invoiceId) async {
+    final db = await dbHelper.database;
+    await db.update(
+      'invoices',
+      {'status': 'converted', 'converted_to_invoice_id': invoiceId},
+      where: 'id = ?',
+      whereArgs: [quotationId],
+    );
+  }
+
   static Future<void> permanentDeleteInvoice(String id) async {
     final db = await dbHelper.database;
     await db.transaction((txn) async {
@@ -708,6 +767,9 @@ class InvoiceService {
           customInvoiceNumber: map['custom_invoice_number'] as String?,
           customFields:
               CustomFieldValue.listFromJson(map['custom_fields'] as String?),
+          status: map['status'] as String?,
+          convertedToInvoiceId: map['converted_to_invoice_id'] as String?,
+          convertedFromInvoiceId: map['converted_from_invoice_id'] as String?,
         ),
       );
     }
@@ -874,7 +936,9 @@ class InvoiceService {
     );
     final invoices = await _buildInvoiceList(rows);
     return invoices
-        .where((inv) => inv.outstandingBalance > InvoiceCalculator.moneyEpsilon)
+        .where((inv) =>
+            inv.status != 'declined' &&
+            inv.outstandingBalance > InvoiceCalculator.moneyEpsilon)
         .toList();
   }
 
@@ -893,7 +957,9 @@ class InvoiceService {
     );
     final invoices = await _buildInvoiceList(rows);
     final overdue = invoices
-        .where((inv) => InvoiceCalculator.isOverdue(
+        .where((inv) =>
+            inv.status != 'declined' &&
+            InvoiceCalculator.isOverdue(
               dueDate: inv.dueDate,
               outstanding: inv.outstandingBalance,
             ))
@@ -913,7 +979,9 @@ class InvoiceService {
     );
     final invoices = await _buildInvoiceList(rows);
     return invoices
-        .where((inv) => inv.outstandingBalance > InvoiceCalculator.moneyEpsilon)
+        .where((inv) =>
+            inv.status != 'declined' &&
+            inv.outstandingBalance > InvoiceCalculator.moneyEpsilon)
         .toList();
   }
 

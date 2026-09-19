@@ -85,6 +85,14 @@ class SqliteInvoiceRepository implements InvoiceRepository {
   @override
   Future<void> restoreInvoice(String id) => InvoiceService.restoreInvoice(id);
   @override
+  Future<void> setInvoiceStatus(String id, String status) =>
+      InvoiceService.setInvoiceStatus(id, status);
+  @override
+  Future<void> markQuotationConverted(String quotationId, String invoiceId) =>
+      InvoiceService.markQuotationConverted(quotationId, invoiceId);
+  @override
+  Future<void> declineInvoice(String id) => InvoiceService.declineInvoice(id);
+  @override
   Future<void> permanentDeleteInvoice(String id) => InvoiceService.permanentDeleteInvoice(id);
   @override
   Future<List<Invoice>> getDeletedInvoices() => InvoiceService.getDeletedInvoices();

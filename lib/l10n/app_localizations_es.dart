@@ -304,10 +304,16 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get dashboardRecentInvoicesTitle => 'Facturas recientes';
+  String get dashboardRecentInvoicesTitle => 'Documentos recientes';
 
   @override
-  String get dashboardLastFiveInvoicesLabel => 'Últimas 5 facturas';
+  String get dashboardLastFiveInvoicesLabel => 'Últimos 5 documentos';
+
+  @override
+  String get dashboardColDocumentNo => 'N.º de documento';
+
+  @override
+  String get dashboardColType => 'Tipo';
 
   @override
   String get dashboardNoInvoicesYetTitle => 'Aún no hay facturas';
@@ -1431,6 +1437,71 @@ class AppLocalizationsEs extends AppLocalizations {
   String invoiceMgmtNewDocumentButton(String type) {
     return 'Crear $type';
   }
+
+  @override
+  String get invoiceMgmtConvertToInvoiceAction => 'Convertir en factura';
+
+  @override
+  String get invoiceMgmtConvertAgainTitle => '¿Convertir de nuevo?';
+
+  @override
+  String invoiceMgmtConvertAgainBody(String number) {
+    return 'La cotización $number ya se convirtió en una factura. ¿Crear otra factura a partir de ella?';
+  }
+
+  @override
+  String get invoiceMgmtMarkAsSent => 'Marcar como enviada';
+
+  @override
+  String get invoiceMgmtMarkAsAccepted => 'Marcar como aceptada';
+
+  @override
+  String get invoiceMgmtMarkAsDeclined => 'Marcar como rechazada';
+
+  @override
+  String get quotationStatusDraft => 'Borrador';
+
+  @override
+  String get quotationStatusSent => 'Enviada';
+
+  @override
+  String get quotationStatusAccepted => 'Aceptada';
+
+  @override
+  String get quotationStatusDeclined => 'Rechazada';
+
+  @override
+  String get quotationStatusConverted => 'Convertida';
+
+  @override
+  String get invoiceMgmtDeclineInvoiceTitle => '¿Rechazar factura?';
+
+  @override
+  String invoiceMgmtDeclineInvoiceBody(String number) {
+    return 'Esto marcará la factura #$number como rechazada y devolverá sus artículos al stock. Esta acción no se puede deshacer.';
+  }
+
+  @override
+  String get invoiceMgmtDeclinedSuccessMessage =>
+      'Factura rechazada, stock restaurado.';
+
+  @override
+  String get invoiceStatusDeclinedBadge => 'Rechazada';
+
+  @override
+  String get createInvoiceConvertTitle => 'Convertir en factura';
+
+  @override
+  String createInvoiceConvertedSuccessMessage(String invoiceNumber) {
+    return 'Convertida en factura n.º $invoiceNumber';
+  }
+
+  @override
+  String get createInvoiceTrashQuotationAction => 'Eliminar cotización';
+
+  @override
+  String get createInvoiceQuotationTrashedMessage =>
+      'Cotización movida a la papelera';
 
   @override
   String get invoiceMgmtOverdueBadge => 'Vencida';

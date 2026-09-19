@@ -645,14 +645,26 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardRecentInvoicesTitle.
   ///
   /// In en, this message translates to:
-  /// **'Recent Invoices'**
+  /// **'Recent Documents'**
   String get dashboardRecentInvoicesTitle;
 
   /// No description provided for @dashboardLastFiveInvoicesLabel.
   ///
   /// In en, this message translates to:
-  /// **'Last 5 invoices'**
+  /// **'Last 5 documents'**
   String get dashboardLastFiveInvoicesLabel;
+
+  /// No description provided for @dashboardColDocumentNo.
+  ///
+  /// In en, this message translates to:
+  /// **'Document no.'**
+  String get dashboardColDocumentNo;
+
+  /// No description provided for @dashboardColType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get dashboardColType;
 
   /// No description provided for @dashboardNoInvoicesYetTitle.
   ///
@@ -2441,6 +2453,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'New {type}'**
   String invoiceMgmtNewDocumentButton(String type);
+
+  /// No description provided for @invoiceMgmtConvertToInvoiceAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert to Invoice'**
+  String get invoiceMgmtConvertToInvoiceAction;
+
+  /// No description provided for @invoiceMgmtConvertAgainTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert again?'**
+  String get invoiceMgmtConvertAgainTitle;
+
+  /// No description provided for @invoiceMgmtConvertAgainBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Quotation {number} was already converted to an invoice. Create another invoice from it?'**
+  String invoiceMgmtConvertAgainBody(String number);
+
+  /// No description provided for @invoiceMgmtMarkAsSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as sent'**
+  String get invoiceMgmtMarkAsSent;
+
+  /// No description provided for @invoiceMgmtMarkAsAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as accepted'**
+  String get invoiceMgmtMarkAsAccepted;
+
+  /// No description provided for @invoiceMgmtMarkAsDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as declined'**
+  String get invoiceMgmtMarkAsDeclined;
+
+  /// No description provided for @quotationStatusDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get quotationStatusDraft;
+
+  /// No description provided for @quotationStatusSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent'**
+  String get quotationStatusSent;
+
+  /// No description provided for @quotationStatusAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get quotationStatusAccepted;
+
+  /// No description provided for @quotationStatusDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'Declined'**
+  String get quotationStatusDeclined;
+
+  /// No description provided for @quotationStatusConverted.
+  ///
+  /// In en, this message translates to:
+  /// **'Converted'**
+  String get quotationStatusConverted;
+
+  /// No description provided for @invoiceMgmtDeclineInvoiceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline invoice?'**
+  String get invoiceMgmtDeclineInvoiceTitle;
+
+  /// No description provided for @invoiceMgmtDeclineInvoiceBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This will mark invoice #{number} as declined and return its items to stock. This can\'t be undone.'**
+  String invoiceMgmtDeclineInvoiceBody(String number);
+
+  /// No description provided for @invoiceMgmtDeclinedSuccessMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice declined, stock restored.'**
+  String get invoiceMgmtDeclinedSuccessMessage;
+
+  /// No description provided for @invoiceStatusDeclinedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Declined'**
+  String get invoiceStatusDeclinedBadge;
+
+  /// No description provided for @createInvoiceConvertTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert to Invoice'**
+  String get createInvoiceConvertTitle;
+
+  /// No description provided for @createInvoiceConvertedSuccessMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Converted to Invoice #{invoiceNumber}'**
+  String createInvoiceConvertedSuccessMessage(String invoiceNumber);
+
+  /// No description provided for @createInvoiceTrashQuotationAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Trash quote'**
+  String get createInvoiceTrashQuotationAction;
+
+  /// No description provided for @createInvoiceQuotationTrashedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Quotation moved to trash'**
+  String get createInvoiceQuotationTrashedMessage;
 
   /// No description provided for @invoiceMgmtOverdueBadge.
   ///

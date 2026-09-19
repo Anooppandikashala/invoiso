@@ -31,6 +31,8 @@ class InvoiceManagementScreenV2 extends ConsumerStatefulWidget {
   final String filterType; // 'Invoice' | 'Quotation' | 'Receipt'
   // Opens the create form with [filterType] preselected. Null hides the button.
   final void Function(String type)? onCreateNew;
+  // Converts a quotation to an invoice. Only wired for the Quotation list.
+  final void Function(Invoice quotation)? onConvertToInvoice;
 
   const InvoiceManagementScreenV2({
     super.key,
@@ -39,6 +41,7 @@ class InvoiceManagementScreenV2 extends ConsumerStatefulWidget {
     required this.user,
     this.filterType = 'Invoice',
     this.onCreateNew,
+    this.onConvertToInvoice,
   });
 
   @override
@@ -324,6 +327,42 @@ class _InvoiceManagementScreenV2State
     }
   }
 
+  Future<void> _setQuotationStatus(Invoice quotation, String status) async {
+    await ref
+        .read(invoiceRepositoryProvider)
+        .setInvoiceStatus(quotation.id, status);
+    ref.read(invoicesProvider.notifier).refresh();
+    if (!mounted) return;
+    _currentPage = 0;
+    await _loadPage();
+  }
+
+  Future<void> _confirmAndConvert(Invoice quotation) async {
+    if (widget.onConvertToInvoice == null) return;
+    if (quotation.status == 'converted') {
+      final l10n = AppLocalizations.of(context)!;
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(l10n.invoiceMgmtConvertAgainTitle),
+          content: Text(l10n.invoiceMgmtConvertAgainBody(
+              quotation.invoiceNumber ?? quotation.id)),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(l10n.actionCancel)),
+            FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: Text(l10n.invoiceMgmtConvertToInvoiceAction)),
+          ],
+        ),
+      );
+      if (proceed != true) return;
+    }
+    widget.onConvertToInvoice!(quotation);
+  }
+
   Future<void> _softDelete(Invoice invoice) async {
     final l10n = AppLocalizations.of(context)!;
     final confirmed = await AppError.confirm(
@@ -340,6 +379,25 @@ class _InvoiceManagementScreenV2State
     await _loadPage();
     if (mounted) {
       AppError.showSuccess(context, AppLocalizations.of(context)!.invoiceMgmtMovedToTrashMessage);
+    }
+  }
+
+  Future<void> _declineInvoice(Invoice invoice) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await AppError.confirm(
+      context,
+      title: l10n.invoiceMgmtDeclineInvoiceTitle,
+      message: l10n.invoiceMgmtDeclineInvoiceBody(invoice.invoiceNumber ?? invoice.id),
+      confirmLabel: l10n.invoiceMgmtMarkAsDeclined,
+      confirmColor: Colors.red,
+    );
+    if (!confirmed) return;
+
+    await ref.read(invoiceRepositoryProvider).declineInvoice(invoice.id);
+    ref.read(invoicesProvider.notifier).refresh();
+    await _loadPage();
+    if (mounted) {
+      AppError.showSuccess(context, l10n.invoiceMgmtDeclinedSuccessMessage);
     }
   }
 
@@ -1718,16 +1776,45 @@ class _InvoiceManagementScreenV2State
   // those are visible, so the menu carries all of them.
   List<PopupMenuEntry<String>> _rowActionMenuItemsV2(Invoice invoice, bool isWide) {
     final l10n = AppLocalizations.of(context)!;
+    final isDeclined = widget.filterType == 'Invoice' && invoice.status == 'declined';
     return [
       if (!isWide) ...[
         PopupMenuItem(value: 'view', child: _MenuRow(Icons.visibility_outlined, l10n.actionView, Colors.green)),
-        PopupMenuItem(value: 'edit', child: _MenuRow(Icons.edit_outlined, l10n.actionEdit, Colors.blue)),
-        if (widget.filterType == 'Invoice')
+        if (!isDeclined)
+          PopupMenuItem(value: 'edit', child: _MenuRow(Icons.edit_outlined, l10n.actionEdit, Colors.blue)),
+        if (widget.filterType == 'Invoice' && !isDeclined)
           PopupMenuItem(
             value: 'pay',
             child: _MenuRow(Icons.payments_outlined, l10n.actionApplyPayment,
                 invoice.paymentStatus == PaymentStatus.paid ? Colors.green : Colors.purple),
           ),
+      ],
+      if (widget.filterType == 'Invoice' && !isDeclined) ...[
+        PopupMenuItem(
+            value: 'decline_invoice',
+            child: _MenuRow(Icons.cancel_outlined, l10n.invoiceMgmtMarkAsDeclined, Colors.red)),
+        const PopupMenuDivider(),
+      ],
+      if (widget.filterType == 'Quotation') ...[
+        if (widget.onConvertToInvoice != null)
+          PopupMenuItem(
+              value: 'convert',
+              child: _MenuRow(Icons.swap_horiz, l10n.invoiceMgmtConvertToInvoiceAction, Colors.indigo)),
+        if ((invoice.status ?? 'draft') != 'converted') ...[
+          if ((invoice.status ?? 'draft') != 'sent')
+            PopupMenuItem(
+                value: 'mark_sent',
+                child: _MenuRow(Icons.send_outlined, l10n.invoiceMgmtMarkAsSent, Colors.blue)),
+          if ((invoice.status ?? 'draft') != 'accepted')
+            PopupMenuItem(
+                value: 'mark_accepted',
+                child: _MenuRow(Icons.check_circle_outline, l10n.invoiceMgmtMarkAsAccepted, Colors.green)),
+          if ((invoice.status ?? 'draft') != 'declined')
+            PopupMenuItem(
+                value: 'mark_declined',
+                child: _MenuRow(Icons.cancel_outlined, l10n.invoiceMgmtMarkAsDeclined, Colors.red)),
+        ],
+        const PopupMenuDivider(),
       ],
       PopupMenuItem(value: 'duplicate', child: _MenuRow(Icons.copy_all_outlined, l10n.actionDuplicate, Colors.teal)),
       if (!isWide) ...[
@@ -1751,6 +1838,16 @@ class _InvoiceManagementScreenV2State
         widget.onEditInvoice(invoice);
       case 'pay':
         _showApplyPaymentDialog(invoice);
+      case 'decline_invoice':
+        _declineInvoice(invoice);
+      case 'convert':
+        _confirmAndConvert(invoice);
+      case 'mark_sent':
+        _setQuotationStatus(invoice, 'sent');
+      case 'mark_accepted':
+        _setQuotationStatus(invoice, 'accepted');
+      case 'mark_declined':
+        _setQuotationStatus(invoice, 'declined');
       case 'duplicate':
         _showCloneDialog(invoice);
       case 'preview':
@@ -1766,6 +1863,7 @@ class _InvoiceManagementScreenV2State
 
   Widget _rowActionsV2(Invoice invoice, bool isWide) {
     final l10n = AppLocalizations.of(context)!;
+    final isDeclined = widget.filterType == 'Invoice' && invoice.status == 'declined';
     final menu = PopupMenuButton<String>(
       icon: const Icon(Icons.more_vert, size: 20),
       tooltip: l10n.invoiceMgmtMoreActionsTooltip,
@@ -1781,9 +1879,10 @@ class _InvoiceManagementScreenV2State
       children: [
         _buildActionButton(Icons.visibility_outlined, Colors.green, l10n.actionView,
             () => InvoicePdfServices.showInvoiceDetails(context, invoice)),
-        _buildActionButton(
-            Icons.edit_outlined, Colors.blue, l10n.actionEdit, () => widget.onEditInvoice(invoice)),
-        if (widget.filterType == 'Invoice')
+        if (!isDeclined)
+          _buildActionButton(
+              Icons.edit_outlined, Colors.blue, l10n.actionEdit, () => widget.onEditInvoice(invoice)),
+        if (widget.filterType == 'Invoice' && !isDeclined)
           _buildActionButton(
             Icons.payments_outlined,
             invoice.paymentStatus == PaymentStatus.paid ? Colors.green : Colors.purple,
@@ -1835,6 +1934,8 @@ class _InvoiceManagementScreenV2State
             SizedBox(width: 76, child: Text(l10n.invoiceMgmtColStatus, style: style)),
             Expanded(child: Text(l10n.invoiceMgmtColOutstanding, style: style)),
           ],
+          if (widget.filterType == 'Quotation')
+            SizedBox(width: 96, child: Text(l10n.invoiceMgmtColStatus, style: style)),
           SizedBox(width: isWide ? 300 : 48, child: Text(l10n.invoiceMgmtColActions, style: style)),
         ],
       ),
@@ -1955,11 +2056,13 @@ class _InvoiceManagementScreenV2State
               width: 76,
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: _buildPaymentStatusChip(invoice.paymentStatus),
+                child: invoice.status == 'declined'
+                    ? _statusPill(AppLocalizations.of(context)!.invoiceStatusDeclinedBadge, Colors.red)
+                    : _buildPaymentStatusChip(invoice.paymentStatus),
               ),
             ),
             Expanded(
-              child: invoice.paymentStatus == PaymentStatus.paid
+              child: invoice.status == 'declined' || invoice.paymentStatus == PaymentStatus.paid
                   ? Text('—', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))
                   : Text(
                       '${invoice.currencySymbol} ${invoice.outstandingBalance.toStringAsFixed(2)}',
@@ -1974,6 +2077,14 @@ class _InvoiceManagementScreenV2State
                     ),
             ),
           ],
+          if (widget.filterType == 'Quotation')
+            SizedBox(
+              width: 96,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: _buildQuotationStatusChip(invoice.status),
+              ),
+            ),
           SizedBox(width: isWide ? 300 : 48, child: _rowActionsV2(invoice, isWide)),
         ],
       ),
@@ -2371,6 +2482,35 @@ class _InvoiceManagementScreenV2State
         color = Colors.red;
         label = l10n.paymentStatusUnpaid;
     }
+    return _statusPill(label, color);
+  }
+
+  // Quotation lifecycle chip. status null -> 'draft'.
+  Widget _buildQuotationStatusChip(String? status) {
+    final l10n = AppLocalizations.of(context)!;
+    final Color color;
+    final String label;
+    switch (status ?? 'draft') {
+      case 'sent':
+        color = Colors.blue;
+        label = l10n.quotationStatusSent;
+      case 'accepted':
+        color = Colors.green;
+        label = l10n.quotationStatusAccepted;
+      case 'declined':
+        color = Colors.red;
+        label = l10n.quotationStatusDeclined;
+      case 'converted':
+        color = Colors.indigo;
+        label = l10n.quotationStatusConverted;
+      default:
+        color = Colors.blueGrey;
+        label = l10n.quotationStatusDraft;
+    }
+    return _statusPill(label, color);
+  }
+
+  Widget _statusPill(String label, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
       decoration: BoxDecoration(

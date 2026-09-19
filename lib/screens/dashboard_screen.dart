@@ -78,6 +78,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   // the "New {type}" button on each management screen. Reset to 'Invoice' by
   // the nav-rail New Invoice action.
   String _newInvoiceType = 'Invoice';
+  // Id of the quotation being converted to an invoice (drives the create
+  // form's convert mode). Null unless a conversion is in flight.
+  String? _convertSourceQuotationId;
   bool _hasUpdate = false;
   String _createInvoiceLayout = 'v2';
   int? _accessibilityJumpToken;
@@ -213,13 +216,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       case 1:
         final isNewDoc = invoiceToEdit == null && _invoiceToClone == null;
         final createInvoiceKey = ValueKey(
-            'create_invoice_${invoiceToEdit?.id ?? 'new'}_${_invoiceToClone?.id ?? ''}_${isNewDoc ? _newInvoiceType : ''}');
+            'create_invoice_${invoiceToEdit?.id ?? 'new'}_${_invoiceToClone?.id ?? ''}_${isNewDoc ? _newInvoiceType : ''}_${_convertSourceQuotationId ?? ''}');
         void onCreateNewInvoice() {
           if (!mounted) return;
           setState(() {
             invoiceToEdit = null;
             _invoiceToClone = null;
             _newInvoiceType = 'Invoice';
+            _convertSourceQuotationId = null;
           });
         }
         return _createInvoiceLayout == 'v1'
@@ -229,6 +233,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 cloneFrom: _invoiceToClone,
                 cloneType: _invoiceToClone != null ? _cloneType : null,
                 initialType: isNewDoc ? _newInvoiceType : null,
+                convertFromQuotationId: _convertSourceQuotationId,
                 guard: _invoiceFormGuardV1,
                 onCreateNewInvoice: onCreateNewInvoice,
               )
@@ -238,6 +243,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 cloneFrom: _invoiceToClone,
                 cloneType: _invoiceToClone != null ? _cloneType : null,
                 initialType: isNewDoc ? _newInvoiceType : null,
+                convertFromQuotationId: _convertSourceQuotationId,
                 guard: _invoiceFormGuard,
                 onCreateNewInvoice: onCreateNewInvoice,
               );
@@ -256,6 +262,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           onEditInvoice: editInvoice,
           onCloneInvoice: cloneInvoice,
           onCreateNew: _createDocumentOfType,
+          onConvertToInvoice: _convertQuotationToInvoice,
           user: _currentUser,
           filterType: 'Quotation',
         );
@@ -357,6 +364,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       _selectedIndex = 1;
       invoiceToEdit = invoice;
       _invoiceToClone = null;
+      _convertSourceQuotationId = null;
     });
     _shortcutsFocusNode.unfocus();
   }
@@ -373,6 +381,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       invoiceToEdit = null;
       _invoiceToClone = invoice;
       _cloneType = type;
+      _convertSourceQuotationId = null;
     });
     _shortcutsFocusNode.unfocus();
   }
@@ -388,6 +397,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       invoiceToEdit = null;
       _invoiceToClone = null;
       _newInvoiceType = type;
+      _convertSourceQuotationId = null;
+    });
+    _shortcutsFocusNode.unfocus();
+  }
+
+  // "Convert to Invoice" action on a quotation row — opens the create form
+  // pre-filled from the quotation, locked to Invoice type; on save the
+  // quotation is stamped 'converted' and the two are linked.
+  Future<void> _convertQuotationToInvoice(Invoice quotation) async {
+    if (!await _canLeaveInvoiceForm()) return;
+    await _loadCreateInvoiceLayout();
+    if (!mounted) return;
+    setState(() {
+      _selectedIndex = 1;
+      invoiceToEdit = null;
+      _invoiceToClone = quotation;
+      _cloneType = 'Invoice';
+      _convertSourceQuotationId = quotation.id;
     });
     _shortcutsFocusNode.unfocus();
   }
@@ -410,9 +437,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       if (index != 1) {
         invoiceToEdit = null;
         _invoiceToClone = null;
+        _convertSourceQuotationId = null;
       } else {
-        // Nav-rail "New Invoice" always means a plain invoice.
+        // Nav-rail "New Invoice" always means a plain, blank invoice.
         _newInvoiceType = 'Invoice';
+        _invoiceToClone = null;
+        _convertSourceQuotationId = null;
       }
     });
     // See initState: only hold shortcuts focus for non-create-invoice tabs.
@@ -1997,8 +2027,10 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                               Colors.blue,
                                               AppLocalizations.of(context)!
                                                   .actionEdit,
-                                              () => widget
-                                                  .onEditInvoice(invoice)),
+                                              invoice.status == 'declined'
+                                                  ? null
+                                                  : () => widget
+                                                      .onEditInvoice(invoice)),
                                           _buildActionButton(
                                               Icons.copy_all_outlined,
                                               Colors.teal,
@@ -2033,7 +2065,9 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                               Colors.purple,
                                               AppLocalizations.of(context)!
                                                   .actionPayment,
-                                              invoice.type == 'Invoice'
+                                              invoice.type == 'Invoice' &&
+                                                      invoice.status !=
+                                                          'declined'
                                                   ? () => showDialog(
                                                         context: context,
                                                         barrierDismissible:
@@ -3606,8 +3640,17 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
             child: Row(
               children: [
                 Expanded(
+                    flex: 3,
+                    child: Text(
+                        AppLocalizations.of(context)!.dashboardColDocumentNo,
+                        style: TextStyle(
+                            fontSize: 11,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600))),
+                Expanded(
                     flex: 2,
-                    child: Text(AppLocalizations.of(context)!.labelInvoice,
+                    child: Text(AppLocalizations.of(context)!.dashboardColType,
                         style: TextStyle(
                             fontSize: 11,
                             color:
@@ -3622,7 +3665,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                 Theme.of(context).colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w600))),
                 Expanded(
-                    flex: 2,
+                    flex: 3,
                     child: Text(AppLocalizations.of(context)!.labelAmount,
                         textAlign: TextAlign.right,
                         style: TextStyle(
@@ -3661,34 +3704,48 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     final Color statusColor;
     final String statusLabel;
     final l10n = AppLocalizations.of(context)!;
-    switch (status) {
-      case PaymentStatus.paid:
-        statusColor = const Color(0xFF2E7D32);
-        statusLabel = l10n.paymentStatusPaid;
-        break;
-      case PaymentStatus.partial:
-        statusColor = const Color(0xFFF57C00);
-        statusLabel = l10n.paymentStatusPartial;
-        break;
-      default:
-        final isOver = InvoiceCalculator.isOverdue(
-            dueDate: inv.dueDate, outstanding: inv.outstandingBalance);
-        statusColor =
-            isOver ? const Color(0xFFC62828) : const Color(0xFF546E7A);
-        statusLabel = isOver
-            ? l10n.dashboardOverdueSectionTitle
-            : l10n.paymentStatusUnpaid;
+    if (inv.status == 'declined') {
+      statusColor = const Color(0xFFC62828);
+      statusLabel = l10n.invoiceStatusDeclinedBadge;
+    } else {
+      switch (status) {
+        case PaymentStatus.paid:
+          statusColor = const Color(0xFF2E7D32);
+          statusLabel = l10n.paymentStatusPaid;
+          break;
+        case PaymentStatus.partial:
+          statusColor = const Color(0xFFF57C00);
+          statusLabel = l10n.paymentStatusPartial;
+          break;
+        default:
+          final isOver = InvoiceCalculator.isOverdue(
+              dueDate: inv.dueDate, outstanding: inv.outstandingBalance);
+          statusColor =
+              isOver ? const Color(0xFFC62828) : const Color(0xFF546E7A);
+          statusLabel = isOver
+              ? l10n.dashboardOverdueSectionTitle
+              : l10n.paymentStatusUnpaid;
+      }
     }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(
         children: [
           Expanded(
-            flex: 2,
+            flex: 3,
             child: Text(
-                '#${inv.id.length > 8 ? inv.id.substring(inv.id.length - 8) : inv.id}',
+                '#${inv.invoiceNumber ?? inv.id}',
                 style:
                     const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis),
+          ),
+          Expanded(
+            flex: 2,
+            child: Text(_invoiceTypeLabel(context, inv.type),
+                style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis),
           ),
@@ -3702,7 +3759,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                 overflow: TextOverflow.ellipsis),
           ),
           Expanded(
-            flex: 2,
+            flex: 3,
             child: Text('$_currencySymbol ${_fmtAmt(inv.total)}',
                 style:
                     const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
@@ -3722,20 +3779,22 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                     fontWeight: FontWeight.w700)),
           ),
           const SizedBox(width: 8),
-          Tooltip(
-            message: 'Edit',
-            child: InkWell(
-              onTap: () => widget.onEditInvoice(inv),
-              borderRadius: BorderRadius.circular(6),
-              child: Padding(
-                padding: const EdgeInsets.all(4),
-                child: Icon(Icons.edit_outlined,
-                    size: 15,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant),
+          if (inv.status != 'declined') ...[
+            Tooltip(
+              message: 'Edit',
+              child: InkWell(
+                onTap: () => widget.onEditInvoice(inv),
+                borderRadius: BorderRadius.circular(6),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(Icons.edit_outlined,
+                      size: 15,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant),
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 2),
+            const SizedBox(width: 2),
+          ],
           Tooltip(
             message: 'Download PDF',
             child: InkWell(
@@ -4379,16 +4438,17 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
         }
       },
       itemBuilder: (ctx) => [
-        PopupMenuItem(
-          value: 'payment',
-          child: Row(children: [
-            const Icon(Icons.payments_outlined,
-                size: 16, color: Color(0xFF6A1B9A)),
-            const SizedBox(width: 10),
-            Text(AppLocalizations.of(context)!.actionRecordPayment,
-                style: const TextStyle(fontSize: 13)),
-          ]),
-        ),
+        if (inv.status != 'declined')
+          PopupMenuItem(
+            value: 'payment',
+            child: Row(children: [
+              const Icon(Icons.payments_outlined,
+                  size: 16, color: Color(0xFF6A1B9A)),
+              const SizedBox(width: 10),
+              Text(AppLocalizations.of(context)!.actionRecordPayment,
+                  style: const TextStyle(fontSize: 13)),
+            ]),
+          ),
         PopupMenuItem(
           value: 'preview',
           child: Row(children: [

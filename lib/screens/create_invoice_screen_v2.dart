@@ -43,6 +43,12 @@ class CreateInvoiceScreenV2 extends ConsumerStatefulWidget {
   /// | 'Receipt'). Ignored when editing or cloning.
   final String? initialType;
 
+  /// Set when this form is a quotation→invoice conversion: the id of the source
+  /// quotation. On save the quotation is stamped 'converted' and linked, and
+  /// the new invoice records it as its source. Implies cloneFrom is that
+  /// quotation and cloneType == 'Invoice'.
+  final String? convertFromQuotationId;
+
   /// Called when the user taps "New Invoice" while in edit mode.
   /// The parent (DashboardScreen) resets invoiceToEdit to null.
   final VoidCallback? onCreateNewInvoice;
@@ -54,6 +60,7 @@ class CreateInvoiceScreenV2 extends ConsumerStatefulWidget {
     this.cloneFrom,
     this.cloneType,
     this.initialType,
+    this.convertFromQuotationId,
     this.onCreateNewInvoice,
     this.guard,
   });
@@ -1302,9 +1309,15 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         customInvoiceNumber: customInvoiceNumberController.text.trim().isEmpty
             ? null
             : customInvoiceNumberController.text.trim(),
+        convertedFromInvoiceId: widget.convertFromQuotationId,
       );
 
       await ref.read(invoiceRepositoryProvider).insertInvoice(invoice);
+      if (widget.convertFromQuotationId != null) {
+        await ref
+            .read(invoiceRepositoryProvider)
+            .markQuotationConverted(widget.convertFromQuotationId!, invoice.id);
+      }
 
       if (!mounted) return true;
       setState(() {
@@ -1314,18 +1327,46 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       });
       _markFormClean();
 
+      final l10n = AppLocalizations.of(context)!;
+      final convertedFromId = widget.convertFromQuotationId;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
             children: [
               const Icon(Icons.check_circle, color: Colors.white),
               const SizedBox(width: 12),
-              Text(AppLocalizations.of(context)!.createInvoiceCreatedSuccessMessage(_invoiceTypeLabel(invoiceType))),
+              Expanded(
+                child: Text(convertedFromId != null
+                    ? l10n.createInvoiceConvertedSuccessMessage(
+                        invoice.invoiceNumber ?? invoice.id)
+                    : l10n.createInvoiceCreatedSuccessMessage(
+                        _invoiceTypeLabel(invoiceType))),
+              ),
             ],
           ),
           backgroundColor: Colors.green,
           behavior: SnackBarBehavior.floating,
           showCloseIcon: true,
+          duration: convertedFromId != null
+              ? const Duration(seconds: 8)
+              : const Duration(seconds: 4),
+          action: convertedFromId == null
+              ? null
+              : SnackBarAction(
+                  label: l10n.createInvoiceTrashQuotationAction,
+                  textColor: Colors.white,
+                  onPressed: () async {
+                    await ref
+                        .read(invoiceRepositoryProvider)
+                        .softDeleteInvoice(convertedFromId);
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text(l10n.createInvoiceQuotationTrashedMessage),
+                      behavior: SnackBarBehavior.floating,
+                      showCloseIcon: true,
+                    ));
+                  },
+                ),
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         ),
@@ -3807,9 +3848,11 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                               ? AppLocalizations.of(context)!.createInvoiceCreatedTitleShort(_invoiceTypeLabel(invoiceType))
                               : widget.invoiceToEdit != null
                                   ? AppLocalizations.of(context)!.createInvoiceEditTitle(_invoiceTypeLabel(invoiceType))
-                                  : widget.cloneFrom != null
-                                      ? AppLocalizations.of(context)!.createInvoiceDuplicateAsTitle(_invoiceTypeLabel(invoiceType))
-                                      : AppLocalizations.of(context)!.createInvoiceAppBarTitle(_invoiceTypeLabel(invoiceType)),
+                                  : widget.convertFromQuotationId != null
+                                      ? AppLocalizations.of(context)!.createInvoiceConvertTitle
+                                      : widget.cloneFrom != null
+                                          ? AppLocalizations.of(context)!.createInvoiceDuplicateAsTitle(_invoiceTypeLabel(invoiceType))
+                                          : AppLocalizations.of(context)!.createInvoiceAppBarTitle(_invoiceTypeLabel(invoiceType)),
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
                         ),
@@ -4341,15 +4384,16 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
             value: invoiceType,
             decoration: _flatFieldDecorationV2(
               AppLocalizations.of(context)!.createInvoiceTypeFieldLabel,
-              helperText:
-                  isEditing ? AppLocalizations.of(context)!.createInvoiceTypeLockedHelperText : null,
+              helperText: (isEditing || widget.convertFromQuotationId != null)
+                  ? AppLocalizations.of(context)!.createInvoiceTypeLockedHelperText
+                  : null,
             ),
             items: [
               DropdownMenuItem(value: 'Invoice', child: Text(AppLocalizations.of(context)!.labelInvoice)),
               DropdownMenuItem(value: 'Quotation', child: Text(AppLocalizations.of(context)!.labelQuotation)),
               DropdownMenuItem(value: 'Receipt', child: Text(AppLocalizations.of(context)!.labelReceipt)),
             ],
-            onChanged: isEditing
+            onChanged: (isEditing || widget.convertFromQuotationId != null)
                 ? null
                 : (value) {
                     if (value != null) resetInvoiceType(value);
