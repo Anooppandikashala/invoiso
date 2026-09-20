@@ -721,6 +721,7 @@ pw.Widget buildInvoiceTable(Invoice invoice,
     double watermarkOpacity = 0.12,
     bool showCgstSgst = false,
     bool showIgst = false,
+    bool showTaxColumn = true,
     bool isLandscape = false,
     Map<String, bool> metadataColumns = const {},
     String metadataDatePattern = 'dd/MM/yyyy'}) {
@@ -742,11 +743,10 @@ pw.Widget buildInvoiceTable(Invoice invoice,
   // Metadata columns eat into table width in portrait. Shorten the Discount
   // header to claw back space whenever any are on.
   final bool shortDiscountHeader = !isLandscape && metaKeys.isNotEmpty;
-  final bool showItemTax = invoice.taxMode == TaxMode.perItem;
   final bool isGlobalTaxMode = invoice.taxMode == TaxMode.global;
-  final bool splitCgstSgst =
-      (showItemTax || isGlobalTaxMode) && showCgstSgst && !showIgst;
-  final bool showIgstCol = (showItemTax || isGlobalTaxMode) && showIgst;
+  final bool taxColumnOn = showTaxColumn && invoice.taxMode != TaxMode.none;
+  final bool splitCgstSgst = taxColumnOn && showCgstSgst && !showIgst;
+  final bool showIgstCol = taxColumnOn && showIgst;
   final double globalTaxRatePercent = invoice.taxRate * 100;
   final watermarkImage =
       watermarkBytes != null ? pw.MemoryImage(watermarkBytes) : null;
@@ -770,7 +770,7 @@ pw.Widget buildInvoiceTable(Invoice invoice,
     colWidths[col++] = const pw.FlexColumnWidth(1.2);
   } else if (showIgstCol) {
     colWidths[col++] = const pw.FlexColumnWidth(1.2);
-  } else if (showItemTax) {
+  } else if (taxColumnOn) {
     colWidths[col++] = const pw.FlexColumnWidth(1);
   }
   if (showDiscount) {
@@ -897,8 +897,8 @@ pw.Widget buildInvoiceTable(Invoice invoice,
             fontSize: tableFontSize,
             cellPaddingH: cellPaddingH,
             cellPaddingV: cellPaddingV)
-      else if (showItemTax)
-        buildTableCell('Tax %',
+      else if (taxColumnOn)
+        buildTableCell('Tax',
             isHeader: true,
             textColor: textColor,
             fontSize: tableFontSize,
@@ -1029,8 +1029,9 @@ pw.Widget buildInvoiceTable(Invoice invoice,
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
               cellPaddingV: cellPaddingV)
-        else if (showItemTax)
-          buildTableCell('${item.product.tax_rate}%',
+        else if (taxColumnOn)
+          buildTableCell(
+              '${(isGlobalTaxMode ? (invoice.subtotal > 0 ? invoice.tax * (item.total / invoice.subtotal) : 0.0) : item.taxAmount).toStringAsFixed(2)}\n(${isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate}%)',
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
               cellPaddingV: cellPaddingV),
@@ -1147,7 +1148,7 @@ pw.Widget buildInvoiceTable(Invoice invoice,
                   fontSize: tableFontSize,
                   cellPaddingH: cellPaddingH,
                   cellPaddingV: cellPaddingV),
-            ] else if (showItemTax)
+            ] else if (taxColumnOn)
               buildTableCell('',
                   fontSize: tableFontSize,
                   cellPaddingH: cellPaddingH,

@@ -44,6 +44,7 @@ pw.MultiPage buildMinimalTemplate(
   bool watermarkFullPage = false,
   bool showCgstSgst = false,
   bool showIgst = false,
+  bool showTaxColumn = true,
   bool showRoundOff = false,
   bool showLeadingZeros = true,
   bool showPhone = true,
@@ -332,6 +333,7 @@ pw.MultiPage buildMinimalTemplate(
           watermarkOpacity: watermarkOpacity,
           tableFontSize: minimalPdfStyle.tableFontSize,
           showCgstSgst: showCgstSgst, showIgst: showIgst,
+          showTaxColumn: showTaxColumn,
           metadataColumns: metadataColumns,
           metadataDatePattern: datePattern),
 

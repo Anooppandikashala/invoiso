@@ -130,6 +130,7 @@ class PDFService {
       BackendServices.settings.getPdfLandscape(), // 50
       BackendServices.settings.getWatermarkFullPage(), // 51
       BackendServices.settings.getInvoicePdfMetadataColumns(), // 52
+      BackendServices.settings.getSetting(SettingKey.showTaxColumn), // 53
     ]);
 
     final rawPrefix = (results[2] as String?) ?? 'INV';
@@ -180,6 +181,7 @@ class PDFService {
       watermarkBytes: _cachedWatermarkBytes(results[26] as String?),
       watermarkOpacity: results[27] as double,
       showCgstSgst: (results[28] as String?) == 'true',
+      showTaxColumn: (results[53] as String?) != 'false',
       showRoundOff: (results[29] as String?) == 'true',
       showPhone: results[30] as bool,
       showEmail: results[31] as bool,
@@ -293,6 +295,7 @@ class PDFService {
           watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
+          showTaxColumn: s.showTaxColumn,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
@@ -348,6 +351,7 @@ class PDFService {
           watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
+          showTaxColumn: s.showTaxColumn,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
@@ -403,6 +407,7 @@ class PDFService {
           watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
+          showTaxColumn: s.showTaxColumn,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
@@ -458,6 +463,7 @@ class PDFService {
           watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
+          showTaxColumn: s.showTaxColumn,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
@@ -512,6 +518,7 @@ class PDFService {
           watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
+          showTaxColumn: s.showTaxColumn,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
@@ -598,6 +605,7 @@ class PDFService {
           watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
+          showTaxColumn: s.showTaxColumn,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,

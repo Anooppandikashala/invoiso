@@ -5235,14 +5235,26 @@ abstract class AppLocalizations {
   /// No description provided for @invoiceSettingsColumnTaxLabel.
   ///
   /// In en, this message translates to:
-  /// **'Tax column'**
+  /// **'Show tax column'**
   String get invoiceSettingsColumnTaxLabel;
 
   /// No description provided for @invoiceSettingsColumnTaxSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Print the per-item CGST/SGST, IGST % column'**
+  /// **'Show the tax % and amount for each item, for global and per-item tax'**
   String get invoiceSettingsColumnTaxSubtitle;
+
+  /// No description provided for @invoiceSettingsSplitCgstSgstLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Split CGST / SGST'**
+  String get invoiceSettingsSplitCgstSgstLabel;
+
+  /// No description provided for @invoiceSettingsSplitCgstSgstSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Split the tax into CGST/SGST, or IGST for interstate (India GST)'**
+  String get invoiceSettingsSplitCgstSgstSubtitle;
 
   /// No description provided for @invoiceSettingsColumnRequiredSubtitle.
   ///

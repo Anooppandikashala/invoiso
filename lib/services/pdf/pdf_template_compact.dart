@@ -45,6 +45,7 @@ pw.MultiPage buildCompactTemplate(
   bool watermarkFullPage = false,
   bool showCgstSgst = false,
   bool showIgst = false,
+  bool showTaxColumn = true,
   bool showRoundOff = false,
   bool showLeadingZeros = true,
   bool showPhone = true,
@@ -347,6 +348,7 @@ pw.MultiPage buildCompactTemplate(
         cellPaddingH: cellPaddingH,
         cellPaddingV: cellPaddingV,
         showCgstSgst: showCgstSgst, showIgst: showIgst,
+        showTaxColumn: showTaxColumn,
         totalQuantityText: showTotalQuantity && showQuantity
             ? '${totalQty == totalQty.roundToDouble() ? totalQty.toInt() : totalQty}'
             : null,

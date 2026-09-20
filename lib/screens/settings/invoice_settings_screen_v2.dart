@@ -57,6 +57,7 @@ class _InvoiceSettingsScreenV2State
   bool _showTaxButtonInInvoicePage = true;
   bool _hideInvoiceNumberByDefault = false;
   bool _showCgstSgst = false;
+  bool _showTaxColumn = true;
   bool _showRoundOff = false;
   String _defaultTaxMode = 'global';
   String? _signatureBase64;
@@ -150,6 +151,7 @@ class _InvoiceSettingsScreenV2State
       settingsRepo.getShowSlNoInPdf(),
       settingsRepo.getWatermarkFullPage(),
       settingsRepo.getInvoicePdfMetadataColumns(),
+      settingsRepo.getSetting(SettingKey.showTaxColumn),
     ]);
 
     if (!mounted) return;
@@ -209,6 +211,7 @@ class _InvoiceSettingsScreenV2State
       };
       _customFieldsEnabled = customFieldsEnabledStr == 'true';
       _customFieldDefs = customFieldDefs;
+      _showTaxColumn = (results[43] as String?) != 'false';
       _isLoading = false;
     });
   }
@@ -264,6 +267,8 @@ class _InvoiceSettingsScreenV2State
         settingsRepo.setAllowDuplicateInvoiceItems(_allowDuplicateInvoiceItems),
         settingsRepo.setSetting(
             SettingKey.showCgstSgst, _showCgstSgst.toString()),
+        settingsRepo.setSetting(
+            SettingKey.showTaxColumn, _showTaxColumn.toString()),
         settingsRepo.setSetting(SettingKey.defaultTaxMode, _defaultTaxMode),
         settingsRepo.setSetting(
             SettingKey.showRoundOff, _showRoundOff.toString()),
@@ -1284,8 +1289,23 @@ class _InvoiceSettingsScreenV2State
           title: l10n.invoiceSettingsColumnTaxLabel,
           subtitle: l10n.invoiceSettingsColumnTaxSubtitle,
           icon: Icons.percent_rounded,
-          value: _showCgstSgst,
-          onChanged: (val) => setState(() => _showCgstSgst = val),
+          value: _showTaxColumn,
+          onChanged: (val) => setState(() => _showTaxColumn = val),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(left: 24),
+          child: Opacity(
+            opacity: _showTaxColumn ? 1 : 0.5,
+            child: _toggleCardV2(
+              title: l10n.invoiceSettingsSplitCgstSgstLabel,
+              subtitle: l10n.invoiceSettingsSplitCgstSgstSubtitle,
+              icon: Icons.call_split_rounded,
+              value: _showCgstSgst,
+              onChanged: _showTaxColumn
+                  ? (val) => setState(() => _showCgstSgst = val)
+                  : null,
+            ),
+          ),
         ),
         _toggleCardV2(
           title: l10n.invoiceSettingsShowDiscountLabel,

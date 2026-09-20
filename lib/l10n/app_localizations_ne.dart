@@ -3172,11 +3172,18 @@ class AppLocalizationsNe extends AppLocalizations {
       'Print the HSN/SAC code column (tied to Show GST Fields)';
 
   @override
-  String get invoiceSettingsColumnTaxLabel => 'Tax column';
+  String get invoiceSettingsColumnTaxLabel => 'Show tax column';
 
   @override
   String get invoiceSettingsColumnTaxSubtitle =>
-      'Print the per-item CGST/SGST, IGST % column';
+      'Show the tax % and amount for each item, for global and per-item tax';
+
+  @override
+  String get invoiceSettingsSplitCgstSgstLabel => 'Split CGST / SGST';
+
+  @override
+  String get invoiceSettingsSplitCgstSgstSubtitle =>
+      'Split the tax into CGST/SGST, or IGST for interstate (India GST)';
 
   @override
   String get invoiceSettingsColumnRequiredSubtitle => 'Always shown';

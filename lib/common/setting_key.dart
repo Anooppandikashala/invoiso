@@ -88,6 +88,7 @@ enum SettingKey {
   customFieldDefs, // JSON list of CustomFieldDef objects
   faqCache, // cached JSON string of the last successfully fetched faq.json, used offline/on fetch failure
   lastFaqFetch, // ISO timestamp of last successful faq.json fetch
+  showTaxColumn, // whether to show the per-item Tax column on A4 PDFs, for both global and per-item tax modes (default true); showCgstSgst only matters when this is on
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -271,6 +272,8 @@ extension SettingKeyExtension on SettingKey {
         return 'faq_cache';
       case SettingKey.lastFaqFetch:
         return 'last_faq_fetch';
+      case SettingKey.showTaxColumn:
+        return 'show_tax_column';
 
     }
   }
