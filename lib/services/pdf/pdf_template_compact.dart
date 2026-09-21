@@ -4,6 +4,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/models/company_info.dart';
+import 'package:invoiso/models/custom_field_value.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'pdf_widgets.dart';
 
@@ -37,12 +38,14 @@ pw.MultiPage buildCompactTemplate(
   double previousBalanceDue = 0.0,
   bool showTotalQuantity = false,
   PdfPageFormat pageFormat = PdfPageFormat.a6,
+  Map<String, bool> metadataColumns = const {},
   pw.ThemeData? pdfTheme,
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
   bool watermarkFullPage = false,
   bool showCgstSgst = false,
   bool showIgst = false,
+  bool showTaxColumn = true,
   bool showRoundOff = false,
   bool showLeadingZeros = true,
   bool showPhone = true,
@@ -280,6 +283,49 @@ pw.MultiPage buildCompactTemplate(
           ],
         ),
       ),
+      if (invoice.customFields.any((f) => f.value.trim().isNotEmpty)) ...[
+        pw.SizedBox(height: 4),
+        () {
+          final filled = invoice.customFields
+              .where((f) => f.value.trim().isNotEmpty)
+              .toList();
+          pw.Widget fieldCell(CustomFieldValue? f) => pw.Padding(
+                padding: const pw.EdgeInsets.all(3),
+                child: f == null
+                    ? null
+                    : pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          pw.Text(f.label,
+                              style: pw.TextStyle(
+                                  fontSize: addressFont,
+                                  fontWeight: pw.FontWeight.bold)),
+                          pw.Text(f.value, style: pw.TextStyle(fontSize: addressFont)),
+                        ],
+                      ),
+              );
+          return pw.Container(
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(color: PdfColors.grey400, width: 0.5),
+            ),
+            child: pw.Table(
+              columnWidths: const {
+                0: pw.FlexColumnWidth(1),
+                1: pw.FlexColumnWidth(1),
+                2: pw.FlexColumnWidth(1),
+              },
+              children: [
+                for (var i = 0; i < filled.length; i += 3)
+                  pw.TableRow(children: [
+                    fieldCell(filled[i]),
+                    fieldCell(i + 1 < filled.length ? filled[i + 1] : null),
+                    fieldCell(i + 2 < filled.length ? filled[i + 2] : null),
+                  ]),
+              ],
+            ),
+          );
+        }(),
+      ],
       pw.SizedBox(height: 6),
 
       // ── Items Table ──
@@ -302,11 +348,14 @@ pw.MultiPage buildCompactTemplate(
         cellPaddingH: cellPaddingH,
         cellPaddingV: cellPaddingV,
         showCgstSgst: showCgstSgst, showIgst: showIgst,
+        showTaxColumn: showTaxColumn,
         totalQuantityText: showTotalQuantity && showQuantity
             ? '${totalQty == totalQty.roundToDouble() ? totalQty.toInt() : totalQty}'
             : null,
         watermarkBytes: fullPageWatermark ? null : watermarkBytes,
         watermarkOpacity: watermarkOpacity,
+        metadataColumns: metadataColumns,
+        metadataDatePattern: datePattern,
       ),
 
       pw.SizedBox(height: 2),

@@ -122,6 +122,7 @@
   "dashboardSupportAction": "Support",
   "dashboardOverviewTitle": "Dashboard Overview",
   "actionRefresh": "Refresh",
+  "helpSearchTooltip": "Search Help & Settings",
   "dashboardOutOfStockCountLabel": "{count} out of stock",
   "@dashboardOutOfStockCountLabel": {
     "placeholders": {
@@ -1937,8 +1938,10 @@
   "invoiceSettingsShowSlNoSubtitle": "Print the serial-number column on A4/Letter invoices",
   "invoiceSettingsColumnHsnLabel": "HSN/SAC column",
   "invoiceSettingsColumnHsnSubtitle": "Print the HSN/SAC code column (tied to Show GST Fields)",
-  "invoiceSettingsColumnTaxLabel": "Tax column",
-  "invoiceSettingsColumnTaxSubtitle": "Print the per-item CGST/SGST, IGST % column",
+  "invoiceSettingsColumnTaxLabel": "Show tax column",
+  "invoiceSettingsColumnTaxSubtitle": "Show the tax % and amount for each item, for global and per-item tax",
+  "invoiceSettingsSplitCgstSgstLabel": "Split CGST / SGST",
+  "invoiceSettingsSplitCgstSgstSubtitle": "Split the tax into CGST/SGST, or IGST for interstate (India GST)",
   "invoiceSettingsColumnRequiredSubtitle": "Always shown",
   "invoiceSettingsColumnItemNameLabel": "Item Name column",
   "invoiceSettingsColumnPriceLabel": "Price / Rate column",
@@ -2065,7 +2068,7 @@
   "pdfSettingsOrientationLandscape": "Landscape",
   "pdfSettingsMetadataColumnsLabel": "Product metadata columns",
   "pdfSettingsMetadataColumnsHint": "Print product metadata as extra columns in the items table.",
-  "pdfSettingsMetadataColumnsWarning": "Metadata columns print only on Grid Classic at A4. Each one narrows the others — if the table looks cramped, switch to Landscape above. Values are captured when an item is added; editing the product later won't change past invoices.",
+  "pdfSettingsMetadataColumnsWarning": "Metadata columns print on any A4 template (not A5/A6 or thermal receipts). Each one narrows the others — if the table looks cramped, turn a few off, or switch Grid Classic to Landscape above. Values are captured when an item is added; editing the product later won't change past invoices.",
   "pdfSettingsItemLayoutLabel": "Item layout",
   "pdfSettingsItemLayoutTableLabel": "Table",
   "pdfSettingsItemLayoutDetailedLabel": "Detailed",
@@ -2475,6 +2478,6 @@
   "shortcutAddCustomItemDescription": "Add custom (ad-hoc) item",
   "shortcutPreviewPdfDescription": "Preview invoice PDF",
   "shortcutPrintPdfDescription": "Generate / print invoice PDF",
-  "invoiceSettingsCustomFieldsGridClassicNote": "Note: Custom fields are only printed on the Grid Classic PDF template.",
-  "invoiceSettingsMetadataColumnsGridClassicNote": "Note: Metadata columns are only applied to the Grid Classic PDF template."
+  "invoiceSettingsMetadataColumnsGridClassicNote": "Note: Metadata columns print on A4 PDF templates only (not A5/A6 or thermal receipts).",
+  "invoiceSettingsCustomFieldsPageSupportNote": "Custom fields print on every PDF template except thermal receipts."
 }

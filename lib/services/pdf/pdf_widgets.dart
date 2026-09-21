@@ -102,7 +102,7 @@ double getSlNumberFlex(PdfPageFormat format, InvoiceTemplate template, bool isLa
    return isLandscape ? 0.7 : 0.8;
 }
 
-// ── Product-metadata snapshot columns (Grid Classic A4 only) ──────────────
+// ── Product-metadata snapshot columns (A4 templates only) ─────────────────
 
 double _metaColFlex(String key) =>
     (key == 'expiryDate' || key == 'manufactureDate') ? 1.6
@@ -721,13 +721,13 @@ pw.Widget buildInvoiceTable(Invoice invoice,
     double watermarkOpacity = 0.12,
     bool showCgstSgst = false,
     bool showIgst = false,
+    bool showTaxColumn = true,
     bool isLandscape = false,
     Map<String, bool> metadataColumns = const {},
     String metadataDatePattern = 'dd/MM/yyyy'}) {
-  // Optional product-metadata snapshot columns — Grid Classic A4 only. Order is
+  // Optional product-metadata snapshot columns — any A4 template. Order is
   // fixed; only the keys the user enabled are kept.
-  final List<String> metaKeys = (template == InvoiceTemplate.gridClassic &&
-          pageFormat == PdfPageFormat.a4)
+  final List<String> metaKeys = (pageFormat == PdfPageFormat.a4)
       ? const [
           'storageLocation',
           'containerNumber',
@@ -740,14 +740,13 @@ pw.Widget buildInvoiceTable(Invoice invoice,
           'notes',
         ].where((k) => metadataColumns[k] == true).toList()
       : const <String>[];
-  // Grid Classic is the space-constrained template (extra metadata columns,
-  // portrait). Shorten the Discount header there to claw back width.
-  final bool shortDiscountHeader = template == InvoiceTemplate.gridClassic && !isLandscape &&  metaKeys.isNotEmpty;
-  final bool showItemTax = invoice.taxMode == TaxMode.perItem;
+  // Metadata columns eat into table width in portrait. Shorten the Discount
+  // header to claw back space whenever any are on.
+  final bool shortDiscountHeader = !isLandscape && metaKeys.isNotEmpty;
   final bool isGlobalTaxMode = invoice.taxMode == TaxMode.global;
-  final bool splitCgstSgst =
-      (showItemTax || isGlobalTaxMode) && showCgstSgst && !showIgst;
-  final bool showIgstCol = (showItemTax || isGlobalTaxMode) && showIgst;
+  final bool taxColumnOn = showTaxColumn && invoice.taxMode != TaxMode.none;
+  final bool splitCgstSgst = taxColumnOn && showCgstSgst && !showIgst;
+  final bool showIgstCol = taxColumnOn && showIgst;
   final double globalTaxRatePercent = invoice.taxRate * 100;
   final watermarkImage =
       watermarkBytes != null ? pw.MemoryImage(watermarkBytes) : null;
@@ -771,7 +770,7 @@ pw.Widget buildInvoiceTable(Invoice invoice,
     colWidths[col++] = const pw.FlexColumnWidth(1.2);
   } else if (showIgstCol) {
     colWidths[col++] = const pw.FlexColumnWidth(1.2);
-  } else if (showItemTax) {
+  } else if (taxColumnOn) {
     colWidths[col++] = const pw.FlexColumnWidth(1);
   }
   if (showDiscount) {
@@ -898,8 +897,8 @@ pw.Widget buildInvoiceTable(Invoice invoice,
             fontSize: tableFontSize,
             cellPaddingH: cellPaddingH,
             cellPaddingV: cellPaddingV)
-      else if (showItemTax)
-        buildTableCell('Tax %',
+      else if (taxColumnOn)
+        buildTableCell('Tax',
             isHeader: true,
             textColor: textColor,
             fontSize: tableFontSize,
@@ -1030,8 +1029,9 @@ pw.Widget buildInvoiceTable(Invoice invoice,
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
               cellPaddingV: cellPaddingV)
-        else if (showItemTax)
-          buildTableCell('${item.product.tax_rate}%',
+        else if (taxColumnOn)
+          buildTableCell(
+              '${(isGlobalTaxMode ? (invoice.subtotal > 0 ? invoice.tax * (item.total / invoice.subtotal) : 0.0) : item.taxAmount).toStringAsFixed(2)}\n(${isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate}%)',
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
               cellPaddingV: cellPaddingV),
@@ -1148,7 +1148,7 @@ pw.Widget buildInvoiceTable(Invoice invoice,
                   fontSize: tableFontSize,
                   cellPaddingH: cellPaddingH,
                   cellPaddingV: cellPaddingV),
-            ] else if (showItemTax)
+            ] else if (taxColumnOn)
               buildTableCell('',
                   fontSize: tableFontSize,
                   cellPaddingH: cellPaddingH,

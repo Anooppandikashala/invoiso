@@ -58,6 +58,7 @@ class PdfGenerationSettings {
   final double watermarkOpacity;
   final bool watermarkFullPage;
   final bool showCgstSgst;
+  final bool showTaxColumn;
   final bool showRoundOff;
   final bool showLeadingZeros;
   final bool showSlNo;
@@ -91,6 +92,7 @@ class PdfGenerationSettings {
     required this.showTotalQuantity,
     required this.pdfTheme,
     required this.showCgstSgst,
+    this.showTaxColumn = true,
     this.thermalItemLayout = 'table',
     this.thermalCompanyNameSize = 'medium',
     this.signatureBytes,

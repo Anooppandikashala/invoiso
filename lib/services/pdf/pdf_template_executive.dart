@@ -4,6 +4,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/models/company_info.dart';
+import 'package:invoiso/models/custom_field_value.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'pdf_widgets.dart';
 
@@ -36,12 +37,14 @@ pw.MultiPage buildExecutiveTemplate(
   double signatureSizePx = 50,
   double previousBalanceDue = 0.0,
   PdfPageFormat pageFormat = PdfPageFormat.a4,
+  Map<String, bool> metadataColumns = const {},
   pw.ThemeData? pdfTheme,
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
   bool watermarkFullPage = false,
   bool showCgstSgst = false,
   bool showIgst = false,
+  bool showTaxColumn = true,
   bool showRoundOff = false,
   bool showLeadingZeros = true,
   bool showPhone = true,
@@ -105,6 +108,47 @@ pw.MultiPage buildExecutiveTemplate(
   // GSTIN + PAN + FSSAI all present → one joined line; fewer → line by line.
   final allCompanyIds = companyIdParts.length == 3;
   final companyIdLine = companyIdParts.join('   ');
+
+  pw.Widget customFieldsCard() {
+    final filled = invoice.customFields
+        .where((f) => f.value.trim().isNotEmpty)
+        .toList();
+    if (filled.isEmpty) return pw.Container();
+    pw.Widget fieldCell(CustomFieldValue? f) => pw.Padding(
+          padding: const pw.EdgeInsets.only(top: 4),
+          child: f == null
+              ? null
+              : pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(f.label,
+                        style: pw.TextStyle(
+                            fontSize: executivePdfStyle.bodyFontSize - 1,
+                            fontWeight: pw.FontWeight.bold,
+                            color: PdfColors.grey600)),
+                    pw.Text(f.value,
+                        style: pw.TextStyle(fontSize: executivePdfStyle.bodyFontSize)),
+                  ],
+                ),
+        );
+    return pw.Container(
+      padding: pw.EdgeInsets.all(executivePdfStyle.sectionPadding),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: PdfColors.grey300, width: 0.7),
+        borderRadius: pw.BorderRadius.circular(6),
+      ),
+      child: pw.Table(
+        columnWidths: const {0: pw.FlexColumnWidth(1), 1: pw.FlexColumnWidth(1)},
+        children: [
+          for (var i = 0; i < filled.length; i += 2)
+            pw.TableRow(children: [
+              fieldCell(filled[i]),
+              fieldCell(i + 1 < filled.length ? filled[i + 1] : null),
+            ]),
+        ],
+      ),
+    );
+  }
 
   final customerLines = [
     invoice.customer.name,
@@ -221,7 +265,8 @@ pw.MultiPage buildExecutiveTemplate(
             child: partyBlock('BILL TO', customerLines),
             flex: 1,
           ),
-          pw.Expanded(flex: 1, child: pw.Container()),
+          pw.SizedBox(width: 14),
+          pw.Expanded(flex: 1, child: customFieldsCard()),
         ],
       ),
       pw.SizedBox(height: 5),
@@ -243,7 +288,10 @@ pw.MultiPage buildExecutiveTemplate(
         watermarkBytes: fullPageWatermark ? null : watermarkBytes,
         watermarkOpacity: watermarkOpacity,
         showCgstSgst: showCgstSgst, showIgst: showIgst,
-        tableFontSize: executivePdfStyle.tableFontSize
+        showTaxColumn: showTaxColumn,
+        tableFontSize: executivePdfStyle.tableFontSize,
+        metadataColumns: metadataColumns,
+        metadataDatePattern: datePattern,
       ),
       pw.SizedBox(height: 5),
       pw.Row(

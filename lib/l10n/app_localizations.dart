@@ -612,6 +612,12 @@ abstract class AppLocalizations {
   /// **'Refresh'**
   String get actionRefresh;
 
+  /// No description provided for @helpSearchTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Help & Settings'**
+  String get helpSearchTooltip;
+
   /// No description provided for @dashboardOutOfStockCountLabel.
   ///
   /// In en, this message translates to:
@@ -5229,14 +5235,26 @@ abstract class AppLocalizations {
   /// No description provided for @invoiceSettingsColumnTaxLabel.
   ///
   /// In en, this message translates to:
-  /// **'Tax column'**
+  /// **'Show tax column'**
   String get invoiceSettingsColumnTaxLabel;
 
   /// No description provided for @invoiceSettingsColumnTaxSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Print the per-item CGST/SGST, IGST % column'**
+  /// **'Show the tax % and amount for each item, for global and per-item tax'**
   String get invoiceSettingsColumnTaxSubtitle;
+
+  /// No description provided for @invoiceSettingsSplitCgstSgstLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Split CGST / SGST'**
+  String get invoiceSettingsSplitCgstSgstLabel;
+
+  /// No description provided for @invoiceSettingsSplitCgstSgstSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Split the tax into CGST/SGST, or IGST for interstate (India GST)'**
+  String get invoiceSettingsSplitCgstSgstSubtitle;
 
   /// No description provided for @invoiceSettingsColumnRequiredSubtitle.
   ///
@@ -5871,7 +5889,7 @@ abstract class AppLocalizations {
   /// No description provided for @pdfSettingsMetadataColumnsWarning.
   ///
   /// In en, this message translates to:
-  /// **'Metadata columns print only on Grid Classic at A4. Each one narrows the others — if the table looks cramped, switch to Landscape above. Values are captured when an item is added; editing the product later won\'t change past invoices.'**
+  /// **'Metadata columns print on any A4 template (not A5/A6 or thermal receipts). Each one narrows the others — if the table looks cramped, turn a few off, or switch Grid Classic to Landscape above. Values are captured when an item is added; editing the product later won\'t change past invoices.'**
   String get pdfSettingsMetadataColumnsWarning;
 
   /// No description provided for @pdfSettingsItemLayoutLabel.
@@ -7464,17 +7482,17 @@ abstract class AppLocalizations {
   /// **'Generate / print invoice PDF'**
   String get shortcutPrintPdfDescription;
 
-  /// No description provided for @invoiceSettingsCustomFieldsGridClassicNote.
-  ///
-  /// In en, this message translates to:
-  /// **'Note: Custom fields are only printed on the Grid Classic PDF template.'**
-  String get invoiceSettingsCustomFieldsGridClassicNote;
-
   /// No description provided for @invoiceSettingsMetadataColumnsGridClassicNote.
   ///
   /// In en, this message translates to:
-  /// **'Note: Metadata columns are only applied to the Grid Classic PDF template.'**
+  /// **'Note: Metadata columns print on A4 PDF templates only (not A5/A6 or thermal receipts).'**
   String get invoiceSettingsMetadataColumnsGridClassicNote;
+
+  /// No description provided for @invoiceSettingsCustomFieldsPageSupportNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom fields print on every PDF template except thermal receipts.'**
+  String get invoiceSettingsCustomFieldsPageSupportNote;
 }
 
 class _AppLocalizationsDelegate

@@ -14,6 +14,7 @@ import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/providers/theme_provider.dart';
 import 'package:invoiso/screens/auth/forgot_password_screen.dart';
 import 'package:invoiso/screens/auth/change_password_screen.dart';
+import 'package:invoiso/screens/help/help_search_screen.dart';
 import 'package:invoiso/screens/settings/company_management_screen.dart';
 import 'package:invoiso/screens/test_gate_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -483,9 +484,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         MouseRegion(
                           cursor: SystemMouseCursors.click,
                           child: GestureDetector(
-                            onTap: () => launchUrl(
-                                Uri.parse(AppConfig.supportForm),
-                                mode: LaunchMode.externalApplication),
+                            onTap: () => showHelpSearchDialog(context),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
