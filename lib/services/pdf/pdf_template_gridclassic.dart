@@ -138,24 +138,47 @@ pw.MultiPage buildGridClassicTemplate(
   //final qtyLabel =
   //    (invoice.quantityLabel?.isNotEmpty == true) ? invoice.quantityLabel! : 'Qty';
 
-  // alignEnd: shrink the row to its content so the enclosing right-hand column
-  // can sit against the page's right edge while the labels stay left-aligned
-  // with each other.
+  // Right-hand rows (Invoice No/Date/Due Date/Time) reserve a fixed label
+  // width so their colons line up in a neat column against the page's right
+  // edge. Left-hand rows (Customer/GST) instead size the label to its own
+  // text — see [infoRow] — since a fixed width there either strands a gap
+  // before the colon (label left-aligned) or indents short labels away from
+  // the margin (label right-aligned).
+  const double labelColWidth = 58;
+  const double colonColWidth = 9;
+
+  // alignEnd: shrink the row to its content, label right-aligned in a fixed
+  // column, so the enclosing right-hand column can sit against the page's
+  // right edge with colons lined up. Otherwise the label sizes to its own
+  // text with the colon immediately after, standard "Label: value" style.
   pw.Widget infoRow(String k, String v, {bool alignEnd = false}) => pw.Padding(
         padding: pw.EdgeInsets.symmetric(vertical: 1.5 * fontScale),
-        child: pw.Row(
-          mainAxisSize:
-              alignEnd ? pw.MainAxisSize.min : pw.MainAxisSize.max,
-          children: [
-            pw.SizedBox(
-                width: 58 * fontScale,
-                child: pw.Text(k,
-                    style: pw.TextStyle(
-                        fontSize: labelFont, fontWeight: pw.FontWeight.bold))),
-            pw.Text(': ', style: pw.TextStyle(fontSize: labelFont)),
-            pw.Text(v, style: pw.TextStyle(fontSize: labelFont)),
-          ],
-        ),
+        child: alignEnd
+            ? pw.Row(
+                mainAxisSize: pw.MainAxisSize.min,
+                children: [
+                  pw.SizedBox(
+                      width: labelColWidth * fontScale,
+                      child: pw.Text(k,
+                          textAlign: pw.TextAlign.right,
+                          style: pw.TextStyle(
+                              fontSize: labelFont, fontWeight: pw.FontWeight.bold))),
+                  pw.SizedBox(
+                      width: colonColWidth * fontScale,
+                      child: pw.Text(':', style: pw.TextStyle(fontSize: labelFont))),
+                  pw.Text(v, style: pw.TextStyle(fontSize: labelFont)),
+                ],
+              )
+            : pw.Row(
+                children: [
+                  pw.Text('$k:',
+                      style: pw.TextStyle(
+                          fontSize: labelFont, fontWeight: pw.FontWeight.bold)),
+                  pw.SizedBox(width: 4 * fontScale),
+                  pw.Expanded(
+                      child: pw.Text(v, style: pw.TextStyle(fontSize: labelFont))),
+                ],
+              ),
       );
 
   pw.Widget totalsRow(String k, String v, {bool bold = false, double? size}) =>
@@ -282,31 +305,48 @@ pw.MultiPage buildGridClassicTemplate(
                   child: pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      infoRow('Customer', invoice.customer.name),
-                      if (showCustomerBusinessName && invoice.customer.businessName.isNotEmpty)
-                        pw.Padding(
-                          padding: pw.EdgeInsets.only(left: 60 * fontScale),
-                          child: pw.Text(invoice.customer.businessName,
-                              style: pw.TextStyle(fontSize: labelFont)),
+                      // "Customer:" sized to its own text, followed by an
+                      // Expanded column for the name plus any continuation
+                      // lines — they start exactly where the label ends
+                      // because the layout engine puts them there, not
+                      // because of a hand-tuned indent guess.
+                      pw.Padding(
+                        padding: pw.EdgeInsets.symmetric(vertical: 1.5 * fontScale),
+                        child: pw.Row(
+                          crossAxisAlignment: pw.CrossAxisAlignment.start,
+                          children: [
+                            pw.Text('Customer:',
+                                style: pw.TextStyle(
+                                    fontSize: labelFont, fontWeight: pw.FontWeight.bold)),
+                            pw.SizedBox(width: 4 * fontScale),
+                            pw.Expanded(
+                              child: pw.Column(
+                                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                                children: [
+                                  pw.Text(invoice.customer.name,
+                                      style: pw.TextStyle(fontSize: labelFont)),
+                                  if (showCustomerBusinessName &&
+                                      invoice.customer.businessName.isNotEmpty)
+                                    pw.Text(invoice.customer.businessName,
+                                        style: pw.TextStyle(fontSize: labelFont)),
+                                  if (showCustomerAddress &&
+                                      invoice.customer.address.isNotEmpty)
+                                    pw.Text(invoice.customer.address,
+                                        style: pw.TextStyle(fontSize: labelFont)),
+                                  if (showCustomerPhone &&
+                                      invoice.customer.phone.isNotEmpty)
+                                    pw.Text('Ph: ${invoice.customer.phone}',
+                                        style: pw.TextStyle(fontSize: labelFont)),
+                                  if (showCustomerEmail &&
+                                      invoice.customer.email.isNotEmpty)
+                                    pw.Text(invoice.customer.email,
+                                        style: pw.TextStyle(fontSize: labelFont)),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                      if (showCustomerAddress && invoice.customer.address.isNotEmpty)
-                        pw.Padding(
-                          padding: pw.EdgeInsets.only(left: 60 * fontScale),
-                          child: pw.Text(invoice.customer.address,
-                              style: pw.TextStyle(fontSize: labelFont)),
-                        ),
-                      if (showCustomerPhone && invoice.customer.phone.isNotEmpty)
-                        pw.Padding(
-                          padding: pw.EdgeInsets.only(left: 60 * fontScale),
-                          child: pw.Text('Ph: ${invoice.customer.phone}',
-                              style: pw.TextStyle(fontSize: labelFont)),
-                        ),
-                      if (showCustomerEmail && invoice.customer.email.isNotEmpty)
-                        pw.Padding(
-                          padding: pw.EdgeInsets.only(left: 60 * fontScale),
-                          child: pw.Text(invoice.customer.email,
-                              style: pw.TextStyle(fontSize: labelFont)),
-                        ),
+                      ),
                       if (showGst && showCustomerGstin && invoice.customer.gstin.isNotEmpty)
                         infoRow(gstLabel, invoice.customer.gstin),
                     ],

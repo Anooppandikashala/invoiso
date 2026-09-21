@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/database/company_registry_service.dart';
 import 'package:invoiso/database/user_service.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
@@ -9,8 +10,8 @@ import 'package:invoiso/models/user.dart';
 import 'package:invoiso/providers/locale_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/providers/theme_provider.dart';
+import 'package:invoiso/utils/company_switch_navigation.dart';
 import 'package:invoiso/utils/window_title.dart';
-import 'package:invoiso/widgets/restart_required_dialog.dart';
 
 /// Lists every company registered on this device, with actions to switch,
 /// create, rename, or (self-only) delete. Reused from two entry points:
@@ -69,7 +70,14 @@ class _CompanyManagementScreenState
   /// no restart needed. Re-syncs the two providers loaded before Login even
   /// renders, per the same reasoning as the Login screen's own selector.
   Future<void> _liveSwitchTo(String id) async {
-    await CompanyRegistryService.switchToCompany(id);
+    try {
+      await CompanyRegistryService.switchToCompany(id);
+    } catch (e) {
+      if (!mounted) return;
+      _showErrorDialog(
+          AppLocalizations.of(context)!.companyMgmtSwitchErrorMessage(e.toString()));
+      return;
+    }
     final themeKey = await ref.read(settingsRepositoryProvider).getThemeMode();
     final localeKey = await ref.read(settingsRepositoryProvider).getAppLocale();
     if (!mounted) return;
@@ -107,11 +115,32 @@ class _CompanyManagementScreenState
     );
     if (confirmed != true || !mounted) return;
 
-    await CompanyRegistryService.switchToCompany(company.id);
+    try {
+      await CompanyRegistryService.switchToCompany(company.id);
+    } catch (e) {
+      if (!mounted) return;
+      _showErrorDialog(l10n.companyMgmtSwitchErrorMessage(e.toString()));
+      return;
+    }
     if (!mounted) return;
-    showRestartRequiredDialog(context,
-        title: l10n.companyMgmtSwitchRestartTitle,
-        body: l10n.companyMgmtSwitchRestartBody);
+    await returnToLoginAfterCompanyChange(context, ref);
+  }
+
+  void _showErrorDialog(String message) {
+    final l10n = AppLocalizations.of(context)!;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.commonErrorTitle),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(l10n.actionOk),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _createCompany() async {
@@ -120,64 +149,141 @@ class _CompanyManagementScreenState
     final nameController = TextEditingController();
     final usernameController = TextEditingController();
     final passwordController = TextEditingController();
+    final fieldRadius = BorderRadius.circular(AppBorderRadius.xsmall);
+    final existingNames =
+        _companies.map((c) => c.name.trim().toLowerCase()).toSet();
+    bool obscurePassword = true;
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.companyMgmtNewCompanyTitle),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: nameController,
-                decoration:
-                    InputDecoration(labelText: l10n.onboardingCompanyNameLabel),
-                validator: (v) => (v == null || v.trim().isEmpty)
-                    ? l10n.fieldRequiredMessage(l10n.onboardingCompanyNameLabel)
-                    : null,
-              ),
-              const SizedBox(height: 16),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(l10n.companyMgmtAdminAccountSectionLabel,
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: usernameController,
-                decoration:
-                    InputDecoration(labelText: l10n.userMgmtUsernameRequiredLabel),
-                validator: (v) => (v == null || v.trim().isEmpty)
-                    ? l10n.userMgmtUsernameRequiredMessage
-                    : null,
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: passwordController,
-                obscureText: true,
-                decoration:
-                    InputDecoration(labelText: l10n.userMgmtPasswordRequiredLabel),
-                validator: (v) => (v == null || v.isEmpty)
-                    ? l10n.userMgmtPasswordRequiredMessage
-                    : null,
-              ),
-            ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setObscureState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.corporate_fare,
+                      color: Colors.white, size: 24),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(l10n.companyMgmtNewCompanyTitle,
+                      style: const TextStyle(fontSize: 20)),
+                ),
+              ],
+            ),
           ),
+          content: SizedBox(
+            width: 400,
+            child: Form(
+              key: formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextFormField(
+                      controller: nameController,
+                      decoration: InputDecoration(
+                        labelText: l10n.onboardingCompanyNameLabel,
+                        prefixIcon: const Icon(Icons.business_rounded),
+                        border: OutlineInputBorder(borderRadius: fieldRadius),
+                        filled: true,
+                        fillColor:
+                            Theme.of(context).colorScheme.surfaceContainerHighest,
+                      ),
+                      validator: (v) {
+                        final trimmed = v?.trim() ?? '';
+                        if (trimmed.isEmpty) {
+                          return l10n.fieldRequiredMessage(
+                              l10n.onboardingCompanyNameLabel);
+                        }
+                        if (existingNames.contains(trimmed.toLowerCase())) {
+                          return l10n.companyMgmtNameTakenMessage;
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Icon(Icons.admin_panel_settings_outlined,
+                            size: 18,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        const SizedBox(width: 6),
+                        Text(l10n.companyMgmtAdminAccountSectionLabel,
+                            style: const TextStyle(fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: usernameController,
+                      decoration: InputDecoration(
+                        labelText: l10n.userMgmtUsernameRequiredLabel,
+                        prefixIcon: const Icon(Icons.person_outline),
+                        border: OutlineInputBorder(borderRadius: fieldRadius),
+                        filled: true,
+                        fillColor:
+                            Theme.of(context).colorScheme.surfaceContainerHighest,
+                      ),
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? l10n.userMgmtUsernameRequiredMessage
+                          : null,
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: passwordController,
+                      obscureText: obscurePassword,
+                      decoration: InputDecoration(
+                        labelText: l10n.userMgmtPasswordRequiredLabel,
+                        prefixIcon: const Icon(Icons.lock_outline),
+                        suffixIcon: IconButton(
+                          icon: Icon(obscurePassword
+                              ? Icons.visibility_off
+                              : Icons.visibility),
+                          onPressed: () => setObscureState(
+                              () => obscurePassword = !obscurePassword),
+                        ),
+                        border: OutlineInputBorder(borderRadius: fieldRadius),
+                        filled: true,
+                        fillColor:
+                            Theme.of(context).colorScheme.surfaceContainerHighest,
+                      ),
+                      validator: (v) => (v == null || v.isEmpty)
+                          ? l10n.userMgmtPasswordRequiredMessage
+                          : null,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(l10n.actionCancel),
+            ),
+            FilledButton(
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  Navigator.of(context).pop(true);
+                }
+              },
+              child: Text(l10n.companyMgmtCreateButton),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(l10n.actionCancel),
-          ),
-          TextButton(
-            onPressed: () {
-              if (formKey.currentState!.validate()) Navigator.of(context).pop(true);
-            },
-            child: Text(l10n.companyMgmtCreateButton),
-          ),
-        ],
       ),
     );
     if (confirmed != true || !mounted) return;
@@ -231,9 +337,7 @@ class _CompanyManagementScreenState
       return;
     }
 
-    showRestartRequiredDialog(context,
-        title: l10n.companyMgmtCreateRestartTitle,
-        body: l10n.companyMgmtCreateRestartBody);
+    await returnToLoginAfterCompanyChange(context, ref);
   }
 
   Future<void> _rename(CompanyProfile company) async {
@@ -265,7 +369,7 @@ class _CompanyManagementScreenState
     await _load();
   }
 
-  Future<void> _deleteActiveCompany(CompanyProfile company) async {
+  Future<void> _deleteCompany(CompanyProfile company) async {
     final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController();
     final confirmed = await showDialog<bool>(
@@ -304,23 +408,47 @@ class _CompanyManagementScreenState
     );
     if (confirmed != true || !mounted) return;
 
-    // The active company is being removed — hand off to whichever other
-    // company remains before deleting, so the app always has one to load.
-    final remaining = _companies.where((c) => c.id != company.id).toList();
-    final fallback = remaining.first;
-    await CompanyRegistryService.switchToCompany(fallback.id);
+    final isActive = company.id == _activeId;
+    if (isActive) {
+      // Removing the active company — hand off to whichever other company
+      // remains before deleting, so the app always has one to load.
+      final fallback = _companies.firstWhere((c) => c.id != company.id);
+      await CompanyRegistryService.switchToCompany(fallback.id);
+    }
     await CompanyRegistryService.deleteCompany(company.id);
 
     if (!mounted) return;
-    showRestartRequiredDialog(context,
-        title: l10n.companyMgmtDeleteRestartTitle,
-        body: l10n.companyMgmtDeleteRestartBody);
+
+    if (isActive) {
+      // Only the active company's removal touches this app instance's own
+      // open DB connection — that's what actually needs a fresh login.
+      await returnToLoginAfterCompanyChange(context, ref);
+    } else {
+      await _load();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.companyMgmtDeletedMessage)),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final canDelete = widget.currentUser?.isAdmin() ?? false;
+    // A light pastel green (fine against the light theme's white cards)
+    // reads as a washed-out, low-contrast card against the dark theme's
+    // near-black background and default light text — swap to a dark,
+    // opaque green so the active card still reads as a clean highlight
+    // in both themes.
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeCardFill = isDark ? Colors.green.shade900 : Colors.green.shade50;
+    final activeCardBorder = isDark ? Colors.green.shade600 : Colors.green.shade300;
+    final activeBadgeBg =
+        isDark ? Colors.green.withValues(alpha: 0.25) : Colors.green.withValues(alpha: 0.12);
+    final activeBadgeBorder =
+        isDark ? Colors.green.shade400 : Colors.green.withValues(alpha: 0.4);
+    final activeBadgeText = isDark ? Colors.green.shade300 : Colors.green;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.companyMgmtTitle)),
@@ -334,10 +462,40 @@ class _CompanyManagementScreenState
                   children: [
                     for (final company in _companies)
                       Card(
+                        // A flat, fully-opaque pastel instead of an
+                        // alpha-blended green — alpha blending combined with
+                        // the card's own drop shadow read as a muddy sage
+                        // rather than a clean highlight.
+                        elevation: company.id == _activeId ? 0 : null,
+                        color: company.id == _activeId ? activeCardFill : null,
+                        shape: company.id == _activeId
+                            ? RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(4),
+                                side: BorderSide(color: activeCardBorder),
+                              )
+                            : null,
                         child: ListTile(
                           title: Text(company.name),
                           subtitle: company.id == _activeId
-                              ? Text(l10n.companyMgmtActiveBadge)
+                              ? Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: activeBadgeBg,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: activeBadgeBorder),
+                                    ),
+                                    child: Text(
+                                      l10n.companyMgmtActiveBadge,
+                                      style: TextStyle(
+                                          color: activeBadgeText,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600),
+                                    ),
+                                  ),
+                                )
                               : null,
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -352,7 +510,7 @@ class _CompanyManagementScreenState
                                   onPressed: () => _switchTo(company),
                                   child: Text(l10n.companyMgmtSwitchButton),
                                 ),
-                              if (company.id == _activeId && canDelete)
+                              if (canDelete)
                                 IconButton(
                                   icon: const Icon(Icons.delete_outline,
                                       color: Colors.red),
@@ -360,7 +518,7 @@ class _CompanyManagementScreenState
                                       ? l10n.companyMgmtDeleteButton
                                       : l10n.companyMgmtOnlyCompanyTooltip,
                                   onPressed: _companies.length > 1
-                                      ? () => _deleteActiveCompany(company)
+                                      ? () => _deleteCompany(company)
                                       : null,
                                 ),
                             ],

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:invoiso/common/app_config.dart';
+import 'package:invoiso/database/company_registry_service.dart';
 import 'package:invoiso/database/database_helper.dart';
 import 'package:invoiso/utils/fs_utils.dart';
 import 'package:path/path.dart';
@@ -34,19 +35,24 @@ class BackupManager {
 
   // Create backup of the entire database
   Future<BackupResult> createBackup({
+    required String companyId,
+    required String companyName,
     String? customPath,
     BackupType type = BackupType.database,
   }) async {
     try {
       final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-');
-      final backupName = 'invoice_backup_$timestamp';
+      final backupName =
+          'invoice_backup_${_sanitizeForFilename(companyName)}_$timestamp';
 
       String backupPath;
 
       if (type == BackupType.database) {
-        backupPath = await _createDatabaseBackup(backupName, customPath);
+        backupPath =
+            await _createDatabaseBackup(backupName, customPath, companyId);
       } else {
-        backupPath = await _createJsonBackup(backupName, customPath);
+        backupPath =
+            await _createJsonBackup(backupName, customPath, companyId);
       }
 
       return BackupResult(
@@ -68,11 +74,12 @@ class BackupManager {
   Future<String> _createDatabaseBackup(
       String backupName,
       String? customPath,
+      String companyId,
       ) async {
     final dbPath = DatabaseHelper.path!;
     final backupDir = customPath != null
         ? (await ensureDirectory(customPath)).path
-        : await _getBackupDirectory();
+        : await _getBackupDirectory(companyId);
     final backupPath = join(backupDir, '$backupName$_backupExtension');
 
     await File(dbPath).copy(backupPath);
@@ -84,10 +91,11 @@ class BackupManager {
   Future<String> _createJsonBackup(
       String backupName,
       String? customPath,
+      String companyId,
       ) async {
     final backupDir = customPath != null
         ? (await ensureDirectory(customPath)).path
-        : await _getBackupDirectory();
+        : await _getBackupDirectory(companyId);
     final backupPath = join(backupDir, '$backupName$_jsonExtension');
 
     final backupData = await _exportDataToJson(await DatabaseHelper().database);
@@ -260,14 +268,19 @@ class BackupManager {
     });
   }
 
-  // Get list of available backups (current store + legacy Documents store,
-  // so users upgrading from a build that saved into Documents still see them).
-  Future<List<BackupInfo>> getBackupList() async {
+  // Get list of a company's available backups (its own store, plus — for the
+  // default company only — the pre-multi-company flat store and the legacy
+  // Documents store, so users upgrading from an earlier build still see the
+  // backups they made before companies existed).
+  Future<List<BackupInfo>> getBackupList(String companyId) async {
     final backups = <String, BackupInfo>{};
 
     for (final dirPath in {
-      await _getBackupDirectory(),
-      await _legacyBackupDirectory(),
+      await _getBackupDirectory(companyId),
+      if (companyId == defaultCompanyId) ...[
+        await _legacyFlatBackupDirectory(),
+        await _legacyBackupDirectory(),
+      ],
     }) {
       final directory = Directory(dirPath);
       if (!await directory.exists()) continue;
@@ -321,19 +334,31 @@ class BackupManager {
   }
 
   // Auto backup (scheduled)
-  Future<void> performAutoBackup(Database database) async {
-    final backups = await getBackupList();
+  Future<void> performAutoBackup(
+      Database database, String companyId, String companyName) async {
+    final backups = await getBackupList(companyId);
 
     if (backups.isEmpty ||
         DateTime.now().difference(backups.first.createdAt).inDays >= 7) {
-      await createBackup();
-      await _cleanupOldBackups();
+      await createBackup(companyId: companyId, companyName: companyName);
+      await _cleanupOldBackups(companyId);
     }
   }
 
+  // Filesystem-safe fragment for a backup filename — strips characters
+  // invalid on Windows/Android and collapses whitespace so a business name
+  // like "Acme / Sons: Ltd." doesn't break path handling on any platform.
+  String _sanitizeForFilename(String name) {
+    final cleaned = name
+        .replaceAll(RegExp(r'[<>:"/\\|?*\x00-\x1F]'), '')
+        .trim()
+        .replaceAll(RegExp(r'\s+'), '_');
+    return cleaned.isEmpty ? 'company' : cleaned;
+  }
+
   // Clean up old backups
-  Future<void> _cleanupOldBackups() async {
-    final backups = await getBackupList();
+  Future<void> _cleanupOldBackups(String companyId) async {
+    final backups = await getBackupList(companyId);
 
     if (backups.length > 5) {
       final oldBackups = backups.skip(5);
@@ -417,17 +442,28 @@ class BackupManager {
     }
   }
 
-  // App-managed store for the rolling automatic backups. Lives beside the
-  // database (getApplicationSupportDirectory) — a directory the app already
-  // created and can always write to — so it never fails even when the user's
-  // Documents folder is missing or redirected (Windows + OneDrive). Users get
-  // a copy elsewhere via the Download / Share actions on each backup.
-  Future<String> _getBackupDirectory() async {
+  // App-managed store for a company's rolling automatic backups. Lives
+  // beside the database (getApplicationSupportDirectory) — a directory the
+  // app already created and can always write to — so it never fails even
+  // when the user's Documents folder is missing or redirected (Windows +
+  // OneDrive). Grouped under the company's id so switching companies can't
+  // mix one company's backups into another's list. Users get a copy
+  // elsewhere via the Download / Share actions on each backup.
+  Future<String> _getBackupDirectory(String companyId) async {
     final supportDir = await getApplicationSupportDirectory();
-    return (await ensureDirectory(join(supportDir.path, 'backups'))).path;
+    return (await ensureDirectory(join(supportDir.path, 'backups', companyId)))
+        .path;
   }
 
-  // Where older builds saved backups; kept only for [getBackupList].
+  // Where backups landed before per-company grouping existed; kept only for
+  // [getBackupList] on the default company, so upgrading users still see
+  // backups they made before companies existed.
+  Future<String> _legacyFlatBackupDirectory() async {
+    final supportDir = await getApplicationSupportDirectory();
+    return join(supportDir.path, 'backups');
+  }
+
+  // Where even older builds saved backups; kept only for [getBackupList].
   Future<String> _legacyBackupDirectory() async {
     final docsDir = await getApplicationDocumentsDirectory();
     return join(docsDir.path, 'backups');

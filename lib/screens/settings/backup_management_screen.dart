@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:invoiso/backup/backup_manager.dart';
 import 'package:invoiso/common/common.dart';
+import 'package:invoiso/database/company_registry_service.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/models/backup_info.dart';
 import 'package:invoiso/widgets/restart_required_dialog.dart';
@@ -28,7 +29,9 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final backups = await _backupManager.getBackupList();
+      final companyId =
+          await CompanyRegistryService.getActiveCompanyId() ?? defaultCompanyId;
+      final backups = await _backupManager.getBackupList(companyId);
       setState(() => _backups = backups);
     } catch (e) {
       if (!mounted) return;
@@ -43,7 +46,12 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
     setState(() => _isLoading = true);
 
     try {
+      final companyId =
+          await CompanyRegistryService.getActiveCompanyId() ?? defaultCompanyId;
+      final companyName = await CompanyRegistryService.getActiveCompanyName();
       final result = await _backupManager.createBackup(
+        companyId: companyId,
+        companyName: companyName,
         type: type,
       );
 

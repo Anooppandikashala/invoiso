@@ -19,6 +19,10 @@ import 'package:invoiso/common/invoiso_colors.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/product.dart';
 import 'package:invoiso/common/common.dart';
+import 'package:invoiso/database/company_registry_service.dart';
+import 'package:invoiso/models/company_profile.dart';
+import 'package:invoiso/screens/settings/company_management_screen.dart';
+import 'package:invoiso/utils/company_switch_navigation.dart';
 import 'package:invoiso/screens/help/help_search_screen.dart';
 import 'package:invoiso/screens/settings/settings_screen.dart';
 import 'package:invoiso/services/invoice_pdf_services.dart';
@@ -70,6 +74,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   bool _sidebarExpanded = true;
   late User _currentUser;
   String? _pendingReportsStatementCustomerKey;
+  String? _companyName;
+  List<CompanyProfile> _companies = [];
+  String? _activeCompanyId;
 
   Invoice? invoiceToEdit;
   Invoice? _invoiceToClone;
@@ -90,6 +97,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     super.initState();
     _currentUser = widget.loggedInUser;
     _loadCreateInvoiceLayout();
+    _loadCompanies();
     SessionManager.initialize(_onSessionTimeout);
     if (ref.read(appEditionConfigProvider).enableUpdateCheck) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _checkForUpdates());
@@ -101,6 +109,66 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       WidgetsBinding.instance
           .addPostFrameCallback((_) => _shortcutsFocusNode.requestFocus());
     }
+  }
+
+  Future<void> _loadCompanies() async {
+    final companies = await CompanyRegistryService.listCompanies();
+    final activeId = await CompanyRegistryService.getActiveCompanyId();
+    if (!mounted) return;
+    setState(() {
+      _companies = companies;
+      _activeCompanyId = activeId;
+      _companyName = companies.where((c) => c.id == activeId).firstOrNull?.name;
+    });
+  }
+
+  Future<void> _switchCompany(CompanyProfile company) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.companyMgmtSwitchConfirmTitle),
+        content: Text(l10n.companyMgmtSwitchConfirmBody(company.name)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.actionCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.companyMgmtSwitchButton),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await CompanyRegistryService.switchToCompany(company.id);
+    } catch (e) {
+      if (!mounted) return;
+      _showErrorDialog(l10n.companyMgmtSwitchErrorMessage(e.toString()));
+      return;
+    }
+    if (!mounted) return;
+    await returnToLoginAfterCompanyChange(context, ref);
+  }
+
+  void _showErrorDialog(String message) {
+    final l10n = AppLocalizations.of(context)!;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.commonErrorTitle),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(l10n.actionOk),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _loadCreateInvoiceLayout() async {
@@ -486,46 +554,151 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           children: [
             // ── Logo + toggle ──────────────────────────
             if (expanded)
-              SizedBox(
-                height: 76,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Positioned(
-                      left: 16,
-                      right: 36,
-                      child: Image.asset(
-                        Theme.of(context).brightness == Brightness.dark
-                            ? 'assets/images/logo_dark.png'
-                            : 'assets/images/logo.png',
-                        height: 36,
-                        fit: BoxFit.fitHeight,
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    height: 76,
+                    child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Positioned(
+                            left: 16,
+                            right: 36,
+                            child: Image.asset(
+                              Theme.of(context).brightness == Brightness.dark
+                                  ? 'assets/images/logo_dark.png'
+                                  : 'assets/images/logo.png',
+                              height: 36,
+                              fit: BoxFit.fitHeight,
+                            ),
+                          ),
+                          Positioned(
+                            right: 6,
+                            child: Tooltip(
+                              message: AppLocalizations.of(context)!
+                                  .dashboardCollapseSidebarTooltip,
+                              child: InkWell(
+                                onTap: () {
+                                  if (!mounted) return;
+                                  setState(() => _sidebarExpanded = false);
+                                },
+                                borderRadius: BorderRadius.circular(6),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(6),
+                                  child: Icon(Icons.chevron_left_rounded,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                      size: 20),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    Positioned(
-                      right: 6,
-                      child: Tooltip(
-                        message: AppLocalizations.of(context)!
-                            .dashboardCollapseSidebarTooltip,
-                        child: InkWell(
-                          onTap: () {
-                            if (!mounted) return;
-                            setState(() => _sidebarExpanded = false);
+                    if (_companyName?.isNotEmpty == true)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+                        child: PopupMenuButton<String>(
+                          tooltip: '',
+                          padding: EdgeInsets.zero,
+                          offset: const Offset(0, 40),
+                          itemBuilder: (context) => [
+                            for (final company in _companies)
+                              PopupMenuItem<String>(
+                                value: company.id,
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      company.id == _activeCompanyId
+                                          ? Icons.check_circle
+                                          : Icons.circle_outlined,
+                                      size: 18,
+                                      color: company.id == _activeCompanyId
+                                          ? Colors.green
+                                          : Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Flexible(
+                                        child: Text(company.name,
+                                            overflow: TextOverflow.ellipsis)),
+                                  ],
+                                ),
+                              ),
+                            const PopupMenuDivider(),
+                            PopupMenuItem<String>(
+                              value: '__manage__',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.settings_outlined,
+                                      size: 18,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant),
+                                  const SizedBox(width: 10),
+                                  Text(AppLocalizations.of(context)!
+                                      .companyMgmtTitle),
+                                ],
+                              ),
+                            ),
+                          ],
+                          onSelected: (value) {
+                            if (value == '__manage__') {
+                              Navigator.of(context).push(MaterialPageRoute(
+                                builder: (_) => CompanyManagementScreen(
+                                    currentUser: _currentUser),
+                              ));
+                            } else if (value != _activeCompanyId) {
+                              final company = _companies
+                                  .where((c) => c.id == value)
+                                  .firstOrNull;
+                              if (company != null) _switchCompany(company);
+                            }
                           },
-                          borderRadius: BorderRadius.circular(6),
-                          child: Padding(
-                            padding: const EdgeInsets.all(6),
-                            child: Icon(Icons.chevron_left_rounded,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
-                                size: 20),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                CircleAvatar(
+                                  radius: 11,
+                                  backgroundColor: primary,
+                                  child: Text(
+                                    _companyName!.trim()[0].toUpperCase(),
+                                    style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _companyName!,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: primary,
+                                    ),
+                                  ),
+                                ),
+                                Icon(Icons.expand_more, size: 16, color: primary),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
+                ],
               )
             else
               SizedBox(
@@ -533,15 +706,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: Image.asset(
-                        Theme.of(context).brightness == Brightness.dark
-                            ? 'assets/images/logo_v_dark.png'
-                            : 'assets/images/logo_v.png',
-                        width: 38,
-                        height: 38,
-                        fit: BoxFit.cover,
+                    Tooltip(
+                      message: _companyName ?? '',
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.asset(
+                          Theme.of(context).brightness == Brightness.dark
+                              ? 'assets/images/logo_v_dark.png'
+                              : 'assets/images/logo_v.png',
+                          width: 38,
+                          height: 38,
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 4),

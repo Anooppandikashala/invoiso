@@ -3715,7 +3715,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fieldIfscCodeLabel => 'IFSC Code';
 
   @override
+  String get fieldIbanLabel => 'IBAN';
+
+  @override
   String get companyInfoAddBankAccountButton => 'Add Bank Account';
+
+  @override
+  String get companyInfoEditBankAccountTitle => 'Edit Bank Account';
+
+  @override
+  String get fieldBankAccountNameLabel => 'Account Name';
 
   @override
   String get tooltipShowOnInvoicePdf => 'Show on invoice PDF';
@@ -4107,6 +4116,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get companyMgmtRenameTitle => 'Rename Company';
 
   @override
+  String get companyMgmtNameTakenMessage =>
+      'A company with this name already exists';
+
+  @override
+  String companyMgmtSwitchErrorMessage(String error) {
+    return 'Failed to switch company: $error';
+  }
+
+  @override
   String get companyMgmtSwitchRestartTitle => 'Company Switched';
 
   @override
@@ -4119,6 +4137,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get companyMgmtCreateRestartBody =>
       'Your new company is ready. Please close and reopen the application to continue.';
+
+  @override
+  String get companyMgmtDeletedMessage => 'Company deleted';
 
   @override
   String get companyMgmtDeleteRestartTitle => 'Company Deleted';

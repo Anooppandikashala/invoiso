@@ -12,7 +12,7 @@ import 'package:invoiso/database/database_helper.dart';
 import 'package:invoiso/common/setting_key.dart';
 import 'package:invoiso/models/company_profile.dart';
 
-const _defaultCompanyId = 'default';
+const defaultCompanyId = 'default';
 const _defaultDbFileName = 'invoice_manager.db';
 const _registryPrefsKey = 'company_registry';
 const _activeCompanyIdPrefsKey = 'active_company_id';
@@ -55,13 +55,13 @@ class CompanyRegistryService {
 
     final name = await _readDefaultCompanyName() ?? 'My Company';
     final profile = CompanyProfile(
-      id: _defaultCompanyId,
+      id: defaultCompanyId,
       name: name,
       dbFileName: _defaultDbFileName,
       createdAt: DateTime.now(),
     );
     await _writeRegistry(prefs, [profile]);
-    await prefs.setString(_activeCompanyIdPrefsKey, _defaultCompanyId);
+    await prefs.setString(_activeCompanyIdPrefsKey, defaultCompanyId);
   }
 
   /// Reads `company_info.name` from the default company's file via a
@@ -114,6 +114,15 @@ class CompanyRegistryService {
   static Future<String?> getActiveCompanyId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_activeCompanyIdPrefsKey);
+  }
+
+  /// Active company's display name, live-resolved the same way
+  /// [listCompanies] resolves it for the active entry.
+  static Future<String> getActiveCompanyName() async {
+    final companies = await listCompanies();
+    final activeId = await getActiveCompanyId();
+    return companies.where((c) => c.id == activeId).firstOrNull?.name ??
+        'My Company';
   }
 
   static Future<void> setActiveCompanyId(String id) async {

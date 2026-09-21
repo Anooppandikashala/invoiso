@@ -34,6 +34,21 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  // Canonical content ids, independent of rail position (which shifts
+  // depending on edition/extra-tab). Used as the switch keys in
+  // _buildContent; _railOrder below maps a rail position to one of these.
+  static const _idCompanyInfo = 0;
+  static const _idBackup = 1;
+  static const _idUsers = 2;
+  static const _idPdf = 3;
+  static const _idInvoice = 4;
+  static const _idSoftwareInfo = 5;
+  static const _idCustomize = 6;
+  static const _idExtra = 7;
+  static const _idProductColumns = 8;
+  static const _idAccessibility = 9;
+  static const _idCompanies = 10;
+
   int _selectedIndex = 0;
   int? _highlightCustomIndex;
   Object? _handledAccessibilityToken;
@@ -47,6 +62,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   void initState() {
     super.initState();
+    // Company Info is the default landing tab; Companies (rail position 0
+    // on offline editions) is opened explicitly, not landed on by default.
+    _selectedIndex =
+        _railOrder(ref.read(appEditionConfigProvider)).indexOf(_idCompanyInfo);
     if (ref.read(appEditionConfigProvider).enableUpdateCheck) {
       _loadCachedUpdateInfo();
     }
@@ -61,6 +80,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
+  // Content ids in rail-position order — must mirror NavigationRail's
+  // `destinations` list in build() exactly, entry for entry, so a raw
+  // _selectedIndex can be mapped back to a canonical content id (and vice
+  // versa) with no hand-derived offset arithmetic to keep in sync.
+  List<int> _railOrder(AppEditionConfig cfg) {
+    final hasExtraTab = cfg.extraSettingsTab != null;
+    return [
+      if (!cfg.isCloud) _idCompanies,
+      _idCompanyInfo,
+      if (hasExtraTab) _idExtra,
+      if (!cfg.isCloud) _idBackup,
+      if (!cfg.isCloud) _idUsers,
+      _idPdf,
+      _idInvoice,
+      _idProductColumns,
+      _idCustomize,
+      _idAccessibility,
+      _idSoftwareInfo,
+    ];
+  }
+
   // Rail position of the Accessibility tab — mirrors the layout built in
   // NavigationRail's `destinations` / _buildContent's index math below.
   void _maybeJumpToAccessibility() {
@@ -70,10 +110,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
     _handledAccessibilityToken = widget.openAccessibilityToken;
     final cfg = ref.read(appEditionConfigProvider);
-    final hasExtraTab = cfg.extraSettingsTab != null;
-    final productColumnsPosition =
-        cfg.isCloud ? (hasExtraTab ? 4 : 3) : (hasExtraTab ? 6 : 5);
-    _selectedIndex = productColumnsPosition + 2;
+    _selectedIndex = _railOrder(cfg).indexOf(_idAccessibility);
   }
 
   Future<void> _loadCachedUpdateInfo() async {
@@ -147,65 +184,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildContent(AppEditionConfig cfg) {
-    final bool hasExtraTab = cfg.extraSettingsTab != null;
-    // Rail order (after Invoice Settings): PDF, Invoice, Product Details,
-    // Customize, Software Info (last). Company/Backup/Users/PDF/Invoice keep
-    // their original raw positions (0-4) — only these three trailing items
-    // moved, so each gets its own position variable + idx special-case below;
-    // the original fallback formula still handles positions 0-4 unchanged.
-    final int productColumnsPosition =
-        cfg.isCloud ? (hasExtraTab ? 4 : 3) : (hasExtraTab ? 6 : 5);
-    final int customizeIndex =
-        cfg.isCloud ? (hasExtraTab ? 5 : 4) : (hasExtraTab ? 7 : 6);
-    // Accessibility sits right before Software Info (its old slot); Software
-    // Info itself shifts one further out.
-    final int accessibilityPosition = customizeIndex + 1;
-    // Companies is offline-edition-only (cloud manages multi-tenancy server
-    // side), so it only exists as a rail position at all when !cfg.isCloud —
-    // placed right above Software Info, same pattern as accessibility above,
-    // to avoid disturbing the protected 0-4 raw positions. Software Info
-    // shifts one further out only when Companies actually occupies a slot.
-    final int companiesPosition = customizeIndex + 2;
-    final int softwareInfoPosition =
-        cfg.isCloud ? customizeIndex + 2 : customizeIndex + 3;
-    // When kIsCloud, Backup (1) and Users (2) tabs are hidden. If the edition
-    // also supplies an extraSettingsTab (e.g. cloud's Team Management), it
-    // takes rail slot 1 and maps to canonical case 7; everything after it
-    // shifts down by 1 instead of 2. Offset back to match canonical case
-    // numbers used below.
-    final int idx;
-    if (!cfg.isCloud && _selectedIndex == companiesPosition) {
-      idx = 10;
-    } else if (_selectedIndex == productColumnsPosition) {
-      idx = 8;
-    } else if (_selectedIndex == customizeIndex) {
-      idx = 6;
-    } else if (_selectedIndex == accessibilityPosition) {
-      idx = 9;
-    } else if (_selectedIndex == softwareInfoPosition) {
-      idx = 5;
-    } else if (hasExtraTab && _selectedIndex == 1) {
-      idx = 7;
-    } else if (!cfg.isCloud) {
-      idx = _selectedIndex;
-    } else if (_selectedIndex == 0) {
-      idx = 0;
-    } else {
-      idx = _selectedIndex + (hasExtraTab ? 1 : 2);
-    }
+    final railOrder = _railOrder(cfg);
+    final int idx = _selectedIndex < railOrder.length
+        ? railOrder[_selectedIndex]
+        : -1;
+    final int customizeIndex = railOrder.indexOf(_idCustomize);
 
     switch (idx) {
-      case 0:
+      case _idCompanyInfo:
         return const CompanyInfoScreen();
-      case 1:
+      case _idBackup:
         return BackupManagementScreen();
-      case 2:
+      case _idUsers:
         return UserManagementScreenV2(
           currentUser: widget.currentUser,
         );
-      case 7:
+      case _idExtra:
         return cfg.extraSettingsTab!(context);
-      case 3:
+      case _idPdf:
         return PdfSettingsScreenV2(
           onNavigateToCustomization: () {
             setState(() {
@@ -214,7 +210,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             });
           },
         );
-      case 4:
+      case _idInvoice:
         return InvoiceSettingsScreenV2(
           onNavigateToCustomization: () {
             setState(() {
@@ -223,15 +219,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             });
           },
         );
-      case 5:
+      case _idSoftwareInfo:
         return _buildAppInfoScreen();
-      case 6:
+      case _idCustomize:
         return CustomizationScreen(highlightIndex: _highlightCustomIndex);
-      case 8:
+      case _idProductColumns:
         return const ProductColumnsSettingsScreen();
-      case 9:
+      case _idAccessibility:
         return const AccessibilityScreen();
-      case 10:
+      case _idCompanies:
         return CompanyManagementScreen(currentUser: widget.currentUser);
       default:
         return _buildDummySection(
@@ -259,6 +255,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               });
             },
             destinations: [
+              if (!cfg.isCloud)
+                NavigationRailDestination(
+                  icon: const Icon(Icons.corporate_fare),
+                  label: Text(l10n.settingsNavCompaniesLabel),
+                ),
               NavigationRailDestination(
                 icon: const Icon(Icons.business),
                 label: Text(l10n.settingsNavCompanyInfoLabel),
@@ -299,11 +300,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 icon: const Icon(Icons.accessibility_new_rounded),
                 label: Text(l10n.settingsNavAccessibilityLabel),
               ),
-              if (!cfg.isCloud)
-                NavigationRailDestination(
-                  icon: const Icon(Icons.corporate_fare),
-                  label: Text(l10n.settingsNavCompaniesLabel),
-                ),
               NavigationRailDestination(
                 icon: Stack(
                   clipBehavior: Clip.none,

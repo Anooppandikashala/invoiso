@@ -6252,11 +6252,29 @@ abstract class AppLocalizations {
   /// **'IFSC Code'**
   String get fieldIfscCodeLabel;
 
+  /// No description provided for @fieldIbanLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'IBAN'**
+  String get fieldIbanLabel;
+
   /// No description provided for @companyInfoAddBankAccountButton.
   ///
   /// In en, this message translates to:
   /// **'Add Bank Account'**
   String get companyInfoAddBankAccountButton;
+
+  /// No description provided for @companyInfoEditBankAccountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Bank Account'**
+  String get companyInfoEditBankAccountTitle;
+
+  /// No description provided for @fieldBankAccountNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Name'**
+  String get fieldBankAccountNameLabel;
 
   /// No description provided for @tooltipShowOnInvoicePdf.
   ///
@@ -6954,6 +6972,18 @@ abstract class AppLocalizations {
   /// **'Rename Company'**
   String get companyMgmtRenameTitle;
 
+  /// No description provided for @companyMgmtNameTakenMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'A company with this name already exists'**
+  String get companyMgmtNameTakenMessage;
+
+  /// No description provided for @companyMgmtSwitchErrorMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to switch company: {error}'**
+  String companyMgmtSwitchErrorMessage(String error);
+
   /// No description provided for @companyMgmtSwitchRestartTitle.
   ///
   /// In en, this message translates to:
@@ -6977,6 +7007,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your new company is ready. Please close and reopen the application to continue.'**
   String get companyMgmtCreateRestartBody;
+
+  /// No description provided for @companyMgmtDeletedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Company deleted'**
+  String get companyMgmtDeletedMessage;
 
   /// No description provided for @companyMgmtDeleteRestartTitle.
   ///

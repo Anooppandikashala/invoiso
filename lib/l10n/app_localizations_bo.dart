@@ -3717,7 +3717,16 @@ class AppLocalizationsBo extends AppLocalizations {
   String get fieldIfscCodeLabel => 'IFSC ཨང་རྟགས།';
 
   @override
+  String get fieldIbanLabel => 'IBAN';
+
+  @override
   String get companyInfoAddBankAccountButton => 'དངུལ་ཁང་རྩིས་ཁྲ་སྣོན།';
+
+  @override
+  String get companyInfoEditBankAccountTitle => 'དངུལ་ཁང་རྩིས་ཁྲ་ཞུ་དག';
+
+  @override
+  String get fieldBankAccountNameLabel => 'རྩིས་ཁྲའི་མིང་།';
 
   @override
   String get tooltipShowOnInvoicePdf => 'ཁྲལ་ཤོག PDF ནང་སྟོན།';
@@ -4110,6 +4119,14 @@ class AppLocalizationsBo extends AppLocalizations {
   String get companyMgmtRenameTitle => 'ཚོང་ལས་མིང་བསྒྱུར།';
 
   @override
+  String get companyMgmtNameTakenMessage => 'མིང་འདི་ཐོག་ཚོང་ལས་ཡོད་ཟིན།';
+
+  @override
+  String companyMgmtSwitchErrorMessage(String error) {
+    return 'ཚོང་ལས་བརྗེས་བ་མ་གྲུབ། $error';
+  }
+
+  @override
   String get companyMgmtSwitchRestartTitle => 'ཚོང་ལས་བརྗེས་ཟིན།';
 
   @override
@@ -4122,6 +4139,9 @@ class AppLocalizationsBo extends AppLocalizations {
   @override
   String get companyMgmtCreateRestartBody =>
       'ཁྱེད་ཀྱི་ཚོང་ལས་གསར་པ་གྲ་སྒྲིག་ཟིན། མུ་མཐུད་ཆེད་ཐུགས་རྗེས་ཉར་ཚགས་ཁ་བརྒྱབ་ནས་ཡང་བསྐྱར་ཕྱེ་རོགས།';
+
+  @override
+  String get companyMgmtDeletedMessage => 'ཚོང་ལས་བསུབས་ཟིན།';
 
   @override
   String get companyMgmtDeleteRestartTitle => 'ཚོང་ལས་བསུབས་ཟིན།';

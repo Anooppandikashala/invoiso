@@ -3573,7 +3573,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get fieldIfscCodeLabel => 'IFSC 代码';
 
   @override
+  String get fieldIbanLabel => 'IBAN';
+
+  @override
   String get companyInfoAddBankAccountButton => '添加银行账户';
+
+  @override
+  String get companyInfoEditBankAccountTitle => '编辑银行账户';
+
+  @override
+  String get fieldBankAccountNameLabel => '账户名称';
 
   @override
   String get tooltipShowOnInvoicePdf => '在发票PDF中显示';
@@ -3952,6 +3961,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get companyMgmtRenameTitle => '重命名公司';
 
   @override
+  String get companyMgmtNameTakenMessage => '已存在同名公司';
+
+  @override
+  String companyMgmtSwitchErrorMessage(String error) {
+    return '切换公司失败：$error';
+  }
+
+  @override
   String get companyMgmtSwitchRestartTitle => '公司已切换';
 
   @override
@@ -3963,6 +3980,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get companyMgmtCreateRestartBody => '您的新公司已准备就绪。请关闭并重新打开应用程序以继续。';
+
+  @override
+  String get companyMgmtDeletedMessage => '公司已删除';
 
   @override
   String get companyMgmtDeleteRestartTitle => '公司已删除';

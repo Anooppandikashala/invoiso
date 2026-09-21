@@ -3795,7 +3795,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get fieldIfscCodeLabel => 'Code IFSC';
 
   @override
+  String get fieldIbanLabel => 'IBAN';
+
+  @override
   String get companyInfoAddBankAccountButton => 'Ajouter un compte bancaire';
+
+  @override
+  String get companyInfoEditBankAccountTitle => 'Modifier le compte bancaire';
+
+  @override
+  String get fieldBankAccountNameLabel => 'Nom du compte';
 
   @override
   String get tooltipShowOnInvoicePdf => 'Afficher sur le PDF de la facture';
@@ -4195,6 +4204,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get companyMgmtRenameTitle => 'Renommer l\'entreprise';
 
   @override
+  String get companyMgmtNameTakenMessage =>
+      'Une entreprise portant ce nom existe déjà';
+
+  @override
+  String companyMgmtSwitchErrorMessage(String error) {
+    return 'Échec du changement d\'entreprise : $error';
+  }
+
+  @override
   String get companyMgmtSwitchRestartTitle => 'Entreprise changée';
 
   @override
@@ -4207,6 +4225,9 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get companyMgmtCreateRestartBody =>
       'Votre nouvelle entreprise est prête. Veuillez fermer puis rouvrir l\'application pour continuer.';
+
+  @override
+  String get companyMgmtDeletedMessage => 'Entreprise supprimée';
 
   @override
   String get companyMgmtDeleteRestartTitle => 'Entreprise supprimée';

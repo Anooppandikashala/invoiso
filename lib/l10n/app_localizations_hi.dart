@@ -3729,7 +3729,16 @@ class AppLocalizationsHi extends AppLocalizations {
   String get fieldIfscCodeLabel => 'IFSC कोड';
 
   @override
+  String get fieldIbanLabel => 'IBAN';
+
+  @override
   String get companyInfoAddBankAccountButton => 'बैंक खाता जोड़ें';
+
+  @override
+  String get companyInfoEditBankAccountTitle => 'बैंक खाता संपादित करें';
+
+  @override
+  String get fieldBankAccountNameLabel => 'खाता नाम';
 
   @override
   String get tooltipShowOnInvoicePdf => 'इनवॉइस PDF पर दिखाएं';
@@ -4122,6 +4131,14 @@ class AppLocalizationsHi extends AppLocalizations {
   String get companyMgmtRenameTitle => 'कंपनी का नाम बदलें';
 
   @override
+  String get companyMgmtNameTakenMessage => 'इस नाम की कंपनी पहले से मौजूद है';
+
+  @override
+  String companyMgmtSwitchErrorMessage(String error) {
+    return 'कंपनी स्विच करने में विफल: $error';
+  }
+
+  @override
   String get companyMgmtSwitchRestartTitle => 'कंपनी स्विच हो गई';
 
   @override
@@ -4134,6 +4151,9 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get companyMgmtCreateRestartBody =>
       'आपकी नई कंपनी तैयार है। जारी रखने के लिए कृपया एप्लिकेशन बंद करके फिर से खोलें।';
+
+  @override
+  String get companyMgmtDeletedMessage => 'कंपनी हटा दी गई';
 
   @override
   String get companyMgmtDeleteRestartTitle => 'कंपनी हटा दी गई';
