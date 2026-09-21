@@ -130,6 +130,7 @@ class PDFService {
       BackendServices.settings.getPdfLandscape(), // 50
       BackendServices.settings.getWatermarkFullPage(), // 51
       BackendServices.settings.getInvoicePdfMetadataColumns(), // 52
+      BackendServices.settings.getSetting(SettingKey.showTaxColumn), // 53
     ]);
 
     final rawPrefix = (results[2] as String?) ?? 'INV';
@@ -180,6 +181,7 @@ class PDFService {
       watermarkBytes: _cachedWatermarkBytes(results[26] as String?),
       watermarkOpacity: results[27] as double,
       showCgstSgst: (results[28] as String?) == 'true',
+      showTaxColumn: (results[53] as String?) != 'false',
       showRoundOff: (results[29] as String?) == 'true',
       showPhone: results[30] as bool,
       showEmail: results[31] as bool,
@@ -234,7 +236,8 @@ class PDFService {
     }
     final showUpiQr = s.showQrStr == 'true' &&
         effectiveUpiId != null &&
-        effectiveUpiId.isNotEmpty;
+        effectiveUpiId.isNotEmpty &&
+        invoice.outstandingBalance > 0;
 
     BankAccount? effectiveBank;
     if (s.showBankDetails) {
@@ -285,12 +288,14 @@ class PDFService {
           signatureSizePx: s.signatureSizePx,
           previousBalanceDue: effectivePreviousBalance,
           pageFormat: s.pageFormat,
+          metadataColumns: s.metadataColumns,
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
           watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
+          showTaxColumn: s.showTaxColumn,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
@@ -339,12 +344,14 @@ class PDFService {
           signatureSizePx: s.signatureSizePx,
           previousBalanceDue: effectivePreviousBalance,
           pageFormat: s.pageFormat,
+          metadataColumns: s.metadataColumns,
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
           watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
+          showTaxColumn: s.showTaxColumn,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
@@ -393,12 +400,14 @@ class PDFService {
           signatureSizePx: s.signatureSizePx,
           previousBalanceDue: effectivePreviousBalance,
           pageFormat: s.pageFormat,
+          metadataColumns: s.metadataColumns,
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
           watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
+          showTaxColumn: s.showTaxColumn,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
@@ -447,12 +456,14 @@ class PDFService {
           signatureSizePx: s.signatureSizePx,
           previousBalanceDue: effectivePreviousBalance,
           pageFormat: s.pageFormat,
+          metadataColumns: s.metadataColumns,
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
           watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
+          showTaxColumn: s.showTaxColumn,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
@@ -500,12 +511,14 @@ class PDFService {
           previousBalanceDue: effectivePreviousBalance,
           showTotalQuantity: s.showTotalQuantity,
           pageFormat: s.pageFormat,
+          metadataColumns: s.metadataColumns,
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
           watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
+          showTaxColumn: s.showTaxColumn,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
@@ -592,6 +605,7 @@ class PDFService {
           watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
+          showTaxColumn: s.showTaxColumn,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
@@ -644,14 +658,21 @@ class PDFService {
       bytes: Platform.isAndroid ? pdfBytes : null,
     );
     if (savePath == null) return;
+    var finalPath = savePath;
     if (!Platform.isAndroid) {
-      await File(savePath).writeAsBytes(pdfBytes);
+      // file_picker's native save dialog doesn't reliably keep the .pdf
+      // extension on desktop (observed writing "Invoice.file") — enforce it
+      // before we write the bytes ourselves. Android writes via `bytes`
+      // above straight to the URI the picker returned, so it can't be
+      // renamed after the fact.
+      if (!finalPath.toLowerCase().endsWith('.pdf')) finalPath += '.pdf';
+      await File(finalPath).writeAsBytes(pdfBytes);
     }
-    await OpenFile.open(savePath);
+    await OpenFile.open(finalPath);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Saved: $savePath'),
+          content: Text('Saved: $finalPath'),
           behavior: SnackBarBehavior.floating,
         ),
       );

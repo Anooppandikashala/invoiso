@@ -281,6 +281,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get actionRefresh => 'रीफ्रेश करें';
 
   @override
+  String get helpSearchTooltip => 'Search Help & Settings';
+
+  @override
   String dashboardOutOfStockCountLabel(int count) {
     return '$count स्टॉक में नहीं';
   }
@@ -2614,6 +2617,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get reportsNavDailyReportLabel => 'दैनिक रिपोर्ट';
 
   @override
+  String get reportsNavInventoryLabel => 'Inventory';
+
+  @override
   String get reportsNavInvoiceStatusLabel => 'इनवॉइस स्थिति';
 
   @override
@@ -2624,6 +2630,55 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get reportsNavTaxLabel => 'टैक्स';
+
+  @override
+  String get reportsInventoryBlockedValueLabel => 'Inventory Value Blocked';
+
+  @override
+  String get reportsInventoryPotentialSaleValueLabel => 'Potential Sale Value';
+
+  @override
+  String get reportsInventoryLockedProfitLabel => 'Profit Locked in Stock';
+
+  @override
+  String get reportsInventoryTotalUnitsLabel => 'Total Units';
+
+  @override
+  String get reportsInventoryProductCountLabel => 'Products Tracked';
+
+  @override
+  String get reportsInventoryBreakdownTitle => 'Product Breakdown';
+
+  @override
+  String get reportsNoInventoryDataMessage => 'No inventory data';
+
+  @override
+  String get reportsInventoryProductColumnLabel => 'Product';
+
+  @override
+  String get reportsInventoryStockColumnLabel => 'Stock';
+
+  @override
+  String get reportsInventoryPurchasePriceColumnLabel => 'Purchase Price';
+
+  @override
+  String get reportsInventoryStockValueColumnLabel => 'Stock Value';
+
+  @override
+  String get reportsInventorySaleValueColumnLabel => 'Sale Value';
+
+  @override
+  String reportsInventoryExcludedBannerMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count items are excluded from inventory value — they\'re services or have unlimited stock tracking on.',
+      one:
+          '1 item is excluded from inventory value — it\'s a service or has unlimited stock tracking on.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get reportsNoCustomerDataMessage => 'इस अवधि में कोई ग्राहक डेटा नहीं';
@@ -3104,11 +3159,18 @@ class AppLocalizationsHi extends AppLocalizations {
       'Print the HSN/SAC code column (tied to Show GST Fields)';
 
   @override
-  String get invoiceSettingsColumnTaxLabel => 'Tax column';
+  String get invoiceSettingsColumnTaxLabel => 'Show tax column';
 
   @override
   String get invoiceSettingsColumnTaxSubtitle =>
-      'Print the per-item CGST/SGST, IGST % column';
+      'Show the tax % and amount for each item, for global and per-item tax';
+
+  @override
+  String get invoiceSettingsSplitCgstSgstLabel => 'Split CGST / SGST';
+
+  @override
+  String get invoiceSettingsSplitCgstSgstSubtitle =>
+      'Split the tax into CGST/SGST, or IGST for interstate (India GST)';
 
   @override
   String get invoiceSettingsColumnRequiredSubtitle => 'Always shown';
@@ -3470,7 +3532,7 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get pdfSettingsMetadataColumnsWarning =>
-      'Metadata columns print only on Grid Classic at A4. Each one narrows the others — if the table looks cramped, switch to Landscape above. Values are captured when an item is added; editing the product later won\'t change past invoices.';
+      'Metadata columns print on any A4 template (not A5/A6 or thermal receipts). Each one narrows the others — if the table looks cramped, turn a few off, or switch Grid Classic to Landscape above. Values are captured when an item is added; editing the product later won\'t change past invoices.';
 
   @override
   String get pdfSettingsItemLayoutLabel => 'आइटम लेआउट';
@@ -3610,6 +3672,9 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get fieldTinLabel => 'TIN';
+
+  @override
+  String get fieldVatRegNoLabel => 'वैट पंजीकरण संख्या';
 
   @override
   String get companyInfoFssaiCodeLabel => 'FSSAI कोड';
@@ -4274,10 +4339,10 @@ class AppLocalizationsHi extends AppLocalizations {
   String get shortcutPrintPdfDescription => 'इनवॉइस PDF जनरेट/प्रिंट करें';
 
   @override
-  String get invoiceSettingsCustomFieldsGridClassicNote =>
-      'ध्यान दें: कस्टम फ़ील्ड केवल ग्रिड क्लासिक PDF टेम्पलेट पर प्रिंट होते हैं।';
+  String get invoiceSettingsMetadataColumnsGridClassicNote =>
+      'Note: Metadata columns print on A4 PDF templates only (not A5/A6 or thermal receipts).';
 
   @override
-  String get invoiceSettingsMetadataColumnsGridClassicNote =>
-      'Note: Metadata columns are only applied to the Grid Classic PDF template.';
+  String get invoiceSettingsCustomFieldsPageSupportNote =>
+      'Custom fields print on every PDF template except thermal receipts.';
 }

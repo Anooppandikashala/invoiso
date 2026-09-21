@@ -612,6 +612,12 @@ abstract class AppLocalizations {
   /// **'Refresh'**
   String get actionRefresh;
 
+  /// No description provided for @helpSearchTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Help & Settings'**
+  String get helpSearchTooltip;
+
   /// No description provided for @dashboardOutOfStockCountLabel.
   ///
   /// In en, this message translates to:
@@ -4320,6 +4326,12 @@ abstract class AppLocalizations {
   /// **'Daily Report'**
   String get reportsNavDailyReportLabel;
 
+  /// No description provided for @reportsNavInventoryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory'**
+  String get reportsNavInventoryLabel;
+
   /// No description provided for @reportsNavInvoiceStatusLabel.
   ///
   /// In en, this message translates to:
@@ -4343,6 +4355,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tax'**
   String get reportsNavTaxLabel;
+
+  /// No description provided for @reportsInventoryBlockedValueLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory Value Blocked'**
+  String get reportsInventoryBlockedValueLabel;
+
+  /// No description provided for @reportsInventoryPotentialSaleValueLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Potential Sale Value'**
+  String get reportsInventoryPotentialSaleValueLabel;
+
+  /// No description provided for @reportsInventoryLockedProfitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Profit Locked in Stock'**
+  String get reportsInventoryLockedProfitLabel;
+
+  /// No description provided for @reportsInventoryTotalUnitsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Units'**
+  String get reportsInventoryTotalUnitsLabel;
+
+  /// No description provided for @reportsInventoryProductCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Products Tracked'**
+  String get reportsInventoryProductCountLabel;
+
+  /// No description provided for @reportsInventoryBreakdownTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Product Breakdown'**
+  String get reportsInventoryBreakdownTitle;
+
+  /// No description provided for @reportsNoInventoryDataMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No inventory data'**
+  String get reportsNoInventoryDataMessage;
+
+  /// No description provided for @reportsInventoryProductColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Product'**
+  String get reportsInventoryProductColumnLabel;
+
+  /// No description provided for @reportsInventoryStockColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock'**
+  String get reportsInventoryStockColumnLabel;
+
+  /// No description provided for @reportsInventoryPurchasePriceColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase Price'**
+  String get reportsInventoryPurchasePriceColumnLabel;
+
+  /// No description provided for @reportsInventoryStockValueColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock Value'**
+  String get reportsInventoryStockValueColumnLabel;
+
+  /// No description provided for @reportsInventorySaleValueColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sale Value'**
+  String get reportsInventorySaleValueColumnLabel;
+
+  /// No description provided for @reportsInventoryExcludedBannerMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item is excluded from inventory value — it\'s a service or has unlimited stock tracking on.} other{{count} items are excluded from inventory value — they\'re services or have unlimited stock tracking on.}}'**
+  String reportsInventoryExcludedBannerMessage(int count);
 
   /// No description provided for @reportsNoCustomerDataMessage.
   ///
@@ -5145,14 +5235,26 @@ abstract class AppLocalizations {
   /// No description provided for @invoiceSettingsColumnTaxLabel.
   ///
   /// In en, this message translates to:
-  /// **'Tax column'**
+  /// **'Show tax column'**
   String get invoiceSettingsColumnTaxLabel;
 
   /// No description provided for @invoiceSettingsColumnTaxSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Print the per-item CGST/SGST, IGST % column'**
+  /// **'Show the tax % and amount for each item, for global and per-item tax'**
   String get invoiceSettingsColumnTaxSubtitle;
+
+  /// No description provided for @invoiceSettingsSplitCgstSgstLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Split CGST / SGST'**
+  String get invoiceSettingsSplitCgstSgstLabel;
+
+  /// No description provided for @invoiceSettingsSplitCgstSgstSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Split the tax into CGST/SGST, or IGST for interstate (India GST)'**
+  String get invoiceSettingsSplitCgstSgstSubtitle;
 
   /// No description provided for @invoiceSettingsColumnRequiredSubtitle.
   ///
@@ -5787,7 +5889,7 @@ abstract class AppLocalizations {
   /// No description provided for @pdfSettingsMetadataColumnsWarning.
   ///
   /// In en, this message translates to:
-  /// **'Metadata columns print only on Grid Classic at A4. Each one narrows the others — if the table looks cramped, switch to Landscape above. Values are captured when an item is added; editing the product later won\'t change past invoices.'**
+  /// **'Metadata columns print on any A4 template (not A5/A6 or thermal receipts). Each one narrows the others — if the table looks cramped, turn a few off, or switch Grid Classic to Landscape above. Values are captured when an item is added; editing the product later won\'t change past invoices.'**
   String get pdfSettingsMetadataColumnsWarning;
 
   /// No description provided for @pdfSettingsItemLayoutLabel.
@@ -6047,6 +6149,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'TIN'**
   String get fieldTinLabel;
+
+  /// No description provided for @fieldVatRegNoLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'VAT Registration Number'**
+  String get fieldVatRegNoLabel;
 
   /// No description provided for @companyInfoFssaiCodeLabel.
   ///
@@ -7230,17 +7338,17 @@ abstract class AppLocalizations {
   /// **'Generate / print invoice PDF'**
   String get shortcutPrintPdfDescription;
 
-  /// No description provided for @invoiceSettingsCustomFieldsGridClassicNote.
-  ///
-  /// In en, this message translates to:
-  /// **'Note: Custom fields are only printed on the Grid Classic PDF template.'**
-  String get invoiceSettingsCustomFieldsGridClassicNote;
-
   /// No description provided for @invoiceSettingsMetadataColumnsGridClassicNote.
   ///
   /// In en, this message translates to:
-  /// **'Note: Metadata columns are only applied to the Grid Classic PDF template.'**
+  /// **'Note: Metadata columns print on A4 PDF templates only (not A5/A6 or thermal receipts).'**
   String get invoiceSettingsMetadataColumnsGridClassicNote;
+
+  /// No description provided for @invoiceSettingsCustomFieldsPageSupportNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom fields print on every PDF template except thermal receipts.'**
+  String get invoiceSettingsCustomFieldsPageSupportNote;
 }
 
 class _AppLocalizationsDelegate

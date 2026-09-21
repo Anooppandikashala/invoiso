@@ -104,6 +104,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   int _invoicePage = 0;
   int _invoicePageSize = 25;
 
+  InventoryValuationSummary _inventorySummary = InventoryValuationSummary.empty;
+  List<InventoryValuationRow> _inventoryRows = [];
+  int _inventoryPage = 0;
+  int _inventoryPageSize = 25;
+
   bool _showFooterBranding = true;
 
   // Formatting
@@ -427,6 +432,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             _missingCostItemCount = r[1] as int;
             _dailyPage = 0;
           });
+        case 8:
+          final r = await Future.wait([
+            ref.read(reportRepositoryProvider).getInventoryValuationSummary(),
+            ref.read(reportRepositoryProvider).getInventoryValuationRows(),
+          ]);
+          if (!mounted) return;
+          setState(() {
+            _inventorySummary = r[0] as InventoryValuationSummary;
+            _inventoryRows = (r[1] as List).cast<InventoryValuationRow>();
+            _inventoryPage = 0;
+          });
       }
       if (mounted) {
         setState(() {
@@ -739,6 +755,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     (Icons.request_quote_outlined, Icons.request_quote),
     (Icons.list_alt_outlined, Icons.list_alt),
     (Icons.calendar_today_outlined, Icons.calendar_today),
+    (Icons.warehouse_outlined, Icons.warehouse),
   ];
 
   String _presetLabel(_DatePreset preset) {
@@ -764,7 +781,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       4 => l10n.navProducts,
       5 => l10n.navQuotations,
       6 => l10n.reportsNavInvoiceStatusLabel,
-      _ => l10n.reportsNavDailyReportLabel,
+      7 => l10n.reportsNavDailyReportLabel,
+      _ => l10n.reportsNavInventoryLabel,
     };
   }
 
@@ -837,20 +855,22 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             child: Divider(
                 height: 1, color: Theme.of(context).colorScheme.outlineVariant),
           ),
-          // ── Currency scope ──
-          Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Text(
-                AppLocalizations.of(context)!.reportsCurrencySectionLabel,
-                style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    letterSpacing: 0.8)),
-          ),
-          _currencyScopeItem(_CurrencyScope.selected, primary),
-          _currencyScopeItem(_CurrencyScope.all, primary),
-          if (_selectedIndex != 6 && _selectedIndex != 7) ...[
+          // ── Currency scope ── (inventory is a single-currency snapshot)
+          if (_selectedIndex != 8) ...[
+            Padding(
+              padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Text(
+                  AppLocalizations.of(context)!.reportsCurrencySectionLabel,
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      letterSpacing: 0.8)),
+            ),
+            _currencyScopeItem(_CurrencyScope.selected, primary),
+            _currencyScopeItem(_CurrencyScope.all, primary),
+          ],
+          if (_selectedIndex != 6 && _selectedIndex != 7 && _selectedIndex != 8) ...[
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Divider(
@@ -1017,6 +1037,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       5 => _buildQuotations(),
       6 => _buildInvoiceStatus(),
       7 => _buildDailyReport(),
+      8 => _buildInventoryValuation(),
       _ => const SizedBox.shrink(),
     };
   }
@@ -1258,7 +1279,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                               child: _kpiCard(
                                   l10n.reportsTotalBilledLabel,
                                   _money(_kpi.billed),
-                                  const Color(0xFF002E78),
+                                  Theme.of(context).primaryColor,
                                   Icons.receipt_long)),
                           const SizedBox(width: 12),
                           Expanded(
@@ -2488,17 +2509,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     return ChoiceChip(
       label: Text(label),
       selected: selected,
-      selectedColor: const Color(0xFF002E78).withValues(alpha: 0.12),
+      selectedColor: Theme.of(context).primaryColor.withValues(alpha: 0.12),
       labelStyle: TextStyle(
         fontSize: 12,
         fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
         color: selected
-            ? const Color(0xFF002E78)
+            ? Theme.of(context).primaryColor
             : Theme.of(context).colorScheme.onSurfaceVariant,
       ),
       side: BorderSide(
           color: selected
-              ? const Color(0xFF002E78)
+              ? Theme.of(context).primaryColor
               : Theme.of(context).colorScheme.outlineVariant),
       onSelected: (_) {
         if (!mounted) return;
@@ -2603,10 +2624,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           child: Text(
                             _money(c.collected),
                             textAlign: TextAlign.right,
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xFF002E78)),
+                                color: Theme.of(context).primaryColor),
                           ),
                         ),
                       ],
@@ -2779,14 +2800,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF002E78).withValues(alpha: 0.08),
+                  color: Theme.of(context).primaryColor.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(statement.currencyCode,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF002E78))),
+                        color: Theme.of(context).primaryColor)),
               ),
             ],
           ),
@@ -2820,7 +2841,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       _kpiCard(
           l10n.reportsInvoicedLabel,
           _statementMoney(statement, statement.invoiced),
-          const Color(0xFF002E78),
+          Theme.of(context).primaryColor,
           Icons.receipt_long_outlined),
       _kpiCard(
           l10n.paymentStatusPaid,
@@ -2922,7 +2943,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                       fontWeight: FontWeight.w600,
                       color: line.type == 'Payment'
                           ? const Color(0xFF16A34A)
-                          : const Color(0xFF002E78)))),
+                          : Theme.of(context).primaryColor))),
           Expanded(
               flex: 3,
               child: Text(line.reference,
@@ -3351,6 +3372,266 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           Expanded(
               flex: 1,
               child: Text('${p.marginPercent.toStringAsFixed(0)}%',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant))),
+        ],
+      ),
+    );
+  }
+
+  // ─── Section: Inventory Valuation ──────────────────────────────────────────
+
+  Widget _inventoryExcludedBanner() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFBEB),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFFDE68A)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.warning_amber_rounded,
+              color: Color(0xFFD97706), size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              AppLocalizations.of(context)!.reportsInventoryExcludedBannerMessage(
+                  _inventorySummary.excludedCount),
+              style: const TextStyle(fontSize: 12, color: Color(0xFF92400E)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInventoryValuation() {
+    final ts = DateTime.now().millisecondsSinceEpoch;
+    final l10n = AppLocalizations.of(context)!;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: AppLayout.maxWidthNormal),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: Column(
+                  children: [
+                    IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                              child: _kpiCard(
+                                  l10n.reportsInventoryBlockedValueLabel,
+                                  _money(_inventorySummary.stockValue),
+                                  Theme.of(context).primaryColor,
+                                  Icons.warehouse_outlined)),
+                          const SizedBox(width: 12),
+                          Expanded(
+                              child: _kpiCard(
+                                  l10n.reportsInventoryPotentialSaleValueLabel,
+                                  _money(_inventorySummary.retailValue),
+                                  const Color(0xFF7C3AED),
+                                  Icons.sell_outlined)),
+                          const SizedBox(width: 12),
+                          Expanded(
+                              child: _kpiCard(
+                                  l10n.reportsInventoryLockedProfitLabel,
+                                  _money(_inventorySummary.lockedProfit),
+                                  _inventorySummary.lockedProfit < 0
+                                      ? const Color(0xFFDC2626)
+                                      : const Color(0xFF16A34A),
+                                  Icons.savings_outlined)),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                              child: _kpiCard(
+                                  l10n.reportsInventoryTotalUnitsLabel,
+                                  _fmtInt.format(_inventorySummary.totalUnits),
+                                  const Color(0xFF0F766E),
+                                  Icons.inventory_2_outlined)),
+                          const SizedBox(width: 12),
+                          Expanded(
+                              child: _kpiCard(
+                                  l10n.reportsInventoryProductCountLabel,
+                                  _fmtInt.format(_inventorySummary.productCount),
+                                  const Color(0xFF334155),
+                                  Icons.category_outlined)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (_inventorySummary.excludedCount > 0)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: _inventoryExcludedBanner(),
+                ),
+              _sectionCard(
+                padding: EdgeInsets.zero,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+                      child: _cardTitle(
+                        l10n.reportsInventoryBreakdownTitle,
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _exportBtn(l10n.reportsExportCsvLabel, () async {
+                              final rows = await ref
+                                  .read(reportRepositoryProvider)
+                                  .getInventoryValuationRows(limit: null);
+                              final csv = ReportService
+                                  .exportInventoryValuationCsv(
+                                      rows, _inventorySummary);
+                              await _saveCsv(csv, 'inventory_valuation_$ts.csv');
+                            }),
+                            const SizedBox(width: 4),
+                            _exportBtn(l10n.customerMgmtExportPdfMenuLabel,
+                                () async {
+                              final rows = await ref
+                                  .read(reportRepositoryProvider)
+                                  .getInventoryValuationRows(limit: null);
+                              final bytes = await ReportService
+                                  .exportInventoryValuationPdf(
+                                rows,
+                                _inventorySummary,
+                                currencySymbol: _sym,
+                                showFooterBranding: _showFooterBranding,
+                              );
+                              await _savePdf(bytes, 'inventory_valuation_$ts.pdf');
+                            }),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (_inventoryRows.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 20),
+                        child: _emptyState(l10n.reportsNoInventoryDataMessage),
+                      )
+                    else ...[
+                      _inventoryTableHeader(),
+                      ..._inventoryRows
+                          .skip(_inventoryPage * _inventoryPageSize)
+                          .take(_inventoryPageSize)
+                          .map(_inventoryRow),
+                      _buildReportPagination(
+                        currentPage: _inventoryPage,
+                        pageSize: _inventoryPageSize,
+                        total: _inventoryRows.length,
+                        onPageChange: (p) {
+                          if (!mounted) return;
+                          setState(() => _inventoryPage = p);
+                        },
+                        onSizeChange: (s) {
+                          if (!mounted) return;
+                          setState(() {
+                            _inventoryPageSize = s;
+                            _inventoryPage = 0;
+                          });
+                        },
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _inventoryTableHeader() {
+    final l10n = AppLocalizations.of(context)!;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: Row(
+        children: [
+          Expanded(
+              flex: 4, child: _TableHead(l10n.reportsInventoryProductColumnLabel)),
+          Expanded(
+              flex: 2,
+              child:
+                  _TableHead(l10n.reportsInventoryStockColumnLabel, right: true)),
+          Expanded(
+              flex: 2,
+              child: _TableHead(l10n.reportsInventoryPurchasePriceColumnLabel,
+                  right: true)),
+          Expanded(
+              flex: 2,
+              child: _TableHead(l10n.reportsInventoryStockValueColumnLabel,
+                  right: true)),
+          Expanded(
+              flex: 2,
+              child: _TableHead(l10n.reportsInventorySaleValueColumnLabel,
+                  right: true)),
+        ],
+      ),
+    );
+  }
+
+  Widget _inventoryRow(InventoryValuationRow p) {
+    return Container(
+      decoration: BoxDecoration(
+          border: Border(
+              top: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant))),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      child: Row(
+        children: [
+          Expanded(
+              flex: 4,
+              child: Text(p.name,
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurface),
+                  overflow: TextOverflow.ellipsis)),
+          Expanded(
+              flex: 2,
+              child: Text(_fmtInt.format(p.stock),
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant))),
+          Expanded(
+              flex: 2,
+              child: Text(_money(p.purchasePrice),
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant))),
+          Expanded(
+              flex: 2,
+              child: Text(_money(p.stockValue),
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).primaryColor))),
+          Expanded(
+              flex: 2,
+              child: Text(_money(p.retailValue),
                   textAlign: TextAlign.right,
                   style: TextStyle(
                       fontSize: 13,
@@ -3884,7 +4165,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           child: _kpiCard(
                               l10n.reportsTotalInvoicesLabel,
                               _fmtInt.format(_invoiceList.length),
-                              const Color(0xFF002E78),
+                              Theme.of(context).primaryColor,
                               Icons.receipt_long_outlined)),
                       const SizedBox(width: 12),
                       Expanded(
@@ -4036,7 +4317,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       _InvoiceFilter.partial => const Color(0xFFF59E0B),
       _InvoiceFilter.unpaid => Theme.of(context).colorScheme.onSurfaceVariant,
       _InvoiceFilter.overdue => const Color(0xFFDC2626),
-      _ => const Color(0xFF002E78),
+      _ => Theme.of(context).primaryColor,
     };
     return ChoiceChip(
       label: Text(label),

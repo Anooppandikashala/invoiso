@@ -54,6 +54,7 @@ pw.MultiPage buildGridClassicTemplate(
   bool watermarkFullPage = false,
   bool showCgstSgst = false,
   bool showIgst = false,
+  bool showTaxColumn = true,
   bool showRoundOff = false,
   bool showLeadingZeros = true,
   bool showPhone = true,
@@ -116,7 +117,8 @@ pw.MultiPage buildGridClassicTemplate(
   final companyIdParts = <String>[
     if (showGst && gstin.isNotEmpty) '$gstLabel: $gstin',
     if (showPan && panNumber.isNotEmpty) 'PAN: $panNumber',
-    if (showFssai && fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
+    if (showFssai && fssaiCode.isNotEmpty && isIndiaCountry(company?.country))
+      'FSSAI: $fssaiCode',
   ];
   // All three present → one joined line above the divider (current look).
   // Fewer → fold each into the company-details block, line by line.
@@ -129,7 +131,6 @@ pw.MultiPage buildGridClassicTemplate(
   final netTotal = roundNetTotal(rawNet);
   final roundedNet = netTotal.rounded;
   final roundOff = netTotal.roundOff;
-  final payableAmount = showRoundOff ? roundedNet : rawNet;
 
   final totalQty = showTotalQuantity
       ? invoice.items.fold<double>(0, (s, i) => s + i.quantity)
@@ -499,7 +500,7 @@ pw.MultiPage buildGridClassicTemplate(
                         showUpiQr: showUpiQr,
                         upiId: upiId,
                         companyName: company?.name ?? '',
-                        amount: payableAmount,
+                        amount: invoice.outstandingBalance,
                         currencyCode: invoice.currencyCode,
                         invoiceId: invoice.id,
                         accentColor: accentColor,
@@ -522,7 +523,7 @@ pw.MultiPage buildGridClassicTemplate(
                         showUpiQr: showUpiQr,
                         upiId: upiId,
                         companyName: company?.name ?? '',
-                        amount: payableAmount,
+                        amount: invoice.outstandingBalance,
                         currencyCode: invoice.currencyCode,
                         invoiceId: invoice.id,
                         accentColor: accentColor,
@@ -621,6 +622,7 @@ pw.MultiPage buildGridClassicTemplate(
         watermarkOpacity: watermarkOpacity,
         showCgstSgst: showCgstSgst,
         showIgst: showIgst,
+        showTaxColumn: showTaxColumn,
         isLandscape: landscape,
         metadataColumns: metadataColumns,
         metadataDatePattern: datePattern,

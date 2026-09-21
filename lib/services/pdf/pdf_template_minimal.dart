@@ -4,6 +4,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/models/company_info.dart';
+import 'package:invoiso/models/custom_field_value.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'pdf_widgets.dart';
 
@@ -36,12 +37,14 @@ pw.MultiPage buildMinimalTemplate(
   double signatureSizePx = 50,
   double previousBalanceDue = 0.0,
   PdfPageFormat pageFormat = PdfPageFormat.a4,
+  Map<String, bool> metadataColumns = const {},
   pw.ThemeData? pdfTheme,
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
   bool watermarkFullPage = false,
   bool showCgstSgst = false,
   bool showIgst = false,
+  bool showTaxColumn = true,
   bool showRoundOff = false,
   bool showLeadingZeros = true,
   bool showPhone = true,
@@ -77,7 +80,8 @@ pw.MultiPage buildMinimalTemplate(
   final companyIdParts = <String>[
     if (showGst && gstin.isNotEmpty) '$gstLabel: $gstin',
     if (showPan && panNumber.isNotEmpty) '${panLabel(company?.country)}: $panNumber',
-    if (showFssai && fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
+    if (showFssai && fssaiCode.isNotEmpty && isIndiaCountry(company?.country))
+      'FSSAI: $fssaiCode',
   ];
   // GSTIN + PAN + FSSAI all present → one joined line; fewer → line by line.
   final allCompanyIds = companyIdParts.length == 3;
@@ -269,6 +273,46 @@ pw.MultiPage buildMinimalTemplate(
         ],
       ),
 
+      if (invoice.customFields.any((f) => f.value.trim().isNotEmpty)) ...[
+        pw.SizedBox(height: 8),
+        () {
+          final filled = invoice.customFields
+              .where((f) => f.value.trim().isNotEmpty)
+              .toList();
+          pw.Widget fieldCell(CustomFieldValue? f) => pw.Padding(
+                padding: const pw.EdgeInsets.only(right: 8, bottom: 6),
+                child: f == null
+                    ? null
+                    : pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          pw.Text(f.label,
+                              style: pw.TextStyle(
+                                  fontSize: minimalPdfStyle.bodyFontSize,
+                                  fontWeight: pw.FontWeight.bold)),
+                          pw.Text(f.value,
+                              style: pw.TextStyle(fontSize: minimalPdfStyle.bodyFontSize)),
+                        ],
+                      ),
+              );
+          return pw.Table(
+            columnWidths: const {
+              0: pw.FlexColumnWidth(1),
+              1: pw.FlexColumnWidth(1),
+              2: pw.FlexColumnWidth(1),
+            },
+            children: [
+              for (var i = 0; i < filled.length; i += 3)
+                pw.TableRow(children: [
+                  fieldCell(filled[i]),
+                  fieldCell(i + 1 < filled.length ? filled[i + 1] : null),
+                  fieldCell(i + 2 < filled.length ? filled[i + 2] : null),
+                ]),
+            ],
+          );
+        }(),
+      ],
+
       pw.SizedBox(height: 5),
 
       buildInvoiceTable(invoice,
@@ -288,7 +332,10 @@ pw.MultiPage buildMinimalTemplate(
           watermarkBytes: fullPageWatermark ? null : watermarkBytes,
           watermarkOpacity: watermarkOpacity,
           tableFontSize: minimalPdfStyle.tableFontSize,
-          showCgstSgst: showCgstSgst, showIgst: showIgst),
+          showCgstSgst: showCgstSgst, showIgst: showIgst,
+          showTaxColumn: showTaxColumn,
+          metadataColumns: metadataColumns,
+          metadataDatePattern: datePattern),
 
       pw.SizedBox(height: 5),
 
@@ -324,7 +371,7 @@ pw.MultiPage buildMinimalTemplate(
                     showUpiQr: showUpiQr,
                     upiId: upiId,
                     companyName: company?.name ?? '',
-                    amount: invoice.total,
+                    amount: invoice.outstandingBalance,
                     currencyCode: invoice.currencyCode,
                     invoiceId: invoice.id,
                     accentColor: accentColor,
@@ -344,7 +391,7 @@ pw.MultiPage buildMinimalTemplate(
                     showUpiQr: showUpiQr,
                     upiId: upiId,
                     companyName: company?.name ?? '',
-                    amount: invoice.total,
+                    amount: invoice.outstandingBalance,
                     currencyCode: invoice.currencyCode,
                     invoiceId: invoice.id,
                     accentColor: accentColor,

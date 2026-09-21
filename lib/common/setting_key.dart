@@ -86,6 +86,9 @@ enum SettingKey {
   pdfLandscape, // whether the Grid Classic invoice PDF renders in landscape orientation (default false)
   customFieldsEnabled, // whether the user-defined Custom Fields feature is on (default false)
   customFieldDefs, // JSON list of CustomFieldDef objects
+  faqCache, // cached JSON string of the last successfully fetched faq.json, used offline/on fetch failure
+  lastFaqFetch, // ISO timestamp of last successful faq.json fetch
+  showTaxColumn, // whether to show the per-item Tax column on A4 PDFs, for both global and per-item tax modes (default true); showCgstSgst only matters when this is on
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -265,6 +268,12 @@ extension SettingKeyExtension on SettingKey {
         return 'custom_fields_enabled';
       case SettingKey.customFieldDefs:
         return 'custom_field_defs';
+      case SettingKey.faqCache:
+        return 'faq_cache';
+      case SettingKey.lastFaqFetch:
+        return 'last_faq_fetch';
+      case SettingKey.showTaxColumn:
+        return 'show_tax_column';
 
     }
   }
