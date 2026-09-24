@@ -1036,7 +1036,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
 
       String getField(List<dynamic> row, String col) {
         final i = headers.indexOf(col);
-        return i < 0 || i >= row.length ? '' : row[i].toString().trim();
+        return i < 0 || i >= row.length ? '' : stripCsvFormulaGuard(row[i].toString().trim());
       }
 
       final List<Product> valid = [];

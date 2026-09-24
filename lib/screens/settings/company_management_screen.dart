@@ -14,7 +14,7 @@ import 'package:invoiso/utils/company_switch_navigation.dart';
 import 'package:invoiso/utils/window_title.dart';
 
 /// Lists every company registered on this device, with actions to switch,
-/// create, rename, or (self-only) delete. Reused from two entry points:
+/// create, or (self-only) rename/delete. Reused from two entry points:
 /// - The Login screen's gear icon, before anyone is authenticated
 ///   ([currentUser] is null). Switching/creating here is instant — nothing
 ///   has read per-company data yet (see [_liveSwitchTo]).
@@ -435,7 +435,10 @@ class _CompanyManagementScreenState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final canDelete = widget.currentUser?.isAdmin() ?? false;
+    // Rename/delete only the company the admin is logged into — never
+    // another company (whose own admins never authenticated here), and
+    // never pre-login.
+    final canManage = widget.currentUser?.isAdmin() ?? false;
     // A light pastel green (fine against the light theme's white cards)
     // reads as a washed-out, low-contrast card against the dark theme's
     // near-black background and default light text — swap to a dark,
@@ -500,17 +503,18 @@ class _CompanyManagementScreenState
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              IconButton(
-                                icon: const Icon(Icons.edit_outlined),
-                                tooltip: l10n.companyMgmtRenameTooltip,
-                                onPressed: () => _rename(company),
-                              ),
+                              if (canManage && company.id == _activeId)
+                                IconButton(
+                                  icon: const Icon(Icons.edit_outlined),
+                                  tooltip: l10n.companyMgmtRenameTooltip,
+                                  onPressed: () => _rename(company),
+                                ),
                               if (company.id != _activeId)
                                 TextButton(
                                   onPressed: () => _switchTo(company),
                                   child: Text(l10n.companyMgmtSwitchButton),
                                 ),
-                              if (canDelete)
+                              if (canManage && company.id == _activeId)
                                 IconButton(
                                   icon: const Icon(Icons.delete_outline,
                                       color: Colors.red),

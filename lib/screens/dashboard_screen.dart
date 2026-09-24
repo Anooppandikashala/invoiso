@@ -248,9 +248,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   void _onSessionTimeout() {
     if (!mounted) return;
-    Navigator.pushReplacement(
-      context,
+    // Clear the whole stack — a dialog or pushed screen may be on top, and
+    // pushReplacement would leave the dashboard reachable behind Login.
+    Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => const LoginScreen()),
+      (_) => false,
     );
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

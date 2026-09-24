@@ -184,11 +184,14 @@ class BackupManager {
   // singleton so all subsequent DB calls get a live connection.
   Future<void> _restoreFromDatabaseBackup(String backupPath) async {
     final dbPath = DatabaseHelper.path!;
-    final safetyPath = '$dbPath.pre_restore_backup';
+    // Timestamped so a copy kept by an earlier failed restore isn't overwritten.
+    final safetyPath =
+        '$dbPath.pre_restore_backup_${DateTime.now().millisecondsSinceEpoch}';
 
     // Safety copy of current database
     await File(dbPath).copy(safetyPath);
 
+    var keepSafetyCopy = false;
     try {
       // Close singleton and null its reference
       await DatabaseHelper().close();
@@ -204,12 +207,22 @@ class BackupManager {
         await DatabaseHelper().close();
         await File(safetyPath).copy(dbPath);
         await DatabaseHelper().reinitialize();
-      } catch (_) {}
+      } catch (rollbackError) {
+        // Rollback failed — the safety copy is now the only good copy of the
+        // user's data, so keep it and tell the user where it is.
+        keepSafetyCopy = true;
+        throw Exception(
+          'Restore failed ($e) and rollback failed ($rollbackError). '
+          'Your previous data is saved at: $safetyPath',
+        );
+      }
       rethrow;
     } finally {
-      // Clean up safety copy
-      final safetyFile = File(safetyPath);
-      if (await safetyFile.exists()) await safetyFile.delete();
+      // Clean up safety copy only once the live DB is known-good
+      if (!keepSafetyCopy) {
+        final safetyFile = File(safetyPath);
+        if (await safetyFile.exists()) await safetyFile.delete();
+      }
     }
   }
 
