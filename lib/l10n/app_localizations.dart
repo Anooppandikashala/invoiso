@@ -498,6 +498,12 @@ abstract class AppLocalizations {
   /// **'Support'**
   String get dashboardSupportTooltip;
 
+  /// No description provided for @buyMeCoffeeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Buy me a coffee'**
+  String get buyMeCoffeeLabel;
+
   /// No description provided for @dashboardLogoutTooltip.
   ///
   /// In en, this message translates to:

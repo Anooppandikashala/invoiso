@@ -212,6 +212,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get dashboardSupportTooltip => '支持';
 
   @override
+  String get buyMeCoffeeLabel => 'Buy me a coffee';
+
+  @override
   String get dashboardLogoutTooltip => '退出登录';
 
   @override

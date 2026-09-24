@@ -219,6 +219,9 @@ class AppLocalizationsBo extends AppLocalizations {
   String get dashboardSupportTooltip => 'རོགས་སྐྱོར།';
 
   @override
+  String get buyMeCoffeeLabel => 'Buy me a coffee';
+
+  @override
   String get dashboardLogoutTooltip => 'ཕྱིར་འཐོན།';
 
   @override

@@ -221,6 +221,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dashboardSupportTooltip => 'Soporte';
 
   @override
+  String get buyMeCoffeeLabel => 'Buy me a coffee';
+
+  @override
   String get dashboardLogoutTooltip => 'Cerrar sesión';
 
   @override

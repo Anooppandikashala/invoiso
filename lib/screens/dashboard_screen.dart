@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/common/constants.dart';
+import 'package:invoiso/common/app_config.dart';
 import 'package:invoiso/providers/app_config_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/services/update_service.dart';
@@ -668,34 +669,49 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               color: primary.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: Row(
-                              children: [
-                                CircleAvatar(
-                                  radius: 11,
-                                  backgroundColor: primary,
-                                  child: Text(
-                                    _companyName!.trim()[0].toUpperCase(),
-                                    style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold),
+                            // `expanded` flips true while the sidebar is still ~64px
+                            // wide mid-animation; give the row a minimum width and
+                            // clip the excess instead of overflowing.
+                            child: LayoutBuilder(
+                              builder: (context, constraints) => UnconstrainedBox(
+                                constrainedAxis: Axis.vertical,
+                                alignment: Alignment.centerLeft,
+                                clipBehavior: Clip.hardEdge,
+                                child: SizedBox(
+                                  width: constraints.maxWidth < 60
+                                      ? 60
+                                      : constraints.maxWidth,
+                                  child: Row(
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 11,
+                                        backgroundColor: primary,
+                                        child: Text(
+                                          _companyName!.trim()[0].toUpperCase(),
+                                          style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          _companyName!,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 12.5,
+                                            fontWeight: FontWeight.w600,
+                                            color: primary,
+                                          ),
+                                        ),
+                                      ),
+                                      Icon(Icons.expand_more, size: 16, color: primary),
+                                    ],
                                   ),
                                 ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    _companyName!,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 12.5,
-                                      fontWeight: FontWeight.w600,
-                                      color: primary,
-                                    ),
-                                  ),
-                                ),
-                                Icon(Icons.expand_more, size: 16, color: primary),
-                              ],
+                              ),
                             ),
                           ),
                         ),
@@ -804,7 +820,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 thickness: 1),
             LayoutBuilder(
               builder: (context, constraints) {
-                final useExpanded = constraints.maxWidth > 110;
+                // Row below needs ~178px of fixed content (padding + avatar +
+                // 3 icon buttons) — switch only once it fits, not at 110.
+                final useExpanded = constraints.maxWidth > 180;
                 if (useExpanded) {
                   return Padding(
                     padding: const EdgeInsets.fromLTRB(14, 12, 10, 10),
@@ -856,6 +874,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                         fontSize: 11),
                                   ),
                                 ],
+                              ),
+                            ),
+                            Tooltip(
+                              message: AppLocalizations.of(context)!
+                                  .buyMeCoffeeLabel,
+                              child: InkWell(
+                                onTap: () => launchUrl(
+                                    Uri.parse(AppConfig.buyMeCoffee),
+                                    mode: LaunchMode.externalApplication),
+                                borderRadius: BorderRadius.circular(6),
+                                child: const Padding(
+                                  padding: EdgeInsets.all(6),
+                                  child: Icon(Icons.coffee_outlined,
+                                      color: Color(0xFFD97706), size: 18),
+                                ),
                               ),
                             ),
                             Tooltip(
@@ -949,6 +982,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                   color: primary,
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Center(
+                        child: Tooltip(
+                          message: AppLocalizations.of(context)!
+                              .buyMeCoffeeLabel,
+                          child: InkWell(
+                            onTap: () => launchUrl(
+                                Uri.parse(AppConfig.buyMeCoffee),
+                                mode: LaunchMode.externalApplication),
+                            borderRadius: BorderRadius.circular(6),
+                            child: const Padding(
+                              padding: EdgeInsets.all(6),
+                              child: Icon(Icons.coffee_outlined,
+                                  color: Color(0xFFD97706), size: 18),
                             ),
                           ),
                         ),

@@ -80,7 +80,9 @@ class CompanyRegistryService {
       Future<T?> Function(Database db) reader) async {
     final path = join(await _dbDirPath(), _defaultDbFileName);
     if (!await File(path).exists()) return null;
-    final db = await openDatabase(path, readOnly: true);
+    // singleInstance: false — otherwise sqflite hands back DatabaseHelper's
+    // already-open connection for this path, and the close() below kills it.
+    final db = await openDatabase(path, readOnly: true, singleInstance: false);
     try {
       return await reader(db);
     } catch (_) {

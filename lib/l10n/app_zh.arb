@@ -64,6 +64,7 @@
   "dashboardRoleAdmin": "管理员",
   "dashboardRoleUser": "用户",
   "dashboardSupportTooltip": "支持",
+  "buyMeCoffeeLabel": "Buy me a coffee",
   "dashboardLogoutTooltip": "退出登录",
   "dashboardTestBuildBadge": "测试版本",
   "dashboardTestBadgeShort": "测试",

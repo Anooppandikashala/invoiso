@@ -64,6 +64,7 @@
   "dashboardRoleAdmin": "Administrateur",
   "dashboardRoleUser": "Utilisateur",
   "dashboardSupportTooltip": "Support",
+  "buyMeCoffeeLabel": "Buy me a coffee",
   "dashboardLogoutTooltip": "Déconnexion",
   "dashboardTestBuildBadge": "VERSION TEST",
   "dashboardTestBadgeShort": "TEST",

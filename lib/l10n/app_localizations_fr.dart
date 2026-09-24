@@ -220,6 +220,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dashboardSupportTooltip => 'Support';
 
   @override
+  String get buyMeCoffeeLabel => 'Buy me a coffee';
+
+  @override
   String get dashboardLogoutTooltip => 'Déconnexion';
 
   @override

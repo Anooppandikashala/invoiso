@@ -220,6 +220,9 @@ class AppLocalizationsNe extends AppLocalizations {
   String get dashboardSupportTooltip => 'सहयोग';
 
   @override
+  String get buyMeCoffeeLabel => 'Buy me a coffee';
+
+  @override
   String get dashboardLogoutTooltip => 'लगआउट';
 
   @override

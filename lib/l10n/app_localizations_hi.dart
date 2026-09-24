@@ -217,6 +217,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get dashboardSupportTooltip => 'सहायता';
 
   @override
+  String get buyMeCoffeeLabel => 'Buy me a coffee';
+
+  @override
   String get dashboardLogoutTooltip => 'लॉगआउट';
 
   @override

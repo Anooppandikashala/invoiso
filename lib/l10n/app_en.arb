@@ -96,6 +96,7 @@
   "dashboardRoleAdmin": "Admin",
   "dashboardRoleUser": "User",
   "dashboardSupportTooltip": "Support",
+  "buyMeCoffeeLabel": "Buy me a coffee",
   "dashboardLogoutTooltip": "Logout",
   "dashboardTestBuildBadge": "TEST BUILD",
   "dashboardTestBadgeShort": "TEST",
