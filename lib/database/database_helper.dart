@@ -16,7 +16,7 @@ class DatabaseHelper {
   static String? get path => _path;
   static Database? _database;
   static String _dbFileName = 'invoice_manager.db';
-  final dbVersion = 47;
+  final dbVersion = 48;
 
   /// Startup only, before anything has opened a connection yet — just points
   /// at the right file for the first `_initDB()` call. No close/reopen, so
@@ -236,6 +236,14 @@ class DatabaseHelper {
     await db.execute('CREATE INDEX idx_invoice_items_invoice ON invoice_items(invoice_id)');
     await db.execute('CREATE INDEX idx_payments_invoice ON invoice_payments(invoice_id)');
     await db.execute('CREATE INDEX idx_payments_date ON invoice_payments(date_paid)');
+    await db.execute('CREATE INDEX idx_inv_type_del_id ON invoices(type, deleted_at, id)');
+    await db.execute('CREATE INDEX idx_inv_customer_id ON invoices(customer_id, type, date)');
+    await db.execute('CREATE INDEX idx_inv_type_num ON invoices(type, invoice_number)');
+    await db.execute('CREATE INDEX idx_inv_type_due ON invoices(type, due_date)');
+    await db.execute('CREATE INDEX idx_products_name_nc ON products(name COLLATE NOCASE)');
+    await db.execute('CREATE INDEX idx_customers_name_nc ON customers(name COLLATE NOCASE)');
+    await db.execute('CREATE INDEX idx_customers_email ON customers(email)');
+    await db.execute('CREATE INDEX idx_customers_phone ON customers(phone)');
 
     // Insert dummy company info
     await db.insert('company_info', {
@@ -784,6 +792,27 @@ class DatabaseHelper {
         );
       });
     }
+
+    if (oldVersion < 48) {
+      // Performance indexes (Issues.md #37) — list pages, customer filter,
+      // previous balance, next invoice number, due/overdue, NOCASE name
+      // sorts, import duplicate checks.
+      await _runMigrationStep(db, 48, 'add_performance_indexes', () async {
+        const indexes = [
+          'CREATE INDEX IF NOT EXISTS idx_inv_type_del_id ON invoices(type, deleted_at, id)',
+          'CREATE INDEX IF NOT EXISTS idx_inv_customer_id ON invoices(customer_id, type, date)',
+          'CREATE INDEX IF NOT EXISTS idx_inv_type_num ON invoices(type, invoice_number)',
+          'CREATE INDEX IF NOT EXISTS idx_inv_type_due ON invoices(type, due_date)',
+          'CREATE INDEX IF NOT EXISTS idx_products_name_nc ON products(name COLLATE NOCASE)',
+          'CREATE INDEX IF NOT EXISTS idx_customers_name_nc ON customers(name COLLATE NOCASE)',
+          'CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email)',
+          'CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone)',
+        ];
+        for (final sql in indexes) {
+          await db.execute(sql);
+        }
+      });
+    }
   }
 
   Future<void> _runMigrationStep(
@@ -857,4 +886,21 @@ class DatabaseHelper {
     _database = await _initDB();
     return _database!;
   }
+}
+
+/// Runs [query] once per chunk of at most 900 [ids] and concatenates the
+/// rows. Keeps `IN (?,…)` under SQLite's 999 bind-variable limit on Android
+/// 8–11 (Issues.md #36). [query] gets the chunk and its `?,?,…` placeholders.
+Future<List<Map<String, Object?>>> queryInChunks(
+  List<String> ids,
+  Future<List<Map<String, Object?>>> Function(
+          List<String> chunk, String placeholders)
+      query,
+) async {
+  final rows = <Map<String, Object?>>[];
+  for (var i = 0; i < ids.length; i += 900) {
+    final chunk = ids.sublist(i, i + 900 > ids.length ? ids.length : i + 900);
+    rows.addAll(await query(chunk, List.filled(chunk.length, '?').join(',')));
+  }
+  return rows;
 }

@@ -229,13 +229,15 @@ class PaymentService {
       List<String> invoiceIds) async {
     if (invoiceIds.isEmpty) return {};
     final db = await _dbHelper.database;
-    final placeholders = List.filled(invoiceIds.length, '?').join(',');
-    final rows = await db.rawQuery(
-      'SELECT invoice_id, COALESCE(SUM(amount_paid), 0.0) AS total '
-      'FROM invoice_payments '
-      'WHERE invoice_id IN ($placeholders) '
-      'GROUP BY invoice_id',
+    final rows = await queryInChunks(
       invoiceIds,
+      (chunk, placeholders) => db.rawQuery(
+        'SELECT invoice_id, COALESCE(SUM(amount_paid), 0.0) AS total '
+        'FROM invoice_payments '
+        'WHERE invoice_id IN ($placeholders) '
+        'GROUP BY invoice_id',
+        chunk,
+      ),
     );
     return {
       for (final row in rows)

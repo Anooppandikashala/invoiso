@@ -9,7 +9,7 @@ import 'package:invoiso/common/invoiso_colors.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/models/customer.dart';
 import 'package:invoiso/models/invoice.dart';
-import 'package:invoiso/providers/invoice_provider.dart';
+import 'package:invoiso/models/invoice_list_filter.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:invoiso/services/backend_services.dart';
@@ -138,6 +138,18 @@ class _InvoiceManagementScreenV2State
       _selectedIds.clear(); // selection reset on every page/search change
     });
     try {
+      // Filters run in the query, before pagination (Issues.md #39) — so
+      // pages stay full and the total/page count match the filtered set.
+      final filter = InvoiceListFilter(
+        dateFrom: _invoiceDateFrom,
+        dateTo: _invoiceDateTo,
+        numberFrom: _idRangeFrom,
+        numberTo: _idRangeTo,
+        dueDate: _dueDateFilter,
+        paymentStatus:
+            widget.filterType == 'Invoice' ? _paymentStatusFilterV2 : 'all',
+        hidePaid: _hidePaid,
+      );
       final results = await Future.wait([
         ref.read(invoiceRepositoryProvider).getInvoicesPaginated(
           page: _currentPage,
@@ -147,91 +159,18 @@ class _InvoiceManagementScreenV2State
           orderBy: _sortField,
           orderAscending: _sortAscending,
           customerId: _selectedCustomerId,
+          filter: filter,
         ),
         ref.read(invoiceRepositoryProvider).getInvoiceCount(
           searchQuery: _searchQuery,
           filterType: widget.filterType,
           customerId: _selectedCustomerId,
+          filter: filter,
         ),
       ]);
       if (mounted) {
-        var pageInvoices = results[0] as List<Invoice>;
-        if (_hidePaid) {
-          // Keep Quotations; for Invoices only keep those with an outstanding balance
-          pageInvoices = pageInvoices
-              .where((inv) =>
-                  inv.type != 'Invoice' ||
-                  inv.outstandingBalance > InvoiceCalculator.moneyEpsilon)
-              .toList();
-        }
-        if (_dueDateFilter != 'all') {
-          pageInvoices = pageInvoices.where((inv) {
-            if (inv.dueDate == null) return false;
-            final today = InvoiceCalculator.dateOnly(DateTime.now());
-            final due = InvoiceCalculator.dateOnly(inv.dueDate!);
-            switch (_dueDateFilter) {
-              case 'overdue':
-                return InvoiceCalculator.isOverdue(
-                  dueDate: inv.dueDate,
-                  outstanding: inv.outstandingBalance,
-                );
-              case 'due_today':
-                return due == today;
-              case 'due_week':
-                return !due.isBefore(today) &&
-                    due.isBefore(today.add(const Duration(days: 7)));
-              case 'due_month':
-                return !due.isBefore(today) &&
-                    due.isBefore(
-                        DateTime(today.year, today.month + 1, today.day));
-              default:
-                return true;
-            }
-          }).toList();
-        }
-        // V2: additional payment-status filter (All / Paid / Partial /
-        // Unpaid) — same client-side-on-the-loaded-page approach as the
-        // existing hidePaid/dueDate filters above, for consistency.
-        if (widget.filterType == 'Invoice' && _paymentStatusFilterV2 != 'all') {
-          pageInvoices = pageInvoices.where((inv) {
-            switch (_paymentStatusFilterV2) {
-              case 'paid':
-                return inv.paymentStatus == PaymentStatus.paid;
-              case 'partial':
-                return inv.paymentStatus == PaymentStatus.partial;
-              case 'unpaid':
-                return inv.paymentStatus == PaymentStatus.unpaid;
-              default:
-                return true;
-            }
-          }).toList();
-        }
-        if (_invoiceDateFrom != null || _invoiceDateTo != null) {
-          pageInvoices = pageInvoices.where((inv) {
-            final d = InvoiceCalculator.dateOnly(inv.date);
-            if (_invoiceDateFrom != null &&
-                d.isBefore(InvoiceCalculator.dateOnly(_invoiceDateFrom!))) {
-              return false;
-            }
-            if (_invoiceDateTo != null &&
-                d.isAfter(InvoiceCalculator.dateOnly(_invoiceDateTo!))) {
-              return false;
-            }
-            return true;
-          }).toList();
-        }
-        if (_idRangeFrom != null || _idRangeTo != null) {
-          pageInvoices = pageInvoices.where((inv) {
-            final n = int.tryParse(
-                (inv.invoiceNumber ?? inv.id).replaceAll(RegExp(r'\D'), ''));
-            if (n == null) return false;
-            if (_idRangeFrom != null && n < _idRangeFrom!) return false;
-            if (_idRangeTo != null && n > _idRangeTo!) return false;
-            return true;
-          }).toList();
-        }
         setState(() {
-          _pageInvoices = pageInvoices;
+          _pageInvoices = results[0] as List<Invoice>;
           _totalCount = results[1] as int;
           _isLoadingPage = false;
         });
@@ -336,7 +275,6 @@ class _InvoiceManagementScreenV2State
     if (!confirmed) return;
 
     await ref.read(invoiceRepositoryProvider).softDeleteInvoice(invoice.id);
-    ref.read(invoicesProvider.notifier).refresh();
     await _loadPage();
     if (mounted) {
       AppError.showSuccess(context, AppLocalizations.of(context)!.invoiceMgmtMovedToTrashMessage);
@@ -507,7 +445,6 @@ class _InvoiceManagementScreenV2State
         deletedInvoices: deleted,
         datePattern: _datePattern,
         onRestored: () async {
-          ref.read(invoicesProvider.notifier).refresh();
           await _loadPage();
         },
       ),
@@ -533,7 +470,6 @@ class _InvoiceManagementScreenV2State
       for (final id in List<String>.from(_selectedIds)) {
         await ref.read(invoiceRepositoryProvider).softDeleteInvoice(id);
       }
-      ref.read(invoicesProvider.notifier).refresh();
       await _loadPage(); // also clears _selectedIds
       if (mounted) {
         AppError.showSuccess(
@@ -1054,7 +990,6 @@ class _InvoiceManagementScreenV2State
         invoices: unpaid,
         datePaid: DateTime.now(),
       );
-      ref.read(invoicesProvider.notifier).refresh();
       await _loadPage();
       if (mounted) {
         AppError.showSuccess(
@@ -2393,7 +2328,6 @@ class _InvoiceManagementScreenV2State
       builder: (ctx) => ApplyPaymentDialog(
         invoice: invoice,
         onPaymentRecorded: () {
-          ref.read(invoicesProvider.notifier).refresh();
           _loadPage();
         },
       ),

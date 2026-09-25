@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:sqflite/sqflite.dart';
+
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/database/invoice_item_service.dart';
 import 'package:invoiso/database/settings_service.dart';
@@ -12,6 +14,7 @@ import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/product.dart';
 import 'package:invoiso/models/customer.dart';
 import 'package:invoiso/models/invoice_item.dart';
+import 'package:invoiso/models/invoice_list_filter.dart';
 import 'package:invoiso/models/invoice_payment.dart';
 import 'package:invoiso/utils/app_date.dart';
 import 'package:invoiso/utils/app_logger.dart';
@@ -235,6 +238,17 @@ class InvoiceService {
         ? <Object>[invoiceDateKey]
         : <Object>[invoiceDateKey, invoiceDateKey, sameDayId];
 
+    final invoiceWhere = 'customer_id = ? '
+        'AND type = ? '
+        'AND deleted_at IS NULL '
+        'AND currency_code = ? '
+        'AND $dateFilter';
+    final invoiceArgs = [
+      normalizedCustomerId,
+      'Invoice',
+      currencyCode,
+      ...dateArgs,
+    ];
     final invoiceRows = await db.query(
       'invoices',
       columns: [
@@ -245,34 +259,26 @@ class InvoiceService {
         'invoice_discount_type',
         'invoice_discount_value',
       ],
-      where: 'customer_id = ? '
-          'AND type = ? '
-          'AND deleted_at IS NULL '
-          'AND currency_code = ? '
-          'AND $dateFilter',
-      whereArgs: [
-        normalizedCustomerId,
-        'Invoice',
-        currencyCode,
-        ...dateArgs,
-      ],
+      where: invoiceWhere,
+      whereArgs: invoiceArgs,
     );
 
     if (invoiceRows.isEmpty) return 0.0;
 
-    final ids = invoiceRows.map((row) => row['id'] as String).toList();
-    final placeholders = List.filled(ids.length, '?').join(',');
+    // Subquery instead of one `?` per id — see Issues.md #36.
     final itemRows = await db.rawQuery(
       'SELECT invoice_id, unit_price, product_price, quantity, discount, '
       'discount_per_unit, extra_cost, product_tax_rate, product_price_includes_tax '
-      'FROM invoice_items WHERE invoice_id IN ($placeholders) ORDER BY rowid ASC',
-      ids,
+      'FROM invoice_items WHERE invoice_id IN '
+      '(SELECT id FROM invoices WHERE $invoiceWhere) ORDER BY rowid ASC',
+      invoiceArgs,
     );
     final paymentRows = await db.rawQuery(
       'SELECT invoice_id, COALESCE(SUM(amount_paid), 0.0) as paid '
-      'FROM invoice_payments WHERE invoice_id IN ($placeholders) '
+      'FROM invoice_payments WHERE invoice_id IN '
+      '(SELECT id FROM invoices WHERE $invoiceWhere) '
       'GROUP BY invoice_id',
-      ids,
+      invoiceArgs,
     );
 
     final itemsByInvoice = <String, List<Map<String, dynamic>>>{};
@@ -523,30 +529,32 @@ class InvoiceService {
     String orderBy = 'id',
     bool orderAscending = false,
     String? customerId,
+    InvoiceListFilter filter = const InvoiceListFilter(),
   }) async {
     final db = await dbHelper.database;
 
-    final whereParts = <String>['deleted_at IS NULL'];
-    final whereArgs = <dynamic>[];
-
-    if (searchQuery.isNotEmpty) {
-      whereParts.add('(customer_name LIKE ? OR id LIKE ?)');
-      whereArgs.addAll(['%$searchQuery%', '%$searchQuery%']);
-    }
-    if (filterType != null && filterType.isNotEmpty) {
-      whereParts.add('type = ?');
-      whereArgs.add(filterType);
-    }
-    if (customerId != null && customerId.isNotEmpty) {
-      whereParts.add('customer_id = ?');
-      whereArgs.add(customerId);
-    }
-
-    final where = whereParts.join(' AND ');
+    final (where, whereArgs) =
+        _listWhere(searchQuery, filterType, customerId, filter);
     final order = orderAscending ? 'ASC' : 'DESC';
     final orderClause = orderBy == 'customer_name'
         ? 'customer_name COLLATE NOCASE $order'
         : '$orderBy $order';
+
+    if (filter.needsBalance) {
+      final ids = await _idsPassingBalanceFilter(
+          db, where, whereArgs, filter, orderClause);
+      final pageIds = ids.skip(page * pageSize).take(pageSize).toList();
+      if (pageIds.isEmpty) return [];
+      // pageIds <= pageSize (max 100) — well under the 999-variable limit.
+      final pageMaps = await db.query(
+        'invoices',
+        where: 'id IN (${List.filled(pageIds.length, '?').join(',')})',
+        whereArgs: pageIds,
+        orderBy: orderClause,
+      );
+      return _buildInvoiceList(pageMaps);
+    }
+
     final invoiceMaps = await db.query(
       'invoices',
       where: where,
@@ -563,11 +571,30 @@ class InvoiceService {
     String searchQuery = '',
     String? filterType,
     String? customerId,
+    InvoiceListFilter filter = const InvoiceListFilter(),
   }) async {
     final db = await dbHelper.database;
 
+    final (where, whereArgs) =
+        _listWhere(searchQuery, filterType, customerId, filter);
+    if (filter.needsBalance) {
+      return (await _idsPassingBalanceFilter(
+              db, where, whereArgs, filter, 'id DESC'))
+          .length;
+    }
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) FROM invoices WHERE $where',
+      whereArgs.isEmpty ? null : whereArgs,
+    );
+    return (result.first.values.first as int?) ?? 0;
+  }
+
+  /// WHERE clause shared by [getInvoicesPaginated] and [getInvoiceCount] —
+  /// everything in [filter] that's expressible on stored columns.
+  static (String, List<Object?>) _listWhere(String searchQuery,
+      String? filterType, String? customerId, InvoiceListFilter filter) {
     final whereParts = <String>['deleted_at IS NULL'];
-    final whereArgs = <dynamic>[];
+    final whereArgs = <Object?>[];
 
     if (searchQuery.isNotEmpty) {
       whereParts.add('(customer_name LIKE ? OR id LIKE ?)');
@@ -581,13 +608,139 @@ class InvoiceService {
       whereParts.add('customer_id = ?');
       whereArgs.add(customerId);
     }
+    if (filter.dateFrom != null) {
+      whereParts.add('date >= ?');
+      whereArgs.add(AppDate.dateKeyStart(filter.dateFrom!));
+    }
+    if (filter.dateTo != null) {
+      whereParts.add('date <= ?');
+      whereArgs.add(AppDate.dateKeyEnd(filter.dateTo!));
+    }
+    const numberExpr = 'CAST(COALESCE(invoice_number, id) AS INTEGER)';
+    if (filter.numberFrom != null) {
+      whereParts.add('$numberExpr >= ?');
+      whereArgs.add(filter.numberFrom);
+    }
+    if (filter.numberTo != null) {
+      whereParts.add('$numberExpr <= ?');
+      whereArgs.add(filter.numberTo);
+    }
+    if (filter.dueDate != 'all') {
+      final today = InvoiceCalculator.dateOnly(DateTime.now());
+      final DateTime? end = switch (filter.dueDate) {
+        'due_today' => DateTime(today.year, today.month, today.day + 1),
+        'due_week' => today.add(const Duration(days: 7)),
+        'due_month' => DateTime(today.year, today.month + 1, today.day),
+        _ => null, // 'overdue': due before today; balance checked in Dart
+      };
+      whereParts.add('due_date IS NOT NULL');
+      if (end == null) {
+        whereParts.add('due_date < ?');
+        whereArgs.add(AppDate.dateKeyStart(today));
+      } else {
+        whereParts.add('due_date >= ? AND due_date < ?');
+        whereArgs.addAll([AppDate.dateKeyStart(today), AppDate.dateKeyStart(end)]);
+      }
+    }
+    return (whereParts.join(' AND '), whereArgs);
+  }
 
-    final where = whereParts.join(' AND ');
-    final result = await db.rawQuery(
-      'SELECT COUNT(*) FROM invoices WHERE $where',
-      whereArgs.isEmpty ? null : whereArgs,
+  /// Ids (in [orderClause] order) of invoices matching [where] whose balance
+  /// passes [filter]'s hidePaid / overdue / paymentStatus. Invoice totals
+  /// aren't stored, so they're computed here over the SQL-filtered set
+  /// (Issues.md #41 would make this plain SQL).
+  static Future<List<String>> _idsPassingBalanceFilter(
+    Database db,
+    String where,
+    List<Object?> whereArgs,
+    InvoiceListFilter filter,
+    String orderClause,
+  ) async {
+    final rows = await db.query(
+      'invoices',
+      columns: [
+        'id',
+        'type',
+        'due_date',
+        'tax_rate',
+        'tax_mode',
+        'additional_costs',
+        'invoice_discount_type',
+        'invoice_discount_value',
+      ],
+      where: where,
+      whereArgs: whereArgs,
+      orderBy: orderClause,
     );
-    return (result.first.values.first as int?) ?? 0;
+    if (rows.isEmpty) return [];
+
+    final subquery = '(SELECT id FROM invoices WHERE $where)';
+    final itemRows = await db.rawQuery(
+      'SELECT invoice_id, unit_price, product_price, quantity, discount, '
+      'discount_per_unit, extra_cost, product_tax_rate, product_price_includes_tax '
+      'FROM invoice_items WHERE invoice_id IN $subquery ORDER BY rowid ASC',
+      whereArgs,
+    );
+    final paymentRows = await db.rawQuery(
+      'SELECT invoice_id, COALESCE(SUM(amount_paid), 0.0) as paid '
+      'FROM invoice_payments WHERE invoice_id IN $subquery '
+      'GROUP BY invoice_id',
+      whereArgs,
+    );
+
+    final itemsByInvoice = <String, List<Map<String, dynamic>>>{};
+    for (final row in itemRows) {
+      itemsByInvoice.putIfAbsent(row['invoice_id'] as String, () => []).add(row);
+    }
+    final paidByInvoice = <String, double>{
+      for (final row in paymentRows)
+        row['invoice_id'] as String: (row['paid'] as num).toDouble()
+    };
+
+    final ids = <String>[];
+    for (final row in rows) {
+      final id = row['id'] as String;
+      final taxMode = TaxModeExtension.fromKey(row['tax_mode'] as String?);
+      final taxRate = (row['tax_rate'] as num?)?.toDouble() ?? 0.0;
+      final total = InvoiceTotalsCalculator.totals(
+        lines: (itemsByInvoice[id] ?? []).map((r) =>
+            InvoiceTotalsCalculator.lineFromDbRow(r,
+                taxMode: taxMode, globalTaxRatePercent: taxRate * 100)),
+        taxMode: taxMode,
+        globalTaxRate: taxRate,
+        globalTaxRateFormat: TaxRateFormat.fraction,
+        additionalCostsTotal:
+            AdditionalCost.listFromJson(row['additional_costs'] as String?)
+                .fold(0.0, (sum, cost) => sum + cost.amount),
+        invoiceDiscountType: InvoiceDiscountTypeExtension.fromKey(
+            row['invoice_discount_type'] as String?),
+        invoiceDiscountValue:
+            (row['invoice_discount_value'] as num?)?.toDouble() ?? 0.0,
+      ).total;
+      final paid = paidByInvoice[id] ?? 0.0;
+      final outstanding =
+          InvoiceCalculator.outstanding(total: total, paid: paid);
+
+      if (filter.hidePaid &&
+          row['type'] == 'Invoice' &&
+          outstanding <= InvoiceCalculator.moneyEpsilon) {
+        continue;
+      }
+      if (filter.dueDate == 'overdue' &&
+          !InvoiceCalculator.isOverdue(
+            dueDate: DateTime.tryParse(row['due_date'] as String? ?? ''),
+            outstanding: outstanding,
+          )) {
+        continue;
+      }
+      if (filter.paymentStatus != 'all' &&
+          InvoiceCalculator.paymentStatus(total: total, paid: paid).name !=
+              filter.paymentStatus) {
+        continue;
+      }
+      ids.add(id);
+    }
+    return ids;
   }
 
   static Future<int> getTotalInvoiceCountIncludingTrashed() async {
@@ -715,12 +868,14 @@ class InvoiceService {
     // Batch-load all payments for this page in one query, then assign
     final db = await dbHelper.database;
     final ids = invoices.map((inv) => inv.id).toList();
-    final placeholders = List.filled(ids.length, '?').join(',');
-    final paymentRows = await db.rawQuery(
-      'SELECT * FROM invoice_payments '
-      'WHERE invoice_id IN ($placeholders) '
-      'ORDER BY invoice_id, date_paid ASC, rowid ASC',
+    final paymentRows = await queryInChunks(
       ids,
+      (chunk, placeholders) => db.rawQuery(
+        'SELECT * FROM invoice_payments '
+        'WHERE invoice_id IN ($placeholders) '
+        'ORDER BY invoice_id, date_paid ASC, rowid ASC',
+        chunk,
+      ),
     );
 
     // Group payments by invoice_id
@@ -785,21 +940,20 @@ class InvoiceService {
       return (count: count, revenue: revenue, outstanding: 0.0);
     }
 
-    final ids = invoiceRows.map((r) => r['id'] as String).toList();
-    final placeholders = List.filled(ids.length, '?').join(',');
+    // Subquery instead of one `?` per id — see Issues.md #36.
+    const invoiceSubquery = "(SELECT id FROM invoices "
+        "WHERE type = 'Invoice' AND deleted_at IS NULL)";
 
     final itemRows = await db.rawQuery(
       'SELECT invoice_id, unit_price, product_price, quantity, discount, '
       'discount_per_unit, extra_cost, product_tax_rate, product_price_includes_tax '
-      'FROM invoice_items WHERE invoice_id IN ($placeholders) ORDER BY rowid ASC',
-      ids,
+      'FROM invoice_items WHERE invoice_id IN $invoiceSubquery ORDER BY rowid ASC',
     );
 
     final paymentSums = await db.rawQuery(
       'SELECT invoice_id, COALESCE(SUM(amount_paid), 0.0) as paid '
-      'FROM invoice_payments WHERE invoice_id IN ($placeholders) '
+      'FROM invoice_payments WHERE invoice_id IN $invoiceSubquery '
       'GROUP BY invoice_id',
-      ids,
     );
 
     final itemsByInvoice = <String, List<Map<String, dynamic>>>{};

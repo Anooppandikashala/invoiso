@@ -98,6 +98,16 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   Timer? _customerSearchDebounce;
   int _customerSearchRequestId = 0;
   static const int _customerFetchLimit = 30;
+
+  /// Puts [c] into the local customer list (replaced by id, else prepended)
+  /// instead of re-fetching every customer after one add/edit — the list is
+  /// only ever the first [_customerFetchLimit] anyway (Issues.md #43).
+  void _upsertLocalCustomer(Customer c) {
+    customers = customers.any((x) => x.id == c.id)
+        ? [for (final x in customers) x.id == c.id ? c : x]
+        : [c, ...customers];
+    filteredCustomers = List.from(customers);
+  }
   List<InvoiceItem> invoiceItems = [];
   final Set<String> _savedAdHocIds =
       {}; // tracks custom item IDs already saved to products
@@ -2241,12 +2251,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           businessName: businessNameController.text.trim(),
         );
         await ref.read(customerRepositoryProvider).updateCustomer(updated);
-        final reloaded = await ref.read(customerRepositoryProvider).getAllCustomers();
         if (!mounted) return;
         setState(() {
           selectedCustomer = updated;
-          customers = reloaded;
-          filteredCustomers = reloaded;
+          _upsertLocalCustomer(updated);
         });
         await _loadPreviousBalanceDue(updated);
         if (mounted) {
@@ -2342,12 +2350,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         businessName: businessNameController.text.trim(),
       );
       await ref.read(customerRepositoryProvider).updateCustomer(updated);
-      final reloaded = await ref.read(customerRepositoryProvider).getAllCustomers();
       if(!mounted) return;
       setState(() {
         selectedCustomer = updated;
-        customers = reloaded;
-        filteredCustomers = reloaded;
+        _upsertLocalCustomer(updated);
       });
       await _loadPreviousBalanceDue(updated);
       if (mounted) {
@@ -2370,12 +2376,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         businessName: businessNameController.text.trim(),
       );
       await ref.read(customerRepositoryProvider).insertCustomer(newCustomer);
-      final reloaded = await ref.read(customerRepositoryProvider).getAllCustomers();
       if(!mounted) return;
       setState(() {
         selectedCustomer = newCustomer;
-        customers = reloaded;
-        filteredCustomers = reloaded;
+        _upsertLocalCustomer(newCustomer);
       });
       await _loadPreviousBalanceDue(newCustomer);
       if (mounted) {
@@ -3586,13 +3590,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                             if (existing == null) {
                               await ref.read(customerRepositoryProvider).insertCustomer(newCustomer);
                             }
-                            final reloaded =
-                                await ref.read(customerRepositoryProvider).getAllCustomers();
                             if (mounted) {
                               setState(() {
                                 selectedCustomer = newCustomer;
-                                customers = reloaded;
-                                filteredCustomers = reloaded;
+                                _upsertLocalCustomer(newCustomer);
                               });
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
