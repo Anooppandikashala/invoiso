@@ -220,6 +220,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dashboardSupportTooltip => 'Support';
 
   @override
+  String get buyMeCoffeeLabel => 'Buy me a coffee';
+
+  @override
   String get dashboardLogoutTooltip => 'Déconnexion';
 
   @override
@@ -3795,7 +3798,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get fieldIfscCodeLabel => 'Code IFSC';
 
   @override
+  String get fieldIbanLabel => 'IBAN';
+
+  @override
   String get companyInfoAddBankAccountButton => 'Ajouter un compte bancaire';
+
+  @override
+  String get companyInfoEditBankAccountTitle => 'Modifier le compte bancaire';
+
+  @override
+  String get fieldBankAccountNameLabel => 'Nom du compte';
 
   @override
   String get tooltipShowOnInvoicePdf => 'Afficher sur le PDF de la facture';
@@ -4124,6 +4136,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsNavCompanyInfoLabel => 'Infos entreprise';
 
   @override
+  String get settingsNavCompaniesLabel => 'Entreprises';
+
+  @override
   String get settingsNavTeamLabel => 'Équipe';
 
   @override
@@ -4143,6 +4158,96 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsNavSoftwareInfoLabel => 'Infos logiciel';
+
+  @override
+  String get companyMgmtTitle => 'Gérer les entreprises';
+
+  @override
+  String get companyMgmtActiveBadge => 'Active';
+
+  @override
+  String get companyMgmtSwitchButton => 'Changer';
+
+  @override
+  String get companyMgmtSwitchConfirmTitle => 'Changer d\'entreprise ?';
+
+  @override
+  String companyMgmtSwitchConfirmBody(String name) {
+    return 'Invoiso va redémarrer pour passer à « $name ».';
+  }
+
+  @override
+  String get companyMgmtNewCompanyButton => '+ Nouvelle entreprise';
+
+  @override
+  String get companyMgmtNewCompanyTitle => 'Nouvelle entreprise';
+
+  @override
+  String get companyMgmtAdminAccountSectionLabel => 'Compte administrateur';
+
+  @override
+  String get companyMgmtCreateButton => 'Créer';
+
+  @override
+  String get companyMgmtDeleteButton => 'Supprimer cette entreprise';
+
+  @override
+  String companyMgmtDeleteConfirmTitle(String name) {
+    return 'Supprimer « $name » ?';
+  }
+
+  @override
+  String get companyMgmtDeleteConfirmBody =>
+      'Cela supprime définitivement toutes les données de cette entreprise et ne peut pas être annulé. Tapez le nom de l\'entreprise pour confirmer.';
+
+  @override
+  String get companyMgmtRenameTooltip => 'Renommer';
+
+  @override
+  String get companyMgmtRenameTitle => 'Renommer l\'entreprise';
+
+  @override
+  String get companyMgmtNameTakenMessage =>
+      'Une entreprise portant ce nom existe déjà';
+
+  @override
+  String companyMgmtSwitchErrorMessage(String error) {
+    return 'Échec du changement d\'entreprise : $error';
+  }
+
+  @override
+  String get companyMgmtSwitchRestartTitle => 'Entreprise changée';
+
+  @override
+  String get companyMgmtSwitchRestartBody =>
+      'Invoiso doit redémarrer pour terminer le changement d\'entreprise. Veuillez fermer puis rouvrir l\'application.';
+
+  @override
+  String get companyMgmtCreateRestartTitle => 'Entreprise créée';
+
+  @override
+  String get companyMgmtCreateRestartBody =>
+      'Votre nouvelle entreprise est prête. Veuillez fermer puis rouvrir l\'application pour continuer.';
+
+  @override
+  String get companyMgmtDeletedMessage => 'Entreprise supprimée';
+
+  @override
+  String get companyMgmtDeleteRestartTitle => 'Entreprise supprimée';
+
+  @override
+  String get companyMgmtDeleteRestartBody =>
+      'L\'entreprise a été supprimée et Invoiso est passé à une autre. Veuillez fermer puis rouvrir l\'application pour continuer.';
+
+  @override
+  String get companyMgmtOnlyCompanyTooltip =>
+      'Il vous faut au moins une autre entreprise avant de pouvoir supprimer celle-ci';
+
+  @override
+  String get loginCompanyGearTooltip => 'Gérer les entreprises';
+
+  @override
+  String get loginCompanySelectorLabel => 'Entreprise';
 
   @override
   String get customizationEyebrowLabel => 'PERSONNALISATION';

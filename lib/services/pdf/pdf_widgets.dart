@@ -295,6 +295,8 @@ pw.Widget buildBankDetailsSection({
         row('Account No.', bankAccount.accountNumber),
         if (bankAccount.ifscCode.isNotEmpty)
           row('IFSC Code', bankAccount.ifscCode),
+        if (bankAccount.iban.isNotEmpty)
+          row('IBAN', bankAccount.iban),
       ],
     ),
   );
@@ -752,6 +754,13 @@ pw.Widget buildInvoiceTable(Invoice invoice,
       watermarkBytes != null ? pw.MemoryImage(watermarkBytes) : null;
   final watermarkCursor = _WatermarkCursor();
   final String priceHeader = showQuantity ? 'Price' : 'Rate';
+  // gridClassic centers its Sl No/Qty/Price/Tax columns and right-aligns
+  // Discount/Total; every other template keeps the default left alignment
+  // unchanged.
+  final pw.TextAlign centerOnGridClassic =
+      template == InvoiceTemplate.gridClassic ? pw.TextAlign.center : pw.TextAlign.left;
+  final pw.TextAlign rightOnGridClassic =
+      template == InvoiceTemplate.gridClassic ? pw.TextAlign.right : pw.TextAlign.left;
 
   int col = 0;
   final Map<int, pw.TableColumnWidth> colWidths = {
@@ -840,7 +849,8 @@ pw.Widget buildInvoiceTable(Invoice invoice,
             textColor: textColor,
             fontSize: tableFontSize,
             cellPaddingH: cellPaddingH,
-            cellPaddingV: cellPaddingV),
+            cellPaddingV: cellPaddingV,
+            textAlign: centerOnGridClassic),
       buildTableCell('Item Name',
           isHeader: true,
           textColor: textColor,
@@ -870,53 +880,61 @@ pw.Widget buildInvoiceTable(Invoice invoice,
             textColor: textColor,
             fontSize: tableFontSize,
             cellPaddingH: cellPaddingH,
-            cellPaddingV: cellPaddingV),
+            cellPaddingV: cellPaddingV,
+            textAlign: centerOnGridClassic),
       buildTableCell(priceHeader,
           isHeader: true,
           textColor: textColor,
           fontSize: tableFontSize,
           cellPaddingH: cellPaddingH,
-          cellPaddingV: cellPaddingV),
+          cellPaddingV: cellPaddingV,
+          textAlign: centerOnGridClassic),
       if (splitCgstSgst) ...[
         buildTableCell('CGST',
             isHeader: true,
             textColor: textColor,
             fontSize: tableFontSize,
             cellPaddingH: cellPaddingH,
-            cellPaddingV: cellPaddingV),
+            cellPaddingV: cellPaddingV,
+            textAlign: centerOnGridClassic),
         buildTableCell('SGST',
             isHeader: true,
             textColor: textColor,
             fontSize: tableFontSize,
             cellPaddingH: cellPaddingH,
-            cellPaddingV: cellPaddingV),
+            cellPaddingV: cellPaddingV,
+            textAlign: centerOnGridClassic),
       ] else if (showIgstCol)
         buildTableCell('IGST',
             isHeader: true,
             textColor: textColor,
             fontSize: tableFontSize,
             cellPaddingH: cellPaddingH,
-            cellPaddingV: cellPaddingV)
+            cellPaddingV: cellPaddingV,
+            textAlign: centerOnGridClassic)
       else if (taxColumnOn)
         buildTableCell('Tax',
             isHeader: true,
             textColor: textColor,
             fontSize: tableFontSize,
             cellPaddingH: cellPaddingH,
-            cellPaddingV: cellPaddingV),
+            cellPaddingV: cellPaddingV,
+            textAlign: centerOnGridClassic),
       if (showDiscount)
         buildTableCell(shortDiscountHeader ? 'Disc.' : 'Discount',
             isHeader: true,
             textColor: textColor,
             fontSize: tableFontSize,
             cellPaddingH: cellPaddingH,
-            cellPaddingV: cellPaddingV),
+            cellPaddingV: cellPaddingV,
+            textAlign: rightOnGridClassic),
       buildTableCell('Total',
           isHeader: true,
           textColor: textColor,
           fontSize: tableFontSize,
           cellPaddingH: cellPaddingH,
-          cellPaddingV: cellPaddingV),
+          cellPaddingV: cellPaddingV,
+          textAlign: rightOnGridClassic),
     ],
   );
 
@@ -939,7 +957,8 @@ pw.Widget buildInvoiceTable(Invoice invoice,
           buildTableCell('${index + 1}',
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
-              cellPaddingV: cellPaddingV),
+              cellPaddingV: cellPaddingV,
+              textAlign: centerOnGridClassic),
         pw.Padding(
           padding: pw.EdgeInsets.symmetric(
             horizontal: cellPaddingH,
@@ -1004,46 +1023,54 @@ pw.Widget buildInvoiceTable(Invoice invoice,
               '${item.effectiveUnit.trim().isEmpty ? '' : ' ${item.effectiveUnit}'}',
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
-              cellPaddingV: cellPaddingV),
+              cellPaddingV: cellPaddingV,
+              textAlign: centerOnGridClassic),
         buildTableCell(
             showDiscount
                 ? item.effectivePrice.toStringAsFixed(2)
                 : (item.total / item.quantity).toStringAsFixed(2),
             fontSize: tableFontSize,
             cellPaddingH: cellPaddingH,
-            cellPaddingV: cellPaddingV),
+            cellPaddingV: cellPaddingV,
+            textAlign: centerOnGridClassic),
         if (splitCgstSgst) ...[
           buildTableCell(
               '${(isGlobalTaxMode ? (invoice.subtotal > 0 ? invoice.tax * (item.total / invoice.subtotal) / 2 : 0.0) : item.taxAmount / 2).toStringAsFixed(2)}\n(${(isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate) / 2}%)',
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
-              cellPaddingV: cellPaddingV),
+              cellPaddingV: cellPaddingV,
+              textAlign: centerOnGridClassic),
           buildTableCell(
               '${(isGlobalTaxMode ? (invoice.subtotal > 0 ? invoice.tax * (item.total / invoice.subtotal) / 2 : 0.0) : item.taxAmount / 2).toStringAsFixed(2)}\n(${(isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate) / 2}%)',
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
-              cellPaddingV: cellPaddingV),
+              cellPaddingV: cellPaddingV,
+              textAlign: centerOnGridClassic),
         ] else if (showIgstCol)
           buildTableCell(
               '${(isGlobalTaxMode ? (invoice.subtotal > 0 ? invoice.tax * (item.total / invoice.subtotal) : 0.0) : item.taxAmount).toStringAsFixed(2)}\n(${isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate}%)',
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
-              cellPaddingV: cellPaddingV)
+              cellPaddingV: cellPaddingV,
+              textAlign: centerOnGridClassic)
         else if (taxColumnOn)
           buildTableCell(
               '${(isGlobalTaxMode ? (invoice.subtotal > 0 ? invoice.tax * (item.total / invoice.subtotal) : 0.0) : item.taxAmount).toStringAsFixed(2)}\n(${isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate}%)',
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
-              cellPaddingV: cellPaddingV),
+              cellPaddingV: cellPaddingV,
+              textAlign: centerOnGridClassic),
         if (showDiscount)
           buildTableCell(item.totalDiscount.toStringAsFixed(2),
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
-              cellPaddingV: cellPaddingV),
+              cellPaddingV: cellPaddingV,
+              textAlign: rightOnGridClassic),
         buildTableCell(item.total.toStringAsFixed(2),
             fontSize: tableFontSize,
             cellPaddingH: cellPaddingH,
-            cellPaddingV: cellPaddingV),
+            cellPaddingV: cellPaddingV,
+            textAlign: rightOnGridClassic),
       ],
     ), borderOverride: newLineDescription ? itemBorderNoBottom : null));
 
@@ -1134,7 +1161,8 @@ pw.Widget buildInvoiceTable(Invoice invoice,
                   isHeader: true,
                   fontSize: tableFontSize,
                   cellPaddingH: cellPaddingH,
-                  cellPaddingV: cellPaddingV),
+                  cellPaddingV: cellPaddingV,
+                  textAlign: centerOnGridClassic),
             buildTableCell('',
                 fontSize: tableFontSize,
                 cellPaddingH: cellPaddingH,
@@ -1174,12 +1202,14 @@ pw.Widget buildTableCell(String text,
     PdfColor textColor = PdfColors.black,
     double fontSize = 10,
     double cellPaddingH = 6,
-    double cellPaddingV = 8}) {
+    double cellPaddingV = 8,
+    pw.TextAlign textAlign = pw.TextAlign.left}) {
   return pw.Padding(
     padding: pw.EdgeInsets.symmetric(
         horizontal: cellPaddingH, vertical: cellPaddingV),
     child: pw.Text(
       text,
+      textAlign: textAlign,
       style: pw.TextStyle(
           fontWeight: isHeader ? pw.FontWeight.bold : pw.FontWeight.normal,
           fontSize: fontSize,

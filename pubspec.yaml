@@ -18,6 +18,7 @@ dependencies:
   sqflite_common_ffi: ^2.3.6
   path: ^1.8.3
   path_provider: ^2.0.15
+  shared_preferences: ^2.3.2
   file_picker: ^10.2.0
   permission_handler: ^12.0.1
   share_plus: ^11.0.0
@@ -59,6 +60,7 @@ flutter:
    - assets/images/logo.png
    - assets/images/logo_dark.png
    - assets/images/logo.svg
+   - assets/images/bmc_logo.svg
    - assets/images/logo_v.png
    - assets/images/logo_v_dark.png
    - assets/images/grid_classic_additional_fields.png
@@ -76,6 +78,9 @@ flutter:
         - asset: assets/fonts/NotoSerifTibetan-Regular.ttf
         - asset: assets/fonts/NotoSerifTibetan-Bold.ttf
           weight: 700
+    - family: Cookie
+      fonts:
+        - asset: assets/fonts/Cookie-Regular.ttf
 
 flutter_launcher_icons:
   macos:

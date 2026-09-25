@@ -16,6 +16,7 @@ import 'package:intl/intl.dart';
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/models/product.dart';
+import 'package:invoiso/models/product_list_stats.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/utils/formatters.dart';
 import 'package:invoiso/screens/settings/product_columns_settings_screen.dart';
@@ -76,18 +77,22 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
 
   String _currencySymbol = '₹';
   BusinessType _businessType = BusinessType.both;
-  String _typeFilter = 'both'; // 'both' | 'product' | 'service'
   String _newItemType = 'product'; // type for the add-product form
   bool _unlimitedStock = false;
   bool _priceIncludesTax = false;
 
   // ── V2 state ──────────────────────────────────────────────────────────
-  // V2 loads the full product list once (for the stat cards / tab counts)
-  // and does all filtering, search, sort, and pagination against that
-  // in-memory list, rather than round-tripping to the paginated server
-  // query for every interaction. _products/_totalProducts/_currentPage/
-  // _pageSize are the same fields v1 uses — just populated differently.
-  List<Product> _allProductsV2 = [];
+  // Only the visible page is loaded (tab/search/sort/paging in SQL, see
+  // _loadProducts); stat cards / tab counts come from one aggregate query
+  // (_statsV2) — never the whole catalog (Issues.md #42).
+  ProductListStats _statsV2 = (
+    all: 0,
+    products: 0,
+    services: 0,
+    lowStock: 0,
+    outOfStock: 0,
+    expired: 0,
+  );
   Map<String, ProductMetadata> _productMetadataV2 = {};
   bool _statsLoadingV2 = false;
   int _activeTabV2 = 0; // 0 all, 1 products, 2 services, 3 low stock, 4 out of stock
@@ -128,7 +133,6 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     _taxRateController.text = "18";
     _defaultDiscountController.text = "0";
     _loadBusinessType();
-    _loadProducts();
     _loadCurrency();
     _loadDateFormat();
     _loadStatsV2();
@@ -356,7 +360,6 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     final bt = await ref.read(settingsRepositoryProvider).getBusinessType();
     setState(() {
       _businessType = bt;
-      _typeFilter = bt == BusinessType.both ? 'both' : bt.key;
       _newItemType = bt == BusinessType.service ? 'service' : 'product';
     });
   }
@@ -394,30 +397,42 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     super.dispose();
   }
 
+  // Loads just the visible page — active tab, search, sort and paging all
+  // in SQL — plus metadata for those rows only (Issues.md #42).
   Future<void> _loadProducts() async {
     final requestId = ++_loadRequestId;
     if(!mounted) return;
     setState(() => _isLoading = true);
     try {
       final productRepo = ref.read(productRepositoryProvider);
+      final tab = _tabKeyV2;
+      Future<List<Product>> page() => productRepo.getProductListPage(
+          offset: _currentPage * _pageSize,
+          limit: _pageSize,
+          query: _searchQuery,
+          tab: tab,
+          orderBy: _sortBy,
+          ascending: _isAscending);
       final results = await Future.wait([
-        productRepo.getProductsPaginated(
-            offset: _currentPage * _pageSize,
-            limit: _pageSize,
-            query: _searchQuery,
-            orderBy: _sortBy,
-            orderASC: _isAscending,
-            type: _typeFilter),
-        productRepo.getTotalProductCount(),
+        page(),
+        productRepo.getProductListCount(query: _searchQuery, tab: tab),
       ]);
-      final result = results[0] as List<Product>;
-      final allCount = results[1] as int;
+      var result = results[0] as List<Product>;
+      final total = results[1] as int;
+      // Current page fell off the end (e.g. last row on the last page deleted).
+      final maxPage = total == 0 ? 0 : (total - 1) ~/ _pageSize;
+      if (_currentPage > maxPage) {
+        _currentPage = maxPage;
+        result = await page();
+      }
+      final metadata = await productRepo
+          .getProductMetadataForIds(result.map((p) => p.id).toList());
 
       if (requestId != _loadRequestId || !mounted) return;
       setState(() {
         _products = result;
-        _totalProducts = allCount;
-        _allProductsCount = allCount;
+        _totalProducts = total;
+        _productMetadataV2 = metadata;
       });
     } catch (e) {
       if (requestId != _loadRequestId || !mounted) return;
@@ -1036,7 +1051,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
 
       String getField(List<dynamic> row, String col) {
         final i = headers.indexOf(col);
-        return i < 0 || i >= row.length ? '' : row[i].toString().trim();
+        return i < 0 || i >= row.length ? '' : stripCsvFormulaGuard(row[i].toString().trim());
       }
 
       final List<Product> valid = [];
@@ -1538,8 +1553,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
   // ============================================================
   // V2 — flat / modern layout. Reuses all v1 state, controllers,
   // validation, and repository calls. New pieces:
-  //  - stats loaded once as a full list, filtering/search/sort/paging
-  //    done in-memory against it (see _applyClientFilterV2)
+  //  - stat counts from one SQL aggregate; the table loads one page at a
+  //    time (see _loadProducts)
   //  - a slide-out "Add New Product" panel (Basic/Advanced tabs)
   //    instead of the always-visible left sidebar form
   //  - flat table/cards instead of Card/DataTable chrome
@@ -1549,15 +1564,16 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     if (!mounted) return;
     setState(() => _statsLoadingV2 = true);
     try {
-      final repo = ref.read(productRepositoryProvider);
-      final all = await repo.getAllProducts();
-      final metadata = await repo.getAllProductMetadata();
+      final results = await Future.wait([
+        ref.read(productRepositoryProvider).getProductListStats(),
+        _loadProducts(),
+      ]);
+      final stats = results[0] as ProductListStats;
       if (!mounted) return;
       setState(() {
-        _allProductsV2 = all;
-        _productMetadataV2 = metadata;
+        _statsV2 = stats;
+        _allProductsCount = stats.all;
       });
-      _applyClientFilterV2();
     } catch (e) {
       if (!mounted) return;
       _showSnackBar(AppLocalizations.of(context)!.productMgmtLoadErrorMessage(e.toString()), isError: true);
@@ -1572,71 +1588,16 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     return DateTime.tryParse(raw);
   }
 
-  bool _isExpiredV2(Product p) {
-    final d = _expiryDateOfV2(p);
-    return d != null && d.isBefore(DateTime.now());
-  }
+  int get _allCountV2 => _statsV2.all;
+  int get _productsCountV2 => _statsV2.products;
+  int get _servicesCountV2 => _statsV2.services;
+  int get _lowStockCountV2 => _statsV2.lowStock;
+  int get _outOfStockCountV2 => _statsV2.outOfStock;
+  int get _expiredCountV2 => _statsV2.expired;
 
-  int get _allCountV2 => _allProductsV2.length;
-  int get _productsCountV2 =>
-      _allProductsV2.where((p) => p.type == 'product').length;
-  int get _servicesCountV2 =>
-      _allProductsV2.where((p) => p.type == 'service').length;
-  int get _lowStockCountV2 => _allProductsV2
-      .where((p) => !p.unlimitedStock && p.stock > 0 && p.stock <= 10)
-      .length;
-  int get _outOfStockCountV2 =>
-      _allProductsV2.where((p) => !p.unlimitedStock && p.stock <= 0).length;
-  int get _expiredCountV2 => _allProductsV2.where(_isExpiredV2).length;
-
-  // Applies the active tab (type + stock-status), search text, and sort
-  // to the full in-memory list, then slices out the current page.
-  void _applyClientFilterV2() {
-    Iterable<Product> list = _allProductsV2;
-    if (_activeTabV2 == 1) list = list.where((p) => p.type == 'product');
-    if (_activeTabV2 == 2) list = list.where((p) => p.type == 'service');
-    if (_activeTabV2 == 3) {
-      list = list.where((p) => !p.unlimitedStock && p.stock > 0 && p.stock <= 10);
-    }
-    if (_activeTabV2 == 4) {
-      list = list.where((p) => !p.unlimitedStock && p.stock <= 0);
-    }
-    if (_activeTabV2 == 5) {
-      list = list.where(_isExpiredV2);
-    }
-    if (_searchQuery.trim().isNotEmpty) {
-      final q = _searchQuery.trim().toLowerCase();
-      list = list.where((p) =>
-          p.name.toLowerCase().contains(q) ||
-          (p.aliasName ?? '').toLowerCase().contains(q) ||
-          p.hsncode.toLowerCase().contains(q));
-    }
-    final sorted = list.toList()
-      ..sort((a, b) {
-        int cmp;
-        switch (_sortBy) {
-          case 'price':
-            cmp = a.price.compareTo(b.price);
-            break;
-          case 'stock':
-            cmp = a.stock.compareTo(b.stock);
-            break;
-          default:
-            cmp = a.name.toLowerCase().compareTo(b.name.toLowerCase());
-        }
-        return _isAscending ? cmp : -cmp;
-      });
-    final total = sorted.length;
-    final maxPage = total == 0 ? 0 : ((total - 1) / _pageSize).floor();
-    if (_currentPage > maxPage) _currentPage = maxPage;
-    final start = (_currentPage * _pageSize).clamp(0, total);
-    final end = (start + _pageSize).clamp(0, total);
-    if (!mounted) return;
-    setState(() {
-      _totalProducts = total;
-      _products = sorted.sublist(start, end);
-    });
-  }
+  // _activeTabV2 index → ProductService list tab key.
+  String get _tabKeyV2 =>
+      const ['all', 'product', 'service', 'low', 'out', 'expired'][_activeTabV2];
 
   void _selectTabV2(int index) {
     if (!mounted) return;
@@ -1644,7 +1605,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
       _activeTabV2 = index;
       _currentPage = 0;
     });
-    _applyClientFilterV2();
+    _loadProducts();
   }
 
   void _onSearchChangedV2(String query) {
@@ -1655,7 +1616,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     });
     _searchDebounce?.cancel();
     _searchDebounce =
-        Timer(const Duration(milliseconds: 300), _applyClientFilterV2);
+        Timer(const Duration(milliseconds: 300), _loadProducts);
   }
 
   // Combines v1's separate sort-field + sort-direction controls into the
@@ -1667,13 +1628,13 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
       _isAscending = ascending;
       _currentPage = 0;
     });
-    _applyClientFilterV2();
+    _loadProducts();
   }
 
   void _changePageV2(int page) {
     if (!mounted) return;
     setState(() => _currentPage = page);
-    _applyClientFilterV2();
+    _loadProducts();
   }
 
   Future<void> _addProductV2() async {
@@ -2233,7 +2194,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                       _ => (_activeTabV2 >= 3 && _activeTabV2 <= 5) ? 0 : _activeTabV2,
                     };
                   });
-                  _applyClientFilterV2();
+                  _loadProducts();
                 },
                 itemBuilder: (ctx) => [
                   PopupMenuItem(value: 'all', child: Text(l10n.productMgmtAllStockLevelsLabel)),
@@ -2493,7 +2454,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         mainAxisSize: MainAxisSize.min,
         children: [
           _tableHeaderRowV2(),
-          _statsLoadingV2 && _allProductsV2.isEmpty
+          _statsLoadingV2 && _products.isEmpty
               ? const SizedBox(
                   height: 240, child: Center(child: CircularProgressIndicator()))
               : _products.isEmpty
@@ -2563,7 +2524,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                     _pageSize = n;
                     _currentPage = 0;
                   });
-                  _applyClientFilterV2();
+                  _loadProducts();
                 },
               ),
               const SizedBox(width: 12),

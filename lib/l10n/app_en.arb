@@ -96,6 +96,7 @@
   "dashboardRoleAdmin": "Admin",
   "dashboardRoleUser": "User",
   "dashboardSupportTooltip": "Support",
+  "buyMeCoffeeLabel": "Buy me a coffee",
   "dashboardLogoutTooltip": "Logout",
   "dashboardTestBuildBadge": "TEST BUILD",
   "dashboardTestBadgeShort": "TEST",
@@ -2129,7 +2130,10 @@
   "fieldBankNameLabel": "Bank Name",
   "fieldAccountNumberLabel": "Account Number",
   "fieldIfscCodeLabel": "IFSC Code",
+  "fieldIbanLabel": "IBAN",
   "companyInfoAddBankAccountButton": "Add Bank Account",
+  "companyInfoEditBankAccountTitle": "Edit Bank Account",
+  "fieldBankAccountNameLabel": "Account Name",
   "tooltipShowOnInvoicePdf": "Show on invoice PDF",
   "companyInfoSavedSuccessMessage": "Company info saved successfully",
   "companyInfoImageTooLargeMessage": "Image file must be less than 2 MB.",
@@ -2300,6 +2304,7 @@
   "productColumnsExtraCostSubtitle": "Optional flat extra charge on an invoice line item.",
   "settingsOptionsComingSoonMessage": "Options coming soon...",
   "settingsNavCompanyInfoLabel": "Company Info",
+  "settingsNavCompaniesLabel": "Companies",
   "settingsNavTeamLabel": "Team",
   "settingsNavBackupLabel": "Backup",
   "settingsNavUsersLabel": "Users",
@@ -2307,6 +2312,49 @@
   "settingsNavCustomizeLabel": "Customize",
   "settingsNavAccessibilityLabel": "Accessibility",
   "settingsNavSoftwareInfoLabel": "Software Info",
+  "companyMgmtTitle": "Manage Companies",
+  "companyMgmtActiveBadge": "Active",
+  "companyMgmtSwitchButton": "Switch",
+  "companyMgmtSwitchConfirmTitle": "Switch Company?",
+  "companyMgmtSwitchConfirmBody": "Invoiso will restart to switch to \"{name}\".",
+  "@companyMgmtSwitchConfirmBody": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "companyMgmtNewCompanyButton": "+ New Company",
+  "companyMgmtNewCompanyTitle": "New Company",
+  "companyMgmtAdminAccountSectionLabel": "Admin Account",
+  "companyMgmtCreateButton": "Create",
+  "companyMgmtDeleteButton": "Delete This Company",
+  "companyMgmtDeleteConfirmTitle": "Delete \"{name}\"?",
+  "@companyMgmtDeleteConfirmTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "companyMgmtDeleteConfirmBody": "This permanently deletes all of this company's data and cannot be undone. Type the company name to confirm.",
+  "companyMgmtRenameTooltip": "Rename",
+  "companyMgmtRenameTitle": "Rename Company",
+  "companyMgmtNameTakenMessage": "A company with this name already exists",
+  "companyMgmtSwitchErrorMessage": "Failed to switch company: {error}",
+  "@companyMgmtSwitchErrorMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "companyMgmtSwitchRestartTitle": "Company Switched",
+  "companyMgmtSwitchRestartBody": "Invoiso needs to restart to finish switching companies. Please close and reopen the application.",
+  "companyMgmtCreateRestartTitle": "Company Created",
+  "companyMgmtCreateRestartBody": "Your new company is ready. Please close and reopen the application to continue.",
+  "companyMgmtDeletedMessage": "Company deleted",
+  "companyMgmtDeleteRestartTitle": "Company Deleted",
+  "companyMgmtDeleteRestartBody": "The company was deleted and Invoiso switched to another one. Please close and reopen the application to continue.",
+  "companyMgmtOnlyCompanyTooltip": "You need at least one other company before you can delete this one",
+  "loginCompanyGearTooltip": "Manage companies",
+  "loginCompanySelectorLabel": "Company",
   "customizationEyebrowLabel": "CUSTOMIZATION",
   "customizationHeadline": "Tailored just for your business",
   "customizationSubtitle": "Pick what you need and send a request. We'll get back to you within 24 hours.",

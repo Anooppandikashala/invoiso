@@ -146,22 +146,22 @@ class ReportService {
     );
     if (invRows.isEmpty) return [];
 
-    final ids = invRows.map((r) => r['id'] as String).toList();
-    final ph = List.filled(ids.length, '?').join(',');
+    // Subquery instead of one `?` per id — see Issues.md #36.
+    final invSubquery = '(SELECT id FROM invoices WHERE $sb)';
 
     final itemRows = await db.rawQuery(
       'SELECT invoice_id, quantity, unit_price, product_price, discount, '
       'discount_per_unit, extra_cost, product_tax_rate, product_price_includes_tax, '
       'product_purchase_price '
-      'FROM invoice_items WHERE invoice_id IN ($ph)',
-      ids,
+      'FROM invoice_items WHERE invoice_id IN $invSubquery',
+      args,
     );
 
     final payRows = await db.rawQuery(
       'SELECT invoice_id, COALESCE(SUM(amount_paid), 0.0) AS paid '
-      'FROM invoice_payments WHERE invoice_id IN ($ph) '
+      'FROM invoice_payments WHERE invoice_id IN $invSubquery '
       'GROUP BY invoice_id',
-      ids,
+      args,
     );
 
     final itemsByInv = <String, List<Map<String, dynamic>>>{};
@@ -589,13 +589,17 @@ class ReportService {
     );
 
     if (globalInvRows.isNotEmpty) {
-      final ids = globalInvRows.map((r) => r['id'] as String).toList();
-      final ph = List.filled(ids.length, '?').join(',');
+      // Subquery instead of one `?` per id — see Issues.md #36.
       final itemRows = await db.rawQuery(
         "SELECT invoice_id, quantity, unit_price, product_price, discount, "
         "discount_per_unit, extra_cost, product_tax_rate, product_price_includes_tax "
-        "FROM invoice_items WHERE invoice_id IN ($ph)",
-        ids,
+        "FROM invoice_items WHERE invoice_id IN ("
+        "SELECT i.id FROM invoices i "
+        "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+        "AND i.tax_mode = 'global' AND i.tax_rate > 0 "
+        "$ccFilter"
+        "AND i.date >= ? AND i.date <= ?)",
+        dateArgs,
       );
       final itemsByInv = <String, List<Map<String, dynamic>>>{};
       for (final r in itemRows) {
@@ -731,13 +735,15 @@ class ReportService {
     for (final entry in byCurrency.entries) {
       final currencyRows = entry.value;
       final ids = currencyRows.map((r) => r.id).toList();
-      final ph = List.filled(ids.length, '?').join(',');
-      final paymentRows = await db.rawQuery(
-        'SELECT invoice_id, receipt_number, amount_paid, date_paid, '
-        'payment_method, notes '
-        'FROM invoice_payments WHERE invoice_id IN ($ph) '
-        'ORDER BY date_paid ASC, rowid ASC',
+      final paymentRows = await queryInChunks(
         ids,
+        (chunk, ph) => db.rawQuery(
+          'SELECT invoice_id, receipt_number, amount_paid, date_paid, '
+          'payment_method, notes '
+          'FROM invoice_payments WHERE invoice_id IN ($ph) '
+          'ORDER BY date_paid ASC, rowid ASC',
+          chunk,
+        ),
       );
       final invoicesById = {for (final r in currencyRows) r.id: r};
       final drafts = <_StatementLineDraft>[];

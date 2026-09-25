@@ -217,6 +217,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get dashboardSupportTooltip => 'सहायता';
 
   @override
+  String get buyMeCoffeeLabel => 'Buy me a coffee';
+
+  @override
   String get dashboardLogoutTooltip => 'लॉगआउट';
 
   @override
@@ -3729,7 +3732,16 @@ class AppLocalizationsHi extends AppLocalizations {
   String get fieldIfscCodeLabel => 'IFSC कोड';
 
   @override
+  String get fieldIbanLabel => 'IBAN';
+
+  @override
   String get companyInfoAddBankAccountButton => 'बैंक खाता जोड़ें';
+
+  @override
+  String get companyInfoEditBankAccountTitle => 'बैंक खाता संपादित करें';
+
+  @override
+  String get fieldBankAccountNameLabel => 'खाता नाम';
 
   @override
   String get tooltipShowOnInvoicePdf => 'इनवॉइस PDF पर दिखाएं';
@@ -4051,6 +4063,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get settingsNavCompanyInfoLabel => 'कंपनी जानकारी';
 
   @override
+  String get settingsNavCompaniesLabel => 'कंपनियाँ';
+
+  @override
   String get settingsNavTeamLabel => 'टीम';
 
   @override
@@ -4070,6 +4085,95 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get settingsNavSoftwareInfoLabel => 'सॉफ़्टवेयर जानकारी';
+
+  @override
+  String get companyMgmtTitle => 'कंपनियाँ प्रबंधित करें';
+
+  @override
+  String get companyMgmtActiveBadge => 'सक्रिय';
+
+  @override
+  String get companyMgmtSwitchButton => 'स्विच करें';
+
+  @override
+  String get companyMgmtSwitchConfirmTitle => 'कंपनी स्विच करें?';
+
+  @override
+  String companyMgmtSwitchConfirmBody(String name) {
+    return '\"$name\" पर स्विच करने के लिए Invoiso पुनः आरंभ होगा।';
+  }
+
+  @override
+  String get companyMgmtNewCompanyButton => '+ नई कंपनी';
+
+  @override
+  String get companyMgmtNewCompanyTitle => 'नई कंपनी';
+
+  @override
+  String get companyMgmtAdminAccountSectionLabel => 'एडमिन खाता';
+
+  @override
+  String get companyMgmtCreateButton => 'बनाएं';
+
+  @override
+  String get companyMgmtDeleteButton => 'यह कंपनी हटाएं';
+
+  @override
+  String companyMgmtDeleteConfirmTitle(String name) {
+    return '\"$name\" हटाएं?';
+  }
+
+  @override
+  String get companyMgmtDeleteConfirmBody =>
+      'इससे इस कंपनी का सारा डेटा स्थायी रूप से हट जाएगा और इसे पूर्ववत नहीं किया जा सकता। पुष्टि के लिए कंपनी का नाम टाइप करें।';
+
+  @override
+  String get companyMgmtRenameTooltip => 'नाम बदलें';
+
+  @override
+  String get companyMgmtRenameTitle => 'कंपनी का नाम बदलें';
+
+  @override
+  String get companyMgmtNameTakenMessage => 'इस नाम की कंपनी पहले से मौजूद है';
+
+  @override
+  String companyMgmtSwitchErrorMessage(String error) {
+    return 'कंपनी स्विच करने में विफल: $error';
+  }
+
+  @override
+  String get companyMgmtSwitchRestartTitle => 'कंपनी स्विच हो गई';
+
+  @override
+  String get companyMgmtSwitchRestartBody =>
+      'कंपनी स्विच पूरा करने के लिए Invoiso को पुनः आरंभ करना होगा। कृपया एप्लिकेशन बंद करके फिर से खोलें।';
+
+  @override
+  String get companyMgmtCreateRestartTitle => 'कंपनी बन गई';
+
+  @override
+  String get companyMgmtCreateRestartBody =>
+      'आपकी नई कंपनी तैयार है। जारी रखने के लिए कृपया एप्लिकेशन बंद करके फिर से खोलें।';
+
+  @override
+  String get companyMgmtDeletedMessage => 'कंपनी हटा दी गई';
+
+  @override
+  String get companyMgmtDeleteRestartTitle => 'कंपनी हटा दी गई';
+
+  @override
+  String get companyMgmtDeleteRestartBody =>
+      'कंपनी हटा दी गई और Invoiso दूसरी कंपनी में स्विच हो गया। जारी रखने के लिए कृपया एप्लिकेशन बंद करके फिर से खोलें।';
+
+  @override
+  String get companyMgmtOnlyCompanyTooltip =>
+      'इसे हटाने से पहले आपके पास कम से कम एक और कंपनी होनी चाहिए';
+
+  @override
+  String get loginCompanyGearTooltip => 'कंपनियाँ प्रबंधित करें';
+
+  @override
+  String get loginCompanySelectorLabel => 'कंपनी';
 
   @override
   String get customizationEyebrowLabel => 'कस्टमाइज़ेशन';

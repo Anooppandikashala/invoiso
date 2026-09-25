@@ -1,5 +1,6 @@
 import 'package:invoiso/database/product_service.dart';
 import 'package:invoiso/models/product.dart';
+import 'package:invoiso/models/product_list_stats.dart';
 import 'package:invoiso/repositories/product_repository.dart';
 
 class SqliteProductRepository implements ProductRepository {
@@ -16,6 +17,29 @@ class SqliteProductRepository implements ProductRepository {
   @override
   Future<List<Product>> searchProducts(String query, {String? type}) =>
       ProductService.searchProducts(query, type: type);
+  @override
+  Future<List<Product>> getProductListPage({
+    required int offset,
+    required int limit,
+    String query = '',
+    String tab = 'all',
+    String orderBy = 'name',
+    bool ascending = true,
+  }) =>
+      ProductService.getProductListPage(
+        offset: offset,
+        limit: limit,
+        query: query,
+        tab: tab,
+        orderBy: orderBy,
+        ascending: ascending,
+      );
+  @override
+  Future<int> getProductListCount({String query = '', String tab = 'all'}) =>
+      ProductService.getProductListCount(query: query, tab: tab);
+  @override
+  Future<ProductListStats> getProductListStats() =>
+      ProductService.getProductListStats();
   @override
   Future<List<Product>> getProductsPaginated({
     required int offset,
