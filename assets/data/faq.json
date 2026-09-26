@@ -1,6 +1,6 @@
 {
-  "version": 5,
-  "updated_at": "2026-09-21",
+  "version": 6,
+  "updated_at": "2026-09-26",
   "categories": [
     { "id": "general", "label": "General" },
     { "id": "data-privacy", "label": "Data & Privacy" },
@@ -197,6 +197,34 @@
       "question": "Which types of businesses in India use Invoiso?",
       "answer": "All kinds — **kirana shops, retailers, hardware stores, textile sellers, traders, wholesalers**, service businesses, repair shops, freelancers, consultants, and agencies.\n\nIf you need offline GST billing, PDF invoices, and payment tracking without a subscription, Invoiso fits.",
       "keywords": ["business types", "kirana", "retailer", "wholesaler", "freelancer"]
+    },
+    {
+      "id": "faq_cash_exchange",
+      "category": "india",
+      "question": "Can Invoiso track UPI ↔ cash exchanges and service fees?",
+      "answer": "Yes. Turn on **Cash Exchange Services** in **Settings → Accessibility → Optional features**.\n\nRecord **UPI → Cash** and **Cash → UPI** exchanges with a separate **service fee** (only the fee counts as income), plus expenses, withdrawals and bank deposits. Invoiso keeps your **Cash** and **UPI/Bank** balances up to date — including invoice payments — and can print or download a receipt when a customer asks.",
+      "keywords": ["upi to cash", "cash exchange", "upi cash withdrawal", "service fee", "cash balance", "upi balance"]
+    },
+    {
+      "id": "faq_hide_purchase_price",
+      "category": "features",
+      "question": "Can I hide purchase price and profit from my staff?",
+      "answer": "Yes. In **Settings → Product Columns**, turn on **Purchase Price: Admins Only**.\n\nStaff (non-admin users) can still see products, selling prices and available stock, but **not** the purchase price, cost, profit or stock value. Admins see everything.",
+      "keywords": ["hide purchase price", "staff", "admin only", "hide profit", "cost price"]
+    },
+    {
+      "id": "faq_low_stock_limit",
+      "category": "features",
+      "question": "Can I set a different low-stock alert level for each product?",
+      "answer": "Yes. Set a **Low-stock limit** on any product (blank uses the default of **10**).\n\nProducts at or below their limit appear in the **Low Stock** tab and in the dashboard **Low Stock** alert.",
+      "keywords": ["low stock", "reorder level", "stock alert", "threshold"]
+    },
+    {
+      "id": "faq_payment_on_create",
+      "category": "features",
+      "question": "Can I mark an invoice as paid while creating it?",
+      "answer": "Yes. The create-invoice screen has a **Payment** section — choose **Paid**, **Partial** or **Unpaid**, the payment method (Cash, UPI, Bank Transfer…) and the amount. The payment is recorded when you save.",
+      "keywords": ["paid on creation", "record payment", "partial payment", "upi payment"]
     }
   ]
 }
