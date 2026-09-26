@@ -89,6 +89,7 @@ enum SettingKey {
   faqCache, // cached JSON string of the last successfully fetched faq.json, used offline/on fetch failure
   lastFaqFetch, // ISO timestamp of last successful faq.json fetch
   showTaxColumn, // whether to show the per-item Tax column on A4 PDFs, for both global and per-item tax modes (default true); showCgstSgst only matters when this is on
+  cashUpiExchangeEnabled, // whether the Cash/UPI-Bank exchange Services tab is on (default false)
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -274,6 +275,8 @@ extension SettingKeyExtension on SettingKey {
         return 'last_faq_fetch';
       case SettingKey.showTaxColumn:
         return 'show_tax_column';
+      case SettingKey.cashUpiExchangeEnabled:
+        return 'cash_upi_exchange_enabled';
 
     }
   }

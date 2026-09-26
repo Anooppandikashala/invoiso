@@ -43,6 +43,7 @@ import 'package:invoiso/screens/create_invoice_screen_v2.dart';
 import 'package:invoiso/screens/product_management_screen_v2.dart';
 // import 'package:invoiso/screens/invoice_management_screen.dart';
 import 'package:invoiso/screens/invoice_management_screen_v2.dart';
+import 'package:invoiso/screens/cash_exchange_screen.dart';
 import 'package:invoiso/screens/auth/login_screen.dart';
 import 'package:invoiso/screens/reports_screen.dart';
 
@@ -72,6 +73,7 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   int _selectedIndex = 0;
+  bool _servicesEnabled = false;
   bool _sidebarExpanded = true;
   late User _currentUser;
   String? _pendingReportsStatementCustomerKey;
@@ -98,6 +100,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     super.initState();
     _currentUser = widget.loggedInUser;
     _loadCreateInvoiceLayout();
+    _loadServicesEnabled();
     _loadCompanies();
     SessionManager.initialize(_onSessionTimeout);
     if (ref.read(appEditionConfigProvider).enableUpdateCheck) {
@@ -170,6 +173,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ],
       ),
     );
+  }
+
+  // Services nav item; the toggle lives in Settings → Accessibility.
+  Future<void> _loadServicesEnabled() async {
+    final v = await ref
+        .read(settingsRepositoryProvider)
+        .getSetting(SettingKey.cashUpiExchangeEnabled);
+    if (!mounted) return;
+    setState(() => _servicesEnabled = v == 'true');
   }
 
   Future<void> _loadCreateInvoiceLayout() async {
@@ -355,12 +367,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       case 7:
         final statementCustomerKey = _pendingReportsStatementCustomerKey;
         _pendingReportsStatementCustomerKey = null;
-        return ReportsScreen(initialStatementCustomerKey: statementCustomerKey);
+        return ReportsScreen(
+            initialStatementCustomerKey: statementCustomerKey,
+            isAdmin: _currentUser.isAdmin());
       case 8:
         return SettingsScreen(
           currentUser: _currentUser,
           openAccessibilityToken: _accessibilityJumpToken,
         );
+      case 9: // Services (Cash / UPI-Bank exchange); shown after New Invoice
+        return CashExchangeScreen(user: _currentUser);
       default:
         return Center(
             child:
@@ -474,6 +490,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     if (_selectedIndex == index) return;
     if (_selectedIndex == 1 && !await _canLeaveInvoiceForm()) return;
     if (_selectedIndex == 7 && index != 7) await _refreshUser();
+    if (_selectedIndex == 8 && index != 8) await _loadServicesEnabled();
     if (index == 1) await _loadCreateInvoiceLayout();
     if (!mounted) return;
     setState(() {
@@ -777,6 +794,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         AppLocalizations.of(context)!.navDashboard),
                     _buildNavItem(1, Icons.receipt_outlined, Icons.receipt,
                         AppLocalizations.of(context)!.navNewInvoice),
+                    if (_servicesEnabled)
+                      _buildNavItem(9, Icons.currency_exchange,
+                          Icons.currency_exchange,
+                          AppLocalizations.of(context)!.navServices),
                     _buildNavItem(
                         2,
                         Icons.receipt_long_outlined,
@@ -1405,6 +1426,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
   List<Invoice> recentInvoices = [];
   List<Invoice> dueSoonInvoices = [];
   List<Product> outOfStockProducts = [];
+  List<Product> lowStockProducts = [];
   List<Invoice> overdueInvoices = [];
   String _currencySymbol = '₹';
   bool isLoading = true;
@@ -1455,6 +1477,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
       ref
           .read(settingsRepositoryProvider)
           .getSetting(SettingKey.shortcutsBannerDismissed), // 15
+      ref.read(productRepositoryProvider).getLowStockProducts(), // 16
     ]);
 
     final customerCount = results[0] as int;
@@ -1472,6 +1495,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     final bannerDismissed = results[11] as String?;
     final supportDismissed = results[12] as String?;
     final outOfStock = results[13] as List<Product>;
+    final lowStock = results[16] as List<Product>;
     final themeBannerDismissed = results[14] as String?;
     final shortcutsBannerDismissed =
         Platform.isAndroid ? '1' : results[15] as String?;
@@ -1487,6 +1511,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
       totalCustomers = customerCount;
       totalProducts = productCount;
       outOfStockProducts = outOfStock;
+      lowStockProducts = lowStock;
       totalInvoices = financials.count;
       totalRevenue = financials.revenue;
       totalOutstanding = financials.outstanding;
@@ -1845,6 +1870,10 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
               if (outOfStockProducts.isNotEmpty) ...[
                 const SizedBox(height: 36),
                 _buildOutOfStockSection(),
+              ],
+              if (lowStockProducts.isNotEmpty) ...[
+                const SizedBox(height: 36),
+                _buildOutOfStockSection(low: true),
               ],
 
               // ── Overdue Invoices ──────────────────────────────
@@ -2783,7 +2812,10 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     controller.dispose();
   }
 
-  Widget _buildOutOfStockSection() {
+  // [low]: the same alert for in-stock items at/below their low-stock limit.
+  Widget _buildOutOfStockSection({bool low = false}) {
+    final products = low ? lowStockProducts : outOfStockProducts;
+    final MaterialColor alert = low ? Colors.orange : Colors.red;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2794,15 +2826,17 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
               width: 4,
               height: 24,
               decoration: BoxDecoration(
-                color: Colors.red[700],
+                color: alert[700],
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             const SizedBox(width: 12),
-            Icon(Icons.inventory_2, color: Colors.red[600], size: 22),
+            Icon(Icons.inventory_2, color: alert[600], size: 22),
             const SizedBox(width: 8),
             Text(
-              AppLocalizations.of(context)!.dashboardOutOfStockSectionTitle,
+              low
+                  ? AppLocalizations.of(context)!.productMgmtLowStockTabLabel
+                  : AppLocalizations.of(context)!.dashboardOutOfStockSectionTitle,
               style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -2812,17 +2846,17 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.10),
+                color: alert.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.red.withValues(alpha: 0.4)),
+                border: Border.all(color: alert.withValues(alpha: 0.4)),
               ),
               child: Text(
                 AppLocalizations.of(context)!
-                    .dashboardItemCountLabel(outOfStockProducts.length),
+                    .dashboardItemCountLabel(products.length),
                 style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: Colors.red[700]),
+                    color: alert[700]),
               ),
             ),
             const Spacer(),
@@ -2835,14 +2869,14 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
           ],
         ),
         const SizedBox(height: 16),
-        ...outOfStockProducts.map((product) => Container(
+        ...products.map((product) => Container(
               margin: const EdgeInsets.only(bottom: 10),
               child: Card(
                 elevation: 2,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                   side: BorderSide(
-                      color: Colors.red.withValues(alpha: 0.3), width: 1),
+                      color: alert.withValues(alpha: 0.3), width: 1),
                 ),
                 child: Padding(
                   padding:
@@ -2853,11 +2887,11 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.1),
+                          color: alert.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(Icons.inventory_2,
-                            color: Colors.red[600], size: 20),
+                            color: alert[600], size: 20),
                       ),
                       const SizedBox(width: 16),
                       // Name & type
@@ -2899,10 +2933,10 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.08),
+                          color: alert.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
-                              color: Colors.red.withValues(alpha: 0.4)),
+                              color: alert.withValues(alpha: 0.4)),
                         ),
                         child: Text(
                           AppLocalizations.of(context)!
@@ -2910,7 +2944,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                           style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: Colors.red[700]),
+                              color: alert[700]),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -3348,6 +3382,10 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                           _buildOutOfStockCard(),
                           const SizedBox(height: 14),
                         ],
+                        if (lowStockProducts.isNotEmpty) ...[
+                          _buildOutOfStockCard(low: true),
+                          const SizedBox(height: 14),
+                        ],
                         _buildQuickActionsCard(),
                       ],
                     ),
@@ -3455,6 +3493,10 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                         ],
                         if (outOfStockProducts.isNotEmpty)
                           _buildOutOfStockCard(),
+                        if (lowStockProducts.isNotEmpty) ...[
+                          const SizedBox(height: 14),
+                          _buildOutOfStockCard(low: true),
+                        ],
                       ],
                     ),
                   ),
@@ -4057,13 +4099,16 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
 
   // ── Shared: Out of Stock Card ────────────────────────────────────────────────
 
-  Widget _buildOutOfStockCard() {
+  // [low]: see _buildOutOfStockSection.
+  Widget _buildOutOfStockCard({bool low = false}) {
+    final products = low ? lowStockProducts : outOfStockProducts;
+    final MaterialColor alert = low ? Colors.orange : Colors.red;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.red.withValues(alpha: 0.18), width: 1),
+        border: Border.all(color: alert.withValues(alpha: 0.18), width: 1),
         boxShadow: [
           BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
@@ -4080,14 +4125,16 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                    color: Colors.red.withValues(alpha: 0.1),
+                    color: alert.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8)),
-                child: const Icon(Icons.inventory_2_outlined,
-                    color: Colors.red, size: 15),
+                child: Icon(Icons.inventory_2_outlined,
+                    color: alert, size: 15),
               ),
               const SizedBox(width: 8),
               Text(
-                  AppLocalizations.of(context)!.dashboardOutOfStockSectionTitle,
+                  low
+                      ? AppLocalizations.of(context)!.productMgmtLowStockTabLabel
+                      : AppLocalizations.of(context)!.dashboardOutOfStockSectionTitle,
                   style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -4096,18 +4143,18 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
-                    color: Colors.red.withValues(alpha: 0.1),
+                    color: alert.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10)),
-                child: Text('${outOfStockProducts.length}',
-                    style: const TextStyle(
+                child: Text('${products.length}',
+                    style: TextStyle(
                         fontSize: 12,
-                        color: Colors.red,
+                        color: alert,
                         fontWeight: FontWeight.w700)),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          ...outOfStockProducts.take(5).map((p) => Padding(
+          ...products.take(5).map((p) => Padding(
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Row(
                   children: [
@@ -4116,10 +4163,14 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                             style: const TextStyle(fontSize: 12),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis)),
-                    Text(AppLocalizations.of(context)!.dashboardZeroLeftLabel,
-                        style: const TextStyle(
+                    Text(
+                        low
+                            ? AppLocalizations.of(context)!
+                                .dashboardStockLabel(p.stock)
+                            : AppLocalizations.of(context)!.dashboardZeroLeftLabel,
+                        style: TextStyle(
                             fontSize: 12,
-                            color: Colors.red,
+                            color: alert,
                             fontWeight: FontWeight.w600)),
                     const SizedBox(width: 6),
                     Tooltip(
@@ -4521,6 +4572,10 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                         if (outOfStockProducts.isNotEmpty) ...[
                           const SizedBox(height: 14),
                           _buildOutOfStockCard(),
+                        ],
+                        if (lowStockProducts.isNotEmpty) ...[
+                          const SizedBox(height: 14),
+                          _buildOutOfStockCard(low: true),
                         ],
                       ],
                     ),

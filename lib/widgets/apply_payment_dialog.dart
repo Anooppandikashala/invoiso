@@ -8,10 +8,14 @@ import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/services/payment_receipt_service.dart';
 import 'package:invoiso/utils/app_date.dart';
 
-String _paymentMethodLabel(AppLocalizations l10n, String method) {
+const paymentMethods = ['Cash', 'UPI', 'Bank Transfer', 'Check', 'Online', 'Other'];
+
+String paymentMethodLabel(AppLocalizations l10n, String method) {
   switch (method) {
     case 'Cash':
       return l10n.paymentMethodCash;
+    case 'UPI':
+      return l10n.paymentMethodUpi;
     case 'Bank Transfer':
       return l10n.paymentMethodBankTransfer;
     case 'Check':
@@ -48,7 +52,7 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
   bool _isLoadingPayments = true;
   List<InvoicePayment> _payments = [];
 
-  static const _methods = ['Cash', 'Bank Transfer', 'Check', 'Online', 'Other'];
+  static const _methods = paymentMethods;
 
   @override
   void initState() {
@@ -424,7 +428,7 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
                                         .map((m) => DropdownMenuItem(
                                             value: m,
                                             child: Text(
-                                                _paymentMethodLabel(l10n, m))))
+                                                paymentMethodLabel(l10n, m))))
                                         .toList(),
                                     onChanged: (v) =>
                                         setState(() => _selectedMethod = v),
@@ -624,7 +628,7 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
             child: Text(
               payment.paymentMethod == null
                   ? '—'
-                  : _paymentMethodLabel(l10n, payment.paymentMethod!),
+                  : paymentMethodLabel(l10n, payment.paymentMethod!),
               style: TextStyle(
                   fontSize: 13,
                   color: Theme.of(context).colorScheme.onSurfaceVariant),

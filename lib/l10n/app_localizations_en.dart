@@ -190,6 +190,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navInvoices => 'Invoices';
 
   @override
+  String get navServices => 'Cash Exchange Services';
+
+  @override
   String get navQuotations => 'Quotations';
 
   @override
@@ -759,6 +762,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createInvoicePreviousBalanceDueLabel => 'Previous Balance Due';
+
+  @override
+  String get createInvoicePaymentSectionLabel => 'Payment';
+
+  @override
+  String get createInvoiceBalanceDueLabel => 'Balance Due';
+
+  @override
+  String createInvoicePaymentNotRecordedMessage(String error) {
+    return 'Invoice saved, but the payment was not recorded: $error. Add it from the Invoices list.';
+  }
 
   @override
   String get createInvoiceDueShortLabel => 'Due';
@@ -2093,6 +2107,10 @@ class AppLocalizationsEn extends AppLocalizations {
       '1/true if price already includes tax, default 0';
 
   @override
+  String get productMgmtCsvDescLowStockLimit =>
+      'Low-stock threshold for this product, blank = default 10';
+
+  @override
   String get productMgmtCsvDescStorageLocation => 'Warehouse/shelf location';
 
   @override
@@ -2361,6 +2379,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get productMgmtTrackInfiniteStockSubtitle =>
       'Track infinite stock for this product';
+
+  @override
+  String get productMgmtLowStockLimitLabel => 'Low-stock limit';
+
+  @override
+  String get productMgmtLowStockLimitHelper =>
+      'Shown in Low Stock when stock is at or below this number. Leave blank for the default (10).';
 
   @override
   String get productMgmtTipEnableCustomFieldsMessage =>
@@ -3981,6 +4006,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Cost price, for margin tracking.';
 
   @override
+  String get productColumnsPurchasePriceAdminOnlyLabel =>
+      'Purchase Price: Admins Only';
+
+  @override
+  String get productColumnsPurchasePriceAdminOnlySubtitle =>
+      'Hide purchase price, profit and stock value from non-admin users.';
+
+  @override
   String get productColumnsDefaultDiscountLabel => 'Default Discount';
 
   @override
@@ -4352,7 +4385,161 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paymentMethodOnline => 'Online';
 
   @override
+  String get paymentMethodUpi => 'UPI';
+
+  @override
   String get paymentMethodOther => 'Other';
+
+  @override
+  String get accessibilityOptionalFeaturesSectionTitle => 'Optional features';
+
+  @override
+  String get accessibilityCashExchangeLabel => 'Cash / UPI Exchange Service';
+
+  @override
+  String get accessibilityCashExchangeSubtitle =>
+      'Adds a Cash Exchange Services menu after New Invoice to record UPI ↔ Cash exchanges, service fees and cash movements, with Cash and UPI/Bank balances.';
+
+  @override
+  String get cashExchangeCashLabel => 'Cash';
+
+  @override
+  String get cashExchangeUpiBankLabel => 'UPI/Bank';
+
+  @override
+  String get cashExchangeTotalLabel => 'Total balance';
+
+  @override
+  String get cashExchangeIncomeTodayLabel => 'Service income (today)';
+
+  @override
+  String get cashExchangeIncomeMonthLabel => 'Service income (this month)';
+
+  @override
+  String get cashExchangeExpensesMonthLabel => 'Expenses (this month)';
+
+  @override
+  String get cashExchangeSetupTitle => 'Set opening balances';
+
+  @override
+  String get cashExchangeSetupMessage =>
+      'Enter the cash and UPI/Bank money you have on this date. Invoice payments from this date on are added to the balances.';
+
+  @override
+  String get cashExchangeSetupAdminOnlyMessage =>
+      'Ask an admin to set the opening balances.';
+
+  @override
+  String get cashExchangeUpiToCash => 'UPI → Cash';
+
+  @override
+  String get cashExchangeCashToUpi => 'Cash → UPI';
+
+  @override
+  String get cashExchangeExpense => 'Expense';
+
+  @override
+  String get cashExchangeWithdrawal => 'Withdrawal';
+
+  @override
+  String get cashExchangeBankDeposit => 'Bank deposit';
+
+  @override
+  String get cashExchangeOpeningBalance => 'Opening balance';
+
+  @override
+  String get cashExchangeAdjustment => 'Adjustment';
+
+  @override
+  String get cashExchangeInvoicePayment => 'Invoice payment';
+
+  @override
+  String get cashExchangeAmountLabel => 'Amount';
+
+  @override
+  String get cashExchangeFeeLabel => 'Service fee';
+
+  @override
+  String get cashExchangeFeePaidByLabel => 'Service fee paid by';
+
+  @override
+  String get cashExchangeFromAccountLabel => 'Paid from';
+
+  @override
+  String get cashExchangeCustomerNameLabel => 'Customer name (optional)';
+
+  @override
+  String get cashExchangeCustomerSearchHint =>
+      'Search customers or type a new name';
+
+  @override
+  String get cashExchangeCustomerPhoneLabel => 'Phone (optional)';
+
+  @override
+  String get cashExchangeNotesLabel => 'Notes (optional)';
+
+  @override
+  String get cashExchangeDateTimeLabel => 'Date & time';
+
+  @override
+  String get cashExchangeDateLabel => 'Date';
+
+  @override
+  String get cashExchangeCashDeltaLabel => 'Cash change (+ / −)';
+
+  @override
+  String get cashExchangeUpiDeltaLabel => 'UPI/Bank change (+ / −)';
+
+  @override
+  String get cashExchangeDeleteTitle => 'Delete entry';
+
+  @override
+  String get cashExchangeDeleteMessage =>
+      'Delete this entry? Balances will be recalculated.';
+
+  @override
+  String get cashExchangeEmpty => 'No entries for this period.';
+
+  @override
+  String get cashExchangePeriodToday => 'Today';
+
+  @override
+  String get cashExchangePeriodMonth => 'This month';
+
+  @override
+  String get cashExchangePeriodAll => 'All time';
+
+  @override
+  String get cashExchangePeriodCustom => 'Custom date';
+
+  @override
+  String get cashExchangeShowingLabel => 'Showing';
+
+  @override
+  String get cashExchangeChangeDates => 'Change dates';
+
+  @override
+  String get cashExchangeClosingBalance => 'Closing balance';
+
+  @override
+  String get cashExchangeAllTypes => 'All types';
+
+  @override
+  String cashExchangeSummaryUpiToCash(
+      String amount, String fee, String method) {
+    return 'Customer sends $amount by UPI/Bank • You give $amount cash • Fee $fee by $method';
+  }
+
+  @override
+  String cashExchangeSummaryCashToUpi(
+      String amount, String fee, String method) {
+    return 'Customer gives $amount cash • You send $amount by UPI/Bank • Fee $fee by $method';
+  }
+
+  @override
+  String cashExchangeLowBalanceWarning(String balance, String account) {
+    return 'Only $balance available in $account.';
+  }
 
   @override
   String get customerInfoButtonTooltip => 'View contact details';

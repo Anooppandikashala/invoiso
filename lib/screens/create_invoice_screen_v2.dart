@@ -22,6 +22,7 @@ import 'package:invoiso/models/custom_field_def.dart';
 import 'package:invoiso/models/custom_field_value.dart';
 import 'package:invoiso/services/invoice_pdf_services.dart';
 import 'package:invoiso/services/pdf_service.dart';
+import 'package:invoiso/widgets/apply_payment_dialog.dart';
 import 'package:invoiso/common/constants.dart';
 
 class InvoiceFormGuard {
@@ -118,6 +119,11 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   bool _customerDetailsExpanded = true;
   InvoiceDiscountType _invoiceDiscountType = InvoiceDiscountType.percent;
   final _invoiceDiscountController = TextEditingController();
+  // Payment taken while creating an invoice. Unpaid (default) records no
+  // payment, so saving behaves exactly as before.
+  PaymentStatus _payStatus = PaymentStatus.unpaid;
+  String _payMethod = 'Cash';
+  final _payAmountController = TextEditingController();
 
   final notesController = TextEditingController();
   final customInvoiceNumberController = TextEditingController();
@@ -390,6 +396,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       row.amount.dispose();
     }
     _invoiceDiscountController.dispose();
+    _payAmountController.dispose();
     super.dispose();
   }
 
@@ -466,6 +473,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       'quantityLabel': _quantityLabel.trim(),
       'hideInvoiceNumber': _hideInvoiceNumber,
       'customInvoiceNumber': customInvoiceNumberController.text.trim(),
+      'payStatus': _payStatus.name,
+      'payMethod': _payMethod,
+      'payAmount': _payAmountController.text.trim(),
     });
   }
 
@@ -1314,7 +1324,50 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
             : customInvoiceNumberController.text.trim(),
       );
 
+      final payAmount = invoiceType != 'Invoice'
+          ? 0.0
+          : _payStatus == PaymentStatus.paid
+              ? invoice.total
+              : _payStatus == PaymentStatus.partial
+                  ? (double.tryParse(_payAmountController.text.trim()) ?? 0.0)
+                  : 0.0;
+      if (invoiceType == 'Invoice' &&
+          _payStatus == PaymentStatus.partial &&
+          (payAmount <= 0 || payAmount > invoice.total)) {
+        if (!mounted) return false;
+        setState(() => isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(payAmount <= 0
+                ? AppLocalizations.of(context)!.paymentDialogInvalidAmountError
+                : AppLocalizations.of(context)!.paymentDialogExceedsOutstandingError),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            showCloseIcon: true,
+          ),
+        );
+        return false;
+      }
+
       await ref.read(invoiceRepositoryProvider).insertInvoice(invoice);
+
+      // Separate transaction from the invoice insert: if it fails the
+      // invoice is kept and the user adds the payment from the Invoices list.
+      String? payError;
+      if (payAmount > 0) {
+        try {
+          invoice.payments = [
+            await ref.read(paymentRepositoryProvider).addPayment(
+                  invoice: invoice,
+                  amountPaid: payAmount,
+                  datePaid: DateTime.now(),
+                  paymentMethod: _payMethod,
+                )
+          ];
+        } catch (e) {
+          payError = e.toString();
+        }
+      }
 
       if (!mounted) return true;
       setState(() {
@@ -1340,6 +1393,17 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         ),
       );
+      if (payError != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!
+                .createInvoicePaymentNotRecordedMessage(payError)),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            showCloseIcon: true,
+          ),
+        );
+      }
       return true;
     } catch (e) {
       if (!mounted) return false;
@@ -2136,6 +2200,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       dueDateController.clear();
       _previousBalanceDue = 0.0;
       _isPreviousBalanceLoading = false;
+      _payStatus = PaymentStatus.unpaid;
+      _payAmountController.clear();
     });
     await _setAdditionalNote(forceDefault: true);
     _markFormClean();
@@ -5106,6 +5172,86 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     );
   }
 
+  Widget _paymentSectionV2(double total) {
+    final l10n = AppLocalizations.of(context)!;
+    final paid = _payStatus == PaymentStatus.paid
+        ? total
+        : _payStatus == PaymentStatus.partial
+            ? (double.tryParse(_payAmountController.text.trim()) ?? 0.0)
+            : 0.0;
+    final balanceDue = total - paid;
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.green.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+        border: Border.all(color: Colors.green.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SegmentedButton<PaymentStatus>(
+            showSelectedIcon: false,
+            segments: [
+              ButtonSegment(
+                  value: PaymentStatus.unpaid,
+                  label: Text(l10n.paymentStatusUnpaid)),
+              ButtonSegment(
+                  value: PaymentStatus.partial,
+                  label: Text(l10n.paymentStatusPartial)),
+              ButtonSegment(
+                  value: PaymentStatus.paid,
+                  label: Text(l10n.paymentStatusPaid)),
+            ],
+            selected: {_payStatus},
+            onSelectionChanged: (v) => setState(() => _payStatus = v.first),
+          ),
+          if (_payStatus != PaymentStatus.unpaid) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    value: _payMethod,
+                    decoration: _flatFieldDecorationV2(
+                        l10n.paymentDialogMethodFieldLabel),
+                    items: paymentMethods
+                        .map((m) => DropdownMenuItem(
+                            value: m, child: Text(paymentMethodLabel(l10n, m))))
+                        .toList(),
+                    onChanged: (v) {
+                      if (v != null) setState(() => _payMethod = v);
+                    },
+                  ),
+                ),
+                if (_payStatus == PaymentStatus.partial) ...[
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: _payAmountController,
+                      onChanged: (_) => setState(() {}),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      decoration: _flatFieldDecorationV2(
+                          l10n.paymentDialogAmountPaidLabel,
+                          prefixText: '$_currencySymbol '),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 10),
+            _buildTotalRow(l10n.paymentDialogAmountPaidLabel, paid, false),
+            const SizedBox(height: 4),
+            _buildTotalRow(l10n.createInvoiceBalanceDueLabel,
+                balanceDue < 0 ? 0 : balanceDue, false),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _notesFieldV2() {
     return TextField(
       controller: notesController,
@@ -5560,6 +5706,12 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                         _buildAdditionalCostsSection(),
                         const SizedBox(height: 12),
                         _invoiceDiscountSectionV2(),
+                        if (!isEditing && invoiceType == 'Invoice') ...[
+                          const SizedBox(height: 18),
+                          _sectionLabelV2(AppLocalizations.of(context)!
+                              .createInvoicePaymentSectionLabel),
+                          _paymentSectionV2(total),
+                        ],
                         const SizedBox(height: 18),
                         _sectionLabelV2('Notes'),
                         _notesFieldV2(),
@@ -5757,6 +5909,12 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               _buildAdditionalCostsSection(),
               const SizedBox(height: 12),
               _invoiceDiscountSectionV2(),
+              if (!isEditing && invoiceType == 'Invoice') ...[
+                const SizedBox(height: 18),
+                _sectionLabelV2(AppLocalizations.of(context)!
+                    .createInvoicePaymentSectionLabel),
+                _paymentSectionV2(total),
+              ],
               const SizedBox(height: 18),
               _sectionLabelV2('Notes'),
               _notesFieldV2(),

@@ -444,6 +444,12 @@ abstract class AppLocalizations {
   /// **'Invoices'**
   String get navInvoices;
 
+  /// No description provided for @navServices.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash Exchange Services'**
+  String get navServices;
+
   /// No description provided for @navQuotations.
   ///
   /// In en, this message translates to:
@@ -1397,6 +1403,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Previous Balance Due'**
   String get createInvoicePreviousBalanceDueLabel;
+
+  /// No description provided for @createInvoicePaymentSectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get createInvoicePaymentSectionLabel;
+
+  /// No description provided for @createInvoiceBalanceDueLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance Due'**
+  String get createInvoiceBalanceDueLabel;
+
+  /// No description provided for @createInvoicePaymentNotRecordedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice saved, but the payment was not recorded: {error}. Add it from the Invoices list.'**
+  String createInvoicePaymentNotRecordedMessage(String error);
 
   /// No description provided for @createInvoiceDueShortLabel.
   ///
@@ -3480,6 +3504,12 @@ abstract class AppLocalizations {
   /// **'1/true if price already includes tax, default 0'**
   String get productMgmtCsvDescPriceIncludesTax;
 
+  /// No description provided for @productMgmtCsvDescLowStockLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Low-stock threshold for this product, blank = default 10'**
+  String get productMgmtCsvDescLowStockLimit;
+
   /// No description provided for @productMgmtCsvDescStorageLocation.
   ///
   /// In en, this message translates to:
@@ -3941,6 +3971,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Track infinite stock for this product'**
   String get productMgmtTrackInfiniteStockSubtitle;
+
+  /// No description provided for @productMgmtLowStockLimitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Low-stock limit'**
+  String get productMgmtLowStockLimitLabel;
+
+  /// No description provided for @productMgmtLowStockLimitHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Shown in Low Stock when stock is at or below this number. Leave blank for the default (10).'**
+  String get productMgmtLowStockLimitHelper;
 
   /// No description provided for @productMgmtTipEnableCustomFieldsMessage.
   ///
@@ -6720,6 +6762,18 @@ abstract class AppLocalizations {
   /// **'Cost price, for margin tracking.'**
   String get productColumnsPurchasePriceSubtitle;
 
+  /// No description provided for @productColumnsPurchasePriceAdminOnlyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase Price: Admins Only'**
+  String get productColumnsPurchasePriceAdminOnlyLabel;
+
+  /// No description provided for @productColumnsPurchasePriceAdminOnlySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide purchase price, profit and stock value from non-admin users.'**
+  String get productColumnsPurchasePriceAdminOnlySubtitle;
+
   /// No description provided for @productColumnsDefaultDiscountLabel.
   ///
   /// In en, this message translates to:
@@ -7380,11 +7434,293 @@ abstract class AppLocalizations {
   /// **'Online'**
   String get paymentMethodOnline;
 
+  /// No description provided for @paymentMethodUpi.
+  ///
+  /// In en, this message translates to:
+  /// **'UPI'**
+  String get paymentMethodUpi;
+
   /// No description provided for @paymentMethodOther.
   ///
   /// In en, this message translates to:
   /// **'Other'**
   String get paymentMethodOther;
+
+  /// No description provided for @accessibilityOptionalFeaturesSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional features'**
+  String get accessibilityOptionalFeaturesSectionTitle;
+
+  /// No description provided for @accessibilityCashExchangeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash / UPI Exchange Service'**
+  String get accessibilityCashExchangeLabel;
+
+  /// No description provided for @accessibilityCashExchangeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Adds a Cash Exchange Services menu after New Invoice to record UPI ↔ Cash exchanges, service fees and cash movements, with Cash and UPI/Bank balances.'**
+  String get accessibilityCashExchangeSubtitle;
+
+  /// No description provided for @cashExchangeCashLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash'**
+  String get cashExchangeCashLabel;
+
+  /// No description provided for @cashExchangeUpiBankLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'UPI/Bank'**
+  String get cashExchangeUpiBankLabel;
+
+  /// No description provided for @cashExchangeTotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total balance'**
+  String get cashExchangeTotalLabel;
+
+  /// No description provided for @cashExchangeIncomeTodayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Service income (today)'**
+  String get cashExchangeIncomeTodayLabel;
+
+  /// No description provided for @cashExchangeIncomeMonthLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Service income (this month)'**
+  String get cashExchangeIncomeMonthLabel;
+
+  /// No description provided for @cashExchangeExpensesMonthLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Expenses (this month)'**
+  String get cashExchangeExpensesMonthLabel;
+
+  /// No description provided for @cashExchangeSetupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set opening balances'**
+  String get cashExchangeSetupTitle;
+
+  /// No description provided for @cashExchangeSetupMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the cash and UPI/Bank money you have on this date. Invoice payments from this date on are added to the balances.'**
+  String get cashExchangeSetupMessage;
+
+  /// No description provided for @cashExchangeSetupAdminOnlyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask an admin to set the opening balances.'**
+  String get cashExchangeSetupAdminOnlyMessage;
+
+  /// No description provided for @cashExchangeUpiToCash.
+  ///
+  /// In en, this message translates to:
+  /// **'UPI → Cash'**
+  String get cashExchangeUpiToCash;
+
+  /// No description provided for @cashExchangeCashToUpi.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash → UPI'**
+  String get cashExchangeCashToUpi;
+
+  /// No description provided for @cashExchangeExpense.
+  ///
+  /// In en, this message translates to:
+  /// **'Expense'**
+  String get cashExchangeExpense;
+
+  /// No description provided for @cashExchangeWithdrawal.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdrawal'**
+  String get cashExchangeWithdrawal;
+
+  /// No description provided for @cashExchangeBankDeposit.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank deposit'**
+  String get cashExchangeBankDeposit;
+
+  /// No description provided for @cashExchangeOpeningBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening balance'**
+  String get cashExchangeOpeningBalance;
+
+  /// No description provided for @cashExchangeAdjustment.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjustment'**
+  String get cashExchangeAdjustment;
+
+  /// No description provided for @cashExchangeInvoicePayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice payment'**
+  String get cashExchangeInvoicePayment;
+
+  /// No description provided for @cashExchangeAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get cashExchangeAmountLabel;
+
+  /// No description provided for @cashExchangeFeeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Service fee'**
+  String get cashExchangeFeeLabel;
+
+  /// No description provided for @cashExchangeFeePaidByLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Service fee paid by'**
+  String get cashExchangeFeePaidByLabel;
+
+  /// No description provided for @cashExchangeFromAccountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid from'**
+  String get cashExchangeFromAccountLabel;
+
+  /// No description provided for @cashExchangeCustomerNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer name (optional)'**
+  String get cashExchangeCustomerNameLabel;
+
+  /// No description provided for @cashExchangeCustomerSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search customers or type a new name'**
+  String get cashExchangeCustomerSearchHint;
+
+  /// No description provided for @cashExchangeCustomerPhoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone (optional)'**
+  String get cashExchangeCustomerPhoneLabel;
+
+  /// No description provided for @cashExchangeNotesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes (optional)'**
+  String get cashExchangeNotesLabel;
+
+  /// No description provided for @cashExchangeDateTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Date & time'**
+  String get cashExchangeDateTimeLabel;
+
+  /// No description provided for @cashExchangeDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get cashExchangeDateLabel;
+
+  /// No description provided for @cashExchangeCashDeltaLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash change (+ / −)'**
+  String get cashExchangeCashDeltaLabel;
+
+  /// No description provided for @cashExchangeUpiDeltaLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'UPI/Bank change (+ / −)'**
+  String get cashExchangeUpiDeltaLabel;
+
+  /// No description provided for @cashExchangeDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete entry'**
+  String get cashExchangeDeleteTitle;
+
+  /// No description provided for @cashExchangeDeleteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this entry? Balances will be recalculated.'**
+  String get cashExchangeDeleteMessage;
+
+  /// No description provided for @cashExchangeEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No entries for this period.'**
+  String get cashExchangeEmpty;
+
+  /// No description provided for @cashExchangePeriodToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get cashExchangePeriodToday;
+
+  /// No description provided for @cashExchangePeriodMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'This month'**
+  String get cashExchangePeriodMonth;
+
+  /// No description provided for @cashExchangePeriodAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All time'**
+  String get cashExchangePeriodAll;
+
+  /// No description provided for @cashExchangePeriodCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom date'**
+  String get cashExchangePeriodCustom;
+
+  /// No description provided for @cashExchangeShowingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing'**
+  String get cashExchangeShowingLabel;
+
+  /// No description provided for @cashExchangeChangeDates.
+  ///
+  /// In en, this message translates to:
+  /// **'Change dates'**
+  String get cashExchangeChangeDates;
+
+  /// No description provided for @cashExchangeClosingBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Closing balance'**
+  String get cashExchangeClosingBalance;
+
+  /// No description provided for @cashExchangeAllTypes.
+  ///
+  /// In en, this message translates to:
+  /// **'All types'**
+  String get cashExchangeAllTypes;
+
+  /// No description provided for @cashExchangeSummaryUpiToCash.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer sends {amount} by UPI/Bank • You give {amount} cash • Fee {fee} by {method}'**
+  String cashExchangeSummaryUpiToCash(String amount, String fee, String method);
+
+  /// No description provided for @cashExchangeSummaryCashToUpi.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer gives {amount} cash • You send {amount} by UPI/Bank • Fee {fee} by {method}'**
+  String cashExchangeSummaryCashToUpi(String amount, String fee, String method);
+
+  /// No description provided for @cashExchangeLowBalanceWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Only {balance} available in {account}.'**
+  String cashExchangeLowBalanceWarning(String balance, String account);
 
   /// No description provided for @customerInfoButtonTooltip.
   ///

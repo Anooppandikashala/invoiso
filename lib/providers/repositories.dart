@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/repositories/auth_repository.dart';
+import 'package:invoiso/repositories/cash_ledger_repository.dart';
 import 'package:invoiso/repositories/company_info_repository.dart';
 import 'package:invoiso/repositories/customer_repository.dart';
 import 'package:invoiso/repositories/invoice_item_repository.dart';
@@ -30,6 +31,12 @@ final productRepositoryProvider = Provider<ProductRepository>((ref) {
 final paymentRepositoryProvider = Provider<PaymentRepository>((ref) {
   throw UnimplementedError(
     'paymentRepositoryProvider must be overridden.',
+  );
+});
+
+final cashLedgerRepositoryProvider = Provider<CashLedgerRepository>((ref) {
+  throw UnimplementedError(
+    'cashLedgerRepositoryProvider must be overridden.',
   );
 });
 

@@ -185,6 +185,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get navInvoices => '发票';
 
   @override
+  String get navServices => '现金兑换服务';
+
+  @override
   String get navQuotations => '报价单';
 
   @override
@@ -737,6 +740,17 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get createInvoicePreviousBalanceDueLabel => '上期应付余额';
+
+  @override
+  String get createInvoicePaymentSectionLabel => '付款';
+
+  @override
+  String get createInvoiceBalanceDueLabel => '应付余额';
+
+  @override
+  String createInvoicePaymentNotRecordedMessage(String error) {
+    return '发票已保存，但付款未记录：$error。请从发票列表中添加。';
+  }
 
   @override
   String get createInvoiceDueShortLabel => '应付';
@@ -2023,6 +2037,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get productMgmtCsvDescPriceIncludesTax => '1/true 表示价格已含税，默认 0';
 
   @override
+  String get productMgmtCsvDescLowStockLimit => '该产品的低库存阈值，留空 = 默认 10';
+
+  @override
   String get productMgmtCsvDescStorageLocation => '仓库/货架位置';
 
   @override
@@ -2282,6 +2299,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get productMgmtTrackInfiniteStockSubtitle => '为此产品跟踪无限库存';
+
+  @override
+  String get productMgmtLowStockLimitLabel => '低库存阈值';
+
+  @override
+  String get productMgmtLowStockLimitHelper =>
+      '库存小于或等于此数量时显示在低库存中。留空则使用默认值（10）。';
 
   @override
   String get productMgmtTipEnableCustomFieldsMessage =>
@@ -3829,6 +3853,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get productColumnsPurchasePriceSubtitle => '成本价，用于利润追踪。';
 
   @override
+  String get productColumnsPurchasePriceAdminOnlyLabel => '采购价：仅管理员可见';
+
+  @override
+  String get productColumnsPurchasePriceAdminOnlySubtitle =>
+      '对非管理员用户隐藏采购价、利润和库存价值。';
+
+  @override
   String get productColumnsDefaultDiscountLabel => '默认折扣';
 
   @override
@@ -4189,7 +4220,158 @@ class AppLocalizationsZh extends AppLocalizations {
   String get paymentMethodOnline => '在线支付';
 
   @override
+  String get paymentMethodUpi => 'UPI';
+
+  @override
   String get paymentMethodOther => '其他';
+
+  @override
+  String get accessibilityOptionalFeaturesSectionTitle => '可选功能';
+
+  @override
+  String get accessibilityCashExchangeLabel => '现金 / UPI 兑换服务';
+
+  @override
+  String get accessibilityCashExchangeSubtitle =>
+      '在“新建发票”之后添加“现金兑换服务”菜单，用于记录 UPI ↔ 现金兑换、服务费和现金收支，并显示现金与 UPI/银行余额。';
+
+  @override
+  String get cashExchangeCashLabel => '现金';
+
+  @override
+  String get cashExchangeUpiBankLabel => 'UPI/银行';
+
+  @override
+  String get cashExchangeTotalLabel => '总余额';
+
+  @override
+  String get cashExchangeIncomeTodayLabel => '服务收入（今天）';
+
+  @override
+  String get cashExchangeIncomeMonthLabel => '服务收入（本月）';
+
+  @override
+  String get cashExchangeExpensesMonthLabel => '支出（本月）';
+
+  @override
+  String get cashExchangeSetupTitle => '设置期初余额';
+
+  @override
+  String get cashExchangeSetupMessage =>
+      '输入您在此日期持有的现金和 UPI/银行金额。自此日期起的发票付款将计入余额。';
+
+  @override
+  String get cashExchangeSetupAdminOnlyMessage => '请管理员设置期初余额。';
+
+  @override
+  String get cashExchangeUpiToCash => 'UPI → 现金';
+
+  @override
+  String get cashExchangeCashToUpi => '现金 → UPI';
+
+  @override
+  String get cashExchangeExpense => '支出';
+
+  @override
+  String get cashExchangeWithdrawal => '提取';
+
+  @override
+  String get cashExchangeBankDeposit => '银行存款';
+
+  @override
+  String get cashExchangeOpeningBalance => '期初余额';
+
+  @override
+  String get cashExchangeAdjustment => '调整';
+
+  @override
+  String get cashExchangeInvoicePayment => '发票付款';
+
+  @override
+  String get cashExchangeAmountLabel => '金额';
+
+  @override
+  String get cashExchangeFeeLabel => '服务费';
+
+  @override
+  String get cashExchangeFeePaidByLabel => '服务费支付方式';
+
+  @override
+  String get cashExchangeFromAccountLabel => '支付账户';
+
+  @override
+  String get cashExchangeCustomerNameLabel => '客户名称（可选）';
+
+  @override
+  String get cashExchangeCustomerSearchHint => '搜索客户或输入新名称';
+
+  @override
+  String get cashExchangeCustomerPhoneLabel => '电话（可选）';
+
+  @override
+  String get cashExchangeNotesLabel => '备注（可选）';
+
+  @override
+  String get cashExchangeDateTimeLabel => '日期和时间';
+
+  @override
+  String get cashExchangeDateLabel => '日期';
+
+  @override
+  String get cashExchangeCashDeltaLabel => '现金变动（+ / −）';
+
+  @override
+  String get cashExchangeUpiDeltaLabel => 'UPI/银行变动（+ / −）';
+
+  @override
+  String get cashExchangeDeleteTitle => '删除记录';
+
+  @override
+  String get cashExchangeDeleteMessage => '删除此记录？余额将重新计算。';
+
+  @override
+  String get cashExchangeEmpty => '此期间没有记录。';
+
+  @override
+  String get cashExchangePeriodToday => '今天';
+
+  @override
+  String get cashExchangePeriodMonth => '本月';
+
+  @override
+  String get cashExchangePeriodAll => '全部时间';
+
+  @override
+  String get cashExchangePeriodCustom => '自定义日期';
+
+  @override
+  String get cashExchangeShowingLabel => '显示';
+
+  @override
+  String get cashExchangeChangeDates => '更改日期';
+
+  @override
+  String get cashExchangeClosingBalance => '期末余额';
+
+  @override
+  String get cashExchangeAllTypes => '所有类型';
+
+  @override
+  String cashExchangeSummaryUpiToCash(
+      String amount, String fee, String method) {
+    return '客户通过 UPI/银行发送 $amount • 您支付现金 $amount • 服务费 $fee，通过 $method';
+  }
+
+  @override
+  String cashExchangeSummaryCashToUpi(
+      String amount, String fee, String method) {
+    return '客户支付现金 $amount • 您通过 UPI/银行发送 $amount • 服务费 $fee，通过 $method';
+  }
+
+  @override
+  String cashExchangeLowBalanceWarning(String balance, String account) {
+    return '$account 中仅有 $balance 可用。';
+  }
 
   @override
   String get customerInfoButtonTooltip => '查看联系方式';

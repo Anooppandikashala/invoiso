@@ -275,6 +275,15 @@ class _ProductColumnsSettingsScreenState
                                 _config = _config.copyWith(purchasePrice: v)),
                           ),
                           _tile(
+                            title: l10n.productColumnsPurchasePriceAdminOnlyLabel,
+                            subtitle:
+                                l10n.productColumnsPurchasePriceAdminOnlySubtitle,
+                            icon: Icons.admin_panel_settings_outlined,
+                            value: _config.purchasePriceAdminOnly,
+                            onChanged: (v) => setState(() => _config =
+                                _config.copyWith(purchasePriceAdminOnly: v)),
+                          ),
+                          _tile(
                             title: l10n.productColumnsDefaultDiscountLabel,
                             subtitle:
                                 l10n.productColumnsDefaultDiscountSubtitle,

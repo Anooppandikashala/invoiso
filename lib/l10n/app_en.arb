@@ -87,6 +87,7 @@
   "navDashboard": "Dashboard",
   "navNewInvoice": "New Invoice",
   "navInvoices": "Invoices",
+  "navServices": "Cash Exchange Services",
   "navQuotations": "Quotations",
   "navReceipts": "Receipts",
   "navCustomers": "Customers",
@@ -434,6 +435,16 @@
   "createInvoiceDiscountPerUnitFormulaOff": "(price × qty) − discount",
   "createInvoicePrevBalanceShortLabel": "Prev. Balance",
   "createInvoicePreviousBalanceDueLabel": "Previous Balance Due",
+  "createInvoicePaymentSectionLabel": "Payment",
+  "createInvoiceBalanceDueLabel": "Balance Due",
+  "createInvoicePaymentNotRecordedMessage": "Invoice saved, but the payment was not recorded: {error}. Add it from the Invoices list.",
+  "@createInvoicePaymentNotRecordedMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "createInvoiceDueShortLabel": "Due",
   "createInvoiceTotalDueLabel": "Total Due",
   "createInvoiceUpdatedSuccessMessage": "{invoiceTypeLabel} updated successfully!",
@@ -1380,6 +1391,7 @@
   "productMgmtCsvDescUnit": "Unit of measure (e.g. kg, bag, pcs), default pcs",
   "productMgmtCsvDescUnlimitedStock": "1/true for unlimited stock, default 0",
   "productMgmtCsvDescPriceIncludesTax": "1/true if price already includes tax, default 0",
+  "productMgmtCsvDescLowStockLimit": "Low-stock threshold for this product, blank = default 10",
   "productMgmtCsvDescStorageLocation": "Warehouse/shelf location",
   "productMgmtCsvDescContainerNumber": "Container/box number",
   "productMgmtCsvDescBatchNumber": "Batch/lot number",
@@ -1525,6 +1537,8 @@
   "productMgmtSectionInventory": "Inventory",
   "productMgmtUnlimitedStockLabel": "Unlimited stock",
   "productMgmtTrackInfiniteStockSubtitle": "Track infinite stock for this product",
+  "productMgmtLowStockLimitLabel": "Low-stock limit",
+  "productMgmtLowStockLimitHelper": "Shown in Low Stock when stock is at or below this number. Leave blank for the default (10).",
   "productMgmtTipEnableCustomFieldsMessage": "Tip: Enable custom fields from Columns to add more details.",
   "productMgmtEditProductTitle": "Edit Product",
   "productMgmtViewProductTitle": "View Product",
@@ -2283,6 +2297,8 @@
   "productColumnsDescriptionSubtitle": "Free-text product description.",
   "productColumnsPurchasePriceLabel": "Purchase Price",
   "productColumnsPurchasePriceSubtitle": "Cost price, for margin tracking.",
+  "productColumnsPurchasePriceAdminOnlyLabel": "Purchase Price: Admins Only",
+  "productColumnsPurchasePriceAdminOnlySubtitle": "Hide purchase price, profit and stock value from non-admin users.",
   "productColumnsDefaultDiscountLabel": "Default Discount",
   "productColumnsDefaultDiscountSubtitle": "Pre-filled discount when adding this product to an invoice.",
   "productColumnsUnitLabel": "Unit",
@@ -2468,7 +2484,90 @@
   "paymentMethodBankTransfer": "Bank Transfer",
   "paymentMethodCheck": "Check",
   "paymentMethodOnline": "Online",
+  "paymentMethodUpi": "UPI",
   "paymentMethodOther": "Other",
+  "accessibilityOptionalFeaturesSectionTitle": "Optional features",
+  "accessibilityCashExchangeLabel": "Cash / UPI Exchange Service",
+  "accessibilityCashExchangeSubtitle": "Adds a Cash Exchange Services menu after New Invoice to record UPI ↔ Cash exchanges, service fees and cash movements, with Cash and UPI/Bank balances.",
+  "cashExchangeCashLabel": "Cash",
+  "cashExchangeUpiBankLabel": "UPI/Bank",
+  "cashExchangeTotalLabel": "Total balance",
+  "cashExchangeIncomeTodayLabel": "Service income (today)",
+  "cashExchangeIncomeMonthLabel": "Service income (this month)",
+  "cashExchangeExpensesMonthLabel": "Expenses (this month)",
+  "cashExchangeSetupTitle": "Set opening balances",
+  "cashExchangeSetupMessage": "Enter the cash and UPI/Bank money you have on this date. Invoice payments from this date on are added to the balances.",
+  "cashExchangeSetupAdminOnlyMessage": "Ask an admin to set the opening balances.",
+  "cashExchangeUpiToCash": "UPI → Cash",
+  "cashExchangeCashToUpi": "Cash → UPI",
+  "cashExchangeExpense": "Expense",
+  "cashExchangeWithdrawal": "Withdrawal",
+  "cashExchangeBankDeposit": "Bank deposit",
+  "cashExchangeOpeningBalance": "Opening balance",
+  "cashExchangeAdjustment": "Adjustment",
+  "cashExchangeInvoicePayment": "Invoice payment",
+  "cashExchangeAmountLabel": "Amount",
+  "cashExchangeFeeLabel": "Service fee",
+  "cashExchangeFeePaidByLabel": "Service fee paid by",
+  "cashExchangeFromAccountLabel": "Paid from",
+  "cashExchangeCustomerNameLabel": "Customer name (optional)",
+  "cashExchangeCustomerSearchHint": "Search customers or type a new name",
+  "cashExchangeCustomerPhoneLabel": "Phone (optional)",
+  "cashExchangeNotesLabel": "Notes (optional)",
+  "cashExchangeDateTimeLabel": "Date & time",
+  "cashExchangeDateLabel": "Date",
+  "cashExchangeCashDeltaLabel": "Cash change (+ / −)",
+  "cashExchangeUpiDeltaLabel": "UPI/Bank change (+ / −)",
+  "cashExchangeDeleteTitle": "Delete entry",
+  "cashExchangeDeleteMessage": "Delete this entry? Balances will be recalculated.",
+  "cashExchangeEmpty": "No entries for this period.",
+  "cashExchangePeriodToday": "Today",
+  "cashExchangePeriodMonth": "This month",
+  "cashExchangePeriodAll": "All time",
+  "cashExchangePeriodCustom": "Custom date",
+  "cashExchangeShowingLabel": "Showing",
+  "cashExchangeChangeDates": "Change dates",
+  "cashExchangeClosingBalance": "Closing balance",
+  "cashExchangeAllTypes": "All types",
+  "cashExchangeSummaryUpiToCash": "Customer sends {amount} by UPI/Bank • You give {amount} cash • Fee {fee} by {method}",
+  "@cashExchangeSummaryUpiToCash": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "fee": {
+        "type": "String"
+      },
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "cashExchangeSummaryCashToUpi": "Customer gives {amount} cash • You send {amount} by UPI/Bank • Fee {fee} by {method}",
+  "@cashExchangeSummaryCashToUpi": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "fee": {
+        "type": "String"
+      },
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "cashExchangeLowBalanceWarning": "Only {balance} available in {account}.",
+  "@cashExchangeLowBalanceWarning": {
+    "placeholders": {
+      "balance": {
+        "type": "String"
+      },
+      "account": {
+        "type": "String"
+      }
+    }
+  },
   "customerInfoButtonTooltip": "View contact details",
   "customerInfoButtonNoContactMessage": "No contact details available.",
   "updateDialogTitle": "Update Available",

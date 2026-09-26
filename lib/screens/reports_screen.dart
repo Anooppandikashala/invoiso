@@ -41,7 +41,9 @@ enum _DailyMode { today, last30, monthYear, custom }
 
 class ReportsScreen extends ConsumerStatefulWidget {
   final String? initialStatementCustomerKey;
-  const ReportsScreen({super.key, this.initialStatementCustomerKey});
+  final bool isAdmin;
+  const ReportsScreen(
+      {super.key, this.initialStatementCustomerKey, this.isAdmin = true});
 
   @override
   ConsumerState<ReportsScreen> createState() => _ReportsScreenState();
@@ -49,6 +51,8 @@ class ReportsScreen extends ConsumerStatefulWidget {
 
 class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   int _selectedIndex = 0;
+  // Purchase price restricted to admins: hide cost, profit and stock value.
+  bool _hideCost = false;
   final Set<int> _loadedTabs = {};
   final Map<int, bool> _tabLoading = {};
 
@@ -249,13 +253,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     final results = await Future.wait([
       settingsRepo.getSetting(SettingKey.currency),
       settingsRepo.getDateFormat(),
+      settingsRepo.getProductColumnsConfig(),
     ]);
     final code = (results[0] as String?) ?? 'INR';
     final currency = SupportedCurrencies.all.firstWhere((c) => c.code == code,
         orElse: () => SupportedCurrencies.all.first);
     final dateFormat = results[1] as DateFormatOption;
+    final hideCost = (results[2] as ProductColumnsConfig).purchasePriceAdminOnly &&
+        !widget.isAdmin;
     if (mounted) {
       setState(() {
+        _hideCost = hideCost;
         _sym = currency.symbol;
         _currencyCode = currency.code;
         _currencyName = currency.name;
@@ -849,7 +857,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         children: [
           const SizedBox(height: 8),
           // ── Nav items ──
-          for (int i = 0; i < _navIcons.length; i++) _navItem(i, primary),
+          for (int i = 0; i < _navIcons.length; i++)
+            if (!(_hideCost && i == 8)) _navItem(i, primary),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Divider(
@@ -1309,6 +1318,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                                   _money(_kpi.avgInvoiceValue),
                                   const Color(0xFF7C3AED),
                                   Icons.trending_up)),
+                          if (!_hideCost) ...[
                           const SizedBox(width: 12),
                           Expanded(
                               child: _kpiCard(
@@ -1327,13 +1337,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                                       ? const Color(0xFFDC2626)
                                       : const Color(0xFF16A34A),
                                   Icons.payments_outlined)),
+                          ],
                         ],
                       ),
                     ),
                   ],
                 ),
               ),
-              if (_missingCostItemCount > 0)
+              if (!_hideCost && _missingCostItemCount > 0)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                   child: _missingCostBanner(),
@@ -1346,7 +1357,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   children: [
                     _cardTitle(
                       l10n.reportsMonthlyRevenueTrendTitle,
-                      trailing: Row(
+                      trailing: _hideCost ? null : Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           _exportBtn(l10n.reportsExportCsvLabel, () async {
@@ -1398,9 +1409,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           const SizedBox(width: 24),
                           _legend(const Color(0xFF22C55E),
                               l10n.dashboardCollectedLabel),
+                          if (!_hideCost) ...[
                           const SizedBox(width: 24),
                           _legend(
                               const Color(0xFF7C3AED), l10n.reportsProfitLabel),
+                          ],
                         ],
                       ),
                     ],
@@ -1450,6 +1463,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           Expanded(
               flex: 2,
               child: _TableHead(l10n.dashboardOutstandingLabel, right: true)),
+          if (!_hideCost) ...[
           Expanded(
               flex: 2,
               child: _TableHead(l10n.reportsCogsColumnLabel, right: true)),
@@ -1459,6 +1473,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           Expanded(
               flex: 1,
               child: _TableHead(l10n.reportsMarginColumnLabel, right: true)),
+          ],
         ],
       ),
     );
@@ -1497,6 +1512,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               color: const Color(0xFF1D4ED8), weight: FontWeight.w600),
           _revenueCell(_money(p.collected)),
           _revenueCell(_money(p.outstanding)),
+          if (!_hideCost) ...[
           _revenueCell(_money(p.cogs)),
           _revenueCell(_money(p.profit),
               color: p.profit < 0
@@ -1504,6 +1520,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   : const Color(0xFF16A34A),
               weight: FontWeight.w600),
           _revenueCell('${p.marginPercent.toStringAsFixed(0)}%', flex: 1),
+          ],
         ],
       ),
     );
@@ -1539,6 +1556,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           _revenueCell(_money(billed), weight: FontWeight.w700),
           _revenueCell(_money(collected), weight: FontWeight.w700),
           _revenueCell(_money(outstanding), weight: FontWeight.w700),
+          if (!_hideCost) ...[
           _revenueCell(_money(cogs), weight: FontWeight.w700),
           _revenueCell(_money(profit),
               weight: FontWeight.w700,
@@ -1547,6 +1565,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   : const Color(0xFF16A34A)),
           _revenueCell('${margin.toStringAsFixed(0)}%',
               flex: 1, weight: FontWeight.w700),
+          ],
         ],
       ),
     );
@@ -1584,12 +1603,13 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   Widget _buildBarChart() {
     final maxY = _trend
-            .map((p) => [p.billed, p.collected, p.profit]
+            .map((p) => [p.billed, p.collected, if (!_hideCost) p.profit]
                 .reduce((a, b) => a > b ? a : b))
             .fold(0.0, (a, b) => a > b ? a : b) *
         1.2;
-    final minY =
-        _trend.map((p) => p.profit).fold(0.0, (a, b) => a < b ? a : b) *
+    final minY = _hideCost
+        ? 0.0
+        : _trend.map((p) => p.profit).fold(0.0, (a, b) => a < b ? a : b) *
             (_trend.any((p) => p.profit < 0) ? 1.2 : 1.0);
 
     final groups = _trend.asMap().entries.map((e) {
@@ -1609,6 +1629,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             width: 8,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
           ),
+          if (!_hideCost)
           BarChartRodData(
             toY: e.value.profit,
             color: const Color(0xFF7C3AED),
@@ -3105,7 +3126,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                                               .reportsProfitLabel
                                           : AppLocalizations.of(context)!
                                               .reportsNavRevenueLabel),
-                              trailing: Row(
+                              trailing: _hideCost ? null : Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   TextButton.icon(
@@ -3165,7 +3186,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                               ),
                             ),
                           ),
-                          if (_missingCostItemCount > 0)
+                          if (!_hideCost && _missingCostItemCount > 0)
                             Padding(
                               padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
                               child: _missingCostBanner(),
@@ -3305,11 +3326,13 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               flex: 2,
               child: _TableHead(l10n.reportsDiscountGivenColumnLabel,
                   right: true)),
+          if (!_hideCost) ...[
           Expanded(
               flex: 2, child: _TableHead(l10n.reportsProfitLabel, right: true)),
           Expanded(
               flex: 1,
               child: _TableHead(l10n.reportsMarginColumnLabel, right: true)),
+          ],
         ],
       ),
     );
@@ -3359,6 +3382,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   style: TextStyle(
                       fontSize: 13,
                       color: Theme.of(context).colorScheme.onSurfaceVariant))),
+          if (!_hideCost) ...[
           Expanded(
               flex: 2,
               child: Text(_money(p.profit),
@@ -3376,6 +3400,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   style: TextStyle(
                       fontSize: 13,
                       color: Theme.of(context).colorScheme.onSurfaceVariant))),
+          ],
         ],
       ),
     );
@@ -3665,7 +3690,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                             padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
                             child: _cardTitle(
                               l10n.reportsDailySalesProfitTitle,
-                              trailing: Row(
+                              trailing: _hideCost ? null : Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   _exportBtn(l10n.reportsExportCsvLabel,
@@ -3726,7 +3751,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                               _loadTab(7);
                             },
                           ),
-                          if (_missingCostItemCount > 0)
+                          if (!_hideCost && _missingCostItemCount > 0)
                             Padding(
                               padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
                               child: _missingCostBanner(),
@@ -3880,6 +3905,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           Expanded(
               flex: 2,
               child: _TableHead(l10n.reportsSalesColumnLabel, right: true)),
+          if (!_hideCost) ...[
           Expanded(
               flex: 2,
               child: _TableHead(l10n.reportsCogsColumnLabel, right: true)),
@@ -3888,6 +3914,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           Expanded(
               flex: 1,
               child: _TableHead(l10n.reportsMarginColumnLabel, right: true)),
+          ],
         ],
       ),
     );
@@ -3938,6 +3965,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: Color(0xFF1D4ED8)))),
+            if (!_hideCost) ...[
             Expanded(
                 flex: 2,
                 child: Text(_money(d.cogs),
@@ -3964,6 +3992,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                         fontSize: 13,
                         color:
                             Theme.of(context).colorScheme.onSurfaceVariant))),
+            ],
           ],
         ),
       ),

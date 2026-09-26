@@ -194,6 +194,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get navInvoices => 'Facturas';
 
   @override
+  String get navServices => 'Servicios de cambio de efectivo';
+
+  @override
   String get navQuotations => 'Presupuestos';
 
   @override
@@ -763,6 +766,17 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get createInvoicePreviousBalanceDueLabel => 'Saldo anterior pendiente';
+
+  @override
+  String get createInvoicePaymentSectionLabel => 'Pago';
+
+  @override
+  String get createInvoiceBalanceDueLabel => 'Saldo pendiente';
+
+  @override
+  String createInvoicePaymentNotRecordedMessage(String error) {
+    return 'Factura guardada, pero el pago no se registró: $error. Agréguelo desde la lista de facturas.';
+  }
 
   @override
   String get createInvoiceDueShortLabel => 'Vence';
@@ -2122,6 +2136,10 @@ class AppLocalizationsEs extends AppLocalizations {
       '1/true si el precio ya incluye impuestos, predeterminado 0';
 
   @override
+  String get productMgmtCsvDescLowStockLimit =>
+      'Umbral de stock bajo del producto, vacío = 10 por defecto';
+
+  @override
   String get productMgmtCsvDescStorageLocation =>
       'Ubicación de almacén/estante';
 
@@ -2400,6 +2418,13 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get productMgmtTrackInfiniteStockSubtitle =>
       'Rastrear stock infinito para este producto';
+
+  @override
+  String get productMgmtLowStockLimitLabel => 'Límite de stock bajo';
+
+  @override
+  String get productMgmtLowStockLimitHelper =>
+      'Aparece en Stock bajo cuando el stock es igual o menor a este número. Déjelo vacío para usar el valor predeterminado (10).';
 
   @override
   String get productMgmtTipEnableCustomFieldsMessage =>
@@ -4062,6 +4087,14 @@ class AppLocalizationsEs extends AppLocalizations {
       'Precio de costo, para el seguimiento de márgenes.';
 
   @override
+  String get productColumnsPurchasePriceAdminOnlyLabel =>
+      'Precio de compra: solo administradores';
+
+  @override
+  String get productColumnsPurchasePriceAdminOnlySubtitle =>
+      'Oculta el precio de compra, las ganancias y el valor de inventario a los usuarios que no son administradores.';
+
+  @override
   String get productColumnsDefaultDiscountLabel => 'Descuento predeterminado';
 
   @override
@@ -4438,7 +4471,163 @@ class AppLocalizationsEs extends AppLocalizations {
   String get paymentMethodOnline => 'En línea';
 
   @override
+  String get paymentMethodUpi => 'UPI';
+
+  @override
   String get paymentMethodOther => 'Otro';
+
+  @override
+  String get accessibilityOptionalFeaturesSectionTitle =>
+      'Funciones opcionales';
+
+  @override
+  String get accessibilityCashExchangeLabel =>
+      'Servicio de cambio de efectivo / UPI';
+
+  @override
+  String get accessibilityCashExchangeSubtitle =>
+      'Añade un menú Servicios de cambio de efectivo después de Nueva factura para registrar cambios UPI ↔ efectivo, comisiones de servicio y movimientos de efectivo, con saldos de efectivo y UPI/Banco.';
+
+  @override
+  String get cashExchangeCashLabel => 'Efectivo';
+
+  @override
+  String get cashExchangeUpiBankLabel => 'UPI/Banco';
+
+  @override
+  String get cashExchangeTotalLabel => 'Saldo total';
+
+  @override
+  String get cashExchangeIncomeTodayLabel => 'Ingresos por servicio (hoy)';
+
+  @override
+  String get cashExchangeIncomeMonthLabel => 'Ingresos por servicio (este mes)';
+
+  @override
+  String get cashExchangeExpensesMonthLabel => 'Gastos (este mes)';
+
+  @override
+  String get cashExchangeSetupTitle => 'Establecer saldos iniciales';
+
+  @override
+  String get cashExchangeSetupMessage =>
+      'Introduzca el efectivo y el dinero en UPI/Banco que tiene en esta fecha. Los pagos de facturas desde esta fecha se suman a los saldos.';
+
+  @override
+  String get cashExchangeSetupAdminOnlyMessage =>
+      'Pida a un administrador que establezca los saldos iniciales.';
+
+  @override
+  String get cashExchangeUpiToCash => 'UPI → Efectivo';
+
+  @override
+  String get cashExchangeCashToUpi => 'Efectivo → UPI';
+
+  @override
+  String get cashExchangeExpense => 'Gasto';
+
+  @override
+  String get cashExchangeWithdrawal => 'Retiro';
+
+  @override
+  String get cashExchangeBankDeposit => 'Depósito bancario';
+
+  @override
+  String get cashExchangeOpeningBalance => 'Saldo inicial';
+
+  @override
+  String get cashExchangeAdjustment => 'Ajuste';
+
+  @override
+  String get cashExchangeInvoicePayment => 'Pago de factura';
+
+  @override
+  String get cashExchangeAmountLabel => 'Importe';
+
+  @override
+  String get cashExchangeFeeLabel => 'Comisión de servicio';
+
+  @override
+  String get cashExchangeFeePaidByLabel => 'Comisión pagada con';
+
+  @override
+  String get cashExchangeFromAccountLabel => 'Pagado desde';
+
+  @override
+  String get cashExchangeCustomerNameLabel => 'Nombre del cliente (opcional)';
+
+  @override
+  String get cashExchangeCustomerSearchHint =>
+      'Busque clientes o escriba un nombre nuevo';
+
+  @override
+  String get cashExchangeCustomerPhoneLabel => 'Teléfono (opcional)';
+
+  @override
+  String get cashExchangeNotesLabel => 'Notas (opcional)';
+
+  @override
+  String get cashExchangeDateTimeLabel => 'Fecha y hora';
+
+  @override
+  String get cashExchangeDateLabel => 'Fecha';
+
+  @override
+  String get cashExchangeCashDeltaLabel => 'Cambio en efectivo (+ / −)';
+
+  @override
+  String get cashExchangeUpiDeltaLabel => 'Cambio en UPI/Banco (+ / −)';
+
+  @override
+  String get cashExchangeDeleteTitle => 'Eliminar registro';
+
+  @override
+  String get cashExchangeDeleteMessage =>
+      '¿Eliminar este registro? Los saldos se recalcularán.';
+
+  @override
+  String get cashExchangeEmpty => 'No hay registros en este período.';
+
+  @override
+  String get cashExchangePeriodToday => 'Hoy';
+
+  @override
+  String get cashExchangePeriodMonth => 'Este mes';
+
+  @override
+  String get cashExchangePeriodAll => 'Todo el tiempo';
+
+  @override
+  String get cashExchangePeriodCustom => 'Fecha personalizada';
+
+  @override
+  String get cashExchangeShowingLabel => 'Mostrando';
+
+  @override
+  String get cashExchangeChangeDates => 'Cambiar fechas';
+
+  @override
+  String get cashExchangeClosingBalance => 'Saldo final';
+
+  @override
+  String get cashExchangeAllTypes => 'Todos los tipos';
+
+  @override
+  String cashExchangeSummaryUpiToCash(
+      String amount, String fee, String method) {
+    return 'El cliente envía $amount por UPI/Banco • Usted entrega $amount en efectivo • Comisión $fee en $method';
+  }
+
+  @override
+  String cashExchangeSummaryCashToUpi(
+      String amount, String fee, String method) {
+    return 'El cliente entrega $amount en efectivo • Usted envía $amount por UPI/Banco • Comisión $fee en $method';
+  }
+
+  @override
+  String cashExchangeLowBalanceWarning(String balance, String account) {
+    return 'Solo hay $balance disponible en $account.';
+  }
 
   @override
   String get customerInfoButtonTooltip => 'Ver datos de contacto';

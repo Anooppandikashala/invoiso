@@ -17,11 +17,29 @@ class AccessibilityScreen extends ConsumerStatefulWidget {
 
 class _AccessibilityScreenState extends ConsumerState<AccessibilityScreen> {
   String _createInvoiceLayout = 'v2';
+  bool _cashExchangeEnabled = false;
 
   @override
   void initState() {
     super.initState();
     _loadCreateInvoiceLayout();
+    _loadCashExchangeEnabled();
+  }
+
+  Future<void> _loadCashExchangeEnabled() async {
+    final v = await ref
+        .read(settingsRepositoryProvider)
+        .getSetting(SettingKey.cashUpiExchangeEnabled);
+    if (!mounted) return;
+    setState(() => _cashExchangeEnabled = v == 'true');
+  }
+
+  Future<void> _setCashExchangeEnabled(bool value) async {
+    await ref
+        .read(settingsRepositoryProvider)
+        .setSetting(SettingKey.cashUpiExchangeEnabled, value.toString());
+    if (!mounted) return;
+    setState(() => _cashExchangeEnabled = value);
   }
 
   Future<void> _loadCreateInvoiceLayout() async {
@@ -128,6 +146,36 @@ class _AccessibilityScreenState extends ConsumerState<AccessibilityScreen> {
                         ),
                       ],
                     ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(l10n.accessibilityOptionalFeaturesSectionTitle,
+                    style: const TextStyle(
+                        fontSize: AppFontSize.large,
+                        fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                Card(
+                  elevation: 0,
+                  color: Theme.of(context).colorScheme.surfaceContainer,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+                    side: BorderSide(
+                        color: Theme.of(context).colorScheme.outlineVariant),
+                  ),
+                  child: SwitchListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 8),
+                    secondary: const Icon(Icons.currency_exchange),
+                    title: Text(l10n.accessibilityCashExchangeLabel,
+                        style: const TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: Text(l10n.accessibilityCashExchangeSubtitle,
+                        style: TextStyle(
+                            fontSize: AppFontSize.xsmall,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant)),
+                    value: _cashExchangeEnabled,
+                    onChanged: _setCashExchangeEnabled,
                   ),
                 ),
                 const SizedBox(height: 24),

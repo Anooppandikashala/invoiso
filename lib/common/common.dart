@@ -483,6 +483,9 @@ class ProductColumnsConfig {
   final bool metaSupplierName;
   final bool metaSkuCode;
   final bool metaNotes;
+  // Not a column: when true, purchase price is hidden from non-admin users
+  // (product screen, CSV export, cost/profit reports). Default false.
+  final bool purchasePriceAdminOnly;
 
   const ProductColumnsConfig({
     this.aliasName = true,
@@ -505,6 +508,7 @@ class ProductColumnsConfig {
     this.metaSupplierName = true,
     this.metaSkuCode = true,
     this.metaNotes = true,
+    this.purchasePriceAdminOnly = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -528,6 +532,7 @@ class ProductColumnsConfig {
         'metaSupplierName': metaSupplierName,
         'metaSkuCode': metaSkuCode,
         'metaNotes': metaNotes,
+        'purchasePriceAdminOnly': purchasePriceAdminOnly,
       };
 
   factory ProductColumnsConfig.fromJson(Map<String, dynamic> json) =>
@@ -552,6 +557,8 @@ class ProductColumnsConfig {
         metaSupplierName: json['metaSupplierName'] as bool? ?? true,
         metaSkuCode: json['metaSkuCode'] as bool? ?? true,
         metaNotes: json['metaNotes'] as bool? ?? true,
+        purchasePriceAdminOnly:
+            json['purchasePriceAdminOnly'] as bool? ?? false,
       );
 
   ProductColumnsConfig copyWith({
@@ -575,6 +582,7 @@ class ProductColumnsConfig {
     bool? metaSupplierName,
     bool? metaSkuCode,
     bool? metaNotes,
+    bool? purchasePriceAdminOnly,
   }) =>
       ProductColumnsConfig(
         aliasName: aliasName ?? this.aliasName,
@@ -597,6 +605,8 @@ class ProductColumnsConfig {
         metaSupplierName: metaSupplierName ?? this.metaSupplierName,
         metaSkuCode: metaSkuCode ?? this.metaSkuCode,
         metaNotes: metaNotes ?? this.metaNotes,
+        purchasePriceAdminOnly:
+            purchasePriceAdminOnly ?? this.purchasePriceAdminOnly,
       );
 }
 

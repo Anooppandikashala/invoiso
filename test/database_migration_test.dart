@@ -217,6 +217,16 @@ void main() {
     expect(companyInfo['pan_number'], '');
     expect(companyInfo['fssai_code'], '');
 
+    // v49: exchange ledger table and per-product low-stock limit (NULL =
+    // default, so old products keep the old threshold of 10).
+    final ledgerCols = (await db.rawQuery('PRAGMA table_info(cash_ledger)'))
+        .map((r) => r['name'])
+        .toSet();
+    expect(ledgerCols, containsAll(['entry_type', 'cash_delta', 'upi_delta']));
+    final product = (await db.query('products')).first;
+    expect(product.containsKey('low_stock_limit'), isTrue);
+    expect(product['low_stock_limit'], isNull);
+
     await db.close();
   });
 }

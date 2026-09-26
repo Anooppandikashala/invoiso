@@ -190,6 +190,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get navInvoices => 'इनवॉइस';
 
   @override
+  String get navServices => 'नकद विनिमय सेवाएँ';
+
+  @override
   String get navQuotations => 'कोटेशन';
 
   @override
@@ -757,6 +760,17 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get createInvoicePreviousBalanceDueLabel => 'पिछला बकाया शेष';
+
+  @override
+  String get createInvoicePaymentSectionLabel => 'भुगतान';
+
+  @override
+  String get createInvoiceBalanceDueLabel => 'शेष देय राशि';
+
+  @override
+  String createInvoicePaymentNotRecordedMessage(String error) {
+    return 'इनवॉइस सहेजा गया, लेकिन भुगतान दर्ज नहीं हुआ: $error. इसे इनवॉइस सूची से जोड़ें।';
+  }
 
   @override
   String get createInvoiceDueShortLabel => 'बकाया';
@@ -2103,6 +2117,10 @@ class AppLocalizationsHi extends AppLocalizations {
       'यदि मूल्य में टैक्स शामिल है तो 1/true, डिफ़ॉल्ट 0';
 
   @override
+  String get productMgmtCsvDescLowStockLimit =>
+      'इस उत्पाद की कम स्टॉक सीमा, खाली = डिफ़ॉल्ट 10';
+
+  @override
   String get productMgmtCsvDescStorageLocation => 'गोदाम/शेल्फ स्थान';
 
   @override
@@ -2374,6 +2392,13 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get productMgmtTrackInfiniteStockSubtitle =>
       'इस उत्पाद के लिए असीमित स्टॉक ट्रैक करें';
+
+  @override
+  String get productMgmtLowStockLimitLabel => 'कम स्टॉक सीमा';
+
+  @override
+  String get productMgmtLowStockLimitHelper =>
+      'स्टॉक इस संख्या के बराबर या कम होने पर कम स्टॉक में दिखता है। डिफ़ॉल्ट (10) के लिए खाली छोड़ें।';
 
   @override
   String get productMgmtTipEnableCustomFieldsMessage =>
@@ -3995,6 +4020,14 @@ class AppLocalizationsHi extends AppLocalizations {
       'मार्जिन ट्रैकिंग के लिए लागत मूल्य।';
 
   @override
+  String get productColumnsPurchasePriceAdminOnlyLabel =>
+      'खरीद मूल्य: केवल एडमिन';
+
+  @override
+  String get productColumnsPurchasePriceAdminOnlySubtitle =>
+      'गैर-एडमिन उपयोगकर्ताओं से खरीद मूल्य, लाभ और स्टॉक मूल्य छिपाएँ।';
+
+  @override
   String get productColumnsDefaultDiscountLabel => 'डिफ़ॉल्ट छूट';
 
   @override
@@ -4368,7 +4401,160 @@ class AppLocalizationsHi extends AppLocalizations {
   String get paymentMethodOnline => 'ऑनलाइन';
 
   @override
+  String get paymentMethodUpi => 'UPI';
+
+  @override
   String get paymentMethodOther => 'अन्य';
+
+  @override
+  String get accessibilityOptionalFeaturesSectionTitle => 'वैकल्पिक सुविधाएँ';
+
+  @override
+  String get accessibilityCashExchangeLabel => 'नकद / UPI विनिमय सेवा';
+
+  @override
+  String get accessibilityCashExchangeSubtitle =>
+      'नया इनवॉइस के बाद नकद विनिमय सेवाएँ मेनू जोड़ता है, जिससे UPI ↔ नकद विनिमय, सेवा शुल्क और नकद लेन-देन दर्ज कर सकें, नकद और UPI/बैंक शेष के साथ।';
+
+  @override
+  String get cashExchangeCashLabel => 'नकद';
+
+  @override
+  String get cashExchangeUpiBankLabel => 'UPI/बैंक';
+
+  @override
+  String get cashExchangeTotalLabel => 'कुल शेष';
+
+  @override
+  String get cashExchangeIncomeTodayLabel => 'सेवा आय (आज)';
+
+  @override
+  String get cashExchangeIncomeMonthLabel => 'सेवा आय (इस माह)';
+
+  @override
+  String get cashExchangeExpensesMonthLabel => 'खर्च (इस माह)';
+
+  @override
+  String get cashExchangeSetupTitle => 'प्रारंभिक शेष सेट करें';
+
+  @override
+  String get cashExchangeSetupMessage =>
+      'इस तारीख को आपके पास मौजूद नकद और UPI/बैंक राशि दर्ज करें। इस तारीख से इनवॉइस भुगतान शेष में जुड़ते हैं।';
+
+  @override
+  String get cashExchangeSetupAdminOnlyMessage =>
+      'प्रारंभिक शेष सेट करने के लिए एडमिन से कहें।';
+
+  @override
+  String get cashExchangeUpiToCash => 'UPI → नकद';
+
+  @override
+  String get cashExchangeCashToUpi => 'नकद → UPI';
+
+  @override
+  String get cashExchangeExpense => 'खर्च';
+
+  @override
+  String get cashExchangeWithdrawal => 'निकासी';
+
+  @override
+  String get cashExchangeBankDeposit => 'बैंक जमा';
+
+  @override
+  String get cashExchangeOpeningBalance => 'प्रारंभिक शेष';
+
+  @override
+  String get cashExchangeAdjustment => 'समायोजन';
+
+  @override
+  String get cashExchangeInvoicePayment => 'इनवॉइस भुगतान';
+
+  @override
+  String get cashExchangeAmountLabel => 'राशि';
+
+  @override
+  String get cashExchangeFeeLabel => 'सेवा शुल्क';
+
+  @override
+  String get cashExchangeFeePaidByLabel => 'सेवा शुल्क भुगतान माध्यम';
+
+  @override
+  String get cashExchangeFromAccountLabel => 'भुगतान खाता';
+
+  @override
+  String get cashExchangeCustomerNameLabel => 'ग्राहक का नाम (वैकल्पिक)';
+
+  @override
+  String get cashExchangeCustomerSearchHint => 'ग्राहक खोजें या नया नाम लिखें';
+
+  @override
+  String get cashExchangeCustomerPhoneLabel => 'फ़ोन (वैकल्पिक)';
+
+  @override
+  String get cashExchangeNotesLabel => 'नोट्स (वैकल्पिक)';
+
+  @override
+  String get cashExchangeDateTimeLabel => 'तारीख और समय';
+
+  @override
+  String get cashExchangeDateLabel => 'तारीख';
+
+  @override
+  String get cashExchangeCashDeltaLabel => 'नकद बदलाव (+ / −)';
+
+  @override
+  String get cashExchangeUpiDeltaLabel => 'UPI/बैंक बदलाव (+ / −)';
+
+  @override
+  String get cashExchangeDeleteTitle => 'प्रविष्टि हटाएँ';
+
+  @override
+  String get cashExchangeDeleteMessage =>
+      'यह प्रविष्टि हटाएँ? शेष दोबारा गणना किया जाएगा।';
+
+  @override
+  String get cashExchangeEmpty => 'इस अवधि में कोई प्रविष्टि नहीं।';
+
+  @override
+  String get cashExchangePeriodToday => 'आज';
+
+  @override
+  String get cashExchangePeriodMonth => 'इस माह';
+
+  @override
+  String get cashExchangePeriodAll => 'सभी समय';
+
+  @override
+  String get cashExchangePeriodCustom => 'कस्टम तारीख';
+
+  @override
+  String get cashExchangeShowingLabel => 'दिखा रहे हैं';
+
+  @override
+  String get cashExchangeChangeDates => 'तारीखें बदलें';
+
+  @override
+  String get cashExchangeClosingBalance => 'अंतिम शेष';
+
+  @override
+  String get cashExchangeAllTypes => 'सभी प्रकार';
+
+  @override
+  String cashExchangeSummaryUpiToCash(
+      String amount, String fee, String method) {
+    return 'ग्राहक UPI/बैंक से $amount भेजता है • आप $amount नकद देते हैं • शुल्क $fee $method से';
+  }
+
+  @override
+  String cashExchangeSummaryCashToUpi(
+      String amount, String fee, String method) {
+    return 'ग्राहक $amount नकद देता है • आप UPI/बैंक से $amount भेजते हैं • शुल्क $fee $method से';
+  }
+
+  @override
+  String cashExchangeLowBalanceWarning(String balance, String account) {
+    return '$account में केवल $balance उपलब्ध है।';
+  }
 
   @override
   String get customerInfoButtonTooltip => 'संपर्क विवरण देखें';
