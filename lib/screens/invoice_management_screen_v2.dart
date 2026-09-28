@@ -1896,9 +1896,22 @@ class _InvoiceManagementScreenV2State
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('#${invoice.invoiceNumber ?? invoice.id}',
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700)),
+                  invoice.isDraft
+                      ? Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                          ),
+                          child: Text('DRAFT',
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.orange[800])),
+                        )
+                      : Text('#${invoice.invoiceNumber ?? invoice.id}',
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 2),
                   Row(
                     mainAxisSize: MainAxisSize.min,
