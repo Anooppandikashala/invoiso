@@ -6,6 +6,7 @@ import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/custom_field_value.dart';
 import 'package:invoiso/models/invoice.dart';
+import 'package:invoiso/models/customer_field_settings.dart';
 import 'pdf_widgets.dart';
 
 pw.MultiPage buildCompactTemplate(
@@ -57,6 +58,7 @@ pw.MultiPage buildCompactTemplate(
   bool showCustomerBusinessName = true,
   bool showCustomerAddress = true,
   bool showCustomerGstin = true,
+  CustomerFieldSettings customerFields = const CustomerFieldSettings(),
   bool showTimeInPdf = true,
   String pdfTimeFormat = '24',
 }) {
@@ -249,6 +251,27 @@ pw.MultiPage buildCompactTemplate(
                           style: pw.TextStyle(
                               fontSize: addressFont,
                               color: PdfColors.grey700)),
+                    for (final line in customerExtraLines(
+                        invoice.customer, customerFields, invoice.date, datePattern))
+                      pw.Text(line,
+                          style: pw.TextStyle(
+                              fontSize: addressFont,
+                              color: PdfColors.grey700)),
+                    // A6 is too narrow for a third column: Ship To stacks
+                    // under Bill To in the same cell.
+                    if (showShipTo(invoice.customer, customerFields)) ...[
+                      pw.SizedBox(height: 3),
+                      pw.Text('Ship To:',
+                          style: pw.TextStyle(
+                              fontSize: sectionHeaderFont,
+                              fontWeight: pw.FontWeight.bold)),
+                      pw.SizedBox(height: 1),
+                      for (final line in shipToLines(invoice.customer))
+                        pw.Text(line,
+                            style: pw.TextStyle(
+                                fontSize: addressFont,
+                                color: PdfColors.grey700)),
+                    ],
                   ],
                 ),
               ),

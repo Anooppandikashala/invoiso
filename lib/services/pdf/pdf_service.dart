@@ -14,6 +14,7 @@ import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/models/company_info.dart';
+import 'package:invoiso/models/customer_field_settings.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/services/pdf/pdf_font_service.dart';
 import 'package:invoiso/services/thermal_printer_service_v1.dart';
@@ -131,6 +132,7 @@ class PDFService {
       BackendServices.settings.getWatermarkFullPage(), // 51
       BackendServices.settings.getInvoicePdfMetadataColumns(), // 52
       BackendServices.settings.getSetting(SettingKey.showTaxColumn), // 53
+      CustomerFieldSettings.load(BackendServices.settings), // 54
     ]);
 
     final rawPrefix = (results[2] as String?) ?? 'INV';
@@ -206,6 +208,7 @@ class PDFService {
       landscape: results[50] as bool,
       watermarkFullPage: results[51] as bool,
       metadataColumns: results[52] as Map<String, bool>,
+      customerFields: results[54] as CustomerFieldSettings,
     );
   }
 
@@ -262,6 +265,7 @@ class PDFService {
           showCustomerPhone: s.showCustomerPhone,
           showCustomerEmail: s.showCustomerEmail,
           showCustomerGstin: s.showCustomerGstin,
+          customerFields: s.customerFields,
           showTimeInPdf: s.showTimeInPdf,
           pdfTimeFormat: s.pdfTimeFormat,
           upiId: effectiveUpiId,
@@ -318,6 +322,7 @@ class PDFService {
           showCustomerPhone: s.showCustomerPhone,
           showCustomerEmail: s.showCustomerEmail,
           showCustomerGstin: s.showCustomerGstin,
+          customerFields: s.customerFields,
           showTimeInPdf: s.showTimeInPdf,
           pdfTimeFormat: s.pdfTimeFormat,
           upiId: effectiveUpiId,
@@ -374,6 +379,7 @@ class PDFService {
           showCustomerPhone: s.showCustomerPhone,
           showCustomerEmail: s.showCustomerEmail,
           showCustomerGstin: s.showCustomerGstin,
+          customerFields: s.customerFields,
           showTimeInPdf: s.showTimeInPdf,
           pdfTimeFormat: s.pdfTimeFormat,
           upiId: effectiveUpiId,
@@ -430,6 +436,7 @@ class PDFService {
           showCustomerPhone: s.showCustomerPhone,
           showCustomerEmail: s.showCustomerEmail,
           showCustomerGstin: s.showCustomerGstin,
+          customerFields: s.customerFields,
           showTimeInPdf: s.showTimeInPdf,
           pdfTimeFormat: s.pdfTimeFormat,
           upiId: effectiveUpiId,
@@ -484,6 +491,7 @@ class PDFService {
           showCustomerBusinessName: s.showCustomerBusinessName,
           showCustomerAddress: s.showCustomerAddress,
           showCustomerGstin: s.showCustomerGstin,
+          customerFields: s.customerFields,
           showTimeInPdf: s.showTimeInPdf,
           pdfTimeFormat: s.pdfTimeFormat,
           upiId: effectiveUpiId,
@@ -537,6 +545,7 @@ class PDFService {
           showCustomerBusinessName: s.showCustomerBusinessName,
           showCustomerPhone: s.showCustomerPhone,
           showCustomerGstin: s.showCustomerGstin,
+          customerFields: s.customerFields,
           showTimeInPdf: s.showTimeInPdf,
           pdfTimeFormat: s.pdfTimeFormat,
           showGst: s.showGst,
@@ -570,6 +579,7 @@ class PDFService {
           showCustomerPhone: s.showCustomerPhone,
           showCustomerEmail: s.showCustomerEmail,
           showCustomerGstin: s.showCustomerGstin,
+          customerFields: s.customerFields,
           showTimeInPdf: s.showTimeInPdf,
           pdfTimeFormat: s.pdfTimeFormat,
           upiId: effectiveUpiId,

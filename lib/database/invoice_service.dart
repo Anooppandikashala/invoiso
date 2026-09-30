@@ -41,6 +41,16 @@ class InvoiceService {
         'customer_address': invoice.customer.address,
         'customer_gstin': invoice.customer.gstin,
         'customer_business_name': invoice.customer.businessName,
+        'customer_shipping_same_as_billing':
+            invoice.customer.shippingSameAsBilling ? 1 : 0,
+        'customer_shipping_name': invoice.customer.shippingName,
+        'customer_shipping_phone': invoice.customer.shippingPhone,
+        'customer_shipping_address': invoice.customer.shippingAddress,
+        'customer_dob': invoice.customer.dob,
+        'customer_age': invoice.customer.ageOn(invoice.date),
+        'customer_gender': invoice.customer.gender,
+        'customer_custom_fields':
+            CustomFieldValue.listToJson(invoice.customer.customFields),
         'date': invoice.date.toIso8601String(),
         'notes': invoice.notes,
         'tax_rate': invoice.taxRate,
@@ -124,6 +134,16 @@ class InvoiceService {
           'customer_address': invoice.customer.address,
           'customer_gstin': invoice.customer.gstin,
           'customer_business_name': invoice.customer.businessName,
+          'customer_shipping_same_as_billing':
+              invoice.customer.shippingSameAsBilling ? 1 : 0,
+          'customer_shipping_name': invoice.customer.shippingName,
+          'customer_shipping_phone': invoice.customer.shippingPhone,
+          'customer_shipping_address': invoice.customer.shippingAddress,
+          'customer_dob': invoice.customer.dob,
+          'customer_age': invoice.customer.ageOn(invoice.date),
+          'customer_gender': invoice.customer.gender,
+          'customer_custom_fields':
+              CustomFieldValue.listToJson(invoice.customer.customFields),
           'notes': invoice.notes,
           'tax_rate': invoice.taxRate,
           'type': invoice.type,
@@ -344,6 +364,14 @@ class InvoiceService {
       'address': i['customer_address'],
       'gstin': i['customer_gstin'],
       'business_name': i['customer_business_name'] ?? '',
+      'shipping_same_as_billing': i['customer_shipping_same_as_billing'],
+      'shipping_name': i['customer_shipping_name'],
+      'shipping_phone': i['customer_shipping_phone'],
+      'shipping_address': i['customer_shipping_address'],
+      'dob': i['customer_dob'],
+      'age': i['customer_age'],
+      'gender': i['customer_gender'],
+      'custom_fields': i['customer_custom_fields'],
     });
 
     final itemRows = await db.query('invoice_items',
@@ -823,6 +851,14 @@ class InvoiceService {
         'address': map['customer_address'],
         'gstin': map['customer_gstin'],
         'business_name': map['customer_business_name'] ?? '',
+        'shipping_same_as_billing': map['customer_shipping_same_as_billing'],
+        'shipping_name': map['customer_shipping_name'],
+        'shipping_phone': map['customer_shipping_phone'],
+        'shipping_address': map['customer_shipping_address'],
+        'dob': map['customer_dob'],
+        'age': map['customer_age'],
+        'gender': map['customer_gender'],
+        'custom_fields': map['customer_custom_fields'],
       });
 
       final items =

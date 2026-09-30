@@ -20,6 +20,8 @@ abstract class SettingsRepository {
   Future<void> setUpiIds(List<UpiEntry> entries);
   Future<List<CustomFieldDef>> getCustomFieldDefs();
   Future<void> setCustomFieldDefs(List<CustomFieldDef> defs);
+  Future<List<CustomFieldDef>> getCustomerCustomFieldDefs();
+  Future<void> setCustomerCustomFieldDefs(List<CustomFieldDef> defs);
   Future<List<BankAccount>> getBankAccounts();
   Future<void> setBankAccounts(List<BankAccount> accounts);
   Future<ProductColumnsConfig> getProductColumnsConfig();

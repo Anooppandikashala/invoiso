@@ -41,6 +41,10 @@ class SqliteSettingsRepository implements SettingsRepository {
   @override
   Future<void> setCustomFieldDefs(List<CustomFieldDef> defs) => SettingsService.setCustomFieldDefs(defs);
   @override
+  Future<List<CustomFieldDef>> getCustomerCustomFieldDefs() => SettingsService.getCustomerCustomFieldDefs();
+  @override
+  Future<void> setCustomerCustomFieldDefs(List<CustomFieldDef> defs) => SettingsService.setCustomerCustomFieldDefs(defs);
+  @override
   Future<List<BankAccount>> getBankAccounts() => SettingsService.getBankAccounts();
   @override
   Future<void> setBankAccounts(List<BankAccount> accounts) => SettingsService.setBankAccounts(accounts);

@@ -5,6 +5,7 @@ import 'package:invoiso/common/common.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/utils/amount_in_words.dart';
+import 'package:invoiso/models/customer_field_settings.dart';
 import 'pdf_widgets.dart';
 
 const double _thermalMargin = 4 * PdfPageFormat.mm;
@@ -36,6 +37,7 @@ pw.Page buildThermalTemplate(
   bool showCustomerBusinessName = true,
   bool showCustomerPhone = true,
   bool showCustomerGstin = true,
+  CustomerFieldSettings customerFields = const CustomerFieldSettings(),
   bool showTimeInPdf = true,
   String pdfTimeFormat = '24',
 }) {
@@ -324,6 +326,17 @@ pw.Page buildThermalTemplate(
       if (showGst && showCustomerGstin && invoice.customer.gstin.isNotEmpty)
         pw.Text('${taxLabel(company?.country)}: ${invoice.customer.gstin}',
             style: const pw.TextStyle(fontSize: smallFs)),
+      for (final line in customerExtraLines(
+          invoice.customer, customerFields, invoice.date, datePattern))
+        pw.Text(line, style: const pw.TextStyle(fontSize: smallFs)),
+      if (showShipTo(invoice.customer, customerFields)) ...[
+        pw.SizedBox(height: 2),
+        pw.Text('Ship To:',
+            style: pw.TextStyle(
+                fontSize: bodyFs, fontWeight: pw.FontWeight.bold)),
+        for (final line in shipToLines(invoice.customer, phonePrefix: 'Ph: '))
+          pw.Text(line, style: const pw.TextStyle(fontSize: smallFs)),
+      ],
       pw.SizedBox(height: 3),
 
       // ── Items header ──

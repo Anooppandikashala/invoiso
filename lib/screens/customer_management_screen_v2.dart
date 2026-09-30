@@ -14,6 +14,8 @@ import 'package:invoiso/models/customer_list_stats.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/widgets/apply_customer_payment_dialog.dart';
+import 'package:invoiso/models/customer_field_settings.dart';
+import 'package:invoiso/widgets/customer_extra_fields.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:uuid/uuid.dart';
 import 'package:csv/csv.dart';
@@ -64,6 +66,8 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
   final _addressController = TextEditingController();
   final _gstinController = TextEditingController();
   final _businessNameController = TextEditingController();
+  final _extraFields = CustomerExtraFieldsController();
+  CustomerFieldSettings _fieldSettings = const CustomerFieldSettings();
   final _formKey = GlobalKey<FormState>();
 
   // ── V2 state ──────────────────────────────────────────────────────────
@@ -84,6 +88,12 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
     super.initState();
     _loadCustomers();
     _loadStatsCardsVisibilityV2();
+    _loadFieldSettings();
+  }
+
+  Future<void> _loadFieldSettings() async {
+    final s = await CustomerFieldSettings.load(ref.read(settingsRepositoryProvider));
+    if (mounted) setState(() => _fieldSettings = s);
   }
 
   Future<void> _loadStatsCardsVisibilityV2() async {
@@ -110,6 +120,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
     _addressController.dispose();
     _gstinController.dispose();
     _businessNameController.dispose();
+    _extraFields.dispose();
     _searchFocusNode.dispose();
     _horizontalScrollController.dispose();
     _searchDebounce?.cancel();
@@ -280,7 +291,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
 
     setState(() => _isLoading = true);
     try {
-      final newCustomer = Customer(
+      final newCustomer = _extraFields.applyTo(Customer(
         id: customer?.id ?? const Uuid().v4(),
         name: _nameController.text.trim(),
         email: _emailController.text.trim(),
@@ -288,7 +299,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
         address: _addressController.text.trim(),
         gstin: _gstinController.text.trim(),
         businessName: _businessNameController.text.trim(),
-      );
+      ), _fieldSettings);
 
       if (customer == null) {
         await ref.read(customerRepositoryProvider).insertCustomer(newCustomer);
@@ -315,6 +326,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
     _addressController.clear();
     _gstinController.clear();
     _businessNameController.clear();
+    _extraFields.load(null);
   }
 
   void _showSnackBar(String message, {bool isError = false}) {
@@ -347,6 +359,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
     final addressCtrl = TextEditingController(text: customer.address);
     final gstinCtrl = TextEditingController(text: customer.gstin);
     final businessNameCtrl = TextEditingController(text: customer.businessName);
+    final extraFields = CustomerExtraFieldsController()..load(customer);
     final dialogFormKey = GlobalKey<FormState>();
 
     await showDialog(
@@ -395,6 +408,14 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                   const SizedBox(height: 16),
                   _buildDialogTextField(addressCtrl, AppLocalizations.of(context)!.fieldAddressLabel, Icons.location_on,
                       readOnly: !isEdit, maxLines: 3, maxLength: 100),
+                  CustomerExtraFields(
+                    controller: extraFields,
+                    settings: _fieldSettings,
+                    readOnly: !isEdit,
+                    billingName: nameCtrl,
+                    billingPhone: phoneCtrl,
+                    billingAddress: addressCtrl,
+                  ),
                 ],
               ),
             ),
@@ -412,7 +433,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                 final l10n = AppLocalizations.of(context)!;
                 setDialogState(() => isSaving = true);
                 try {
-                  final updatedCustomer = Customer(
+                  final updatedCustomer = extraFields.applyTo(Customer(
                     id: customer.id,
                     name: nameCtrl.text.trim(),
                     email: emailCtrl.text.trim(),
@@ -420,7 +441,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                     address: addressCtrl.text.trim(),
                     gstin: gstinCtrl.text.trim(),
                     businessName: businessNameCtrl.text.trim(),
-                  );
+                  ), _fieldSettings);
 
                   await ref.read(customerRepositoryProvider).updateCustomer(updatedCustomer);
                   await _loadCustomers();
@@ -536,7 +557,10 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
   // ── CSV Import ────────────────────────────────────────────────────────────
 
   static const _csvMaxRows = 200;
-  static const _csvHeaders = ['name', 'email', 'phone', 'address', 'business_name', 'tax_number'];
+  static const _csvHeaders = [
+    'name', 'email', 'phone', 'address', 'business_name', 'tax_number',
+    'shipping_name', 'shipping_phone', 'shipping_address', 'dob', 'age', 'gender',
+  ];
 
   Future<void> _showImportDialog() async {
     final proceed = await showDialog<bool>(
@@ -583,6 +607,19 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                     _csvRuleRow(context, 'address',       AppLocalizations.of(context)!.commonNoLabel,  AppLocalizations.of(context)!.customerMgmtCsvDescAddress),
                     _csvRuleRow(context, 'business_name', AppLocalizations.of(context)!.commonNoLabel,  AppLocalizations.of(context)!.customerMgmtCsvDescBusinessName),
                     _csvRuleRow(context, 'tax_number',    AppLocalizations.of(context)!.commonNoLabel,  AppLocalizations.of(context)!.customerMgmtCsvDescTaxNumber),
+                    if (_fieldSettings.shipping) ...[
+                      _csvRuleRow(context, 'shipping_name',    AppLocalizations.of(context)!.commonNoLabel, AppLocalizations.of(context)!.customerMgmtCsvDescShippingName),
+                      _csvRuleRow(context, 'shipping_phone',   AppLocalizations.of(context)!.commonNoLabel, AppLocalizations.of(context)!.customerMgmtCsvDescShippingPhone),
+                      _csvRuleRow(context, 'shipping_address', AppLocalizations.of(context)!.commonNoLabel, AppLocalizations.of(context)!.customerMgmtCsvDescShippingAddress),
+                    ],
+                    if (_fieldSettings.dob)
+                      _csvRuleRow(context, 'dob',    AppLocalizations.of(context)!.commonNoLabel, AppLocalizations.of(context)!.customerMgmtCsvDescDob),
+                    if (_fieldSettings.age)
+                      _csvRuleRow(context, 'age',    AppLocalizations.of(context)!.commonNoLabel, AppLocalizations.of(context)!.customerMgmtCsvDescAge),
+                    if (_fieldSettings.gender)
+                      _csvRuleRow(context, 'gender', AppLocalizations.of(context)!.commonNoLabel, AppLocalizations.of(context)!.customerMgmtCsvDescGender),
+                    if (_fieldSettings.customFields && _fieldSettings.customFieldDefs.isNotEmpty)
+                      _csvRuleRow(context, '$customerCsvCustomPrefix…', AppLocalizations.of(context)!.commonNoLabel, AppLocalizations.of(context)!.customerMgmtCsvDescCustomField),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -698,8 +735,8 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
         return;
       }
       for (final col in headers) {
-        if (!_csvHeaders.contains(col)) {
-          _showSnackBar(l10n.customerMgmtUnknownColumnMessage(col, _csvHeaders.join(', ')), isError: true);
+        if (!_csvHeaders.contains(col) && !col.startsWith(customerCsvCustomPrefix)) {
+          _showSnackBar(l10n.customerMgmtUnknownColumnMessage(col, [..._csvHeaders, '$customerCsvCustomPrefix<field>'].join(', ')), isError: true);
           if(!mounted) return;
           setState(() => _isLoading = false);
           return;
@@ -777,6 +814,8 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
           gstin: getField(row, 'tax_number'),
           businessName: getField(row, 'business_name'),
         );
+        applyCustomerCsvExtraFields(customer, headers, (col) => getField(row, col),
+            existing, _fieldSettings.customFieldDefs);
         if (existing != null) {
           duplicates.add(customer);
         } else {
@@ -1016,8 +1055,19 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
     final l10n = AppLocalizations.of(context)!;
     try {
       final customers = await _filteredForExportV2();
+      // Optional columns only for fields switched on in settings; import
+      // accepts them regardless.
+      final s = _fieldSettings;
+      final customDefs = s.customFields ? s.customFieldDefs : const [];
       List<List<String>> csvData = [
-        ['name', 'email', 'phone', 'address', 'business_name', 'tax_number'],
+        [
+          'name', 'email', 'phone', 'address', 'business_name', 'tax_number',
+          if (s.shipping) ...['shipping_name', 'shipping_phone', 'shipping_address'],
+          if (s.dob) 'dob',
+          if (s.age) 'age',
+          if (s.gender) 'gender',
+          for (final d in customDefs) '$customerCsvCustomPrefix${d.label}',
+        ],
         ...customers.map((c) => [
           c.name,
           c.email,
@@ -1025,6 +1075,18 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
           c.address,
           c.businessName,
           c.gstin,
+          // Same-as-billing exports an empty shipping_address, which
+          // re-imports as same-as-billing.
+          if (s.shipping) ...[
+            c.shippingName,
+            c.shippingPhone,
+            c.shippingSameAsBilling ? '' : c.shippingAddress,
+          ],
+          if (s.dob) c.dob,
+          if (s.age) c.age?.toString() ?? '',
+          if (s.gender) c.gender,
+          for (final d in customDefs)
+            c.customFields.where((v) => v.defId == d.id).firstOrNull?.value ?? '',
         ]),
       ];
 
@@ -1979,6 +2041,13 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                       _buildFormField(_addressController, AppLocalizations.of(context)!.fieldAddressLabel, Icons.location_on,
                           false,
                           maxLines: 3, maxLength: 500),
+                      CustomerExtraFields(
+                        controller: _extraFields,
+                        settings: _fieldSettings,
+                        billingName: _nameController,
+                        billingPhone: _phoneController,
+                        billingAddress: _addressController,
+                      ),
                     ],
                   ),
                 ),

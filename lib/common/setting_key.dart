@@ -89,6 +89,16 @@ enum SettingKey {
   faqCache, // cached JSON string of the last successfully fetched faq.json, used offline/on fetch failure
   lastFaqFetch, // ISO timestamp of last successful faq.json fetch
   showTaxColumn, // whether to show the per-item Tax column on A4 PDFs, for both global and per-item tax modes (default true); showCgstSgst only matters when this is on
+  customerAgeEnabled, // whether customers have an Age field, in forms + PDFs (default false); only used when DOB is empty
+  customerDobEnabled, // whether customers have a Date of Birth field, in forms + PDFs (default false)
+  customerGenderEnabled, // whether customers have a Gender field, in forms + PDFs (default false)
+  shippingAddressEnabled, // whether customers/invoices have a separate Ship To (name, phone, address), in forms + PDFs (default false)
+  customerCustomFieldsEnabled, // whether the user-defined customer Custom Fields feature is on (default false)
+  customerCustomFieldDefs, // JSON list of CustomFieldDef objects for customers (separate from invoice customFieldDefs)
+  showCustomerAgeInPdf, // print customer Age on PDFs/receipts when customerAgeEnabled (default true)
+  showCustomerDobInPdf, // print customer DOB on PDFs/receipts when customerDobEnabled (default true)
+  showCustomerGenderInPdf, // print customer Gender on PDFs/receipts when customerGenderEnabled (default true)
+  showShipToInPdf, // print the Ship To block on PDFs/receipts when shippingAddressEnabled (default true)
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -274,6 +284,26 @@ extension SettingKeyExtension on SettingKey {
         return 'last_faq_fetch';
       case SettingKey.showTaxColumn:
         return 'show_tax_column';
+      case SettingKey.customerAgeEnabled:
+        return 'customer_age_enabled';
+      case SettingKey.customerDobEnabled:
+        return 'customer_dob_enabled';
+      case SettingKey.customerGenderEnabled:
+        return 'customer_gender_enabled';
+      case SettingKey.shippingAddressEnabled:
+        return 'shipping_address_enabled';
+      case SettingKey.customerCustomFieldsEnabled:
+        return 'customer_custom_fields_enabled';
+      case SettingKey.customerCustomFieldDefs:
+        return 'customer_custom_field_defs';
+      case SettingKey.showCustomerAgeInPdf:
+        return 'show_customer_age_in_pdf';
+      case SettingKey.showCustomerDobInPdf:
+        return 'show_customer_dob_in_pdf';
+      case SettingKey.showCustomerGenderInPdf:
+        return 'show_customer_gender_in_pdf';
+      case SettingKey.showShipToInPdf:
+        return 'show_ship_to_in_pdf';
 
     }
   }

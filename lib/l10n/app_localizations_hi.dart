@@ -3228,6 +3228,153 @@ class AppLocalizationsHi extends AppLocalizations {
       'Print the customer\'s GSTIN / tax id (requires GST fields on)';
 
   @override
+  String get invoiceSettingsCustomerFieldsHeader => 'ग्राहक फ़ील्ड';
+
+  @override
+  String get invoiceSettingsCustomerFieldsHint =>
+      'ग्राहकों और इनवॉइस पर दर्ज किए जा सकने वाले अतिरिक्त विवरण। हर एक केवल चालू होने पर ही ग्राहक और इनवॉइस फ़ॉर्म में दिखता है और PDF पर छपता है।';
+
+  @override
+  String get invoiceSettingsShippingAddressLabel => 'अलग शिपिंग पता';
+
+  @override
+  String get invoiceSettingsShippingAddressSubtitle =>
+      'शिप टू नाम, फ़ोन और पता जोड़ें। बिलिंग पते जैसा होने पर केवल एक ब्लॉक छपता है';
+
+  @override
+  String get invoiceSettingsCustomerDobLabel => 'जन्म तिथि';
+
+  @override
+  String get invoiceSettingsCustomerDobSubtitle =>
+      'ग्राहक की जन्म तिथि दर्ज करें। दर्ज होने पर उम्र उसी से गणना की जाती है';
+
+  @override
+  String get invoiceSettingsCustomerAgeLabel => 'उम्र';
+
+  @override
+  String get invoiceSettingsCustomerAgeSubtitle =>
+      'ग्राहक की उम्र दर्ज करें। केवल तब उपयोग होती है जब जन्म तिथि न हो';
+
+  @override
+  String get invoiceSettingsCustomerGenderLabel => 'लिंग';
+
+  @override
+  String get invoiceSettingsCustomerGenderSubtitle =>
+      'ग्राहक का लिंग दर्ज करें (पुरुष / महिला / अन्य)';
+
+  @override
+  String get invoiceSettingsCustomerCustomFieldsLabel => 'ग्राहक कस्टम फ़ील्ड';
+
+  @override
+  String get invoiceSettingsCustomerCustomFieldsSubtitle =>
+      'अपने ग्राहक फ़ील्ड बनाएँ (जैसे मरीज़ ID, ब्लड ग्रुप) और हर ग्राहक पर भरें';
+
+  @override
+  String get invoiceSettingsCustomerCustomFieldHint => 'जैसे मरीज़ ID';
+
+  @override
+  String get invoiceSettingsPrintOnPdfLabel => 'PDF पर प्रिंट करें';
+
+  @override
+  String get invoiceSettingsPrintOnPdfSubtitle =>
+      'इस फ़ील्ड को इनवॉइस PDF और थर्मल रसीदों पर दिखाएँ';
+
+  @override
+  String get customFieldPrintedOnPdfTooltip =>
+      'PDF पर प्रिंट होता है — छिपाने के लिए क्लिक करें';
+
+  @override
+  String get customFieldNotPrintedOnPdfTooltip =>
+      'PDF पर प्रिंट नहीं होता — प्रिंट करने के लिए क्लिक करें';
+
+  @override
+  String get customerFieldDobLabel => 'जन्म तिथि';
+
+  @override
+  String get customerFieldClearDobTooltip => 'जन्म तिथि साफ़ करें';
+
+  @override
+  String get customerFieldAgeLabel => 'उम्र';
+
+  @override
+  String get customerFieldAgeFromDobHelper => 'जन्म तिथि से गणना की गई';
+
+  @override
+  String get customerFieldAgeInvalidMessage => '0 से 150 के बीच उम्र दर्ज करें';
+
+  @override
+  String get customerFieldGenderLabel => 'लिंग';
+
+  @override
+  String get customerFieldGenderNotSpecified => 'निर्दिष्ट नहीं';
+
+  @override
+  String get customerFieldGenderMale => 'पुरुष';
+
+  @override
+  String get customerFieldGenderFemale => 'महिला';
+
+  @override
+  String get customerFieldGenderOther => 'अन्य';
+
+  @override
+  String get customerFieldShippingSameAsBillingLabel =>
+      'शिपिंग पता बिलिंग पते जैसा';
+
+  @override
+  String get customerFieldShipToHeader => 'शिप टू';
+
+  @override
+  String get createInvoiceCustomerDetailsDialogTitle => 'ग्राहक विवरण';
+
+  @override
+  String get customerFieldPersonalDetailsHeader => 'व्यक्तिगत विवरण';
+
+  @override
+  String get customerFieldAdditionalDetailsHeader => 'अतिरिक्त विवरण';
+
+  @override
+  String get customerFieldCopyFromBillingButton => 'बिलिंग से कॉपी करें';
+
+  @override
+  String get customerFieldRecipientNameLabel => 'प्राप्तकर्ता का नाम';
+
+  @override
+  String get customerFieldRecipientPhoneLabel => 'प्राप्तकर्ता का फ़ोन';
+
+  @override
+  String get customerFieldShippingAddressLabel => 'शिपिंग पता';
+
+  @override
+  String get customerFieldShippingAddressRequiredMessage =>
+      'शिपिंग पता दर्ज करें, या \"बिलिंग पते जैसा\" चुनें';
+
+  @override
+  String get customerMgmtCsvDescShippingName => 'शिप टू प्राप्तकर्ता का नाम';
+
+  @override
+  String get customerMgmtCsvDescShippingPhone => 'शिप टू प्राप्तकर्ता का फ़ोन';
+
+  @override
+  String get customerMgmtCsvDescShippingAddress =>
+      'शिप टू पता। खाली = बिलिंग पते जैसा';
+
+  @override
+  String get customerMgmtCsvDescDob =>
+      'जन्म तिथि, yyyy-MM-dd (जैसे 1990-06-15)';
+
+  @override
+  String get customerMgmtCsvDescAge =>
+      'वर्षों में उम्र (केवल तब जब dob खाली हो)';
+
+  @override
+  String get customerMgmtCsvDescGender => 'male, female या other';
+
+  @override
+  String get customerMgmtCsvDescCustomField =>
+      'हर ग्राहक कस्टम फ़ील्ड के लिए एक कॉलम, हेडर custom:<फ़ील्ड का नाम> (जैसे custom:Patient ID)';
+
+  @override
   String get invoiceSettingsShowTimeInPdfLabel => 'Show Time on PDF';
 
   @override

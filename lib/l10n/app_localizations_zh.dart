@@ -3102,6 +3102,143 @@ class AppLocalizationsZh extends AppLocalizations {
       'Print the customer\'s GSTIN / tax id (requires GST fields on)';
 
   @override
+  String get invoiceSettingsCustomerFieldsHeader => '客户字段';
+
+  @override
+  String get invoiceSettingsCustomerFieldsHint =>
+      '可在客户和发票中记录的额外信息。每项仅在开启后才会显示在客户和发票表单中并打印到 PDF 上。';
+
+  @override
+  String get invoiceSettingsShippingAddressLabel => '单独的收货地址';
+
+  @override
+  String get invoiceSettingsShippingAddressSubtitle =>
+      '添加收货人姓名、电话和地址。与账单地址相同时只打印一个区块';
+
+  @override
+  String get invoiceSettingsCustomerDobLabel => '出生日期';
+
+  @override
+  String get invoiceSettingsCustomerDobSubtitle => '记录客户的出生日期。填写后将据此计算年龄';
+
+  @override
+  String get invoiceSettingsCustomerAgeLabel => '年龄';
+
+  @override
+  String get invoiceSettingsCustomerAgeSubtitle => '记录客户的年龄。仅在未填写出生日期时使用';
+
+  @override
+  String get invoiceSettingsCustomerGenderLabel => '性别';
+
+  @override
+  String get invoiceSettingsCustomerGenderSubtitle => '记录客户的性别（男 / 女 / 其他）';
+
+  @override
+  String get invoiceSettingsCustomerCustomFieldsLabel => '客户自定义字段';
+
+  @override
+  String get invoiceSettingsCustomerCustomFieldsSubtitle =>
+      '定义您自己的客户字段（如患者编号、血型），并为每位客户填写';
+
+  @override
+  String get invoiceSettingsCustomerCustomFieldHint => '如：患者编号';
+
+  @override
+  String get invoiceSettingsPrintOnPdfLabel => '打印到 PDF';
+
+  @override
+  String get invoiceSettingsPrintOnPdfSubtitle => '在发票 PDF 和热敏小票上显示此字段';
+
+  @override
+  String get customFieldPrintedOnPdfTooltip => '会打印到 PDF — 点击隐藏';
+
+  @override
+  String get customFieldNotPrintedOnPdfTooltip => '不打印到 PDF — 点击打印';
+
+  @override
+  String get customerFieldDobLabel => '出生日期';
+
+  @override
+  String get customerFieldClearDobTooltip => '清除出生日期';
+
+  @override
+  String get customerFieldAgeLabel => '年龄';
+
+  @override
+  String get customerFieldAgeFromDobHelper => '根据出生日期计算';
+
+  @override
+  String get customerFieldAgeInvalidMessage => '请输入 0 到 150 之间的年龄';
+
+  @override
+  String get customerFieldGenderLabel => '性别';
+
+  @override
+  String get customerFieldGenderNotSpecified => '未指定';
+
+  @override
+  String get customerFieldGenderMale => '男';
+
+  @override
+  String get customerFieldGenderFemale => '女';
+
+  @override
+  String get customerFieldGenderOther => '其他';
+
+  @override
+  String get customerFieldShippingSameAsBillingLabel => '收货地址与账单地址相同';
+
+  @override
+  String get customerFieldShipToHeader => '收货信息';
+
+  @override
+  String get createInvoiceCustomerDetailsDialogTitle => '客户信息';
+
+  @override
+  String get customerFieldPersonalDetailsHeader => '个人信息';
+
+  @override
+  String get customerFieldAdditionalDetailsHeader => '附加信息';
+
+  @override
+  String get customerFieldCopyFromBillingButton => '从账单信息复制';
+
+  @override
+  String get customerFieldRecipientNameLabel => '收货人姓名';
+
+  @override
+  String get customerFieldRecipientPhoneLabel => '收货人电话';
+
+  @override
+  String get customerFieldShippingAddressLabel => '收货地址';
+
+  @override
+  String get customerFieldShippingAddressRequiredMessage =>
+      '请输入收货地址，或勾选“与账单地址相同”';
+
+  @override
+  String get customerMgmtCsvDescShippingName => '收货人姓名';
+
+  @override
+  String get customerMgmtCsvDescShippingPhone => '收货人电话';
+
+  @override
+  String get customerMgmtCsvDescShippingAddress => '收货地址。留空 = 与账单地址相同';
+
+  @override
+  String get customerMgmtCsvDescDob => '出生日期，格式 yyyy-MM-dd（如 1990-06-15）';
+
+  @override
+  String get customerMgmtCsvDescAge => '年龄（周岁，仅在 dob 为空时使用）';
+
+  @override
+  String get customerMgmtCsvDescGender => 'male、female 或 other';
+
+  @override
+  String get customerMgmtCsvDescCustomField =>
+      '每个客户自定义字段一列，表头为 custom:<字段名称>（如 custom:Patient ID）';
+
+  @override
   String get invoiceSettingsShowTimeInPdfLabel => 'Show Time on PDF';
 
   @override

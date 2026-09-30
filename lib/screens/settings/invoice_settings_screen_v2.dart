@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/supported_currencies.dart';
 import 'package:invoiso/models/custom_field_def.dart';
+import 'package:invoiso/widgets/custom_field_defs_editor.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/common/constants.dart';
@@ -91,8 +92,16 @@ class _InvoiceSettingsScreenV2State
   bool _isSaving = false;
   bool _customFieldsEnabled = false;
   List<CustomFieldDef> _customFieldDefs = [];
-  final TextEditingController _newCustomFieldController =
-      TextEditingController();
+  bool _customerAgeEnabled = false;
+  bool _customerDobEnabled = false;
+  bool _customerGenderEnabled = false;
+  bool _shippingAddressEnabled = false;
+  bool _customerCustomFieldsEnabled = false;
+  bool _showCustomerAgeInPdf = true;
+  bool _showCustomerDobInPdf = true;
+  bool _showCustomerGenderInPdf = true;
+  bool _showShipToInPdf = true;
+  List<CustomFieldDef> _customerCustomFieldDefs = [];
 
   // ── V2 state: which settings section is currently shown ──────────────
   int _selectedSectionV2 = 0;
@@ -159,6 +168,19 @@ class _InvoiceSettingsScreenV2State
     final customFieldsEnabledStr =
         await settingsRepo.getSetting(SettingKey.customFieldsEnabled);
     final customFieldDefs = await settingsRepo.getCustomFieldDefs();
+    final customerFieldFlags = await Future.wait([
+      settingsRepo.getSetting(SettingKey.customerAgeEnabled),
+      settingsRepo.getSetting(SettingKey.customerDobEnabled),
+      settingsRepo.getSetting(SettingKey.customerGenderEnabled),
+      settingsRepo.getSetting(SettingKey.shippingAddressEnabled),
+      settingsRepo.getSetting(SettingKey.customerCustomFieldsEnabled),
+      settingsRepo.getSetting(SettingKey.showCustomerAgeInPdf),
+      settingsRepo.getSetting(SettingKey.showCustomerDobInPdf),
+      settingsRepo.getSetting(SettingKey.showCustomerGenderInPdf),
+      settingsRepo.getSetting(SettingKey.showShipToInPdf),
+    ]);
+    final customerCustomFieldDefs =
+        await settingsRepo.getCustomerCustomFieldDefs();
     if (!mounted) return;
 
     setState(() {
@@ -211,6 +233,16 @@ class _InvoiceSettingsScreenV2State
       };
       _customFieldsEnabled = customFieldsEnabledStr == 'true';
       _customFieldDefs = customFieldDefs;
+      _customerAgeEnabled = customerFieldFlags[0] == 'true';
+      _customerDobEnabled = customerFieldFlags[1] == 'true';
+      _customerGenderEnabled = customerFieldFlags[2] == 'true';
+      _shippingAddressEnabled = customerFieldFlags[3] == 'true';
+      _customerCustomFieldsEnabled = customerFieldFlags[4] == 'true';
+      _showCustomerAgeInPdf = customerFieldFlags[5] != 'false';
+      _showCustomerDobInPdf = customerFieldFlags[6] != 'false';
+      _showCustomerGenderInPdf = customerFieldFlags[7] != 'false';
+      _showShipToInPdf = customerFieldFlags[8] != 'false';
+      _customerCustomFieldDefs = customerCustomFieldDefs;
       _showTaxColumn = (results[43] as String?) != 'false';
       _isLoading = false;
     });
@@ -290,6 +322,25 @@ class _InvoiceSettingsScreenV2State
         settingsRepo.setSetting(
             SettingKey.customFieldsEnabled, _customFieldsEnabled.toString()),
         settingsRepo.setCustomFieldDefs(_customFieldDefs),
+        settingsRepo.setSetting(
+            SettingKey.customerAgeEnabled, _customerAgeEnabled.toString()),
+        settingsRepo.setSetting(
+            SettingKey.customerDobEnabled, _customerDobEnabled.toString()),
+        settingsRepo.setSetting(SettingKey.customerGenderEnabled,
+            _customerGenderEnabled.toString()),
+        settingsRepo.setSetting(SettingKey.shippingAddressEnabled,
+            _shippingAddressEnabled.toString()),
+        settingsRepo.setSetting(SettingKey.customerCustomFieldsEnabled,
+            _customerCustomFieldsEnabled.toString()),
+        settingsRepo.setCustomerCustomFieldDefs(_customerCustomFieldDefs),
+        settingsRepo.setSetting(
+            SettingKey.showCustomerAgeInPdf, _showCustomerAgeInPdf.toString()),
+        settingsRepo.setSetting(
+            SettingKey.showCustomerDobInPdf, _showCustomerDobInPdf.toString()),
+        settingsRepo.setSetting(SettingKey.showCustomerGenderInPdf,
+            _showCustomerGenderInPdf.toString()),
+        settingsRepo.setSetting(
+            SettingKey.showShipToInPdf, _showShipToInPdf.toString()),
       ]);
 
       if (!mounted) return;
@@ -1444,44 +1495,7 @@ class _InvoiceSettingsScreenV2State
   // User-defined per-invoice fields (e.g. Vehicle No, Delivery Note) — not
   // tied to the customer. Off by default; when on, seeded with a starting
   // set of fields matching a typical GST transport invoice, all freely
-  // renameable/deletable. Every mutation calls setState so the live preview
-  // table below stays in sync; TextFormField keeps its own text/cursor state
-  // via the ValueKey below, so a rebuild on rename doesn't reset it.
-  void _addCustomField() {
-    final label = _newCustomFieldController.text.trim();
-    if (label.isEmpty) return;
-    setState(() {
-      _customFieldDefs.add(CustomFieldDef(
-        id: 'cf-${DateTime.now().microsecondsSinceEpoch}',
-        label: label,
-        sortOrder: _customFieldDefs.length,
-      ));
-      _newCustomFieldController.clear();
-    });
-  }
-
-  void _removeCustomField(int index) {
-    setState(() => _customFieldDefs.removeAt(index));
-  }
-
-  void _renameCustomField(int index, String label) {
-    final def = _customFieldDefs[index];
-    setState(() => _customFieldDefs[index] =
-        CustomFieldDef(id: def.id, label: label, sortOrder: def.sortOrder));
-  }
-
-  void _moveCustomField(int oldIndex, int newIndex) {
-    setState(() {
-      final item = _customFieldDefs.removeAt(oldIndex);
-      _customFieldDefs.insert(newIndex, item);
-      for (var i = 0; i < _customFieldDefs.length; i++) {
-        final def = _customFieldDefs[i];
-        _customFieldDefs[i] =
-            CustomFieldDef(id: def.id, label: def.label, sortOrder: i);
-      }
-    });
-  }
-
+  // renameable/deletable via CustomFieldDefsEditor.
   void _showCustomFieldsPreview(BuildContext context) {
     showDialog(
       context: context,
@@ -1653,7 +1667,14 @@ class _InvoiceSettingsScreenV2State
         if (_customFieldsEnabled) ...[
           const SizedBox(height: 12),
           LayoutBuilder(builder: (context, constraints) {
-            final editor = _customFieldsEditorColumnV2();
+            final editor = CustomFieldDefsEditor(
+              defs: _customFieldDefs,
+              onChanged: (defs) => setState(() => _customFieldDefs = defs),
+              idPrefix: 'cf',
+              newFieldHint: 'e.g. Vehicle No',
+              decoration: (label, hint) =>
+                  _fieldDecorationV2(context, label: label, hint: hint),
+            );
             final preview = _customFieldsPreviewCardV2();
             if (constraints.maxWidth < 700) {
               return Column(
@@ -1671,70 +1692,6 @@ class _InvoiceSettingsScreenV2State
             );
           }),
         ],
-      ],
-    );
-  }
-
-  Widget _customFieldsEditorColumnV2() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (var index = 0; index < _customFieldDefs.length; index++) ...[
-          Row(
-            key: ValueKey(_customFieldDefs[index].id),
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_upward, size: 18),
-                visualDensity: VisualDensity.compact,
-                tooltip: 'Move up',
-                onPressed: index == 0
-                    ? null
-                    : () => _moveCustomField(index, index - 1),
-              ),
-              IconButton(
-                icon: const Icon(Icons.arrow_downward, size: 18),
-                visualDensity: VisualDensity.compact,
-                tooltip: 'Move down',
-                onPressed: index == _customFieldDefs.length - 1
-                    ? null
-                    : () => _moveCustomField(index, index + 1),
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: TextFormField(
-                  initialValue: _customFieldDefs[index].label,
-                  decoration: _fieldDecorationV2(context, label: 'Field label'),
-                  onChanged: (val) => _renameCustomField(index, val),
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete_outline, color: Colors.red),
-                tooltip: 'Delete field',
-                onPressed: () => _removeCustomField(index),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-        ],
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _newCustomFieldController,
-                decoration: _fieldDecorationV2(context,
-                    label: 'New field label', hint: 'e.g. Vehicle No'),
-                onSubmitted: (_) => _addCustomField(),
-              ),
-            ),
-            const SizedBox(width: 8),
-            FilledButton.icon(
-              onPressed: _addCustomField,
-              icon: const Icon(Icons.add),
-              label: const Text('Add'),
-            ),
-          ],
-        ),
       ],
     );
   }
@@ -1787,7 +1744,131 @@ class _InvoiceSettingsScreenV2State
           value: _showCustomerGstin,
           onChanged: (val) => setState(() => _showCustomerGstin = val),
         ),
+        const Divider(height: 24),
+        Text(l10n.invoiceSettingsCustomerFieldsHeader,
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 4),
+        Text(l10n.invoiceSettingsCustomerFieldsHint,
+            style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.onSurfaceVariant)),
+        const SizedBox(height: 4),
+        _customerFieldGroupV2(
+          _toggleCardV2(
+            title: l10n.invoiceSettingsShippingAddressLabel,
+            subtitle: l10n.invoiceSettingsShippingAddressSubtitle,
+            icon: Icons.local_shipping_outlined,
+            value: _shippingAddressEnabled,
+            onChanged: (val) => setState(() => _shippingAddressEnabled = val),
+          ),
+          [
+            if (_shippingAddressEnabled)
+              _printOnPdfToggleV2(_showShipToInPdf,
+                  (val) => setState(() => _showShipToInPdf = val)),
+          ],
+        ),
+        _customerFieldGroupV2(
+          _toggleCardV2(
+            title: l10n.invoiceSettingsCustomerDobLabel,
+            subtitle: l10n.invoiceSettingsCustomerDobSubtitle,
+            icon: Icons.cake_outlined,
+            value: _customerDobEnabled,
+            onChanged: (val) => setState(() => _customerDobEnabled = val),
+          ),
+          [
+            if (_customerDobEnabled)
+              _printOnPdfToggleV2(_showCustomerDobInPdf,
+                  (val) => setState(() => _showCustomerDobInPdf = val)),
+          ],
+        ),
+        _customerFieldGroupV2(
+          _toggleCardV2(
+            title: l10n.invoiceSettingsCustomerAgeLabel,
+            subtitle: l10n.invoiceSettingsCustomerAgeSubtitle,
+            icon: Icons.numbers_outlined,
+            value: _customerAgeEnabled,
+            onChanged: (val) => setState(() => _customerAgeEnabled = val),
+          ),
+          [
+            if (_customerAgeEnabled)
+              _printOnPdfToggleV2(_showCustomerAgeInPdf,
+                  (val) => setState(() => _showCustomerAgeInPdf = val)),
+          ],
+        ),
+        _customerFieldGroupV2(
+          _toggleCardV2(
+            title: l10n.invoiceSettingsCustomerGenderLabel,
+            subtitle: l10n.invoiceSettingsCustomerGenderSubtitle,
+            icon: Icons.wc_outlined,
+            value: _customerGenderEnabled,
+            onChanged: (val) => setState(() => _customerGenderEnabled = val),
+          ),
+          [
+            if (_customerGenderEnabled)
+              _printOnPdfToggleV2(_showCustomerGenderInPdf,
+                  (val) => setState(() => _showCustomerGenderInPdf = val)),
+          ],
+        ),
+        _customerFieldGroupV2(
+          _toggleCardV2(
+            title: l10n.invoiceSettingsCustomerCustomFieldsLabel,
+            subtitle: l10n.invoiceSettingsCustomerCustomFieldsSubtitle,
+            icon: Icons.dashboard_customize_outlined,
+            value: _customerCustomFieldsEnabled,
+            onChanged: (val) =>
+                setState(() => _customerCustomFieldsEnabled = val),
+          ),
+          [
+            if (_customerCustomFieldsEnabled)
+              CustomFieldDefsEditor(
+                defs: _customerCustomFieldDefs,
+                onChanged: (defs) =>
+                    setState(() => _customerCustomFieldDefs = defs),
+                idPrefix: 'ccf',
+                showPdfToggle: true,
+                newFieldHint: l10n.invoiceSettingsCustomerCustomFieldHint,
+                decoration: (label, hint) =>
+                    _fieldDecorationV2(context, label: label, hint: hint),
+              ),
+          ],
+        ),
       ],
+    );
+  }
+
+  // One box per customer field: its switch plus nested settings (Print on
+  // PDF / the custom-field editor), same look as _descriptionGroupV2, so
+  // each field reads as one unit.
+  Widget _customerFieldGroupV2(Widget toggle, List<Widget> nested) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).primaryColor.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(AppBorderRadius.small),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        children: [
+          toggle,
+          for (final n in nested) ...[const SizedBox(height: 8), n],
+        ],
+      ),
+    );
+  }
+
+  // Indented "Print on PDF" sub-switch under an enabled customer field — the
+  // field can be recorded in the app without being printed.
+  Widget _printOnPdfToggleV2(bool value, ValueChanged<bool> onChanged) {
+    final l10n = AppLocalizations.of(context)!;
+    return Padding(
+      padding: const EdgeInsets.only(left: 16),
+      child: _toggleCardV2(
+        title: l10n.invoiceSettingsPrintOnPdfLabel,
+        subtitle: l10n.invoiceSettingsPrintOnPdfSubtitle,
+        icon: Icons.print_outlined,
+        value: value,
+        onChanged: onChanged,
+      ),
     );
   }
 

@@ -184,6 +184,18 @@ class SettingsService {
     await setSetting(SettingKey.customFieldDefs, CustomFieldDef.listToJson(defs));
   }
 
+  /// Customer custom-field definitions. Unlike invoice custom fields, no
+  /// defaults are seeded — an unset key is just an empty list.
+  static Future<List<CustomFieldDef>> getCustomerCustomFieldDefs() async {
+    return CustomFieldDef.listFromJson(
+        await getSetting(SettingKey.customerCustomFieldDefs));
+  }
+
+  static Future<void> setCustomerCustomFieldDefs(List<CustomFieldDef> defs) async {
+    await setSetting(
+        SettingKey.customerCustomFieldDefs, CustomFieldDef.listToJson(defs));
+  }
+
   /// Returns whether GST/GSTIN fields should be shown.
   /// Defaults to true so existing users are unaffected.
   static Future<bool> getShowGstFields() async {

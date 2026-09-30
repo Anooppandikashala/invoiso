@@ -5352,6 +5352,270 @@ abstract class AppLocalizations {
   /// **'Print the customer\'s GSTIN / tax id (requires GST fields on)'**
   String get invoiceSettingsShowCustomerGstinSubtitle;
 
+  /// No description provided for @invoiceSettingsCustomerFieldsHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer Fields'**
+  String get invoiceSettingsCustomerFieldsHeader;
+
+  /// No description provided for @invoiceSettingsCustomerFieldsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Extra details you can record on customers and invoices. Each one appears on the customer and invoice forms and prints on PDFs only when switched on.'**
+  String get invoiceSettingsCustomerFieldsHint;
+
+  /// No description provided for @invoiceSettingsShippingAddressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Separate Shipping Address'**
+  String get invoiceSettingsShippingAddressLabel;
+
+  /// No description provided for @invoiceSettingsShippingAddressSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a Ship To name, phone and address. When it\'s the same as billing, only one block prints'**
+  String get invoiceSettingsShippingAddressSubtitle;
+
+  /// No description provided for @invoiceSettingsCustomerDobLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Date of Birth'**
+  String get invoiceSettingsCustomerDobLabel;
+
+  /// No description provided for @invoiceSettingsCustomerDobSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Record the customer\'s date of birth. When set, age is calculated from it'**
+  String get invoiceSettingsCustomerDobSubtitle;
+
+  /// No description provided for @invoiceSettingsCustomerAgeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Age'**
+  String get invoiceSettingsCustomerAgeLabel;
+
+  /// No description provided for @invoiceSettingsCustomerAgeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Record the customer\'s age. Used only when no date of birth is entered'**
+  String get invoiceSettingsCustomerAgeSubtitle;
+
+  /// No description provided for @invoiceSettingsCustomerGenderLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Gender'**
+  String get invoiceSettingsCustomerGenderLabel;
+
+  /// No description provided for @invoiceSettingsCustomerGenderSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Record the customer\'s gender (Male / Female / Other)'**
+  String get invoiceSettingsCustomerGenderSubtitle;
+
+  /// No description provided for @invoiceSettingsCustomerCustomFieldsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer Custom Fields'**
+  String get invoiceSettingsCustomerCustomFieldsLabel;
+
+  /// No description provided for @invoiceSettingsCustomerCustomFieldsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Define your own customer fields (e.g. Patient ID, Blood Group) and fill them in on each customer'**
+  String get invoiceSettingsCustomerCustomFieldsSubtitle;
+
+  /// No description provided for @invoiceSettingsCustomerCustomFieldHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Patient ID'**
+  String get invoiceSettingsCustomerCustomFieldHint;
+
+  /// No description provided for @invoiceSettingsPrintOnPdfLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Print on PDF'**
+  String get invoiceSettingsPrintOnPdfLabel;
+
+  /// No description provided for @invoiceSettingsPrintOnPdfSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show this field on invoice PDFs and thermal receipts'**
+  String get invoiceSettingsPrintOnPdfSubtitle;
+
+  /// No description provided for @customFieldPrintedOnPdfTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Printed on PDF — click to hide'**
+  String get customFieldPrintedOnPdfTooltip;
+
+  /// No description provided for @customFieldNotPrintedOnPdfTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Not printed on PDF — click to print'**
+  String get customFieldNotPrintedOnPdfTooltip;
+
+  /// No description provided for @customerFieldDobLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Date of Birth'**
+  String get customerFieldDobLabel;
+
+  /// No description provided for @customerFieldClearDobTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear date of birth'**
+  String get customerFieldClearDobTooltip;
+
+  /// No description provided for @customerFieldAgeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Age'**
+  String get customerFieldAgeLabel;
+
+  /// No description provided for @customerFieldAgeFromDobHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculated from date of birth'**
+  String get customerFieldAgeFromDobHelper;
+
+  /// No description provided for @customerFieldAgeInvalidMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an age between 0 and 150'**
+  String get customerFieldAgeInvalidMessage;
+
+  /// No description provided for @customerFieldGenderLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Gender'**
+  String get customerFieldGenderLabel;
+
+  /// No description provided for @customerFieldGenderNotSpecified.
+  ///
+  /// In en, this message translates to:
+  /// **'Not specified'**
+  String get customerFieldGenderNotSpecified;
+
+  /// No description provided for @customerFieldGenderMale.
+  ///
+  /// In en, this message translates to:
+  /// **'Male'**
+  String get customerFieldGenderMale;
+
+  /// No description provided for @customerFieldGenderFemale.
+  ///
+  /// In en, this message translates to:
+  /// **'Female'**
+  String get customerFieldGenderFemale;
+
+  /// No description provided for @customerFieldGenderOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get customerFieldGenderOther;
+
+  /// No description provided for @customerFieldShippingSameAsBillingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Shipping address same as billing'**
+  String get customerFieldShippingSameAsBillingLabel;
+
+  /// No description provided for @customerFieldShipToHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Ship To'**
+  String get customerFieldShipToHeader;
+
+  /// No description provided for @createInvoiceCustomerDetailsDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer Details'**
+  String get createInvoiceCustomerDetailsDialogTitle;
+
+  /// No description provided for @customerFieldPersonalDetailsHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal Details'**
+  String get customerFieldPersonalDetailsHeader;
+
+  /// No description provided for @customerFieldAdditionalDetailsHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional Details'**
+  String get customerFieldAdditionalDetailsHeader;
+
+  /// No description provided for @customerFieldCopyFromBillingButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy from billing'**
+  String get customerFieldCopyFromBillingButton;
+
+  /// No description provided for @customerFieldRecipientNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipient Name'**
+  String get customerFieldRecipientNameLabel;
+
+  /// No description provided for @customerFieldRecipientPhoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipient Phone'**
+  String get customerFieldRecipientPhoneLabel;
+
+  /// No description provided for @customerFieldShippingAddressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Shipping Address'**
+  String get customerFieldShippingAddressLabel;
+
+  /// No description provided for @customerFieldShippingAddressRequiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a shipping address, or tick \"same as billing\"'**
+  String get customerFieldShippingAddressRequiredMessage;
+
+  /// No description provided for @customerMgmtCsvDescShippingName.
+  ///
+  /// In en, this message translates to:
+  /// **'Ship To recipient name'**
+  String get customerMgmtCsvDescShippingName;
+
+  /// No description provided for @customerMgmtCsvDescShippingPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Ship To recipient phone'**
+  String get customerMgmtCsvDescShippingPhone;
+
+  /// No description provided for @customerMgmtCsvDescShippingAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Ship To address. Empty = same as billing'**
+  String get customerMgmtCsvDescShippingAddress;
+
+  /// No description provided for @customerMgmtCsvDescDob.
+  ///
+  /// In en, this message translates to:
+  /// **'Date of birth, yyyy-MM-dd (e.g. 1990-06-15)'**
+  String get customerMgmtCsvDescDob;
+
+  /// No description provided for @customerMgmtCsvDescAge.
+  ///
+  /// In en, this message translates to:
+  /// **'Age in years (used only when dob is empty)'**
+  String get customerMgmtCsvDescAge;
+
+  /// No description provided for @customerMgmtCsvDescGender.
+  ///
+  /// In en, this message translates to:
+  /// **'male, female or other'**
+  String get customerMgmtCsvDescGender;
+
+  /// No description provided for @customerMgmtCsvDescCustomField.
+  ///
+  /// In en, this message translates to:
+  /// **'One column per customer custom field, header custom:<field label> (e.g. custom:Patient ID)'**
+  String get customerMgmtCsvDescCustomField;
+
   /// No description provided for @invoiceSettingsShowTimeInPdfLabel.
   ///
   /// In en, this message translates to:

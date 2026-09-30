@@ -6,6 +6,7 @@ import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/custom_field_value.dart';
 import 'package:invoiso/models/invoice.dart';
+import 'package:invoiso/models/customer_field_settings.dart';
 import 'pdf_widgets.dart';
 
 pw.MultiPage buildClassicTemplate(
@@ -60,6 +61,7 @@ pw.MultiPage buildClassicTemplate(
   bool showCustomerPhone = true,
   bool showCustomerEmail = true,
   bool showCustomerGstin = true,
+  CustomerFieldSettings customerFields = const CustomerFieldSettings(),
   bool showTimeInPdf = true,
   String pdfTimeFormat = '24',
 }) {
@@ -210,11 +212,42 @@ pw.MultiPage buildClassicTemplate(
                               fontStyle: pw.FontStyle.italic,
                               fontSize: classicPdfStyle.subtitleFontSize,
                               color: PdfColors.grey600)),
+                    for (final line in customerExtraLines(
+                        invoice.customer, customerFields, invoice.date, datePattern))
+                      pw.Text(line,
+                          style: pw.TextStyle(fontSize: classicPdfStyle.bodyFontSize)),
                   ],
                 ),
               ),
             ],
           ),
+          if (showShipTo(invoice.customer, customerFields))
+            pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Container(
+                  padding: pw.EdgeInsets.symmetric(horizontal: classicPdfStyle.sectionPadding, vertical: classicPdfStyle.sectionPadding),
+                  color: PdfColors.grey200,
+                  child: pw.Text("SHIP TO",
+                      style: pw.TextStyle(
+                          fontWeight: pw.FontWeight.bold,
+                          fontSize: classicPdfStyle.labelFontSize,
+                          color: PdfColors.grey700)),
+                ),
+                pw.Padding(
+                  padding: pw.EdgeInsets.symmetric(horizontal: classicPdfStyle.sectionPadding, vertical: classicPdfStyle.sectionPadding),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.SizedBox(height: classicPdfStyle.headerGap),
+                      for (final line in shipToLines(invoice.customer))
+                        pw.Text(line,
+                            style: pw.TextStyle(fontSize: classicPdfStyle.bodyFontSize)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.end,
             children: [

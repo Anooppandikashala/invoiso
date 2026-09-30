@@ -3213,6 +3213,153 @@ class AppLocalizationsEn extends AppLocalizations {
       'Print the customer\'s GSTIN / tax id (requires GST fields on)';
 
   @override
+  String get invoiceSettingsCustomerFieldsHeader => 'Customer Fields';
+
+  @override
+  String get invoiceSettingsCustomerFieldsHint =>
+      'Extra details you can record on customers and invoices. Each one appears on the customer and invoice forms and prints on PDFs only when switched on.';
+
+  @override
+  String get invoiceSettingsShippingAddressLabel => 'Separate Shipping Address';
+
+  @override
+  String get invoiceSettingsShippingAddressSubtitle =>
+      'Add a Ship To name, phone and address. When it\'s the same as billing, only one block prints';
+
+  @override
+  String get invoiceSettingsCustomerDobLabel => 'Date of Birth';
+
+  @override
+  String get invoiceSettingsCustomerDobSubtitle =>
+      'Record the customer\'s date of birth. When set, age is calculated from it';
+
+  @override
+  String get invoiceSettingsCustomerAgeLabel => 'Age';
+
+  @override
+  String get invoiceSettingsCustomerAgeSubtitle =>
+      'Record the customer\'s age. Used only when no date of birth is entered';
+
+  @override
+  String get invoiceSettingsCustomerGenderLabel => 'Gender';
+
+  @override
+  String get invoiceSettingsCustomerGenderSubtitle =>
+      'Record the customer\'s gender (Male / Female / Other)';
+
+  @override
+  String get invoiceSettingsCustomerCustomFieldsLabel =>
+      'Customer Custom Fields';
+
+  @override
+  String get invoiceSettingsCustomerCustomFieldsSubtitle =>
+      'Define your own customer fields (e.g. Patient ID, Blood Group) and fill them in on each customer';
+
+  @override
+  String get invoiceSettingsCustomerCustomFieldHint => 'e.g. Patient ID';
+
+  @override
+  String get invoiceSettingsPrintOnPdfLabel => 'Print on PDF';
+
+  @override
+  String get invoiceSettingsPrintOnPdfSubtitle =>
+      'Show this field on invoice PDFs and thermal receipts';
+
+  @override
+  String get customFieldPrintedOnPdfTooltip => 'Printed on PDF — click to hide';
+
+  @override
+  String get customFieldNotPrintedOnPdfTooltip =>
+      'Not printed on PDF — click to print';
+
+  @override
+  String get customerFieldDobLabel => 'Date of Birth';
+
+  @override
+  String get customerFieldClearDobTooltip => 'Clear date of birth';
+
+  @override
+  String get customerFieldAgeLabel => 'Age';
+
+  @override
+  String get customerFieldAgeFromDobHelper => 'Calculated from date of birth';
+
+  @override
+  String get customerFieldAgeInvalidMessage => 'Enter an age between 0 and 150';
+
+  @override
+  String get customerFieldGenderLabel => 'Gender';
+
+  @override
+  String get customerFieldGenderNotSpecified => 'Not specified';
+
+  @override
+  String get customerFieldGenderMale => 'Male';
+
+  @override
+  String get customerFieldGenderFemale => 'Female';
+
+  @override
+  String get customerFieldGenderOther => 'Other';
+
+  @override
+  String get customerFieldShippingSameAsBillingLabel =>
+      'Shipping address same as billing';
+
+  @override
+  String get customerFieldShipToHeader => 'Ship To';
+
+  @override
+  String get createInvoiceCustomerDetailsDialogTitle => 'Customer Details';
+
+  @override
+  String get customerFieldPersonalDetailsHeader => 'Personal Details';
+
+  @override
+  String get customerFieldAdditionalDetailsHeader => 'Additional Details';
+
+  @override
+  String get customerFieldCopyFromBillingButton => 'Copy from billing';
+
+  @override
+  String get customerFieldRecipientNameLabel => 'Recipient Name';
+
+  @override
+  String get customerFieldRecipientPhoneLabel => 'Recipient Phone';
+
+  @override
+  String get customerFieldShippingAddressLabel => 'Shipping Address';
+
+  @override
+  String get customerFieldShippingAddressRequiredMessage =>
+      'Enter a shipping address, or tick \"same as billing\"';
+
+  @override
+  String get customerMgmtCsvDescShippingName => 'Ship To recipient name';
+
+  @override
+  String get customerMgmtCsvDescShippingPhone => 'Ship To recipient phone';
+
+  @override
+  String get customerMgmtCsvDescShippingAddress =>
+      'Ship To address. Empty = same as billing';
+
+  @override
+  String get customerMgmtCsvDescDob =>
+      'Date of birth, yyyy-MM-dd (e.g. 1990-06-15)';
+
+  @override
+  String get customerMgmtCsvDescAge =>
+      'Age in years (used only when dob is empty)';
+
+  @override
+  String get customerMgmtCsvDescGender => 'male, female or other';
+
+  @override
+  String get customerMgmtCsvDescCustomField =>
+      'One column per customer custom field, header custom:<field label> (e.g. custom:Patient ID)';
+
+  @override
   String get invoiceSettingsShowTimeInPdfLabel => 'Show Time on PDF';
 
   @override

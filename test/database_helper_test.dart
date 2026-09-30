@@ -60,6 +60,42 @@ void main() {
         'currency_symbol',
         'tax_mode',
         'invoice_number',
+        'customer_shipping_same_as_billing',
+        'customer_shipping_name',
+        'customer_shipping_phone',
+        'customer_shipping_address',
+        'customer_dob',
+        'customer_age',
+        'customer_gender',
+        'customer_custom_fields',
+      ]),
+    );
+
+    await db.close();
+  });
+
+  test('fresh create customers table has shipping/personal/custom columns',
+      () async {
+    final db = await openDatabase(
+      inMemoryDatabasePath,
+      version: currentVersion,
+      onCreate: (db, v) => DatabaseHelper().createDbForTest(db, v),
+    );
+
+    final cols = await db.rawQuery('PRAGMA table_info(customers)');
+    final colNames = cols.map((r) => r['name']).toSet();
+
+    expect(
+      colNames,
+      containsAll([
+        'shipping_same_as_billing',
+        'shipping_name',
+        'shipping_phone',
+        'shipping_address',
+        'dob',
+        'age',
+        'gender',
+        'custom_fields',
       ]),
     );
 

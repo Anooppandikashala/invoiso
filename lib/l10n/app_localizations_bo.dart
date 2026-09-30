@@ -3211,6 +3211,153 @@ class AppLocalizationsBo extends AppLocalizations {
       'Print the customer\'s GSTIN / tax id (requires GST fields on)';
 
   @override
+  String get invoiceSettingsCustomerFieldsHeader => 'མཉོགས་མིའི་ཡིག་སྒྲོམ།';
+
+  @override
+  String get invoiceSettingsCustomerFieldsHint =>
+      'མཉོགས་མི་དང་ཚོང་ཐོ་ཐོག་ཐོ་འགོད་བྱེད་ཆོག་པའི་ཞིབ་ཕྲ་གཞན། རེ་རེ་ཁ་ཕྱེ་ཡོད་དུས་ཁོ་ནར་མཉོགས་མི་དང་ཚོང་ཐོའི་རེའུ་མིག་ནང་མངོན་ཞིང་ PDF ཐོག་པར་དུ་འཁོད།';
+
+  @override
+  String get invoiceSettingsShippingAddressLabel => 'སྐྱེལ་སའི་གནས་ཡུལ་སོ་སོ།';
+
+  @override
+  String get invoiceSettingsShippingAddressSubtitle =>
+      'སྐྱེལ་ཡུལ་གྱི་མིང་དང་། ཁ་པར། གནས་ཡུལ་སྣོན། རིན་ཐོའི་གནས་ཡུལ་དང་གཅིག་མཚུངས་ཡིན་ན་སྡེ་ཚན་གཅིག་ཁོ་ན་པར་དུ་འཁོད།';
+
+  @override
+  String get invoiceSettingsCustomerDobLabel => 'སྐྱེས་ཚེས།';
+
+  @override
+  String get invoiceSettingsCustomerDobSubtitle =>
+      'མཉོགས་མིའི་སྐྱེས་ཚེས་ཐོ་འགོད། བཀོད་ཡོད་ན་ལོ་ཚད་དེ་ལས་རྩིས་རྒྱུ།';
+
+  @override
+  String get invoiceSettingsCustomerAgeLabel => 'ལོ་ཚད།';
+
+  @override
+  String get invoiceSettingsCustomerAgeSubtitle =>
+      'མཉོགས་མིའི་ལོ་ཚད་ཐོ་འགོད། སྐྱེས་ཚེས་མེད་དུས་ཁོ་ནར་བེད་སྤྱོད།';
+
+  @override
+  String get invoiceSettingsCustomerGenderLabel => 'ཕོ་མོ།';
+
+  @override
+  String get invoiceSettingsCustomerGenderSubtitle =>
+      'མཉོགས་མིའི་ཕོ་མོ་ཐོ་འགོད། (ཕོ། / མོ། / གཞན།)';
+
+  @override
+  String get invoiceSettingsCustomerCustomFieldsLabel =>
+      'མཉོགས་མིའི་རང་བཟོས་ཡིག་སྒྲོམ།';
+
+  @override
+  String get invoiceSettingsCustomerCustomFieldsSubtitle =>
+      'རང་ཉིད་ཀྱི་མཉོགས་མིའི་ཡིག་སྒྲོམ་བཟོས་ཏེ་ (དཔེར་ན། ནད་པའི་ ID དང་ཁྲག་རིགས།) མཉོགས་མི་རེ་རེར་སྐོང་།';
+
+  @override
+  String get invoiceSettingsCustomerCustomFieldHint => 'དཔེར་ན། ནད་པའི་ ID';
+
+  @override
+  String get invoiceSettingsPrintOnPdfLabel => 'PDF ཐོག་པར་དུ་འཁོད།';
+
+  @override
+  String get invoiceSettingsPrintOnPdfSubtitle =>
+      'ཡིག་སྒྲོམ་འདི་ཚོང་ཐོའི་ PDF དང་ཚ་ཤུགས་ཤོག་བྱང་ཐོག་མངོན།';
+
+  @override
+  String get customFieldPrintedOnPdfTooltip =>
+      'PDF ཐོག་པར་དུ་འཁོད་ཡོད། — སྦེད་པར་མནན།';
+
+  @override
+  String get customFieldNotPrintedOnPdfTooltip =>
+      'PDF ཐོག་པར་དུ་མི་འཁོད། — པར་དུ་འགོད་པར་མནན།';
+
+  @override
+  String get customerFieldDobLabel => 'སྐྱེས་ཚེས།';
+
+  @override
+  String get customerFieldClearDobTooltip => 'སྐྱེས་ཚེས་གསལ་བོར་བཟོ།';
+
+  @override
+  String get customerFieldAgeLabel => 'ལོ་ཚད།';
+
+  @override
+  String get customerFieldAgeFromDobHelper => 'སྐྱེས་ཚེས་ལས་རྩིས་པ།';
+
+  @override
+  String get customerFieldAgeInvalidMessage => 'ལོ་ཚད་ 0 ནས་ 150 བར་འཇུག';
+
+  @override
+  String get customerFieldGenderLabel => 'ཕོ་མོ།';
+
+  @override
+  String get customerFieldGenderNotSpecified => 'གསལ་བཤད་མེད།';
+
+  @override
+  String get customerFieldGenderMale => 'ཕོ།';
+
+  @override
+  String get customerFieldGenderFemale => 'མོ།';
+
+  @override
+  String get customerFieldGenderOther => 'གཞན།';
+
+  @override
+  String get customerFieldShippingSameAsBillingLabel =>
+      'སྐྱེལ་སའི་གནས་ཡུལ་རིན་ཐོའི་གནས་ཡུལ་དང་གཅིག་མཚུངས།';
+
+  @override
+  String get customerFieldShipToHeader => 'སྐྱེལ་ཡུལ།';
+
+  @override
+  String get createInvoiceCustomerDetailsDialogTitle => 'མཉོགས་མིའི་ཞིབ་ཕྲ།';
+
+  @override
+  String get customerFieldPersonalDetailsHeader => 'སྒེར་གྱི་ཞིབ་ཕྲ།';
+
+  @override
+  String get customerFieldAdditionalDetailsHeader => 'ཁ་སྣོན་ཞིབ་ཕྲ།';
+
+  @override
+  String get customerFieldCopyFromBillingButton => 'རིན་ཐོ་ནས་འདྲ་བཤུས།';
+
+  @override
+  String get customerFieldRecipientNameLabel => 'ལེན་མཁན་གྱི་མིང་།';
+
+  @override
+  String get customerFieldRecipientPhoneLabel => 'ལེན་མཁན་གྱི་ཁ་པར།';
+
+  @override
+  String get customerFieldShippingAddressLabel => 'སྐྱེལ་སའི་གནས་ཡུལ།';
+
+  @override
+  String get customerFieldShippingAddressRequiredMessage =>
+      'སྐྱེལ་སའི་གནས་ཡུལ་འཇུག་པའམ། \"རིན་ཐོ་དང་གཅིག་མཚུངས།\" འདེམས།';
+
+  @override
+  String get customerMgmtCsvDescShippingName => 'སྐྱེལ་ཡུལ་ལེན་མཁན་གྱི་མིང་།';
+
+  @override
+  String get customerMgmtCsvDescShippingPhone => 'སྐྱེལ་ཡུལ་ལེན་མཁན་གྱི་ཁ་པར།';
+
+  @override
+  String get customerMgmtCsvDescShippingAddress =>
+      'སྐྱེལ་སའི་གནས་ཡུལ། སྟོང་པ་ = རིན་ཐོ་དང་གཅིག་མཚུངས།';
+
+  @override
+  String get customerMgmtCsvDescDob =>
+      'སྐྱེས་ཚེས། yyyy-MM-dd (དཔེར་ན། 1990-06-15)';
+
+  @override
+  String get customerMgmtCsvDescAge => 'ལོ་གྲངས། (dob སྟོང་པ་ཡིན་དུས་ཁོ་ན།)';
+
+  @override
+  String get customerMgmtCsvDescGender => 'male, female ཡང་ན་ other';
+
+  @override
+  String get customerMgmtCsvDescCustomField =>
+      'མཉོགས་མིའི་རང་བཟོས་ཡིག་སྒྲོམ་རེ་རེར་སྟར་པ་གཅིག ཁ་བྱང་ custom:<ཡིག་སྒྲོམ་གྱི་མིང་> (དཔེར་ན། custom:Patient ID)';
+
+  @override
   String get invoiceSettingsShowTimeInPdfLabel => 'Show Time on PDF';
 
   @override

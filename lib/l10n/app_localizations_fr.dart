@@ -3274,6 +3274,162 @@ class AppLocalizationsFr extends AppLocalizations {
       'Print the customer\'s GSTIN / tax id (requires GST fields on)';
 
   @override
+  String get invoiceSettingsCustomerFieldsHeader => 'Champs client';
+
+  @override
+  String get invoiceSettingsCustomerFieldsHint =>
+      'Informations supplémentaires à enregistrer sur les clients et les factures. Chacune apparaît dans les formulaires client et facture, et s\'imprime sur les PDF, uniquement si elle est activée.';
+
+  @override
+  String get invoiceSettingsShippingAddressLabel =>
+      'Adresse de livraison distincte';
+
+  @override
+  String get invoiceSettingsShippingAddressSubtitle =>
+      'Ajoute un nom, un téléphone et une adresse de livraison. Si elle est identique à la facturation, un seul bloc est imprimé';
+
+  @override
+  String get invoiceSettingsCustomerDobLabel => 'Date de naissance';
+
+  @override
+  String get invoiceSettingsCustomerDobSubtitle =>
+      'Enregistre la date de naissance du client. Si elle est renseignée, l\'âge est calculé à partir de celle-ci';
+
+  @override
+  String get invoiceSettingsCustomerAgeLabel => 'Âge';
+
+  @override
+  String get invoiceSettingsCustomerAgeSubtitle =>
+      'Enregistre l\'âge du client. Utilisé uniquement sans date de naissance';
+
+  @override
+  String get invoiceSettingsCustomerGenderLabel => 'Sexe';
+
+  @override
+  String get invoiceSettingsCustomerGenderSubtitle =>
+      'Enregistre le sexe du client (Homme / Femme / Autre)';
+
+  @override
+  String get invoiceSettingsCustomerCustomFieldsLabel =>
+      'Champs personnalisés client';
+
+  @override
+  String get invoiceSettingsCustomerCustomFieldsSubtitle =>
+      'Définissez vos propres champs client (ex. ID patient, groupe sanguin) et remplissez-les pour chaque client';
+
+  @override
+  String get invoiceSettingsCustomerCustomFieldHint => 'ex. ID patient';
+
+  @override
+  String get invoiceSettingsPrintOnPdfLabel => 'Imprimer sur le PDF';
+
+  @override
+  String get invoiceSettingsPrintOnPdfSubtitle =>
+      'Afficher ce champ sur les PDF de facture et les tickets thermiques';
+
+  @override
+  String get customFieldPrintedOnPdfTooltip =>
+      'Imprimé sur le PDF — cliquez pour masquer';
+
+  @override
+  String get customFieldNotPrintedOnPdfTooltip =>
+      'Non imprimé sur le PDF — cliquez pour imprimer';
+
+  @override
+  String get customerFieldDobLabel => 'Date de naissance';
+
+  @override
+  String get customerFieldClearDobTooltip => 'Effacer la date de naissance';
+
+  @override
+  String get customerFieldAgeLabel => 'Âge';
+
+  @override
+  String get customerFieldAgeFromDobHelper =>
+      'Calculé à partir de la date de naissance';
+
+  @override
+  String get customerFieldAgeInvalidMessage =>
+      'Saisissez un âge entre 0 et 150';
+
+  @override
+  String get customerFieldGenderLabel => 'Sexe';
+
+  @override
+  String get customerFieldGenderNotSpecified => 'Non précisé';
+
+  @override
+  String get customerFieldGenderMale => 'Homme';
+
+  @override
+  String get customerFieldGenderFemale => 'Femme';
+
+  @override
+  String get customerFieldGenderOther => 'Autre';
+
+  @override
+  String get customerFieldShippingSameAsBillingLabel =>
+      'Adresse de livraison identique à la facturation';
+
+  @override
+  String get customerFieldShipToHeader => 'Livrer à';
+
+  @override
+  String get createInvoiceCustomerDetailsDialogTitle =>
+      'Informations du client';
+
+  @override
+  String get customerFieldPersonalDetailsHeader => 'Informations personnelles';
+
+  @override
+  String get customerFieldAdditionalDetailsHeader =>
+      'Informations supplémentaires';
+
+  @override
+  String get customerFieldCopyFromBillingButton =>
+      'Copier depuis la facturation';
+
+  @override
+  String get customerFieldRecipientNameLabel => 'Nom du destinataire';
+
+  @override
+  String get customerFieldRecipientPhoneLabel => 'Téléphone du destinataire';
+
+  @override
+  String get customerFieldShippingAddressLabel => 'Adresse de livraison';
+
+  @override
+  String get customerFieldShippingAddressRequiredMessage =>
+      'Saisissez une adresse de livraison ou cochez « identique à la facturation »';
+
+  @override
+  String get customerMgmtCsvDescShippingName =>
+      'Nom du destinataire de la livraison';
+
+  @override
+  String get customerMgmtCsvDescShippingPhone =>
+      'Téléphone du destinataire de la livraison';
+
+  @override
+  String get customerMgmtCsvDescShippingAddress =>
+      'Adresse de livraison. Vide = identique à la facturation';
+
+  @override
+  String get customerMgmtCsvDescDob =>
+      'Date de naissance, yyyy-MM-dd (ex. 1990-06-15)';
+
+  @override
+  String get customerMgmtCsvDescAge =>
+      'Âge en années (utilisé uniquement si dob est vide)';
+
+  @override
+  String get customerMgmtCsvDescGender => 'male, female ou other';
+
+  @override
+  String get customerMgmtCsvDescCustomField =>
+      'Une colonne par champ personnalisé client, en-tête custom:<nom du champ> (ex. custom:Patient ID)';
+
+  @override
   String get invoiceSettingsShowTimeInPdfLabel => 'Show Time on PDF';
 
   @override

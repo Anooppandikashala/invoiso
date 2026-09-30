@@ -6,6 +6,7 @@ import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/custom_field_value.dart';
 import 'package:invoiso/models/invoice.dart';
+import 'package:invoiso/models/customer_field_settings.dart';
 import 'pdf_widgets.dart';
 
 pw.MultiPage buildExecutiveTemplate(
@@ -60,6 +61,7 @@ pw.MultiPage buildExecutiveTemplate(
   bool showCustomerPhone = true,
   bool showCustomerEmail = true,
   bool showCustomerGstin = true,
+  CustomerFieldSettings customerFields = const CustomerFieldSettings(),
   bool showTimeInPdf = true,
   String pdfTimeFormat = '24',
 }) {
@@ -162,6 +164,8 @@ pw.MultiPage buildExecutiveTemplate(
       invoice.customer.email,
     if (showGst && showCustomerGstin && invoice.customer.gstin.isNotEmpty)
       '${taxLabel(company?.country)}: ${invoice.customer.gstin}',
+    ...customerExtraLines(
+        invoice.customer, customerFields, invoice.date, datePattern),
   ];
 
   final fullPageWatermark = watermarkFullPage && watermarkBytes != null;
@@ -266,6 +270,13 @@ pw.MultiPage buildExecutiveTemplate(
             flex: 1,
           ),
           pw.SizedBox(width: 14),
+          if (showShipTo(invoice.customer, customerFields)) ...[
+            pw.Expanded(
+              child: partyBlock('SHIP TO', shipToLines(invoice.customer)),
+              flex: 1,
+            ),
+            pw.SizedBox(width: 14),
+          ],
           pw.Expanded(flex: 1, child: customFieldsCard()),
         ],
       ),

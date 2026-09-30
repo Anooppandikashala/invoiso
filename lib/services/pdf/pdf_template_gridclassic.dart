@@ -8,6 +8,7 @@ import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/custom_field_value.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/utils/amount_in_words.dart';
+import 'package:invoiso/models/customer_field_settings.dart';
 import 'pdf_widgets.dart';
 
 /// Bordered, tabular "old style" bill — the boxed grid layout common on
@@ -68,6 +69,7 @@ pw.MultiPage buildGridClassicTemplate(
   bool showCustomerPhone = true,
   bool showCustomerEmail = true,
   bool showCustomerGstin = true,
+  CustomerFieldSettings customerFields = const CustomerFieldSettings(),
   bool showTimeInPdf = true,
   String pdfTimeFormat = '24',
 }) {
@@ -341,6 +343,11 @@ pw.MultiPage buildGridClassicTemplate(
                                       invoice.customer.email.isNotEmpty)
                                     pw.Text(invoice.customer.email,
                                         style: pw.TextStyle(fontSize: labelFont)),
+                                  for (final line in customerExtraLines(
+                                      invoice.customer, customerFields,
+                                      invoice.date, datePattern))
+                                    pw.Text(line,
+                                        style: pw.TextStyle(fontSize: labelFont)),
                                 ],
                               ),
                             ),
@@ -352,6 +359,34 @@ pw.MultiPage buildGridClassicTemplate(
                     ],
                   ),
                 ),
+                // Same row as Customer, same label + continuation-column layout.
+                if (showShipTo(invoice.customer, customerFields))
+                  pw.Expanded(
+                    flex: 3,
+                    child: pw.Padding(
+                      padding: pw.EdgeInsets.symmetric(vertical: 1.5 * fontScale),
+                      child: pw.Row(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          pw.Text('Ship To:',
+                              style: pw.TextStyle(
+                                  fontSize: labelFont, fontWeight: pw.FontWeight.bold)),
+                          pw.SizedBox(width: 4 * fontScale),
+                          pw.Expanded(
+                            child: pw.Column(
+                              crossAxisAlignment: pw.CrossAxisAlignment.start,
+                              children: [
+                                for (final line in shipToLines(invoice.customer,
+                                    phonePrefix: 'Ph: '))
+                                  pw.Text(line,
+                                      style: pw.TextStyle(fontSize: labelFont)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 pw.Expanded(
                   flex: 2,
                   child: pw.Row(

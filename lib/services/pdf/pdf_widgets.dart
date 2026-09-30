@@ -5,6 +5,8 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:qr/qr.dart';
 import 'package:invoiso/common/common.dart';
+import 'package:invoiso/models/customer.dart';
+import 'package:invoiso/models/customer_field_settings.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/invoice_item.dart';
 import 'package:invoiso/utils/amount_in_words.dart';
@@ -1274,4 +1276,53 @@ String formatInvoiceNumberForDisplay(String number, bool showLeadingZeros) {
   if (showLeadingZeros) return number;
   final stripped = number.replaceFirst(RegExp(r'^0+'), '');
   return stripped.isEmpty ? '0' : stripped;
+}
+
+/// Ship To prints only when the feature is on, the invoice isn't
+/// same-as-billing and has a shipping address — otherwise every template
+/// shows just the Bill To block, exactly as before.
+bool showShipTo(Customer c, CustomerFieldSettings s) =>
+    s.shipping &&
+    s.shipToInPdf &&
+    !c.shippingSameAsBilling &&
+    c.shippingAddress.trim().isNotEmpty;
+
+/// Ship To block lines: recipient name, phone, address (empties skipped).
+List<String> shipToLines(Customer c, {String phonePrefix = ''}) => [
+      if (c.shippingName.trim().isNotEmpty) c.shippingName.trim(),
+      if (c.shippingPhone.trim().isNotEmpty)
+        '$phonePrefix${c.shippingPhone.trim()}',
+      c.shippingAddress.trim(),
+    ];
+
+const _pdfGenderLabels = {'male': 'Male', 'female': 'Female', 'other': 'Other'};
+
+/// Extra lines under Bill To: one "Age: 34 · DOB: 15/06/1990 · Gender: Female"
+/// line (switched-off or empty parts skipped), then "Label: value" per filled
+/// customer custom field. Age is at the invoice date (from DOB when set).
+/// Custom field labels come from the invoice snapshot, so renaming a field
+/// later doesn't relabel old invoices.
+List<String> customerExtraLines(Customer c, CustomerFieldSettings s,
+    DateTime invoiceDate, String datePattern, {String separator = ' · '}) {
+  final age = s.age && s.ageInPdf ? c.ageOn(invoiceDate) : null;
+  final dob = s.dob && s.dobInPdf ? DateTime.tryParse(c.dob) : null;
+  final gender = s.gender && s.genderInPdf ? _pdfGenderLabels[c.gender] : null;
+  // Per-definition print flag; values of since-deleted definitions still
+  // print (nothing says otherwise).
+  final hidden = {
+    for (final d in s.customFieldDefs)
+      if (!d.showInPdf) d.id,
+  };
+  final personal = [
+    if (age != null) 'Age: $age',
+    if (dob != null) 'DOB: ${formatPdfDate(dob, datePattern)}',
+    if (gender != null) 'Gender: $gender',
+  ].join(separator);
+  return [
+    if (personal.isNotEmpty) personal,
+    if (s.customFields)
+      for (final v in c.customFields)
+        if (v.value.trim().isNotEmpty && !hidden.contains(v.defId))
+          '${v.label}: ${v.value.trim()}',
+  ];
 }

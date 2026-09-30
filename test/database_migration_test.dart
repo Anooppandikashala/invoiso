@@ -212,6 +212,22 @@ void main() {
     expect(item.containsKey('description'), isTrue);
     expect(item['description'], isNull);
 
+    // v50: existing customers/invoices default to "same as billing" with no
+    // shipping, personal or custom field data, so they print as before.
+    final customer =
+        (await db.query('customers', where: 'id = ?', whereArgs: ['c1']))
+            .first;
+    expect(customer['shipping_same_as_billing'], 1);
+    expect(customer['shipping_address'], '');
+    expect(customer['dob'], '');
+    expect(customer['age'], isNull);
+    expect(customer['gender'], '');
+    expect(customer['custom_fields'], isNull);
+    expect(invoice['customer_shipping_same_as_billing'], 1);
+    expect(invoice['customer_shipping_address'], '');
+    expect(invoice['customer_age'], isNull);
+    expect(invoice['customer_custom_fields'], isNull);
+
     final companyInfo = (await db.query('company_info')).first;
     expect(companyInfo['country'], 'India');
     expect(companyInfo['pan_number'], '');
