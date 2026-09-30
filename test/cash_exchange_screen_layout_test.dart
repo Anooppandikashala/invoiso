@@ -42,31 +42,56 @@ class _Ledger implements CashLedgerRepository {
   dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
 }
 
+Future<void> _pump(WidgetTester tester, double width, double scale,
+    String userType) async {
+  tester.view.physicalSize = Size(width, 1600);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  await tester.pumpWidget(ProviderScope(
+    overrides: [
+      settingsRepositoryProvider.overrideWith((ref) => _Settings()),
+      cashLedgerRepositoryProvider.overrideWith((ref) => _Ledger()),
+    ],
+    child: MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      builder: (c, child) => MediaQuery(
+          data: MediaQuery.of(c).copyWith(textScaler: TextScaler.linear(scale)),
+          child: child!),
+      home: CashExchangeScreen(
+          user: User(id: 'u', username: userType, password: '', userType: userType)),
+    ),
+  ));
+  await tester.pumpAndSettle();
+}
+
 void main() {
   for (final width in [320.0, 400.0, 480.0, 600.0, 700.0, 900.0, 1400.0]) {
     for (final scale in [1.0, 1.3]) {
       testWidgets('no overflow at ${width}px, text x$scale', (tester) async {
-        tester.view.physicalSize = Size(width, 1600);
-        tester.view.devicePixelRatio = 1;
-        addTearDown(tester.view.reset);
-        await tester.pumpWidget(ProviderScope(
-          overrides: [
-            settingsRepositoryProvider.overrideWith((ref) => _Settings()),
-            cashLedgerRepositoryProvider.overrideWith((ref) => _Ledger()),
-          ],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            builder: (c, child) => MediaQuery(
-                data: MediaQuery.of(c).copyWith(textScaler: TextScaler.linear(scale)),
-                child: child!),
-            home: CashExchangeScreen(
-                user: User(id: 'u', username: 'admin', password: '', userType: 'admin')),
-          ),
-        ));
-        await tester.pumpAndSettle();
+        await _pump(tester, width, scale, 'admin');
         expect(find.text('Cash'), findsWidgets);
+        expect(find.text('Total balance'), findsWidgets);
       });
     }
+  }
+
+  // Regular users: no balances, income or expense totals, but every action.
+  for (final width in [320.0, 1400.0]) {
+    testWidgets('regular user at ${width}px sees actions, not balances',
+        (tester) async {
+      await _pump(tester, width, 1.0, 'user');
+      for (final hidden in [
+        'Total balance',
+        'Service income (today)',
+        'Service income (this month)',
+        'Expenses (this month)',
+      ]) {
+        expect(find.text(hidden), findsNothing, reason: hidden);
+      }
+      expect(find.textContaining('Closing balance'), findsNothing);
+      expect(find.text('UPI → Cash'), findsOneWidget);
+      expect(find.text('Withdrawal'), findsOneWidget);
+    });
   }
 }

@@ -4095,6 +4095,14 @@ class AppLocalizationsEs extends AppLocalizations {
       'Oculta el precio de compra, las ganancias y el valor de inventario a los usuarios que no son administradores.';
 
   @override
+  String get productColumnsStockEditAdminOnlyLabel =>
+      'Edición de stock: solo administradores';
+
+  @override
+  String get productColumnsStockEditAdminOnlySubtitle =>
+      'Los usuarios que no son administradores no pueden establecer ni cambiar las cantidades de stock ni importar productos desde CSV.';
+
+  @override
   String get productColumnsDefaultDiscountLabel => 'Descuento predeterminado';
 
   @override
@@ -4487,6 +4495,14 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get accessibilityCashExchangeSubtitle =>
       'Añade un menú Servicios de cambio de efectivo después de Nueva factura para registrar cambios UPI ↔ efectivo, comisiones de servicio y movimientos de efectivo, con saldos de efectivo y UPI/Banco.';
+
+  @override
+  String get accessibilityReportsAdminOnlyLabel =>
+      'Informes: solo administradores';
+
+  @override
+  String get accessibilityReportsAdminOnlySubtitle =>
+      'Oculta el menú Informes a los usuarios que no son administradores.';
 
   @override
   String get cashExchangeCashLabel => 'Efectivo';

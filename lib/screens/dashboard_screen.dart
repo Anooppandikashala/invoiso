@@ -74,6 +74,9 @@ class DashboardScreen extends ConsumerStatefulWidget {
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   int _selectedIndex = 0;
   bool _servicesEnabled = false;
+  bool _reportsAdminOnly = false;
+  // Reports hidden for this user (Settings → Accessibility).
+  bool get _reportsLocked => _reportsAdminOnly && !_currentUser.isAdmin();
   bool _sidebarExpanded = true;
   late User _currentUser;
   String? _pendingReportsStatementCustomerKey;
@@ -101,6 +104,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     _currentUser = widget.loggedInUser;
     _loadCreateInvoiceLayout();
     _loadServicesEnabled();
+    _loadReportsAdminOnly();
     _loadCompanies();
     SessionManager.initialize(_onSessionTimeout);
     if (ref.read(appEditionConfigProvider).enableUpdateCheck) {
@@ -182,6 +186,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         .getSetting(SettingKey.cashUpiExchangeEnabled);
     if (!mounted) return;
     setState(() => _servicesEnabled = v == 'true');
+  }
+
+  Future<void> _loadReportsAdminOnly() async {
+    final v = await ref
+        .read(settingsRepositoryProvider)
+        .getSetting(SettingKey.reportsAdminOnly);
+    if (!mounted) return;
+    setState(() => _reportsAdminOnly = v == 'true');
   }
 
   Future<void> _loadCreateInvoiceLayout() async {
@@ -354,17 +366,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       case 5:
         return CustomerManagementScreenV2(
           user: _currentUser,
-          onViewCustomerStatement: (c) {
-            setState(() {
-              _pendingReportsStatementCustomerKey =
-                  CustomerIdentity.key(id: c.id, name: c.name);
-              _selectedIndex = 7;
-            });
-          },
+          onViewCustomerStatement: _reportsLocked
+              ? null
+              : (c) {
+                  setState(() {
+                    _pendingReportsStatementCustomerKey =
+                        CustomerIdentity.key(id: c.id, name: c.name);
+                    _selectedIndex = 7;
+                  });
+                },
         );
       case 6:
         return ProductManagementScreenV2(user: _currentUser);
-      case 7:
+      case 7 when !_reportsLocked:
         final statementCustomerKey = _pendingReportsStatementCustomerKey;
         _pendingReportsStatementCustomerKey = null;
         return ReportsScreen(
@@ -490,7 +504,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     if (_selectedIndex == index) return;
     if (_selectedIndex == 1 && !await _canLeaveInvoiceForm()) return;
     if (_selectedIndex == 7 && index != 7) await _refreshUser();
-    if (_selectedIndex == 8 && index != 8) await _loadServicesEnabled();
+    if (_selectedIndex == 8 && index != 8) {
+      await _loadServicesEnabled();
+      await _loadReportsAdminOnly();
+    }
     if (index == 1) await _loadCreateInvoiceLayout();
     if (!mounted) return;
     setState(() {
@@ -820,8 +837,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         Icons.inventory_2_outlined,
                         Icons.inventory_2,
                         AppLocalizations.of(context)!.navProducts),
-                    _buildNavItem(7, Icons.bar_chart_outlined, Icons.bar_chart,
-                        AppLocalizations.of(context)!.navReports),
+                    if (!_reportsLocked)
+                      _buildNavItem(7, Icons.bar_chart_outlined, Icons.bar_chart,
+                          AppLocalizations.of(context)!.navReports),
                     _buildNavItem(8, Icons.settings_outlined, Icons.settings,
                         AppLocalizations.of(context)!.navSettings,
                         showDot: _hasUpdate),
@@ -1427,6 +1445,8 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
   List<Invoice> dueSoonInvoices = [];
   List<Product> outOfStockProducts = [];
   List<Product> lowStockProducts = [];
+  // Hides "Update stock" when stock editing is admin-only.
+  bool _stockLocked = false;
   List<Invoice> overdueInvoices = [];
   String _currencySymbol = '₹';
   bool isLoading = true;
@@ -1478,6 +1498,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
           .read(settingsRepositoryProvider)
           .getSetting(SettingKey.shortcutsBannerDismissed), // 15
       ref.read(productRepositoryProvider).getLowStockProducts(), // 16
+      ref.read(settingsRepositoryProvider).getProductColumnsConfig(), // 17
     ]);
 
     final customerCount = results[0] as int;
@@ -1496,6 +1517,9 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     final supportDismissed = results[12] as String?;
     final outOfStock = results[13] as List<Product>;
     final lowStock = results[16] as List<Product>;
+    final stockLocked =
+        (results[17] as ProductColumnsConfig).stockEditAdminOnly &&
+            !widget.user.isAdmin();
     final themeBannerDismissed = results[14] as String?;
     final shortcutsBannerDismissed =
         Platform.isAndroid ? '1' : results[15] as String?;
@@ -1512,6 +1536,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
       totalProducts = productCount;
       outOfStockProducts = outOfStock;
       lowStockProducts = lowStock;
+      _stockLocked = stockLocked;
       totalInvoices = financials.count;
       totalRevenue = financials.revenue;
       totalOutstanding = financials.outstanding;
@@ -2947,6 +2972,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                               color: alert[700]),
                         ),
                       ),
+                      if (!_stockLocked) ...[
                       const SizedBox(width: 12),
                       // Update stock button
                       _buildActionButton(
@@ -2955,6 +2981,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                         AppLocalizations.of(context)!.actionUpdateStock,
                         () => _showUpdateStockDialog(product),
                       ),
+                      ],
                     ],
                   ),
                 ),
@@ -4172,6 +4199,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                             fontSize: 12,
                             color: alert,
                             fontWeight: FontWeight.w600)),
+                    if (!_stockLocked) ...[
                     const SizedBox(width: 6),
                     Tooltip(
                       message: AppLocalizations.of(context)!.actionUpdateStock,
@@ -4201,6 +4229,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                         ),
                       ),
                     ),
+                    ],
                   ],
                 ),
               )),
@@ -4375,6 +4404,10 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                   ?._selectedIndex = 5;
             });
           }),
+          if (context
+                  .findAncestorStateOfType<_DashboardScreenState>()
+                  ?._reportsLocked !=
+              true) ...[
           const SizedBox(height: 4),
           _buildQuickActionRow(
               Icons.bar_chart_outlined,
@@ -4389,6 +4422,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                   ?._selectedIndex = 7;
             });
           }),
+          ],
         ],
       ),
     );

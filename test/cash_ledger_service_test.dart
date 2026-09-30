@@ -266,4 +266,39 @@ void main() {
     expect(rows.length, 1);
     expect((await CashLedgerService.balancesOn(db)).cash, 6000);
   });
+
+  test('daily net per account: movements + counted payments, not the opening',
+      () async {
+    final next = DateTime(2026, 9, 26, 15);
+    await opening(5000, 10000, day);
+    await add(exchange(true, CashLedgerEntry.accountCash)); // 25th
+    await add(CashLedgerService.buildMovement(
+        type: CashLedgerEntry.expense, amount: 200, dateTime: next));
+    await add(CashLedgerService.buildMovement(
+        type: CashLedgerEntry.bankDeposit, amount: 300, dateTime: next));
+    await invoice('i1');
+    await invoice('i2', deletedAt: '2026-09-26T12:00:00.000');
+    await invoicePayment('p1', 'i1', 50, 'Cash', '2026-09-24'); // pre-opening
+    await invoicePayment('p2', 'i1', 150, 'Cash', '2026-09-26');
+    await invoicePayment('p3', 'i1', 400, 'UPI', '2026-09-26');
+    await invoicePayment('p4', 'i1', 600, 'Check', '2026-09-26'); // not money
+    await invoicePayment('p5', 'i2', 700, 'Cash', '2026-09-26'); // deleted inv
+
+    final net = await CashLedgerService.dailyNetOn(
+        db, DateTime(2026, 9, 24), DateTime(2026, 9, 26));
+    expect(net.keys.toSet(), {'2026-09-25', '2026-09-26'});
+    expect(net['2026-09-25'], (cash: -990.0, upiBank: 1000.0));
+    expect(net['2026-09-26'], (cash: -200.0 - 300 + 150, upiBank: 300.0 + 400));
+
+    // Reconciles with the balances: closing(26th) − closing(25th) = net(26th).
+    final c25 = await CashLedgerService.balancesOn(db, before: DateTime(2026, 9, 26));
+    final c26 = await CashLedgerService.balancesOn(db, before: DateTime(2026, 9, 27));
+    expect(c26.cash - c25.cash, net['2026-09-26']!.cash);
+    expect(c26.upiBank - c25.upiBank, net['2026-09-26']!.upiBank);
+
+    // Range limits both sources.
+    expect((await CashLedgerService.dailyNetOn(
+            db, DateTime(2026, 9, 26), DateTime(2026, 9, 26)))
+        .keys, ['2026-09-26']);
+  });
 }

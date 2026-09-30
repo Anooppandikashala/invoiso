@@ -284,6 +284,15 @@ class _ProductColumnsSettingsScreenState
                                 _config.copyWith(purchasePriceAdminOnly: v)),
                           ),
                           _tile(
+                            title: l10n.productColumnsStockEditAdminOnlyLabel,
+                            subtitle:
+                                l10n.productColumnsStockEditAdminOnlySubtitle,
+                            icon: Icons.inventory_2_outlined,
+                            value: _config.stockEditAdminOnly,
+                            onChanged: (v) => setState(() => _config =
+                                _config.copyWith(stockEditAdminOnly: v)),
+                          ),
+                          _tile(
                             title: l10n.productColumnsDefaultDiscountLabel,
                             subtitle:
                                 l10n.productColumnsDefaultDiscountSubtitle,

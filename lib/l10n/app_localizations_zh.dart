@@ -3860,6 +3860,13 @@ class AppLocalizationsZh extends AppLocalizations {
       '对非管理员用户隐藏采购价、利润和库存价值。';
 
   @override
+  String get productColumnsStockEditAdminOnlyLabel => '库存编辑：仅管理员';
+
+  @override
+  String get productColumnsStockEditAdminOnlySubtitle =>
+      '非管理员用户无法设置或更改库存数量，也无法从 CSV 导入产品。';
+
+  @override
   String get productColumnsDefaultDiscountLabel => '默认折扣';
 
   @override
@@ -4234,6 +4241,12 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get accessibilityCashExchangeSubtitle =>
       '在“新建发票”之后添加“现金兑换服务”菜单，用于记录 UPI ↔ 现金兑换、服务费和现金收支，并显示现金与 UPI/银行余额。';
+
+  @override
+  String get accessibilityReportsAdminOnlyLabel => '报表：仅管理员';
+
+  @override
+  String get accessibilityReportsAdminOnlySubtitle => '对非管理员用户隐藏报表菜单。';
 
   @override
   String get cashExchangeCashLabel => '现金';

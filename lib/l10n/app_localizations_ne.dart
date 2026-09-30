@@ -4052,6 +4052,14 @@ class AppLocalizationsNe extends AppLocalizations {
       'गैर-एडमिन प्रयोगकर्ताहरूबाट खरिद मूल्य, नाफा र स्टक मूल्य लुकाउनुहोस्।';
 
   @override
+  String get productColumnsStockEditAdminOnlyLabel =>
+      'स्टक सम्पादन: एडमिन मात्र';
+
+  @override
+  String get productColumnsStockEditAdminOnlySubtitle =>
+      'गैर-एडमिन प्रयोगकर्ताहरूले स्टक परिमाण सेट वा परिवर्तन गर्न, वा CSV बाट उत्पादनहरू आयात गर्न सक्दैनन्।';
+
+  @override
   String get productColumnsDefaultDiscountLabel => 'पूर्वनिर्धारित छुट';
 
   @override
@@ -4438,6 +4446,13 @@ class AppLocalizationsNe extends AppLocalizations {
   @override
   String get accessibilityCashExchangeSubtitle =>
       'नयाँ बीजकपछि नगद विनिमय सेवाहरू मेनु थप्छ, जसले UPI ↔ नगद विनिमय, सेवा शुल्क र नगद कारोबार रेकर्ड गर्छ, नगद र UPI/बैंक मौज्दातसहित।';
+
+  @override
+  String get accessibilityReportsAdminOnlyLabel => 'रिपोर्ट: एडमिन मात्र';
+
+  @override
+  String get accessibilityReportsAdminOnlySubtitle =>
+      'गैर-एडमिन प्रयोगकर्ताहरूबाट रिपोर्ट मेनु लुकाउनुहोस्।';
 
   @override
   String get cashExchangeCashLabel => 'नगद';

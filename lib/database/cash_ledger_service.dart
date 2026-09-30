@@ -358,6 +358,10 @@ class CashLedgerService {
           DateTime from, DateTime to) async =>
       periodTotalsOn(await _dbHelper.database, from, to);
 
+  static Future<Map<String, CashDailyNet>> getDailyNet(
+          DateTime from, DateTime to) async =>
+      dailyNetOn(await _dbHelper.database, from, to);
+
   /// Ledger sums plus invoice payments (non-deleted invoices) dated on or
   /// after the opening-balance date. Before an opening balance is set,
   /// invoice payments aren't counted. [before] (a day boundary) limits both
@@ -401,6 +405,62 @@ class CashLedgerService {
       upi += (pay['upi'] as num).toDouble();
     }
     return (cash: cash, upiBank: upi, trackingStart: start);
+  }
+
+  /// Net change of Cash and UPI/Bank per day in [from]..[to] (whole days),
+  /// keyed by `yyyy-MM-dd`, days with no movement left out. Same sources as
+  /// [balancesOn] except the opening row, which is a starting balance, not a
+  /// movement. So a day's closing balance = the previous day's + its net.
+  @visibleForTesting
+  static Future<Map<String, CashDailyNet>> dailyNetOn(
+      DatabaseExecutor db, DateTime from, DateTime to) async {
+    final net = <String, CashDailyNet>{};
+    void add(Map<String, Object?> r) {
+      final d = r['d'] as String;
+      final prev = net[d] ?? (cash: 0.0, upiBank: 0.0);
+      net[d] = (
+        cash: prev.cash + (r['cash'] as num).toDouble(),
+        upiBank: prev.upiBank + (r['upi'] as num).toDouble(),
+      );
+    }
+
+    (await db.rawQuery(
+      'SELECT substr(date_time, 1, 10) AS d, SUM(cash_delta) AS cash, '
+      'SUM(upi_delta) AS upi FROM cash_ledger '
+      'WHERE entry_type != ? AND date_time >= ? AND date_time <= ? GROUP BY d',
+      [
+        CashLedgerEntry.opening,
+        AppDate.dateKeyStart(from),
+        AppDate.dateKeyEnd(to),
+      ],
+    ))
+        .forEach(add);
+
+    final openingRows = await db.query('cash_ledger',
+        columns: ['date_time'],
+        where: 'entry_type = ?',
+        whereArgs: [CashLedgerEntry.opening],
+        limit: 1);
+    if (openingRows.isNotEmpty) {
+      final start = DateTime.parse(openingRows.first['date_time'] as String);
+      final marks = upiBankPaymentMethods.map((_) => '?').join(', ');
+      final first = from.isBefore(start) ? start : from;
+      (await db.rawQuery(
+        'SELECT substr(date_paid, 1, 10) AS d, '
+        "COALESCE(SUM(CASE WHEN payment_method = 'Cash' THEN amount_paid END), 0) AS cash, "
+        'COALESCE(SUM(CASE WHEN payment_method IN ($marks) THEN amount_paid END), 0) AS upi '
+        'FROM invoice_payments WHERE date_paid >= ? AND date_paid <= ? '
+        'AND invoice_id IN (SELECT id FROM invoices WHERE deleted_at IS NULL) '
+        'GROUP BY d',
+        [
+          ...upiBankPaymentMethods,
+          AppDate.dateKey(first),
+          AppDate.dateKeyEnd(to),
+        ],
+      ))
+          .forEach(add);
+    }
+    return net;
   }
 
   @visibleForTesting

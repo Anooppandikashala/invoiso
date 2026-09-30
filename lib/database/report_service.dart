@@ -8,6 +8,7 @@ import 'package:invoiso/domain/customer_identity.dart';
 import 'package:invoiso/domain/invoice_calculator.dart';
 import 'package:invoiso/domain/invoice_totals_calculator.dart';
 import 'package:invoiso/models/additional_cost.dart';
+import 'package:invoiso/models/cash_ledger_entry.dart';
 import 'package:invoiso/utils/app_date.dart';
 import 'package:invoiso/utils/formatters.dart';
 import 'package:invoiso/models/report_models.dart';
@@ -402,6 +403,26 @@ class ReportService {
               cogs: cogsByDay[d] ?? 0.0,
             ))
         .toList();
+  }
+
+  /// Adds each day's net Cash / UPI-Bank change to [rows]. Days with only
+  /// ledger activity get a row with no invoices; the result stays date-sorted.
+  static List<DailyPoint> mergeDailyCashUpi(
+      List<DailyPoint> rows, Map<String, CashDailyNet> net) {
+    final byDate = {for (final d in rows) d.date: d};
+    final days = {...byDate.keys, ...net.keys}.toList()..sort();
+    return days.map((day) {
+      final d = byDate[day];
+      final n = net[day];
+      return DailyPoint(
+        date: day,
+        invoiceCount: d?.invoiceCount ?? 0,
+        billed: d?.billed ?? 0,
+        cogs: d?.cogs ?? 0,
+        cash: n?.cash ?? 0,
+        upiBank: n?.upiBank ?? 0,
+      );
+    }).toList();
   }
 
   // ── 3. Payment status breakdown ────────────────────────────────────────────
@@ -1118,9 +1139,14 @@ class ReportService {
 
   // ── CSV export helpers ─────────────────────────────────────────────────────
 
-  static String exportDailyReportCsv(List<DailyPoint> rows) {
+  /// [cashUpi] adds the net Cash and UPI/Bank columns.
+  static String exportDailyReportCsv(List<DailyPoint> rows,
+      {bool cashUpi = false}) {
     return buildQuotedCsv([
-      ['Date', 'Invoices', 'Sales', 'COGS', 'Profit', 'Margin %'],
+      [
+        'Date', 'Invoices', 'Sales', 'COGS', 'Profit', 'Margin %',
+        if (cashUpi) ...['Cash', 'UPI/Bank'],
+      ],
       for (final d in rows)
         [
           d.date,
@@ -1129,6 +1155,10 @@ class ReportService {
           d.cogs.toStringAsFixed(2),
           d.profit.toStringAsFixed(2),
           d.marginPercent.toStringAsFixed(1),
+          if (cashUpi) ...[
+            d.cash.toStringAsFixed(2),
+            d.upiBank.toStringAsFixed(2),
+          ],
         ],
     ]);
   }
@@ -1452,6 +1482,7 @@ class ReportService {
     required String currencySymbol,
     required String dateRangeLabel,
     bool showFooterBranding = true,
+    bool cashUpi = false,
   }) async {
     final theme = await PdfFontService.loadTheme();
     final doc = pw.Document(theme: theme);
@@ -1470,6 +1501,8 @@ class ReportService {
     final totalCogs = rows.fold<double>(0, (a, d) => a + d.cogs);
     final totalProfit = totalSales - totalCogs;
     final totalMargin = totalSales == 0 ? 0.0 : (totalProfit / totalSales) * 100;
+    final totalCash = rows.fold<double>(0, (a, d) => a + d.cash);
+    final totalUpi = rows.fold<double>(0, (a, d) => a + d.upiBank);
 
     doc.addPage(
       pw.MultiPage(
@@ -1497,7 +1530,10 @@ class ReportService {
         ),
         build: (context) => [
           pw.TableHelper.fromTextArray(
-            headers: ['SL', 'Date', 'Invoices', 'Sales', 'COGS', 'Profit', 'Margin %'],
+            headers: [
+              'SL', 'Date', 'Invoices', 'Sales', 'COGS', 'Profit', 'Margin %',
+              if (cashUpi) ...['Cash', 'UPI/Bank'],
+            ],
             data: List<List<String>>.generate(rows.length, (i) {
               final d = rows[i];
               return [
@@ -1508,6 +1544,7 @@ class ReportService {
                 money(d.cogs),
                 money(d.profit),
                 '${d.marginPercent.toStringAsFixed(1)}%',
+                if (cashUpi) ...[money(d.cash), money(d.upiBank)],
               ];
             }),
             headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9, color: PdfColors.white),
@@ -1521,6 +1558,8 @@ class ReportService {
               4: pw.Alignment.centerRight,
               5: pw.Alignment.centerRight,
               6: pw.Alignment.centerRight,
+              7: pw.Alignment.centerRight,
+              8: pw.Alignment.centerRight,
             },
             cellHeight: 22,
             oddRowDecoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF8FAFC)),
@@ -1538,7 +1577,8 @@ class ReportService {
                 pw.Text(
                   'Total — Invoices: $totalInvoices   Sales: ${money(totalSales)}   '
                   'COGS: ${money(totalCogs)}   Profit: ${money(totalProfit)}   '
-                  'Margin: ${totalMargin.toStringAsFixed(1)}%',
+                  'Margin: ${totalMargin.toStringAsFixed(1)}%'
+                  '${cashUpi ? '   Cash: ${money(totalCash)}   UPI/Bank: ${money(totalUpi)}' : ''}',
                   style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
                 ),
               ],

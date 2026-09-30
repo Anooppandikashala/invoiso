@@ -97,5 +97,8 @@ typedef CashBalances = ({
   DateTime? trackingStart, // opening-balance date; null = not set up yet
 });
 
+/// Net change of each account on one day (Daily Report).
+typedef CashDailyNet = ({double cash, double upiBank});
+
 /// Income / spend over a period (display only).
 typedef CashPeriodTotals = ({double serviceIncome, double expenses});

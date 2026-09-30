@@ -170,6 +170,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
   ProductColumnsConfig _columnsConfig = const ProductColumnsConfig();
   // Purchase price restricted to admins and this user isn't one.
   bool _hidePurchasePrice = false;
+  // Stock editing admin-only: non-admins can't set stock or import CSV.
+  bool _stockLocked = false;
   bool _showColumnsBanner = false;
 
   // Which optional columns show in the list table. Independent of the
@@ -204,6 +206,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     final hide = config.purchasePriceAdminOnly && !widget.user.isAdmin();
     setState(() {
       _hidePurchasePrice = hide;
+      _stockLocked = config.stockEditAdminOnly && !widget.user.isAdmin();
       _columnsConfig = hide ? config.copyWith(purchasePrice: false) : config;
       if (!config.stock) _unlimitedStock = true;
     });
@@ -466,7 +469,9 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
         price: price,
-        stock: _unlimitedStock ? 0 : int.parse(_stockController.text.trim()),
+        stock: _unlimitedStock || _stockLocked
+            ? 0
+            : int.parse(_stockController.text.trim()),
         hsncode: _hsnCodeController.text.trim(),
         tax_rate: int.parse(_taxRateController.text.trim()),
         type: _newItemType,
@@ -479,7 +484,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         unit: _selectedUnit.trim(),
         unlimitedStock: _unlimitedStock,
         priceIncludesTax: _priceIncludesTax,
-        lowStockLimit: _unlimitedStock
+        lowStockLimit: _unlimitedStock || _stockLocked
             ? null
             : int.tryParse(_lowStockLimitController.text.trim()),
       );
@@ -2069,6 +2074,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
           runSpacing: 8,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
+            if (!_stockLocked)
             OutlinedButton.icon(
               onPressed: () async {
                 await _showImportDialog();
@@ -2702,8 +2708,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                   child: _buildFormField(_stockController, l10n.labelStock, Icons.inventory,
                       keyboardType: TextInputType.number,
                       isStock: true,
-                      required: !_unlimitedStock,
-                      enabled: !_unlimitedStock),
+                      required: !_unlimitedStock && !_stockLocked,
+                      enabled: !_unlimitedStock && !_stockLocked),
                 ),
               if (_columnsConfig.stock && _columnsConfig.unit) const SizedBox(width: 12),
               if (_columnsConfig.unit)
@@ -2725,10 +2731,12 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
               controlAffinity: ListTileControlAffinity.leading,
               dense: true,
               value: _unlimitedStock,
-              onChanged: (v) {
-                if (!mounted) return;
-                setState(() => _unlimitedStock = v ?? false);
-              },
+              onChanged: _stockLocked
+                  ? null
+                  : (v) {
+                      if (!mounted) return;
+                      setState(() => _unlimitedStock = v ?? false);
+                    },
               title: Text(l10n.productMgmtUnlimitedStockLabel),
               subtitle: Text(l10n.productMgmtTrackInfiniteStockSubtitle),
             ),
@@ -2738,6 +2746,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                 keyboardType: TextInputType.number,
                 isStock: true,
                 required: false,
+                enabled: !_stockLocked,
                 helperText: l10n.productMgmtLowStockLimitHelper),
         ],
         if (_columnsConfig.productMetadata) ...[
@@ -3008,12 +3017,13 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
             bool isTaxRate = false,
             bool isRequired = false,
             String? prefixText,
+            bool locked = false,
           }) {
             return _buildDialogTextField(
               controller,
               label,
               icon,
-              readOnly: !isEdit,
+              readOnly: !isEdit || locked,
               maxLines: maxLines,
               maxLength: maxLength,
               keyboardType: keyboardType,
@@ -3053,7 +3063,9 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                 name: nameCtrl.text.trim(),
                 description: descCtrl.text.trim(),
                 price: price,
-                stock: unlimitedStock ? 0 : int.parse(stockCtrl.text.trim()),
+                stock: _stockLocked
+                    ? product.stock
+                    : unlimitedStock ? 0 : int.parse(stockCtrl.text.trim()),
                 hsncode: hsnCtrl.text.trim(),
                 tax_rate: int.parse(taxCtrl.text.trim()),
                 type: itemType,
@@ -3061,9 +3073,12 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                 purchasePrice: purchasePrice,
                 aliasName: aliasCtrl.text.trim().isEmpty ? null : aliasCtrl.text.trim(),
                 unit: unit.trim(),
-                unlimitedStock: unlimitedStock,
+                unlimitedStock:
+                    _stockLocked ? product.unlimitedStock : unlimitedStock,
                 priceIncludesTax: priceIncludesTax,
-                lowStockLimit: int.tryParse(lowStockLimitCtrl.text.trim()),
+                lowStockLimit: _stockLocked
+                    ? product.lowStockLimit
+                    : int.tryParse(lowStockLimitCtrl.text.trim()),
               );
               await ref.read(productRepositoryProvider).updateProduct(updated);
               await ref.read(productRepositoryProvider).upsertProductMetadata(
@@ -3289,7 +3304,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                                       child: field(stockCtrl, l10n.labelStock, Icons.inventory,
                                           keyboardType: TextInputType.number,
                                           isStock: !unlimitedStock,
-                                          isRequired: !unlimitedStock),
+                                          isRequired: !unlimitedStock,
+                                          locked: _stockLocked),
                                     ),
                                   if (_columnsConfig.stock && _columnsConfig.unit)
                                     const SizedBox(width: 12),
@@ -3310,7 +3326,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                                   contentPadding: EdgeInsets.zero,
                                   controlAffinity: ListTileControlAffinity.leading,
                                   value: unlimitedStock,
-                                  onChanged: !isEdit
+                                  onChanged: !isEdit || _stockLocked
                                       ? null
                                       : (v) => setDialogState(
                                           () => unlimitedStock = v ?? false),
@@ -3322,7 +3338,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                                 field(lowStockLimitCtrl,
                                     l10n.productMgmtLowStockLimitLabel,
                                     Icons.notification_important_outlined,
-                                    keyboardType: TextInputType.number),
+                                    keyboardType: TextInputType.number,
+                                    locked: _stockLocked),
                             ],
                             if (_columnsConfig.productMetadata) ...[
                               const SizedBox(height: 8),

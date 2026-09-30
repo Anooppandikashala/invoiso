@@ -52,4 +52,5 @@ abstract class CashLedgerRepository {
   });
   Future<CashBalances> getBalances({DateTime? before});
   Future<CashPeriodTotals> getPeriodTotals(DateTime from, DateTime to);
+  Future<Map<String, CashDailyNet>> getDailyNet(DateTime from, DateTime to);
 }

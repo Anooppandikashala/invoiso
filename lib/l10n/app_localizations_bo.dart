@@ -4016,6 +4016,14 @@ class AppLocalizationsBo extends AppLocalizations {
       'དོ་དམ་པ་མ་ཡིན་པའི་སྤྱོད་མཁན་ལ་ཉོ་གོང་དང་ཁེ་འབབ། ཚོང་ཟོག་གི་རིན་ཐང་སྦས།';
 
   @override
+  String get productColumnsStockEditAdminOnlyLabel =>
+      'ཚོང་ཟོག་བཟོ་བཅོས། དོ་དམ་པ་ཁོ་ན།';
+
+  @override
+  String get productColumnsStockEditAdminOnlySubtitle =>
+      'དོ་དམ་པ་མ་ཡིན་པའི་སྤྱོད་མཁན་གྱིས་ཚོང་ཟོག་གི་གྲངས་འབོར་གཏན་འཁེལ་དང་བསྒྱུར་བཅོས། CSV ནས་ཐོན་རྫས་ནང་འདྲེན་བྱེད་མི་ཆོག';
+
+  @override
   String get productColumnsDefaultDiscountLabel => 'སྔར་སྒྲིག་ཐོ་ཆད།';
 
   @override
@@ -4401,6 +4409,13 @@ class AppLocalizationsBo extends AppLocalizations {
   @override
   String get accessibilityCashExchangeSubtitle =>
       'ཐོ་ཡིག་གསར་པའི་རྗེས་སུ་དངུལ་ལག་བརྗེ་རེས་ཞབས་ཞུའི་འདེམས་ཐོ་སྣོན་ནས། UPI ↔ དངུལ་ལག་བརྗེ་རེས་དང་ཞབས་ཞུའི་གླ་ཆ། དངུལ་ལག་འགྲོ་སོང་བཅས་ཐོ་འགོད་བྱེད། དངུལ་ལག་དང་ UPI/དངུལ་ཁང་གི་ལྷག་བསགས་དང་མཉམ་དུ།';
+
+  @override
+  String get accessibilityReportsAdminOnlyLabel => 'སྙན་ཐོ། དོ་དམ་པ་ཁོ་ན།';
+
+  @override
+  String get accessibilityReportsAdminOnlySubtitle =>
+      'དོ་དམ་པ་མ་ཡིན་པའི་སྤྱོད་མཁན་ལ་སྙན་ཐོའི་འདེམས་ཐོ་སྦས།';
 
   @override
   String get cashExchangeCashLabel => 'དངུལ་ལག';

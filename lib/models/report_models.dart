@@ -58,12 +58,18 @@ class DailyPoint {
   final int invoiceCount;
   final double billed;
   final double cogs;
+  // Net change of the Cash and UPI/Bank accounts that day (Cash/UPI exchange
+  // feature); 0 when it's off.
+  final double cash;
+  final double upiBank;
 
   const DailyPoint({
     required this.date,
     required this.invoiceCount,
     required this.billed,
     this.cogs = 0.0,
+    this.cash = 0.0,
+    this.upiBank = 0.0,
   });
 
   double get profit => billed - cogs;

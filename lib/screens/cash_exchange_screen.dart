@@ -488,7 +488,8 @@ class _CashExchangeScreenState extends ConsumerState<CashExchangeScreen> {
                       _money(a), _money(f), method),
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
-          if (a > available)
+          // The warning shows the balance, which regular users don't see.
+          if (_isAdmin && a > available)
             Text(
               l10n.cashExchangeLowBalanceWarning(
                   _money(available),
@@ -962,6 +963,7 @@ class _CashExchangeScreenState extends ConsumerState<CashExchangeScreen> {
                     child: Text(l10n.cashExchangeChangeDates)),
             ],
           ),
+          if (_isAdmin) ...[
           const SizedBox(height: 12),
           Wrap(
             spacing: 12,
@@ -977,6 +979,7 @@ class _CashExchangeScreenState extends ConsumerState<CashExchangeScreen> {
                   _periodClosing),
             ],
           ),
+          ],
         ],
       ),
     );
@@ -1104,6 +1107,8 @@ class _CashExchangeScreenState extends ConsumerState<CashExchangeScreen> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // Balances and income are business finance: admins only.
+                    if (_isAdmin)
                     Wrap(
                       spacing: gap,
                       runSpacing: gap,
@@ -1124,7 +1129,7 @@ class _CashExchangeScreenState extends ConsumerState<CashExchangeScreen> {
                       ],
                     ),
                     if (_opening == null) ...[
-                      const SizedBox(height: 16),
+                      if (_isAdmin) const SizedBox(height: 16),
                       // Not a ListTile: its trailing button can't wrap and
                       // asserts on narrow widths.
                       Card(
@@ -1175,7 +1180,7 @@ class _CashExchangeScreenState extends ConsumerState<CashExchangeScreen> {
                         ),
                       ),
                     ],
-                    const SizedBox(height: 20),
+                    if (_isAdmin || _opening == null) const SizedBox(height: 20),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,

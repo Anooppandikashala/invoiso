@@ -6774,6 +6774,18 @@ abstract class AppLocalizations {
   /// **'Hide purchase price, profit and stock value from non-admin users.'**
   String get productColumnsPurchasePriceAdminOnlySubtitle;
 
+  /// No description provided for @productColumnsStockEditAdminOnlyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock Editing: Admins Only'**
+  String get productColumnsStockEditAdminOnlyLabel;
+
+  /// No description provided for @productColumnsStockEditAdminOnlySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Non-admin users can\'t set or change stock quantities, or import products from CSV.'**
+  String get productColumnsStockEditAdminOnlySubtitle;
+
   /// No description provided for @productColumnsDefaultDiscountLabel.
   ///
   /// In en, this message translates to:
@@ -7463,6 +7475,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Adds a Cash Exchange Services menu after New Invoice to record UPI ↔ Cash exchanges, service fees and cash movements, with Cash and UPI/Bank balances.'**
   String get accessibilityCashExchangeSubtitle;
+
+  /// No description provided for @accessibilityReportsAdminOnlyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports: Admins Only'**
+  String get accessibilityReportsAdminOnlyLabel;
+
+  /// No description provided for @accessibilityReportsAdminOnlySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hides the Reports menu from non-admin users.'**
+  String get accessibilityReportsAdminOnlySubtitle;
 
   /// No description provided for @cashExchangeCashLabel.
   ///

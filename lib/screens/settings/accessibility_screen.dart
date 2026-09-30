@@ -18,12 +18,30 @@ class AccessibilityScreen extends ConsumerStatefulWidget {
 class _AccessibilityScreenState extends ConsumerState<AccessibilityScreen> {
   String _createInvoiceLayout = 'v2';
   bool _cashExchangeEnabled = false;
+  bool _reportsAdminOnly = false;
 
   @override
   void initState() {
     super.initState();
     _loadCreateInvoiceLayout();
     _loadCashExchangeEnabled();
+    _loadReportsAdminOnly();
+  }
+
+  Future<void> _loadReportsAdminOnly() async {
+    final v = await ref
+        .read(settingsRepositoryProvider)
+        .getSetting(SettingKey.reportsAdminOnly);
+    if (!mounted) return;
+    setState(() => _reportsAdminOnly = v == 'true');
+  }
+
+  Future<void> _setReportsAdminOnly(bool value) async {
+    await ref
+        .read(settingsRepositoryProvider)
+        .setSetting(SettingKey.reportsAdminOnly, value.toString());
+    if (!mounted) return;
+    setState(() => _reportsAdminOnly = value);
   }
 
   Future<void> _loadCashExchangeEnabled() async {
@@ -176,6 +194,31 @@ class _AccessibilityScreenState extends ConsumerState<AccessibilityScreen> {
                                 .onSurfaceVariant)),
                     value: _cashExchangeEnabled,
                     onChanged: _setCashExchangeEnabled,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Card(
+                  elevation: 0,
+                  color: Theme.of(context).colorScheme.surfaceContainer,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+                    side: BorderSide(
+                        color: Theme.of(context).colorScheme.outlineVariant),
+                  ),
+                  child: SwitchListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 8),
+                    secondary: const Icon(Icons.bar_chart_outlined),
+                    title: Text(l10n.accessibilityReportsAdminOnlyLabel,
+                        style: const TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: Text(l10n.accessibilityReportsAdminOnlySubtitle,
+                        style: TextStyle(
+                            fontSize: AppFontSize.xsmall,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant)),
+                    value: _reportsAdminOnly,
+                    onChanged: _setReportsAdminOnly,
                   ),
                 ),
                 const SizedBox(height: 24),

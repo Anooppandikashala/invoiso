@@ -4099,6 +4099,14 @@ class AppLocalizationsFr extends AppLocalizations {
       'Masque le prix d\'achat, les marges et la valeur du stock aux utilisateurs non administrateurs.';
 
   @override
+  String get productColumnsStockEditAdminOnlyLabel =>
+      'Modification du stock : administrateurs uniquement';
+
+  @override
+  String get productColumnsStockEditAdminOnlySubtitle =>
+      'Les utilisateurs non administrateurs ne peuvent pas définir ni modifier les quantités en stock, ni importer des produits depuis un CSV.';
+
+  @override
   String get productColumnsDefaultDiscountLabel => 'Remise par défaut';
 
   @override
@@ -4492,6 +4500,14 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get accessibilityCashExchangeSubtitle =>
       'Ajoute un menu Services de change d\'espèces après Nouvelle facture pour enregistrer les échanges UPI ↔ espèces, les frais de service et les mouvements d\'espèces, avec les soldes Espèces et UPI/Banque.';
+
+  @override
+  String get accessibilityReportsAdminOnlyLabel =>
+      'Rapports : administrateurs uniquement';
+
+  @override
+  String get accessibilityReportsAdminOnlySubtitle =>
+      'Masque le menu Rapports aux utilisateurs non administrateurs.';
 
   @override
   String get cashExchangeCashLabel => 'Espèces';

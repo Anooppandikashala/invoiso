@@ -4014,6 +4014,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Hide purchase price, profit and stock value from non-admin users.';
 
   @override
+  String get productColumnsStockEditAdminOnlyLabel =>
+      'Stock Editing: Admins Only';
+
+  @override
+  String get productColumnsStockEditAdminOnlySubtitle =>
+      'Non-admin users can\'t set or change stock quantities, or import products from CSV.';
+
+  @override
   String get productColumnsDefaultDiscountLabel => 'Default Discount';
 
   @override
@@ -4399,6 +4407,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get accessibilityCashExchangeSubtitle =>
       'Adds a Cash Exchange Services menu after New Invoice to record UPI ↔ Cash exchanges, service fees and cash movements, with Cash and UPI/Bank balances.';
+
+  @override
+  String get accessibilityReportsAdminOnlyLabel => 'Reports: Admins Only';
+
+  @override
+  String get accessibilityReportsAdminOnlySubtitle =>
+      'Hides the Reports menu from non-admin users.';
 
   @override
   String get cashExchangeCashLabel => 'Cash';

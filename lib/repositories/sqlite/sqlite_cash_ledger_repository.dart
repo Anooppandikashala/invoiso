@@ -113,4 +113,8 @@ class SqliteCashLedgerRepository implements CashLedgerRepository {
   @override
   Future<CashPeriodTotals> getPeriodTotals(DateTime from, DateTime to) =>
       CashLedgerService.getPeriodTotals(from, to);
+
+  @override
+  Future<Map<String, CashDailyNet>> getDailyNet(DateTime from, DateTime to) =>
+      CashLedgerService.getDailyNet(from, to);
 }

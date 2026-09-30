@@ -4028,6 +4028,14 @@ class AppLocalizationsHi extends AppLocalizations {
       'गैर-एडमिन उपयोगकर्ताओं से खरीद मूल्य, लाभ और स्टॉक मूल्य छिपाएँ।';
 
   @override
+  String get productColumnsStockEditAdminOnlyLabel =>
+      'स्टॉक संपादन: केवल एडमिन';
+
+  @override
+  String get productColumnsStockEditAdminOnlySubtitle =>
+      'गैर-एडमिन उपयोगकर्ता स्टॉक मात्रा सेट या बदल नहीं सकते, न ही CSV से उत्पाद आयात कर सकते हैं।';
+
+  @override
   String get productColumnsDefaultDiscountLabel => 'डिफ़ॉल्ट छूट';
 
   @override
@@ -4415,6 +4423,13 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get accessibilityCashExchangeSubtitle =>
       'नया इनवॉइस के बाद नकद विनिमय सेवाएँ मेनू जोड़ता है, जिससे UPI ↔ नकद विनिमय, सेवा शुल्क और नकद लेन-देन दर्ज कर सकें, नकद और UPI/बैंक शेष के साथ।';
+
+  @override
+  String get accessibilityReportsAdminOnlyLabel => 'रिपोर्ट: केवल एडमिन';
+
+  @override
+  String get accessibilityReportsAdminOnlySubtitle =>
+      'गैर-एडमिन उपयोगकर्ताओं से रिपोर्ट मेनू छिपाएँ।';
 
   @override
   String get cashExchangeCashLabel => 'नकद';

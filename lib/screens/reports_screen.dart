@@ -10,6 +10,7 @@ import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/database/report_service.dart';
+import 'package:invoiso/models/cash_ledger_entry.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/services/customer_statement_pdf_service.dart';
 import 'package:invoiso/providers/repositories.dart';
@@ -53,6 +54,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   int _selectedIndex = 0;
   // Purchase price restricted to admins: hide cost, profit and stock value.
   bool _hideCost = false;
+  // Daily Report net Cash / UPI-Bank columns: exchange feature on, admins only.
+  bool _cashUpi = false;
   final Set<int> _loadedTabs = {};
   final Map<int, bool> _tabLoading = {};
 
@@ -254,6 +257,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       settingsRepo.getSetting(SettingKey.currency),
       settingsRepo.getDateFormat(),
       settingsRepo.getProductColumnsConfig(),
+      settingsRepo.getSetting(SettingKey.cashUpiExchangeEnabled),
     ]);
     final code = (results[0] as String?) ?? 'INR';
     final currency = SupportedCurrencies.all.firstWhere((c) => c.code == code,
@@ -264,6 +268,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     if (mounted) {
       setState(() {
         _hideCost = hideCost;
+        _cashUpi = results[3] == 'true' && widget.isAdmin;
         _sym = currency.symbol;
         _currencyCode = currency.code;
         _currencyName = currency.name;
@@ -433,10 +438,15 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             ref.read(reportRepositoryProvider).getMissingCostItemCount(
                 dFrom, dTo,
                 currencyCode: _reportCurrencyCode),
+            if (_cashUpi)
+              ref.read(cashLedgerRepositoryProvider).getDailyNet(dFrom, dTo),
           ]);
           if (!mounted) return;
           setState(() {
-            _dailyReport = r[0] as List<DailyPoint>;
+            _dailyReport = _cashUpi
+                ? ReportService.mergeDailyCashUpi(r[0] as List<DailyPoint>,
+                    r[2] as Map<String, CashDailyNet>)
+                : r[0] as List<DailyPoint>;
             _missingCostItemCount = r[1] as int;
             _dailyPage = 0;
           });
@@ -3697,7 +3707,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                                       () async {
                                     final csv =
                                         ReportService.exportDailyReportCsv(
-                                            _dailyReport);
+                                            _dailyReport,
+                                            cashUpi: _cashUpi);
                                     await _saveCsv(csv, 'daily_report_$ts.csv');
                                   }),
                                   const SizedBox(width: 4),
@@ -3712,6 +3723,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                                       showFooterBranding: _showFooterBranding,
                                       dateRangeLabel:
                                           '${_formatDate(from)} – ${_formatDate(to)}  •  $_currencyScopeLabel',
+                                      cashUpi: _cashUpi,
                                     );
                                     await _savePdf(
                                         bytes, 'daily_report_$ts.pdf');
@@ -3915,6 +3927,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               flex: 1,
               child: _TableHead(l10n.reportsMarginColumnLabel, right: true)),
           ],
+          if (_cashUpi) ...[
+          Expanded(
+              flex: 2,
+              child: _TableHead(l10n.cashExchangeCashLabel, right: true)),
+          Expanded(
+              flex: 2,
+              child: _TableHead(l10n.cashExchangeUpiBankLabel, right: true)),
+          ],
         ],
       ),
     );
@@ -3993,6 +4013,18 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                         color:
                             Theme.of(context).colorScheme.onSurfaceVariant))),
             ],
+            if (_cashUpi)
+              for (final v in [d.cash, d.upiBank])
+                Expanded(
+                    flex: 2,
+                    child: Text(_money(v),
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: v < 0
+                                ? const Color(0xFFDC2626)
+                                : Theme.of(context).colorScheme.onSurface))),
           ],
         ),
       ),
