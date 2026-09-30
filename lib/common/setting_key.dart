@@ -89,6 +89,12 @@ enum SettingKey {
   faqCache, // cached JSON string of the last successfully fetched faq.json, used offline/on fetch failure
   lastFaqFetch, // ISO timestamp of last successful faq.json fetch
   showTaxColumn, // whether to show the per-item Tax column on A4 PDFs, for both global and per-item tax modes (default true); showCgstSgst only matters when this is on
+  pdfFontSize, // 'small' | 'medium' | 'large' | 'xlarge' — text size multiplier for non-thermal invoice PDFs; default 'medium'
+  pdfCompanyNameFontSize, // PdfFontSize key for the company name; empty/absent = same as pdfFontSize
+  pdfDocTitleFontSize, // PdfFontSize key for the document title; empty/absent = same as pdfFontSize
+  pdfTableHeaderFontSize, // PdfFontSize key for the items table header; empty/absent = same as pdfFontSize
+  pdfTableItemsFontSize, // PdfFontSize key for the items table rows; empty/absent = same as pdfFontSize
+  pdfTotalsFontSize, // PdfFontSize key for the totals block; empty/absent = same as pdfFontSize
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -274,6 +280,18 @@ extension SettingKeyExtension on SettingKey {
         return 'last_faq_fetch';
       case SettingKey.showTaxColumn:
         return 'show_tax_column';
+      case SettingKey.pdfFontSize:
+        return 'pdf_font_size';
+      case SettingKey.pdfCompanyNameFontSize:
+        return 'pdf_company_name_font_size';
+      case SettingKey.pdfDocTitleFontSize:
+        return 'pdf_doc_title_font_size';
+      case SettingKey.pdfTableHeaderFontSize:
+        return 'pdf_table_header_font_size';
+      case SettingKey.pdfTableItemsFontSize:
+        return 'pdf_table_items_font_size';
+      case SettingKey.pdfTotalsFontSize:
+        return 'pdf_totals_font_size';
 
     }
   }

@@ -3410,6 +3410,27 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pdfSettingsCompanyNameSizeLabel => '公司名称大小';
 
   @override
+  String get pdfSettingsFontSizeLabel => 'PDF 文字大小';
+
+  @override
+  String get pdfSettingsSectionSizesLabel => '分区大小';
+
+  @override
+  String get pdfSettingsDocTitleSizeLabel => '单据标题大小';
+
+  @override
+  String get pdfSettingsTableHeaderSizeLabel => '表头大小';
+
+  @override
+  String get pdfSettingsTableItemsSizeLabel => '表格项目大小';
+
+  @override
+  String get pdfSettingsTotalsSizeLabel => '合计大小';
+
+  @override
+  String get pdfFontSizeSameAsOverallLabel => '与整体相同';
+
+  @override
   String get pdfSettingsThemeColorLabel => '主题颜色';
 
   @override
@@ -4241,6 +4262,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get sizeLargeLabel => '大';
+
+  @override
+  String get sizeXLargeLabel => '特大';
 
   @override
   String get shortcutNewInvoiceDescription => '新建发票（从仪表盘）／重置表单（在创建发票中）';

@@ -3554,6 +3554,27 @@ class AppLocalizationsHi extends AppLocalizations {
   String get pdfSettingsCompanyNameSizeLabel => 'कंपनी नाम का आकार';
 
   @override
+  String get pdfSettingsFontSizeLabel => 'PDF टेक्स्ट का आकार';
+
+  @override
+  String get pdfSettingsSectionSizesLabel => 'सेक्शन के आकार';
+
+  @override
+  String get pdfSettingsDocTitleSizeLabel => 'दस्तावेज़ शीर्षक का आकार';
+
+  @override
+  String get pdfSettingsTableHeaderSizeLabel => 'टेबल हेडर का आकार';
+
+  @override
+  String get pdfSettingsTableItemsSizeLabel => 'टेबल आइटम का आकार';
+
+  @override
+  String get pdfSettingsTotalsSizeLabel => 'कुल राशि का आकार';
+
+  @override
+  String get pdfFontSizeSameAsOverallLabel => 'सामान्य के समान';
+
+  @override
   String get pdfSettingsThemeColorLabel => 'थीम रंग';
 
   @override
@@ -4422,6 +4443,9 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get sizeLargeLabel => 'बड़ा';
+
+  @override
+  String get sizeXLargeLabel => 'बहुत बड़ा';
 
   @override
   String get shortcutNewInvoiceDescription =>
