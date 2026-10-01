@@ -410,25 +410,34 @@ class CashLedgerService {
   /// Net change of Cash and UPI/Bank per day in [from]..[to] (whole days),
   /// keyed by `yyyy-MM-dd`, days with no movement left out. Same sources as
   /// [balancesOn] except the opening row, which is a starting balance, not a
-  /// movement. So a day's closing balance = the previous day's + its net.
+  /// movement. So a day's closing balance = the previous day's + its net
+  /// (ledger `cash` + invoice `payCash`, likewise for UPI/Bank).
   @visibleForTesting
   static Future<Map<String, CashDailyNet>> dailyNetOn(
       DatabaseExecutor db, DateTime from, DateTime to) async {
     final net = <String, CashDailyNet>{};
     void add(Map<String, Object?> r) {
       final d = r['d'] as String;
-      final prev = net[d] ?? (cash: 0.0, upiBank: 0.0);
+      final prev = net[d] ??
+          (cash: 0.0, upiBank: 0.0, payCash: 0.0, payUpi: 0.0, fee: 0.0, exchanges: 0);
       net[d] = (
-        cash: prev.cash + (r['cash'] as num).toDouble(),
-        upiBank: prev.upiBank + (r['upi'] as num).toDouble(),
+        cash: prev.cash + ((r['cash'] as num?) ?? 0).toDouble(),
+        upiBank: prev.upiBank + ((r['upi'] as num?) ?? 0).toDouble(),
+        payCash: prev.payCash + ((r['pcash'] as num?) ?? 0).toDouble(),
+        payUpi: prev.payUpi + ((r['pupi'] as num?) ?? 0).toDouble(),
+        fee: prev.fee + ((r['fee'] as num?) ?? 0).toDouble(),
+        exchanges: prev.exchanges + ((r['n'] as num?) ?? 0).toInt(),
       );
     }
 
     (await db.rawQuery(
       'SELECT substr(date_time, 1, 10) AS d, SUM(cash_delta) AS cash, '
-      'SUM(upi_delta) AS upi FROM cash_ledger '
+      'SUM(upi_delta) AS upi, SUM(service_fee) AS fee, '
+      'SUM(CASE WHEN entry_type IN (?, ?) THEN 1 ELSE 0 END) AS n FROM cash_ledger '
       'WHERE entry_type != ? AND date_time >= ? AND date_time <= ? GROUP BY d',
       [
+        CashLedgerEntry.upiToCash,
+        CashLedgerEntry.cashToUpi,
         CashLedgerEntry.opening,
         AppDate.dateKeyStart(from),
         AppDate.dateKeyEnd(to),
@@ -447,8 +456,8 @@ class CashLedgerService {
       final first = from.isBefore(start) ? start : from;
       (await db.rawQuery(
         'SELECT substr(date_paid, 1, 10) AS d, '
-        "COALESCE(SUM(CASE WHEN payment_method = 'Cash' THEN amount_paid END), 0) AS cash, "
-        'COALESCE(SUM(CASE WHEN payment_method IN ($marks) THEN amount_paid END), 0) AS upi '
+        "COALESCE(SUM(CASE WHEN payment_method = 'Cash' THEN amount_paid END), 0) AS pcash, "
+        'COALESCE(SUM(CASE WHEN payment_method IN ($marks) THEN amount_paid END), 0) AS pupi '
         'FROM invoice_payments WHERE date_paid >= ? AND date_paid <= ? '
         'AND invoice_id IN (SELECT id FROM invoices WHERE deleted_at IS NULL) '
         'GROUP BY d',

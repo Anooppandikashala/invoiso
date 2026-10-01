@@ -32,6 +32,9 @@ enum _DatePreset {
 
 enum _InvoiceFilter { all, paid, partial, unpaid, overdue }
 
+// Daily Report lines shown (Cash/UPI exchange feature on).
+enum _DailyView { all, invoices, exchanges }
+
 enum _CurrencyScope { selected, all }
 
 enum _CustomerReportMode { overview, statements }
@@ -72,6 +75,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   List<MonthlyPoint> _trend = [];
   List<DailyPoint> _dailyReport = [];
   int _dailyPage = 0;
+  _DailyView _dailyView = _DailyView.all;
   int _dailyPageSize = 25;
   _DailyMode _dailyMode = _DailyMode.today;
   int _dailyYear = DateTime.now().year;
@@ -1076,22 +1080,34 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   Widget _cardTitle(String text, {Widget? trailing}) {
-    return Row(
+    return SizedBox(
+      width: double.infinity,
+      child: Wrap(
+      alignment: WrapAlignment.spaceBetween,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         Text(text,
             style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
                 color: Theme.of(context).colorScheme.onSurface)),
-        if (trailing != null) ...[const Spacer(), trailing],
+        if (trailing != null) trailing,
       ],
+      ),
     );
   }
 
-  Widget _kpiCard(String label, String value, Color color, IconData icon) {
+  Widget _kpiCard(String label, String value, Color color, IconData icon,
+      {bool outlined = false}) {
+    final scheme = Theme.of(context).colorScheme;
     return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: outlined ? 0 : 1,
+      color: outlined ? scheme.surfaceContainerHighest : null,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: outlined
+              ? BorderSide(color: scheme.outlineVariant)
+              : BorderSide.none),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -1151,6 +1167,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     final end = ((currentPage + 1) * pageSize).clamp(0, total);
     final l10n = AppLocalizations.of(context)!;
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
@@ -1158,10 +1175,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             top: BorderSide(
                 color: Theme.of(context).colorScheme.outlineVariant)),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text(l10n.invoiceMgmtRowsPerPageLabel,
                   style: TextStyle(
@@ -1186,6 +1205,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             ],
           ),
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               IconButton(
                 icon: const Icon(Icons.chevron_left),
@@ -3678,9 +3698,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   // ─── Section: Daily Sales & Profit Report ──────────────────────────────────
 
+  List<DailyLine> get _dailyLines => ReportService.dailyLines(_dailyReport,
+      invoices: !_cashUpi || _dailyView != _DailyView.exchanges,
+      exchanges: _cashUpi && _dailyView != _DailyView.invoices);
+
   Widget _buildDailyReport() {
     final ts = DateTime.now().millisecondsSinceEpoch;
     final l10n = AppLocalizations.of(context)!;
+    final lines = _dailyLines;
     return SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 24),
         child: Align(
@@ -3707,7 +3732,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                                       () async {
                                     final csv =
                                         ReportService.exportDailyReportCsv(
-                                            _dailyReport,
+                                            _dailyLines,
                                             cashUpi: _cashUpi);
                                     await _saveCsv(csv, 'daily_report_$ts.csv');
                                   }),
@@ -3718,7 +3743,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                                     final (from, to) = _dailyRange;
                                     final bytes = await ReportService
                                         .exportDailyReportPdf(
-                                      _dailyReport,
+                                      _dailyLines,
                                       currencySymbol: _sym,
                                       showFooterBranding: _showFooterBranding,
                                       dateRangeLabel:
@@ -3768,7 +3793,32 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                               padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
                               child: _missingCostBanner(),
                             ),
-                          if (_dailyReport.isEmpty)
+                          if (_cashUpi)
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                              child: Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  for (final (v, label) in [
+                                    (_DailyView.all,
+                                        l10n.invoiceMgmtStatusAllLabel),
+                                    (_DailyView.invoices, l10n.navInvoices),
+                                    (_DailyView.exchanges,
+                                        l10n.reportsTransactionsLabel),
+                                  ])
+                                    _rangeModeChip(label, _dailyView == v, () {
+                                      if (!mounted) return;
+                                      setState(() {
+                                        _dailyView = v;
+                                        _dailyPage = 0;
+                                      });
+                                    }),
+                                ],
+                              ),
+                            ),
+                          _dailyKpis(),
+                          if (lines.isEmpty)
                             Padding(
                               padding: const EdgeInsets.only(bottom: 20),
                               child: _emptyState(
@@ -3776,14 +3826,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                             )
                           else ...[
                             _dailyTableHeader(),
-                            ..._dailyReport
-                                .skip(_dailyPage * _dailyPageSize)
-                                .take(_dailyPageSize)
-                                .map(_dailyRow),
+                            for (var i = _dailyPage * _dailyPageSize;
+                                i < lines.length &&
+                                    i < (_dailyPage + 1) * _dailyPageSize;
+                                i++)
+                              _dailyRow(lines[i],
+                                  showDate: i == _dailyPage * _dailyPageSize ||
+                                      lines[i - 1].d.date != lines[i].d.date),
                             _buildReportPagination(
                               currentPage: _dailyPage,
                               pageSize: _dailyPageSize,
-                              total: _dailyReport.length,
+                              total: lines.length,
                               onPageChange: (p) {
                                 if (!mounted) return;
                                 setState(() => _dailyPage = p);
@@ -3913,7 +3966,13 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       child: Row(
         children: [
           Expanded(flex: 2, child: _TableHead(l10n.invoiceMgmtColDate)),
-          Expanded(flex: 1, child: _TableHead(l10n.navInvoices, right: true)),
+          if (_cashUpi)
+            Expanded(flex: 2, child: _TableHead(l10n.reportsTypeColumnLabel)),
+          Expanded(
+              flex: 1,
+              child: _TableHead(
+                  _cashUpi ? l10n.reportsCountColumnLabel : l10n.navInvoices,
+                  right: true)),
           Expanded(
               flex: 2,
               child: _TableHead(l10n.reportsSalesColumnLabel, right: true)),
@@ -3940,6 +3999,106 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     );
   }
 
+  Widget _dailyKpis() {
+    final l10n = AppLocalizations.of(context)!;
+    final showInv = !_cashUpi || _dailyView != _DailyView.exchanges;
+    final showExc = _cashUpi && _dailyView != _DailyView.invoices;
+    double sum(double Function(DailyPoint) f) =>
+        _dailyReport.fold<double>(0, (a, d) => a + f(d));
+    final profit = sum((d) => d.profit);
+    final totalProfit = sum((d) => d.totalProfit);
+    final cash = sum((d) => d.cash);
+    final upi = sum((d) => d.upiBank);
+    Color profitColor(double v) =>
+        v < 0 ? const Color(0xFFDC2626) : const Color(0xFF16A34A);
+    // As many cards per line as fit at >= 150px each; the rest wrap.
+    Widget row(List<Widget> cards) => LayoutBuilder(builder: (context, c) {
+          const minW = 150.0, gap = 12.0;
+          final perRow = ((c.maxWidth + gap) / (minW + gap))
+              .floor()
+              .clamp(1, cards.length);
+          final w = (c.maxWidth - gap * (perRow - 1)) / perRow;
+          return Wrap(
+            spacing: gap,
+            runSpacing: gap,
+            children: [
+              for (final k in cards)
+                SizedBox(width: w, child: IntrinsicHeight(child: k)),
+            ],
+          );
+        });
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (showInv) ...[
+            if (showExc) ...[
+              _TableHead(l10n.navInvoices),
+              const SizedBox(height: 8),
+            ],
+            row([
+              _kpiCard(l10n.reportsSalesColumnLabel, _money(sum((d) => d.billed)),
+                  Theme.of(context).primaryColor, Icons.receipt_long,
+                  outlined: true),
+              if (!_hideCost) ...[
+                _kpiCard(l10n.reportsCogsColumnLabel, _money(sum((d) => d.cogs)),
+                    const Color(0xFFEA580C), Icons.inventory_2_outlined,
+                    outlined: true),
+                _kpiCard(
+                    _cashUpi
+                        ? l10n.reportsInvoiceProfitLabel
+                        : l10n.reportsTotalProfitLabel,
+                    _money(profit),
+                    profitColor(profit),
+                    Icons.savings_outlined,
+                    outlined: true),
+              ],
+            ]),
+          ],
+          if (showExc) ...[
+            if (showInv) ...[
+              const SizedBox(height: 16),
+              _TableHead(l10n.reportsCashExchangeTypeLabel),
+              const SizedBox(height: 8),
+            ],
+            row([
+              _kpiCard(
+                  l10n.reportsTxnsLabel,
+                  _fmtInt.format(
+                      _dailyReport.fold<int>(0, (a, d) => a + d.exchangeCount)),
+                  const Color(0xFF7C3AED),
+                  Icons.swap_horiz,
+                  outlined: true),
+              _kpiCard(
+                  l10n.reportsServiceIncomeLabel,
+                  _money(sum((d) => d.serviceIncome)),
+                  const Color(0xFF0F766E),
+                  Icons.trending_up,
+                  outlined: true),
+              _kpiCard(
+                  l10n.cashExchangeCashLabel,
+                  _money(cash),
+                  cash < 0 ? const Color(0xFFDC2626) : const Color(0xFF16A34A),
+                  Icons.payments_outlined,
+                  outlined: true),
+              _kpiCard(
+                  l10n.cashExchangeUpiBankLabel,
+                  _money(upi),
+                  upi < 0 ? const Color(0xFFDC2626) : const Color(0xFF1D4ED8),
+                  Icons.account_balance_outlined,
+                  outlined: true),
+              if (showInv && !_hideCost)
+                _kpiCard(l10n.reportsTotalProfitLabel, _money(totalProfit),
+                    profitColor(totalProfit), Icons.savings_outlined,
+                    outlined: true),
+            ]),
+          ],
+        ],
+      ),
+    );
+  }
+
   void _openDayInInvoiceStatus(String dateKey) {
     final day = DateTime.tryParse(dateKey);
     if (day == null || !mounted) return;
@@ -3952,79 +4111,76 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     _loadTab(6);
   }
 
-  Widget _dailyRow(DailyPoint d) {
+  // One line of the daily table; [showDate] is false for the second line of
+  // the same day. Exchange lines: profit = service fee, Cash / UPI-Bank =
+  // ledger movements; invoice lines: Cash / UPI-Bank = payments received.
+  Widget _dailyRow(DailyLine l, {required bool showDate}) {
+    final l10n = AppLocalizations.of(context)!;
+    final d = l.d;
+    final ex = l.exchange;
+    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    final profit = ex ? d.serviceIncome : d.profit;
+    Widget cell(int flex, String text, {Color? color, bool bold = false}) =>
+        Expanded(
+            flex: flex,
+            child: Text(text,
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: bold ? FontWeight.w600 : null,
+                    color: color ?? muted)));
+    Color signed(double v) => v < 0
+        ? const Color(0xFFDC2626)
+        : Theme.of(context).colorScheme.onSurface;
     return InkWell(
-      onTap: () => _openDayInInvoiceStatus(d.date),
+      onTap: ex || d.invoiceCount == 0
+          ? null
+          : () => _openDayInInvoiceStatus(d.date),
       child: Container(
         decoration: BoxDecoration(
-            border: Border(
-                top: BorderSide(
-                    color: Theme.of(context).colorScheme.outlineVariant))),
+            color: ex ? const Color(0xFF0F766E).withValues(alpha: 0.06) : null,
+            border: showDate
+                ? Border(
+                    top: BorderSide(
+                        color: Theme.of(context).colorScheme.outlineVariant))
+                : null),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Row(
           children: [
             Expanded(
                 flex: 2,
-                child: Text(_formatStoredDate(d.date),
+                child: Text(showDate ? _formatStoredDate(d.date) : '',
                     style: TextStyle(
                         fontSize: 13,
                         color: Theme.of(context).colorScheme.onSurface))),
-            Expanded(
-                flex: 1,
-                child: Text(_fmtInt.format(d.invoiceCount),
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                        fontSize: 13,
-                        color:
-                            Theme.of(context).colorScheme.onSurfaceVariant))),
-            Expanded(
-                flex: 2,
-                child: Text(_money(d.billed),
-                    textAlign: TextAlign.right,
-                    style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1D4ED8)))),
+            if (_cashUpi)
+              Expanded(
+                  flex: 2,
+                  child: Text(
+                      ex ? l10n.reportsCashExchangeTypeLabel : l10n.navInvoices,
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: ex
+                              ? const Color(0xFF0F766E)
+                              : Theme.of(context).colorScheme.onSurface))),
+            cell(1, _fmtInt.format(ex ? d.exchangeCount : d.invoiceCount)),
+            ex
+                ? cell(2, '—')
+                : cell(2, _money(d.billed),
+                    color: const Color(0xFF1D4ED8), bold: true),
             if (!_hideCost) ...[
-            Expanded(
-                flex: 2,
-                child: Text(_money(d.cogs),
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                        fontSize: 13,
-                        color:
-                            Theme.of(context).colorScheme.onSurfaceVariant))),
-            Expanded(
-                flex: 2,
-                child: Text(_money(d.profit),
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: d.profit < 0
-                            ? const Color(0xFFDC2626)
-                            : const Color(0xFF16A34A)))),
-            Expanded(
-                flex: 1,
-                child: Text('${d.marginPercent.toStringAsFixed(0)}%',
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                        fontSize: 13,
-                        color:
-                            Theme.of(context).colorScheme.onSurfaceVariant))),
+              cell(2, ex ? '—' : _money(d.cogs)),
+              cell(2, _money(profit),
+                  bold: true,
+                  color: profit < 0
+                      ? const Color(0xFFDC2626)
+                      : const Color(0xFF16A34A)),
+              cell(1, ex ? '—' : '${d.marginPercent.toStringAsFixed(0)}%'),
             ],
             if (_cashUpi)
-              for (final v in [d.cash, d.upiBank])
-                Expanded(
-                    flex: 2,
-                    child: Text(_money(v),
-                        textAlign: TextAlign.right,
-                        style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: v < 0
-                                ? const Color(0xFFDC2626)
-                                : Theme.of(context).colorScheme.onSurface))),
+              for (final v in ex ? [d.cash, d.upiBank] : [d.paidCash, d.paidUpi])
+                cell(2, _money(v), color: signed(v), bold: true),
           ],
         ),
       ),

@@ -7560,6 +7560,42 @@ abstract class AppLocalizations {
   /// **'Service income (this month)'**
   String get cashExchangeIncomeMonthLabel;
 
+  /// No description provided for @reportsServiceIncomeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Service income'**
+  String get reportsServiceIncomeLabel;
+
+  /// No description provided for @reportsTxnsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Txns'**
+  String get reportsTxnsLabel;
+
+  /// No description provided for @reportsInvoiceProfitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice profit'**
+  String get reportsInvoiceProfitLabel;
+
+  /// No description provided for @reportsTransactionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Transactions'**
+  String get reportsTransactionsLabel;
+
+  /// No description provided for @reportsCashExchangeTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash exchange'**
+  String get reportsCashExchangeTypeLabel;
+
+  /// No description provided for @reportsCountColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Count'**
+  String get reportsCountColumnLabel;
+
   /// No description provided for @cashExchangeExpensesMonthLabel.
   ///
   /// In en, this message translates to:

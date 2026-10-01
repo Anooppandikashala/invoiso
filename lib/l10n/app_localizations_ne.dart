@@ -4491,6 +4491,24 @@ class AppLocalizationsNe extends AppLocalizations {
   String get cashExchangeIncomeMonthLabel => 'सेवा आम्दानी (यो महिना)';
 
   @override
+  String get reportsServiceIncomeLabel => 'सेवा आम्दानी';
+
+  @override
+  String get reportsTxnsLabel => 'कारोबार';
+
+  @override
+  String get reportsInvoiceProfitLabel => 'बीजक नाफा';
+
+  @override
+  String get reportsTransactionsLabel => 'कारोबार';
+
+  @override
+  String get reportsCashExchangeTypeLabel => 'नगद विनिमय';
+
+  @override
+  String get reportsCountColumnLabel => 'संख्या';
+
+  @override
   String get cashExchangeExpensesMonthLabel => 'खर्च (यो महिना)';
 
   @override

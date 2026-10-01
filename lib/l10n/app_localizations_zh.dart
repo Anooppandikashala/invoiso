@@ -4285,6 +4285,24 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cashExchangeIncomeMonthLabel => '服务收入（本月）';
 
   @override
+  String get reportsServiceIncomeLabel => '服务收入';
+
+  @override
+  String get reportsTxnsLabel => '交易笔数';
+
+  @override
+  String get reportsInvoiceProfitLabel => '发票利润';
+
+  @override
+  String get reportsTransactionsLabel => '交易';
+
+  @override
+  String get reportsCashExchangeTypeLabel => '现金兑换';
+
+  @override
+  String get reportsCountColumnLabel => '数量';
+
+  @override
   String get cashExchangeExpensesMonthLabel => '支出（本月）';
 
   @override

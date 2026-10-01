@@ -4454,6 +4454,24 @@ class AppLocalizationsBo extends AppLocalizations {
   String get cashExchangeIncomeMonthLabel => 'ཞབས་ཞུའི་ཡོང་འབབ། (ཟླ་བ་འདི)';
 
   @override
+  String get reportsServiceIncomeLabel => 'ཞབས་ཞུའི་ཡོང་འབབ།';
+
+  @override
+  String get reportsTxnsLabel => 'ལས་འགན།';
+
+  @override
+  String get reportsInvoiceProfitLabel => 'ཁྲལ་ཤོག་གི་ཁེ་སྐྱེད།';
+
+  @override
+  String get reportsTransactionsLabel => 'ལས་འགན།';
+
+  @override
+  String get reportsCashExchangeTypeLabel => 'དངུལ་སྒོར་བརྗེ་རེས།';
+
+  @override
+  String get reportsCountColumnLabel => 'གྲངས།';
+
+  @override
   String get cashExchangeExpensesMonthLabel => 'འགྲོ་སོང་། (ཟླ་བ་འདི)';
 
   @override

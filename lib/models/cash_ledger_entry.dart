@@ -98,7 +98,15 @@ typedef CashBalances = ({
 });
 
 /// Net change of each account on one day (Daily Report).
-typedef CashDailyNet = ({double cash, double upiBank});
+// cash / upiBank: ledger movements; payCash / payUpi: invoice payments.
+typedef CashDailyNet = ({
+  double cash,
+  double upiBank,
+  double payCash,
+  double payUpi,
+  double fee,
+  int exchanges
+});
 
 /// Income / spend over a period (display only).
 typedef CashPeriodTotals = ({double serviceIncome, double expenses});

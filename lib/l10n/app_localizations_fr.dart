@@ -4548,6 +4548,24 @@ class AppLocalizationsFr extends AppLocalizations {
   String get cashExchangeIncomeMonthLabel => 'Revenus de service (ce mois-ci)';
 
   @override
+  String get reportsServiceIncomeLabel => 'Revenus de service';
+
+  @override
+  String get reportsTxnsLabel => 'Trans.';
+
+  @override
+  String get reportsInvoiceProfitLabel => 'Bénéfice des factures';
+
+  @override
+  String get reportsTransactionsLabel => 'Transactions';
+
+  @override
+  String get reportsCashExchangeTypeLabel => 'Échange d\'espèces';
+
+  @override
+  String get reportsCountColumnLabel => 'Nombre';
+
+  @override
   String get cashExchangeExpensesMonthLabel => 'Dépenses (ce mois-ci)';
 
   @override

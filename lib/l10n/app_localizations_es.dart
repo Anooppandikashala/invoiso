@@ -4543,6 +4543,24 @@ class AppLocalizationsEs extends AppLocalizations {
   String get cashExchangeIncomeMonthLabel => 'Ingresos por servicio (este mes)';
 
   @override
+  String get reportsServiceIncomeLabel => 'Ingresos por servicio';
+
+  @override
+  String get reportsTxnsLabel => 'Trans.';
+
+  @override
+  String get reportsInvoiceProfitLabel => 'Ganancia de facturas';
+
+  @override
+  String get reportsTransactionsLabel => 'Transacciones';
+
+  @override
+  String get reportsCashExchangeTypeLabel => 'Cambio de efectivo';
+
+  @override
+  String get reportsCountColumnLabel => 'Cantidad';
+
+  @override
   String get cashExchangeExpensesMonthLabel => 'Gastos (este mes)';
 
   @override

@@ -287,14 +287,31 @@ void main() {
     final net = await CashLedgerService.dailyNetOn(
         db, DateTime(2026, 9, 24), DateTime(2026, 9, 26));
     expect(net.keys.toSet(), {'2026-09-25', '2026-09-26'});
-    expect(net['2026-09-25'], (cash: -990.0, upiBank: 1000.0));
-    expect(net['2026-09-26'], (cash: -200.0 - 300 + 150, upiBank: 300.0 + 400));
+    // 25th: one exchange with a 10 service fee; 26th: ledger movements and
+    // invoice payments kept apart, no exchanges, no fees.
+    expect(net['2026-09-25'], (
+      cash: -990.0,
+      upiBank: 1000.0,
+      payCash: 0.0,
+      payUpi: 0.0,
+      fee: 10.0,
+      exchanges: 1
+    ));
+    expect(net['2026-09-26'], (
+      cash: -200.0 - 300,
+      upiBank: 300.0,
+      payCash: 150.0,
+      payUpi: 400.0,
+      fee: 0.0,
+      exchanges: 0
+    ));
 
     // Reconciles with the balances: closing(26th) − closing(25th) = net(26th).
     final c25 = await CashLedgerService.balancesOn(db, before: DateTime(2026, 9, 26));
     final c26 = await CashLedgerService.balancesOn(db, before: DateTime(2026, 9, 27));
-    expect(c26.cash - c25.cash, net['2026-09-26']!.cash);
-    expect(c26.upiBank - c25.upiBank, net['2026-09-26']!.upiBank);
+    final n26 = net['2026-09-26']!;
+    expect(c26.cash - c25.cash, n26.cash + n26.payCash);
+    expect(c26.upiBank - c25.upiBank, n26.upiBank + n26.payUpi);
 
     // Range limits both sources.
     expect((await CashLedgerService.dailyNetOn(

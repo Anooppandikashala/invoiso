@@ -4468,6 +4468,24 @@ class AppLocalizationsHi extends AppLocalizations {
   String get cashExchangeIncomeMonthLabel => 'सेवा आय (इस माह)';
 
   @override
+  String get reportsServiceIncomeLabel => 'सेवा आय';
+
+  @override
+  String get reportsTxnsLabel => 'लेन-देन';
+
+  @override
+  String get reportsInvoiceProfitLabel => 'इनवॉइस लाभ';
+
+  @override
+  String get reportsTransactionsLabel => 'लेन-देन';
+
+  @override
+  String get reportsCashExchangeTypeLabel => 'नकद विनिमय';
+
+  @override
+  String get reportsCountColumnLabel => 'संख्या';
+
+  @override
   String get cashExchangeExpensesMonthLabel => 'खर्च (इस माह)';
 
   @override
