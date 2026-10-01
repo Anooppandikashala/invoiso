@@ -3566,6 +3566,27 @@ class AppLocalizationsBo extends AppLocalizations {
   String get pdfSettingsCompanyNameSizeLabel => 'ཚོང་ལས་མིང་གི་ཚད།';
 
   @override
+  String get pdfSettingsFontSizeLabel => 'PDF ཡི་གེའི་ཚད།';
+
+  @override
+  String get pdfSettingsSectionSizesLabel => 'སྡེ་ཚན་གྱི་ཚད།';
+
+  @override
+  String get pdfSettingsDocTitleSizeLabel => 'ཡིག་ཆའི་མགོ་མིང་གི་ཚད།';
+
+  @override
+  String get pdfSettingsTableHeaderSizeLabel => 'རེའུ་མིག་མགོ་བྱང་གི་ཚད།';
+
+  @override
+  String get pdfSettingsTableItemsSizeLabel => 'རེའུ་མིག་དངོས་པོའི་ཚད།';
+
+  @override
+  String get pdfSettingsTotalsSizeLabel => 'བསྡོམས་འབོར་གྱི་ཚད།';
+
+  @override
+  String get pdfFontSizeSameAsOverallLabel => 'ཡོངས་ཁྱབ་དང་མཚུངས།';
+
+  @override
   String get pdfSettingsThemeColorLabel => 'བཀོད་པའི་ཚོན་མདོག';
 
   @override
@@ -4608,6 +4629,9 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get sizeLargeLabel => 'ཆེན་པོ།';
+
+  @override
+  String get sizeXLargeLabel => 'ཧ་ཅང་ཆེན་པོ།';
 
   @override
   String get shortcutNewInvoiceDescription =>

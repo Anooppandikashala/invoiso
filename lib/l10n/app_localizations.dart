@@ -5970,6 +5970,48 @@ abstract class AppLocalizations {
   /// **'Company name size'**
   String get pdfSettingsCompanyNameSizeLabel;
 
+  /// No description provided for @pdfSettingsFontSizeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF text size'**
+  String get pdfSettingsFontSizeLabel;
+
+  /// No description provided for @pdfSettingsSectionSizesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Section sizes'**
+  String get pdfSettingsSectionSizesLabel;
+
+  /// No description provided for @pdfSettingsDocTitleSizeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Document title size'**
+  String get pdfSettingsDocTitleSizeLabel;
+
+  /// No description provided for @pdfSettingsTableHeaderSizeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Table header size'**
+  String get pdfSettingsTableHeaderSizeLabel;
+
+  /// No description provided for @pdfSettingsTableItemsSizeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Table items size'**
+  String get pdfSettingsTableItemsSizeLabel;
+
+  /// No description provided for @pdfSettingsTotalsSizeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Totals size'**
+  String get pdfSettingsTotalsSizeLabel;
+
+  /// No description provided for @pdfFontSizeSameAsOverallLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Same as overall'**
+  String get pdfFontSizeSameAsOverallLabel;
+
   /// No description provided for @pdfSettingsThemeColorLabel.
   ///
   /// In en, this message translates to:
@@ -7847,6 +7889,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Large'**
   String get sizeLargeLabel;
+
+  /// No description provided for @sizeXLargeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Extra Large'**
+  String get sizeXLargeLabel;
 
   /// No description provided for @shortcutNewInvoiceDescription.
   ///

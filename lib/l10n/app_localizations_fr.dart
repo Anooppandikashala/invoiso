@@ -3640,6 +3640,28 @@ class AppLocalizationsFr extends AppLocalizations {
       'Taille du nom de l\'entreprise';
 
   @override
+  String get pdfSettingsFontSizeLabel => 'Taille du texte du PDF';
+
+  @override
+  String get pdfSettingsSectionSizesLabel => 'Tailles par section';
+
+  @override
+  String get pdfSettingsDocTitleSizeLabel => 'Taille du titre du document';
+
+  @override
+  String get pdfSettingsTableHeaderSizeLabel =>
+      'Taille de l\'en-tête du tableau';
+
+  @override
+  String get pdfSettingsTableItemsSizeLabel => 'Taille des articles du tableau';
+
+  @override
+  String get pdfSettingsTotalsSizeLabel => 'Taille des totaux';
+
+  @override
+  String get pdfFontSizeSameAsOverallLabel => 'Identique au général';
+
+  @override
   String get pdfSettingsThemeColorLabel => 'Couleur du thème';
 
   @override
@@ -4703,6 +4725,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get sizeLargeLabel => 'Grand';
+
+  @override
+  String get sizeXLargeLabel => 'Très grand';
 
   @override
   String get shortcutNewInvoiceDescription =>
