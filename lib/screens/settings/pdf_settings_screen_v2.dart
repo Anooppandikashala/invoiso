@@ -41,6 +41,19 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
   String _previewedThermalItemLayout = 'table';
   String _savedThermalCompanyNameSize = 'medium';
   String _previewedThermalCompanyNameSize = 'medium';
+  String _savedPdfFontSize = 'medium';
+  String _previewedPdfFontSize = 'medium';
+  // Per-section PDF text sizes; '' = same as overall (_previewedPdfFontSize).
+  static const _pdfSectionSizeKeys = [
+    SettingKey.pdfCompanyNameFontSize,
+    SettingKey.pdfDocTitleFontSize,
+    SettingKey.pdfTableHeaderFontSize,
+    SettingKey.pdfTableItemsFontSize,
+    SettingKey.pdfTotalsFontSize,
+  ];
+  Map<SettingKey, String> _savedPdfSectionSizes = {};
+  Map<SettingKey, String> _previewedPdfSectionSizes = {};
+  bool _showPdfSectionSizes = false;
   bool _isSaving = false;
 
   static const _presetThemeColors = [
@@ -73,6 +86,9 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
           .read(settingsRepositoryProvider)
           .getSetting(SettingKey.thermalCompanyNameSize),
       ref.read(settingsRepositoryProvider).getPdfLandscape(),
+      ref.read(settingsRepositoryProvider).getSetting(SettingKey.pdfFontSize),
+      for (final key in _pdfSectionSizeKeys)
+        ref.read(settingsRepositoryProvider).getSetting(key),
     ]);
     final saved = results[0] as InvoiceTemplate;
     final savedThemeColor = results[1] as String?;
@@ -82,6 +98,11 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
     final savedThermalItemLayout = results[5] as String?;
     final savedThermalCompanyNameSize = results[6] as String?;
     final savedLandscape = results[7] as bool;
+    final savedPdfFontSize = results[8] as String?;
+    final savedPdfSectionSizes = {
+      for (var i = 0; i < _pdfSectionSizeKeys.length; i++)
+        _pdfSectionSizeKeys[i]: (results[9 + i] as String?) ?? '',
+    };
     final previewedTemplate =
         effectiveInvoiceTemplateForPageSize(saved, savedPageSize);
     setState(() {
@@ -103,6 +124,10 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       _previewedThermalItemLayout = _savedThermalItemLayout;
       _savedThermalCompanyNameSize = savedThermalCompanyNameSize ?? 'medium';
       _previewedThermalCompanyNameSize = _savedThermalCompanyNameSize;
+      _savedPdfFontSize = savedPdfFontSize ?? 'medium';
+      _previewedPdfFontSize = _savedPdfFontSize;
+      _savedPdfSectionSizes = savedPdfSectionSizes;
+      _previewedPdfSectionSizes = Map.of(savedPdfSectionSizes);
     });
   }
 
@@ -135,6 +160,11 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
         ref.read(settingsRepositoryProvider).setSetting(
             SettingKey.thermalCompanyNameSize,
             _previewedThermalCompanyNameSize),
+        ref.read(settingsRepositoryProvider).setSetting(
+            SettingKey.pdfFontSize, _previewedPdfFontSize),
+        for (final key in _pdfSectionSizeKeys)
+          ref.read(settingsRepositoryProvider).setSetting(
+              key, _previewedPdfSectionSizes[key] ?? ''),
       ]);
       setState(() {
         _savedTemplate = _previewedTemplate;
@@ -145,6 +175,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
         _savedThermalWidthMargin = _previewedThermalWidthMargin;
         _savedThermalItemLayout = _previewedThermalItemLayout;
         _savedThermalCompanyNameSize = _previewedThermalCompanyNameSize;
+        _savedPdfFontSize = _previewedPdfFontSize;
+        _savedPdfSectionSizes = Map.of(_previewedPdfSectionSizes);
       });
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -284,7 +316,10 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
           _previewedShowTotalQuantity != _savedShowTotalQuantity ||
           _previewedThermalWidthMargin != _savedThermalWidthMargin ||
           _previewedThermalItemLayout != _savedThermalItemLayout ||
-          _previewedThermalCompanyNameSize != _savedThermalCompanyNameSize);
+          _previewedThermalCompanyNameSize != _savedThermalCompanyNameSize ||
+          _previewedPdfFontSize != _savedPdfFontSize ||
+          _pdfSectionSizeKeys.any((k) =>
+              _previewedPdfSectionSizes[k] != _savedPdfSectionSizes[k]));
 
   void _resetToDefaultV2() {
     setState(() {
@@ -299,6 +334,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       _thermalWidthMarginController.text = '1';
       _previewedThermalItemLayout = 'table';
       _previewedThermalCompanyNameSize = 'medium';
+      _previewedPdfFontSize = 'medium';
+      _previewedPdfSectionSizes = {for (final k in _pdfSectionSizeKeys) k: ''};
     });
   }
 
@@ -534,24 +571,25 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
                 style: TextStyle(
                     fontSize: 12.5,
                     color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            const SizedBox(height: 18),
+            _sectionLabel(l10n.pdfSettingsDisplayOptionsLabel),
+            const SizedBox(height: 8),
             if (_previewedTemplate == InvoiceTemplate.compact ||
-                _previewedTemplate == InvoiceTemplate.thermal ||
-                _previewedTemplate == InvoiceTemplate.gridClassic) ...[
-              const SizedBox(height: 18),
-              _sectionLabel(l10n.pdfSettingsDisplayOptionsLabel),
+                _previewedTemplate == InvoiceTemplate.gridClassic)
+              _buildTotalQuantityToggle(),
+            if (_previewedTemplate == InvoiceTemplate.gridClassic) ...[
               const SizedBox(height: 8),
+              _buildOrientationField(),
+            ],
+            if (_previewedTemplate == InvoiceTemplate.thermal) ...[
+              _buildThermalItemLayoutField(),
+              const SizedBox(height: 8),
+              _buildThermalCompanyNameSizeField(),
+            ] else ...[
               if (_previewedTemplate == InvoiceTemplate.compact ||
                   _previewedTemplate == InvoiceTemplate.gridClassic)
-                _buildTotalQuantityToggle(),
-              if (_previewedTemplate == InvoiceTemplate.gridClassic) ...[
                 const SizedBox(height: 8),
-                _buildOrientationField(),
-              ],
-              if (_previewedTemplate == InvoiceTemplate.thermal) ...[
-                _buildThermalItemLayoutField(),
-                const SizedBox(height: 8),
-                _buildThermalCompanyNameSizeField(),
-              ],
+              _buildPdfFontSizeField(),
             ],
             const SizedBox(height: 18),
             _sectionLabel(l10n.pdfSettingsThemeColorLabel),
@@ -866,6 +904,152 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildPdfFontSizeField() {
+    final l10n = AppLocalizations.of(context)!;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(AppBorderRadius.small),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.pdfSettingsFontSizeLabel,
+            style: TextStyle(
+              fontSize: AppFontSize.small,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  value: _previewedPdfFontSize,
+                  isExpanded: true,
+                  decoration: InputDecoration(
+                    isDense: true,
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    border: OutlineInputBorder(
+                      borderRadius:
+                          BorderRadius.circular(AppBorderRadius.xsmall),
+                    ),
+                  ),
+                  items: [
+                    for (final size in PdfFontSize.values)
+                      DropdownMenuItem(
+                          value: size.key,
+                          child: Text(pdfFontSizeLabel(context, size))),
+                  ],
+                  onChanged: (value) =>
+                      setState(() => _previewedPdfFontSize = value!),
+                ),
+              ),
+              // Back to the default sizes (overall + sections) without
+              // resetting the other options.
+              if (_previewedPdfFontSize != PdfFontSize.medium.key ||
+                  _previewedPdfSectionSizes.values.any((v) => v.isNotEmpty)) ...[
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: () => setState(() {
+                    _previewedPdfFontSize = PdfFontSize.medium.key;
+                    _previewedPdfSectionSizes = {
+                      for (final k in _pdfSectionSizeKeys) k: ''
+                    };
+                  }),
+                  child: Text(l10n.actionReset),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 4),
+          InkWell(
+            onTap: () =>
+                setState(() => _showPdfSectionSizes = !_showPdfSectionSizes),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  Icon(
+                      _showPdfSectionSizes
+                          ? Icons.expand_more
+                          : Icons.chevron_right,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  const SizedBox(width: 4),
+                  Text(
+                    l10n.pdfSettingsSectionSizesLabel,
+                    style: TextStyle(
+                      fontSize: AppFontSize.small,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_showPdfSectionSizes)
+            for (final key in _pdfSectionSizeKeys) ...[
+              const SizedBox(height: 8),
+              _buildPdfSectionSizeRow(key),
+            ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPdfSectionSizeRow(SettingKey key) {
+    final l10n = AppLocalizations.of(context)!;
+    final label = switch (key) {
+      SettingKey.pdfCompanyNameFontSize => l10n.pdfSettingsCompanyNameSizeLabel,
+      SettingKey.pdfDocTitleFontSize => l10n.pdfSettingsDocTitleSizeLabel,
+      SettingKey.pdfTableHeaderFontSize => l10n.pdfSettingsTableHeaderSizeLabel,
+      SettingKey.pdfTableItemsFontSize => l10n.pdfSettingsTableItemsSizeLabel,
+      _ => l10n.pdfSettingsTotalsSizeLabel,
+    };
+    return Row(
+      children: [
+        Expanded(
+          child: Text(label,
+              style: TextStyle(
+                  fontSize: AppFontSize.small,
+                  color: Theme.of(context).colorScheme.onSurface)),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: DropdownButtonFormField<String>(
+            value: _previewedPdfSectionSizes[key] ?? '',
+            isExpanded: true,
+            decoration: InputDecoration(
+              isDense: true,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+              ),
+            ),
+            items: [
+              DropdownMenuItem(
+                  value: '', child: Text(l10n.pdfFontSizeSameAsOverallLabel)),
+              for (final size in PdfFontSize.values)
+                DropdownMenuItem(
+                    value: size.key,
+                    child: Text(pdfFontSizeLabel(context, size))),
+            ],
+            onChanged: (value) =>
+                setState(() => _previewedPdfSectionSizes[key] = value!),
+          ),
+        ),
+      ],
     );
   }
 

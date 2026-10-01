@@ -13,7 +13,9 @@ import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/providers/theme_provider.dart';
 import 'package:invoiso/widgets/language_picker.dart';
 import 'package:invoiso/common/invoiso_colors.dart';
+import 'package:invoiso/database/company_registry_service.dart';
 import 'package:invoiso/models/company_info.dart';
+import 'package:invoiso/utils/window_title.dart';
 
 import 'package:invoiso/common/app_countries.dart';
 
@@ -47,6 +49,7 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
         TextEditingController bankName,
         TextEditingController accountNumber,
         TextEditingController ifscCode,
+        TextEditingController iban,
       })> _bankControllers = [];
   int? _defaultBankIndex;
 
@@ -173,6 +176,7 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
         row.bankName.dispose();
         row.accountNumber.dispose();
         row.ifscCode.dispose();
+        row.iban.dispose();
       }
 
       _bankControllers.clear();
@@ -186,6 +190,7 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
           bankName: TextEditingController(text: entry.bankName),
           accountNumber: TextEditingController(text: entry.accountNumber),
           ifscCode: TextEditingController(text: entry.ifscCode),
+          iban: TextEditingController(text: entry.iban),
         ));
 
         if (entry.isDefault) {
@@ -232,6 +237,7 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
           bankName: _bankControllers[i].bankName.text.trim(),
           accountNumber: accountNum,
           ifscCode: _bankControllers[i].ifscCode.text.trim(),
+          iban: _bankControllers[i].iban.text.trim(),
           isDefault: i == _defaultBankIndex,
         ));
       }
@@ -257,6 +263,18 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
         settingsRepo.setShowAddress(_showAddress),
         settingsRepo.setShowLogo(_showLogo),
       ]);
+
+      // Keep the device-level company registry's label in sync too — it's
+      // what the Login screen's selector and Settings > Companies list show
+      // for this company whenever it *isn't* the active one (the active
+      // company's own name is resolved live from `company_info`, but a
+      // non-active company's label is only ever as fresh as its last sync).
+      final activeCompanyId = await CompanyRegistryService.getActiveCompanyId();
+      if (activeCompanyId != null) {
+        await CompanyRegistryService.renameCompany(activeCompanyId, newInfo.name);
+      }
+
+      await refreshWindowTitle();
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -290,6 +308,7 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
       row.bankName.dispose();
       row.accountNumber.dispose();
       row.ifscCode.dispose();
+      row.iban.dispose();
     }
     super.dispose();
   }
@@ -1018,7 +1037,7 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                                     width: 130,
                                     child: _buildField(
                                       controller: row.label,
-                                      label: l10n.fieldLabelLabel,
+                                      label: l10n.fieldBankAccountNameLabel,
                                       icon: Icons.label_outline_rounded,
                                       hint: l10n
                                           .companyInfoHintExampleAccountLabel,
@@ -1048,15 +1067,36 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                                     ),
                                   ),
                                   const SizedBox(width: 8),
-                                  SizedBox(
-                                    width: 130,
-                                    child: _buildField(
-                                      controller: row.ifscCode,
-                                      label: l10n.fieldIfscCodeLabel,
-                                      icon: Icons.code_outlined,
-                                      hint: 'HDFC0001234',
-                                      maxLength: 11,
+                                  // IFSC only exists in India; everywhere else
+                                  // this slot takes the IBAN instead.
+                                  if (_selectedCountry == 'India' ||
+                                      _selectedCountry.isEmpty)
+                                    SizedBox(
+                                      width: 130,
+                                      child: _buildField(
+                                        controller: row.ifscCode,
+                                        label: l10n.fieldIfscCodeLabel,
+                                        icon: Icons.code_outlined,
+                                        hint: 'HDFC0001234',
+                                        maxLength: 11,
+                                      ),
+                                    )
+                                  else
+                                    SizedBox(
+                                      width: 200,
+                                      child: _buildField(
+                                        controller: row.iban,
+                                        label: l10n.fieldIbanLabel,
+                                        icon: Icons.code_outlined,
+                                        hint: 'DE89370400440532013000',
+                                        maxLength: 34,
+                                      ),
                                     ),
+                                  const SizedBox(width: 8),
+                                  IconButton(
+                                    icon: const Icon(Icons.open_in_full, size: 18),
+                                    tooltip: l10n.tooltipEditInLargerView,
+                                    onPressed: () => _editBankAccountDialog(index),
                                   ),
                                   const SizedBox(width: 8),
                                   IconButton(
@@ -1076,6 +1116,7 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                                         _bankControllers[index]
                                             .ifscCode
                                             .dispose();
+                                        _bankControllers[index].iban.dispose();
                                         _bankControllers.removeAt(index);
                                         if (_defaultBankIndex == index) {
                                           _defaultBankIndex = null;
@@ -1103,6 +1144,7 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                                   bankName: TextEditingController(),
                                   accountNumber: TextEditingController(),
                                   ifscCode: TextEditingController(),
+                                  iban: TextEditingController(),
                                 ));
                               });
                             },
@@ -1331,6 +1373,104 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
     if (result != null && mounted) {
       setState(() => controller.text = result);
     }
+  }
+
+  /// Edits one bank account row's fields in a full-size stacked dialog
+  /// instead of the cramped horizontally-scrolling inline row. Edits a copy
+  /// of each field so Cancel discards them; only Save writes back to the
+  /// row's live controllers.
+  Future<void> _editBankAccountDialog(int index) async {
+    final l10n = AppLocalizations.of(context)!;
+    final row = _bankControllers[index];
+    final labelCtrl = TextEditingController(text: row.label.text);
+    final bankNameCtrl = TextEditingController(text: row.bankName.text);
+    final accountNumberCtrl = TextEditingController(text: row.accountNumber.text);
+    final ifscCtrl = TextEditingController(text: row.ifscCode.text);
+    final ibanCtrl = TextEditingController(text: row.iban.text);
+    final isIndia = _selectedCountry == 'India' || _selectedCountry.isEmpty;
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.companyInfoEditBankAccountTitle),
+        content: SizedBox(
+          width: 420,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildField(
+                  controller: labelCtrl,
+                  label: l10n.fieldBankAccountNameLabel,
+                  icon: Icons.label_outline_rounded,
+                  hint: l10n.companyInfoHintExampleAccountLabel,
+                  maxLength: 40,
+                ),
+                const SizedBox(height: 12),
+                _buildField(
+                  controller: bankNameCtrl,
+                  label: l10n.fieldBankNameLabel,
+                  icon: Icons.account_balance_outlined,
+                  hint: l10n.companyInfoHintExampleBankName,
+                  maxLength: 60,
+                ),
+                const SizedBox(height: 12),
+                _buildField(
+                  controller: accountNumberCtrl,
+                  label: l10n.fieldAccountNumberLabel,
+                  icon: Icons.numbers_outlined,
+                  hint: '123456789012',
+                  maxLength: 20,
+                ),
+                const SizedBox(height: 12),
+                if (isIndia)
+                  _buildField(
+                    controller: ifscCtrl,
+                    label: l10n.fieldIfscCodeLabel,
+                    icon: Icons.code_outlined,
+                    hint: 'HDFC0001234',
+                    maxLength: 11,
+                  )
+                else
+                  _buildField(
+                    controller: ibanCtrl,
+                    label: l10n.fieldIbanLabel,
+                    icon: Icons.code_outlined,
+                    hint: 'DE89370400440532013000',
+                    maxLength: 34,
+                  ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.actionCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.actionSave),
+          ),
+        ],
+      ),
+    );
+
+    if (saved == true && mounted) {
+      setState(() {
+        row.label.text = labelCtrl.text;
+        row.bankName.text = bankNameCtrl.text;
+        row.accountNumber.text = accountNumberCtrl.text;
+        row.ifscCode.text = ifscCtrl.text;
+        row.iban.text = ibanCtrl.text;
+      });
+    }
+    labelCtrl.dispose();
+    bankNameCtrl.dispose();
+    accountNumberCtrl.dispose();
+    ifscCtrl.dispose();
+    ibanCtrl.dispose();
   }
 
   /// Compact "show on invoice PDF" toggle used as a field's trailing icon.

@@ -1,5 +1,6 @@
 import 'package:invoiso/database/customer_service.dart';
 import 'package:invoiso/models/customer.dart';
+import 'package:invoiso/models/customer_list_stats.dart';
 import 'package:invoiso/repositories/customer_repository.dart';
 
 class SqliteCustomerRepository implements CustomerRepository {
@@ -40,4 +41,34 @@ class SqliteCustomerRepository implements CustomerRepository {
         orderBy: orderBy,
         orderASC: orderASC,
       );
+  @override
+  Future<List<Customer>> getCustomerListPage({
+    required int offset,
+    required int limit,
+    String query = '',
+    String tab = 'all',
+    String orderBy = 'name',
+    bool ascending = true,
+  }) =>
+      CustomerService.getCustomerListPage(
+          offset: offset, limit: limit, query: query, tab: tab,
+          orderBy: orderBy, ascending: ascending);
+  @override
+  Future<int> getCustomerListCount({String query = '', String tab = 'all'}) =>
+      CustomerService.getCustomerListCount(query: query, tab: tab);
+  @override
+  Future<List<String>> getCustomerListIds({
+    String query = '',
+    String tab = 'all',
+    String orderBy = 'name',
+    bool ascending = true,
+  }) =>
+      CustomerService.getCustomerListIds(
+          query: query, tab: tab, orderBy: orderBy, ascending: ascending);
+  @override
+  Future<List<Customer>> getCustomersByIds(List<String> ids) =>
+      CustomerService.getCustomersByIds(ids);
+  @override
+  Future<CustomerListStats> getCustomerListStats() =>
+      CustomerService.getCustomerListStats();
 }

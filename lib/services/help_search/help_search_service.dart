@@ -75,23 +75,54 @@ class HelpSearchService {
     return items;
   }
 
-  /// Searches the given [index] for [query] using fuzzy (Levenshtein-based)
-  /// matching, ranked by score descending. Only results scoring above
-  /// [cutoff] (0-100) are returned.
+  /// Score credited to an item that matches every query word but wasn't
+  /// found by the fuzzy pass at all — just needs to be above [search]'s
+  /// default cutoff so it isn't dropped; its rank is decided by the
+  /// all-tokens-matched tiering in [search], not this number.
+  static const _multiWordMatchScore = 80;
+
+  static List<String> _tokenize(String text) => text
+      .toLowerCase()
+      .split(RegExp(r'[^a-z0-9]+'))
+      .where((t) => t.isNotEmpty)
+      .toList();
+
+  /// Searches the given [index] for [query], ranked by score descending.
+  /// Only results scoring above [cutoff] (0-100) are returned.
   ///
-  /// Each item is scored as multiple short candidates (its question, and
-  /// each keyword individually) rather than one long concatenated string —
-  /// WeightedRatio penalizes large length mismatches between the query and
-  /// the text it's compared against, so a single blob of 5-10 keywords
-  /// tacked onto a question drags every score down regardless of match
-  /// quality. The item's best-scoring candidate wins.
+  /// Combines two signals:
+  /// 1. Fuzzy (Levenshtein-based) matching — good for typos and near
+  ///    matches on a single phrase. Each item is scored as multiple short
+  ///    candidates (its question, and each keyword individually) rather
+  ///    than one long concatenated string — WeightedRatio penalizes large
+  ///    length mismatches between the query and the text it's compared
+  ///    against, so a single blob of 5-10 keywords tacked onto a question
+  ///    drags every score down regardless of match quality. The item's
+  ///    best-scoring candidate wins.
+  /// 2. Multi-word, order-independent token coverage — the same style
+  ///    Android's Contacts search uses: split the query into words and
+  ///    check whether every one appears (as a substring) somewhere in the
+  ///    item's question/keywords, in any order.
+  ///
+  /// For multi-word queries, (2) is the *primary* sort key, not just a
+  /// fallback for items the fuzzy pass missed: an item containing every
+  /// searched word must outrank one that only fuzzily resembles part of
+  /// the query, even when the raw fuzzy ratio number says otherwise (e.g.
+  /// "multi user" vs "How do I make a **user** an admin?" can out-score
+  /// "How do I delete **multi**ple **user**s at once?" on pure ratio, even
+  /// though only the second one actually contains both words). Fuzzy score
+  /// is still used as the tiebreaker within each tier, and single-word
+  /// queries are untouched (no tiering — pure fuzzy order, same as before).
   static List<ScoredSearchResult> search(
     List<SearchableItem> index,
     String query, {
     int cutoff = 65,
     int limit = 20,
   }) {
-    if (query.trim().isEmpty) return const [];
+    final trimmedQuery = query.trim();
+    if (trimmedQuery.isEmpty) return const [];
+
+    final itemsById = {for (final item in index) item.id: item};
 
     final candidates = <_Candidate>[];
     for (final item in index) {
@@ -101,24 +132,52 @@ class HelpSearchService {
       }
     }
 
-    final results = extractAllSorted(
-      query: query,
+    final fuzzyResults = extractAllSorted(
+      query: trimmedQuery,
       choices: candidates,
       cutoff: cutoff,
       getter: (c) => c.text,
     );
 
-    final bestByItemId = <String, ScoredSearchResult>{};
-    for (final r in results) {
+    final fuzzyScoreByItemId = <String, int>{};
+    for (final r in fuzzyResults) {
       final id = r.choice.item.id;
-      final existing = bestByItemId[id];
-      if (existing == null || existing.score < r.score) {
-        bestByItemId[id] = ScoredSearchResult(r.choice.item, r.score);
+      final existing = fuzzyScoreByItemId[id];
+      if (existing == null || existing < r.score) {
+        fuzzyScoreByItemId[id] = r.score;
       }
     }
 
-    final sorted = bestByItemId.values.toList()
-      ..sort((a, b) => b.score.compareTo(a.score));
-    return sorted.take(limit).toList();
+    final queryTokens = _tokenize(trimmedQuery);
+    final matchesAllTokens = <String, bool>{};
+    if (queryTokens.length > 1) {
+      for (final item in index) {
+        final haystack = _tokenize([item.question, ...item.keywords].join(' '));
+        matchesAllTokens[item.id] =
+            queryTokens.every((qt) => haystack.any((ht) => ht.contains(qt)));
+      }
+    }
+
+    final resultIds = <String>{
+      ...fuzzyScoreByItemId.keys,
+      ...matchesAllTokens.entries.where((e) => e.value).map((e) => e.key),
+    };
+
+    final results = [
+      for (final id in resultIds)
+        ScoredSearchResult(
+          itemsById[id]!,
+          fuzzyScoreByItemId[id] ?? _multiWordMatchScore,
+        ),
+    ];
+
+    results.sort((a, b) {
+      final aAll = matchesAllTokens[a.item.id] ?? false;
+      final bAll = matchesAllTokens[b.item.id] ?? false;
+      if (aAll != bAll) return aAll ? -1 : 1;
+      return b.score.compareTo(a.score);
+    });
+
+    return results.take(limit).toList();
   }
 }

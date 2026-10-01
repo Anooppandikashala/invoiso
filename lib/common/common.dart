@@ -4,9 +4,9 @@ import 'package:invoiso/l10n/app_localizations.dart';
 export 'setting_key.dart';
 export 'pdf_styles.dart';
 
-/// Shared "X-Small"/"Small"/"Medium"/"Large" labels for [LogoSize],
-/// [SignatureSize], and [ThermalCompanyNameSize] — same wording, so one
-/// ARB key set covers all three instead of tripling near-identical keys.
+/// Shared "X-Small"/"Small"/"Medium"/"Large"/"Extra Large" labels for
+/// [LogoSize], [SignatureSize], [ThermalCompanyNameSize] and [PdfFontSize] —
+/// same wording, so one ARB key set covers all of them.
 String _genericSizeLabel(BuildContext context, String key) {
   final l10n = AppLocalizations.of(context)!;
   switch (key) {
@@ -16,6 +16,8 @@ String _genericSizeLabel(BuildContext context, String key) {
       return l10n.sizeSmallLabel;
     case 'medium':
       return l10n.sizeMediumLabel;
+    case 'xlarge':
+      return l10n.sizeXLargeLabel;
     default:
       return l10n.sizeLargeLabel;
   }
@@ -261,7 +263,8 @@ class BankAccount {
   final String label; // friendly name, e.g. "Business Account"
   final String bankName; // e.g. "HDFC Bank"
   final String accountNumber; // e.g. "123456789012"
-  final String ifscCode; // e.g. "HDFC0001234"
+  final String ifscCode; // e.g. "HDFC0001234" (India)
+  final String iban; // e.g. "DE89370400440532013000" (outside India)
   final bool isDefault;
 
   const BankAccount({
@@ -269,6 +272,7 @@ class BankAccount {
     required this.bankName,
     required this.accountNumber,
     required this.ifscCode,
+    this.iban = '',
     this.isDefault = false,
   });
 
@@ -277,6 +281,7 @@ class BankAccount {
         'bankName': bankName,
         'accountNumber': accountNumber,
         'ifscCode': ifscCode,
+        'iban': iban,
         'isDefault': isDefault,
       };
 
@@ -285,6 +290,7 @@ class BankAccount {
         bankName: json['bankName'] as String? ?? '',
         accountNumber: json['accountNumber'] as String? ?? '',
         ifscCode: json['ifscCode'] as String? ?? '',
+        iban: json['iban'] as String? ?? '',
         isDefault: json['isDefault'] as bool? ?? false,
       );
 
@@ -664,3 +670,54 @@ ThermalCompanyNameSize thermalCompanyNameSizeFromKey(String? key) {
 String thermalCompanyNameSizeLabel(
         BuildContext context, ThermalCompanyNameSize size) =>
     _genericSizeLabel(context, size.key);
+
+enum PdfFontSize { small, medium, large, xlarge }
+
+extension PdfFontSizeExtension on PdfFontSize {
+  String get key {
+    switch (this) {
+      case PdfFontSize.small:
+        return 'small';
+      case PdfFontSize.medium:
+        return 'medium';
+      case PdfFontSize.large:
+        return 'large';
+      case PdfFontSize.xlarge:
+        return 'xlarge';
+    }
+  }
+
+  /// Multiplier applied to every font in the non-thermal invoice templates.
+  /// 'medium' = 1.0 so existing PDFs don't change by default.
+  double get scale {
+    switch (this) {
+      case PdfFontSize.small:
+        return 0.9;
+      case PdfFontSize.medium:
+        return 1.0;
+      case PdfFontSize.large:
+        return 1.2;
+      case PdfFontSize.xlarge:
+        return 1.4;
+    }
+  }
+}
+
+PdfFontSize pdfFontSizeFromKey(String? key) {
+  return PdfFontSize.values.firstWhere(
+    (s) => s.key == key,
+    orElse: () => PdfFontSize.medium,
+  );
+}
+
+String pdfFontSizeLabel(BuildContext context, PdfFontSize size) =>
+    _genericSizeLabel(context, size.key);
+
+/// Scale for one PDF section (company name, totals…): the section's own
+/// preset replaces the overall size; unset/unknown key = [overall].
+double pdfSectionScale(String? key, double overall) {
+  for (final s in PdfFontSize.values) {
+    if (s.key == key) return s.scale;
+  }
+  return overall;
+}

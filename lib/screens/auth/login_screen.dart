@@ -5,16 +5,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:invoiso/common/app_config.dart';
 import 'package:invoiso/common/constants.dart';
+import 'package:invoiso/database/company_registry_service.dart';
+import 'package:invoiso/l10n/app_localizations.dart';
+import 'package:invoiso/models/company_profile.dart';
 import 'package:invoiso/models/user.dart';
+import 'package:invoiso/providers/locale_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
+import 'package:invoiso/providers/theme_provider.dart';
 import 'package:invoiso/screens/auth/forgot_password_screen.dart';
 import 'package:invoiso/screens/auth/change_password_screen.dart';
 import 'package:invoiso/screens/help/help_search_screen.dart';
+import 'package:invoiso/screens/settings/company_management_screen.dart';
 import 'package:invoiso/screens/test_gate_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:invoiso/providers/app_config_provider.dart';
 import 'package:invoiso/utils/post_auth_navigation.dart';
+import 'package:invoiso/utils/window_title.dart';
 
 // Login Screen
 class LoginScreen extends ConsumerStatefulWidget {
@@ -30,11 +37,60 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _showDefaultCredsHint = false;
+  List<CompanyProfile> _companies = [];
+  String? _activeCompanyId;
 
   @override
   void initState() {
     super.initState();
+    _loadCompanies();
     _checkFirstTimeUser();
+  }
+
+  Future<void> _loadCompanies() async {
+    final companies = await CompanyRegistryService.listCompanies();
+    final activeId = await CompanyRegistryService.getActiveCompanyId();
+    if (!mounted) return;
+    setState(() {
+      _companies = companies;
+      _activeCompanyId = activeId;
+    });
+  }
+
+  /// Nothing has read per-company data yet at the Login screen (see
+  /// `CompanyManagementScreen`'s doc comment for the full reasoning), so
+  /// switching here is instant — repoint the DB, re-sync the two providers
+  /// loaded before this screen even rendered, and start the credential
+  /// fields fresh for whichever company is now selected.
+  Future<void> _onCompanySelected(String? id) async {
+    if (id == null || id == _activeCompanyId) return;
+    await CompanyRegistryService.switchToCompany(id);
+    final themeKey = await ref.read(settingsRepositoryProvider).getThemeMode();
+    final localeKey = await ref.read(settingsRepositoryProvider).getAppLocale();
+    await refreshWindowTitle();
+    if (!mounted) return;
+    ref.read(themeModeProvider.notifier).state = themeModeFromKey(themeKey);
+    applyAppLocale(ref, localeFromKey(localeKey));
+    _usernameController.clear();
+    _passwordController.clear();
+    setState(() {
+      _activeCompanyId = id;
+      _showDefaultCredsHint = false;
+    });
+    await _checkFirstTimeUser();
+  }
+
+  Future<void> _openCompanyManagement() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const CompanyManagementScreen()),
+    );
+    if (!mounted) return;
+    _usernameController.clear();
+    _passwordController.clear();
+    setState(() => _showDefaultCredsHint = false);
+    await _loadCompanies();
+    await _checkFirstTimeUser();
   }
 
   // Show the hint only while admin/admin actually still works as a login.
@@ -170,8 +226,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final logoWidth = (cardWidth * 0.65).clamp(140.0, 230.0);
     return Scaffold(
       backgroundColor: isDark ? null : Colors.blue[50],
-      body: SafeArea(
-        child: Center(
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
             child: Column(
@@ -311,6 +369,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                           AppSpacing.hLarge,
                         ],
+                        if (_companies.length > 1) ...[
+                          DropdownButtonFormField<String>(
+                            value: _activeCompanyId,
+                            decoration: InputDecoration(
+                              labelText: AppLocalizations.of(context)!
+                                  .loginCompanySelectorLabel,
+                              prefixIcon: const Icon(Icons.corporate_fare),
+                              border: const OutlineInputBorder(),
+                            ),
+                            items: [
+                              for (final company in _companies)
+                                DropdownMenuItem(
+                                  value: company.id,
+                                  child: Text(company.name),
+                                ),
+                            ],
+                            onChanged: _onCompanySelected,
+                          ),
+                          AppSpacing.hMedium,
+                        ],
                         TextField(
                           controller: _usernameController,
                           decoration: InputDecoration(
@@ -440,6 +518,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ),
         ),
+          ),
+          if (!cfg.isCloud)
+            Positioned(
+              right: 16,
+              bottom: 16,
+              child: IconButton(
+                tooltip: AppLocalizations.of(context)!.loginCompanyGearTooltip,
+                icon: const Icon(Icons.settings),
+                onPressed: _openCompanyManagement,
+              ),
+            ),
+        ],
       ),
     );
   }
