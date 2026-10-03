@@ -323,6 +323,11 @@ class _InvoiceManagementScreenV2State
 
   Future<void> _declineInvoice(Invoice invoice) async {
     final l10n = AppLocalizations.of(context)!;
+    if (invoice.payments.isNotEmpty) {
+      AppError.show(context,
+          l10n.invoiceMgmtDeclineHasPaymentsMessage(invoice.invoiceNumber ?? invoice.id));
+      return;
+    }
     final confirmed = await AppError.confirm(
       context,
       title: l10n.invoiceMgmtDeclineInvoiceTitle,
@@ -1738,6 +1743,12 @@ class _InvoiceManagementScreenV2State
             child: _MenuRow(Icons.payments_outlined, l10n.actionApplyPayment,
                 invoice.paymentStatus == PaymentStatus.paid ? Colors.green : Colors.purple),
           ),
+        // Declined: read-only history (dialog opens read-only for declined).
+        if (isDeclined && invoice.payments.isNotEmpty)
+          PopupMenuItem(
+            value: 'pay',
+            child: _MenuRow(Icons.history, l10n.paymentDialogHistoryTitle, Colors.blueGrey),
+          ),
       ],
       if (widget.filterType == 'Invoice' && !isDeclined) ...[
         PopupMenuItem(
@@ -1839,6 +1850,9 @@ class _InvoiceManagementScreenV2State
             l10n.actionApplyPayment,
             () => _showApplyPaymentDialog(invoice),
           ),
+        if (isDeclined && invoice.payments.isNotEmpty)
+          _buildActionButton(Icons.history, Colors.blueGrey, l10n.paymentDialogHistoryTitle,
+              () => _showApplyPaymentDialog(invoice)),
         _buildActionButton(Icons.picture_as_pdf_outlined, Colors.orange, l10n.actionPdfPreview,
             () => InvoicePdfServices.previewPDF(context, invoice)),
         _buildActionButton(Icons.download_outlined, Colors.deepPurple, l10n.actionDownloadPdf,

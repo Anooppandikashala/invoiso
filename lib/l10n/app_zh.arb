@@ -409,6 +409,7 @@
       }
     }
   },
+  "invoiceMgmtDeclineHasPaymentsMessage": "发票 #{number} 已有付款记录。拒绝前请先在“应用付款”中删除这些付款。",
   "invoiceMgmtDeclinedSuccessMessage": "发票已拒绝，库存已归还。",
   "invoiceStatusDeclinedBadge": "已拒绝",
   "createInvoiceConvertTitle": "转换为发票",

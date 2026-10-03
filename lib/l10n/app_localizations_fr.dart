@@ -1492,6 +1492,11 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String invoiceMgmtDeclineHasPaymentsMessage(String number) {
+    return 'La facture #$number a des paiements enregistrés. Supprimez-les dans Appliquer un paiement avant de la refuser.';
+  }
+
+  @override
   String get invoiceMgmtDeclinedSuccessMessage =>
       'Facture refusée, stock restauré.';
 

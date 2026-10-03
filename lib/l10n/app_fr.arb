@@ -409,6 +409,7 @@
       }
     }
   },
+  "invoiceMgmtDeclineHasPaymentsMessage": "La facture #{number} a des paiements enregistrés. Supprimez-les dans Appliquer un paiement avant de la refuser.",
   "invoiceMgmtDeclinedSuccessMessage": "Facture refusée, stock restauré.",
   "invoiceStatusDeclinedBadge": "Refusée",
   "createInvoiceConvertTitle": "Convertir en facture",

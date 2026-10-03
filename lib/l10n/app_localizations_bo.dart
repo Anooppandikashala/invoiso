@@ -1467,6 +1467,11 @@ class AppLocalizationsBo extends AppLocalizations {
   }
 
   @override
+  String invoiceMgmtDeclineHasPaymentsMessage(String number) {
+    return 'ཁྲལ་ཤོག་ #$number ལ་སྤྲོད་ཆད་ཐོ་འགོད་ཡོད། ཁས་མི་ལེན་གོང་ལ་སྤྲོད་ཆད་སྤྱོད་ནང་དེ་དག་སུབ་རོགས།';
+  }
+
+  @override
   String get invoiceMgmtDeclinedSuccessMessage =>
       'ཁྲལ་ཤོག་ཁས་མི་ལེན་པར་བརྟགས་ཟིན་པ་དང་ཅ་དངོས་སློག་ཟིན།';
 

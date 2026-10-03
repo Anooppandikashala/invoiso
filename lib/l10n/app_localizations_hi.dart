@@ -1475,6 +1475,11 @@ class AppLocalizationsHi extends AppLocalizations {
   }
 
   @override
+  String invoiceMgmtDeclineHasPaymentsMessage(String number) {
+    return 'चालान #$number पर भुगतान दर्ज हैं। अस्वीकृत करने से पहले उन्हें भुगतान लागू करें में हटाएँ।';
+  }
+
+  @override
   String get invoiceMgmtDeclinedSuccessMessage =>
       'इनवॉइस अस्वीकृत, स्टॉक वापस कर दिया गया।';
 

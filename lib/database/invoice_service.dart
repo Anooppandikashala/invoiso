@@ -863,7 +863,10 @@ class InvoiceService {
         'invoices',
         {'status': 'declined'},
         where: "id = ? AND type = 'Invoice' "
-            "AND (status IS NULL OR status != 'declined')",
+            "AND (status IS NULL OR status != 'declined') "
+            // Paid money must be removed first — see _declineInvoice in the list.
+            'AND NOT EXISTS (SELECT 1 FROM invoice_payments '
+            'WHERE invoice_payments.invoice_id = invoices.id)',
         whereArgs: [id],
       );
       if (changed == 0) return;

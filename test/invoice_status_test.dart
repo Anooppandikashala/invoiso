@@ -126,6 +126,19 @@ void main() {
     expect(fin.outstanding, 0.0);
   });
 
+  test('declineInvoice refuses an invoice with payments', () async {
+    final p = await addProduct();
+    await InvoiceService.insertInvoice(doc('i1', 'Invoice', p));
+    await PaymentService.addPayment(
+      invoice: (await InvoiceService.getInvoiceById('i1'))!,
+      amountPaid: 300,
+      datePaid: DateTime.now(),
+    );
+    await InvoiceService.declineInvoice('i1');
+    expect((await InvoiceService.getInvoiceById('i1'))!.status, isNull);
+    expect(await stockOf('p1'), 7);
+  });
+
   test('declineInvoice ignores quotations', () async {
     final p = await addProduct();
     await InvoiceService.insertInvoice(doc('q1', 'Quotation', p));
@@ -304,9 +317,11 @@ void main() {
     }
   }
 
-  // Invoice list screen (wide layout) over the seeded active + declined pair.
-  Future<void> pumpInvoiceList(WidgetTester tester) async {
-    await tester.runAsync(seedActiveAndDeclined);
+  // Invoice list screen (wide layout); seeds the active + declined pair
+  // unless [seed] is given.
+  Future<void> pumpInvoiceList(WidgetTester tester,
+      {Future<void> Function()? seed}) async {
+    await tester.runAsync(seed ?? seedActiveAndDeclined);
     tester.view.physicalSize = const Size(1800, 1200);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
@@ -380,5 +395,52 @@ void main() {
     await applyFilter(tester, hideDeclined: true);
     expect(rowCount(), 1);
     expect(find.text('Declined'), findsNothing);
+  });
+
+  // One unpaid-then-fully-paid invoice i1.
+  Future<void> seedPaidInvoice() async {
+    final p = await addProduct();
+    await InvoiceService.insertInvoice(doc('i1', 'Invoice', p));
+    await PaymentService.addPayment(
+      invoice: (await InvoiceService.getInvoiceById('i1'))!,
+      amountPaid: 300,
+      datePaid: DateTime.now(),
+    );
+  }
+
+  testWidgets('decline is blocked on an invoice with payments',
+      (tester) async {
+    await pumpInvoiceList(tester, seed: seedPaidInvoice);
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Mark as declined'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.textContaining('has payments recorded'), findsOneWidget);
+    expect(find.byType(AlertDialog), findsNothing); // no confirm dialog
+    await tester.runAsync(() async {
+      expect((await InvoiceService.getInvoiceById('i1'))!.status, isNull);
+    });
+  });
+
+  testWidgets('declined invoice with payments opens read-only history',
+      (tester) async {
+    // Declined while it had payments (data from before the block existed).
+    await pumpInvoiceList(tester, seed: () async {
+      await seedPaidInvoice();
+      await InvoiceService.setInvoiceStatus('i1', 'declined');
+    });
+    await tester.tap(find.byTooltip('Payment History'));
+    await tester.pump();
+    await settle(tester);
+
+    expect(find.text('Payment History'), findsWidgets);
+    expect(find.text('Record Payment'), findsNothing);
+    expect(find.byIcon(Icons.delete_outline), findsNothing);
+    expect(
+        find.descendant(
+            of: find.byType(Dialog), matching: find.byIcon(Icons.download_outlined)),
+        findsOneWidget); // receipt download still available
   });
 }

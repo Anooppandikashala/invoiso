@@ -409,6 +409,7 @@
       }
     }
   },
+  "invoiceMgmtDeclineHasPaymentsMessage": "चालान #{number} पर भुगतान दर्ज हैं। अस्वीकृत करने से पहले उन्हें भुगतान लागू करें में हटाएँ।",
   "invoiceMgmtDeclinedSuccessMessage": "इनवॉइस अस्वीकृत, स्टॉक वापस कर दिया गया।",
   "invoiceStatusDeclinedBadge": "अस्वीकृत",
   "createInvoiceConvertTitle": "इनवॉइस में बदलें",

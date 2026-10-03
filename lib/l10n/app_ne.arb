@@ -409,6 +409,7 @@
       }
     }
   },
+  "invoiceMgmtDeclineHasPaymentsMessage": "बीजक #{number} मा भुक्तानी दर्ता छन्। अस्वीकृत गर्नु अघि तिनलाई भुक्तानी लागू गर्नुहोस् मा मेटाउनुहोस्।",
   "invoiceMgmtDeclinedSuccessMessage": "बीजक अस्वीकृत भयो, स्टक फिर्ता गरियो।",
   "invoiceStatusDeclinedBadge": "अस्वीकृत",
   "createInvoiceConvertTitle": "बीजकमा रूपान्तरण गर्नुहोस्",

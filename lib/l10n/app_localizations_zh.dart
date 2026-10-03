@@ -1427,6 +1427,11 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String invoiceMgmtDeclineHasPaymentsMessage(String number) {
+    return '发票 #$number 已有付款记录。拒绝前请先在“应用付款”中删除这些付款。';
+  }
+
+  @override
   String get invoiceMgmtDeclinedSuccessMessage => '发票已拒绝，库存已归还。';
 
   @override

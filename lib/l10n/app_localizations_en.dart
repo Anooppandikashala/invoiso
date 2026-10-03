@@ -1470,6 +1470,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String invoiceMgmtDeclineHasPaymentsMessage(String number) {
+    return 'Invoice #$number has payments recorded. Delete them in Apply Payment before declining.';
+  }
+
+  @override
   String get invoiceMgmtDeclinedSuccessMessage =>
       'Invoice declined, stock restored.';
 

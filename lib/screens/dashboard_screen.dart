@@ -2295,8 +2295,10 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                               AppLocalizations.of(context)!
                                                   .actionPayment,
                                               invoice.type == 'Invoice' &&
-                                                      invoice.status !=
-                                                          'declined'
+                                                      (invoice.status !=
+                                                              'declined' ||
+                                                          invoice.payments
+                                                              .isNotEmpty)
                                                   ? () => showDialog(
                                                         context: context,
                                                         barrierDismissible:

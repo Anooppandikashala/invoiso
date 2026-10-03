@@ -926,6 +926,14 @@
       }
     }
   },
+  "invoiceMgmtDeclineHasPaymentsMessage": "Invoice #{number} has payments recorded. Delete them in Apply Payment before declining.",
+  "@invoiceMgmtDeclineHasPaymentsMessage": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
   "invoiceMgmtDeclinedSuccessMessage": "Invoice declined, stock restored.",
   "invoiceStatusDeclinedBadge": "Declined",
   "createInvoiceConvertTitle": "Convert to Invoice",

@@ -409,6 +409,7 @@
       }
     }
   },
+  "invoiceMgmtDeclineHasPaymentsMessage": "La factura #{number} tiene pagos registrados. Elimínelos en Aplicar pago antes de rechazarla.",
   "invoiceMgmtDeclinedSuccessMessage": "Factura rechazada, stock restaurado.",
   "invoiceStatusDeclinedBadge": "Rechazada",
   "createInvoiceConvertTitle": "Convertir en factura",

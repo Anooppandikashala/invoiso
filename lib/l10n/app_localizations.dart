@@ -2544,6 +2544,12 @@ abstract class AppLocalizations {
   /// **'This will mark invoice #{number} as declined and return its items to stock. This can\'t be undone.'**
   String invoiceMgmtDeclineInvoiceBody(String number);
 
+  /// No description provided for @invoiceMgmtDeclineHasPaymentsMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice #{number} has payments recorded. Delete them in Apply Payment before declining.'**
+  String invoiceMgmtDeclineHasPaymentsMessage(String number);
+
   /// No description provided for @invoiceMgmtDeclinedSuccessMessage.
   ///
   /// In en, this message translates to:

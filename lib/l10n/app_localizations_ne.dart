@@ -1482,6 +1482,11 @@ class AppLocalizationsNe extends AppLocalizations {
   }
 
   @override
+  String invoiceMgmtDeclineHasPaymentsMessage(String number) {
+    return 'बीजक #$number मा भुक्तानी दर्ता छन्। अस्वीकृत गर्नु अघि तिनलाई भुक्तानी लागू गर्नुहोस् मा मेटाउनुहोस्।';
+  }
+
+  @override
   String get invoiceMgmtDeclinedSuccessMessage =>
       'बीजक अस्वीकृत भयो, स्टक फिर्ता गरियो।';
 
