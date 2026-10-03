@@ -212,7 +212,7 @@ void main() {
     expect(item.containsKey('description'), isTrue);
     expect(item['description'], isNull);
 
-    // v45 added quotation status + quote<->invoice links. Legacy rows stay
+    // v49 added quotation status + quote<->invoice links. Legacy rows stay
     // NULL (read as 'draft', no link).
     expect(invoice.containsKey('status'), isTrue);
     expect(invoice['status'], isNull);

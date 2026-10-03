@@ -2208,6 +2208,12 @@ abstract class AppLocalizations {
   /// **'Hide fully paid invoices'**
   String get invoiceMgmtHideFullyPaidLabel;
 
+  /// No description provided for @invoiceMgmtHideDeclinedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide declined invoices'**
+  String get invoiceMgmtHideDeclinedLabel;
+
   /// No description provided for @invoiceMgmtPaymentStatusLabel.
   ///
   /// In en, this message translates to:

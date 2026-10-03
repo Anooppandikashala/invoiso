@@ -72,6 +72,7 @@ class _InvoiceManagementScreenV2State
   bool _isLoadingPage = false;
   bool _isBulkLoading = false;
   bool _hidePaid = false;
+  bool _hideDeclined = false;
   String _dueDateFilter =
       'all'; // 'all' | 'overdue' | 'due_today' | 'due_week' | 'due_month'
   String _paymentStatusFilterV2 = 'all'; // 'all' | 'paid' | 'partial' | 'unpaid'
@@ -152,6 +153,7 @@ class _InvoiceManagementScreenV2State
         paymentStatus:
             widget.filterType == 'Invoice' ? _paymentStatusFilterV2 : 'all',
         hidePaid: _hidePaid,
+        hideDeclined: widget.filterType == 'Invoice' && _hideDeclined,
       );
       final results = await Future.wait([
         ref.read(invoiceRepositoryProvider).getInvoicesPaginated(
@@ -270,7 +272,6 @@ class _InvoiceManagementScreenV2State
     await ref
         .read(invoiceRepositoryProvider)
         .setInvoiceStatus(quotation.id, status);
-    ref.read(invoicesProvider.notifier).refresh();
     if (!mounted) return;
     _currentPage = 0;
     await _loadPage();
@@ -332,7 +333,6 @@ class _InvoiceManagementScreenV2State
     if (!confirmed) return;
 
     await ref.read(invoiceRepositoryProvider).declineInvoice(invoice.id);
-    ref.read(invoicesProvider.notifier).refresh();
     await _loadPage();
     if (mounted) {
       AppError.showSuccess(context, l10n.invoiceMgmtDeclinedSuccessMessage);
@@ -1022,6 +1022,7 @@ class _InvoiceManagementScreenV2State
     final unpaid = _pageInvoices
         .where((inv) =>
             _selectedIds.contains(inv.id) &&
+            inv.status != 'declined' &&
             inv.outstandingBalance > InvoiceCalculator.moneyEpsilon)
         .toList();
     final alreadyPaid = _selectedIds.length - unpaid.length;
@@ -1098,6 +1099,7 @@ class _InvoiceManagementScreenV2State
     {'value': 'paid', 'color': Colors.green},
     {'value': 'partial', 'color': Colors.orange},
     {'value': 'unpaid', 'color': Colors.red},
+    {'value': 'declined', 'color': Colors.red},
   ];
 
   static String _paymentStatusFilterLabel(AppLocalizations l10n, String value) {
@@ -1105,6 +1107,7 @@ class _InvoiceManagementScreenV2State
       'paid' => l10n.paymentStatusPaid,
       'partial' => l10n.paymentStatusPartial,
       'unpaid' => l10n.paymentStatusUnpaid,
+      'declined' => l10n.invoiceStatusDeclinedBadge,
       _ => l10n.invoiceMgmtStatusAllLabel,
     };
   }
@@ -1219,6 +1222,7 @@ class _InvoiceManagementScreenV2State
 
   int get _activeFilterCountV2 =>
       (_hidePaid ? 1 : 0) +
+      (_hideDeclined ? 1 : 0) +
       (_dueDateFilter != 'all' ? 1 : 0) +
       (_paymentStatusFilterV2 != 'all' ? 1 : 0) +
       (_invoiceDateFrom != null || _invoiceDateTo != null ? 1 : 0) +
@@ -1227,6 +1231,7 @@ class _InvoiceManagementScreenV2State
 
   Future<void> _showFilterDialogV2() async {
     bool tempHidePaid = _hidePaid;
+    bool tempHideDeclined = _hideDeclined;
     String tempDue = _dueDateFilter;
     String tempStatus = _paymentStatusFilterV2;
     DateTime? tempDateFrom = _invoiceDateFrom;
@@ -1257,6 +1262,14 @@ class _InvoiceManagementScreenV2State
                       onChanged: (v) => setDialogState(() => tempHidePaid = v),
                       activeColor: Theme.of(dialogContext).primaryColor,
                     ),
+                    if (widget.filterType == 'Invoice')
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(AppLocalizations.of(context)!.invoiceMgmtHideDeclinedLabel),
+                        value: tempHideDeclined,
+                        onChanged: (v) => setDialogState(() => tempHideDeclined = v),
+                        activeColor: Theme.of(dialogContext).primaryColor,
+                      ),
                     const SizedBox(height: 8),
                     Text(AppLocalizations.of(context)!.invoiceMgmtPaymentStatusLabel,
                         style: TextStyle(
@@ -1370,6 +1383,7 @@ class _InvoiceManagementScreenV2State
                 onPressed: () {
                   setDialogState(() {
                     tempHidePaid = false;
+                    tempHideDeclined = false;
                     tempDue = 'all';
                     tempStatus = 'all';
                     tempDateFrom = null;
@@ -1392,6 +1406,7 @@ class _InvoiceManagementScreenV2State
                       Navigator.pop(dialogContext);
                       setState(() {
                         _hidePaid = tempHidePaid;
+                        _hideDeclined = tempHideDeclined;
                         _dueDateFilter = tempDue;
                         _paymentStatusFilterV2 = tempStatus;
                         _invoiceDateFrom = tempDateFrom;

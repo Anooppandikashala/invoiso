@@ -1239,6 +1239,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get invoiceMgmtHideFullyPaidLabel => '隐藏已全额付款的发票';
 
   @override
+  String get invoiceMgmtHideDeclinedLabel => '隐藏已拒绝的发票';
+
+  @override
   String get invoiceMgmtPaymentStatusLabel => '付款状态';
 
   @override

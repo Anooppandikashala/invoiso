@@ -1276,11 +1276,6 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       );
 
       await ref.read(invoiceRepositoryProvider).insertInvoice(invoice);
-      if (widget.convertFromQuotationId != null) {
-        await ref
-            .read(invoiceRepositoryProvider)
-            .markQuotationConverted(widget.convertFromQuotationId!, invoice.id);
-      }
 
       if (!mounted) return true;
       setState(() {

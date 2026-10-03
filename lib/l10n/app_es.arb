@@ -346,6 +346,7 @@
   "invoiceMgmtFilterExceedsLimitMessage": "El filtro devolvió {count} facturas — el máximo es {limit}.",
   "invoiceMgmtFilterInvoicesTitle": "Filtrar facturas",
   "invoiceMgmtHideFullyPaidLabel": "Ocultar facturas totalmente pagadas",
+  "invoiceMgmtHideDeclinedLabel": "Ocultar facturas rechazadas",
   "invoiceMgmtPaymentStatusLabel": "Estado de pago",
   "invoiceMgmtDueDateLabel": "Fecha de vencimiento",
   "invoiceMgmtInvoiceDateRangeLabel": "Rango de fechas de factura",

@@ -1289,6 +1289,9 @@ class AppLocalizationsNe extends AppLocalizations {
       'पूर्ण भुक्तानी भएका बीजकहरू लुकाउनुहोस्';
 
   @override
+  String get invoiceMgmtHideDeclinedLabel => 'अस्वीकृत बीजकहरू लुकाउनुहोस्';
+
+  @override
   String get invoiceMgmtPaymentStatusLabel => 'भुक्तानी स्थिति';
 
   @override

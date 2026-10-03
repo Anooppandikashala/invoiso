@@ -634,6 +634,9 @@ pw.MultiPage buildGridClassicTemplate(
           ? (context) =>
               buildFullPageWatermark(watermarkBytes, watermarkOpacity)
           : null,
+      buildForeground: invoice.status == 'declined'
+          ? (context) => buildDeclinedStamp()
+          : null,
     ),
     header: (context) {
       if (context.pageNumber != 1) {

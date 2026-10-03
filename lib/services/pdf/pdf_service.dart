@@ -248,6 +248,7 @@ class PDFService {
       effectiveUpiId = effectiveUpiId.trim();
     }
     final showUpiQr = s.showQrStr == 'true' &&
+        invoice.status != 'declined' &&
         effectiveUpiId != null &&
         effectiveUpiId.isNotEmpty &&
         invoice.outstandingBalance > 0;

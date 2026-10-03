@@ -791,6 +791,7 @@
   },
   "invoiceMgmtFilterInvoicesTitle": "Filter Invoices",
   "invoiceMgmtHideFullyPaidLabel": "Hide fully paid invoices",
+  "invoiceMgmtHideDeclinedLabel": "Hide declined invoices",
   "invoiceMgmtPaymentStatusLabel": "Payment status",
   "invoiceMgmtDueDateLabel": "Due date",
   "invoiceMgmtInvoiceDateRangeLabel": "Invoice date range",

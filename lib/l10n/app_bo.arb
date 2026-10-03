@@ -346,6 +346,7 @@
   "invoiceMgmtFilterExceedsLimitMessage": "འདེམས་སྒྲུག་གིས་ཁྲལ་ཤོག་ {count} བྱུང་། མང་ཤོས་ {limit}།",
   "invoiceMgmtFilterInvoicesTitle": "ཁྲལ་ཤོག་འདེམས་སྒྲུག",
   "invoiceMgmtHideFullyPaidLabel": "ཁྲལ་ཤོག་ཚང་མར་སྤྲད་ཟིན་པ་སྦེད།",
+  "invoiceMgmtHideDeclinedLabel": "ཁས་མི་ལེན་པའི་ཁྲལ་ཤོག་སྦེད།",
   "invoiceMgmtPaymentStatusLabel": "སྤྲོད་ཆད་གནས་བབ།",
   "invoiceMgmtDueDateLabel": "ཐག་ཆོད་ཚེས་གྲངས།",
   "invoiceMgmtInvoiceDateRangeLabel": "ཁྲལ་ཤོག་ཚེས་གྲངས་ཁྱོན།",

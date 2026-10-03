@@ -346,6 +346,7 @@
   "invoiceMgmtFilterExceedsLimitMessage": "फिल्टरले {count} बीजकहरू फर्कायो — अधिकतम {limit} हो।",
   "invoiceMgmtFilterInvoicesTitle": "बीजकहरू फिल्टर गर्नुहोस्",
   "invoiceMgmtHideFullyPaidLabel": "पूर्ण भुक्तानी भएका बीजकहरू लुकाउनुहोस्",
+  "invoiceMgmtHideDeclinedLabel": "अस्वीकृत बीजकहरू लुकाउनुहोस्",
   "invoiceMgmtPaymentStatusLabel": "भुक्तानी स्थिति",
   "invoiceMgmtDueDateLabel": "म्याद मिति",
   "invoiceMgmtInvoiceDateRangeLabel": "बीजक मिति दायरा",

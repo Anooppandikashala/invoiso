@@ -1283,6 +1283,9 @@ class AppLocalizationsHi extends AppLocalizations {
       'पूरी तरह भुगतान किए गए चालान छिपाएँ';
 
   @override
+  String get invoiceMgmtHideDeclinedLabel => 'अस्वीकृत चालान छिपाएँ';
+
+  @override
   String get invoiceMgmtPaymentStatusLabel => 'भुगतान स्थिति';
 
   @override

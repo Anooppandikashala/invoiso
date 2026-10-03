@@ -1296,6 +1296,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'Ocultar facturas totalmente pagadas';
 
   @override
+  String get invoiceMgmtHideDeclinedLabel => 'Ocultar facturas rechazadas';
+
+  @override
   String get invoiceMgmtPaymentStatusLabel => 'Estado de pago';
 
   @override

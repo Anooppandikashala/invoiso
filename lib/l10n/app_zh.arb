@@ -346,6 +346,7 @@
   "invoiceMgmtFilterExceedsLimitMessage": "筛选结果为 {count} 张发票 — 最多为 {limit} 张。",
   "invoiceMgmtFilterInvoicesTitle": "筛选发票",
   "invoiceMgmtHideFullyPaidLabel": "隐藏已全额付款的发票",
+  "invoiceMgmtHideDeclinedLabel": "隐藏已拒绝的发票",
   "invoiceMgmtPaymentStatusLabel": "付款状态",
   "invoiceMgmtDueDateLabel": "到期日",
   "invoiceMgmtInvoiceDateRangeLabel": "发票日期范围",

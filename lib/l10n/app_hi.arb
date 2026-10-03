@@ -346,6 +346,7 @@
   "invoiceMgmtFilterExceedsLimitMessage": "फ़िल्टर ने {count} चालान लौटाए — अधिकतम {limit} है।",
   "invoiceMgmtFilterInvoicesTitle": "चालान फ़िल्टर करें",
   "invoiceMgmtHideFullyPaidLabel": "पूरी तरह भुगतान किए गए चालान छिपाएँ",
+  "invoiceMgmtHideDeclinedLabel": "अस्वीकृत चालान छिपाएँ",
   "invoiceMgmtPaymentStatusLabel": "भुगतान स्थिति",
   "invoiceMgmtDueDateLabel": "देय तिथि",
   "invoiceMgmtInvoiceDateRangeLabel": "चालान तिथि सीमा",

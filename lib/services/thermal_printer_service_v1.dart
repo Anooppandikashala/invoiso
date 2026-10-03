@@ -182,6 +182,9 @@ class ThermalPrinterService {
     }
     hr();
     line(invoice.type.toUpperCase(), align: PosAlign.center, bold: true);
+    if (invoice.status == 'declined') {
+      line('*** DECLINED ***', align: PosAlign.center, bold: true);
+    }
     hr();
 
     // ── Invoice meta ──

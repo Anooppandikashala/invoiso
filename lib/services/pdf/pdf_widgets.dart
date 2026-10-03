@@ -78,6 +78,26 @@ pw.Widget buildFullPageWatermark(Uint8List bytes, double opacity) {
   );
 }
 
+/// Diagonal stamp drawn over every page of a declined (voided) invoice.
+pw.Widget buildDeclinedStamp() {
+  return pw.FullPage(
+    ignoreMargins: true,
+    child: pw.Center(
+      child: pw.Transform.rotateBox(
+        angle: 0.6,
+        child: pw.Opacity(
+          opacity: 0.25,
+          child: pw.Text('DECLINED',
+              style: pw.TextStyle(
+                  fontSize: 72,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.red)),
+        ),
+      ),
+    ),
+  );
+}
+
 pw.Widget buildCompanyLogo(pw.MemoryImage image, {double size = 90}) {
   final iw = image.width;
   final ih = image.height;

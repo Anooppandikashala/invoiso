@@ -1276,6 +1276,9 @@ class AppLocalizationsBo extends AppLocalizations {
   String get invoiceMgmtHideFullyPaidLabel => 'ཁྲལ་ཤོག་ཚང་མར་སྤྲད་ཟིན་པ་སྦེད།';
 
   @override
+  String get invoiceMgmtHideDeclinedLabel => 'ཁས་མི་ལེན་པའི་ཁྲལ་ཤོག་སྦེད།';
+
+  @override
   String get invoiceMgmtPaymentStatusLabel => 'སྤྲོད་ཆད་གནས་བབ།';
 
   @override

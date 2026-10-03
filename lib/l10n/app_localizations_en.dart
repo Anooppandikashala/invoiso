@@ -1279,6 +1279,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get invoiceMgmtHideFullyPaidLabel => 'Hide fully paid invoices';
 
   @override
+  String get invoiceMgmtHideDeclinedLabel => 'Hide declined invoices';
+
+  @override
   String get invoiceMgmtPaymentStatusLabel => 'Payment status';
 
   @override
