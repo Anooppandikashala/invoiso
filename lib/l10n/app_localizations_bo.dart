@@ -776,6 +776,11 @@ class AppLocalizationsBo extends AppLocalizations {
   }
 
   @override
+  String createInvoiceTotalBelowPaidMessage(String paid) {
+    return 'བསྡོམས་གསར་པ་དེ་སྔོན་ལ་སྤྲད་ཟིན་པའི་ $paid ལས་ཉུང་། སྔོན་ལ་སྤྲོད་ཆད་སྤྱོད་ནང་སྤྲོད་ཆད་སུབ་པའམ། བསྡོམས་དེ་དངུལ་འབོར་དེ་དང་མཉམ་པའམ་མང་བ་ཉར་རོགས།';
+  }
+
+  @override
   String createInvoiceErrorUpdatingMessage(String e) {
     return 'ཁྲལ་ཤོག་གསར་བཅོས་བྱེད་པར་ནོར་འཁྲུལ།: $e';
   }
@@ -907,6 +912,9 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get createInvoiceOrderDateLabel => 'མངགས་ཞུའི་ཚེས་གྲངས།';
+
+  @override
+  String get createInvoiceOrderTimeLabel => 'མངགས་ཞུའི་དུས་ཚོད།';
 
   @override
   String get createInvoiceDueDateLabel => 'འབབ་ཚེས།';

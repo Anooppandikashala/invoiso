@@ -446,6 +446,14 @@
       }
     }
   },
+  "createInvoiceTotalBelowPaidMessage": "The new total is less than the {paid} already paid. Delete payments in Apply Payment first, or keep the total at or above that amount.",
+  "@createInvoiceTotalBelowPaidMessage": {
+    "placeholders": {
+      "paid": {
+        "type": "String"
+      }
+    }
+  },
   "createInvoiceErrorUpdatingMessage": "Error updating invoice: {e}",
   "@createInvoiceErrorUpdatingMessage": {
     "placeholders": {
@@ -542,6 +550,7 @@
   "createInvoiceTypeFieldLabel": "Invoice type",
   "createInvoiceTypeLockedHelperText": "Type can't be changed after creation",
   "createInvoiceOrderDateLabel": "Order date",
+  "createInvoiceOrderTimeLabel": "Order time",
   "createInvoiceDueDateLabel": "Due date",
   "createInvoiceGstTitleLabel": "GST title",
   "createInvoiceTaxTitleLabel": "Tax title",

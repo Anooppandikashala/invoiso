@@ -756,6 +756,11 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String createInvoiceTotalBelowPaidMessage(String paid) {
+    return '新的总额低于已支付的 $paid。请先在“应用付款”中删除付款，或将总额保持在该金额或以上。';
+  }
+
+  @override
   String createInvoiceErrorUpdatingMessage(String e) {
     return '更新发票时出错：$e';
   }
@@ -881,6 +886,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get createInvoiceOrderDateLabel => '订单日期';
+
+  @override
+  String get createInvoiceOrderTimeLabel => '订单时间';
 
   @override
   String get createInvoiceDueDateLabel => '到期日期';

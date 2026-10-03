@@ -1428,6 +1428,12 @@ abstract class AppLocalizations {
   /// **'{invoiceTypeLabel} updated successfully!'**
   String createInvoiceUpdatedSuccessMessage(String invoiceTypeLabel);
 
+  /// No description provided for @createInvoiceTotalBelowPaidMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The new total is less than the {paid} already paid. Delete payments in Apply Payment first, or keep the total at or above that amount.'**
+  String createInvoiceTotalBelowPaidMessage(String paid);
+
   /// No description provided for @createInvoiceErrorUpdatingMessage.
   ///
   /// In en, this message translates to:
@@ -1649,6 +1655,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Order date'**
   String get createInvoiceOrderDateLabel;
+
+  /// No description provided for @createInvoiceOrderTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Order time'**
+  String get createInvoiceOrderTimeLabel;
 
   /// No description provided for @createInvoiceDueDateLabel.
   ///

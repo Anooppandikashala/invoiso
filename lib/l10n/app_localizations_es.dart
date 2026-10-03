@@ -782,6 +782,11 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String createInvoiceTotalBelowPaidMessage(String paid) {
+    return 'El nuevo total es menor que los $paid ya pagados. Elimine pagos en Aplicar pago primero o mantenga el total igual o superior a ese importe.';
+  }
+
+  @override
   String createInvoiceErrorUpdatingMessage(String e) {
     return 'Error al actualizar la factura: $e';
   }
@@ -915,6 +920,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get createInvoiceOrderDateLabel => 'Fecha del pedido';
+
+  @override
+  String get createInvoiceOrderTimeLabel => 'Hora del pedido';
 
   @override
   String get createInvoiceDueDateLabel => 'Fecha de vencimiento';

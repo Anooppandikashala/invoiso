@@ -778,6 +778,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String createInvoiceTotalBelowPaidMessage(String paid) {
+    return 'The new total is less than the $paid already paid. Delete payments in Apply Payment first, or keep the total at or above that amount.';
+  }
+
+  @override
   String createInvoiceErrorUpdatingMessage(String e) {
     return 'Error updating invoice: $e';
   }
@@ -909,6 +914,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createInvoiceOrderDateLabel => 'Order date';
+
+  @override
+  String get createInvoiceOrderTimeLabel => 'Order time';
 
   @override
   String get createInvoiceDueDateLabel => 'Due date';

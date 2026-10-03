@@ -123,6 +123,13 @@ class InvoiceService {
   static Future<void> updateInvoice(Invoice invoice) async {
     final db = await dbHelper.database;
 
+    // Never let an edit drop the total below what's already been paid.
+    final paid = await PaymentService.getTotalPaidForInvoice(invoice.id);
+    if (paid - invoice.total > InvoiceCalculator.moneyEpsilon) {
+      throw StateError(
+          'Invoice total ${invoice.total} is below amount paid $paid');
+    }
+
     // Fetch existing items before transaction (to restore stock)
     final oldItems = await db.query(
       'invoice_items',
@@ -142,6 +149,7 @@ class InvoiceService {
           'customer_address': invoice.customer.address,
           'customer_gstin': invoice.customer.gstin,
           'customer_business_name': invoice.customer.businessName,
+          'date': invoice.date.toIso8601String(),
           'notes': invoice.notes,
           'tax_rate': invoice.taxRate,
           'type': invoice.type,
@@ -149,6 +157,7 @@ class InvoiceService {
           'tax_mode': invoice.taxMode.key,
           'is_interstate': invoice.isInterState ? 1 : 0,
           'upi_id': invoice.upiId,
+          'bank_account_id': invoice.bankAccountId,
           'due_date': invoice.dueDate?.toIso8601String(),
           'quantity_label': invoice.quantityLabel,
           'additional_costs':

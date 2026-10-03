@@ -778,6 +778,11 @@ class AppLocalizationsNe extends AppLocalizations {
   }
 
   @override
+  String createInvoiceTotalBelowPaidMessage(String paid) {
+    return 'नयाँ जम्मा पहिले नै भुक्तानी भएको $paid भन्दा कम छ। पहिले भुक्तानी लागू गर्नुहोस् मा भुक्तानी मेटाउनुहोस्, वा जम्मा यो रकम बराबर वा बढी राख्नुहोस्।';
+  }
+
+  @override
   String createInvoiceErrorUpdatingMessage(String e) {
     return 'बीजक अद्यावधिक गर्दा त्रुटि: $e';
   }
@@ -911,6 +916,9 @@ class AppLocalizationsNe extends AppLocalizations {
 
   @override
   String get createInvoiceOrderDateLabel => 'अर्डर मिति';
+
+  @override
+  String get createInvoiceOrderTimeLabel => 'अर्डर समय';
 
   @override
   String get createInvoiceDueDateLabel => 'अन्तिम मिति';
