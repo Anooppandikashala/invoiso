@@ -60,6 +60,9 @@ void main() {
         'currency_symbol',
         'tax_mode',
         'invoice_number',
+        'status',
+        'converted_to_invoice_id',
+        'converted_from_invoice_id',
       ]),
     );
 

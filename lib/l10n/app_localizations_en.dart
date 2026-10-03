@@ -306,10 +306,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get dashboardRecentInvoicesTitle => 'Recent Invoices';
+  String get dashboardRecentInvoicesTitle => 'Recent Documents';
 
   @override
-  String get dashboardLastFiveInvoicesLabel => 'Last 5 invoices';
+  String get dashboardLastFiveInvoicesLabel => 'Last 5 documents';
+
+  @override
+  String get dashboardColDocumentNo => 'Document no.';
+
+  @override
+  String get dashboardColType => 'Type';
 
   @override
   String get dashboardNoInvoicesYetTitle => 'No invoices yet';
@@ -786,6 +792,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String createInvoiceTotalBelowPaidMessage(String paid) {
+    return 'The new total is less than the $paid already paid. Delete payments in Apply Payment first, or keep the total at or above that amount.';
+  }
+
+  @override
   String createInvoiceErrorUpdatingMessage(String e) {
     return 'Error updating invoice: $e';
   }
@@ -917,6 +928,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createInvoiceOrderDateLabel => 'Order date';
+
+  @override
+  String get createInvoiceOrderTimeLabel => 'Order time';
 
   @override
   String get createInvoiceDueDateLabel => 'Due date';
@@ -1287,6 +1301,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get invoiceMgmtHideFullyPaidLabel => 'Hide fully paid invoices';
 
   @override
+  String get invoiceMgmtHideDeclinedLabel => 'Hide declined invoices';
+
+  @override
   String get invoiceMgmtPaymentStatusLabel => 'Payment status';
 
   @override
@@ -1430,6 +1447,75 @@ class AppLocalizationsEn extends AppLocalizations {
   String invoiceMgmtNewDocumentButton(String type) {
     return 'New $type';
   }
+
+  @override
+  String get invoiceMgmtConvertToInvoiceAction => 'Convert to Invoice';
+
+  @override
+  String get invoiceMgmtConvertAgainTitle => 'Convert again?';
+
+  @override
+  String invoiceMgmtConvertAgainBody(String number) {
+    return 'Quotation $number was already converted to an invoice. Create another invoice from it?';
+  }
+
+  @override
+  String get invoiceMgmtMarkAsSent => 'Mark as sent';
+
+  @override
+  String get invoiceMgmtMarkAsAccepted => 'Mark as accepted';
+
+  @override
+  String get invoiceMgmtMarkAsDeclined => 'Mark as declined';
+
+  @override
+  String get quotationStatusDraft => 'Draft';
+
+  @override
+  String get quotationStatusSent => 'Sent';
+
+  @override
+  String get quotationStatusAccepted => 'Accepted';
+
+  @override
+  String get quotationStatusDeclined => 'Declined';
+
+  @override
+  String get quotationStatusConverted => 'Converted';
+
+  @override
+  String get invoiceMgmtDeclineInvoiceTitle => 'Decline invoice?';
+
+  @override
+  String invoiceMgmtDeclineInvoiceBody(String number) {
+    return 'This will mark invoice #$number as declined and return its items to stock. This can\'t be undone.';
+  }
+
+  @override
+  String invoiceMgmtDeclineHasPaymentsMessage(String number) {
+    return 'Invoice #$number has payments recorded. Delete them in Apply Payment before declining.';
+  }
+
+  @override
+  String get invoiceMgmtDeclinedSuccessMessage =>
+      'Invoice declined, stock restored.';
+
+  @override
+  String get invoiceStatusDeclinedBadge => 'Declined';
+
+  @override
+  String get createInvoiceConvertTitle => 'Convert to Invoice';
+
+  @override
+  String createInvoiceConvertedSuccessMessage(String invoiceNumber) {
+    return 'Converted to Invoice #$invoiceNumber';
+  }
+
+  @override
+  String get createInvoiceTrashQuotationAction => 'Trash quote';
+
+  @override
+  String get createInvoiceQuotationTrashedMessage => 'Quotation moved to trash';
 
   @override
   String get invoiceMgmtOverdueBadge => 'Overdue';

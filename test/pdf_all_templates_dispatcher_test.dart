@@ -266,4 +266,29 @@ void main() {
       }
     }
   }
+
+  // Declined (voided) invoice: every template renders with the DECLINED mark.
+  for (final template in InvoiceTemplate.values) {
+    test('${template.name} renders a declined invoice', () async {
+      final settings = _settings(
+        template: template,
+        pageSize: _pageSizeFor(template),
+        pdfTheme: await TestPdfFontService.loadTheme(),
+        logoBytes: await File('assets/images/demo_logo.png').readAsBytes(),
+        watermarkBytes: await File('assets/images/watermark.png').readAsBytes(),
+        signatureBytes: await File('assets/images/sig.jpeg').readAsBytes(),
+      );
+      final pdf = PDFService.generateInvoicePDFWithSettings(
+        _sampleInvoice()..status = 'declined',
+        settings,
+        previousBalanceDue: 50.0,
+      );
+      final bytes = await pdf.save();
+      expect(bytes, isNotEmpty);
+      final outputFile =
+          File('output/pdf_declined_test/${template.name}_declined.pdf');
+      await outputFile.parent.create(recursive: true);
+      await outputFile.writeAsBytes(bytes);
+    });
+  }
 }

@@ -9,11 +9,15 @@ class InvoiceListFilter {
   /// 'all' | 'overdue' | 'due_today' | 'due_week' | 'due_month'
   final String dueDate;
 
-  /// 'all' | 'paid' | 'partial' | 'unpaid' — applies to 'Invoice' rows only.
+  /// 'all' | 'paid' | 'partial' | 'unpaid' | 'declined' — applies to
+  /// 'Invoice' rows only. 'declined' = only declined invoices.
   final String paymentStatus;
 
   /// Drop fully-paid Invoices (other types are kept).
   final bool hidePaid;
+
+  /// Drop declined invoices. Ignored when [paymentStatus] is 'declined'.
+  final bool hideDeclined;
 
   const InvoiceListFilter({
     this.dateFrom,
@@ -23,10 +27,13 @@ class InvoiceListFilter {
     this.dueDate = 'all',
     this.paymentStatus = 'all',
     this.hidePaid = false,
+    this.hideDeclined = false,
   });
 
   /// True when a filter depends on each invoice's total/paid balance, which
   /// isn't stored — those are resolved in Dart over the SQL-filtered set.
   bool get needsBalance =>
-      hidePaid || dueDate == 'overdue' || paymentStatus != 'all';
+      hidePaid ||
+      dueDate == 'overdue' ||
+      (paymentStatus != 'all' && paymentStatus != 'declined');
 }

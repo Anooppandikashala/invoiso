@@ -306,10 +306,16 @@ class AppLocalizationsHi extends AppLocalizations {
   }
 
   @override
-  String get dashboardRecentInvoicesTitle => 'हाल के इनवॉइस';
+  String get dashboardRecentInvoicesTitle => 'हाल के दस्तावेज़';
 
   @override
-  String get dashboardLastFiveInvoicesLabel => 'पिछले 5 इनवॉइस';
+  String get dashboardLastFiveInvoicesLabel => 'पिछले 5 दस्तावेज़';
+
+  @override
+  String get dashboardColDocumentNo => 'दस्तावेज़ सं.';
+
+  @override
+  String get dashboardColType => 'प्रकार';
 
   @override
   String get dashboardNoInvoicesYetTitle => 'अभी तक कोई इनवॉइस नहीं';
@@ -784,6 +790,11 @@ class AppLocalizationsHi extends AppLocalizations {
   }
 
   @override
+  String createInvoiceTotalBelowPaidMessage(String paid) {
+    return 'नया कुल पहले से भुगतान किए गए $paid से कम है। पहले भुगतान लागू करें में भुगतान हटाएँ, या कुल को इस राशि के बराबर या अधिक रखें।';
+  }
+
+  @override
   String createInvoiceErrorUpdatingMessage(String e) {
     return 'इनवॉइस अपडेट करने में त्रुटि: $e';
   }
@@ -916,6 +927,9 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get createInvoiceOrderDateLabel => 'ऑर्डर तिथि';
+
+  @override
+  String get createInvoiceOrderTimeLabel => 'ऑर्डर समय';
 
   @override
   String get createInvoiceDueDateLabel => 'देय तिथि';
@@ -1291,6 +1305,9 @@ class AppLocalizationsHi extends AppLocalizations {
       'पूरी तरह भुगतान किए गए चालान छिपाएँ';
 
   @override
+  String get invoiceMgmtHideDeclinedLabel => 'अस्वीकृत चालान छिपाएँ';
+
+  @override
   String get invoiceMgmtPaymentStatusLabel => 'भुगतान स्थिति';
 
   @override
@@ -1435,6 +1452,76 @@ class AppLocalizationsHi extends AppLocalizations {
   String invoiceMgmtNewDocumentButton(String type) {
     return 'नया $type';
   }
+
+  @override
+  String get invoiceMgmtConvertToInvoiceAction => 'इनवॉइस में बदलें';
+
+  @override
+  String get invoiceMgmtConvertAgainTitle => 'फिर से बदलें?';
+
+  @override
+  String invoiceMgmtConvertAgainBody(String number) {
+    return 'कोटेशन $number पहले ही इनवॉइस में बदला जा चुका है। इससे एक और इनवॉइस बनाएं?';
+  }
+
+  @override
+  String get invoiceMgmtMarkAsSent => 'भेजा गया चिह्नित करें';
+
+  @override
+  String get invoiceMgmtMarkAsAccepted => 'स्वीकृत चिह्नित करें';
+
+  @override
+  String get invoiceMgmtMarkAsDeclined => 'अस्वीकृत चिह्नित करें';
+
+  @override
+  String get quotationStatusDraft => 'ड्राफ़्ट';
+
+  @override
+  String get quotationStatusSent => 'भेजा गया';
+
+  @override
+  String get quotationStatusAccepted => 'स्वीकृत';
+
+  @override
+  String get quotationStatusDeclined => 'अस्वीकृत';
+
+  @override
+  String get quotationStatusConverted => 'परिवर्तित';
+
+  @override
+  String get invoiceMgmtDeclineInvoiceTitle => 'इनवॉइस अस्वीकार करें?';
+
+  @override
+  String invoiceMgmtDeclineInvoiceBody(String number) {
+    return 'इससे इनवॉइस #$number को अस्वीकृत के रूप में चिह्नित किया जाएगा और इसके आइटम स्टॉक में वापस कर दिए जाएंगे। इसे पूर्ववत नहीं किया जा सकता।';
+  }
+
+  @override
+  String invoiceMgmtDeclineHasPaymentsMessage(String number) {
+    return 'चालान #$number पर भुगतान दर्ज हैं। अस्वीकृत करने से पहले उन्हें भुगतान लागू करें में हटाएँ।';
+  }
+
+  @override
+  String get invoiceMgmtDeclinedSuccessMessage =>
+      'इनवॉइस अस्वीकृत, स्टॉक वापस कर दिया गया।';
+
+  @override
+  String get invoiceStatusDeclinedBadge => 'अस्वीकृत';
+
+  @override
+  String get createInvoiceConvertTitle => 'इनवॉइस में बदलें';
+
+  @override
+  String createInvoiceConvertedSuccessMessage(String invoiceNumber) {
+    return 'इनवॉइस #$invoiceNumber में बदला गया';
+  }
+
+  @override
+  String get createInvoiceTrashQuotationAction => 'कोटेशन हटाएं';
+
+  @override
+  String get createInvoiceQuotationTrashedMessage =>
+      'कोटेशन ट्रैश में ले जाया गया';
 
   @override
   String get invoiceMgmtOverdueBadge => 'अतिदेय';

@@ -135,6 +135,9 @@ pw.MultiPage buildCompactTemplate(
           ? (context) =>
               buildFullPageWatermark(watermarkBytes, watermarkOpacity)
           : null,
+      buildForeground: invoice.status == 'declined'
+          ? (context) => buildDeclinedStamp()
+          : null,
     ),
     footer: (context) => pw.Container(
       alignment: pw.Alignment.centerRight,

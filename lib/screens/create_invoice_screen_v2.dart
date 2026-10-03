@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:invoiso/common/common.dart';
+import 'package:invoiso/domain/invoice_calculator.dart';
 import 'package:invoiso/domain/invoice_totals_calculator.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/providers/app_config_provider.dart';
@@ -44,6 +45,12 @@ class CreateInvoiceScreenV2 extends ConsumerStatefulWidget {
   /// | 'Receipt'). Ignored when editing or cloning.
   final String? initialType;
 
+  /// Set when this form is a quotation→invoice conversion: the id of the source
+  /// quotation. On save the quotation is stamped 'converted' and linked, and
+  /// the new invoice records it as its source. Implies cloneFrom is that
+  /// quotation and cloneType == 'Invoice'.
+  final String? convertFromQuotationId;
+
   /// Called when the user taps "New Invoice" while in edit mode.
   /// The parent (DashboardScreen) resets invoiceToEdit to null.
   final VoidCallback? onCreateNewInvoice;
@@ -55,6 +62,7 @@ class CreateInvoiceScreenV2 extends ConsumerStatefulWidget {
     this.cloneFrom,
     this.cloneType,
     this.initialType,
+    this.convertFromQuotationId,
     this.onCreateNewInvoice,
     this.guard,
   });
@@ -174,6 +182,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   String _quantityLabel = '';
   bool _showQuantity = true;
   bool _showPreviousBalance = false;
+  bool _showTimeInPdf = false; // order-time field shown only when PDFs print the time
+  String _pdfTimeFormat = '24'; // '12' | '24'
   bool _showAliasNameInPdf = false;
   bool _allowDuplicateInvoiceItems = false;
   double _previousBalanceDue = 0.0;
@@ -552,6 +562,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         settingsRepo.getHideInvoiceNumberByDefault(), // 18
         settingsRepo.getSetting(SettingKey.customFieldsEnabled), // 19
         settingsRepo.getCustomFieldDefs(), // 20
+        settingsRepo.getShowTimeInPdf(), // 21
+        settingsRepo.getPdfTimeFormat(), // 22
       ]);
 
       final c = results[0] as List<Customer>;
@@ -598,6 +610,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       final hideInvoiceNumberByDefault = results[18] as bool;
       final customFieldsEnabled = (results[19] as String?) == 'true';
       final customFieldDefs = results[20] as List<CustomFieldDef>;
+      final showTimeInPdf = results[21] as bool;
+      final pdfTimeFormat = results[22] as String;
 
       // Determine which UPI to pre-select.
       String? existingUpiId;
@@ -677,6 +691,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           invoiceTitle = invoiceType == 'Invoice' ? defaultInvoiceTitle : null;
         }
         _datePattern = dateFormatOpt.key;
+        _showTimeInPdf = showTimeInPdf;
+        _pdfTimeFormat = pdfTimeFormat;
         dateController.text =
             DateFormat(_datePattern).format(_selectedOrderDate);
         if (_selectedDueDate != null) {
@@ -1322,6 +1338,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         customInvoiceNumber: customInvoiceNumberController.text.trim().isEmpty
             ? null
             : customInvoiceNumberController.text.trim(),
+        convertedFromInvoiceId: widget.convertFromQuotationId,
       );
 
       final payAmount = invoiceType != 'Invoice'
@@ -1377,18 +1394,46 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       });
       _markFormClean();
 
+      final l10n = AppLocalizations.of(context)!;
+      final convertedFromId = widget.convertFromQuotationId;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
             children: [
               const Icon(Icons.check_circle, color: Colors.white),
               const SizedBox(width: 12),
-              Text(AppLocalizations.of(context)!.createInvoiceCreatedSuccessMessage(_invoiceTypeLabel(invoiceType))),
+              Expanded(
+                child: Text(convertedFromId != null
+                    ? l10n.createInvoiceConvertedSuccessMessage(
+                        invoice.invoiceNumber ?? invoice.id)
+                    : l10n.createInvoiceCreatedSuccessMessage(
+                        _invoiceTypeLabel(invoiceType))),
+              ),
             ],
           ),
           backgroundColor: Colors.green,
           behavior: SnackBarBehavior.floating,
           showCloseIcon: true,
+          duration: convertedFromId != null
+              ? const Duration(seconds: 8)
+              : const Duration(seconds: 4),
+          action: convertedFromId == null
+              ? null
+              : SnackBarAction(
+                  label: l10n.createInvoiceTrashQuotationAction,
+                  textColor: Colors.white,
+                  onPressed: () async {
+                    await ref
+                        .read(invoiceRepositoryProvider)
+                        .softDeleteInvoice(convertedFromId);
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text(l10n.createInvoiceQuotationTrashedMessage),
+                      behavior: SnackBarBehavior.floating,
+                      showCloseIcon: true,
+                    ));
+                  },
+                ),
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         ),
@@ -3425,6 +3470,24 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
             : customInvoiceNumberController.text.trim(),
       );
 
+      // Block edits that drop the total below what's already been paid.
+      final paid = await ref
+          .read(paymentRepositoryProvider)
+          .getTotalPaidForInvoice(updatedInvoice.id);
+      if (paid - updatedInvoice.total > InvoiceCalculator.moneyEpsilon) {
+        if (!mounted) return false;
+        setState(() => isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(AppLocalizations.of(context)!
+              .createInvoiceTotalBelowPaidMessage(
+                  '$_currencySymbol ${paid.toStringAsFixed(2)}')),
+          backgroundColor: Colors.red,
+          showCloseIcon: true,
+          behavior: SnackBarBehavior.floating,
+        ));
+        return false;
+      }
+
       await ref.read(invoiceRepositoryProvider).updateInvoice(updatedInvoice);
 
       final refreshedInvoice =
@@ -3874,9 +3937,11 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                               ? AppLocalizations.of(context)!.createInvoiceCreatedTitleShort(_invoiceTypeLabel(invoiceType))
                               : widget.invoiceToEdit != null
                                   ? AppLocalizations.of(context)!.createInvoiceEditTitle(_invoiceTypeLabel(invoiceType))
-                                  : widget.cloneFrom != null
-                                      ? AppLocalizations.of(context)!.createInvoiceDuplicateAsTitle(_invoiceTypeLabel(invoiceType))
-                                      : AppLocalizations.of(context)!.createInvoiceAppBarTitle(_invoiceTypeLabel(invoiceType)),
+                                  : widget.convertFromQuotationId != null
+                                      ? AppLocalizations.of(context)!.createInvoiceConvertTitle
+                                      : widget.cloneFrom != null
+                                          ? AppLocalizations.of(context)!.createInvoiceDuplicateAsTitle(_invoiceTypeLabel(invoiceType))
+                                          : AppLocalizations.of(context)!.createInvoiceAppBarTitle(_invoiceTypeLabel(invoiceType)),
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
                         ),
@@ -4032,6 +4097,38 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       default:
         return AppLocalizations.of(context)!.labelInvoice;
     }
+  }
+
+  // Order time, next to the order date. Uses the PDF's 12/24-hour setting.
+  Widget _orderTimeFieldV2() {
+    final text = DateFormat(_pdfTimeFormat == '12' ? 'h:mm a' : 'HH:mm', 'en_US')
+        .format(_selectedOrderDate);
+    return TextFormField(
+      key: ValueKey('order-time-$text'), // rebuild when the time changes
+      initialValue: text,
+      readOnly: true,
+      decoration: _flatFieldDecorationV2(
+          AppLocalizations.of(context)!.createInvoiceOrderTimeLabel,
+          suffixIcon: const Icon(Icons.access_time, size: 16)),
+      onTap: () async {
+        final picked = await showTimePicker(
+          context: context,
+          initialTime: TimeOfDay.fromDateTime(_selectedOrderDate),
+          builder: (ctx, child) => MediaQuery(
+            data: MediaQuery.of(ctx)
+                .copyWith(alwaysUse24HourFormat: _pdfTimeFormat != '12'),
+            child: child!,
+          ),
+        );
+        if (picked == null || !mounted) return;
+        setState(() => _selectedOrderDate = DateTime(
+            _selectedOrderDate.year,
+            _selectedOrderDate.month,
+            _selectedOrderDate.day,
+            picked.hour,
+            picked.minute));
+      },
+    );
   }
 
   InputDecoration _flatFieldDecorationV2(
@@ -4408,43 +4505,62 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
             value: invoiceType,
             decoration: _flatFieldDecorationV2(
               AppLocalizations.of(context)!.createInvoiceTypeFieldLabel,
-              helperText:
-                  isEditing ? AppLocalizations.of(context)!.createInvoiceTypeLockedHelperText : null,
+              helperText: (isEditing || widget.convertFromQuotationId != null)
+                  ? AppLocalizations.of(context)!.createInvoiceTypeLockedHelperText
+                  : null,
             ),
             items: [
               DropdownMenuItem(value: 'Invoice', child: Text(AppLocalizations.of(context)!.labelInvoice)),
               DropdownMenuItem(value: 'Quotation', child: Text(AppLocalizations.of(context)!.labelQuotation)),
               DropdownMenuItem(value: 'Receipt', child: Text(AppLocalizations.of(context)!.labelReceipt)),
             ],
-            onChanged: isEditing
+            onChanged: (isEditing || widget.convertFromQuotationId != null)
                 ? null
                 : (value) {
                     if (value != null) resetInvoiceType(value);
                   },
           ),
           const SizedBox(height: 12),
-          TextField(
-            controller: dateController,
-            readOnly: true,
-            decoration: _flatFieldDecorationV2(AppLocalizations.of(context)!.createInvoiceOrderDateLabel,
-                suffixIcon: const Icon(Icons.calendar_today, size: 16)),
-            onTap: () async {
-              final picked = await showDatePicker(
-                context: context,
-                initialDate: _selectedOrderDate,
-                firstDate: DateTime(2000),
-                lastDate: DateTime(2100),
-              );
-              if (picked != null) {
-                if (!mounted) return;
-                setState(() {
-                  _selectedOrderDate = picked;
-                  dateController.text =
-                      DateFormat(_datePattern).format(picked);
-                });
-                await _loadPreviousBalanceDue(selectedCustomer);
-              }
-            },
+          Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: TextField(
+                  controller: dateController,
+                  readOnly: true,
+                  decoration: _flatFieldDecorationV2(AppLocalizations.of(context)!.createInvoiceOrderDateLabel,
+                      suffixIcon: const Icon(Icons.calendar_today, size: 16)),
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: _selectedOrderDate,
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100),
+                    );
+                    if (picked != null) {
+                      if (!mounted) return;
+                      setState(() {
+                        // Keep the invoice's existing time — the picker returns midnight.
+                        _selectedOrderDate = DateTime(
+                            picked.year,
+                            picked.month,
+                            picked.day,
+                            _selectedOrderDate.hour,
+                            _selectedOrderDate.minute,
+                            _selectedOrderDate.second);
+                        dateController.text =
+                            DateFormat(_datePattern).format(picked);
+                      });
+                      await _loadPreviousBalanceDue(selectedCustomer);
+                    }
+                  },
+                ),
+              ),
+              if (_showTimeInPdf) ...[
+                const SizedBox(width: 8),
+                Expanded(flex: 2, child: _orderTimeFieldV2()),
+              ],
+            ],
           ),
           const SizedBox(height: 12),
           TextField(

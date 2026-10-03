@@ -309,10 +309,16 @@ class AppLocalizationsNe extends AppLocalizations {
   }
 
   @override
-  String get dashboardRecentInvoicesTitle => 'भर्खरका बीजकहरू';
+  String get dashboardRecentInvoicesTitle => 'भर्खरका कागजातहरू';
 
   @override
-  String get dashboardLastFiveInvoicesLabel => 'पछिल्लो ५ बीजकहरू';
+  String get dashboardLastFiveInvoicesLabel => 'पछिल्लो ५ कागजातहरू';
+
+  @override
+  String get dashboardColDocumentNo => 'कागजात नं.';
+
+  @override
+  String get dashboardColType => 'प्रकार';
 
   @override
   String get dashboardNoInvoicesYetTitle => 'अझै बीजक छैन';
@@ -786,6 +792,11 @@ class AppLocalizationsNe extends AppLocalizations {
   }
 
   @override
+  String createInvoiceTotalBelowPaidMessage(String paid) {
+    return 'नयाँ जम्मा पहिले नै भुक्तानी भएको $paid भन्दा कम छ। पहिले भुक्तानी लागू गर्नुहोस् मा भुक्तानी मेटाउनुहोस्, वा जम्मा यो रकम बराबर वा बढी राख्नुहोस्।';
+  }
+
+  @override
   String createInvoiceErrorUpdatingMessage(String e) {
     return 'बीजक अद्यावधिक गर्दा त्रुटि: $e';
   }
@@ -919,6 +930,9 @@ class AppLocalizationsNe extends AppLocalizations {
 
   @override
   String get createInvoiceOrderDateLabel => 'अर्डर मिति';
+
+  @override
+  String get createInvoiceOrderTimeLabel => 'अर्डर समय';
 
   @override
   String get createInvoiceDueDateLabel => 'अन्तिम मिति';
@@ -1297,6 +1311,9 @@ class AppLocalizationsNe extends AppLocalizations {
       'पूर्ण भुक्तानी भएका बीजकहरू लुकाउनुहोस्';
 
   @override
+  String get invoiceMgmtHideDeclinedLabel => 'अस्वीकृत बीजकहरू लुकाउनुहोस्';
+
+  @override
   String get invoiceMgmtPaymentStatusLabel => 'भुक्तानी स्थिति';
 
   @override
@@ -1442,6 +1459,76 @@ class AppLocalizationsNe extends AppLocalizations {
   String invoiceMgmtNewDocumentButton(String type) {
     return 'नयाँ $type';
   }
+
+  @override
+  String get invoiceMgmtConvertToInvoiceAction => 'बीजकमा रूपान्तरण गर्नुहोस्';
+
+  @override
+  String get invoiceMgmtConvertAgainTitle => 'फेरि रूपान्तरण गर्ने?';
+
+  @override
+  String invoiceMgmtConvertAgainBody(String number) {
+    return 'उद्धरण $number पहिले नै बीजकमा रूपान्तरण भइसकेको छ। यसबाट अर्को बीजक बनाउने?';
+  }
+
+  @override
+  String get invoiceMgmtMarkAsSent => 'पठाइएको रूपमा चिन्ह लगाउनुहोस्';
+
+  @override
+  String get invoiceMgmtMarkAsAccepted => 'स्वीकृत रूपमा चिन्ह लगाउनुहोस्';
+
+  @override
+  String get invoiceMgmtMarkAsDeclined => 'अस्वीकृत रूपमा चिन्ह लगाउनुहोस्';
+
+  @override
+  String get quotationStatusDraft => 'मस्यौदा';
+
+  @override
+  String get quotationStatusSent => 'पठाइयो';
+
+  @override
+  String get quotationStatusAccepted => 'स्वीकृत';
+
+  @override
+  String get quotationStatusDeclined => 'अस्वीकृत';
+
+  @override
+  String get quotationStatusConverted => 'रूपान्तरित';
+
+  @override
+  String get invoiceMgmtDeclineInvoiceTitle => 'बीजक अस्वीकार गर्ने?';
+
+  @override
+  String invoiceMgmtDeclineInvoiceBody(String number) {
+    return 'यसले बीजक #$number लाई अस्वीकृत चिन्ह लगाउनेछ र यसका वस्तुहरू स्टकमा फिर्ता गर्नेछ। यो पूर्ववत गर्न सकिँदैन।';
+  }
+
+  @override
+  String invoiceMgmtDeclineHasPaymentsMessage(String number) {
+    return 'बीजक #$number मा भुक्तानी दर्ता छन्। अस्वीकृत गर्नु अघि तिनलाई भुक्तानी लागू गर्नुहोस् मा मेटाउनुहोस्।';
+  }
+
+  @override
+  String get invoiceMgmtDeclinedSuccessMessage =>
+      'बीजक अस्वीकृत भयो, स्टक फिर्ता गरियो।';
+
+  @override
+  String get invoiceStatusDeclinedBadge => 'अस्वीकृत';
+
+  @override
+  String get createInvoiceConvertTitle => 'बीजकमा रूपान्तरण गर्नुहोस्';
+
+  @override
+  String createInvoiceConvertedSuccessMessage(String invoiceNumber) {
+    return 'बीजक #$invoiceNumber मा रूपान्तरण गरियो';
+  }
+
+  @override
+  String get createInvoiceTrashQuotationAction => 'उद्धरण मेटाउनुहोस्';
+
+  @override
+  String get createInvoiceQuotationTrashedMessage =>
+      'उद्धरण रद्दीटोकरीमा सारियो';
 
   @override
   String get invoiceMgmtOverdueBadge => 'म्याद नाघेको';

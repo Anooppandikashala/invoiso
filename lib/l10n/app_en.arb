@@ -143,8 +143,10 @@
       }
     }
   },
-  "dashboardRecentInvoicesTitle": "Recent Invoices",
-  "dashboardLastFiveInvoicesLabel": "Last 5 invoices",
+  "dashboardRecentInvoicesTitle": "Recent Documents",
+  "dashboardLastFiveInvoicesLabel": "Last 5 documents",
+  "dashboardColDocumentNo": "Document no.",
+  "dashboardColType": "Type",
   "dashboardNoInvoicesYetTitle": "No invoices yet",
   "dashboardNoInvoicesYetSubtitle": "Create your first invoice to see it here",
   "actionView": "View",
@@ -455,6 +457,14 @@
       }
     }
   },
+  "createInvoiceTotalBelowPaidMessage": "The new total is less than the {paid} already paid. Delete payments in Apply Payment first, or keep the total at or above that amount.",
+  "@createInvoiceTotalBelowPaidMessage": {
+    "placeholders": {
+      "paid": {
+        "type": "String"
+      }
+    }
+  },
   "createInvoiceErrorUpdatingMessage": "Error updating invoice: {e}",
   "@createInvoiceErrorUpdatingMessage": {
     "placeholders": {
@@ -551,6 +561,7 @@
   "createInvoiceTypeFieldLabel": "Invoice type",
   "createInvoiceTypeLockedHelperText": "Type can't be changed after creation",
   "createInvoiceOrderDateLabel": "Order date",
+  "createInvoiceOrderTimeLabel": "Order time",
   "createInvoiceDueDateLabel": "Due date",
   "createInvoiceGstTitleLabel": "GST title",
   "createInvoiceTaxTitleLabel": "Tax title",
@@ -800,6 +811,7 @@
   },
   "invoiceMgmtFilterInvoicesTitle": "Filter Invoices",
   "invoiceMgmtHideFullyPaidLabel": "Hide fully paid invoices",
+  "invoiceMgmtHideDeclinedLabel": "Hide declined invoices",
   "invoiceMgmtPaymentStatusLabel": "Payment status",
   "invoiceMgmtDueDateLabel": "Due date",
   "invoiceMgmtInvoiceDateRangeLabel": "Invoice date range",
@@ -907,6 +919,54 @@
       }
     }
   },
+  "invoiceMgmtConvertToInvoiceAction": "Convert to Invoice",
+  "invoiceMgmtConvertAgainTitle": "Convert again?",
+  "invoiceMgmtConvertAgainBody": "Quotation {number} was already converted to an invoice. Create another invoice from it?",
+  "@invoiceMgmtConvertAgainBody": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtMarkAsSent": "Mark as sent",
+  "invoiceMgmtMarkAsAccepted": "Mark as accepted",
+  "invoiceMgmtMarkAsDeclined": "Mark as declined",
+  "quotationStatusDraft": "Draft",
+  "quotationStatusSent": "Sent",
+  "quotationStatusAccepted": "Accepted",
+  "quotationStatusDeclined": "Declined",
+  "quotationStatusConverted": "Converted",
+  "invoiceMgmtDeclineInvoiceTitle": "Decline invoice?",
+  "invoiceMgmtDeclineInvoiceBody": "This will mark invoice #{number} as declined and return its items to stock. This can't be undone.",
+  "@invoiceMgmtDeclineInvoiceBody": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtDeclineHasPaymentsMessage": "Invoice #{number} has payments recorded. Delete them in Apply Payment before declining.",
+  "@invoiceMgmtDeclineHasPaymentsMessage": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtDeclinedSuccessMessage": "Invoice declined, stock restored.",
+  "invoiceStatusDeclinedBadge": "Declined",
+  "createInvoiceConvertTitle": "Convert to Invoice",
+  "createInvoiceConvertedSuccessMessage": "Converted to Invoice #{invoiceNumber}",
+  "@createInvoiceConvertedSuccessMessage": {
+    "placeholders": {
+      "invoiceNumber": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceTrashQuotationAction": "Trash quote",
+  "createInvoiceQuotationTrashedMessage": "Quotation moved to trash",
   "invoiceMgmtOverdueBadge": "Overdue",
   "invoiceMgmtTodayBadge": "Today",
   "invoiceMgmtTrashIsEmptyLabel": "Trash is empty",

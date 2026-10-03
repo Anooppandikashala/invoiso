@@ -300,10 +300,16 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get dashboardRecentInvoicesTitle => '最近发票';
+  String get dashboardRecentInvoicesTitle => '最近文档';
 
   @override
-  String get dashboardLastFiveInvoicesLabel => '最近 5 张发票';
+  String get dashboardLastFiveInvoicesLabel => '最近 5 个文档';
+
+  @override
+  String get dashboardColDocumentNo => '单据编号';
+
+  @override
+  String get dashboardColType => '类型';
 
   @override
   String get dashboardNoInvoicesYetTitle => '暂无发票';
@@ -764,6 +770,11 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String createInvoiceTotalBelowPaidMessage(String paid) {
+    return '新的总额低于已支付的 $paid。请先在“应用付款”中删除付款，或将总额保持在该金额或以上。';
+  }
+
+  @override
   String createInvoiceErrorUpdatingMessage(String e) {
     return '更新发票时出错：$e';
   }
@@ -889,6 +900,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get createInvoiceOrderDateLabel => '订单日期';
+
+  @override
+  String get createInvoiceOrderTimeLabel => '订单时间';
 
   @override
   String get createInvoiceDueDateLabel => '到期日期';
@@ -1247,6 +1261,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get invoiceMgmtHideFullyPaidLabel => '隐藏已全额付款的发票';
 
   @override
+  String get invoiceMgmtHideDeclinedLabel => '隐藏已拒绝的发票';
+
+  @override
   String get invoiceMgmtPaymentStatusLabel => '付款状态';
 
   @override
@@ -1387,6 +1404,74 @@ class AppLocalizationsZh extends AppLocalizations {
   String invoiceMgmtNewDocumentButton(String type) {
     return '新建$type';
   }
+
+  @override
+  String get invoiceMgmtConvertToInvoiceAction => '转换为发票';
+
+  @override
+  String get invoiceMgmtConvertAgainTitle => '再次转换？';
+
+  @override
+  String invoiceMgmtConvertAgainBody(String number) {
+    return '报价单 $number 已转换为发票。要从它再创建一张发票吗？';
+  }
+
+  @override
+  String get invoiceMgmtMarkAsSent => '标记为已发送';
+
+  @override
+  String get invoiceMgmtMarkAsAccepted => '标记为已接受';
+
+  @override
+  String get invoiceMgmtMarkAsDeclined => '标记为已拒绝';
+
+  @override
+  String get quotationStatusDraft => '草稿';
+
+  @override
+  String get quotationStatusSent => '已发送';
+
+  @override
+  String get quotationStatusAccepted => '已接受';
+
+  @override
+  String get quotationStatusDeclined => '已拒绝';
+
+  @override
+  String get quotationStatusConverted => '已转换';
+
+  @override
+  String get invoiceMgmtDeclineInvoiceTitle => '拒绝此发票？';
+
+  @override
+  String invoiceMgmtDeclineInvoiceBody(String number) {
+    return '这将把发票 #$number 标记为已拒绝，并将其商品归还库存。此操作无法撤销。';
+  }
+
+  @override
+  String invoiceMgmtDeclineHasPaymentsMessage(String number) {
+    return '发票 #$number 已有付款记录。拒绝前请先在“应用付款”中删除这些付款。';
+  }
+
+  @override
+  String get invoiceMgmtDeclinedSuccessMessage => '发票已拒绝，库存已归还。';
+
+  @override
+  String get invoiceStatusDeclinedBadge => '已拒绝';
+
+  @override
+  String get createInvoiceConvertTitle => '转换为发票';
+
+  @override
+  String createInvoiceConvertedSuccessMessage(String invoiceNumber) {
+    return '已转换为发票 #$invoiceNumber';
+  }
+
+  @override
+  String get createInvoiceTrashQuotationAction => '删除报价';
+
+  @override
+  String get createInvoiceQuotationTrashedMessage => '报价单已移至回收站';
 
   @override
   String get invoiceMgmtOverdueBadge => '已逾期';

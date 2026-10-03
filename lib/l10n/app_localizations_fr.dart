@@ -310,10 +310,16 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get dashboardRecentInvoicesTitle => 'Factures récentes';
+  String get dashboardRecentInvoicesTitle => 'Documents récents';
 
   @override
-  String get dashboardLastFiveInvoicesLabel => '5 dernières factures';
+  String get dashboardLastFiveInvoicesLabel => '5 derniers documents';
+
+  @override
+  String get dashboardColDocumentNo => 'N° de document';
+
+  @override
+  String get dashboardColType => 'Type';
 
   @override
   String get dashboardNoInvoicesYetTitle => 'Aucune facture pour l\'instant';
@@ -790,6 +796,11 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String createInvoiceTotalBelowPaidMessage(String paid) {
+    return 'Le nouveau total est inférieur aux $paid déjà payés. Supprimez d\'abord des paiements dans Appliquer un paiement, ou gardez un total égal ou supérieur à ce montant.';
+  }
+
+  @override
   String createInvoiceErrorUpdatingMessage(String e) {
     return 'Erreur lors de la mise à jour de la facture : $e';
   }
@@ -924,6 +935,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get createInvoiceOrderDateLabel => 'Date de commande';
+
+  @override
+  String get createInvoiceOrderTimeLabel => 'Heure de commande';
 
   @override
   String get createInvoiceDueDateLabel => 'Date d\'échéance';
@@ -1307,6 +1321,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Masquer les factures entièrement payées';
 
   @override
+  String get invoiceMgmtHideDeclinedLabel => 'Masquer les factures refusées';
+
+  @override
   String get invoiceMgmtPaymentStatusLabel => 'Statut de paiement';
 
   @override
@@ -1452,6 +1469,76 @@ class AppLocalizationsFr extends AppLocalizations {
   String invoiceMgmtNewDocumentButton(String type) {
     return 'Créer $type';
   }
+
+  @override
+  String get invoiceMgmtConvertToInvoiceAction => 'Convertir en facture';
+
+  @override
+  String get invoiceMgmtConvertAgainTitle => 'Convertir à nouveau ?';
+
+  @override
+  String invoiceMgmtConvertAgainBody(String number) {
+    return 'Le devis $number a déjà été converti en facture. Créer une autre facture à partir de celui-ci ?';
+  }
+
+  @override
+  String get invoiceMgmtMarkAsSent => 'Marquer comme envoyé';
+
+  @override
+  String get invoiceMgmtMarkAsAccepted => 'Marquer comme accepté';
+
+  @override
+  String get invoiceMgmtMarkAsDeclined => 'Marquer comme refusé';
+
+  @override
+  String get quotationStatusDraft => 'Brouillon';
+
+  @override
+  String get quotationStatusSent => 'Envoyé';
+
+  @override
+  String get quotationStatusAccepted => 'Accepté';
+
+  @override
+  String get quotationStatusDeclined => 'Refusé';
+
+  @override
+  String get quotationStatusConverted => 'Convertie';
+
+  @override
+  String get invoiceMgmtDeclineInvoiceTitle => 'Refuser la facture ?';
+
+  @override
+  String invoiceMgmtDeclineInvoiceBody(String number) {
+    return 'Cela marquera la facture #$number comme refusée et remettra ses articles en stock. Cette action est irréversible.';
+  }
+
+  @override
+  String invoiceMgmtDeclineHasPaymentsMessage(String number) {
+    return 'La facture #$number a des paiements enregistrés. Supprimez-les dans Appliquer un paiement avant de la refuser.';
+  }
+
+  @override
+  String get invoiceMgmtDeclinedSuccessMessage =>
+      'Facture refusée, stock restauré.';
+
+  @override
+  String get invoiceStatusDeclinedBadge => 'Refusée';
+
+  @override
+  String get createInvoiceConvertTitle => 'Convertir en facture';
+
+  @override
+  String createInvoiceConvertedSuccessMessage(String invoiceNumber) {
+    return 'Converti en facture n° $invoiceNumber';
+  }
+
+  @override
+  String get createInvoiceTrashQuotationAction => 'Corbeille';
+
+  @override
+  String get createInvoiceQuotationTrashedMessage =>
+      'Devis déplacé vers la corbeille';
 
   @override
   String get invoiceMgmtOverdueBadge => 'En retard';
