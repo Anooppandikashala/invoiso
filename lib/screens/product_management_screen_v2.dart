@@ -2240,6 +2240,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                 child: _menuButtonLookV2(
                     Icons.swap_vert, l10n.customerMgmtSortWithLabel(currentLabel)),
               ),
+              if (widget.user.isAdmin())
               OutlinedButton.icon(
                 onPressed: _openColumnsSettingsV2,
                 icon: const Icon(Icons.tune, size: 16),
@@ -3495,7 +3496,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildColumnsDiscoveryBanner(),
+                            if (widget.user.isAdmin())
+                              _buildColumnsDiscoveryBanner(),
                             _headerBarV2(),
                             const SizedBox(height: 12),
                             if (_showStatsCardsV2) ...[
