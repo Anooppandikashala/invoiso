@@ -34,7 +34,15 @@ abstract class CashLedgerRepository {
     required DateTime date,
     String? createdBy,
   });
-  Future<void> deleteEntry(String id);
+  Future<void> updateEntry(String id, CashLedgerEntry updated,
+      {required String userId, required String userName, required bool isAdmin});
+  Future<void> deleteEntry(String id,
+      {required String userId, required String userName, required bool isAdmin});
+  Future<List<CashLedgerChange>> getHistory(String entryId);
+  Future<List<CashLedgerChange>> getChanges(
+      {String? action, int limit, int offset});
+  Future<int> countChanges({String? action});
+  Future<CashLedgerEntry?> getEntry(String id);
   Future<CashLedgerEntry?> getOpening();
   Future<List<CashLedgerEntry>> getEntries({
     DateTime? from,

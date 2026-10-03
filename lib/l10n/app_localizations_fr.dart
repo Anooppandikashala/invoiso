@@ -4735,6 +4735,41 @@ class AppLocalizationsFr extends AppLocalizations {
       'Supprimer cette entrée ? Les soldes seront recalculés.';
 
   @override
+  String get cashExchangeEditTitle => 'Modifier l\'entrée';
+
+  @override
+  String get cashExchangeEdited => 'Modifiée';
+
+  @override
+  String get cashExchangeHistoryTitle => 'Historique des modifications';
+
+  @override
+  String get cashExchangeHistoryCurrent => 'Actuelle';
+
+  @override
+  String cashExchangeHistoryEdited(String user, String date) {
+    return 'Modifiée par $user · $date';
+  }
+
+  @override
+  String cashExchangeHistoryDeleted(String user, String date) {
+    return 'Supprimée par $user · $date';
+  }
+
+  @override
+  String get cashExchangeChangeLog => 'Journal des modifications';
+
+  @override
+  String get cashExchangeDeleted => 'Supprimée';
+
+  @override
+  String get cashExchangeNoChanges => 'Aucune modification enregistrée.';
+
+  @override
+  String get cashExchangeChangeFailed =>
+      'Cette entrée ne peut plus être modifiée. Elle a peut-être été supprimée, ou le délai de modification de 24 heures est dépassé.';
+
+  @override
   String get cashExchangeEmpty => 'Aucune entrée pour cette période.';
 
   @override
@@ -4757,6 +4792,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get cashExchangeClosingBalance => 'Solde de clôture';
+
+  @override
+  String get cashExchangeShowBalances => 'Afficher les soldes';
+
+  @override
+  String get cashExchangeHideBalances => 'Masquer les soldes';
 
   @override
   String get cashExchangeAllTypes => 'Tous les types';

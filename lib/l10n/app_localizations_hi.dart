@@ -4654,6 +4654,41 @@ class AppLocalizationsHi extends AppLocalizations {
       'यह प्रविष्टि हटाएँ? शेष दोबारा गणना किया जाएगा।';
 
   @override
+  String get cashExchangeEditTitle => 'प्रविष्टि संपादित करें';
+
+  @override
+  String get cashExchangeEdited => 'संपादित';
+
+  @override
+  String get cashExchangeHistoryTitle => 'परिवर्तन इतिहास';
+
+  @override
+  String get cashExchangeHistoryCurrent => 'वर्तमान';
+
+  @override
+  String cashExchangeHistoryEdited(String user, String date) {
+    return '$user द्वारा संपादित · $date';
+  }
+
+  @override
+  String cashExchangeHistoryDeleted(String user, String date) {
+    return '$user द्वारा हटाया गया · $date';
+  }
+
+  @override
+  String get cashExchangeChangeLog => 'परिवर्तन लॉग';
+
+  @override
+  String get cashExchangeDeleted => 'हटाया गया';
+
+  @override
+  String get cashExchangeNoChanges => 'कोई परिवर्तन दर्ज नहीं।';
+
+  @override
+  String get cashExchangeChangeFailed =>
+      'यह प्रविष्टि अब बदली नहीं जा सकती। हो सकता है यह हटा दी गई हो, या 24 घंटे की संपादन अवधि समाप्त हो गई हो।';
+
+  @override
   String get cashExchangeEmpty => 'इस अवधि में कोई प्रविष्टि नहीं।';
 
   @override
@@ -4676,6 +4711,12 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get cashExchangeClosingBalance => 'अंतिम शेष';
+
+  @override
+  String get cashExchangeShowBalances => 'शेष दिखाएँ';
+
+  @override
+  String get cashExchangeHideBalances => 'शेष छिपाएँ';
 
   @override
   String get cashExchangeAllTypes => 'सभी प्रकार';

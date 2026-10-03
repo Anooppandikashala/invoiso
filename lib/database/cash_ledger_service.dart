@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
@@ -34,6 +36,7 @@ class CashLedgerService {
     String? customerPhone,
     String? notes,
     String? createdBy,
+    DateTime? createdAt,
   }) {
     var cash = upiToCash ? -amount : amount;
     var upi = upiToCash ? amount : -amount;
@@ -58,6 +61,7 @@ class CashLedgerService {
       dateTime: dateTime,
       notes: notes,
       createdBy: createdBy,
+      createdAt: createdAt,
     );
   }
 
@@ -70,6 +74,7 @@ class CashLedgerService {
     required DateTime dateTime,
     String? notes,
     String? createdBy,
+    DateTime? createdAt,
   }) {
     final isDeposit = type == CashLedgerEntry.bankDeposit;
     final fromCash = isDeposit || account == CashLedgerEntry.accountCash;
@@ -81,6 +86,7 @@ class CashLedgerService {
       dateTime: dateTime,
       notes: notes,
       createdBy: createdBy,
+      createdAt: createdAt,
     );
   }
 
@@ -122,6 +128,7 @@ class CashLedgerService {
         customerPhone: customerPhone,
         notes: notes,
         createdBy: createdBy,
+        createdAt: DateTime.now(),
       );
       await txn.insert('cash_ledger', saved.toMap());
     });
@@ -144,6 +151,7 @@ class CashLedgerService {
       dateTime: dateTime,
       notes: notes,
       createdBy: createdBy,
+      createdAt: DateTime.now(),
     );
     await (await _dbHelper.database).insert('cash_ledger', entry.toMap());
     return entry;
@@ -165,6 +173,7 @@ class CashLedgerService {
       dateTime: dateTime,
       notes: notes,
       createdBy: createdBy,
+      createdAt: DateTime.now(),
     );
     await (await _dbHelper.database).insert('cash_ledger', entry.toMap());
     return entry;
@@ -191,9 +200,148 @@ class CashLedgerService {
         conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
-  static Future<void> deleteEntry(String id) async {
-    await (await _dbHelper.database)
-        .delete('cash_ledger', where: 'id = ?', whereArgs: [id]);
+  // ── Edit / delete with edit log ───────────────────────────────────────────
+
+  /// How long a regular user can edit / delete their own entries.
+  static const userEditWindow = Duration(hours: 24);
+
+  /// Admins: any ledger entry. Regular users: their own exchanges, expenses,
+  /// withdrawals and bank deposits, within [userEditWindow] of entering them.
+  /// Never the opening balance (own dialog) or invoice payments.
+  static bool canModify(CashLedgerEntry e,
+      {required String userId, required bool isAdmin, DateTime? now}) {
+    if (e.entryType == CashLedgerEntry.opening ||
+        e.entryType == CashLedgerEntry.invoicePayment) {
+      return false;
+    }
+    if (isAdmin) return true;
+    final created = e.createdAt;
+    return e.entryType != CashLedgerEntry.adjustment &&
+        e.createdBy == userId &&
+        created != null &&
+        (now ?? DateTime.now()).difference(created) < userEditWindow;
+  }
+
+  /// Saves [updated] (built with the add builders, so its own id is
+  /// ignored) over row [id]. id, receipt number, creator and entry time
+  /// stay; the old version goes to the edit log.
+  static Future<void> updateEntry(String id, CashLedgerEntry updated,
+          {required String userId,
+          required String userName,
+          required bool isAdmin}) async =>
+      (await _dbHelper.database).transaction((txn) => changeOn(txn, id,
+          updated: updated, userId: userId, userName: userName, isAdmin: isAdmin));
+
+  /// Deletes the row; it stays readable in the edit log.
+  static Future<void> deleteEntry(String id,
+          {required String userId,
+          required String userName,
+          required bool isAdmin}) async =>
+      (await _dbHelper.database).transaction((txn) => changeOn(txn, id,
+          userId: userId, userName: userName, isAdmin: isAdmin));
+
+  /// Edit ([updated] set) or delete. Re-reads the row and re-checks
+  /// [canModify] so a stale screen can't bypass either. Throws [StateError]
+  /// when the row is gone or not allowed. Run inside a transaction.
+  @visibleForTesting
+  static Future<void> changeOn(
+    DatabaseExecutor txn,
+    String id, {
+    CashLedgerEntry? updated,
+    required String userId,
+    required String userName,
+    required bool isAdmin,
+    DateTime? now,
+  }) async {
+    final rows = await txn.query('cash_ledger',
+        where: 'id = ?', whereArgs: [id], limit: 1);
+    if (rows.isEmpty) throw StateError('Ledger entry $id no longer exists');
+    final old = CashLedgerEntry.fromMap(rows.first);
+    if (!canModify(old, userId: userId, isAdmin: isAdmin, now: now)) {
+      throw StateError('Not allowed to change ledger entry $id');
+    }
+    final oldMap = old.toMap();
+    Map<String, dynamic>? newMap;
+    if (updated != null) {
+      newMap = updated.toMap()
+        ..['id'] = old.id
+        ..['receipt_number'] = old.receiptNumber
+        ..['created_by'] = old.createdBy
+        ..['created_at'] = oldMap['created_at'];
+      if (mapEquals(newMap, oldMap)) return; // nothing changed, nothing logged
+    }
+    await txn.insert('cash_ledger_history', {
+      'id': _uuid.v4(),
+      'entry_id': id,
+      'action': updated == null ? 'delete' : 'edit',
+      'old_data': jsonEncode(oldMap),
+      'changed_by': userId,
+      'changed_by_name': userName,
+      'changed_at': (now ?? DateTime.now()).toIso8601String(),
+    });
+    if (newMap == null) {
+      await txn.delete('cash_ledger', where: 'id = ?', whereArgs: [id]);
+    } else {
+      await txn.update('cash_ledger', newMap, where: 'id = ?', whereArgs: [id]);
+    }
+    AppLogger.d(_tag, 'Entry ${updated == null ? 'deleted' : 'edited'}: $id');
+  }
+
+  /// Old versions of one entry, newest first.
+  static Future<List<CashLedgerChange>> getHistory(String entryId) async =>
+      historyOn(await _dbHelper.database, entryId: entryId);
+
+  /// One page of the change log, newest first: edits and deletes, or only
+  /// [action] ('edit' / 'delete'). Each row is the entry before the change.
+  static Future<List<CashLedgerChange>> getChanges(
+          {String? action, int limit = 10, int offset = 0}) async =>
+      historyOn(await _dbHelper.database,
+          action: action, limit: limit, offset: offset);
+
+  static Future<int> countChanges({String? action}) async =>
+      countChangesOn(await _dbHelper.database, action: action);
+
+  @visibleForTesting
+  static Future<int> countChangesOn(DatabaseExecutor db,
+          {String? action}) async =>
+      Sqflite.firstIntValue(await db.rawQuery(
+          'SELECT COUNT(*) FROM cash_ledger_history'
+          '${action == null ? '' : ' WHERE action = ?'}',
+          [if (action != null) action])) ??
+      0;
+
+  /// The current version of a ledger row, or null once deleted.
+  static Future<CashLedgerEntry?> getEntry(String id) async {
+    final rows = await (await _dbHelper.database)
+        .query('cash_ledger', where: 'id = ?', whereArgs: [id], limit: 1);
+    return rows.isEmpty ? null : CashLedgerEntry.fromMap(rows.first);
+  }
+
+  /// [entryId]: one entry's versions; else [action], or the whole log.
+  @visibleForTesting
+  static Future<List<CashLedgerChange>> historyOn(DatabaseExecutor db,
+      {String? entryId, String? action, int? limit, int? offset}) async {
+    final key = entryId ?? action;
+    final rows = await db.query('cash_ledger_history',
+        where: key == null
+            ? null
+            : entryId != null
+                ? 'entry_id = ?'
+                : 'action = ?',
+        whereArgs: key == null ? null : [key],
+        orderBy: 'changed_at DESC',
+        limit: limit,
+        offset: offset);
+    return [
+      for (final r in rows)
+        (
+          action: r['action'] as String,
+          entry: CashLedgerEntry.fromMap(
+              jsonDecode(r['old_data'] as String) as Map<String, dynamic>),
+          changedByName: r['changed_by_name'] as String?,
+          changedAt: DateTime.parse(r['changed_at'] as String),
+        ),
+    ];
   }
 
   // ── Reads ─────────────────────────────────────────────────────────────────
@@ -303,7 +451,9 @@ class CashLedgerService {
       if (h.ledger != null)
         'SELECT id, entry_type, receipt_number, exchange_amount, '
             'service_fee, fee_method, cash_delta, upi_delta, customer_id, '
-            'customer_name, customer_phone, date_time, notes, created_by '
+            'customer_name, customer_phone, date_time, notes, created_by, '
+            'created_at, EXISTS (SELECT 1 FROM cash_ledger_history h '
+            "WHERE h.entry_id = cash_ledger.id AND h.action = 'edit') AS edited "
             'FROM cash_ledger${h.ledger}',
       // Aliased so the columns are named when this branch runs alone.
       if (h.payments != null)
@@ -318,7 +468,8 @@ class CashLedgerService {
             'i.customer_id AS customer_id, i.customer_name AS customer_name, '
             'NULL AS customer_phone, '
             "p.date_paid || 'T00:00:00.000' AS date_time, "
-            'p.invoice_number AS notes, NULL AS created_by '
+            'p.invoice_number AS notes, NULL AS created_by, '
+            'NULL AS created_at, 0 AS edited '
             '${h.payments}',
     ];
     if (branches.isEmpty) return [];

@@ -4638,6 +4638,41 @@ class AppLocalizationsEn extends AppLocalizations {
       'Delete this entry? Balances will be recalculated.';
 
   @override
+  String get cashExchangeEditTitle => 'Edit entry';
+
+  @override
+  String get cashExchangeEdited => 'Edited';
+
+  @override
+  String get cashExchangeHistoryTitle => 'Change history';
+
+  @override
+  String get cashExchangeHistoryCurrent => 'Current';
+
+  @override
+  String cashExchangeHistoryEdited(String user, String date) {
+    return 'Edited by $user · $date';
+  }
+
+  @override
+  String cashExchangeHistoryDeleted(String user, String date) {
+    return 'Deleted by $user · $date';
+  }
+
+  @override
+  String get cashExchangeChangeLog => 'Change log';
+
+  @override
+  String get cashExchangeDeleted => 'Deleted';
+
+  @override
+  String get cashExchangeNoChanges => 'No changes recorded.';
+
+  @override
+  String get cashExchangeChangeFailed =>
+      'This entry can no longer be changed. It may have been deleted, or the 24-hour edit window has passed.';
+
+  @override
   String get cashExchangeEmpty => 'No entries for this period.';
 
   @override
@@ -4660,6 +4695,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cashExchangeClosingBalance => 'Closing balance';
+
+  @override
+  String get cashExchangeShowBalances => 'Show balances';
+
+  @override
+  String get cashExchangeHideBalances => 'Hide balances';
 
   @override
   String get cashExchangeAllTypes => 'All types';

@@ -4678,6 +4678,41 @@ class AppLocalizationsNe extends AppLocalizations {
       'यो प्रविष्टि मेटाउने? मौज्दात पुनः गणना हुनेछ।';
 
   @override
+  String get cashExchangeEditTitle => 'प्रविष्टि सम्पादन गर्नुहोस्';
+
+  @override
+  String get cashExchangeEdited => 'सम्पादित';
+
+  @override
+  String get cashExchangeHistoryTitle => 'परिवर्तन इतिहास';
+
+  @override
+  String get cashExchangeHistoryCurrent => 'हालको';
+
+  @override
+  String cashExchangeHistoryEdited(String user, String date) {
+    return '$user द्वारा सम्पादित · $date';
+  }
+
+  @override
+  String cashExchangeHistoryDeleted(String user, String date) {
+    return '$user द्वारा मेटाइएको · $date';
+  }
+
+  @override
+  String get cashExchangeChangeLog => 'परिवर्तन लग';
+
+  @override
+  String get cashExchangeDeleted => 'मेटाइएको';
+
+  @override
+  String get cashExchangeNoChanges => 'कुनै परिवर्तन दर्ता छैन।';
+
+  @override
+  String get cashExchangeChangeFailed =>
+      'यो प्रविष्टि अब परिवर्तन गर्न सकिँदैन। यो मेटाइएको हुन सक्छ, वा २४ घण्टाको सम्पादन अवधि सकिएको छ।';
+
+  @override
   String get cashExchangeEmpty => 'यो अवधिमा कुनै प्रविष्टि छैन।';
 
   @override
@@ -4700,6 +4735,12 @@ class AppLocalizationsNe extends AppLocalizations {
 
   @override
   String get cashExchangeClosingBalance => 'अन्तिम मौज्दात';
+
+  @override
+  String get cashExchangeShowBalances => 'मौज्दात देखाउनुहोस्';
+
+  @override
+  String get cashExchangeHideBalances => 'मौज्दात लुकाउनुहोस्';
 
   @override
   String get cashExchangeAllTypes => 'सबै प्रकार';

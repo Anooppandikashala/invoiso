@@ -318,4 +318,208 @@ void main() {
             db, DateTime(2026, 9, 26), DateTime(2026, 9, 26)))
         .keys, ['2026-09-26']);
   });
+
+  group('edit / delete with edit log', () {
+    final created = DateTime(2026, 9, 25, 10, 5);
+    final soon = created.add(const Duration(hours: 2));
+    Future<CashLedgerEntry> saved(CashLedgerEntry e) async {
+      await add(e);
+      return e;
+    }
+
+    CashLedgerEntry staffExchange() => CashLedgerService.buildExchange(
+        upiToCash: true,
+        amount: 1000,
+        fee: 10,
+        feeMethod: CashLedgerEntry.accountCash,
+        dateTime: day,
+        receiptNumber: 'EXC-0001',
+        customerId: 'c1',
+        customerName: 'Ravi',
+        createdBy: 'staff',
+        createdAt: created);
+
+    Future<void> change(String id,
+            {CashLedgerEntry? updated,
+            String userId = 'staff',
+            bool isAdmin = false,
+            DateTime? now}) =>
+        db.transaction((txn) => CashLedgerService.changeOn(txn, id,
+            updated: updated,
+            userId: userId,
+            userName: userId,
+            isAdmin: isAdmin,
+            now: now ?? soon));
+
+    test('edit rebuilds deltas, keeps identity, logs the old version',
+        () async {
+      await opening(5000, 10000, day);
+      final e = await saved(staffExchange());
+      // Wrong button: it was Cash→UPI ₹2,000, fee ₹20 by UPI.
+      await change(e.id,
+          updated: CashLedgerService.buildExchange(
+              upiToCash: false,
+              amount: 2000,
+              fee: 20,
+              feeMethod: CashLedgerEntry.accountUpiBank,
+              dateTime: day,
+              customerName: 'Ravi'));
+
+      final b = await CashLedgerService.balancesOn(db);
+      expect(b.cash, 5000 + 2000);
+      expect(b.upiBank, 10000 - 2000 + 20);
+
+      final row = CashLedgerEntry.fromMap(
+          (await db.query('cash_ledger', where: 'id = ?', whereArgs: [e.id]))
+              .first);
+      expect(row.entryType, CashLedgerEntry.cashToUpi);
+      expect(row.receiptNumber, 'EXC-0001');
+      expect(row.createdBy, 'staff');
+      expect(row.createdAt, created);
+
+      final h = await CashLedgerService.historyOn(db, entryId: e.id);
+      expect(h.length, 1);
+      expect(h.first.action, 'edit');
+      expect(h.first.changedByName, 'staff');
+      expect(h.first.entry.exchangeAmount, 1000);
+      expect(h.first.entry.cashDelta, -990);
+
+      final listed = await CashLedgerService.entriesOn(db);
+      expect(listed.firstWhere((x) => x.id == e.id).edited, isTrue);
+      expect(listed.firstWhere((x) => x.id == 'open').edited, isFalse);
+    });
+
+    test('moving the date moves the amount between days', () async {
+      final e = await saved(staffExchange());
+      await change(e.id,
+          updated: CashLedgerService.buildExchange(
+              upiToCash: true,
+              amount: 1000,
+              fee: 10,
+              feeMethod: CashLedgerEntry.accountCash,
+              dateTime: DateTime(2026, 9, 24, 18),
+              customerName: 'Ravi'));
+      final net = await CashLedgerService.dailyNetOn(
+          db, DateTime(2026, 9, 24), DateTime(2026, 9, 25));
+      expect(net.keys, ['2026-09-24']);
+      expect(net['2026-09-24']!.cash, -990);
+    });
+
+    test('expense account switch', () async {
+      final e = await saved(CashLedgerService.buildMovement(
+          type: CashLedgerEntry.expense,
+          amount: 200,
+          dateTime: day,
+          createdBy: 'staff',
+          createdAt: created));
+      await change(e.id,
+          updated: CashLedgerService.buildMovement(
+              type: CashLedgerEntry.expense,
+              amount: 250,
+              account: CashLedgerEntry.accountUpiBank,
+              dateTime: day));
+      final b = await CashLedgerService.balancesOn(db);
+      expect((b.cash, b.upiBank), (0.0, -250.0));
+    });
+
+    test('delete removes the row and keeps it in the log', () async {
+      final e = await saved(staffExchange());
+      await change(e.id);
+      expect(await db.query('cash_ledger'), isEmpty);
+      final d = await CashLedgerService.historyOn(db, action: 'delete');
+      expect(d.single.entry.receiptNumber, 'EXC-0001');
+      expect(d.single.entry.customerName, 'Ravi');
+    });
+
+    test('change log: pages, newest first, filter by action', () async {
+      for (var i = 0; i < 25; i++) {
+        final e = await saved(CashLedgerService.buildMovement(
+            type: CashLedgerEntry.expense,
+            amount: i + 1.0,
+            dateTime: day,
+            createdBy: 'staff',
+            createdAt: created));
+        await change(e.id, now: soon.add(Duration(minutes: i)));
+      }
+      expect(await CashLedgerService.countChangesOn(db, action: 'delete'), 25);
+      final pages = [
+        for (final offset in [0, 10, 20])
+          await CashLedgerService.historyOn(db,
+              action: 'delete', limit: 10, offset: offset)
+      ];
+      expect(pages.map((p) => p.length), [10, 10, 5]);
+      final amounts =
+          pages.expand((p) => p).map((c) => -c.entry.cashDelta).toList();
+      expect(amounts, [for (var i = 25; i >= 1; i--) i.toDouble()]);
+
+      // One edit, logged after the deletes: newest in "all", alone in "edit".
+      final e = await saved(staffExchange());
+      await change(e.id,
+          updated: CashLedgerService.buildExchange(
+              upiToCash: true,
+              amount: 1500,
+              fee: 10,
+              feeMethod: CashLedgerEntry.accountCash,
+              dateTime: day,
+              customerName: 'Ravi'),
+          now: soon.add(const Duration(hours: 1)));
+      expect(await CashLedgerService.countChangesOn(db), 26);
+      expect(await CashLedgerService.countChangesOn(db, action: 'edit'), 1);
+      final all = await CashLedgerService.historyOn(db, limit: 10);
+      expect(all.first.action, 'edit');
+      expect(all.first.entry.id, e.id);
+      expect(all.skip(1).every((c) => c.action == 'delete'), isTrue);
+    });
+
+    test('unchanged save writes nothing', () async {
+      final e = await saved(staffExchange());
+      await change(e.id, updated: staffExchange());
+      expect(await db.query('cash_ledger_history'), isEmpty);
+    });
+
+    test('who can change what', () async {
+      final e = await saved(staffExchange());
+      bool can(CashLedgerEntry x,
+              {String user = 'staff', bool admin = false, DateTime? now}) =>
+          CashLedgerService.canModify(x,
+              userId: user, isAdmin: admin, now: now ?? soon);
+      final late = created.add(const Duration(hours: 24));
+
+      expect(can(e), isTrue); // own, within 24 h
+      expect(can(e, now: late), isFalse); // window over
+      expect(can(e, user: 'other'), isFalse); // someone else's
+      expect(can(e, user: 'admin', admin: true, now: late), isTrue);
+      // Adjustments and pre-v51 rows (no entry time): admins only.
+      final adj = CashLedgerEntry(
+          id: 'a',
+          entryType: CashLedgerEntry.adjustment,
+          cashDelta: 5,
+          dateTime: day,
+          createdBy: 'staff',
+          createdAt: created);
+      expect(can(adj), isFalse);
+      expect(can(adj, user: 'admin', admin: true), isTrue);
+      final old = CashLedgerEntry(
+          id: 'o', entryType: CashLedgerEntry.expense, dateTime: day,
+          createdBy: 'staff');
+      expect(can(old), isFalse);
+      // Never: opening and invoice payments.
+      for (final type in [
+        CashLedgerEntry.opening,
+        CashLedgerEntry.invoicePayment
+      ]) {
+        expect(
+            can(CashLedgerEntry(id: 'x', entryType: type, dateTime: day),
+                user: 'admin', admin: true),
+            isFalse);
+      }
+
+      // Enforced on write too, nothing logged.
+      await expectLater(change(e.id, userId: 'other'), throwsStateError);
+      await expectLater(change(e.id, now: late), throwsStateError);
+      await expectLater(change('missing', isAdmin: true), throwsStateError);
+      expect(await db.query('cash_ledger_history'), isEmpty);
+      expect((await db.query('cash_ledger')).length, 1);
+    });
+  });
 }

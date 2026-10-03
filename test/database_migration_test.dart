@@ -236,4 +236,36 @@ void main() {
 
     await db.close();
   });
+
+  test('v51: created_by usernames become user ids; edit log table added',
+      () async {
+    final db = await openDatabase(inMemoryDatabasePath);
+    await db.execute(
+        'CREATE TABLE users (id TEXT PRIMARY KEY, username TEXT UNIQUE)');
+    // cash_ledger as it was at v50.
+    await db.execute('''
+      CREATE TABLE cash_ledger (
+        id TEXT PRIMARY KEY, entry_type TEXT NOT NULL,
+        cash_delta REAL NOT NULL DEFAULT 0, upi_delta REAL NOT NULL DEFAULT 0,
+        date_time TEXT NOT NULL, created_by TEXT)''');
+    await db.insert('users', {'id': 'user-001', 'username': 'admin'});
+    await db.insert('users', {'id': '[#a1b2c]', 'username': 'staff'});
+    for (final (id, by) in [('1', 'staff'), ('2', 'admin'), ('3', 'gone'), ('4', null)]) {
+      await db.insert('cash_ledger', {
+        'id': id,
+        'entry_type': 'expense',
+        'date_time': '2026-09-25T10:00:00.000',
+        'created_by': by,
+      });
+    }
+
+    await DatabaseHelper().upgradeDbForTest(db, 50, 51);
+
+    final rows = await db.query('cash_ledger', orderBy: 'id');
+    expect(rows.map((r) => r['created_by']),
+        ['[#a1b2c]', 'user-001', 'gone', null]);
+    expect(rows.first.containsKey('created_at'), isTrue);
+    expect(await db.query('cash_ledger_history'), isEmpty);
+    await db.close();
+  });
 }

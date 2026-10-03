@@ -4640,6 +4640,41 @@ class AppLocalizationsBo extends AppLocalizations {
       'ཐོ་འགོད་འདི་སུབ་བམ། ལྷག་བསགས་བསྐྱར་རྩིས་བྱེད་ངེས།';
 
   @override
+  String get cashExchangeEditTitle => 'ཐོ་འགོད་བཟོ་བཅོས།';
+
+  @override
+  String get cashExchangeEdited => 'བཟོ་བཅོས་བྱས་ཟིན།';
+
+  @override
+  String get cashExchangeHistoryTitle => 'བཟོ་བཅོས་ལོ་རྒྱུས།';
+
+  @override
+  String get cashExchangeHistoryCurrent => 'ད་ལྟའི།';
+
+  @override
+  String cashExchangeHistoryEdited(String user, String date) {
+    return '$user ཡིས་བཟོ་བཅོས་བྱས། · $date';
+  }
+
+  @override
+  String cashExchangeHistoryDeleted(String user, String date) {
+    return '$user ཡིས་སུབ་པ། · $date';
+  }
+
+  @override
+  String get cashExchangeChangeLog => 'བཟོ་བཅོས་ཐོ་གཞུང་།';
+
+  @override
+  String get cashExchangeDeleted => 'སུབ་ཟིན།';
+
+  @override
+  String get cashExchangeNoChanges => 'བཟོ་བཅོས་ཐོ་འགོད་མེད།';
+
+  @override
+  String get cashExchangeChangeFailed =>
+      'ཐོ་འགོད་འདི་ད་ནས་བཟོ་བཅོས་བྱེད་མི་ཐུབ། སུབ་ཟིན་པའམ། ཡང་ན་ཆུ་ཚོད་ ༢༤ ཡི་བཟོ་བཅོས་དུས་ཚོད་འདས་ཟིན།';
+
+  @override
   String get cashExchangeEmpty => 'དུས་ཡུན་འདིར་ཐོ་འགོད་མེད།';
 
   @override
@@ -4662,6 +4697,12 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get cashExchangeClosingBalance => 'མཇུག་གི་ལྷག་བསགས།';
+
+  @override
+  String get cashExchangeShowBalances => 'ལྷག་བསགས་སྟོན།';
+
+  @override
+  String get cashExchangeHideBalances => 'ལྷག་བསགས་སྦས།';
 
   @override
   String get cashExchangeAllTypes => 'རིགས་ཡོངས།';

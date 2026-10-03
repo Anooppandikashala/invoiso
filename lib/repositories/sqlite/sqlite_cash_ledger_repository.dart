@@ -74,7 +74,38 @@ class SqliteCashLedgerRepository implements CashLedgerRepository {
           cash: cash, upiBank: upiBank, date: date, createdBy: createdBy);
 
   @override
-  Future<void> deleteEntry(String id) => CashLedgerService.deleteEntry(id);
+  Future<void> updateEntry(String id, CashLedgerEntry updated,
+          {required String userId,
+          required String userName,
+          required bool isAdmin}) =>
+      CashLedgerService.updateEntry(id, updated,
+          userId: userId, userName: userName, isAdmin: isAdmin);
+
+  @override
+  Future<void> deleteEntry(String id,
+          {required String userId,
+          required String userName,
+          required bool isAdmin}) =>
+      CashLedgerService.deleteEntry(id,
+          userId: userId, userName: userName, isAdmin: isAdmin);
+
+  @override
+  Future<List<CashLedgerChange>> getHistory(String entryId) =>
+      CashLedgerService.getHistory(entryId);
+
+  @override
+  Future<List<CashLedgerChange>> getChanges(
+          {String? action, int limit = 10, int offset = 0}) =>
+      CashLedgerService.getChanges(
+          action: action, limit: limit, offset: offset);
+
+  @override
+  Future<int> countChanges({String? action}) =>
+      CashLedgerService.countChanges(action: action);
+
+  @override
+  Future<CashLedgerEntry?> getEntry(String id) =>
+      CashLedgerService.getEntry(id);
 
   @override
   Future<CashLedgerEntry?> getOpening() => CashLedgerService.getOpening();

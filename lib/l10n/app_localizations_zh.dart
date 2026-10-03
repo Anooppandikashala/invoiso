@@ -4467,6 +4467,40 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cashExchangeDeleteMessage => '删除此记录？余额将重新计算。';
 
   @override
+  String get cashExchangeEditTitle => '编辑记录';
+
+  @override
+  String get cashExchangeEdited => '已编辑';
+
+  @override
+  String get cashExchangeHistoryTitle => '修改历史';
+
+  @override
+  String get cashExchangeHistoryCurrent => '当前';
+
+  @override
+  String cashExchangeHistoryEdited(String user, String date) {
+    return '$user 编辑 · $date';
+  }
+
+  @override
+  String cashExchangeHistoryDeleted(String user, String date) {
+    return '$user 删除 · $date';
+  }
+
+  @override
+  String get cashExchangeChangeLog => '更改记录';
+
+  @override
+  String get cashExchangeDeleted => '已删除';
+
+  @override
+  String get cashExchangeNoChanges => '没有更改记录。';
+
+  @override
+  String get cashExchangeChangeFailed => '此记录已无法更改。它可能已被删除，或已超过 24 小时的编辑期限。';
+
+  @override
   String get cashExchangeEmpty => '此期间没有记录。';
 
   @override
@@ -4489,6 +4523,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get cashExchangeClosingBalance => '期末余额';
+
+  @override
+  String get cashExchangeShowBalances => '显示余额';
+
+  @override
+  String get cashExchangeHideBalances => '隐藏余额';
 
   @override
   String get cashExchangeAllTypes => '所有类型';

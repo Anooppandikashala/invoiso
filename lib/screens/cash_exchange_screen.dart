@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/constants.dart';
+import 'package:invoiso/database/cash_ledger_service.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/models/cash_ledger_entry.dart';
 import 'package:invoiso/models/customer.dart';
@@ -39,6 +40,7 @@ class _CashExchangeScreenState extends ConsumerState<CashExchangeScreen> {
   CashBalances? _periodOpening;
   CashBalances? _periodClosing;
   String? _typeFilter;
+  bool _balancesOpen = true; // period opening / closing cards
 
   bool get _isAdmin => widget.user.isAdmin();
 
@@ -283,15 +285,20 @@ class _CashExchangeScreenState extends ConsumerState<CashExchangeScreen> {
         onSelectionChanged: (v) => onChanged(v.first),
       );
 
+  /// [floor]: earliest pickable date (the setup date for ledger entries, so
+  /// nothing lands where it's counted but never shown). Ignored when
+  /// [value] is already earlier.
   Widget _dateTimeTile(
       AppLocalizations l10n, DateTime value, ValueChanged<DateTime> onPicked,
-      {bool withTime = true}) {
+      {bool withTime = true, DateTime? floor}) {
     return InkWell(
       onTap: () async {
         final d = await showDatePicker(
             context: context,
             initialDate: value,
-            firstDate: DateTime(2000),
+            firstDate: floor == null || value.isBefore(floor)
+                ? DateTime(2000)
+                : floor,
             lastDate: DateTime.now().add(const Duration(days: 1)));
         if (d == null || !mounted) return;
         var t = TimeOfDay.fromDateTime(value);
@@ -430,30 +437,55 @@ class _CashExchangeScreenState extends ConsumerState<CashExchangeScreen> {
 
   // ── Dialogs ───────────────────────────────────────────────────────────────
 
-  Future<void> _exchangeDialog(bool upiToCash) async {
+  String _init(double v) => v == 0 ? '' : v.toStringAsFixed(2);
+
+  /// [editing]: prefill from that entry and save over it; the direction can
+  /// then be switched too.
+  Future<void> _exchangeDialog(bool upiToCash,
+      {CashLedgerEntry? editing}) async {
     final l10n = AppLocalizations.of(context)!;
-    final amount = TextEditingController();
-    final fee = TextEditingController();
-    final name = TextEditingController();
+    final amount = TextEditingController(text: _init(editing?.exchangeAmount ?? 0));
+    final fee = TextEditingController(text: _init(editing?.serviceFee ?? 0));
+    final name = TextEditingController(text: editing?.customerName);
     final nameFocus = FocusNode();
-    final phone = TextEditingController();
-    final notes = TextEditingController();
+    final phone = TextEditingController(text: editing?.customerPhone);
+    final notes = TextEditingController(text: editing?.notes);
     // Default: the fee comes with what the customer hands over.
-    var feeMethod = upiToCash
-        ? CashLedgerEntry.accountUpiBank
-        : CashLedgerEntry.accountCash;
-    var when = DateTime.now();
+    var feeMethod = editing?.feeMethod ??
+        (upiToCash
+            ? CashLedgerEntry.accountUpiBank
+            : CashLedgerEntry.accountCash);
+    var when = editing?.dateTime ?? DateTime.now();
     Customer? picked; // linked only while the name still matches
     await _formDialog(
-      title: upiToCash ? l10n.cashExchangeUpiToCash : l10n.cashExchangeCashToUpi,
+      title: editing != null
+          ? l10n.cashExchangeEditTitle
+          : upiToCash
+              ? l10n.cashExchangeUpiToCash
+              : l10n.cashExchangeCashToUpi,
       width: 640,
       fields: (setDialog) {
         final a = _parse(amount);
         final f = _parse(fee);
-        // Outgoing side: cash for UPI→Cash, UPI/Bank for Cash→UPI.
-        final available = upiToCash ? _balances.cash : _balances.upiBank;
+        // Outgoing side: cash for UPI→Cash, UPI/Bank for Cash→UPI. When
+        // editing, without the entry's own (old) effect.
+        final available = upiToCash
+            ? _balances.cash - (editing?.cashDelta ?? 0)
+            : _balances.upiBank - (editing?.upiDelta ?? 0);
         final method = _accountLabel(l10n, feeMethod);
         return [
+          if (editing != null)
+            SegmentedButton<bool>(
+              showSelectedIcon: false,
+              segments: [
+                ButtonSegment(
+                    value: true, label: Text(l10n.cashExchangeUpiToCash)),
+                ButtonSegment(
+                    value: false, label: Text(l10n.cashExchangeCashToUpi)),
+              ],
+              selected: {upiToCash},
+              onSelectionChanged: (v) => setDialog(() => upiToCash = v.first),
+            ),
           _pair(
             _numField(amount, l10n.cashExchangeAmountLabel,
                 onChanged: (_) => setDialog(() {})),
@@ -477,7 +509,8 @@ class _CashExchangeScreenState extends ConsumerState<CashExchangeScreen> {
             _textField(phone, l10n.cashExchangeCustomerPhoneLabel,
                 keyboardType: TextInputType.phone),
           ),
-          _dateTimeTile(l10n, when, (v) => setDialog(() => when = v)),
+          _dateTimeTile(l10n, when, (v) => setDialog(() => when = v),
+              floor: _setupDate),
           _textField(notes, l10n.cashExchangeNotesLabel, maxLines: 3),
           if (a > 0)
             Text(
@@ -506,6 +539,24 @@ class _CashExchangeScreenState extends ConsumerState<CashExchangeScreen> {
           return false;
         }
         final linked = picked != null && picked!.name == name.text.trim();
+        if (editing != null) {
+          // Keep the saved customer link while the name is unchanged.
+          final keep = !linked && name.text.trim() == editing.customerName;
+          return _update(
+              editing,
+              CashLedgerService.buildExchange(
+                upiToCash: upiToCash,
+                amount: _parse(amount),
+                fee: _parse(fee),
+                feeMethod: feeMethod,
+                dateTime: when,
+                customerId:
+                    linked ? picked!.id : (keep ? editing.customerId : null),
+                customerName: _opt(name),
+                customerPhone: _opt(phone),
+                notes: _opt(notes),
+              ));
+        }
         await ref.read(cashLedgerRepositoryProvider).addExchange(
               upiToCash: upiToCash,
               amount: _parse(amount),
@@ -516,7 +567,7 @@ class _CashExchangeScreenState extends ConsumerState<CashExchangeScreen> {
               customerName: _opt(name),
               customerPhone: _opt(phone),
               notes: _opt(notes),
-              createdBy: widget.user.username,
+              createdBy: widget.user.id,
             );
         return true;
       },
@@ -524,15 +575,24 @@ class _CashExchangeScreenState extends ConsumerState<CashExchangeScreen> {
     nameFocus.dispose();
   }
 
-  Future<void> _movementDialog(String type) async {
+  Future<void> _movementDialog(String type, {CashLedgerEntry? editing}) async {
     final l10n = AppLocalizations.of(context)!;
-    final amount = TextEditingController();
-    final notes = TextEditingController();
-    var account = CashLedgerEntry.accountCash;
-    var when = DateTime.now();
     final isDeposit = type == CashLedgerEntry.bankDeposit;
+    // No stored account: a deposit adds to UPI/Bank; an expense or
+    // withdrawal takes from the one account it changed.
+    final amount = TextEditingController(
+        text: editing == null
+            ? ''
+            : _init(isDeposit
+                ? editing.upiDelta
+                : -(editing.cashDelta + editing.upiDelta)));
+    final notes = TextEditingController(text: editing?.notes);
+    var account = editing != null && !isDeposit && editing.upiDelta != 0
+        ? CashLedgerEntry.accountUpiBank
+        : CashLedgerEntry.accountCash;
+    var when = editing?.dateTime ?? DateTime.now();
     await _formDialog(
-      title: _typeLabel(l10n, type),
+      title: editing != null ? l10n.cashExchangeEditTitle : _typeLabel(l10n, type),
       fields: (setDialog) => [
         _numField(amount, l10n.cashExchangeAmountLabel),
         if (!isDeposit) ...[
@@ -540,12 +600,24 @@ class _CashExchangeScreenState extends ConsumerState<CashExchangeScreen> {
           _accountPicker(l10n, account, (v) => setDialog(() => account = v)),
         ],
         _textField(notes, l10n.cashExchangeNotesLabel),
-        _dateTimeTile(l10n, when, (v) => setDialog(() => when = v)),
+        _dateTimeTile(l10n, when, (v) => setDialog(() => when = v),
+            floor: _setupDate),
       ],
       save: () async {
         if (_parse(amount) <= 0) {
           _error(l10n.paymentDialogInvalidAmountError);
           return false;
+        }
+        if (editing != null) {
+          return _update(
+              editing,
+              CashLedgerService.buildMovement(
+                type: type,
+                amount: _parse(amount),
+                account: account,
+                dateTime: when,
+                notes: _opt(notes),
+              ));
         }
         await ref.read(cashLedgerRepositoryProvider).addMovement(
               type: type,
@@ -553,7 +625,7 @@ class _CashExchangeScreenState extends ConsumerState<CashExchangeScreen> {
               account: account,
               dateTime: when,
               notes: _opt(notes),
-              createdBy: widget.user.username,
+              createdBy: widget.user.id,
             );
         return true;
       },
@@ -580,38 +652,53 @@ class _CashExchangeScreenState extends ConsumerState<CashExchangeScreen> {
               cash: _parse(cash),
               upiBank: _parse(upi),
               date: DateTime(date.year, date.month, date.day),
-              createdBy: widget.user.username,
+              createdBy: widget.user.id,
             );
         return true;
       },
     );
   }
 
-  Future<void> _adjustmentDialog() async {
+  Future<void> _adjustmentDialog({CashLedgerEntry? editing}) async {
     final l10n = AppLocalizations.of(context)!;
-    final cash = TextEditingController();
-    final upi = TextEditingController();
-    final notes = TextEditingController();
-    var when = DateTime.now();
+    final cash = TextEditingController(text: _init(editing?.cashDelta ?? 0));
+    final upi = TextEditingController(text: _init(editing?.upiDelta ?? 0));
+    final notes = TextEditingController(text: editing?.notes);
+    var when = editing?.dateTime ?? DateTime.now();
     await _formDialog(
-      title: l10n.cashExchangeAdjustment,
+      title: editing != null
+          ? l10n.cashExchangeEditTitle
+          : l10n.cashExchangeAdjustment,
       fields: (setDialog) => [
         _numField(cash, l10n.cashExchangeCashDeltaLabel, signed: true),
         _numField(upi, l10n.cashExchangeUpiDeltaLabel, signed: true),
         _textField(notes, l10n.cashExchangeNotesLabel),
-        _dateTimeTile(l10n, when, (v) => setDialog(() => when = v)),
+        _dateTimeTile(l10n, when, (v) => setDialog(() => when = v),
+            floor: _setupDate),
       ],
       save: () async {
         if (_parse(cash) == 0 && _parse(upi) == 0) {
           _error(l10n.paymentDialogInvalidAmountError);
           return false;
         }
+        if (editing != null) {
+          return _update(
+              editing,
+              CashLedgerEntry(
+                id: editing.id,
+                entryType: CashLedgerEntry.adjustment,
+                cashDelta: _parse(cash),
+                upiDelta: _parse(upi),
+                dateTime: when,
+                notes: _opt(notes),
+              ));
+        }
         await ref.read(cashLedgerRepositoryProvider).addAdjustment(
               cashDelta: _parse(cash),
               upiDelta: _parse(upi),
               dateTime: when,
               notes: _opt(notes),
-              createdBy: widget.user.username,
+              createdBy: widget.user.id,
             );
         return true;
       },
@@ -637,8 +724,203 @@ class _CashExchangeScreenState extends ConsumerState<CashExchangeScreen> {
       ),
     );
     if (ok != true) return;
-    await ref.read(cashLedgerRepositoryProvider).deleteEntry(e.id);
+    try {
+      await ref.read(cashLedgerRepositoryProvider).deleteEntry(e.id,
+          userId: widget.user.id,
+          userName: widget.user.username,
+          isAdmin: _isAdmin);
+    } on StateError {
+      if (mounted) _error(l10n.cashExchangeChangeFailed);
+    }
     await _load();
+  }
+
+  /// Saves an edit. A refusal (row gone, edit window over) still closes the
+  /// dialog, and the reload shows the current state.
+  Future<bool> _update(CashLedgerEntry old, CashLedgerEntry updated) async {
+    try {
+      await ref.read(cashLedgerRepositoryProvider).updateEntry(old.id, updated,
+          userId: widget.user.id,
+          userName: widget.user.username,
+          isAdmin: _isAdmin);
+    } on StateError {
+      if (mounted) _error(AppLocalizations.of(context)!.cashExchangeChangeFailed);
+    }
+    return true;
+  }
+
+  Future<void> _edit(CashLedgerEntry e) => switch (e.entryType) {
+        CashLedgerEntry.upiToCash ||
+        CashLedgerEntry.cashToUpi =>
+          _exchangeDialog(e.entryType == CashLedgerEntry.upiToCash, editing: e),
+        CashLedgerEntry.adjustment => _adjustmentDialog(editing: e),
+        _ => _movementDialog(e.entryType, editing: e),
+      };
+
+  /// One line with everything an entry holds (edit log views).
+  String _summary(AppLocalizations l10n, CashLedgerEntry e) => [
+        _typeLabel(l10n, e.entryType),
+        if (e.isExchange) _money(e.exchangeAmount),
+        if (e.isExchange)
+          '${l10n.cashExchangeFeeLabel} ${_money(e.serviceFee)} · ${_accountLabel(l10n, e.feeMethod)}',
+        if (e.cashDelta != 0) '${l10n.cashExchangeCashLabel} ${_signed(e.cashDelta)}',
+        if (e.upiDelta != 0)
+          '${l10n.cashExchangeUpiBankLabel} ${_signed(e.upiDelta)}',
+        DateFormat('dd MMM yyyy, hh:mm a').format(e.dateTime),
+        if (e.receiptNumber != null) e.receiptNumber!,
+        if (e.customerName != null) e.customerName!,
+        if (e.customerPhone != null) e.customerPhone!,
+        if (e.notes != null) e.notes!,
+      ].join(' • ');
+
+  Widget _changeTile(String title, String summary, {VoidCallback? onTap}) =>
+      ListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(title,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+        subtitle: Text(summary),
+        trailing: onTap == null ? null : const Icon(Icons.chevron_right),
+        onTap: onTap,
+      );
+
+  String _changeTitle(AppLocalizations l10n, CashLedgerChange c) {
+    final user = c.changedByName ?? '—';
+    final date = DateFormat('dd MMM yyyy, hh:mm a').format(c.changedAt);
+    return c.action == 'delete'
+        ? l10n.cashExchangeHistoryDeleted(user, date)
+        : l10n.cashExchangeHistoryEdited(user, date);
+  }
+
+  /// [children] / [pager] get the dialog's context and setState, so a pager
+  /// can swap the page in place.
+  Future<void> _showChanges(
+      String title,
+      List<Widget> Function(BuildContext ctx, StateSetter setDialog) children,
+      {List<Widget> Function(BuildContext ctx, StateSetter setDialog)? pager}) {
+    final l10n = AppLocalizations.of(context)!;
+    return showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialog) => AlertDialog(
+          title: Text(title),
+          content: SizedBox(
+            width: 560,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: children(ctx, setDialog),
+              ),
+            ),
+          ),
+          actions: [
+            if (pager != null) ...pager(ctx, setDialog),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(l10n.actionClose)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Current version first (unless deleted since), then each old version
+  /// (newest first).
+  Future<void> _historyDialog(String entryId, CashLedgerEntry? current) async {
+    final l10n = AppLocalizations.of(context)!;
+    final changes =
+        await ref.read(cashLedgerRepositoryProvider).getHistory(entryId);
+    if (!mounted) return;
+    await _showChanges(l10n.cashExchangeHistoryTitle, (_, __) => [
+      if (current != null)
+        _changeTile(l10n.cashExchangeHistoryCurrent, _summary(l10n, current)),
+      for (final c in changes) ...[
+        if (current != null || c != changes.first) const Divider(),
+        _changeTile(_changeTitle(l10n, c), _summary(l10n, c.entry)),
+      ],
+    ]);
+  }
+
+  /// Edits and deletes, 10 per page, newest first; only the page shown is
+  /// loaded. Tapping an edit opens that entry's full history.
+  Future<void> _changeLogDialog() async {
+    const pageSize = 10;
+    final l10n = AppLocalizations.of(context)!;
+    final repo = ref.read(cashLedgerRepositoryProvider);
+    String? action; // null = all, 'edit', 'delete'
+    var total = await repo.countChanges();
+    var changes = await repo.getChanges(limit: pageSize);
+    var page = 0;
+    if (!mounted) return;
+    int pages() => (total / pageSize).ceil().clamp(1, 1 << 30);
+    Future<void> load(BuildContext ctx, StateSetter setDialog, int p,
+        {bool recount = false}) async {
+      final n = recount ? await repo.countChanges(action: action) : total;
+      final rows = await repo.getChanges(
+          action: action, limit: pageSize, offset: p * pageSize);
+      if (!ctx.mounted) return;
+      setDialog(() {
+        total = n;
+        page = p;
+        changes = rows;
+      });
+    }
+
+    Future<void> openHistory(String entryId) async {
+      final current = await repo.getEntry(entryId);
+      if (mounted) await _historyDialog(entryId, current);
+    }
+
+    await _showChanges(
+      l10n.cashExchangeChangeLog,
+      (ctx, setDialog) => [
+        SegmentedButton<String>(
+          showSelectedIcon: false,
+          segments: [
+            ButtonSegment(
+                value: 'all', label: Text(l10n.invoiceMgmtStatusAllLabel)),
+            ButtonSegment(value: 'edit', label: Text(l10n.cashExchangeEdited)),
+            ButtonSegment(
+                value: 'delete', label: Text(l10n.cashExchangeDeleted)),
+          ],
+          selected: {action ?? 'all'},
+          onSelectionChanged: (v) {
+            action = v.first == 'all' ? null : v.first;
+            load(ctx, setDialog, 0, recount: true);
+          },
+        ),
+        const SizedBox(height: 8),
+        if (changes.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Text(l10n.cashExchangeNoChanges),
+          ),
+        for (var i = 0; i < changes.length; i++) ...[
+          if (i > 0) const Divider(),
+          _changeTile(_changeTitle(l10n, changes[i]),
+              _summary(l10n, changes[i].entry),
+              onTap: changes[i].action == 'edit'
+                  ? () => openHistory(changes[i].entry.id)
+                  : null),
+        ],
+      ],
+      // Always shown (like the main history), arrows off on a single page.
+      pager: (ctx, setDialog) => [
+        IconButton(
+          icon: const Icon(Icons.chevron_left),
+          tooltip: l10n.actionPrevious,
+          onPressed: page > 0 ? () => load(ctx, setDialog, page - 1) : null,
+        ),
+        Text(l10n.invoiceMgmtPageOfLabel(page + 1, pages())),
+        IconButton(
+          icon: const Icon(Icons.chevron_right),
+          tooltip: l10n.actionNext,
+          onPressed: page < pages() - 1
+              ? () => load(ctx, setDialog, page + 1)
+              : null,
+        ),
+      ],
+    );
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────
@@ -760,11 +1042,13 @@ class _CashExchangeScreenState extends ConsumerState<CashExchangeScreen> {
             '+${_money(e.serviceFee)} ${l10n.cashExchangeFeeLabel} · ${_accountLabel(l10n, e.feeMethod)}',
             Colors.green)
         : null;
-    // Invoice payments are managed from the Invoices screen.
-    final canDelete = _isAdmin &&
-        e.entryType != CashLedgerEntry.opening &&
-        !isPayment;
-    // Download (exchanges) + a "more" menu with Print (exchanges) and Delete.
+    // Admins: any entry; users: their own, for 24 hours. Never the opening
+    // (own dialog) or invoice payments (managed from the Invoices screen).
+    final canModify = CashLedgerService.canModify(e,
+        userId: widget.user.id, isAdmin: _isAdmin);
+    final showHistory = _isAdmin && e.edited;
+    // Download (exchanges) + a "more" menu with Print (exchanges), History,
+    // Edit and Delete.
     final actions = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -774,12 +1058,15 @@ class _CashExchangeScreenState extends ConsumerState<CashExchangeScreen> {
             icon: const Icon(Icons.download_outlined, size: 20),
             onPressed: () => ExchangeReceiptService.download(context, e, _sym),
           ),
-        if (e.isExchange || canDelete)
+        if (e.isExchange || canModify || showHistory)
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert, size: 20),
-            onSelected: (v) => v == 'print'
-                ? ExchangeReceiptService.printReceipt(context, e, _sym)
-                : _confirmDelete(e),
+            onSelected: (v) => switch (v) {
+              'print' => ExchangeReceiptService.printReceipt(context, e, _sym),
+              'history' => _historyDialog(e.id, e),
+              'edit' => _edit(e),
+              _ => _confirmDelete(e),
+            },
             itemBuilder: (_) => [
               if (e.isExchange)
                 PopupMenuItem(
@@ -791,7 +1078,27 @@ class _CashExchangeScreenState extends ConsumerState<CashExchangeScreen> {
                     title: Text(l10n.actionPrint),
                   ),
                 ),
-              if (canDelete)
+              if (showHistory)
+                PopupMenuItem(
+                  value: 'history',
+                  child: ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.history),
+                    title: Text(l10n.cashExchangeHistoryTitle),
+                  ),
+                ),
+              if (canModify)
+                PopupMenuItem(
+                  value: 'edit',
+                  child: ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.edit_outlined),
+                    title: Text(l10n.actionEdit),
+                  ),
+                ),
+              if (canModify)
                 PopupMenuItem(
                   value: 'delete',
                   child: ListTile(
@@ -838,6 +1145,7 @@ class _CashExchangeScreenState extends ConsumerState<CashExchangeScreen> {
               if (e.customerName != null)
                 Text(e.customerName!, style: const TextStyle(fontSize: 14)),
               if (fee != null) fee,
+              if (e.edited) _chip(l10n.cashExchangeEdited, Colors.blueGrey),
             ],
           ),
           const SizedBox(height: 4),
@@ -898,7 +1206,8 @@ class _CashExchangeScreenState extends ConsumerState<CashExchangeScreen> {
         : _typeLabel(l10n, _typeFilter!);
     final muted = Theme.of(context).colorScheme.onSurfaceVariant;
 
-    Widget block(String title, CashBalances? b) {
+    Widget block(String title, IconData icon, CashBalances? b,
+        {Color? tint}) {
       Widget value(String label, double v, {bool bold = false}) => Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -910,22 +1219,34 @@ class _CashExchangeScreenState extends ConsumerState<CashExchangeScreen> {
                       color: v < 0 ? Colors.red[400] : null)),
             ],
           );
+      final accent = tint ?? muted;
       return Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+          color: tint?.withValues(alpha: 0.08) ??
+              Theme.of(context).colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(AppBorderRadius.small),
+          border: Border.all(
+              color: tint?.withValues(alpha: 0.35) ?? Colors.transparent),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title,
-                style: const TextStyle(
-                    fontSize: 13, fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(icon, size: 18, color: accent),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(title,
+                      style: const TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w600)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
             Wrap(
-              spacing: 20,
-              runSpacing: 8,
+              spacing: 28,
+              runSpacing: 12,
               children: [
                 value(l10n.cashExchangeCashLabel, b?.cash ?? 0),
                 value(l10n.cashExchangeUpiBankLabel, b?.upiBank ?? 0),
@@ -940,6 +1261,19 @@ class _CashExchangeScreenState extends ConsumerState<CashExchangeScreen> {
     }
 
     final now = DateTime.now();
+    final opening = block(
+        start == null
+            ? l10n.cashExchangeOpeningBalance
+            : '${l10n.cashExchangeOpeningBalance} · ${fmt.format(start)}',
+        Icons.flag_outlined,
+        _periodOpening);
+    final closing = block(
+        '${l10n.cashExchangeClosingBalance} · ${fmt.format(to ?? now)}',
+        Icons.event_available_outlined,
+        _periodClosing,
+        tint: Theme.of(context).colorScheme.primary);
+    final closingTotal =
+        (_periodClosing?.cash ?? 0) + (_periodClosing?.upiBank ?? 0);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -950,36 +1284,82 @@ class _CashExchangeScreenState extends ConsumerState<CashExchangeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Filters left; balances toggle right (wraps under when narrow).
           Wrap(
-            spacing: 8,
+            alignment: WrapAlignment.spaceBetween,
             crossAxisAlignment: WrapCrossAlignment.center,
+            runSpacing: 4,
             children: [
-              Icon(Icons.filter_alt_outlined, size: 18, color: muted),
-              Text('${l10n.cashExchangeShowingLabel}: $range • $type',
-                  style: const TextStyle(fontWeight: FontWeight.w600)),
-              if (_period == _Period.custom)
-                TextButton(
-                    onPressed: () => _setPeriod(_Period.custom),
-                    child: Text(l10n.cashExchangeChangeDates)),
+              Wrap(
+                spacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Icon(Icons.filter_alt_outlined, size: 18, color: muted),
+                  Text('${l10n.cashExchangeShowingLabel}: $range • $type',
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                  if (_period == _Period.custom)
+                    TextButton(
+                        onPressed: () => _setPeriod(_Period.custom),
+                        child: Text(l10n.cashExchangeChangeDates)),
+                ],
+              ),
+              if (_isAdmin)
+                Wrap(
+                  spacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    // Collapsed: the closing total stays in view.
+                    if (!_balancesOpen)
+                      Text(
+                          '${l10n.cashExchangeClosingBalance}: ${_amount(closingTotal)}',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: closingTotal < 0 ? Colors.red[400] : null)),
+                    TextButton.icon(
+                      onPressed: () =>
+                          setState(() => _balancesOpen = !_balancesOpen),
+                      icon: Icon(_balancesOpen
+                          ? Icons.expand_less
+                          : Icons.expand_more),
+                      label: Text(_balancesOpen
+                          ? l10n.cashExchangeHideBalances
+                          : l10n.cashExchangeShowBalances),
+                    ),
+                  ],
+                ),
             ],
           ),
-          if (_isAdmin) ...[
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              block(
-                  start == null
-                      ? l10n.cashExchangeOpeningBalance
-                      : '${l10n.cashExchangeOpeningBalance} · ${fmt.format(start)}',
-                  _periodOpening),
-              block(
-                  '${l10n.cashExchangeClosingBalance} · ${fmt.format(to ?? now)}',
-                  _periodClosing),
-            ],
-          ),
-          ],
+          if (_isAdmin)
+            AnimatedSize(
+              duration: const Duration(milliseconds: 200),
+              alignment: Alignment.topCenter,
+              child: !_balancesOpen
+                  ? const SizedBox(width: double.infinity)
+                  : Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      // Side by side, equal width, when both fit; else
+                      // stacked.
+                      child: LayoutBuilder(
+                        builder: (context, c) => c.maxWidth >= 640
+                            ? Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(child: opening),
+                                  const SizedBox(width: 16),
+                                  Expanded(child: closing),
+                                ],
+                              )
+                            : Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  opening,
+                                  const SizedBox(height: 12),
+                                  closing,
+                                ],
+                              ),
+                      ),
+                    ),
+            ),
         ],
       ),
     );
@@ -1185,13 +1565,23 @@ class _CashExchangeScreenState extends ConsumerState<CashExchangeScreen> {
                       spacing: 8,
                       runSpacing: 8,
                       children: [
+                        // Coloured by what the customer receives, as the
+                        // balance cards: Cash green, UPI/Bank blue.
                         FilledButton.icon(
                             onPressed: () => _exchangeDialog(true),
-                            icon: const Icon(Icons.currency_exchange, size: 18),
+                            style: FilledButton.styleFrom(
+                                backgroundColor: Colors.green[700],
+                                foregroundColor: Colors.white),
+                            icon: const Icon(Icons.payments_outlined, size: 18),
                             label: Text(l10n.cashExchangeUpiToCash)),
                         FilledButton.icon(
                             onPressed: () => _exchangeDialog(false),
-                            icon: const Icon(Icons.currency_exchange, size: 18),
+                            style: FilledButton.styleFrom(
+                                backgroundColor: Colors.blue[700],
+                                foregroundColor: Colors.white),
+                            icon: const Icon(
+                                Icons.account_balance_wallet_outlined,
+                                size: 18),
                             label: Text(l10n.cashExchangeCashToUpi)),
                         OutlinedButton.icon(
                             onPressed: () =>
@@ -1228,30 +1618,36 @@ class _CashExchangeScreenState extends ConsumerState<CashExchangeScreen> {
                       runSpacing: 8,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        SegmentedButton<_Period>(
-                          showSelectedIcon: false,
-                          style: SegmentedButton.styleFrom(
-                            selectedBackgroundColor:
-                                primary.withValues(alpha: 0.18),
-                            selectedForegroundColor: primary,
+                        // Scales down instead of overflowing when the four
+                        // periods don't fit the width (real fonts, narrow
+                        // windows / phones).
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: SegmentedButton<_Period>(
+                            showSelectedIcon: false,
+                            style: SegmentedButton.styleFrom(
+                              selectedBackgroundColor:
+                                  primary.withValues(alpha: 0.18),
+                              selectedForegroundColor: primary,
+                            ),
+                            segments: [
+                              ButtonSegment(
+                                  value: _Period.today,
+                                  label: Text(l10n.cashExchangePeriodToday)),
+                              ButtonSegment(
+                                  value: _Period.month,
+                                  label: Text(l10n.cashExchangePeriodMonth)),
+                              ButtonSegment(
+                                  value: _Period.all,
+                                  label: Text(l10n.cashExchangePeriodAll)),
+                              ButtonSegment(
+                                  value: _Period.custom,
+                                  icon: const Icon(Icons.date_range, size: 16),
+                                  label: Text(l10n.cashExchangePeriodCustom)),
+                            ],
+                            selected: {_period},
+                            onSelectionChanged: (v) => _setPeriod(v.first),
                           ),
-                          segments: [
-                            ButtonSegment(
-                                value: _Period.today,
-                                label: Text(l10n.cashExchangePeriodToday)),
-                            ButtonSegment(
-                                value: _Period.month,
-                                label: Text(l10n.cashExchangePeriodMonth)),
-                            ButtonSegment(
-                                value: _Period.all,
-                                label: Text(l10n.cashExchangePeriodAll)),
-                            ButtonSegment(
-                                value: _Period.custom,
-                                icon: const Icon(Icons.date_range, size: 16),
-                                label: Text(l10n.cashExchangePeriodCustom)),
-                          ],
-                          selected: {_period},
-                          onSelectionChanged: (v) => _setPeriod(v.first),
                         ),
                         // Clip so the hover highlight follows the pill shape;
                         // transparent focus colour so it doesn't stay filled
@@ -1301,6 +1697,11 @@ class _CashExchangeScreenState extends ConsumerState<CashExchangeScreen> {
                             ),
                           ),
                         ),
+                        if (_isAdmin)
+                          TextButton.icon(
+                              onPressed: _changeLogDialog,
+                              icon: const Icon(Icons.history, size: 18),
+                              label: Text(l10n.cashExchangeChangeLog)),
                       ],
                     ),
                     const SizedBox(height: 12),

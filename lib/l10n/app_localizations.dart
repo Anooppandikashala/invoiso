@@ -7902,6 +7902,66 @@ abstract class AppLocalizations {
   /// **'Delete this entry? Balances will be recalculated.'**
   String get cashExchangeDeleteMessage;
 
+  /// No description provided for @cashExchangeEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit entry'**
+  String get cashExchangeEditTitle;
+
+  /// No description provided for @cashExchangeEdited.
+  ///
+  /// In en, this message translates to:
+  /// **'Edited'**
+  String get cashExchangeEdited;
+
+  /// No description provided for @cashExchangeHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Change history'**
+  String get cashExchangeHistoryTitle;
+
+  /// No description provided for @cashExchangeHistoryCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Current'**
+  String get cashExchangeHistoryCurrent;
+
+  /// No description provided for @cashExchangeHistoryEdited.
+  ///
+  /// In en, this message translates to:
+  /// **'Edited by {user} · {date}'**
+  String cashExchangeHistoryEdited(String user, String date);
+
+  /// No description provided for @cashExchangeHistoryDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted by {user} · {date}'**
+  String cashExchangeHistoryDeleted(String user, String date);
+
+  /// No description provided for @cashExchangeChangeLog.
+  ///
+  /// In en, this message translates to:
+  /// **'Change log'**
+  String get cashExchangeChangeLog;
+
+  /// No description provided for @cashExchangeDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted'**
+  String get cashExchangeDeleted;
+
+  /// No description provided for @cashExchangeNoChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'No changes recorded.'**
+  String get cashExchangeNoChanges;
+
+  /// No description provided for @cashExchangeChangeFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'This entry can no longer be changed. It may have been deleted, or the 24-hour edit window has passed.'**
+  String get cashExchangeChangeFailed;
+
   /// No description provided for @cashExchangeEmpty.
   ///
   /// In en, this message translates to:
@@ -7949,6 +8009,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Closing balance'**
   String get cashExchangeClosingBalance;
+
+  /// No description provided for @cashExchangeShowBalances.
+  ///
+  /// In en, this message translates to:
+  /// **'Show balances'**
+  String get cashExchangeShowBalances;
+
+  /// No description provided for @cashExchangeHideBalances.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide balances'**
+  String get cashExchangeHideBalances;
 
   /// No description provided for @cashExchangeAllTypes.
   ///

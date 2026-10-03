@@ -2597,6 +2597,36 @@
   "cashExchangeUpiDeltaLabel": "UPI/Bank change (+ / −)",
   "cashExchangeDeleteTitle": "Delete entry",
   "cashExchangeDeleteMessage": "Delete this entry? Balances will be recalculated.",
+  "cashExchangeEditTitle": "Edit entry",
+  "cashExchangeEdited": "Edited",
+  "cashExchangeHistoryTitle": "Change history",
+  "cashExchangeHistoryCurrent": "Current",
+  "cashExchangeHistoryEdited": "Edited by {user} · {date}",
+  "@cashExchangeHistoryEdited": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "cashExchangeHistoryDeleted": "Deleted by {user} · {date}",
+  "@cashExchangeHistoryDeleted": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "cashExchangeChangeLog": "Change log",
+  "cashExchangeDeleted": "Deleted",
+  "cashExchangeNoChanges": "No changes recorded.",
+  "cashExchangeChangeFailed": "This entry can no longer be changed. It may have been deleted, or the 24-hour edit window has passed.",
   "cashExchangeEmpty": "No entries for this period.",
   "cashExchangePeriodToday": "Today",
   "cashExchangePeriodMonth": "This month",
@@ -2605,6 +2635,8 @@
   "cashExchangeShowingLabel": "Showing",
   "cashExchangeChangeDates": "Change dates",
   "cashExchangeClosingBalance": "Closing balance",
+  "cashExchangeShowBalances": "Show balances",
+  "cashExchangeHideBalances": "Hide balances",
   "cashExchangeAllTypes": "All types",
   "cashExchangeSummaryUpiToCash": "Customer sends {amount} by UPI/Bank • You give {amount} cash • Fee {fee} by {method}",
   "@cashExchangeSummaryUpiToCash": {

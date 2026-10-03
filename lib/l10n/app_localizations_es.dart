@@ -4730,6 +4730,41 @@ class AppLocalizationsEs extends AppLocalizations {
       '¿Eliminar este registro? Los saldos se recalcularán.';
 
   @override
+  String get cashExchangeEditTitle => 'Editar registro';
+
+  @override
+  String get cashExchangeEdited => 'Editado';
+
+  @override
+  String get cashExchangeHistoryTitle => 'Historial de cambios';
+
+  @override
+  String get cashExchangeHistoryCurrent => 'Actual';
+
+  @override
+  String cashExchangeHistoryEdited(String user, String date) {
+    return 'Editado por $user · $date';
+  }
+
+  @override
+  String cashExchangeHistoryDeleted(String user, String date) {
+    return 'Eliminado por $user · $date';
+  }
+
+  @override
+  String get cashExchangeChangeLog => 'Registro de cambios';
+
+  @override
+  String get cashExchangeDeleted => 'Eliminado';
+
+  @override
+  String get cashExchangeNoChanges => 'No hay cambios registrados.';
+
+  @override
+  String get cashExchangeChangeFailed =>
+      'Este registro ya no se puede cambiar. Puede que se haya eliminado o que haya pasado el plazo de 24 horas para editarlo.';
+
+  @override
   String get cashExchangeEmpty => 'No hay registros en este período.';
 
   @override
@@ -4752,6 +4787,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get cashExchangeClosingBalance => 'Saldo final';
+
+  @override
+  String get cashExchangeShowBalances => 'Mostrar saldos';
+
+  @override
+  String get cashExchangeHideBalances => 'Ocultar saldos';
 
   @override
   String get cashExchangeAllTypes => 'Todos los tipos';

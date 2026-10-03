@@ -34,7 +34,9 @@ class CashLedgerEntry {
   final String? customerPhone;
   final DateTime dateTime;
   final String? notes;
-  final String? createdBy;
+  final String? createdBy; // user id (a username on rows before v51)
+  final DateTime? createdAt; // real entry time; null on rows before v51
+  final bool edited; // has edit history; read-only, not a column
 
   const CashLedgerEntry({
     required this.id,
@@ -51,6 +53,8 @@ class CashLedgerEntry {
     required this.dateTime,
     this.notes,
     this.createdBy,
+    this.createdAt,
+    this.edited = false,
   });
 
   bool get isExchange => entryType == upiToCash || entryType == cashToUpi;
@@ -70,6 +74,7 @@ class CashLedgerEntry {
         'date_time': dateTime.toIso8601String(),
         'notes': notes,
         'created_by': createdBy,
+        'created_at': createdAt?.toIso8601String(),
       };
 
   factory CashLedgerEntry.fromMap(Map<String, dynamic> map) => CashLedgerEntry(
@@ -87,8 +92,21 @@ class CashLedgerEntry {
         dateTime: DateTime.parse(map['date_time'] as String),
         notes: map['notes'] as String?,
         createdBy: map['created_by'] as String?,
+        createdAt: map['created_at'] == null
+            ? null
+            : DateTime.parse(map['created_at'] as String),
+        edited: (map['edited'] as num?) == 1,
       );
 }
+
+/// One old version of a ledger row (edit log). [action] is 'edit' or
+/// 'delete'; [entry] is the row as it was before that change.
+typedef CashLedgerChange = ({
+  String action,
+  CashLedgerEntry entry,
+  String? changedByName,
+  DateTime changedAt,
+});
 
 /// Current account balances. Total = [cash] + [upiBank].
 typedef CashBalances = ({
