@@ -272,6 +272,8 @@ pw.Page buildThermalTemplate(
         showTime: showTimeInPdf, timeFormat: pdfTimeFormat);
     final netTotal = roundNetTotal(invoice.total + previousBalanceDue);
     return [
+      if (invoice.status == 'declined')
+        centerText('*** DECLINED ***', fontSize: titleFs, bold: true),
       // ── Business Header ──
       centerText(showCompanyName ? (company?.name ?? '') : '', fontSize: titleFs, bold: true),
       pw.SizedBox(height: 2),

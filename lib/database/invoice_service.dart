@@ -60,6 +60,9 @@ class InvoiceService {
         'hide_invoice_number': invoice.hideInvoiceNumber ? 1 : 0,
         'custom_invoice_number': invoice.customInvoiceNumber,
         'custom_fields': CustomFieldValue.listToJson(invoice.customFields),
+        'status': invoice.status,
+        'converted_to_invoice_id': invoice.convertedToInvoiceId,
+        'converted_from_invoice_id': invoice.convertedFromInvoiceId,
       });
 
       for (var item in invoice.items) {
@@ -90,9 +93,24 @@ class InvoiceService {
               : jsonEncode(item.metadata!.toMap()),
         });
       }
+
+      // Quotation→invoice conversion: stamp the source quotation in the same
+      // transaction so the link can't be half-written.
+      if (invoice.convertedFromInvoiceId != null) {
+        await txn.update(
+          'invoices',
+          {'status': 'converted', 'converted_to_invoice_id': invoice.id},
+          where: 'id = ?',
+          whereArgs: [invoice.convertedFromInvoiceId],
+        );
+      }
     });
 
-    // Stock deduction happens outside the transaction to avoid nested DB calls
+    // Stock deduction happens outside the transaction to avoid nested DB calls.
+    // Quotations are estimates, not completed sales — stock is only deducted
+    // once a quotation is converted to a real Invoice (a fresh insertInvoice
+    // call with type == 'Invoice' at conversion time).
+    if (invoice.type == 'Quotation') return;
     for (var item in invoice.items) {
       final product = await ProductService.getProductById(item.product.id);
       if (product != null && !product.unlimitedStock) {
@@ -183,6 +201,10 @@ class InvoiceService {
       }
     });
 
+    // Quotations never touched stock on creation, so editing one doesn't
+    // touch it either — only a real Invoice's edit restores/re-deducts.
+    if (invoice.type == 'Quotation') return;
+
     // Restore stock for old items (outside transaction)
     for (var oldItem in oldItems) {
       final product =
@@ -241,6 +263,7 @@ class InvoiceService {
     final invoiceWhere = 'customer_id = ? '
         'AND type = ? '
         'AND deleted_at IS NULL '
+        "AND (status IS NULL OR status != 'declined') "
         'AND currency_code = ? '
         'AND $dateFilter';
     final invoiceArgs = [
@@ -421,6 +444,9 @@ class InvoiceService {
       hideInvoiceNumber: (i['hide_invoice_number'] as int?) == 1,
       customInvoiceNumber: i['custom_invoice_number'] as String?,
       customFields: CustomFieldValue.listFromJson(i['custom_fields'] as String?),
+      status: i['status'] as String?,
+      convertedToInvoiceId: i['converted_to_invoice_id'] as String?,
+      convertedFromInvoiceId: i['converted_from_invoice_id'] as String?,
       payments: payments,
     );
   }
@@ -642,6 +668,12 @@ class InvoiceService {
         whereArgs.addAll([AppDate.dateKeyStart(today), AppDate.dateKeyStart(end)]);
       }
     }
+    // Declined is a stored status, so both declined filters run in SQL.
+    if (filter.paymentStatus == 'declined') {
+      whereParts.add("status = 'declined'");
+    } else if (filter.hideDeclined) {
+      whereParts.add("(status IS NULL OR status != 'declined')");
+    }
     return (whereParts.join(' AND '), whereArgs);
   }
 
@@ -661,6 +693,7 @@ class InvoiceService {
       columns: [
         'id',
         'type',
+        'status',
         'due_date',
         'tax_rate',
         'tax_mode',
@@ -700,6 +733,13 @@ class InvoiceService {
     final ids = <String>[];
     for (final row in rows) {
       final id = row['id'] as String;
+      // Declined invoices owe nothing — keep them out of overdue/payment-status filters.
+      final paymentFilter = filter.paymentStatus != 'all' &&
+          filter.paymentStatus != 'declined'; // 'declined' is done in SQL
+      if (row['status'] == 'declined' &&
+          (filter.dueDate == 'overdue' || paymentFilter)) {
+        continue;
+      }
       final taxMode = TaxModeExtension.fromKey(row['tax_mode'] as String?);
       final taxRate = (row['tax_rate'] as num?)?.toDouble() ?? 0.0;
       final total = InvoiceTotalsCalculator.totals(
@@ -733,7 +773,7 @@ class InvoiceService {
           )) {
         continue;
       }
-      if (filter.paymentStatus != 'all' &&
+      if (paymentFilter &&
           InvoiceCalculator.paymentStatus(total: total, paid: paid).name !=
               filter.paymentStatus) {
         continue;
@@ -753,27 +793,103 @@ class InvoiceService {
   // Soft Delete
   static Future<void> softDeleteInvoice(String id) async {
     final db = await dbHelper.database;
+    await db.transaction((txn) async {
+      await txn.update(
+        'invoices',
+        {'deleted_at': DateTime.now().toIso8601String()},
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+      await _unlinkSourceQuotation(txn, id);
+    });
+  }
+
+  static Future<void> restoreInvoice(String id) async {
+    final db = await dbHelper.database;
+    await db.transaction((txn) async {
+      await txn.update(
+        'invoices',
+        {'deleted_at': null},
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+      // Re-link the source quotation — unless the invoice is declined or the
+      // quotation was converted into another invoice while this one was trashed.
+      await txn.rawUpdate(
+        "UPDATE invoices SET status = 'converted', converted_to_invoice_id = ? "
+        'WHERE converted_to_invoice_id IS NULL AND id = '
+        '(SELECT converted_from_invoice_id FROM invoices '
+        "WHERE id = ? AND (status IS NULL OR status != 'declined'))",
+        [id, id],
+      );
+    });
+  }
+
+  /// Sends the quotation that was converted into invoice [invoiceId] back to
+  /// 'accepted' and clears its link, so it can be converted again. No-op when
+  /// no quotation currently points at [invoiceId].
+  static Future<void> _unlinkSourceQuotation(
+      Transaction txn, String invoiceId) async {
+    await txn.update(
+      'invoices',
+      {'status': 'accepted', 'converted_to_invoice_id': null},
+      where: 'converted_to_invoice_id = ?',
+      whereArgs: [invoiceId],
+    );
+  }
+
+  // ─────────────────────────────────────────────
+  // Quotation lifecycle
+  static Future<void> setInvoiceStatus(String id, String status) async {
+    final db = await dbHelper.database;
     await db.update(
       'invoices',
-      {'deleted_at': DateTime.now().toIso8601String()},
+      {'status': status},
       where: 'id = ?',
       whereArgs: [id],
     );
   }
 
-  static Future<void> restoreInvoice(String id) async {
+  // ─────────────────────────────────────────────
+  // Invoice decline — voids an invoice and returns its stock. One-way: a
+  // 'declined' invoice can't be un-declined (would need to re-deduct stock
+  // that may no longer be available).
+  static Future<void> declineInvoice(String id) async {
     final db = await dbHelper.database;
-    await db.update(
-      'invoices',
-      {'deleted_at': null},
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    await db.transaction((txn) async {
+      // Status flip + stock return in one transaction. The status guard makes
+      // a repeat call a no-op, so stock is never returned twice.
+      final changed = await txn.update(
+        'invoices',
+        {'status': 'declined'},
+        where: "id = ? AND type = 'Invoice' "
+            "AND (status IS NULL OR status != 'declined') "
+            // Paid money must be removed first — see _declineInvoice in the list.
+            'AND NOT EXISTS (SELECT 1 FROM invoice_payments '
+            'WHERE invoice_payments.invoice_id = invoices.id)',
+        whereArgs: [id],
+      );
+      if (changed == 0) return;
+
+      final items = await txn.query('invoice_items',
+          columns: ['product_id', 'quantity'],
+          where: 'invoice_id = ?',
+          whereArgs: [id]);
+      for (final item in items) {
+        await txn.rawUpdate(
+          'UPDATE products SET stock = stock + ? '
+          'WHERE id = ? AND (unlimited_stock IS NULL OR unlimited_stock = 0)',
+          [(item['quantity'] as num).round(), item['product_id']],
+        );
+      }
+      await _unlinkSourceQuotation(txn, id);
+    });
   }
 
   static Future<void> permanentDeleteInvoice(String id) async {
     final db = await dbHelper.database;
     await db.transaction((txn) async {
+      await _unlinkSourceQuotation(txn, id);
       await txn.delete('invoice_items', where: 'invoice_id = ?', whereArgs: [id]);
       await txn.delete('invoice_payments', where: 'invoice_id = ?', whereArgs: [id]);
       await txn.delete('invoices', where: 'id = ?', whereArgs: [id]);
@@ -861,6 +977,9 @@ class InvoiceService {
           customInvoiceNumber: map['custom_invoice_number'] as String?,
           customFields:
               CustomFieldValue.listFromJson(map['custom_fields'] as String?),
+          status: map['status'] as String?,
+          convertedToInvoiceId: map['converted_to_invoice_id'] as String?,
+          convertedFromInvoiceId: map['converted_from_invoice_id'] as String?,
         ),
       );
     }
@@ -906,7 +1025,8 @@ class InvoiceService {
 
     // Count
     final countResult = await db.rawQuery(
-      'SELECT COUNT(*) as cnt FROM invoices WHERE type = ? AND deleted_at IS NULL',
+      'SELECT COUNT(*) as cnt FROM invoices WHERE type = ? AND deleted_at IS NULL '
+      "AND (status IS NULL OR status != 'declined')",
       ['Invoice'],
     );
     final count = (countResult.first['cnt'] as int?) ?? 0;
@@ -916,7 +1036,8 @@ class InvoiceService {
       'SELECT COALESCE(SUM(ip.amount_paid), 0.0) as revenue '
       'FROM invoice_payments ip '
       'JOIN invoices i ON ip.invoice_id = i.id '
-      'WHERE i.type = ? AND i.deleted_at IS NULL',
+      'WHERE i.type = ? AND i.deleted_at IS NULL '
+      "AND (i.status IS NULL OR i.status != 'declined')",
       ['Invoice'],
     );
     final revenue = (revenueResult.first['revenue'] as num?)?.toDouble() ?? 0.0;
@@ -932,7 +1053,8 @@ class InvoiceService {
         'invoice_discount_type',
         'invoice_discount_value',
       ],
-      where: 'type = ? AND deleted_at IS NULL',
+      where: "type = ? AND deleted_at IS NULL "
+          "AND (status IS NULL OR status != 'declined')",
       whereArgs: ['Invoice'],
     );
 
@@ -942,7 +1064,8 @@ class InvoiceService {
 
     // Subquery instead of one `?` per id — see Issues.md #36.
     const invoiceSubquery = "(SELECT id FROM invoices "
-        "WHERE type = 'Invoice' AND deleted_at IS NULL)";
+        "WHERE type = 'Invoice' AND deleted_at IS NULL "
+        "AND (status IS NULL OR status != 'declined'))";
 
     final itemRows = await db.rawQuery(
       'SELECT invoice_id, unit_price, product_price, quantity, discount, '
@@ -1028,7 +1151,9 @@ class InvoiceService {
     );
     final invoices = await _buildInvoiceList(rows);
     return invoices
-        .where((inv) => inv.outstandingBalance > InvoiceCalculator.moneyEpsilon)
+        .where((inv) =>
+            inv.status != 'declined' &&
+            inv.outstandingBalance > InvoiceCalculator.moneyEpsilon)
         .toList();
   }
 
@@ -1047,7 +1172,9 @@ class InvoiceService {
     );
     final invoices = await _buildInvoiceList(rows);
     final overdue = invoices
-        .where((inv) => InvoiceCalculator.isOverdue(
+        .where((inv) =>
+            inv.status != 'declined' &&
+            InvoiceCalculator.isOverdue(
               dueDate: inv.dueDate,
               outstanding: inv.outstandingBalance,
             ))
@@ -1067,7 +1194,9 @@ class InvoiceService {
     );
     final invoices = await _buildInvoiceList(rows);
     return invoices
-        .where((inv) => inv.outstandingBalance > InvoiceCalculator.moneyEpsilon)
+        .where((inv) =>
+            inv.status != 'declined' &&
+            inv.outstandingBalance > InvoiceCalculator.moneyEpsilon)
         .toList();
   }
 
@@ -1108,6 +1237,7 @@ class InvoiceService {
       "FROM invoice_payments ip "
       "JOIN invoices i ON ip.invoice_id = i.id "
       "WHERE i.type = 'Invoice' AND i.deleted_at IS NULL "
+      "AND (i.status IS NULL OR i.status != 'declined') "
       "AND substr(ip.date_paid, 1, 10) >= ? "
       "GROUP BY substr(ip.date_paid, 1, 7) "
       "ORDER BY month ASC",
@@ -1132,6 +1262,7 @@ class InvoiceService {
       'FROM invoices i '
       'LEFT JOIN invoice_payments ip ON i.id = ip.invoice_id '
       "WHERE i.type = 'Invoice' AND i.deleted_at IS NULL "
+      "AND (i.status IS NULL OR i.status != 'declined') "
       'GROUP BY i.customer_name '
       'ORDER BY total_paid DESC, invoice_count DESC '
       'LIMIT ?',
@@ -1155,6 +1286,7 @@ class InvoiceService {
       'FROM invoice_items ii '
       'JOIN invoices i ON ii.invoice_id = i.id '
       "WHERE i.type = 'Invoice' AND i.deleted_at IS NULL "
+      "AND (i.status IS NULL OR i.status != 'declined') "
       "AND ii.product_name IS NOT NULL AND ii.product_name != '' "
       'GROUP BY ii.product_name '
       'ORDER BY total_qty DESC '

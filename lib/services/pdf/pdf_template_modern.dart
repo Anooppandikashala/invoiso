@@ -106,6 +106,9 @@ pw.MultiPage buildModernTemplate(
           ? (context) =>
               buildFullPageWatermark(watermarkBytes, watermarkOpacity)
           : null,
+      buildForeground: invoice.status == 'declined'
+          ? (context) => buildDeclinedStamp()
+          : null,
     ),
     footer: (context) => pw.Container(
       padding: const pw.EdgeInsets.symmetric(horizontal: 30, vertical: 8),

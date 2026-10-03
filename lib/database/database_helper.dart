@@ -16,7 +16,7 @@ class DatabaseHelper {
   static String? get path => _path;
   static Database? _database;
   static String _dbFileName = 'invoice_manager.db';
-  final dbVersion = 48;
+  final dbVersion = 49;
 
   /// Startup only, before anything has opened a connection yet — just points
   /// at the right file for the first `_initDB()` call. No close/reopen, so
@@ -136,7 +136,10 @@ class DatabaseHelper {
         hide_invoice_number INTEGER DEFAULT 0,
         custom_invoice_number TEXT,
         is_interstate INTEGER DEFAULT 0,
-        custom_fields TEXT
+        custom_fields TEXT,
+        status TEXT,
+        converted_to_invoice_id TEXT,
+        converted_from_invoice_id TEXT
       )
     ''');
 
@@ -811,6 +814,20 @@ class DatabaseHelper {
         for (final sql in indexes) {
           await db.execute(sql);
         }
+      });
+    }
+
+    if (oldVersion < 49) {
+      // Quotation lifecycle status + quote<->invoice links. NULL on every
+      // pre-v49 row = no status (read as 'draft') and no link, behaves
+      // exactly as before.
+      await _runMigrationStep(
+          db, 49, 'add_quotation_status_and_links', () async {
+        await db.execute('ALTER TABLE invoices ADD COLUMN status TEXT');
+        await db.execute(
+            'ALTER TABLE invoices ADD COLUMN converted_to_invoice_id TEXT');
+        await db.execute(
+            'ALTER TABLE invoices ADD COLUMN converted_from_invoice_id TEXT');
       });
     }
   }
