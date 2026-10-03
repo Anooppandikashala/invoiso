@@ -212,6 +212,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get dashboardSupportTooltip => '支持';
 
   @override
+  String get buyMeCoffeeLabel => 'Buy me a coffee';
+
+  @override
   String get dashboardLogoutTooltip => '退出登录';
 
   @override
@@ -3102,11 +3105,18 @@ class AppLocalizationsZh extends AppLocalizations {
       'Print the HSN/SAC code column (tied to Show GST Fields)';
 
   @override
-  String get invoiceSettingsColumnTaxLabel => 'Tax column';
+  String get invoiceSettingsColumnTaxLabel => 'Show tax column';
 
   @override
   String get invoiceSettingsColumnTaxSubtitle =>
-      'Print the per-item CGST/SGST, IGST % column';
+      'Show the tax % and amount for each item, for global and per-item tax';
+
+  @override
+  String get invoiceSettingsSplitCgstSgstLabel => 'Split CGST / SGST';
+
+  @override
+  String get invoiceSettingsSplitCgstSgstSubtitle =>
+      'Split the tax into CGST/SGST, or IGST for interstate (India GST)';
 
   @override
   String get invoiceSettingsColumnRequiredSubtitle => 'Always shown';
@@ -3450,7 +3460,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get pdfSettingsMetadataColumnsWarning =>
-      'Metadata columns print only on Grid Classic at A4. Each one narrows the others — if the table looks cramped, switch to Landscape above. Values are captured when an item is added; editing the product later won\'t change past invoices.';
+      'Metadata columns print on any A4 template (not A5/A6 or thermal receipts). Each one narrows the others — if the table looks cramped, turn a few off, or switch Grid Classic to Landscape above. Values are captured when an item is added; editing the product later won\'t change past invoices.';
 
   @override
   String get pdfSettingsItemLayoutLabel => '项目布局';
@@ -3467,6 +3477,27 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get pdfSettingsCompanyNameSizeLabel => '公司名称大小';
+
+  @override
+  String get pdfSettingsFontSizeLabel => 'PDF 文字大小';
+
+  @override
+  String get pdfSettingsSectionSizesLabel => '分区大小';
+
+  @override
+  String get pdfSettingsDocTitleSizeLabel => '单据标题大小';
+
+  @override
+  String get pdfSettingsTableHeaderSizeLabel => '表头大小';
+
+  @override
+  String get pdfSettingsTableItemsSizeLabel => '表格项目大小';
+
+  @override
+  String get pdfSettingsTotalsSizeLabel => '合计大小';
+
+  @override
+  String get pdfFontSizeSameAsOverallLabel => '与整体相同';
 
   @override
   String get pdfSettingsThemeColorLabel => '主题颜色';
@@ -3635,7 +3666,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get fieldIfscCodeLabel => 'IFSC 代码';
 
   @override
+  String get fieldIbanLabel => 'IBAN';
+
+  @override
   String get companyInfoAddBankAccountButton => '添加银行账户';
+
+  @override
+  String get companyInfoEditBankAccountTitle => '编辑银行账户';
+
+  @override
+  String get fieldBankAccountNameLabel => '账户名称';
 
   @override
   String get tooltipShowOnInvoicePdf => '在发票PDF中显示';
@@ -3943,6 +3983,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsNavCompanyInfoLabel => '公司信息';
 
   @override
+  String get settingsNavCompaniesLabel => '公司';
+
+  @override
   String get settingsNavTeamLabel => '团队';
 
   @override
@@ -3962,6 +4005,93 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsNavSoftwareInfoLabel => '软件信息';
+
+  @override
+  String get companyMgmtTitle => '管理公司';
+
+  @override
+  String get companyMgmtActiveBadge => '当前';
+
+  @override
+  String get companyMgmtSwitchButton => '切换';
+
+  @override
+  String get companyMgmtSwitchConfirmTitle => '切换公司？';
+
+  @override
+  String companyMgmtSwitchConfirmBody(String name) {
+    return 'Invoiso 将重启以切换到“$name”。';
+  }
+
+  @override
+  String get companyMgmtNewCompanyButton => '+ 新建公司';
+
+  @override
+  String get companyMgmtNewCompanyTitle => '新建公司';
+
+  @override
+  String get companyMgmtAdminAccountSectionLabel => '管理员账户';
+
+  @override
+  String get companyMgmtCreateButton => '创建';
+
+  @override
+  String get companyMgmtDeleteButton => '删除此公司';
+
+  @override
+  String companyMgmtDeleteConfirmTitle(String name) {
+    return '删除“$name”？';
+  }
+
+  @override
+  String get companyMgmtDeleteConfirmBody =>
+      '此操作将永久删除该公司的所有数据，且无法撤销。请输入公司名称以确认。';
+
+  @override
+  String get companyMgmtRenameTooltip => '重命名';
+
+  @override
+  String get companyMgmtRenameTitle => '重命名公司';
+
+  @override
+  String get companyMgmtNameTakenMessage => '已存在同名公司';
+
+  @override
+  String companyMgmtSwitchErrorMessage(String error) {
+    return '切换公司失败：$error';
+  }
+
+  @override
+  String get companyMgmtSwitchRestartTitle => '公司已切换';
+
+  @override
+  String get companyMgmtSwitchRestartBody =>
+      'Invoiso 需要重启才能完成公司切换。请关闭并重新打开应用程序。';
+
+  @override
+  String get companyMgmtCreateRestartTitle => '公司已创建';
+
+  @override
+  String get companyMgmtCreateRestartBody => '您的新公司已准备就绪。请关闭并重新打开应用程序以继续。';
+
+  @override
+  String get companyMgmtDeletedMessage => '公司已删除';
+
+  @override
+  String get companyMgmtDeleteRestartTitle => '公司已删除';
+
+  @override
+  String get companyMgmtDeleteRestartBody =>
+      '该公司已被删除，Invoiso 已切换到另一家公司。请关闭并重新打开应用程序以继续。';
+
+  @override
+  String get companyMgmtOnlyCompanyTooltip => '删除此公司前，您至少需要另一家公司';
+
+  @override
+  String get loginCompanyGearTooltip => '管理公司';
+
+  @override
+  String get loginCompanySelectorLabel => '公司';
 
   @override
   String get customizationEyebrowLabel => '定制服务';
@@ -4203,6 +4333,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sizeLargeLabel => '大';
 
   @override
+  String get sizeXLargeLabel => '特大';
+
+  @override
   String get shortcutNewInvoiceDescription => '新建发票（从仪表盘）／重置表单（在创建发票中）';
 
   @override
@@ -4221,10 +4354,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get shortcutPrintPdfDescription => '生成／打印发票 PDF';
 
   @override
-  String get invoiceSettingsCustomFieldsGridClassicNote =>
-      '注意：自定义字段仅在“经典网格”PDF 模板中打印。';
+  String get invoiceSettingsMetadataColumnsGridClassicNote =>
+      'Note: Metadata columns print on A4 PDF templates only (not A5/A6 or thermal receipts).';
 
   @override
-  String get invoiceSettingsMetadataColumnsGridClassicNote =>
-      'Note: Metadata columns are only applied to the Grid Classic PDF template.';
+  String get invoiceSettingsCustomFieldsPageSupportNote =>
+      'Custom fields print on every PDF template except thermal receipts.';
 }

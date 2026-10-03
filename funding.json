@@ -1,0 +1,67 @@
+{
+  "version": "v1.0.0",
+  "entity": {
+    "type": "individual",
+    "role": "owner",
+    "name": "Anoop Pandikashala",
+    "email": "anooppkrishnan96@gmail.com",
+    "description": "Creator and maintainer of Invoiso, a free and open-source offline invoice and billing application for small businesses, shops and freelancers.",
+    "webpageUrl": {
+      "url": "https://github.com/Anooppandikashala"
+    }
+  },
+  "projects": [
+    {
+      "guid": "invoiso",
+      "name": "Invoiso",
+      "description": "Invoiso is free, offline invoice and billing software for Windows, Linux and macOS, built with Flutter and SQLite. All data stays on the user's machine; no account, subscription or internet connection is needed. It creates invoices and quotations as PDFs (Classic, Modern, Minimal, Compact, Executive, Grid Classic and Thermal templates), records partial and full payments with PDF receipts, and manages customers, products and inventory. It supports multiple currencies, GSTIN/HSN fields with per-item or global tax rates and CGST/SGST/IGST breakdown, UPI payment QR codes, ESC/POS thermal receipt printing, reports with CSV export, customer statements, multi-user login with admin/standard roles, backup and restore, and UI translations in English, Hindi, Nepali, Tibetan, Chinese, Spanish and French.",
+      "webpageUrl": {
+        "url": "https://invoiso.co.in",
+        "wellKnown": "https://invoiso.co.in/.well-known/funding-manifest-urls"
+      },
+      "repositoryUrl": {
+        "url": "https://github.com/Anooppandikashala/invoiso"
+      },
+      "licenses": ["spdx:MIT"],
+      "tags": ["invoicing", "billing", "gst", "small-business", "offline-first", "flutter", "desktop", "cross-platform"]
+    }
+  ],
+  "funding": {
+    "channels": [
+      {
+        "guid": "github-sponsors",
+        "type": "payment-provider",
+        "address": "https://github.com/sponsors/anooppandikashala",
+        "description": "GitHub Sponsors."
+      },
+      {
+        "guid": "buy-me-a-coffee",
+        "type": "payment-provider",
+        "address": "https://buymeacoffee.com/anoopp",
+        "description": "Buy Me a Coffee."
+      }
+    ],
+    "plans": [
+      {
+        "guid": "maintenance",
+        "status": "active",
+        "name": "Ongoing development and maintenance",
+        "description": "Developer time: 750 hours per year (about 15-16 hours per week) at USD 20/hour, covering bug fixes, new features, dependency and Flutter SDK upgrades, Windows/Linux/macOS release builds, and user support.",
+        "amount": 15000,
+        "currency": "USD",
+        "frequency": "yearly",
+        "channels": ["github-sponsors", "buy-me-a-coffee"]
+      }
+    ],
+    "history": [
+      {
+        "year": 2026,
+        "income": 313,
+        "expenses": 0,
+        "taxes": 0,
+        "currency": "USD",
+        "description": "Donations: Buy Me a Coffee $150, GitHub Sponsors $163 (paid out as INR 16,129.58)."
+      }
+    ]
+  }
+}

@@ -221,6 +221,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dashboardSupportTooltip => 'Soporte';
 
   @override
+  String get buyMeCoffeeLabel => 'Buy me a coffee';
+
+  @override
   String get dashboardLogoutTooltip => 'Cerrar sesión';
 
   @override
@@ -3271,11 +3274,18 @@ class AppLocalizationsEs extends AppLocalizations {
       'Print the HSN/SAC code column (tied to Show GST Fields)';
 
   @override
-  String get invoiceSettingsColumnTaxLabel => 'Tax column';
+  String get invoiceSettingsColumnTaxLabel => 'Show tax column';
 
   @override
   String get invoiceSettingsColumnTaxSubtitle =>
-      'Print the per-item CGST/SGST, IGST % column';
+      'Show the tax % and amount for each item, for global and per-item tax';
+
+  @override
+  String get invoiceSettingsSplitCgstSgstLabel => 'Split CGST / SGST';
+
+  @override
+  String get invoiceSettingsSplitCgstSgstSubtitle =>
+      'Split the tax into CGST/SGST, or IGST for interstate (India GST)';
 
   @override
   String get invoiceSettingsColumnRequiredSubtitle => 'Always shown';
@@ -3652,7 +3662,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get pdfSettingsMetadataColumnsWarning =>
-      'Metadata columns print only on Grid Classic at A4. Each one narrows the others — if the table looks cramped, switch to Landscape above. Values are captured when an item is added; editing the product later won\'t change past invoices.';
+      'Metadata columns print on any A4 template (not A5/A6 or thermal receipts). Each one narrows the others — if the table looks cramped, turn a few off, or switch Grid Classic to Landscape above. Values are captured when an item is added; editing the product later won\'t change past invoices.';
 
   @override
   String get pdfSettingsItemLayoutLabel => 'Diseño de artículos';
@@ -3670,6 +3680,29 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get pdfSettingsCompanyNameSizeLabel =>
       'Tamaño del nombre de la empresa';
+
+  @override
+  String get pdfSettingsFontSizeLabel => 'Tamaño del texto del PDF';
+
+  @override
+  String get pdfSettingsSectionSizesLabel => 'Tamaños por sección';
+
+  @override
+  String get pdfSettingsDocTitleSizeLabel => 'Tamaño del título del documento';
+
+  @override
+  String get pdfSettingsTableHeaderSizeLabel =>
+      'Tamaño del encabezado de la tabla';
+
+  @override
+  String get pdfSettingsTableItemsSizeLabel =>
+      'Tamaño de los artículos de la tabla';
+
+  @override
+  String get pdfSettingsTotalsSizeLabel => 'Tamaño de los totales';
+
+  @override
+  String get pdfFontSizeSameAsOverallLabel => 'Igual que el general';
 
   @override
   String get pdfSettingsThemeColorLabel => 'Color del tema';
@@ -3854,7 +3887,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get fieldIfscCodeLabel => 'Código IFSC';
 
   @override
+  String get fieldIbanLabel => 'IBAN';
+
+  @override
   String get companyInfoAddBankAccountButton => 'Añadir cuenta bancaria';
+
+  @override
+  String get companyInfoEditBankAccountTitle => 'Editar cuenta bancaria';
+
+  @override
+  String get fieldBankAccountNameLabel => 'Nombre de la cuenta';
 
   @override
   String get tooltipShowOnInvoicePdf => 'Mostrar en el PDF de la factura';
@@ -4183,6 +4225,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsNavCompanyInfoLabel => 'Info. de la empresa';
 
   @override
+  String get settingsNavCompaniesLabel => 'Empresas';
+
+  @override
   String get settingsNavTeamLabel => 'Equipo';
 
   @override
@@ -4202,6 +4247,96 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsNavSoftwareInfoLabel => 'Info. del software';
+
+  @override
+  String get companyMgmtTitle => 'Gestionar empresas';
+
+  @override
+  String get companyMgmtActiveBadge => 'Activa';
+
+  @override
+  String get companyMgmtSwitchButton => 'Cambiar';
+
+  @override
+  String get companyMgmtSwitchConfirmTitle => '¿Cambiar de empresa?';
+
+  @override
+  String companyMgmtSwitchConfirmBody(String name) {
+    return 'Invoiso se reiniciará para cambiar a \"$name\".';
+  }
+
+  @override
+  String get companyMgmtNewCompanyButton => '+ Nueva empresa';
+
+  @override
+  String get companyMgmtNewCompanyTitle => 'Nueva empresa';
+
+  @override
+  String get companyMgmtAdminAccountSectionLabel => 'Cuenta de administrador';
+
+  @override
+  String get companyMgmtCreateButton => 'Crear';
+
+  @override
+  String get companyMgmtDeleteButton => 'Eliminar esta empresa';
+
+  @override
+  String companyMgmtDeleteConfirmTitle(String name) {
+    return '¿Eliminar \"$name\"?';
+  }
+
+  @override
+  String get companyMgmtDeleteConfirmBody =>
+      'Esto elimina permanentemente todos los datos de esta empresa y no se puede deshacer. Escriba el nombre de la empresa para confirmar.';
+
+  @override
+  String get companyMgmtRenameTooltip => 'Renombrar';
+
+  @override
+  String get companyMgmtRenameTitle => 'Renombrar empresa';
+
+  @override
+  String get companyMgmtNameTakenMessage =>
+      'Ya existe una empresa con este nombre';
+
+  @override
+  String companyMgmtSwitchErrorMessage(String error) {
+    return 'Error al cambiar de empresa: $error';
+  }
+
+  @override
+  String get companyMgmtSwitchRestartTitle => 'Empresa cambiada';
+
+  @override
+  String get companyMgmtSwitchRestartBody =>
+      'Invoiso necesita reiniciarse para completar el cambio de empresa. Cierre y vuelva a abrir la aplicación.';
+
+  @override
+  String get companyMgmtCreateRestartTitle => 'Empresa creada';
+
+  @override
+  String get companyMgmtCreateRestartBody =>
+      'Su nueva empresa está lista. Cierre y vuelva a abrir la aplicación para continuar.';
+
+  @override
+  String get companyMgmtDeletedMessage => 'Empresa eliminada';
+
+  @override
+  String get companyMgmtDeleteRestartTitle => 'Empresa eliminada';
+
+  @override
+  String get companyMgmtDeleteRestartBody =>
+      'La empresa fue eliminada e Invoiso cambió a otra. Cierre y vuelva a abrir la aplicación para continuar.';
+
+  @override
+  String get companyMgmtOnlyCompanyTooltip =>
+      'Necesita al menos otra empresa antes de poder eliminar esta';
+
+  @override
+  String get loginCompanyGearTooltip => 'Gestionar empresas';
+
+  @override
+  String get loginCompanySelectorLabel => 'Empresa';
 
   @override
   String get customizationEyebrowLabel => 'PERSONALIZACIÓN';
@@ -4453,6 +4588,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get sizeLargeLabel => 'Grande';
 
   @override
+  String get sizeXLargeLabel => 'Extra grande';
+
+  @override
   String get shortcutNewInvoiceDescription =>
       'Nueva factura (desde el Panel) / Restablecer formulario (en Crear factura)';
 
@@ -4475,10 +4613,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Generar / imprimir el PDF de la factura';
 
   @override
-  String get invoiceSettingsCustomFieldsGridClassicNote =>
-      'Nota: Los campos personalizados solo se imprimen en la plantilla PDF Cuadrícula clásica.';
+  String get invoiceSettingsMetadataColumnsGridClassicNote =>
+      'Note: Metadata columns print on A4 PDF templates only (not A5/A6 or thermal receipts).';
 
   @override
-  String get invoiceSettingsMetadataColumnsGridClassicNote =>
-      'Note: Metadata columns are only applied to the Grid Classic PDF template.';
+  String get invoiceSettingsCustomFieldsPageSupportNote =>
+      'Custom fields print on every PDF template except thermal receipts.';
 }

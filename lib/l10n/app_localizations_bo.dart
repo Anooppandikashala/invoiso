@@ -219,6 +219,9 @@ class AppLocalizationsBo extends AppLocalizations {
   String get dashboardSupportTooltip => 'རོགས་སྐྱོར།';
 
   @override
+  String get buyMeCoffeeLabel => 'Buy me a coffee';
+
+  @override
   String get dashboardLogoutTooltip => 'ཕྱིར་འཐོན།';
 
   @override
@@ -3213,11 +3216,18 @@ class AppLocalizationsBo extends AppLocalizations {
       'Print the HSN/SAC code column (tied to Show GST Fields)';
 
   @override
-  String get invoiceSettingsColumnTaxLabel => 'Tax column';
+  String get invoiceSettingsColumnTaxLabel => 'Show tax column';
 
   @override
   String get invoiceSettingsColumnTaxSubtitle =>
-      'Print the per-item CGST/SGST, IGST % column';
+      'Show the tax % and amount for each item, for global and per-item tax';
+
+  @override
+  String get invoiceSettingsSplitCgstSgstLabel => 'Split CGST / SGST';
+
+  @override
+  String get invoiceSettingsSplitCgstSgstSubtitle =>
+      'Split the tax into CGST/SGST, or IGST for interstate (India GST)';
 
   @override
   String get invoiceSettingsColumnRequiredSubtitle => 'Always shown';
@@ -3583,7 +3593,7 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get pdfSettingsMetadataColumnsWarning =>
-      'Metadata columns print only on Grid Classic at A4. Each one narrows the others — if the table looks cramped, switch to Landscape above. Values are captured when an item is added; editing the product later won\'t change past invoices.';
+      'Metadata columns print on any A4 template (not A5/A6 or thermal receipts). Each one narrows the others — if the table looks cramped, turn a few off, or switch Grid Classic to Landscape above. Values are captured when an item is added; editing the product later won\'t change past invoices.';
 
   @override
   String get pdfSettingsItemLayoutLabel => 'རྣམ་གྲངས་བཀོད་པ།';
@@ -3600,6 +3610,27 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get pdfSettingsCompanyNameSizeLabel => 'ཚོང་ལས་མིང་གི་ཚད།';
+
+  @override
+  String get pdfSettingsFontSizeLabel => 'PDF ཡི་གེའི་ཚད།';
+
+  @override
+  String get pdfSettingsSectionSizesLabel => 'སྡེ་ཚན་གྱི་ཚད།';
+
+  @override
+  String get pdfSettingsDocTitleSizeLabel => 'ཡིག་ཆའི་མགོ་མིང་གི་ཚད།';
+
+  @override
+  String get pdfSettingsTableHeaderSizeLabel => 'རེའུ་མིག་མགོ་བྱང་གི་ཚད།';
+
+  @override
+  String get pdfSettingsTableItemsSizeLabel => 'རེའུ་མིག་དངོས་པོའི་ཚད།';
+
+  @override
+  String get pdfSettingsTotalsSizeLabel => 'བསྡོམས་འབོར་གྱི་ཚད།';
+
+  @override
+  String get pdfFontSizeSameAsOverallLabel => 'ཡོངས་ཁྱབ་དང་མཚུངས།';
 
   @override
   String get pdfSettingsThemeColorLabel => 'བཀོད་པའི་ཚོན་མདོག';
@@ -3781,7 +3812,16 @@ class AppLocalizationsBo extends AppLocalizations {
   String get fieldIfscCodeLabel => 'IFSC ཨང་རྟགས།';
 
   @override
+  String get fieldIbanLabel => 'IBAN';
+
+  @override
   String get companyInfoAddBankAccountButton => 'དངུལ་ཁང་རྩིས་ཁྲ་སྣོན།';
+
+  @override
+  String get companyInfoEditBankAccountTitle => 'དངུལ་ཁང་རྩིས་ཁྲ་ཞུ་དག';
+
+  @override
+  String get fieldBankAccountNameLabel => 'རྩིས་ཁྲའི་མིང་།';
 
   @override
   String get tooltipShowOnInvoicePdf => 'ཁྲལ་ཤོག PDF ནང་སྟོན།';
@@ -4103,6 +4143,9 @@ class AppLocalizationsBo extends AppLocalizations {
   String get settingsNavCompanyInfoLabel => 'ཚོང་ལས་ཆ་འཕྲིན།';
 
   @override
+  String get settingsNavCompaniesLabel => 'ཚོང་ལས་ཁག';
+
+  @override
   String get settingsNavTeamLabel => 'སྡེ་ཚན།';
 
   @override
@@ -4122,6 +4165,95 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get settingsNavSoftwareInfoLabel => 'མཉེན་ཆས་ཆ་འཕྲིན།';
+
+  @override
+  String get companyMgmtTitle => 'ཚོང་ལས་དོ་དམ།';
+
+  @override
+  String get companyMgmtActiveBadge => 'ད་ལྟ་བཀོལ་བཞིན་པ།';
+
+  @override
+  String get companyMgmtSwitchButton => 'བརྗེ་བ།';
+
+  @override
+  String get companyMgmtSwitchConfirmTitle => 'ཚོང་ལས་བརྗེ་དགོས་སམ།';
+
+  @override
+  String companyMgmtSwitchConfirmBody(String name) {
+    return '\"$name\" ལ་བརྗེ་བར་ Invoiso ཡང་བསྐྱར་འགོ་འཛུགས་འགྲོ།';
+  }
+
+  @override
+  String get companyMgmtNewCompanyButton => '+ ཚོང་ལས་གསར་པ།';
+
+  @override
+  String get companyMgmtNewCompanyTitle => 'ཚོང་ལས་གསར་པ།';
+
+  @override
+  String get companyMgmtAdminAccountSectionLabel => 'དོ་དམ་པའི་ཞིབ་ཕྲ།';
+
+  @override
+  String get companyMgmtCreateButton => 'གསར་བཟོ།';
+
+  @override
+  String get companyMgmtDeleteButton => 'ཚོང་ལས་འདི་བསུབ།';
+
+  @override
+  String companyMgmtDeleteConfirmTitle(String name) {
+    return '\"$name\" བསུབ་དགོས་སམ།';
+  }
+
+  @override
+  String get companyMgmtDeleteConfirmBody =>
+      'འདིས་ཚོང་ལས་འདིའི་ཆ་འཕྲིན་ཡོངས་རྫོགས་གཏན་གྱིས་བསུབ་གྱི་རེད། ངེས་གཏན་བྱེད་ཆེད་ཚོང་ལས་མིང་འཇུག་རོགས།';
+
+  @override
+  String get companyMgmtRenameTooltip => 'མིང་བསྒྱུར།';
+
+  @override
+  String get companyMgmtRenameTitle => 'ཚོང་ལས་མིང་བསྒྱུར།';
+
+  @override
+  String get companyMgmtNameTakenMessage => 'མིང་འདི་ཐོག་ཚོང་ལས་ཡོད་ཟིན།';
+
+  @override
+  String companyMgmtSwitchErrorMessage(String error) {
+    return 'ཚོང་ལས་བརྗེས་བ་མ་གྲུབ། $error';
+  }
+
+  @override
+  String get companyMgmtSwitchRestartTitle => 'ཚོང་ལས་བརྗེས་ཟིན།';
+
+  @override
+  String get companyMgmtSwitchRestartBody =>
+      'ཚོང་ལས་བརྗེ་བ་མཇུག་སྐྱོང་ཆེད་ Invoiso ཡང་བསྐྱར་འགོ་འཛུགས་དགོས། ཐུགས་རྗེས་ཉར་ཚགས་ཁ་བརྒྱབ་ནས་ཡང་བསྐྱར་ཕྱེ་རོགས།';
+
+  @override
+  String get companyMgmtCreateRestartTitle => 'ཚོང་ལས་གསར་བཟོས་ཟིན།';
+
+  @override
+  String get companyMgmtCreateRestartBody =>
+      'ཁྱེད་ཀྱི་ཚོང་ལས་གསར་པ་གྲ་སྒྲིག་ཟིན། མུ་མཐུད་ཆེད་ཐུགས་རྗེས་ཉར་ཚགས་ཁ་བརྒྱབ་ནས་ཡང་བསྐྱར་ཕྱེ་རོགས།';
+
+  @override
+  String get companyMgmtDeletedMessage => 'ཚོང་ལས་བསུབས་ཟིན།';
+
+  @override
+  String get companyMgmtDeleteRestartTitle => 'ཚོང་ལས་བསུབས་ཟིན།';
+
+  @override
+  String get companyMgmtDeleteRestartBody =>
+      'ཚོང་ལས་བསུབས་ཤིང་ Invoiso ཚོང་ལས་གཞན་ཞིག་ལ་བརྗེས་སོང་། མུ་མཐུད་ཆེད་ཐུགས་རྗེས་ཉར་ཚགས་ཁ་བརྒྱབ་ནས་ཡང་བསྐྱར་ཕྱེ་རོགས།';
+
+  @override
+  String get companyMgmtOnlyCompanyTooltip =>
+      'འདི་བསུབ་གོང་ཁྱེད་ལ་ཚོང་ལས་གཞན་ཞིག་དགོས།';
+
+  @override
+  String get loginCompanyGearTooltip => 'ཚོང་ལས་དོ་དམ།';
+
+  @override
+  String get loginCompanySelectorLabel => 'ཚོང་ལས།';
 
   @override
   String get customizationEyebrowLabel => 'སྒེར་སྒྲིག';
@@ -4369,6 +4501,9 @@ class AppLocalizationsBo extends AppLocalizations {
   String get sizeLargeLabel => 'ཆེན་པོ།';
 
   @override
+  String get sizeXLargeLabel => 'ཧ་ཅང་ཆེན་པོ།';
+
+  @override
   String get shortcutNewInvoiceDescription =>
       'ཁྲལ་ཤོག་གསར་པ (ཌེཤ་བོརྡ་ནས) / ཡིག་ཆ་སླར་སྒྲིག (ཁྲལ་ཤོག་བཟོ་བའི་ནང་)';
 
@@ -4388,10 +4523,10 @@ class AppLocalizationsBo extends AppLocalizations {
   String get shortcutPrintPdfDescription => 'ཁྲལ་ཤོག PDF བཟོ/པར་སྐྲུན།';
 
   @override
-  String get invoiceSettingsCustomFieldsGridClassicNote =>
-      'བརྡ་འཕྲིན: སྒེར་སྒྲིག་ཡིག་ཆ་ནི་རེའུ་མིག་སྲོལ་རྒྱུན་གྱི་ PDF ནང་གཞི་ཁོ་ནར་པར་སྐྲུན་བྱེད།';
+  String get invoiceSettingsMetadataColumnsGridClassicNote =>
+      'Note: Metadata columns print on A4 PDF templates only (not A5/A6 or thermal receipts).';
 
   @override
-  String get invoiceSettingsMetadataColumnsGridClassicNote =>
-      'Note: Metadata columns are only applied to the Grid Classic PDF template.';
+  String get invoiceSettingsCustomFieldsPageSupportNote =>
+      'Custom fields print on every PDF template except thermal receipts.';
 }

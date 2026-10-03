@@ -217,6 +217,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get dashboardSupportTooltip => 'सहायता';
 
   @override
+  String get buyMeCoffeeLabel => 'Buy me a coffee';
+
+  @override
   String get dashboardLogoutTooltip => 'लॉगआउट';
 
   @override
@@ -3230,11 +3233,18 @@ class AppLocalizationsHi extends AppLocalizations {
       'Print the HSN/SAC code column (tied to Show GST Fields)';
 
   @override
-  String get invoiceSettingsColumnTaxLabel => 'Tax column';
+  String get invoiceSettingsColumnTaxLabel => 'Show tax column';
 
   @override
   String get invoiceSettingsColumnTaxSubtitle =>
-      'Print the per-item CGST/SGST, IGST % column';
+      'Show the tax % and amount for each item, for global and per-item tax';
+
+  @override
+  String get invoiceSettingsSplitCgstSgstLabel => 'Split CGST / SGST';
+
+  @override
+  String get invoiceSettingsSplitCgstSgstSubtitle =>
+      'Split the tax into CGST/SGST, or IGST for interstate (India GST)';
 
   @override
   String get invoiceSettingsColumnRequiredSubtitle => 'Always shown';
@@ -3596,7 +3606,7 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get pdfSettingsMetadataColumnsWarning =>
-      'Metadata columns print only on Grid Classic at A4. Each one narrows the others — if the table looks cramped, switch to Landscape above. Values are captured when an item is added; editing the product later won\'t change past invoices.';
+      'Metadata columns print on any A4 template (not A5/A6 or thermal receipts). Each one narrows the others — if the table looks cramped, turn a few off, or switch Grid Classic to Landscape above. Values are captured when an item is added; editing the product later won\'t change past invoices.';
 
   @override
   String get pdfSettingsItemLayoutLabel => 'आइटम लेआउट';
@@ -3613,6 +3623,27 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get pdfSettingsCompanyNameSizeLabel => 'कंपनी नाम का आकार';
+
+  @override
+  String get pdfSettingsFontSizeLabel => 'PDF टेक्स्ट का आकार';
+
+  @override
+  String get pdfSettingsSectionSizesLabel => 'सेक्शन के आकार';
+
+  @override
+  String get pdfSettingsDocTitleSizeLabel => 'दस्तावेज़ शीर्षक का आकार';
+
+  @override
+  String get pdfSettingsTableHeaderSizeLabel => 'टेबल हेडर का आकार';
+
+  @override
+  String get pdfSettingsTableItemsSizeLabel => 'टेबल आइटम का आकार';
+
+  @override
+  String get pdfSettingsTotalsSizeLabel => 'कुल राशि का आकार';
+
+  @override
+  String get pdfFontSizeSameAsOverallLabel => 'सामान्य के समान';
 
   @override
   String get pdfSettingsThemeColorLabel => 'थीम रंग';
@@ -3793,7 +3824,16 @@ class AppLocalizationsHi extends AppLocalizations {
   String get fieldIfscCodeLabel => 'IFSC कोड';
 
   @override
+  String get fieldIbanLabel => 'IBAN';
+
+  @override
   String get companyInfoAddBankAccountButton => 'बैंक खाता जोड़ें';
+
+  @override
+  String get companyInfoEditBankAccountTitle => 'बैंक खाता संपादित करें';
+
+  @override
+  String get fieldBankAccountNameLabel => 'खाता नाम';
 
   @override
   String get tooltipShowOnInvoicePdf => 'इनवॉइस PDF पर दिखाएं';
@@ -4115,6 +4155,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get settingsNavCompanyInfoLabel => 'कंपनी जानकारी';
 
   @override
+  String get settingsNavCompaniesLabel => 'कंपनियाँ';
+
+  @override
   String get settingsNavTeamLabel => 'टीम';
 
   @override
@@ -4134,6 +4177,95 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get settingsNavSoftwareInfoLabel => 'सॉफ़्टवेयर जानकारी';
+
+  @override
+  String get companyMgmtTitle => 'कंपनियाँ प्रबंधित करें';
+
+  @override
+  String get companyMgmtActiveBadge => 'सक्रिय';
+
+  @override
+  String get companyMgmtSwitchButton => 'स्विच करें';
+
+  @override
+  String get companyMgmtSwitchConfirmTitle => 'कंपनी स्विच करें?';
+
+  @override
+  String companyMgmtSwitchConfirmBody(String name) {
+    return '\"$name\" पर स्विच करने के लिए Invoiso पुनः आरंभ होगा।';
+  }
+
+  @override
+  String get companyMgmtNewCompanyButton => '+ नई कंपनी';
+
+  @override
+  String get companyMgmtNewCompanyTitle => 'नई कंपनी';
+
+  @override
+  String get companyMgmtAdminAccountSectionLabel => 'एडमिन खाता';
+
+  @override
+  String get companyMgmtCreateButton => 'बनाएं';
+
+  @override
+  String get companyMgmtDeleteButton => 'यह कंपनी हटाएं';
+
+  @override
+  String companyMgmtDeleteConfirmTitle(String name) {
+    return '\"$name\" हटाएं?';
+  }
+
+  @override
+  String get companyMgmtDeleteConfirmBody =>
+      'इससे इस कंपनी का सारा डेटा स्थायी रूप से हट जाएगा और इसे पूर्ववत नहीं किया जा सकता। पुष्टि के लिए कंपनी का नाम टाइप करें।';
+
+  @override
+  String get companyMgmtRenameTooltip => 'नाम बदलें';
+
+  @override
+  String get companyMgmtRenameTitle => 'कंपनी का नाम बदलें';
+
+  @override
+  String get companyMgmtNameTakenMessage => 'इस नाम की कंपनी पहले से मौजूद है';
+
+  @override
+  String companyMgmtSwitchErrorMessage(String error) {
+    return 'कंपनी स्विच करने में विफल: $error';
+  }
+
+  @override
+  String get companyMgmtSwitchRestartTitle => 'कंपनी स्विच हो गई';
+
+  @override
+  String get companyMgmtSwitchRestartBody =>
+      'कंपनी स्विच पूरा करने के लिए Invoiso को पुनः आरंभ करना होगा। कृपया एप्लिकेशन बंद करके फिर से खोलें।';
+
+  @override
+  String get companyMgmtCreateRestartTitle => 'कंपनी बन गई';
+
+  @override
+  String get companyMgmtCreateRestartBody =>
+      'आपकी नई कंपनी तैयार है। जारी रखने के लिए कृपया एप्लिकेशन बंद करके फिर से खोलें।';
+
+  @override
+  String get companyMgmtDeletedMessage => 'कंपनी हटा दी गई';
+
+  @override
+  String get companyMgmtDeleteRestartTitle => 'कंपनी हटा दी गई';
+
+  @override
+  String get companyMgmtDeleteRestartBody =>
+      'कंपनी हटा दी गई और Invoiso दूसरी कंपनी में स्विच हो गया। जारी रखने के लिए कृपया एप्लिकेशन बंद करके फिर से खोलें।';
+
+  @override
+  String get companyMgmtOnlyCompanyTooltip =>
+      'इसे हटाने से पहले आपके पास कम से कम एक और कंपनी होनी चाहिए';
+
+  @override
+  String get loginCompanyGearTooltip => 'कंपनियाँ प्रबंधित करें';
+
+  @override
+  String get loginCompanySelectorLabel => 'कंपनी';
 
   @override
   String get customizationEyebrowLabel => 'कस्टमाइज़ेशन';
@@ -4384,6 +4516,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get sizeLargeLabel => 'बड़ा';
 
   @override
+  String get sizeXLargeLabel => 'बहुत बड़ा';
+
+  @override
   String get shortcutNewInvoiceDescription =>
       'नया इनवॉइस (डैशबोर्ड से) / फ़ॉर्म रीसेट करें (इनवॉइस बनाएं में)';
 
@@ -4403,10 +4538,10 @@ class AppLocalizationsHi extends AppLocalizations {
   String get shortcutPrintPdfDescription => 'इनवॉइस PDF जनरेट/प्रिंट करें';
 
   @override
-  String get invoiceSettingsCustomFieldsGridClassicNote =>
-      'ध्यान दें: कस्टम फ़ील्ड केवल ग्रिड क्लासिक PDF टेम्पलेट पर प्रिंट होते हैं।';
+  String get invoiceSettingsMetadataColumnsGridClassicNote =>
+      'Note: Metadata columns print on A4 PDF templates only (not A5/A6 or thermal receipts).';
 
   @override
-  String get invoiceSettingsMetadataColumnsGridClassicNote =>
-      'Note: Metadata columns are only applied to the Grid Classic PDF template.';
+  String get invoiceSettingsCustomFieldsPageSupportNote =>
+      'Custom fields print on every PDF template except thermal receipts.';
 }

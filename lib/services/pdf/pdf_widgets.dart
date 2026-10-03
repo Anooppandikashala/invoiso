@@ -102,7 +102,7 @@ double getSlNumberFlex(PdfPageFormat format, InvoiceTemplate template, bool isLa
    return isLandscape ? 0.7 : 0.8;
 }
 
-// ── Product-metadata snapshot columns (Grid Classic A4 only) ──────────────
+// ── Product-metadata snapshot columns (A4 templates only) ─────────────────
 
 double _metaColFlex(String key) =>
     (key == 'expiryDate' || key == 'manufactureDate') ? 1.6
@@ -295,6 +295,8 @@ pw.Widget buildBankDetailsSection({
         row('Account No.', bankAccount.accountNumber),
         if (bankAccount.ifscCode.isNotEmpty)
           row('IFSC Code', bankAccount.ifscCode),
+        if (bankAccount.iban.isNotEmpty)
+          row('IBAN', bankAccount.iban),
       ],
     ),
   );
@@ -409,6 +411,7 @@ pw.Widget buildEnhancedTotals(
     {double previousBalanceDue = 0.0,
     double fontSize = 10,
     bool compact = false,
+    double compactScale = 1.0,
     bool showCgstSgst = false,
     bool showIgst = false,
     bool showRoundOff = false}) {
@@ -419,9 +422,15 @@ pw.Widget buildEnhancedTotals(
   final netTotal = roundNetTotal(hasPreviousBalance ? totalDue : invoice.total);
 
   final compactStyle = compact ? compactPdfTotalsStyle : null;
-  final totalWidth = compactStyle?.width ?? 200.0;
-  final rowFontSize = compactStyle?.rowFontSize ?? fontSize;
-  final highlightFontSize = compactStyle?.highlightFontSize ?? fontSize * 1.05;
+  // compactScale = user's PDF text size; compact style sizes are fixed otherwise.
+  final totalWidth =
+      compactStyle != null ? compactStyle.width * compactScale : 200.0;
+  final rowFontSize = compactStyle != null
+      ? compactStyle.rowFontSize * compactScale
+      : fontSize;
+  final highlightFontSize = compactStyle != null
+      ? compactStyle.highlightFontSize * compactScale
+      : fontSize * 1.05;
   final highlightHorizontalPadding =
       compactStyle?.highlightHorizontalPadding ??
           (fontSize * 0.8).clamp(5.0, 8.0);
@@ -713,6 +722,8 @@ pw.Widget buildInvoiceTable(Invoice invoice,
     bool descriptionNewLine = false,
     BusinessType businessType = BusinessType.both,
     double tableFontSize = 10,
+    double? tableHeaderFontSize,
+    double columnScale = 1.0,
     double cellPaddingH = 6,
     double cellPaddingV = 8,
     String? totalQuantityText,
@@ -721,13 +732,13 @@ pw.Widget buildInvoiceTable(Invoice invoice,
     double watermarkOpacity = 0.12,
     bool showCgstSgst = false,
     bool showIgst = false,
+    bool showTaxColumn = true,
     bool isLandscape = false,
     Map<String, bool> metadataColumns = const {},
     String metadataDatePattern = 'dd/MM/yyyy'}) {
-  // Optional product-metadata snapshot columns — Grid Classic A4 only. Order is
+  // Optional product-metadata snapshot columns — any A4 template. Order is
   // fixed; only the keys the user enabled are kept.
-  final List<String> metaKeys = (template == InvoiceTemplate.gridClassic &&
-          pageFormat == PdfPageFormat.a4)
+  final List<String> metaKeys = (pageFormat == PdfPageFormat.a4)
       ? const [
           'storageLocation',
           'containerNumber',
@@ -740,19 +751,25 @@ pw.Widget buildInvoiceTable(Invoice invoice,
           'notes',
         ].where((k) => metadataColumns[k] == true).toList()
       : const <String>[];
-  // Grid Classic is the space-constrained template (extra metadata columns,
-  // portrait). Shorten the Discount header there to claw back width.
-  final bool shortDiscountHeader = template == InvoiceTemplate.gridClassic && !isLandscape &&  metaKeys.isNotEmpty;
-  final bool showItemTax = invoice.taxMode == TaxMode.perItem;
+  // Metadata columns eat into table width in portrait. Shorten the Discount
+  // header to claw back space whenever any are on.
+  final bool shortDiscountHeader = !isLandscape && metaKeys.isNotEmpty;
   final bool isGlobalTaxMode = invoice.taxMode == TaxMode.global;
-  final bool splitCgstSgst =
-      (showItemTax || isGlobalTaxMode) && showCgstSgst && !showIgst;
-  final bool showIgstCol = (showItemTax || isGlobalTaxMode) && showIgst;
+  final bool taxColumnOn = showTaxColumn && invoice.taxMode != TaxMode.none;
+  final bool splitCgstSgst = taxColumnOn && showCgstSgst && !showIgst;
+  final bool showIgstCol = taxColumnOn && showIgst;
   final double globalTaxRatePercent = invoice.taxRate * 100;
   final watermarkImage =
       watermarkBytes != null ? pw.MemoryImage(watermarkBytes) : null;
   final watermarkCursor = _WatermarkCursor();
   final String priceHeader = showQuantity ? 'Price' : 'Rate';
+  // gridClassic centers its Sl No/Qty/Price/Tax columns and right-aligns
+  // Discount/Total; every other template keeps the default left alignment
+  // unchanged.
+  final pw.TextAlign centerOnGridClassic =
+      template == InvoiceTemplate.gridClassic ? pw.TextAlign.center : pw.TextAlign.left;
+  final pw.TextAlign rightOnGridClassic =
+      template == InvoiceTemplate.gridClassic ? pw.TextAlign.right : pw.TextAlign.left;
 
   int col = 0;
   final Map<int, pw.TableColumnWidth> colWidths = {
@@ -771,13 +788,23 @@ pw.Widget buildInvoiceTable(Invoice invoice,
     colWidths[col++] = const pw.FlexColumnWidth(1.2);
   } else if (showIgstCol) {
     colWidths[col++] = const pw.FlexColumnWidth(1.2);
-  } else if (showItemTax) {
+  } else if (taxColumnOn) {
     colWidths[col++] = const pw.FlexColumnWidth(1);
   }
   if (showDiscount) {
     colWidths[col++] = const pw.FlexColumnWidth(1.2);
   }
   colWidths[col++] = const pw.FlexColumnWidth(1.5);
+  // Bigger table text (PDF text size) needs wider number columns; Item Name,
+  // which wraps by word, gives up the space. 1.0 = original widths.
+  if (columnScale != 1.0) {
+    final itemNameCol = showSlNo ? 1 : 0;
+    for (final k in colWidths.keys.toList()) {
+      if (k == itemNameCol) continue;
+      colWidths[k] = pw.FlexColumnWidth(
+          (colWidths[k]! as pw.FlexColumnWidth).flex * columnScale);
+    }
+  }
 
   // Each logical row (header/item/totals) is its own single-row Table
   // sharing colWidths (FlexColumnWidth ratios are content-independent, so
@@ -804,16 +831,16 @@ pw.Widget buildInvoiceTable(Invoice invoice,
           verticalInside: border.verticalInside,
         );
 
-  // Sl No column's flex vs. the rest, ×10 so one-decimal FlexColumnWidth
-  // values (e.g. 1.4) stay exact as ints. Used to indent the new-line
+  // Sl No column's flex vs. the rest, ×100 so two-decimal FlexColumnWidth
+  // values (e.g. 1.4, or 1.68 after columnScale) stay exact as ints. Used to indent the new-line
   // description under "Item Name" while keeping the grid border aligned.
   // When the Sl No column is hidden, slNoFlex is 0 and the description row is
   // rendered as a single full-width column instead.
   final slNoFlex = showSlNo
-      ? ((colWidths[0]! as pw.FlexColumnWidth).flex * 10).round()
+      ? ((colWidths[0]! as pw.FlexColumnWidth).flex * 100).round()
       : 0;
   final restFlex = colWidths.values.fold<int>(
-          0, (sum, w) => sum + ((w as pw.FlexColumnWidth).flex * 10).round()) -
+          0, (sum, w) => sum + ((w as pw.FlexColumnWidth).flex * 100).round()) -
       slNoFlex;
 
   pw.Widget dividerLine({bool isCompact = false}) => pw.Container(height: isCompact ? 0.5 : 1, color: PdfColors.grey400);
@@ -832,6 +859,8 @@ pw.Widget buildInvoiceTable(Invoice invoice,
     );
   }
 
+  // Header row can be sized separately (PDF section size); defaults to rows.
+  final headerFontSize = tableHeaderFontSize ?? tableFontSize;
   final headerRow = pw.TableRow(
     decoration: (template == InvoiceTemplate.gridClassic) ? null : pw.BoxDecoration(color: headerColor),
     children: [
@@ -839,27 +868,28 @@ pw.Widget buildInvoiceTable(Invoice invoice,
         buildTableCell('Sl No',
             isHeader: true,
             textColor: textColor,
-            fontSize: tableFontSize,
+            fontSize: headerFontSize,
             cellPaddingH: cellPaddingH,
-            cellPaddingV: cellPaddingV),
+            cellPaddingV: cellPaddingV,
+            textAlign: centerOnGridClassic),
       buildTableCell('Item Name',
           isHeader: true,
           textColor: textColor,
-          fontSize: tableFontSize,
+          fontSize: headerFontSize,
           cellPaddingH: cellPaddingH,
           cellPaddingV: cellPaddingV),
       if (showGst)
         buildTableCell('HSN/SAC',
             isHeader: true,
             textColor: textColor,
-            fontSize: tableFontSize,
+            fontSize: headerFontSize,
             cellPaddingH: cellPaddingH,
             cellPaddingV: cellPaddingV),
       for (final k in metaKeys)
         buildTableCell(_metaHeaderText(k, short: !isLandscape),
             isHeader: true,
             textColor: textColor,
-            fontSize: tableFontSize,
+            fontSize: headerFontSize,
             cellPaddingH: cellPaddingH,
             cellPaddingV: cellPaddingV),
       if (showQuantity)
@@ -869,55 +899,63 @@ pw.Widget buildInvoiceTable(Invoice invoice,
                 : 'Qty',
             isHeader: true,
             textColor: textColor,
-            fontSize: tableFontSize,
+            fontSize: headerFontSize,
             cellPaddingH: cellPaddingH,
-            cellPaddingV: cellPaddingV),
+            cellPaddingV: cellPaddingV,
+            textAlign: centerOnGridClassic),
       buildTableCell(priceHeader,
           isHeader: true,
           textColor: textColor,
-          fontSize: tableFontSize,
+          fontSize: headerFontSize,
           cellPaddingH: cellPaddingH,
-          cellPaddingV: cellPaddingV),
+          cellPaddingV: cellPaddingV,
+          textAlign: centerOnGridClassic),
       if (splitCgstSgst) ...[
         buildTableCell('CGST',
             isHeader: true,
             textColor: textColor,
-            fontSize: tableFontSize,
+            fontSize: headerFontSize,
             cellPaddingH: cellPaddingH,
-            cellPaddingV: cellPaddingV),
+            cellPaddingV: cellPaddingV,
+            textAlign: centerOnGridClassic),
         buildTableCell('SGST',
             isHeader: true,
             textColor: textColor,
-            fontSize: tableFontSize,
+            fontSize: headerFontSize,
             cellPaddingH: cellPaddingH,
-            cellPaddingV: cellPaddingV),
+            cellPaddingV: cellPaddingV,
+            textAlign: centerOnGridClassic),
       ] else if (showIgstCol)
         buildTableCell('IGST',
             isHeader: true,
             textColor: textColor,
-            fontSize: tableFontSize,
+            fontSize: headerFontSize,
             cellPaddingH: cellPaddingH,
-            cellPaddingV: cellPaddingV)
-      else if (showItemTax)
-        buildTableCell('Tax %',
+            cellPaddingV: cellPaddingV,
+            textAlign: centerOnGridClassic)
+      else if (taxColumnOn)
+        buildTableCell('Tax',
             isHeader: true,
             textColor: textColor,
-            fontSize: tableFontSize,
+            fontSize: headerFontSize,
             cellPaddingH: cellPaddingH,
-            cellPaddingV: cellPaddingV),
+            cellPaddingV: cellPaddingV,
+            textAlign: centerOnGridClassic),
       if (showDiscount)
         buildTableCell(shortDiscountHeader ? 'Disc.' : 'Discount',
             isHeader: true,
             textColor: textColor,
-            fontSize: tableFontSize,
+            fontSize: headerFontSize,
             cellPaddingH: cellPaddingH,
-            cellPaddingV: cellPaddingV),
+            cellPaddingV: cellPaddingV,
+            textAlign: rightOnGridClassic),
       buildTableCell('Total',
           isHeader: true,
           textColor: textColor,
-          fontSize: tableFontSize,
+          fontSize: headerFontSize,
           cellPaddingH: cellPaddingH,
-          cellPaddingV: cellPaddingV),
+          cellPaddingV: cellPaddingV,
+          textAlign: rightOnGridClassic),
     ],
   );
 
@@ -940,7 +978,8 @@ pw.Widget buildInvoiceTable(Invoice invoice,
           buildTableCell('${index + 1}',
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
-              cellPaddingV: cellPaddingV),
+              cellPaddingV: cellPaddingV,
+              textAlign: centerOnGridClassic),
         pw.Padding(
           padding: pw.EdgeInsets.symmetric(
             horizontal: cellPaddingH,
@@ -1005,45 +1044,54 @@ pw.Widget buildInvoiceTable(Invoice invoice,
               '${item.effectiveUnit.trim().isEmpty ? '' : ' ${item.effectiveUnit}'}',
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
-              cellPaddingV: cellPaddingV),
+              cellPaddingV: cellPaddingV,
+              textAlign: centerOnGridClassic),
         buildTableCell(
             showDiscount
                 ? item.effectivePrice.toStringAsFixed(2)
                 : (item.total / item.quantity).toStringAsFixed(2),
             fontSize: tableFontSize,
             cellPaddingH: cellPaddingH,
-            cellPaddingV: cellPaddingV),
+            cellPaddingV: cellPaddingV,
+            textAlign: centerOnGridClassic),
         if (splitCgstSgst) ...[
           buildTableCell(
               '${(isGlobalTaxMode ? (invoice.subtotal > 0 ? invoice.tax * (item.total / invoice.subtotal) / 2 : 0.0) : item.taxAmount / 2).toStringAsFixed(2)}\n(${(isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate) / 2}%)',
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
-              cellPaddingV: cellPaddingV),
+              cellPaddingV: cellPaddingV,
+              textAlign: centerOnGridClassic),
           buildTableCell(
               '${(isGlobalTaxMode ? (invoice.subtotal > 0 ? invoice.tax * (item.total / invoice.subtotal) / 2 : 0.0) : item.taxAmount / 2).toStringAsFixed(2)}\n(${(isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate) / 2}%)',
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
-              cellPaddingV: cellPaddingV),
+              cellPaddingV: cellPaddingV,
+              textAlign: centerOnGridClassic),
         ] else if (showIgstCol)
           buildTableCell(
               '${(isGlobalTaxMode ? (invoice.subtotal > 0 ? invoice.tax * (item.total / invoice.subtotal) : 0.0) : item.taxAmount).toStringAsFixed(2)}\n(${isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate}%)',
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
-              cellPaddingV: cellPaddingV)
-        else if (showItemTax)
-          buildTableCell('${item.product.tax_rate}%',
+              cellPaddingV: cellPaddingV,
+              textAlign: centerOnGridClassic)
+        else if (taxColumnOn)
+          buildTableCell(
+              '${(isGlobalTaxMode ? (invoice.subtotal > 0 ? invoice.tax * (item.total / invoice.subtotal) : 0.0) : item.taxAmount).toStringAsFixed(2)}\n(${isGlobalTaxMode ? globalTaxRatePercent : item.product.tax_rate}%)',
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
-              cellPaddingV: cellPaddingV),
+              cellPaddingV: cellPaddingV,
+              textAlign: centerOnGridClassic),
         if (showDiscount)
           buildTableCell(item.totalDiscount.toStringAsFixed(2),
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
-              cellPaddingV: cellPaddingV),
+              cellPaddingV: cellPaddingV,
+              textAlign: rightOnGridClassic),
         buildTableCell(item.total.toStringAsFixed(2),
             fontSize: tableFontSize,
             cellPaddingH: cellPaddingH,
-            cellPaddingV: cellPaddingV),
+            cellPaddingV: cellPaddingV,
+            textAlign: rightOnGridClassic),
       ],
     ), borderOverride: newLineDescription ? itemBorderNoBottom : null));
 
@@ -1134,7 +1182,8 @@ pw.Widget buildInvoiceTable(Invoice invoice,
                   isHeader: true,
                   fontSize: tableFontSize,
                   cellPaddingH: cellPaddingH,
-                  cellPaddingV: cellPaddingV),
+                  cellPaddingV: cellPaddingV,
+                  textAlign: centerOnGridClassic),
             buildTableCell('',
                 fontSize: tableFontSize,
                 cellPaddingH: cellPaddingH,
@@ -1148,7 +1197,7 @@ pw.Widget buildInvoiceTable(Invoice invoice,
                   fontSize: tableFontSize,
                   cellPaddingH: cellPaddingH,
                   cellPaddingV: cellPaddingV),
-            ] else if (showItemTax)
+            ] else if (taxColumnOn)
               buildTableCell('',
                   fontSize: tableFontSize,
                   cellPaddingH: cellPaddingH,
@@ -1174,17 +1223,30 @@ pw.Widget buildTableCell(String text,
     PdfColor textColor = PdfColors.black,
     double fontSize = 10,
     double cellPaddingH = 6,
-    double cellPaddingV = 8}) {
+    double cellPaddingV = 8,
+    pw.TextAlign textAlign = pw.TextAlign.left}) {
+  final label = pw.Text(
+    text,
+    textAlign: textAlign,
+    style: pw.TextStyle(
+        fontWeight: isHeader ? pw.FontWeight.bold : pw.FontWeight.normal,
+        fontSize: fontSize,
+        color: textColor),
+  );
   return pw.Padding(
     padding: pw.EdgeInsets.symmetric(
         horizontal: cellPaddingH, vertical: cellPaddingV),
-    child: pw.Text(
-      text,
-      style: pw.TextStyle(
-          fontWeight: isHeader ? pw.FontWeight.bold : pw.FontWeight.normal,
-          fontSize: fontSize,
-          color: textColor),
-    ),
+    // Header labels stay on one line: shrink only when the column is too
+    // narrow (small pages / big PDF text size) instead of breaking mid-word.
+    child: isHeader
+        ? pw.Align(
+            alignment: textAlign == pw.TextAlign.center
+                ? pw.Alignment.center
+                : textAlign == pw.TextAlign.right
+                    ? pw.Alignment.centerRight
+                    : pw.Alignment.centerLeft,
+            child: pw.FittedBox(fit: pw.BoxFit.scaleDown, child: label))
+        : label,
   );
 }
 

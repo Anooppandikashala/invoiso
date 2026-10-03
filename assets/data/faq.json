@@ -1,6 +1,6 @@
 {
-  "version": 4,
-  "updated_at": "2026-09-18",
+  "version": 5,
+  "updated_at": "2026-09-21",
   "categories": [
     { "id": "general", "label": "General" },
     { "id": "data-privacy", "label": "Data & Privacy" },
@@ -113,6 +113,20 @@
       "question": "Does Invoiso support dark mode?",
       "answer": "Yes, **dark mode** is available in beta. Go to **Settings → Company Info** and toggle it on to switch the dashboard, login screen, and core modules to a dark theme.\n\nIt's still being polished, so let us know if anything looks off.",
       "keywords": ["dark mode", "theme", "night mode"]
+    },
+    {
+      "id": "faq_multi_company",
+      "category": "features",
+      "question": "Can I manage multiple companies or businesses in Invoiso?",
+      "answer": "Yes. Go to **Settings → Companies**, or tap the company name at the top of the sidebar, to create, switch between, rename, or delete companies.\n\nEach company has its own completely separate database — invoices, customers, products, settings, and backups never mix between companies.",
+      "keywords": ["multi company", "multiple businesses", "manage companies", "switch company"]
+    },
+    {
+      "id": "faq_company_switch_login",
+      "category": "features",
+      "question": "Why do I have to log in again after switching companies?",
+      "answer": "Switching companies changes which database is loaded, so Invoiso logs you out and returns to the Login screen to make sure you sign in with the right account for that company.\n\nThis also prevents data (invoices, products) that's already loaded in memory from one company leaking into the other.",
+      "keywords": ["logout", "login after switch", "company switch", "session"]
     },
     {
       "id": "faq_gst",

@@ -57,6 +57,7 @@ class _InvoiceSettingsScreenV2State
   bool _showTaxButtonInInvoicePage = true;
   bool _hideInvoiceNumberByDefault = false;
   bool _showCgstSgst = false;
+  bool _showTaxColumn = true;
   bool _showRoundOff = false;
   String _defaultTaxMode = 'global';
   String? _signatureBase64;
@@ -69,8 +70,8 @@ class _InvoiceSettingsScreenV2State
   bool _allowDuplicateInvoiceItems = false;
   bool _invoiceLeadingZeros = true;
 
-  // Grid Classic A4 product-metadata columns. Keys match buildInvoiceTable's
-  // metaKeys / ProductMetadata fields; all off by default. Grid Classic only.
+  // A4-template product-metadata columns. Keys match buildInvoiceTable's
+  // metaKeys / ProductMetadata fields; all off by default.
   static const List<String> _metadataColumnKeys = [
     'storageLocation',
     'containerNumber',
@@ -150,6 +151,7 @@ class _InvoiceSettingsScreenV2State
       settingsRepo.getShowSlNoInPdf(),
       settingsRepo.getWatermarkFullPage(),
       settingsRepo.getInvoicePdfMetadataColumns(),
+      settingsRepo.getSetting(SettingKey.showTaxColumn),
     ]);
 
     if (!mounted) return;
@@ -209,6 +211,7 @@ class _InvoiceSettingsScreenV2State
       };
       _customFieldsEnabled = customFieldsEnabledStr == 'true';
       _customFieldDefs = customFieldDefs;
+      _showTaxColumn = (results[43] as String?) != 'false';
       _isLoading = false;
     });
   }
@@ -264,6 +267,8 @@ class _InvoiceSettingsScreenV2State
         settingsRepo.setAllowDuplicateInvoiceItems(_allowDuplicateInvoiceItems),
         settingsRepo.setSetting(
             SettingKey.showCgstSgst, _showCgstSgst.toString()),
+        settingsRepo.setSetting(
+            SettingKey.showTaxColumn, _showTaxColumn.toString()),
         settingsRepo.setSetting(SettingKey.defaultTaxMode, _defaultTaxMode),
         settingsRepo.setSetting(
             SettingKey.showRoundOff, _showRoundOff.toString()),
@@ -1284,8 +1289,23 @@ class _InvoiceSettingsScreenV2State
           title: l10n.invoiceSettingsColumnTaxLabel,
           subtitle: l10n.invoiceSettingsColumnTaxSubtitle,
           icon: Icons.percent_rounded,
-          value: _showCgstSgst,
-          onChanged: (val) => setState(() => _showCgstSgst = val),
+          value: _showTaxColumn,
+          onChanged: (val) => setState(() => _showTaxColumn = val),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(left: 24),
+          child: Opacity(
+            opacity: _showTaxColumn ? 1 : 0.5,
+            child: _toggleCardV2(
+              title: l10n.invoiceSettingsSplitCgstSgstLabel,
+              subtitle: l10n.invoiceSettingsSplitCgstSgstSubtitle,
+              icon: Icons.call_split_rounded,
+              value: _showCgstSgst,
+              onChanged: _showTaxColumn
+                  ? (val) => setState(() => _showCgstSgst = val)
+                  : null,
+            ),
+          ),
         ),
         _toggleCardV2(
           title: l10n.invoiceSettingsShowDiscountLabel,
@@ -1331,7 +1351,7 @@ class _InvoiceSettingsScreenV2State
     }
   }
 
-  // Product-metadata columns for the Grid Classic A4 items table. Moved here
+  // Product-metadata columns for A4 templates' items table. Moved here
   // from PDF settings so all invoice-column choices live in one place.
   Widget _metadataColumnsCardV2(AppLocalizations l10n) {
     final anyOn = _metadataColumns.values.any((v) => v);
@@ -1594,13 +1614,13 @@ class _InvoiceSettingsScreenV2State
               fontSize: 14,
               color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
+        const SizedBox(height: 4),
         Text(
-          AppLocalizations.of(context)!
-              .invoiceSettingsCustomFieldsGridClassicNote,
+          AppLocalizations.of(context)!.invoiceSettingsCustomFieldsPageSupportNote,
           style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.error),
+              fontSize: 13,
+              fontStyle: FontStyle.italic,
+              color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
         const SizedBox(height: 8),
         GestureDetector(

@@ -58,12 +58,21 @@ class PdfGenerationSettings {
   final double watermarkOpacity;
   final bool watermarkFullPage;
   final bool showCgstSgst;
+  final bool showTaxColumn;
   final bool showRoundOff;
   final bool showLeadingZeros;
   final bool showSlNo;
   final bool landscape;
   // Which product-metadata columns print in the Grid Classic A4 items table.
   final Map<String, bool> metadataColumns;
+  // Multiplier for every font in non-thermal templates (PdfFontSize.scale).
+  final double fontSizeScale;
+  // Resolved per-section scales (section preset, else fontSizeScale).
+  final double companyNameScale;
+  final double docTitleScale;
+  final double tableHeaderScale;
+  final double tableItemsScale;
+  final double totalsScale;
 
   const PdfGenerationSettings({
     required this.company,
@@ -91,6 +100,7 @@ class PdfGenerationSettings {
     required this.showTotalQuantity,
     required this.pdfTheme,
     required this.showCgstSgst,
+    this.showTaxColumn = true,
     this.thermalItemLayout = 'table',
     this.thermalCompanyNameSize = 'medium',
     this.signatureBytes,
@@ -122,5 +132,11 @@ class PdfGenerationSettings {
     this.showSlNo = true,
     this.landscape = false,
     this.metadataColumns = const {},
+    this.fontSizeScale = 1.0,
+    this.companyNameScale = 1.0,
+    this.docTitleScale = 1.0,
+    this.tableHeaderScale = 1.0,
+    this.tableItemsScale = 1.0,
+    this.totalsScale = 1.0,
   });
 }

@@ -130,6 +130,13 @@ class PDFService {
       BackendServices.settings.getPdfLandscape(), // 50
       BackendServices.settings.getWatermarkFullPage(), // 51
       BackendServices.settings.getInvoicePdfMetadataColumns(), // 52
+      BackendServices.settings.getSetting(SettingKey.showTaxColumn), // 53
+      BackendServices.settings.getSetting(SettingKey.pdfFontSize), // 54
+      BackendServices.settings.getSetting(SettingKey.pdfCompanyNameFontSize), // 55
+      BackendServices.settings.getSetting(SettingKey.pdfDocTitleFontSize), // 56
+      BackendServices.settings.getSetting(SettingKey.pdfTableHeaderFontSize), // 57
+      BackendServices.settings.getSetting(SettingKey.pdfTableItemsFontSize), // 58
+      BackendServices.settings.getSetting(SettingKey.pdfTotalsFontSize), // 59
     ]);
 
     final rawPrefix = (results[2] as String?) ?? 'INV';
@@ -145,6 +152,7 @@ class PDFService {
         ? base64Decode(base64Sig)
         : null;
     final pdfTheme = await PdfFontService.loadTheme();
+    final fontSizeScale = pdfFontSizeFromKey(results[54] as String?).scale;
 
     return PdfGenerationSettings(
       company: results[0] as CompanyInfo?,
@@ -180,6 +188,7 @@ class PDFService {
       watermarkBytes: _cachedWatermarkBytes(results[26] as String?),
       watermarkOpacity: results[27] as double,
       showCgstSgst: (results[28] as String?) == 'true',
+      showTaxColumn: (results[53] as String?) != 'false',
       showRoundOff: (results[29] as String?) == 'true',
       showPhone: results[30] as bool,
       showEmail: results[31] as bool,
@@ -204,6 +213,12 @@ class PDFService {
       landscape: results[50] as bool,
       watermarkFullPage: results[51] as bool,
       metadataColumns: results[52] as Map<String, bool>,
+      fontSizeScale: fontSizeScale,
+      companyNameScale: pdfSectionScale(results[55] as String?, fontSizeScale),
+      docTitleScale: pdfSectionScale(results[56] as String?, fontSizeScale),
+      tableHeaderScale: pdfSectionScale(results[57] as String?, fontSizeScale),
+      tableItemsScale: pdfSectionScale(results[58] as String?, fontSizeScale),
+      totalsScale: pdfSectionScale(results[59] as String?, fontSizeScale),
     );
   }
 
@@ -286,12 +301,20 @@ class PDFService {
           signatureSizePx: s.signatureSizePx,
           previousBalanceDue: effectivePreviousBalance,
           pageFormat: s.pageFormat,
+          metadataColumns: s.metadataColumns,
+          fontSizeScale: s.fontSizeScale,
+          companyNameScale: s.companyNameScale,
+          docTitleScale: s.docTitleScale,
+          tableHeaderScale: s.tableHeaderScale,
+          tableItemsScale: s.tableItemsScale,
+          totalsScale: s.totalsScale,
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
           watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
+          showTaxColumn: s.showTaxColumn,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
@@ -340,12 +363,20 @@ class PDFService {
           signatureSizePx: s.signatureSizePx,
           previousBalanceDue: effectivePreviousBalance,
           pageFormat: s.pageFormat,
+          metadataColumns: s.metadataColumns,
+          fontSizeScale: s.fontSizeScale,
+          companyNameScale: s.companyNameScale,
+          docTitleScale: s.docTitleScale,
+          tableHeaderScale: s.tableHeaderScale,
+          tableItemsScale: s.tableItemsScale,
+          totalsScale: s.totalsScale,
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
           watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
+          showTaxColumn: s.showTaxColumn,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
@@ -394,12 +425,20 @@ class PDFService {
           signatureSizePx: s.signatureSizePx,
           previousBalanceDue: effectivePreviousBalance,
           pageFormat: s.pageFormat,
+          metadataColumns: s.metadataColumns,
+          fontSizeScale: s.fontSizeScale,
+          companyNameScale: s.companyNameScale,
+          docTitleScale: s.docTitleScale,
+          tableHeaderScale: s.tableHeaderScale,
+          tableItemsScale: s.tableItemsScale,
+          totalsScale: s.totalsScale,
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
           watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
+          showTaxColumn: s.showTaxColumn,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
@@ -448,12 +487,20 @@ class PDFService {
           signatureSizePx: s.signatureSizePx,
           previousBalanceDue: effectivePreviousBalance,
           pageFormat: s.pageFormat,
+          metadataColumns: s.metadataColumns,
+          fontSizeScale: s.fontSizeScale,
+          companyNameScale: s.companyNameScale,
+          docTitleScale: s.docTitleScale,
+          tableHeaderScale: s.tableHeaderScale,
+          tableItemsScale: s.tableItemsScale,
+          totalsScale: s.totalsScale,
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
           watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
+          showTaxColumn: s.showTaxColumn,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
@@ -501,12 +548,20 @@ class PDFService {
           previousBalanceDue: effectivePreviousBalance,
           showTotalQuantity: s.showTotalQuantity,
           pageFormat: s.pageFormat,
+          metadataColumns: s.metadataColumns,
+          fontSizeScale: s.fontSizeScale,
+          companyNameScale: s.companyNameScale,
+          docTitleScale: s.docTitleScale,
+          tableHeaderScale: s.tableHeaderScale,
+          tableItemsScale: s.tableItemsScale,
+          totalsScale: s.totalsScale,
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
           watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
+          showTaxColumn: s.showTaxColumn,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
@@ -548,7 +603,8 @@ class PDFService {
           showAddress: s.showAddress,
         ));
       case InvoiceTemplate.gridClassic:
-        pdf.addPage(buildGridClassicTemplate(
+        pw.MultiPage gridPage({required bool brandingInFrame}) =>
+            buildGridClassicTemplate(
           invoice,
           s.company,
           currencySymbol,
@@ -586,6 +642,12 @@ class PDFService {
           pageFormat: s.pageFormat,
           landscape: s.landscape,
           metadataColumns: s.metadataColumns,
+          fontSizeScale: s.fontSizeScale,
+          companyNameScale: s.companyNameScale,
+          docTitleScale: s.docTitleScale,
+          tableHeaderScale: s.tableHeaderScale,
+          tableItemsScale: s.tableItemsScale,
+          totalsScale: s.totalsScale,
           pdfTheme: pdfTheme,
           logoPosition: s.logoPosition,
           watermarkBytes: s.watermarkBytes,
@@ -593,6 +655,7 @@ class PDFService {
           watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
           showIgst: showIgst,
+          showTaxColumn: s.showTaxColumn,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
@@ -601,7 +664,17 @@ class PDFService {
           showFssai: s.showFssai,
           showAddress: s.showAddress,
           showLogo: s.showLogo,
-        ));
+          brandingInFrame: brandingInFrame,
+        );
+        // Single page: branding inside the frame (can't be cropped off).
+        // Multi-page: re-render with branding in the page footer only, so the
+        // in-frame branding line can never push a near-empty extra page.
+        pdf.addPage(gridPage(brandingInFrame: true));
+        if (s.showFooterBranding && pdf.document.pdfPageList.pages.length > 1) {
+          final multiPagePdf = pw.Document(theme: s.pdfTheme);
+          multiPagePdf.addPage(gridPage(brandingInFrame: false));
+          return multiPagePdf;
+        }
     }
     return pdf;
   }
