@@ -242,82 +242,85 @@ jobs:
           name: Invoiso-Ubuntu24.deb
           path: Invoiso-*-ubuntu24.deb
 
-  # ─────────────────────────────────────────────────────────────
-  # Linux — build AppImage
-  # ─────────────────────────────────────────────────────────────
-  build-appimage:
-    if: ${{ vars.BUILD_APPIMAGE22 == 'true' }}
-    runs-on: ubuntu-22.04
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.32.8'
-          cache: true
-
-      - name: Setup build dependencies
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y \
-            clang cmake ninja-build pkg-config \
-            libgtk-3-dev liblzma-dev patchelf squashfs-tools
-
-      - name: Set version from tag
-        run: |
-          VERSION="${GITHUB_REF#refs/tags/}"
-          IS_TEST_BUILD="false"
-          if [[ "$VERSION" == test-v* ]]; then IS_TEST_BUILD="true"; fi
-          VERSION="${VERSION#test-v}"
-          VERSION="${VERSION#v}"
-          sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
-          echo "Building version: $VERSION (test build: $IS_TEST_BUILD)"
-          sed -i "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/common/constants.dart
-          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/common/constants.dart
-          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/common/constants.dart
-          echo "HEARTBEAT_URL changed"
-
-      - name: Flutter Pub Get
-        run: flutter pub get
-
-      - name: Build Flutter Linux Release
-        run: flutter build linux --release
-
-      - name: Bundle libstdc++ into AppDir
-        run: |
-          # ubuntu-22.04 system libstdc++ already provides GLIBCXX_3.4.29
-          LIBSTDCPP=$(find /usr/lib -name "libstdc++.so.6.0.*" | sort -V | tail -1)
-          echo "Bundling libstdc++: $LIBSTDCPP"
-          mkdir -p AppDir/usr/lib
-          cp "$LIBSTDCPP" AppDir/usr/lib/libstdc++.so.6
-          cp /usr/lib/x86_64-linux-gnu/libgcc_s.so.1 AppDir/usr/lib/
-
-      - name: Prepare AppDir
-        run: |
-          mkdir -p AppDir/usr/bin
-          cp -r build/linux/x64/release/bundle/* AppDir/usr/bin/
-          mkdir -p AppDir/usr/share/icons
-          cp assets/deb/images/logo.png AppDir/usr/share/icons/logo.png
-
-      - name: Install AppImage Builder
-        run: |
-          sudo apt-get install -y appstream file desktop-file-utils libfuse2 zsync
-          pip install "packaging<22" appimage-builder==1.1.0
-
-      - name: Build AppImage
-        run: |
-          VERSION="${GITHUB_REF#refs/tags/}"
-          VERSION="${VERSION#test-v}"
-          VERSION="${VERSION#v}"
-          sed -i "/app_info:/,/^[^ ]/ s/^\(\s*version:\s*\)[0-9.]*$/\1$VERSION/" AppImageBuilder.yml
-          appimage-builder --recipe AppImageBuilder.yml --skip-test
-
-      - name: Upload AppImage
-        uses: actions/upload-artifact@v4
-        with:
-          name: Invoiso-AppImage
-          path: "*.AppImage"
+  # Old appimage-builder AppImage job — disabled: appimage-builder hardcodes
+  # xz compression, which AppImageHub cannot mount. Replaced by the
+  # appimagetool-based build-appimage job below.
+#  # ─────────────────────────────────────────────────────────────
+#  # Linux — build AppImage
+#  # ─────────────────────────────────────────────────────────────
+#  build-appimage:
+#    if: ${{ vars.BUILD_APPIMAGE22 == 'true' }}
+#    runs-on: ubuntu-22.04
+#
+#    steps:
+#      - uses: actions/checkout@v4
+#
+#      - uses: subosito/flutter-action@v2
+#        with:
+#          flutter-version: '3.32.8'
+#          cache: true
+#
+#      - name: Setup build dependencies
+#        run: |
+#          sudo apt-get update -y
+#          sudo apt-get install -y \
+#            clang cmake ninja-build pkg-config \
+#            libgtk-3-dev liblzma-dev patchelf squashfs-tools
+#
+#      - name: Set version from tag
+#        run: |
+#          VERSION="${GITHUB_REF#refs/tags/}"
+#          IS_TEST_BUILD="false"
+#          if [[ "$VERSION" == test-v* ]]; then IS_TEST_BUILD="true"; fi
+#          VERSION="${VERSION#test-v}"
+#          VERSION="${VERSION#v}"
+#          sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
+#          echo "Building version: $VERSION (test build: $IS_TEST_BUILD)"
+#          sed -i "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/common/constants.dart
+#          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/common/constants.dart
+#          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/common/constants.dart
+#          echo "HEARTBEAT_URL changed"
+#
+#      - name: Flutter Pub Get
+#        run: flutter pub get
+#
+#      - name: Build Flutter Linux Release
+#        run: flutter build linux --release
+#
+#      - name: Bundle libstdc++ into AppDir
+#        run: |
+#          # ubuntu-22.04 system libstdc++ already provides GLIBCXX_3.4.29
+#          LIBSTDCPP=$(find /usr/lib -name "libstdc++.so.6.0.*" | sort -V | tail -1)
+#          echo "Bundling libstdc++: $LIBSTDCPP"
+#          mkdir -p AppDir/usr/lib
+#          cp "$LIBSTDCPP" AppDir/usr/lib/libstdc++.so.6
+#          cp /usr/lib/x86_64-linux-gnu/libgcc_s.so.1 AppDir/usr/lib/
+#
+#      - name: Prepare AppDir
+#        run: |
+#          mkdir -p AppDir/usr/bin
+#          cp -r build/linux/x64/release/bundle/* AppDir/usr/bin/
+#          mkdir -p AppDir/usr/share/icons
+#          cp assets/deb/images/logo.png AppDir/usr/share/icons/logo.png
+#
+#      - name: Install AppImage Builder
+#        run: |
+#          sudo apt-get install -y appstream file desktop-file-utils libfuse2 zsync
+#          pip install "packaging<22" appimage-builder==1.1.0
+#
+#      - name: Build AppImage
+#        run: |
+#          VERSION="${GITHUB_REF#refs/tags/}"
+#          VERSION="${VERSION#test-v}"
+#          VERSION="${VERSION#v}"
+#          sed -i "/app_info:/,/^[^ ]/ s/^\(\s*version:\s*\)[0-9.]*$/\1$VERSION/" AppImageBuilder.yml
+#          appimage-builder --recipe AppImageBuilder.yml --skip-test
+#
+#      - name: Upload AppImage
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: Invoiso-AppImage
+#          path: "*.AppImage"
 
   # ─────────────────────────────────────────────────────────────
   # Linux — build AppImage for Ubuntu 24.04
@@ -436,6 +439,122 @@ jobs:
         with:
           name: Invoiso-AppImage-Ubuntu24
           path: "Invoiso-*-ubuntu24-x86_64.AppImage"
+
+  # ─────────────────────────────────────────────────────────────
+  # Linux — build AppImage with appimagetool on Ubuntu 22.04
+  # Replaces appimage-builder: it hardcodes xz compression, which
+  # AppImageHub's runtime cannot mount. appimagetool produces gzip
+  # SquashFS. Compiled on 22.04 (glibc 2.35) for older distros.
+  # ─────────────────────────────────────────────────────────────
+  build-appimage:
+    if: ${{ vars.BUILD_APPIMAGE22 == 'true' }}
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.8'
+          cache: true
+
+      - name: Setup build dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y \
+            clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev patchelf squashfs-tools \
+            desktop-file-utils wget
+
+      - name: Set version from tag
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          IS_TEST_BUILD="false"
+          if [[ "$VERSION" == test-v* ]]; then IS_TEST_BUILD="true"; fi
+          VERSION="${VERSION#test-v}"
+          VERSION="${VERSION#v}"
+          sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
+          echo "Building version: $VERSION (test build: $IS_TEST_BUILD)"
+          sed -i "s|__HEARTBEAT_URL__|${{ secrets.HEARTBEAT_URL }}|g" lib/common/constants.dart
+          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/common/constants.dart
+          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/common/constants.dart
+          echo "HEARTBEAT_URL changed"
+
+      - name: Flutter Pub Get
+        run: flutter pub get
+
+      - name: Build Flutter Linux Release
+        run: flutter build linux --release
+
+      - name: Prepare AppDir
+        run: |
+          mkdir -p AppDir/usr/bin AppDir/usr/lib AppDir/usr/share/icons
+
+          # Copy Flutter bundle
+          cp -r build/linux/x64/release/bundle/. AppDir/usr/bin/
+
+          # Bundle libstdc++ (provides GLIBCXX symbols required by Syncfusion)
+          LIBSTDCPP=$(find /usr/lib -name "libstdc++.so.6.0.*" | sort -V | tail -1)
+          echo "Bundling libstdc++: $LIBSTDCPP"
+          cp "$LIBSTDCPP" AppDir/usr/lib/libstdc++.so.6
+
+          # Bundle libgcc_s
+          cp /usr/lib/x86_64-linux-gnu/libgcc_s.so.1 AppDir/usr/lib/
+
+          # Bundle libsqlite3.so — sqflite_common_ffi calls
+          # DynamicLibrary.open("libsqlite3.so") (unversioned).  Ubuntu only
+          # ships libsqlite3.so.0 in the runtime package so we bundle it here.
+          LIBSQLITE=$(find /usr/lib -name "libsqlite3.so.0.*" | sort -V | tail -1)
+          if [ -z "$LIBSQLITE" ]; then
+            sudo apt-get install -y libsqlite3-dev
+            LIBSQLITE=$(find /usr/lib -name "libsqlite3.so.0.*" | sort -V | tail -1)
+          fi
+          echo "Bundling libsqlite3: $LIBSQLITE"
+          cp "$LIBSQLITE" AppDir/usr/lib/libsqlite3.so
+
+          # Icons
+          cp assets/deb/images/logo.png AppDir/usr/share/icons/logo.png
+          cp assets/deb/images/logo.png AppDir/logo.png
+
+      - name: Create AppRun and desktop entry
+        run: |
+          cat > AppDir/AppRun << 'EOF'
+          #!/bin/sh
+          HERE="$(dirname "$(readlink -f "${0}")")"
+          export LD_LIBRARY_PATH="${HERE}/usr/lib:${HERE}/usr/bin/lib:${LD_LIBRARY_PATH}"
+          exec "${HERE}/usr/bin/invoiso" "$@"
+          EOF
+          chmod +x AppDir/AppRun
+
+          cat > AppDir/invoiso.desktop << 'EOF'
+          [Desktop Entry]
+          Name=Invoiso
+          Exec=invoiso
+          Icon=logo
+          Type=Application
+          Categories=Office;
+          Terminal=false
+          EOF
+
+      - name: Build AppImage with appimagetool
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          VERSION="${VERSION#test-v}"
+          VERSION="${VERSION#v}"
+
+          wget -q -O /tmp/appimagetool.AppImage \
+            https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x /tmp/appimagetool.AppImage
+
+          ARCH=x86_64 APPIMAGE_EXTRACT_AND_RUN=1 \
+            /tmp/appimagetool.AppImage AppDir \
+            "Invoiso-${VERSION}-x86_64.AppImage"
+
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: Invoiso-AppImage
+          path: "Invoiso-*-x86_64.AppImage"
 
 
   # ─────────────────────────────────────────────────────────────
