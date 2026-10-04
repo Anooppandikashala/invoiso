@@ -15,6 +15,7 @@ class PurchaseBill {
   List<PurchaseBillItem> items;
   List<SupplierPayment> payments;
   DateTime? createdAt;
+  bool isDraft; // draft = no stock/ledger/purchase-price effect, no payments
 
   PurchaseBill({
     required this.id,
@@ -27,6 +28,7 @@ class PurchaseBill {
     required this.items,
     this.payments = const [],
     this.createdAt,
+    this.isDraft = false,
   });
 
   PurchaseBillTotals get _totals => PurchaseBillTotalsCalculator.totals(

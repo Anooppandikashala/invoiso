@@ -1313,6 +1313,7 @@
   "purchaseBillMgmtAddAtLeastOneItemMessage": "कम से कम एक आइटम जोड़ें।",
   "purchaseBillMgmtUpdatedMessage": "खरीद बिल अपडेट किया गया!",
   "purchaseBillMgmtCreatedMessage": "खरीद बिल बनाया गया!",
+  "purchaseBillMgmtDraftSavedMessage": "ड्राफ़्ट सहेजा गया — स्टॉक अपडेट नहीं हुआ",
   "purchaseBillMgmtSaveErrorMessage": "खरीद बिल सहेजने में त्रुटि: {error}",
   "purchaseBillMgmtEnterNameMessage": "नाम दर्ज करें",
   "purchaseBillMgmtAddCustomItemTitle": "कस्टम आइटम जोड़ें",

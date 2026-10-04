@@ -4610,6 +4610,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get purchaseBillMgmtCreatedMessage => '采购账单已创建！';
 
   @override
+  String get purchaseBillMgmtDraftSavedMessage => '草稿已保存 — 库存未更新';
+
+  @override
   String purchaseBillMgmtSaveErrorMessage(String error) {
     return '保存采购账单时出错：$error';
   }

@@ -139,13 +139,14 @@ class SupplierService {
 
   // ─────────────────────────────────────────────
   // Live aggregate: SUM(purchase_bills.total_amount) - SUM(supplier_payments.amount_paid)
-  // for this supplier's non-deleted bills (D5 — compute, don't cache).
+  // for this supplier's non-deleted, non-draft bills (D5 — compute, don't cache).
   static Future<double> getOutstandingBalance(String supplierId) async {
     final db = await dbHelper.database;
 
     final billedResult = await db.rawQuery(
       'SELECT COALESCE(SUM(total_amount), 0.0) AS total FROM purchase_bills '
-      'WHERE supplier_id = ? AND deleted_at IS NULL',
+      'WHERE supplier_id = ? AND deleted_at IS NULL '
+      'AND COALESCE(is_draft, 0) = 0',
       [supplierId],
     );
     final billed = (billedResult.first['total'] as num).toDouble();

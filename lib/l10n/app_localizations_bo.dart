@@ -4795,6 +4795,10 @@ class AppLocalizationsBo extends AppLocalizations {
   String get purchaseBillMgmtCreatedMessage => 'ཉོ་ཐོ་ལེགས་གྲུབ་ངང་བཟོས་སོང་།';
 
   @override
+  String get purchaseBillMgmtDraftSavedMessage =>
+      'ཟིན་བྲིས་ཉར་ཚགས་བྱས་སོང་། — ཚོང་ཟོག་གསར་བཅོས་མ་བྱས།';
+
+  @override
   String purchaseBillMgmtSaveErrorMessage(String error) {
     return 'ཉོ་ཐོ་ཉར་ཚགས་སྐབས་ནོར་འཁྲུལ།: $error';
   }

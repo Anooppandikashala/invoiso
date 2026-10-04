@@ -4889,6 +4889,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get purchaseBillMgmtCreatedMessage => '¡Factura de compra creada!';
 
   @override
+  String get purchaseBillMgmtDraftSavedMessage =>
+      'Borrador guardado — stock no actualizado';
+
+  @override
   String purchaseBillMgmtSaveErrorMessage(String error) {
     return 'Error al guardar la factura de compra: $error';
   }

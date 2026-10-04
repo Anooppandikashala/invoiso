@@ -8166,6 +8166,12 @@ abstract class AppLocalizations {
   /// **'Purchase bill created!'**
   String get purchaseBillMgmtCreatedMessage;
 
+  /// No description provided for @purchaseBillMgmtDraftSavedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft saved — stock not updated'**
+  String get purchaseBillMgmtDraftSavedMessage;
+
   /// No description provided for @purchaseBillMgmtSaveErrorMessage.
   ///
   /// In en, this message translates to:

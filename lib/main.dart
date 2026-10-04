@@ -75,6 +75,7 @@ Future<void> main() async {
   await CompanyRegistryService.ensureDefaultCompanyRegistered();
   DatabaseHelper().setActiveFileNameBeforeFirstOpen(
       await CompanyRegistryService.getActiveCompanyDbFileName());
+  await CompanyRegistryService.nameActiveDbIfMissing();
   BackendServices.configure(
     settings: SqliteSettingsRepository(),
     companyInfo: SqliteCompanyInfoRepository(),

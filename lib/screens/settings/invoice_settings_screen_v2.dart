@@ -8,7 +8,6 @@ import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/supported_currencies.dart';
 import 'package:invoiso/models/custom_field_def.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
-import 'package:invoiso/providers/purchase_bills_settings_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/common/constants.dart';
 
@@ -60,7 +59,6 @@ class _InvoiceSettingsScreenV2State
   bool _showCgstSgst = false;
   bool _showTaxColumn = true;
   bool _showRoundOff = false;
-  bool _enablePurchaseBillsAndSuppliers = false;
   String _defaultTaxMode = 'global';
   String? _signatureBase64;
   String _signaturePosition = 'left';
@@ -154,7 +152,6 @@ class _InvoiceSettingsScreenV2State
       settingsRepo.getWatermarkFullPage(),
       settingsRepo.getInvoicePdfMetadataColumns(),
       settingsRepo.getSetting(SettingKey.showTaxColumn),
-      settingsRepo.getSetting(SettingKey.enablePurchaseBillsAndSuppliers),
     ]);
 
     if (!mounted) return;
@@ -215,7 +212,6 @@ class _InvoiceSettingsScreenV2State
       _customFieldsEnabled = customFieldsEnabledStr == 'true';
       _customFieldDefs = customFieldDefs;
       _showTaxColumn = (results[43] as String?) != 'false';
-      _enablePurchaseBillsAndSuppliers = (results[44] as String?) == 'true';
       _isLoading = false;
     });
   }
@@ -294,11 +290,7 @@ class _InvoiceSettingsScreenV2State
         settingsRepo.setSetting(
             SettingKey.customFieldsEnabled, _customFieldsEnabled.toString()),
         settingsRepo.setCustomFieldDefs(_customFieldDefs),
-        settingsRepo.setSetting(SettingKey.enablePurchaseBillsAndSuppliers,
-            _enablePurchaseBillsAndSuppliers.toString()),
       ]);
-      ref.read(enablePurchaseBillsAndSuppliersProvider.notifier).state =
-          _enablePurchaseBillsAndSuppliers;
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -424,7 +416,6 @@ class _InvoiceSettingsScreenV2State
     Icons.person_outline,
     Icons.table_chart_outlined,
     Icons.dashboard_customize_outlined,
-    Icons.local_shipping_outlined,
   ];
 
   String _navSectionLabelV2(BuildContext context, int index) {
@@ -436,8 +427,7 @@ class _InvoiceSettingsScreenV2State
       3 => l10n.invoiceSettingsSectionItems,
       4 => l10n.invoiceSettingsSectionCustomer,
       5 => l10n.invoiceSettingsSectionColumns,
-      6 => 'Custom Fields',
-      _ => l10n.invoiceSettingsSectionSuppliers,
+      _ => 'Custom Fields',
     };
   }
 
@@ -1446,22 +1436,9 @@ class _InvoiceSettingsScreenV2State
         return _sectionCustomerV2();
       case 5:
         return _sectionColumnsV2();
-      case 6:
-        return _sectionCustomFieldsV2();
       default:
-        return _sectionSuppliersV2();
+        return _sectionCustomFieldsV2();
     }
-  }
-
-  Widget _sectionSuppliersV2() {
-    final l10n = AppLocalizations.of(context)!;
-    return _toggleCardV2(
-      title: l10n.settingsEnablePurchaseBillsSuppliersLabel,
-      subtitle: l10n.settingsEnablePurchaseBillsSuppliersSubtitle,
-      icon: Icons.local_shipping_outlined,
-      value: _enablePurchaseBillsAndSuppliers,
-      onChanged: (v) => setState(() => _enablePurchaseBillsAndSuppliers = v),
-    );
   }
 
   // User-defined per-invoice fields (e.g. Vehicle No, Delivery Note) — not

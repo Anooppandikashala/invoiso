@@ -4813,6 +4813,10 @@ class AppLocalizationsHi extends AppLocalizations {
   String get purchaseBillMgmtCreatedMessage => 'खरीद बिल बनाया गया!';
 
   @override
+  String get purchaseBillMgmtDraftSavedMessage =>
+      'ड्राफ़्ट सहेजा गया — स्टॉक अपडेट नहीं हुआ';
+
+  @override
   String purchaseBillMgmtSaveErrorMessage(String error) {
     return 'खरीद बिल सहेजने में त्रुटि: $error';
   }

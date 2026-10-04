@@ -1313,6 +1313,7 @@
   "purchaseBillMgmtAddAtLeastOneItemMessage": "རས་ཆས་གཅིག་ཙམ་ཡང་སྣོན་རོགས།",
   "purchaseBillMgmtUpdatedMessage": "ཉོ་ཐོ་གསར་བཅོས་ལེགས་གྲུབ་བྱུང་།",
   "purchaseBillMgmtCreatedMessage": "ཉོ་ཐོ་ལེགས་གྲུབ་ངང་བཟོས་སོང་།",
+  "purchaseBillMgmtDraftSavedMessage": "ཟིན་བྲིས་ཉར་ཚགས་བྱས་སོང་། — ཚོང་ཟོག་གསར་བཅོས་མ་བྱས།",
   "purchaseBillMgmtSaveErrorMessage": "ཉོ་ཐོ་ཉར་ཚགས་སྐབས་ནོར་འཁྲུལ།: {error}",
   "purchaseBillMgmtEnterNameMessage": "མིང་ཞིག་འཇུག་རོགས།",
   "purchaseBillMgmtAddCustomItemTitle": "རང་བཟོའི་རས་ཆས་སྣོན་པ།",

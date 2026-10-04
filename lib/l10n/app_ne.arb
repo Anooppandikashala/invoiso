@@ -1313,6 +1313,7 @@
   "purchaseBillMgmtAddAtLeastOneItemMessage": "कम्तीमा एउटा वस्तु थप्नुहोस्।",
   "purchaseBillMgmtUpdatedMessage": "खरिद बिल अपडेट गरियो!",
   "purchaseBillMgmtCreatedMessage": "खरिद बिल सिर्जना गरियो!",
+  "purchaseBillMgmtDraftSavedMessage": "मस्यौदा सुरक्षित गरियो — स्टक अद्यावधिक भएन",
   "purchaseBillMgmtSaveErrorMessage": "खरिद बिल सुरक्षित गर्दा त्रुटि: {error}",
   "purchaseBillMgmtEnterNameMessage": "नाम प्रविष्ट गर्नुहोस्",
   "purchaseBillMgmtAddCustomItemTitle": "कस्टम वस्तु थप्नुहोस्",

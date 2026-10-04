@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image/image.dart' as img;
 import 'package:invoiso/common/common.dart';
+import 'package:invoiso/database/company_registry_service.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/user.dart';
@@ -159,6 +160,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           : companyRepo.updateCompanyInfo(newInfo),
       if (_base64Logo != null) settingsRepo.setCompanyLogo(_base64Logo!),
     ]);
+    // Keep the registry label in sync, as Company Info does — it's what the
+    // company pickers show while this company isn't the active one.
+    final activeCompanyId = await CompanyRegistryService.getActiveCompanyId();
+    if (activeCompanyId != null) {
+      await CompanyRegistryService.renameCompany(activeCompanyId, newInfo.name);
+    }
     _existingCompanyInfo = newInfo;
   }
 

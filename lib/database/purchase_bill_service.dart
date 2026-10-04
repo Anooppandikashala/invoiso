@@ -27,6 +27,7 @@ class PurchaseBillService {
         'tax_amount': bill.tax,
         'total_amount': bill.total,
         'created_at': DateTime.now().toIso8601String(),
+        'is_draft': bill.isDraft ? 1 : 0,
       });
 
       for (var item in bill.items) {
@@ -38,10 +39,12 @@ class PurchaseBillService {
     });
 
     // Stock/purchase-info/ledger sync happens outside the transaction to
-    // avoid nested DB calls, mirroring invoice_service.dart.
+    // avoid nested DB calls, mirroring invoice_service.dart. Drafts are inert.
+    if (bill.isDraft) return;
     for (var item in bill.items) {
       await _applyPurchase(item, bill);
     }
+    await _refreshPurchaseInfo(_productIds(bill.items));
   }
 
   static Future<void> updatePurchaseBill(PurchaseBill bill) async {
@@ -53,6 +56,14 @@ class PurchaseBillService {
       where: 'bill_id = ?',
       whereArgs: [bill.id],
     );
+    final oldRow = await db.query('purchase_bills',
+        columns: ['is_draft'], where: 'id = ?', whereArgs: [bill.id]);
+    final wasDraft =
+        oldRow.isNotEmpty && (oldRow.first['is_draft'] as int? ?? 0) == 1;
+    // One-way: a final bill's stock is already applied and may have payments.
+    if (!wasDraft && bill.isDraft) {
+      throw StateError('A final purchase bill cannot be saved as a draft.');
+    }
 
     await db.transaction((txn) async {
       await txn.update(
@@ -67,6 +78,7 @@ class PurchaseBillService {
           'subtotal': bill.subtotal,
           'tax_amount': bill.tax,
           'total_amount': bill.total,
+          'is_draft': bill.isDraft ? 1 : 0,
         },
         where: 'id = ?',
         whereArgs: [bill.id],
@@ -90,7 +102,7 @@ class PurchaseBillService {
     // transaction). Each step writes its own stock_transactions row rather
     // than mutating the original purchase row — same append-only ledger
     // philosophy as the soft-delete compensating reversal (D6).
-    for (var oldItem in oldItems) {
+    for (var oldItem in wasDraft ? const <Map<String, Object?>>[] : oldItems) {
       final rawQty = oldItem['quantity'];
       final qty = rawQty is int ? rawQty.toDouble() : (rawQty as num).toDouble();
       await _reverseStock(
@@ -101,28 +113,26 @@ class PurchaseBillService {
         notes: 'bill update reversal',
       );
     }
-    for (var item in bill.items) {
-      await _applyPurchase(item, bill);
+    if (!bill.isDraft) {
+      for (var item in bill.items) {
+        await _applyPurchase(item, bill);
+      }
     }
+    await _refreshPurchaseInfo({
+      ...oldItems.map((r) => r['product_id'] as String?).whereType<String>(),
+      ..._productIds(bill.items),
+    });
   }
 
   // ─────────────────────────────────────────────
-  // Apply one purchased line item: purchase-price/last-purchase-date sync +
-  // stock addition + ledger row. Ad-hoc items (product_id == null) and
-  // unlimited-stock products are skipped for the stock/ledger part.
+  // Apply one purchased line item: stock addition + ledger row. Ad-hoc items
+  // (product_id == null) and unlimited-stock products are skipped. Purchase
+  // price / last purchase date are synced separately by _refreshPurchaseInfo.
   static Future<void> _applyPurchase(
-      PurchaseBillItem item, PurchaseBill bill) async {
+      PurchaseBillItem item, PurchaseBill bill, {String? notes}) async {
     if (item.productId == null) return;
     final product = await ProductService.getProductById(item.productId!);
-    if (product == null) return;
-
-    await ProductService.updatePurchaseInfo(
-      product.id,
-      purchasePrice: item.netCostPerUnit,
-      lastPurchaseDate: bill.billDate,
-    );
-
-    if (product.unlimitedStock) return;
+    if (product == null || product.unlimitedStock) return;
 
     // D2: products.stock stays INTEGER (rounds), while purchase_bill_items
     // .quantity / stock_transactions.quantity_change stay REAL so the audit
@@ -139,7 +149,40 @@ class PurchaseBillService {
       stockAfter: stockAfter.toDouble(),
       unitCost: item.netCostPerUnit,
       transactionDate: bill.billDate,
+      notes: notes,
     );
+  }
+
+  static Set<String> _productIds(List<PurchaseBillItem> items) =>
+      items.map((i) => i.productId).whereType<String>().toSet();
+
+  // Sets each product's purchase price / last purchase date from its latest
+  // remaining final, non-deleted bill line, so deleting or editing a bill
+  // never leaves a stale cost behind. No such line left → the price is kept
+  // (it may have been entered by hand) and only the date is cleared.
+  static Future<void> _refreshPurchaseInfo(Set<String> productIds) async {
+    final db = await dbHelper.database;
+    for (final productId in productIds) {
+      final rows = await db.rawQuery(
+        'SELECT pbi.*, pb.bill_date AS bill_date FROM purchase_bill_items pbi '
+        'JOIN purchase_bills pb ON pb.id = pbi.bill_id '
+        'WHERE pbi.product_id = ? AND pb.deleted_at IS NULL '
+        'AND COALESCE(pb.is_draft, 0) = 0 '
+        'ORDER BY pb.bill_date DESC, pb.created_at DESC, pbi.rowid DESC '
+        'LIMIT 1',
+        [productId],
+      );
+      if (rows.isEmpty) {
+        await db.update('products', {'last_purchase_date': null},
+            where: 'id = ?', whereArgs: [productId]);
+        continue;
+      }
+      await ProductService.updatePurchaseInfo(
+        productId,
+        purchasePrice: PurchaseBillItem.fromMap(rows.first).netCostPerUnit,
+        lastPurchaseDate: DateTime.parse(rows.first['bill_date'] as String),
+      );
+    }
   }
 
   // Reverses a previously-applied purchase line's stock effect. Writes a
@@ -294,7 +337,7 @@ class PurchaseBillService {
       whereArgs: [id],
     );
 
-    if (bill == null) return;
+    if (bill == null || bill.isDraft) return;
     for (var item in bill.items) {
       await _reverseStock(
         productId: item.productId,
@@ -304,10 +347,11 @@ class PurchaseBillService {
         notes: 'bill soft-delete reversal',
       );
     }
+    await _refreshPurchaseInfo(_productIds(bill.items));
   }
 
-  // Restore only clears deleted_at — does not re-apply stock (mirrors
-  // invoice soft-delete precedent; no verification step requires it).
+  // Restore re-applies the stock that soft-delete reversed (drafts never had
+  // any applied).
   static Future<void> restorePurchaseBill(String id) async {
     final db = await dbHelper.database;
     await db.update(
@@ -316,6 +360,13 @@ class PurchaseBillService {
       where: 'id = ?',
       whereArgs: [id],
     );
+
+    final bill = await getPurchaseBillById(id);
+    if (bill == null || bill.isDraft) return;
+    for (var item in bill.items) {
+      await _applyPurchase(item, bill, notes: 'bill restore');
+    }
+    await _refreshPurchaseInfo(_productIds(bill.items));
   }
 
   static Future<List<PurchaseBill>> getDeletedPurchaseBills() async {
@@ -382,6 +433,7 @@ class PurchaseBillService {
         createdAt: map['created_at'] != null
             ? DateTime.tryParse(map['created_at'] as String)
             : null,
+        isDraft: (map['is_draft'] as int? ?? 0) == 1,
       );
     }).toList();
   }

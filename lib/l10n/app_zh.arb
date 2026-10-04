@@ -1313,6 +1313,7 @@
   "purchaseBillMgmtAddAtLeastOneItemMessage": "请至少添加一个项目。",
   "purchaseBillMgmtUpdatedMessage": "采购账单已更新！",
   "purchaseBillMgmtCreatedMessage": "采购账单已创建！",
+  "purchaseBillMgmtDraftSavedMessage": "草稿已保存 — 库存未更新",
   "purchaseBillMgmtSaveErrorMessage": "保存采购账单时出错：{error}",
   "purchaseBillMgmtEnterNameMessage": "请输入名称",
   "purchaseBillMgmtAddCustomItemTitle": "添加自定义项目",

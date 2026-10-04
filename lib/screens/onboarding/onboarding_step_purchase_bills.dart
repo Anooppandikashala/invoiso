@@ -3,7 +3,7 @@ import 'package:invoiso/l10n/app_localizations.dart';
 
 /// Step 3 of the onboarding wizard: opt-in toggle for the Purchase Bills /
 /// Suppliers dashboard tabs. Off by default; can be changed later in
-/// Settings > Suppliers.
+/// Settings > Accessibility.
 class OnboardingStepPurchaseBills extends StatelessWidget {
   final bool enabled;
   final ValueChanged<bool> onChanged;

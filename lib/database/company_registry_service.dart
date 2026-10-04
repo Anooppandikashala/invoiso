@@ -105,7 +105,12 @@ class CompanyRegistryService {
     // label; their database isn't open, so there's nothing fresher to read.
     final activeInfo = await CompanyInfoService.getCompanyInfo();
     final activeName = activeInfo?.name;
-    if (activeName == null || activeName.isEmpty) return companies;
+    // The untouched seed placeholder is never fresher than a real label.
+    if (activeName == null ||
+        activeName.isEmpty ||
+        activeName == seedCompanyName) {
+      return companies;
+    }
 
     return [
       for (final c in companies)
@@ -148,7 +153,11 @@ class CompanyRegistryService {
     return profile;
   }
 
+  /// Ignores an empty name or the seed placeholder — onboarding and Company
+  /// Info sync whatever `company_info.name` holds, and on a fresh company DB
+  /// that's still the placeholder, which must not replace a real label.
   static Future<void> renameCompany(String id, String name) async {
+    if (name.trim().isEmpty || name == seedCompanyName) return;
     final prefs = await SharedPreferences.getInstance();
     final companies = await _readRegistry(prefs);
     await _writeRegistry(prefs, [
@@ -190,8 +199,34 @@ class CompanyRegistryService {
     if (profile == null) {
       throw ArgumentError('Unknown company id: $id');
     }
-    await DatabaseHelper().switchToFile(profile.dbFileName);
+    await _nameDbIfMissing(
+        profile, () => DatabaseHelper().switchToFile(profile.dbFileName));
     await prefs.setString(_activeCompanyIdPrefsKey, id);
+  }
+
+  /// Startup counterpart of the check in [switchToCompany] — call after
+  /// pointing `DatabaseHelper` at the active file, before anything opens it.
+  static Future<void> nameActiveDbIfMissing() async {
+    final prefs = await SharedPreferences.getInstance();
+    final companies = await _readRegistry(prefs);
+    final activeId = prefs.getString(_activeCompanyIdPrefsKey);
+    final profile = companies.where((c) => c.id == activeId).firstOrNull;
+    if (profile == null) return;
+    await _nameDbIfMissing(profile, () => DatabaseHelper().database);
+  }
+
+  /// A company file deleted outside the app is recreated empty by
+  /// `_createDB`, carrying the seed placeholder name — give it the registry
+  /// label instead. The default company is skipped: its file is legitimately
+  /// missing on a true first run, where the placeholder is expected.
+  static Future<void> _nameDbIfMissing(
+      CompanyProfile profile, Future<Database> Function() open) async {
+    final existed =
+        await File(join(await _dbDirPath(), profile.dbFileName)).exists();
+    final db = await open();
+    if (existed || profile.id == defaultCompanyId) return;
+    await db.update('company_info', {'name': profile.name},
+        where: 'name = ?', whereArgs: [seedCompanyName]);
   }
 
   /// The active company's own file name, for pointing `DatabaseHelper` at

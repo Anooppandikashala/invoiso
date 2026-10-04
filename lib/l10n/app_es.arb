@@ -1313,6 +1313,7 @@
   "purchaseBillMgmtAddAtLeastOneItemMessage": "Agrega al menos un artículo.",
   "purchaseBillMgmtUpdatedMessage": "¡Factura de compra actualizada!",
   "purchaseBillMgmtCreatedMessage": "¡Factura de compra creada!",
+  "purchaseBillMgmtDraftSavedMessage": "Borrador guardado — stock no actualizado",
   "purchaseBillMgmtSaveErrorMessage": "Error al guardar la factura de compra: {error}",
   "purchaseBillMgmtEnterNameMessage": "Ingresa un nombre",
   "purchaseBillMgmtAddCustomItemTitle": "Agregar artículo personalizado",

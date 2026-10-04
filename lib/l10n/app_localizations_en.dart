@@ -4792,6 +4792,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get purchaseBillMgmtCreatedMessage => 'Purchase bill created!';
 
   @override
+  String get purchaseBillMgmtDraftSavedMessage =>
+      'Draft saved — stock not updated';
+
+  @override
   String purchaseBillMgmtSaveErrorMessage(String error) {
     return 'Error saving purchase bill: $error';
   }

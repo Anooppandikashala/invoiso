@@ -4895,6 +4895,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get purchaseBillMgmtCreatedMessage => 'Facture d\'achat créée !';
 
   @override
+  String get purchaseBillMgmtDraftSavedMessage =>
+      'Brouillon enregistré — stock non mis à jour';
+
+  @override
   String purchaseBillMgmtSaveErrorMessage(String error) {
     return 'Erreur lors de l\'enregistrement de la facture d\'achat : $error';
   }

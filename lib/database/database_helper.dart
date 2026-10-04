@@ -8,6 +8,9 @@ import 'package:invoiso/utils/password_utils.dart';
 
 const _tag = 'DatabaseHelper';
 
+/// Placeholder `company_info.name` seeded by `_createDB`.
+const seedCompanyName = 'Your Company Name';
+
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   factory DatabaseHelper() => _instance;
@@ -16,7 +19,7 @@ class DatabaseHelper {
   static String? get path => _path;
   static Database? _database;
   static String _dbFileName = 'invoice_manager.db';
-  final dbVersion = 52;
+  final dbVersion = 53;
 
   /// Startup only, before anything has opened a connection yet — just points
   /// at the right file for the first `_initDB()` call. No close/reopen, so
@@ -262,7 +265,8 @@ class DatabaseHelper {
         tax_amount REAL DEFAULT 0.0,
         total_amount REAL DEFAULT 0.0,
         deleted_at TEXT,
-        created_at TEXT
+        created_at TEXT,
+        is_draft INTEGER DEFAULT 0
       )
     ''');
 
@@ -338,7 +342,7 @@ class DatabaseHelper {
 
     // Insert dummy company info
     await db.insert('company_info', {
-      'name': 'Your Company Name',
+      'name': seedCompanyName,
       'address': '123 Street \nCity, State 12345',
       'phone': '9876543210',
       'email': 'info@yourcompany.com',
@@ -954,7 +958,8 @@ class DatabaseHelper {
             tax_amount REAL DEFAULT 0.0,
             total_amount REAL DEFAULT 0.0,
             deleted_at TEXT,
-            created_at TEXT
+            created_at TEXT,
+            is_draft INTEGER DEFAULT 0
           )
         ''');
         await db.execute('''
@@ -1039,6 +1044,18 @@ class DatabaseHelper {
           db, 52, 'add_description_to_invoice_items', () async {
         await db.execute(
           'ALTER TABLE invoice_items ADD COLUMN description TEXT',
+        );
+      });
+    }
+
+    if (oldVersion < 53) {
+      // Draft purchase bills don't touch stock; 0 = final. Own version (not
+      // folded into v52) because dev DBs were already at v52 before this
+      // column existed, and a v52 step never re-runs for them.
+      await _runMigrationStep(
+          db, 53, 'add_is_draft_to_purchase_bills', () async {
+        await db.execute(
+          'ALTER TABLE purchase_bills ADD COLUMN is_draft INTEGER DEFAULT 0',
         );
       });
     }

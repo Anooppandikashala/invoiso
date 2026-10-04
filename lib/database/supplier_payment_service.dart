@@ -22,6 +22,10 @@ class SupplierPaymentService {
     String? paymentMethod,
     String? notes,
   }) async {
+    // Backstop — the UI hides Record Payment for drafts.
+    if (bill.isDraft) {
+      throw StateError('Cannot record a payment on a draft purchase bill.');
+    }
     final db = await _dbHelper.database;
     late SupplierPayment saved;
 

@@ -118,13 +118,14 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
 
   // Filter — payment status is the only meaningful dimension here (no
   // due-date concept on purchase bills, unlike invoices).
-  String _statusFilter = 'all'; // 'all' | 'paid' | 'partial' | 'unpaid'
+  String _statusFilter = 'all'; // 'all' | 'paid' | 'partial' | 'unpaid' | 'draft'
 
   static const List<Map<String, dynamic>> _statusFilterOptionsV2 = [
     {'value': 'all', 'color': Colors.grey},
     {'value': 'paid', 'color': Colors.green},
     {'value': 'partial', 'color': Colors.orange},
     {'value': 'unpaid', 'color': Colors.red},
+    {'value': 'draft', 'color': Colors.blueGrey},
   ];
 
   static const List<(String, bool, IconData)> _sortOptionsV2 = [
@@ -152,6 +153,7 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
       'paid' => l10n.paymentStatusPaid,
       'partial' => l10n.paymentStatusPartial,
       'unpaid' => l10n.paymentStatusUnpaid,
+      'draft' => l10n.quotationStatusDraft,
       _ => l10n.invoiceMgmtStatusAllLabel,
     };
   }
@@ -207,6 +209,10 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
       // filtered page can show fewer than _pageSize rows.
       if (_statusFilter != 'all') {
         bills = bills.where((b) {
+          // Drafts only show under the Draft filter, never as paid/unpaid.
+          if (_statusFilter == 'draft' || b.isDraft) {
+            return _statusFilter == 'draft' && b.isDraft;
+          }
           final paid = paidTotals[b.id] ?? 0.0;
           final status = PurchaseBillCalculator.paymentStatus(total: b.total, paid: paid);
           switch (_statusFilter) {
@@ -336,7 +342,8 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
     return [
       PopupMenuItem(value: 'view', child: _MenuRow(Icons.visibility_outlined, l10n.actionView, Colors.green)),
       PopupMenuItem(value: 'edit', child: _MenuRow(Icons.edit_outlined, l10n.actionEdit, Colors.blue)),
-      PopupMenuItem(value: 'pay', child: _MenuRow(Icons.payments_outlined, l10n.actionApplyPayment, Colors.purple)),
+      if (!bill.isDraft)
+        PopupMenuItem(value: 'pay', child: _MenuRow(Icons.payments_outlined, l10n.actionApplyPayment, Colors.purple)),
       if (widget.user.isAdmin())
         PopupMenuItem(value: 'delete', child: _MenuRow(Icons.delete_outline, l10n.invoiceMgmtMoveToTrashTitle, Colors.red)),
     ];
@@ -379,19 +386,20 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
       children: [
         _buildActionButton(Icons.visibility_outlined, Colors.green, l10n.actionView, () => _viewBill(bill)),
         _buildActionButton(Icons.edit_outlined, Colors.blue, l10n.actionEdit, () => _editBill(bill)),
-        _buildActionButton(Icons.payments_outlined,
-            status == PaymentStatus.paid ? Colors.green : Colors.purple,
-            l10n.actionApplyPayment, () => _showApplyPaymentDialog(bill)),
+        if (!bill.isDraft)
+          _buildActionButton(Icons.payments_outlined,
+              status == PaymentStatus.paid ? Colors.green : Colors.purple,
+              l10n.actionApplyPayment, () => _showApplyPaymentDialog(bill)),
         if (widget.user.isAdmin())
           _buildActionButton(Icons.delete_outline, Colors.red, l10n.actionDelete, () => _softDelete(bill)),
       ],
     );
   }
 
-  Widget _buildStatusChip(PaymentStatus status) {
+  Widget _buildStatusChip(PaymentStatus status, {bool isDraft = false}) {
     final l10n = AppLocalizations.of(context)!;
-    final Color color;
-    final String label;
+    Color color;
+    String label;
     switch (status) {
       case PaymentStatus.paid:
         color = Colors.green;
@@ -402,6 +410,10 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
       case PaymentStatus.unpaid:
         color = Colors.red;
         label = l10n.paymentStatusUnpaid;
+    }
+    if (isDraft) {
+      color = Colors.blueGrey;
+      label = l10n.quotationStatusDraft;
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
@@ -748,10 +760,10 @@ class _PurchaseBillListViewState extends ConsumerState<_PurchaseBillListView> {
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Colors.green)),
           ),
-          SizedBox(width: 76, child: Align(alignment: Alignment.centerLeft, child: _buildStatusChip(status))),
+          SizedBox(width: 76, child: Align(alignment: Alignment.centerLeft, child: _buildStatusChip(status, isDraft: bill.isDraft))),
           if (isWide)
             Expanded(
-              child: status == PaymentStatus.paid
+              child: status == PaymentStatus.paid || bill.isDraft
                   ? Text('—', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))
                   : Text(
                       '$_currencySymbol ${outstanding.toStringAsFixed(2)}',
@@ -1165,7 +1177,7 @@ class _BillDetailDialogState extends ConsumerState<_BillDetailDialog> {
                         Text('#${bill.billNumber ?? bill.id}',
                             style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                         Text(
-                          '${bill.supplierName.isEmpty ? l10n.purchaseBillMgmtUnknownSupplierLabel : bill.supplierName} · ${AppDate.format(bill.billDate)}',
+                          '${bill.supplierName.isEmpty ? l10n.purchaseBillMgmtUnknownSupplierLabel : bill.supplierName} · ${AppDate.format(bill.billDate)}${bill.isDraft ? ' · ${l10n.quotationStatusDraft}' : ''}',
                           style: const TextStyle(color: Colors.white70, fontSize: 13),
                         ),
                       ],
@@ -1255,7 +1267,7 @@ class _BillDetailDialogState extends ConsumerState<_BillDetailDialog> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.actionClose)),
-                  if (!_isLoadingPayments && _outstanding > 0) ...[
+                  if (!bill.isDraft && !_isLoadingPayments && _outstanding > 0) ...[
                     const SizedBox(width: 12),
                     ElevatedButton.icon(
                       onPressed: _showRecordPaymentDialog,
@@ -1766,7 +1778,8 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
     );
   }
 
-  Future<void> _save() async {
+  // asDraft: saved without touching stock / purchase price; finalized later.
+  Future<void> _save({required bool asDraft}) async {
     final l10n = AppLocalizations.of(context)!;
     if (_useExistingSupplier && _supplierId == null) {
       AppError.show(context, l10n.purchaseBillMgmtSelectSupplierMessage);
@@ -1776,7 +1789,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
       AppError.show(context, l10n.purchaseBillMgmtEnterSupplierNameMessage);
       return;
     }
-    if (_items.isEmpty) {
+    if (!asDraft && _items.isEmpty) {
       AppError.show(context, l10n.purchaseBillMgmtAddAtLeastOneItemMessage);
       return;
     }
@@ -1794,6 +1807,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
         items: _items,
         payments: widget.billToEdit?.payments ?? const [],
         createdAt: widget.billToEdit?.createdAt,
+        isDraft: asDraft,
       );
 
       final repo = ref.read(purchaseBillRepositoryProvider);
@@ -1805,7 +1819,9 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
 
       if (mounted) {
         AppError.showSuccess(context,
-            _isEditing ? l10n.purchaseBillMgmtUpdatedMessage : l10n.purchaseBillMgmtCreatedMessage);
+            asDraft
+                ? l10n.purchaseBillMgmtDraftSavedMessage
+                : _isEditing ? l10n.purchaseBillMgmtUpdatedMessage : l10n.purchaseBillMgmtCreatedMessage);
         widget.onDone();
       }
     } catch (e) {
@@ -2146,16 +2162,19 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
         ],
       ),
       actions: [
-        OutlinedButton.icon(
-          onPressed: _isSaving ? null : _save,
-          icon: const Icon(Icons.save_outlined, size: 16),
-          label: Text(l10n.purchaseBillMgmtSaveDraftButton),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: Colors.white,
-            side: const BorderSide(color: Colors.white54),
+        // One-way: a final bill can't go back to draft.
+        if (!_isEditing || widget.billToEdit!.isDraft) ...[
+          OutlinedButton.icon(
+            onPressed: _isSaving ? null : () => _save(asDraft: true),
+            icon: const Icon(Icons.save_outlined, size: 16),
+            label: Text(l10n.purchaseBillMgmtSaveDraftButton),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.white,
+              side: const BorderSide(color: Colors.white54),
+            ),
           ),
-        ),
-        const SizedBox(width: 8),
+          const SizedBox(width: 8),
+        ],
         Container(
           margin: const EdgeInsets.only(right: 16),
           decoration: BoxDecoration(
@@ -2166,7 +2185,7 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
             mainAxisSize: MainAxisSize.min,
             children: [
               TextButton.icon(
-                onPressed: _isSaving ? null : _save,
+                onPressed: _isSaving ? null : () => _save(asDraft: false),
                 icon: _isSaving
                     ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                     : const Icon(Icons.save, size: 16, color: Colors.white),

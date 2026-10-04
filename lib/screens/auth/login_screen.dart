@@ -5,11 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:invoiso/common/app_config.dart';
 import 'package:invoiso/common/constants.dart';
+import 'package:invoiso/common/setting_key.dart';
 import 'package:invoiso/database/company_registry_service.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/models/company_profile.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/providers/locale_provider.dart';
+import 'package:invoiso/providers/purchase_bills_settings_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/providers/theme_provider.dart';
 import 'package:invoiso/screens/auth/forgot_password_screen.dart';
@@ -67,10 +69,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     await CompanyRegistryService.switchToCompany(id);
     final themeKey = await ref.read(settingsRepositoryProvider).getThemeMode();
     final localeKey = await ref.read(settingsRepositoryProvider).getAppLocale();
+    final purchaseBills = await ref
+        .read(settingsRepositoryProvider)
+        .getSetting(SettingKey.enablePurchaseBillsAndSuppliers);
     await refreshWindowTitle();
     if (!mounted) return;
     ref.read(themeModeProvider.notifier).state = themeModeFromKey(themeKey);
     applyAppLocale(ref, localeFromKey(localeKey));
+    ref.read(enablePurchaseBillsAndSuppliersProvider.notifier).state =
+        purchaseBills == 'true';
     _usernameController.clear();
     _passwordController.clear();
     setState(() {

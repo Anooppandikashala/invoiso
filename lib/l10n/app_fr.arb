@@ -1313,6 +1313,7 @@
   "purchaseBillMgmtAddAtLeastOneItemMessage": "Ajoutez au moins un article.",
   "purchaseBillMgmtUpdatedMessage": "Facture d'achat mise à jour !",
   "purchaseBillMgmtCreatedMessage": "Facture d'achat créée !",
+  "purchaseBillMgmtDraftSavedMessage": "Brouillon enregistré — stock non mis à jour",
   "purchaseBillMgmtSaveErrorMessage": "Erreur lors de l'enregistrement de la facture d'achat : {error}",
   "purchaseBillMgmtEnterNameMessage": "Saisissez un nom",
   "purchaseBillMgmtAddCustomItemTitle": "Ajouter un article personnalisé",

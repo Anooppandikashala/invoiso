@@ -4836,6 +4836,10 @@ class AppLocalizationsNe extends AppLocalizations {
   String get purchaseBillMgmtCreatedMessage => 'खरिद बिल सिर्जना गरियो!';
 
   @override
+  String get purchaseBillMgmtDraftSavedMessage =>
+      'मस्यौदा सुरक्षित गरियो — स्टक अद्यावधिक भएन';
+
+  @override
   String purchaseBillMgmtSaveErrorMessage(String error) {
     return 'खरिद बिल सुरक्षित गर्दा त्रुटि: $error';
   }
