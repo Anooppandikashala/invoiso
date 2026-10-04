@@ -4,6 +4,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/models/company_info.dart';
+import 'package:invoiso/models/custom_field_value.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'pdf_widgets.dart';
 
@@ -15,10 +16,13 @@ pw.MultiPage buildCompactTemplate(
   String? upiId,
   bool showUpiQr = false,
   bool showGst = true,
+  bool showSlNo = true,
   bool showQuantity = true,
   bool showDiscount = true,
   bool showTypeTag = true,
   bool showAliasName = false,
+  bool showDescription = false,
+  bool descriptionNewLine = false,
   BusinessType businessType = BusinessType.both,
   BankAccount? bankAccount,
   String datePattern = 'dd/MM/yyyy',
@@ -34,10 +38,21 @@ pw.MultiPage buildCompactTemplate(
   double previousBalanceDue = 0.0,
   bool showTotalQuantity = false,
   PdfPageFormat pageFormat = PdfPageFormat.a6,
+  Map<String, bool> metadataColumns = const {},
+  double fontSizeScale = 1.0,
+  // Per-section scales; each replaces fontSizeScale for its section.
+  double companyNameScale = 1.0,
+  double docTitleScale = 1.0,
+  double tableHeaderScale = 1.0,
+  double tableItemsScale = 1.0,
+  double totalsScale = 1.0,
   pw.ThemeData? pdfTheme,
   Uint8List? watermarkBytes,
   double watermarkOpacity = 0.12,
+  bool watermarkFullPage = false,
   bool showCgstSgst = false,
+  bool showIgst = false,
+  bool showTaxColumn = true,
   bool showRoundOff = false,
   bool showLeadingZeros = true,
   bool showPhone = true,
@@ -46,6 +61,11 @@ pw.MultiPage buildCompactTemplate(
   bool showFssai = true,
   bool showAddress = true,
   bool showLogo = true,
+  bool showCustomerBusinessName = true,
+  bool showCustomerAddress = true,
+  bool showCustomerGstin = true,
+  bool showTimeInPdf = true,
+  String pdfTimeFormat = '24',
 }) {
   final accentColor = themeColor ?? PdfColors.black;
   final logoImage = logoBytes != null ? pw.MemoryImage(logoBytes) : null;
@@ -53,22 +73,29 @@ pw.MultiPage buildCompactTemplate(
       signatureBytes != null ? pw.MemoryImage(signatureBytes) : null;
 
   final double fontScale = pageFormat == PdfPageFormat.a6 ? 0.78 : 1.0;
-  final double tableFontSize = pageFormat == PdfPageFormat.a6
+  // Fonts use fontScale (page size) × user's PDF text size.
+  final double textScale = fontScale * fontSizeScale;
+  // Bank/UPI boxes share a row with the signature: grow with textScale but
+  // never below today's size, so A5/A6 don't push the signature off-page.
+  final double bankUpiScale = textScale < 1 ? 1.0 : textScale;
+  final double tableBaseFont = pageFormat == PdfPageFormat.a6
       ? compactPdfLayoutStyle.tableFontSize
       : 10 * fontScale;
+  final double tableFontSize = tableBaseFont * tableItemsScale;
+  final double tableHeaderFont = tableBaseFont * tableHeaderScale;
   final double cellPaddingH = pageFormat == PdfPageFormat.a6
       ? compactPdfLayoutStyle.tableHorizontalPadding
       : 6.0;
   final double cellPaddingV = pageFormat == PdfPageFormat.a6
       ? compactPdfLayoutStyle.tableVerticalPadding
       : (8 * fontScale).clamp(4.0, 8.0);
-  final double totalsFontSize = compactPdfLayoutStyle.totalsFontSize * fontScale;
-  final double headerFont = compactPdfLayoutStyle.titleFontSize * fontScale;
-  final double labelFont = compactPdfLayoutStyle.subtitleFontSize * fontScale;
-  final double addressFont = compactPdfLayoutStyle.subtitleFontSize * fontScale;
-  final double sectionHeaderFont = compactPdfLayoutStyle.subtitleFontSize * fontScale;
-  final double bodyFont = compactPdfLayoutStyle.bodyFontSize * fontScale;
-  final double pageMargin = pageFormat == PdfPageFormat.a6 ? 16.0 : 20.0;
+  final double totalsFontSize = compactPdfLayoutStyle.totalsFontSize * fontScale * totalsScale;
+  final double headerFont = compactPdfLayoutStyle.titleFontSize * fontScale * companyNameScale;
+  final double labelFont = compactPdfLayoutStyle.subtitleFontSize * fontScale * docTitleScale;
+  final double addressFont = compactPdfLayoutStyle.subtitleFontSize * textScale;
+  final double sectionHeaderFont = compactPdfLayoutStyle.subtitleFontSize * textScale;
+  final double bodyFont = compactPdfLayoutStyle.bodyFontSize * textScale;
+  final double pageMargin = pageFormat == PdfPageFormat.a6 ? 12.0 : 20.0;
 
   final title = (invoice.invoiceTitle?.trim().isNotEmpty ?? false)
       ? invoice.invoiceTitle!.toUpperCase()
@@ -88,16 +115,30 @@ pw.MultiPage buildCompactTemplate(
   final gstLabel = taxLabel(company?.country);
   final panNumber = company?.panNumber ?? '';
   final fssaiCode = company?.fssaiCode ?? '';
-  final companyIdLine = [
+  final companyIdParts = <String>[
     if (showGst && gstin.isNotEmpty) '$gstLabel: $gstin',
     if (showPan && panNumber.isNotEmpty) '${panLabel(company?.country)}: $panNumber',
-    if (showFssai && fssaiCode.isNotEmpty) 'FSSAI: $fssaiCode',
-  ].join('   ');
+    if (showFssai && fssaiCode.isNotEmpty && isIndiaCountry(company?.country))
+      'FSSAI: $fssaiCode',
+  ];
+  // GSTIN + PAN + FSSAI all present → one joined line; fewer → line by line.
+  final allCompanyIds = companyIdParts.length == 3;
+  final companyIdLine = companyIdParts.join('   ');
 
+  final fullPageWatermark = watermarkFullPage && watermarkBytes != null;
   return pw.MultiPage(
-    pageFormat: pageFormat,
-    theme: pdfTheme,
-    margin: pw.EdgeInsets.all(pageMargin),
+    pageTheme: pw.PageTheme(
+      pageFormat: pageFormat,
+      theme: pdfTheme,
+      margin: pw.EdgeInsets.all(pageMargin),
+      buildBackground: fullPageWatermark
+          ? (context) =>
+              buildFullPageWatermark(watermarkBytes, watermarkOpacity)
+          : null,
+      buildForeground: invoice.status == 'declined'
+          ? (context) => buildDeclinedStamp()
+          : null,
+    ),
     footer: (context) => pw.Container(
       alignment: pw.Alignment.centerRight,
       margin: pw.EdgeInsets.only(top: compactPdfLayoutStyle.footerTopMargin),
@@ -106,7 +147,7 @@ pw.MultiPage buildCompactTemplate(
             ? "Page ${context.pageNumber} of ${context.pagesCount}  -  Generated by Invoiso"
             : "Page ${context.pageNumber} of ${context.pagesCount}",
         style: pw.TextStyle(
-          fontSize: compactPdfLayoutStyle.footerBrandingFontSize,
+          fontSize: compactPdfLayoutStyle.footerBrandingFontSize * fontSizeScale,
           color: PdfColors.grey600,
         ),
       ),
@@ -155,8 +196,9 @@ pw.MultiPage buildCompactTemplate(
                                 style: pw.TextStyle(
                                     fontSize: addressFont,
                                     color: PdfColors.grey700)),
-                          if (companyIdLine.isNotEmpty)
-                            pw.Text(companyIdLine,
+                          for (final line
+                              in allCompanyIds ? [companyIdLine] : companyIdParts)
+                            pw.Text(line,
                                 style: pw.TextStyle(
                                     fontSize: addressFont,
                                     color: PdfColors.grey700)),
@@ -164,87 +206,6 @@ pw.MultiPage buildCompactTemplate(
                       ),
                     ),
                   ],
-                ),
-                pw.SizedBox(height: 4),
-                pw.Container(
-                  decoration: pw.BoxDecoration(
-                    border:
-                        pw.Border.all(color: PdfColors.grey400, width: 0.5),
-                  ),
-                  child: pw.Row(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Expanded(
-                        child: pw.Container(
-                          padding: pw.EdgeInsets.all(
-                              compactPdfLayoutStyle.headerPadding),
-                          decoration: const pw.BoxDecoration(
-                            border: pw.Border(
-                              right: pw.BorderSide(
-                                  color: PdfColors.grey400, width: 0.5),
-                            ),
-                          ),
-                          child: pw.Column(
-                            crossAxisAlignment: pw.CrossAxisAlignment.start,
-                            children: [
-                              pw.Text('Bill To:',
-                                  style: pw.TextStyle(
-                                      fontSize: sectionHeaderFont,
-                                      fontWeight: pw.FontWeight.bold)),
-                              pw.SizedBox(height: 1),
-                              pw.Text(invoice.customer.name,
-                                  style: pw.TextStyle(fontSize: bodyFont)),
-                              if (invoice.customer.businessName.isNotEmpty)
-                                pw.Text(invoice.customer.businessName,
-                                    style: pw.TextStyle(
-                                        fontSize: addressFont,
-                                        color: PdfColors.grey700)),
-                              if (invoice.customer.address.isNotEmpty)
-                                pw.Text(invoice.customer.address,
-                                    style: pw.TextStyle(
-                                        fontSize: addressFont,
-                                        color: PdfColors.grey700)),
-                              if (showGst &&
-                                  invoice.customer.gstin.isNotEmpty)
-                                pw.Text(
-                                    '${taxLabel(company?.country)}: ${invoice.customer.gstin}',
-                                    style: pw.TextStyle(
-                                        fontSize: addressFont,
-                                        color: PdfColors.grey700)),
-                            ],
-                          ),
-                        ),
-                      ),
-                      pw.Expanded(
-                        child: pw.Padding(
-                          padding: pw.EdgeInsets.all(
-                              compactPdfLayoutStyle.headerPadding),
-                          child: pw.Column(
-                            crossAxisAlignment: pw.CrossAxisAlignment.start,
-                            children: [
-                              pw.Text('Invoice Details:',
-                                  style: pw.TextStyle(
-                                      fontSize: sectionHeaderFont,
-                                      fontWeight: pw.FontWeight.bold)),
-                              pw.SizedBox(height: 1),
-                              if (invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros) != null)
-                                pw.Text(
-                                    'No: ${invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros)}',
-                                    style: pw.TextStyle(fontSize: addressFont)),
-                              pw.Text(
-                                  'Date: ${formatPdfDate(invoice.date, datePattern)}',
-                                  style: pw.TextStyle(fontSize: addressFont)),
-                              if (invoice.dueDate != null)
-                                pw.Text(
-                                    'Due: ${formatPdfDate(invoice.dueDate!, datePattern)}',
-                                    style:
-                                        pw.TextStyle(fontSize: addressFont)),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
               ],
             ),
@@ -255,32 +216,168 @@ pw.MultiPage buildCompactTemplate(
           ],
         ],
       ),
+      pw.SizedBox(height: 4),
+
+      // ── Bill To / Invoice Details — full width, below the logo + company
+      // block (A6 is too narrow to split it three ways beside the logo) ──
+      pw.Container(
+        decoration: pw.BoxDecoration(
+          border: pw.Border.all(color: PdfColors.grey400, width: 0.5),
+        ),
+        child: pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Expanded(
+              child: pw.Container(
+                padding:
+                    pw.EdgeInsets.all(compactPdfLayoutStyle.headerPadding),
+                decoration: const pw.BoxDecoration(
+                  border: pw.Border(
+                    right: pw.BorderSide(color: PdfColors.grey400, width: 0.5),
+                  ),
+                ),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text('Bill To:',
+                        style: pw.TextStyle(
+                            fontSize: sectionHeaderFont,
+                            fontWeight: pw.FontWeight.bold)),
+                    pw.SizedBox(height: 1),
+                    pw.Text(invoice.customer.name,
+                        style: pw.TextStyle(fontSize: bodyFont)),
+                    if (showCustomerBusinessName &&
+                        invoice.customer.businessName.isNotEmpty)
+                      pw.Text(invoice.customer.businessName,
+                          style: pw.TextStyle(
+                              fontSize: addressFont,
+                              color: PdfColors.grey700)),
+                    if (showCustomerAddress &&
+                        invoice.customer.address.isNotEmpty)
+                      pw.Text(invoice.customer.address,
+                          style: pw.TextStyle(
+                              fontSize: addressFont,
+                              color: PdfColors.grey700)),
+                    if (showGst &&
+                        showCustomerGstin &&
+                        invoice.customer.gstin.isNotEmpty)
+                      pw.Text(
+                          '${taxLabel(company?.country)}: ${invoice.customer.gstin}',
+                          style: pw.TextStyle(
+                              fontSize: addressFont,
+                              color: PdfColors.grey700)),
+                  ],
+                ),
+              ),
+            ),
+            pw.Expanded(
+              child: pw.Padding(
+                padding:
+                    pw.EdgeInsets.all(compactPdfLayoutStyle.headerPadding),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text('Invoice Details:',
+                        style: pw.TextStyle(
+                            fontSize: sectionHeaderFont,
+                            fontWeight: pw.FontWeight.bold)),
+                    pw.SizedBox(height: 1),
+                    if (invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros) != null)
+                      pw.Text(
+                          'No: ${invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros)}',
+                          style: pw.TextStyle(fontSize: addressFont)),
+                    pw.Text(
+                        'Date: ${formatPdfDateTime(invoice.date, datePattern, showTime: showTimeInPdf, timeFormat: pdfTimeFormat)}',
+                        style: pw.TextStyle(fontSize: addressFont)),
+                    if (invoice.dueDate != null)
+                      pw.Text(
+                          'Due: ${formatPdfDate(invoice.dueDate!, datePattern)}',
+                          style: pw.TextStyle(fontSize: addressFont)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      if (invoice.customFields.any((f) => f.value.trim().isNotEmpty)) ...[
+        pw.SizedBox(height: 4),
+        () {
+          final filled = invoice.customFields
+              .where((f) => f.value.trim().isNotEmpty)
+              .toList();
+          pw.Widget fieldCell(CustomFieldValue? f) => pw.Padding(
+                padding: const pw.EdgeInsets.all(3),
+                child: f == null
+                    ? null
+                    : pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          pw.Text(f.label,
+                              style: pw.TextStyle(
+                                  fontSize: addressFont,
+                                  fontWeight: pw.FontWeight.bold)),
+                          pw.Text(f.value, style: pw.TextStyle(fontSize: addressFont)),
+                        ],
+                      ),
+              );
+          return pw.Container(
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(color: PdfColors.grey400, width: 0.5),
+            ),
+            child: pw.Table(
+              columnWidths: const {
+                0: pw.FlexColumnWidth(1),
+                1: pw.FlexColumnWidth(1),
+                2: pw.FlexColumnWidth(1),
+              },
+              children: [
+                for (var i = 0; i < filled.length; i += 3)
+                  pw.TableRow(children: [
+                    fieldCell(filled[i]),
+                    fieldCell(i + 1 < filled.length ? filled[i + 1] : null),
+                    fieldCell(i + 2 < filled.length ? filled[i + 2] : null),
+                  ]),
+              ],
+            ),
+          );
+        }(),
+      ],
       pw.SizedBox(height: 6),
 
       // ── Items Table ──
       buildInvoiceTable(
         invoice,
         InvoiceTemplate.compact,
+        pageFormat,
         headerColor: PdfColors.grey200,
         textColor: PdfColors.black,
         showGst: showGst,
+        showSlNo: showSlNo,
         showQuantity: showQuantity,
         showDiscount: showDiscount,
         showTypeTag: showTypeTag,
         showAliasName: showAliasName,
+        showDescription: showDescription,
+        descriptionNewLine: descriptionNewLine,
         businessType: businessType,
         tableFontSize: tableFontSize,
+        tableHeaderFontSize: tableHeaderFont,
+        columnScale: tableItemsScale > tableHeaderScale ? tableItemsScale : tableHeaderScale,
         cellPaddingH: cellPaddingH,
         cellPaddingV: cellPaddingV,
-        showCgstSgst: showCgstSgst,
+        showCgstSgst: showCgstSgst, showIgst: showIgst,
+        showTaxColumn: showTaxColumn,
         totalQuantityText: showTotalQuantity && showQuantity
             ? '${totalQty == totalQty.roundToDouble() ? totalQty.toInt() : totalQty}'
             : null,
-        watermarkBytes: watermarkBytes,
+        watermarkBytes: fullPageWatermark ? null : watermarkBytes,
         watermarkOpacity: watermarkOpacity,
+        metadataColumns: metadataColumns,
+        metadataDatePattern: datePattern,
       ),
 
-      pw.SizedBox(height: 6),
+      pw.SizedBox(height: 2),
 
       // ── Totals ──
       pw.Align(
@@ -294,7 +391,8 @@ pw.MultiPage buildCompactTemplate(
           previousBalanceDue: previousBalanceDue,
           fontSize: totalsFontSize,
           compact: true,
-          showCgstSgst: showCgstSgst,
+          compactScale: totalsScale,
+          showCgstSgst: showCgstSgst, showIgst: showIgst,
           showRoundOff: showRoundOff,
         ),
       ),
@@ -312,17 +410,17 @@ pw.MultiPage buildCompactTemplate(
                     showUpiQr: showUpiQr,
                     upiId: upiId,
                     companyName: company?.name ?? '',
-                    amount: invoice.total,
+                    amount: invoice.outstandingBalance,
                     currencyCode: invoice.currencyCode,
                     invoiceId: invoice.id,
                     accentColor: accentColor,
                     gap: 6,
                     qrSize: 50,
-                    bankFontSize: 5.2,
-                    sectionTitleFontSize: 5.8,
+                    bankFontSize: 5.2 * bankUpiScale,
+                    sectionTitleFontSize: 5.8 * bankUpiScale,
                     sectionPadding: 4,
-                    upiIdFontSize: 5,
-                    upiAmountFontSize: 5,
+                    upiIdFontSize: 5 * bankUpiScale,
+                    upiAmountFontSize: 5 * bankUpiScale,
                   ),
                   signatureImage != null
                       ? buildSignatureWidget(
@@ -331,7 +429,7 @@ pw.MultiPage buildCompactTemplate(
                           imageHeight: compactPdfLayoutStyle.signatureImageHeight *
                               (signatureSizePx / 50),
                           labelGap: compactPdfLayoutStyle.signatureLabelGap,
-                          labelFontSize: compactPdfLayoutStyle.signatureLabelFontSize,
+                          labelFontSize: compactPdfLayoutStyle.signatureLabelFontSize * fontSizeScale,
                         )
                       : pw.SizedBox(),
                 ]
@@ -343,7 +441,7 @@ pw.MultiPage buildCompactTemplate(
                           imageHeight: compactPdfLayoutStyle.signatureImageHeight *
                               (signatureSizePx / 50),
                           labelGap: compactPdfLayoutStyle.signatureLabelGap,
-                          labelFontSize: compactPdfLayoutStyle.signatureLabelFontSize,
+                          labelFontSize: compactPdfLayoutStyle.signatureLabelFontSize * fontSizeScale,
                         )
                       : pw.SizedBox(),
                   buildBankUpiRow(
@@ -351,17 +449,17 @@ pw.MultiPage buildCompactTemplate(
                     showUpiQr: showUpiQr,
                     upiId: upiId,
                     companyName: company?.name ?? '',
-                    amount: invoice.total,
+                    amount: invoice.outstandingBalance,
                     currencyCode: invoice.currencyCode,
                     invoiceId: invoice.id,
                     accentColor: accentColor,
                     gap: 6,
                     qrSize: 50,
-                    bankFontSize: 5.2,
-                    sectionTitleFontSize: 5.8,
+                    bankFontSize: 5.2 * bankUpiScale,
+                    sectionTitleFontSize: 5.8 * bankUpiScale,
                     sectionPadding: 4,
-                    upiIdFontSize: 5,
-                    upiAmountFontSize: 5,
+                    upiIdFontSize: 5 * bankUpiScale,
+                    upiAmountFontSize: 5 * bankUpiScale,
                   ),
                 ],
         ),
@@ -373,7 +471,7 @@ pw.MultiPage buildCompactTemplate(
           child: pw.Text(thankYouNote,
               style: pw.TextStyle(
                   color: accentColor,
-                  fontSize: (PdfLayout.thankYouNoteFontSize - 2) * fontScale,
+                  fontSize: (PdfLayout.thankYouNoteFontSize - 2) * textScale,
                   fontWeight: pw.FontWeight.bold)),
         ),
       ],

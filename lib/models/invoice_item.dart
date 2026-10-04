@@ -12,6 +12,9 @@ class InvoiceItem {
   double? unitPrice; // overrides product.price when set
   double? extraCost; // optional flat fee added on top of the line total
   String? unit; // overrides product.unit when set
+  String? description; // optional per-line note typed on the invoice
+  ProductMetadata?
+      metadata; // snapshot of the product's metadata at add time (frozen, print-only)
   bool
       discountPerUnit; // true  → (price − discount) × qty  (discount multiplied by qty)
   // false → (price × qty) − discount   (flat discount off line total)
@@ -26,6 +29,8 @@ class InvoiceItem {
     this.unitPrice,
     this.extraCost,
     this.unit,
+    this.description,
+    this.metadata,
     this.discountPerUnit = false,
     this.isProductSaved = false,
   }) : id = id ?? const Uuid().v4();
@@ -33,6 +38,17 @@ class InvoiceItem {
   double get effectivePrice => unitPrice ?? product.price;
 
   String get effectiveUnit => unit ?? product.unit;
+  
+  String get effectiveDescription => (description ?? '').trim();
+
+  /// What prints on an invoice (A4 + thermal): the per-line note if the user
+  /// typed one, otherwise the product's own snapshotted description. Only
+  /// rendered when the "Show Product Description" setting is on. Kept out of
+  /// [effectiveDescription] so the edit field is never seeded from the
+  /// product.
+  String get printedDescription => effectiveDescription.isNotEmpty
+      ? effectiveDescription
+      : product.description.trim();
 
   InvoiceLineAmount get _amounts => InvoiceTotalsCalculator.line(
         price: effectivePrice,

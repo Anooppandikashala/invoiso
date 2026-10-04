@@ -33,6 +33,19 @@ class SqlitePaymentRepository implements PaymentRepository {
         notes: notes,
       );
   @override
+  Future<List<InvoicePayment>> applyPaymentAcrossInvoices({
+    required List<({Invoice invoice, double amount})> allocations,
+    required DateTime datePaid,
+    String? paymentMethod,
+    String? notes,
+  }) =>
+      PaymentService.applyPaymentAcrossInvoices(
+        allocations: allocations,
+        datePaid: datePaid,
+        paymentMethod: paymentMethod,
+        notes: notes,
+      );
+  @override
   Future<List<InvoicePayment>> getPaymentsForInvoice(String invoiceId) =>
       PaymentService.getPaymentsForInvoice(invoiceId);
   @override

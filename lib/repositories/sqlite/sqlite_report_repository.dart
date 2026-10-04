@@ -18,6 +18,14 @@ class SqliteReportRepository implements ReportRepository {
   Future<List<AgedReceivable>> getAgedReceivables({String? currencyCode}) =>
       ReportService.getAgedReceivables(currencyCode: currencyCode);
   @override
+  Future<List<AgedReceivableSummaryRow>> getAgedReceivableSummary({String? currencyCode}) =>
+      ReportService.getAgedReceivableSummary(currencyCode: currencyCode);
+  @override
+  Future<Map<String, double>> getOutstandingByCustomer({String? currencyCode}) =>
+      ReportService.getOutstandingByCustomer(currencyCode: currencyCode);
+  @override
+  Future<List<String>> getInvoiceCurrencies() => ReportService.getInvoiceCurrencies();
+  @override
   Future<List<TaxBucket>> getTaxByRate(DateTime from, DateTime to, {String? currencyCode}) =>
       ReportService.getTaxByRate(from, to, currencyCode: currencyCode);
   @override
@@ -42,4 +50,10 @@ class SqliteReportRepository implements ReportRepository {
   @override
   Future<int> getMissingCostItemCount(DateTime from, DateTime to, {String? currencyCode}) =>
       ReportService.getMissingCostItemCount(from, to, currencyCode: currencyCode);
+  @override
+  Future<InventoryValuationSummary> getInventoryValuationSummary() =>
+      ReportService.getInventoryValuationSummary();
+  @override
+  Future<List<InventoryValuationRow>> getInventoryValuationRows({int? limit = 500}) =>
+      ReportService.getInventoryValuationRows(limit: limit);
 }

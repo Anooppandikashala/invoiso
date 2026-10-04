@@ -5,15 +5,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:invoiso/common/app_config.dart';
 import 'package:invoiso/common/constants.dart';
+import 'package:invoiso/database/company_registry_service.dart';
+import 'package:invoiso/l10n/app_localizations.dart';
+import 'package:invoiso/models/company_profile.dart';
 import 'package:invoiso/models/user.dart';
+import 'package:invoiso/providers/locale_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
+import 'package:invoiso/providers/theme_provider.dart';
 import 'package:invoiso/screens/auth/forgot_password_screen.dart';
 import 'package:invoiso/screens/auth/change_password_screen.dart';
+import 'package:invoiso/screens/help/help_search_screen.dart';
+import 'package:invoiso/screens/settings/company_management_screen.dart';
 import 'package:invoiso/screens/test_gate_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:invoiso/providers/app_config_provider.dart';
 import 'package:invoiso/utils/post_auth_navigation.dart';
+import 'package:invoiso/utils/window_title.dart';
 
 // Login Screen
 class LoginScreen extends ConsumerStatefulWidget {
@@ -28,6 +36,74 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _showDefaultCredsHint = false;
+  List<CompanyProfile> _companies = [];
+  String? _activeCompanyId;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCompanies();
+    _checkFirstTimeUser();
+  }
+
+  Future<void> _loadCompanies() async {
+    final companies = await CompanyRegistryService.listCompanies();
+    final activeId = await CompanyRegistryService.getActiveCompanyId();
+    if (!mounted) return;
+    setState(() {
+      _companies = companies;
+      _activeCompanyId = activeId;
+    });
+  }
+
+  /// Nothing has read per-company data yet at the Login screen (see
+  /// `CompanyManagementScreen`'s doc comment for the full reasoning), so
+  /// switching here is instant — repoint the DB, re-sync the two providers
+  /// loaded before this screen even rendered, and start the credential
+  /// fields fresh for whichever company is now selected.
+  Future<void> _onCompanySelected(String? id) async {
+    if (id == null || id == _activeCompanyId) return;
+    await CompanyRegistryService.switchToCompany(id);
+    final themeKey = await ref.read(settingsRepositoryProvider).getThemeMode();
+    final localeKey = await ref.read(settingsRepositoryProvider).getAppLocale();
+    await refreshWindowTitle();
+    if (!mounted) return;
+    ref.read(themeModeProvider.notifier).state = themeModeFromKey(themeKey);
+    applyAppLocale(ref, localeFromKey(localeKey));
+    _usernameController.clear();
+    _passwordController.clear();
+    setState(() {
+      _activeCompanyId = id;
+      _showDefaultCredsHint = false;
+    });
+    await _checkFirstTimeUser();
+  }
+
+  Future<void> _openCompanyManagement() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const CompanyManagementScreen()),
+    );
+    if (!mounted) return;
+    _usernameController.clear();
+    _passwordController.clear();
+    setState(() => _showDefaultCredsHint = false);
+    await _loadCompanies();
+    await _checkFirstTimeUser();
+  }
+
+  // Show the hint only while admin/admin actually still works as a login.
+  // Cloud edition has no seeded default account — skip the check entirely.
+  Future<void> _checkFirstTimeUser() async {
+    if (ref.read(appEditionConfigProvider).isCloud) return;
+    final user =
+        await ref.read(authRepositoryProvider).getUser('admin', 'admin');
+    if (!mounted || user == null) return;
+    _usernameController.text = 'admin';
+    _passwordController.text = 'admin';
+    setState(() => _showDefaultCredsHint = true);
+  }
 
   @override
   void dispose() {
@@ -150,8 +226,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final logoWidth = (cardWidth * 0.65).clamp(140.0, 230.0);
     return Scaffold(
       backgroundColor: isDark ? null : Colors.blue[50],
-      body: SafeArea(
-        child: Center(
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
             child: Column(
@@ -233,7 +311,84 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           height: 100,
                           fit: BoxFit.contain,
                         ),
-                        AppSpacing.hXlarge,
+                        AppSpacing.hSmall,
+                        if (!cfg.isCloud && _showDefaultCredsHint) ...[
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .outlineVariant),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.info_outline,
+                                    size: 18,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text.rich(
+                                    TextSpan(
+                                      children: [
+                                        const TextSpan(
+                                            text:
+                                                'First time here? Log in with username '),
+                                        TextSpan(
+                                            text: 'admin',
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.orange.shade700)),
+                                        const TextSpan(text: ' and password '),
+                                        TextSpan(
+                                            text: 'admin',
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.orange.shade700)),
+                                        const TextSpan(
+                                            text:
+                                                ', then set your own password when prompted.'),
+                                      ],
+                                    ),
+                                    style: TextStyle(
+                                        fontSize: 13,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          AppSpacing.hLarge,
+                        ],
+                        if (_companies.length > 1) ...[
+                          DropdownButtonFormField<String>(
+                            value: _activeCompanyId,
+                            decoration: InputDecoration(
+                              labelText: AppLocalizations.of(context)!
+                                  .loginCompanySelectorLabel,
+                              prefixIcon: const Icon(Icons.corporate_fare),
+                              border: const OutlineInputBorder(),
+                            ),
+                            items: [
+                              for (final company in _companies)
+                                DropdownMenuItem(
+                                  value: company.id,
+                                  child: Text(company.name),
+                                ),
+                            ],
+                            onChanged: _onCompanySelected,
+                          ),
+                          AppSpacing.hMedium,
+                        ],
                         TextField(
                           controller: _usernameController,
                           decoration: InputDecoration(
@@ -329,9 +484,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         MouseRegion(
                           cursor: SystemMouseCursors.click,
                           child: GestureDetector(
-                            onTap: () => launchUrl(
-                                Uri.parse(AppConfig.supportForm),
-                                mode: LaunchMode.externalApplication),
+                            onTap: () => showHelpSearchDialog(context),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -365,6 +518,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ),
         ),
+          ),
+          if (!cfg.isCloud)
+            Positioned(
+              right: 16,
+              bottom: 16,
+              child: IconButton(
+                tooltip: AppLocalizations.of(context)!.loginCompanyGearTooltip,
+                icon: const Icon(Icons.settings),
+                onPressed: _openCompanyManagement,
+              ),
+            ),
+        ],
       ),
     );
   }

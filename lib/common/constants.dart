@@ -61,6 +61,29 @@ class Tax {
   static const defaultTaxRate = 0.18;
 }
 
+class AdjustmentLabels {
+  // Presets offered in the "Charges & Adjustments" label dropdown.
+  // User can still type any free-text label.
+  static const presets = [
+    'Advance adjustment',
+    'Courier charges',
+    'Delivery charges',
+    'Deposit adjustment',
+    'Forwarding charges',
+    'Freight charges',
+    'Freight paid by buyer',
+    'Handling charge',
+    'Installation charge',
+    'Insurance charges',
+    'Late fee',
+    'Loading charge',
+    'Packing charges',
+    'Round off',
+    'TDS deducted',
+    'Unloading charge',
+  ];
+}
+
 class AppLayout {
   static const double maxWidthNarrow =
       900.0; // settings, backup, customer, product screens

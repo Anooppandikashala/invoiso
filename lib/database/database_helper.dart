@@ -15,7 +15,23 @@ class DatabaseHelper {
   static String? _path;
   static String? get path => _path;
   static Database? _database;
-  final dbVersion = 42;
+  static String _dbFileName = 'invoice_manager.db';
+  final dbVersion = 52;
+
+  /// Startup only, before anything has opened a connection yet — just points
+  /// at the right file for the first `_initDB()` call. No close/reopen, so
+  /// it's safe to call unconditionally even when the default filename is
+  /// already correct (the common single-company case).
+  void setActiveFileNameBeforeFirstOpen(String fileName) {
+    _dbFileName = fileName;
+  }
+
+  /// Runtime switch — a connection may already be open, so close it first.
+  /// Call this when switching the active company on an already-running app.
+  Future<Database> switchToFile(String fileName) async {
+    _dbFileName = fileName;
+    return reinitialize();
+  }
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -25,7 +41,7 @@ class DatabaseHelper {
 
   Future<Database> _initDB() async {
     final dbDir = await getApplicationSupportDirectory();
-    _path = join(dbDir.path, 'invoice_manager.db');
+    _path = join(dbDir.path, _dbFileName);
     return await openDatabase(
       _path!,
       version: dbVersion,
@@ -83,6 +99,7 @@ class DatabaseHelper {
         batch_number TEXT,
         expiry_date TEXT,
         manufacture_date TEXT,
+        manufacture_name TEXT,
         supplier_name TEXT,
         sku_code TEXT,
         notes TEXT
@@ -118,7 +135,12 @@ class DatabaseHelper {
         invoice_discount_value REAL DEFAULT 0.0,
         invoice_title TEXT,
         hide_invoice_number INTEGER DEFAULT 0,
-        custom_invoice_number TEXT
+        custom_invoice_number TEXT,
+        is_interstate INTEGER DEFAULT 0,
+        custom_fields TEXT,
+        status TEXT,
+        converted_to_invoice_id TEXT,
+        converted_from_invoice_id TEXT
       )
     ''');
 
@@ -143,7 +165,9 @@ class DatabaseHelper {
         product_alias_name TEXT,
         product_unit TEXT DEFAULT '',
         unit TEXT,
-        product_price_includes_tax INTEGER DEFAULT 0
+        product_price_includes_tax INTEGER DEFAULT 0,
+        description TEXT,
+        line_metadata TEXT
       )
     ''');
 
@@ -303,6 +327,14 @@ class DatabaseHelper {
     await db.execute('CREATE INDEX idx_stock_tx_product_date ON stock_transactions(product_id, transaction_date)');
     await db.execute('CREATE INDEX idx_supplier_payments_bill ON supplier_payments(bill_id)');
     await db.execute('CREATE INDEX idx_supplier_payments_supplier ON supplier_payments(supplier_id)');
+    await db.execute('CREATE INDEX idx_inv_type_del_id ON invoices(type, deleted_at, id)');
+    await db.execute('CREATE INDEX idx_inv_customer_id ON invoices(customer_id, type, date)');
+    await db.execute('CREATE INDEX idx_inv_type_num ON invoices(type, invoice_number)');
+    await db.execute('CREATE INDEX idx_inv_type_due ON invoices(type, due_date)');
+    await db.execute('CREATE INDEX idx_products_name_nc ON products(name COLLATE NOCASE)');
+    await db.execute('CREATE INDEX idx_customers_name_nc ON customers(name COLLATE NOCASE)');
+    await db.execute('CREATE INDEX idx_customers_email ON customers(email)');
+    await db.execute('CREATE INDEX idx_customers_phone ON customers(phone)');
 
     // Insert dummy company info
     await db.insert('company_info', {
@@ -767,8 +799,133 @@ class DatabaseHelper {
     }
 
     if (oldVersion < 41) {
+      await _runMigrationStep(db, 41, 'backfill_onboarding_completed', () async {
+        // The first-login onboarding wizard shipped without a backfill, so
+        // every upgrading user would be forced through it. If no account is
+        // still on a forced default password, the app was already set up the
+        // long way before the wizard existed — mark onboarding done. An
+        // install still carrying a default-password account (fresh seed, or
+        // an upgrade where admin/admin was never changed) falls through and
+        // gets the wizard. Username isn't checked — it's user-editable.
+        final unchanged = Sqflite.firstIntValue(await db.rawQuery(
+              'SELECT COUNT(*) FROM users WHERE password_changed = 0',
+            )) ??
+            0;
+        if (unchanged == 0) {
+          await db.insert(
+            'settings',
+            {'key': 'onboarding_completed', 'value': 'true'},
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
+        }
+      });
+    }
+
+    if (oldVersion < 42) {
+      // Per-line description entered while building the invoice. Kept separate
+      // from product_description (the product's own text, snapshotted at
+      // invoice time) so editing a line never touches the product catalogue.
+      // NULL on every pre-v42 row, which reads back as "no description" and
+      // prints exactly as those invoices always did.
       await _runMigrationStep(
-          db, 41, 'create_purchase_bills_suppliers_tables', () async {
+          db, 42, 'add_description_to_invoice_items', () async {
+        await db.execute(
+          'ALTER TABLE invoice_items ADD COLUMN description TEXT',
+        );
+      });
+    }
+
+    if (oldVersion < 43) {
+      // India interstate-supply flag. Drives IGST vs CGST/SGST display only —
+      // no effect on totals. NULL/0 on every pre-v43 row = intrastate, prints
+      // exactly as before.
+      await _runMigrationStep(db, 43, 'add_is_interstate_to_invoices', () async {
+        await db.execute(
+          'ALTER TABLE invoices ADD COLUMN is_interstate INTEGER DEFAULT 0',
+        );
+      });
+    }
+
+    if (oldVersion < 47) {
+      // Moved here from v44/v45/v46 — this client's deployed DB already had
+      // its own (different) migrations at those version numbers, so gating
+      // on oldVersion < 44/45/46 would silently never run for them (their
+      // oldVersion is already past those gates). Consolidated under a single
+      // fresh version so it actually applies on next upgrade regardless of
+      // what their v44-46 previously contained.
+
+      // JSON snapshot of the product's metadata (storage location, batch/
+      // container number, expiry/manufacture date, supplier, SKU, notes) taken
+      // when the line is added, so it can print on the Grid Classic PDF and
+      // stay frozen. NULL on every pre-v47 row = no metadata, prints as before.
+      await _runMigrationStep(
+          db, 47, 'add_line_metadata_to_invoice_items', () async {
+        await db.execute(
+          'ALTER TABLE invoice_items ADD COLUMN line_metadata TEXT',
+        );
+      });
+
+      // User-defined custom fields (e.g. Vehicle No, Delivery Note), filled
+      // per invoice. JSON list of CustomFieldValue. NULL on every pre-v47
+      // row = none filled, prints exactly as before.
+      await _runMigrationStep(db, 47, 'add_custom_fields_to_invoices', () async {
+        await db.execute(
+          'ALTER TABLE invoices ADD COLUMN custom_fields TEXT',
+        );
+      });
+
+      // Manufacturer name for a product (alongside manufacture date). NULL on
+      // every pre-v47 row.
+      await _runMigrationStep(
+          db, 47, 'add_manufacture_name_to_product_metadata', () async {
+        await db.execute(
+          'ALTER TABLE product_metadata ADD COLUMN manufacture_name TEXT',
+        );
+      });
+    }
+
+    if (oldVersion < 48) {
+      // Performance indexes (Issues.md #37) — list pages, customer filter,
+      // previous balance, next invoice number, due/overdue, NOCASE name
+      // sorts, import duplicate checks.
+      await _runMigrationStep(db, 48, 'add_performance_indexes', () async {
+        const indexes = [
+          'CREATE INDEX IF NOT EXISTS idx_inv_type_del_id ON invoices(type, deleted_at, id)',
+          'CREATE INDEX IF NOT EXISTS idx_inv_customer_id ON invoices(customer_id, type, date)',
+          'CREATE INDEX IF NOT EXISTS idx_inv_type_num ON invoices(type, invoice_number)',
+          'CREATE INDEX IF NOT EXISTS idx_inv_type_due ON invoices(type, due_date)',
+          'CREATE INDEX IF NOT EXISTS idx_products_name_nc ON products(name COLLATE NOCASE)',
+          'CREATE INDEX IF NOT EXISTS idx_customers_name_nc ON customers(name COLLATE NOCASE)',
+          'CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email)',
+          'CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone)',
+        ];
+        for (final sql in indexes) {
+          await db.execute(sql);
+        }
+      });
+    }
+
+    if (oldVersion < 49) {
+      // Quotation lifecycle status + quote<->invoice links. NULL on every
+      // pre-v49 row = no status (read as 'draft') and no link, behaves
+      // exactly as before.
+      await _runMigrationStep(
+          db, 49, 'add_quotation_status_and_links', () async {
+        await db.execute('ALTER TABLE invoices ADD COLUMN status TEXT');
+        await db.execute(
+            'ALTER TABLE invoices ADD COLUMN converted_to_invoice_id TEXT');
+        await db.execute(
+            'ALTER TABLE invoices ADD COLUMN converted_from_invoice_id TEXT');
+      });
+    }
+
+    if (oldVersion < 52) {
+      // Purchase bills / suppliers / stock tracking. Was v41/v42 on the
+      // feature branch; renumbered after merging main (which claimed v41-v49).
+      // v50/v51 skipped: claimed by cash-upi-exchange-service (shipped to a
+      // client at v51) and customer-additional-columns.
+      await _runMigrationStep(
+          db, 52, 'create_purchase_bills_suppliers_tables', () async {
         // product_metadata.supplier_name is a pre-existing free-text field,
         // intentionally not reconciled with this new normalized table.
         await db.execute('''
@@ -862,19 +1019,26 @@ class DatabaseHelper {
       // D2: products.stock stays INTEGER (rounds) while purchase_bill_items
       // .quantity / stock_transactions.quantity_change stay REAL, preserving
       // full precision in the audit trail even though the stock counter rounds.
-      await _runMigrationStep(db, 41, 'add_last_purchase_date_to_products',
+      await _runMigrationStep(db, 52, 'add_last_purchase_date_to_products',
           () async {
         await db.execute(
           'ALTER TABLE products ADD COLUMN last_purchase_date TEXT',
         );
       });
-    }
 
-    if (oldVersion < 42) {
       await _runMigrationStep(
-          db, 42, 'add_cost_includes_tax_to_purchase_bill_items', () async {
+          db, 52, 'add_cost_includes_tax_to_purchase_bill_items', () async {
         await db.execute(
           'ALTER TABLE purchase_bill_items ADD COLUMN cost_includes_tax INTEGER DEFAULT 0',
+        );
+      });
+
+      // Re-run of main's v42 step: DBs that ran this branch's old v42 skipped
+      // it. Duplicate column is tolerated by _runMigrationStep.
+      await _runMigrationStep(
+          db, 52, 'add_description_to_invoice_items', () async {
+        await db.execute(
+          'ALTER TABLE invoice_items ADD COLUMN description TEXT',
         );
       });
     }
@@ -951,4 +1115,21 @@ class DatabaseHelper {
     _database = await _initDB();
     return _database!;
   }
+}
+
+/// Runs [query] once per chunk of at most 900 [ids] and concatenates the
+/// rows. Keeps `IN (?,…)` under SQLite's 999 bind-variable limit on Android
+/// 8–11 (Issues.md #36). [query] gets the chunk and its `?,?,…` placeholders.
+Future<List<Map<String, Object?>>> queryInChunks(
+  List<String> ids,
+  Future<List<Map<String, Object?>>> Function(
+          List<String> chunk, String placeholders)
+      query,
+) async {
+  final rows = <Map<String, Object?>>[];
+  for (var i = 0; i < ids.length; i += 900) {
+    final chunk = ids.sublist(i, i + 900 > ids.length ? ids.length : i + 900);
+    rows.addAll(await query(chunk, List.filled(chunk.length, '?').join(',')));
+  }
+  return rows;
 }

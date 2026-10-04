@@ -1,5 +1,6 @@
 import 'package:invoiso/database/invoice_service.dart';
 import 'package:invoiso/models/invoice.dart';
+import 'package:invoiso/models/invoice_list_filter.dart';
 import 'package:invoiso/repositories/invoice_repository.dart';
 
 class SqliteInvoiceRepository implements InvoiceRepository {
@@ -65,6 +66,8 @@ class SqliteInvoiceRepository implements InvoiceRepository {
     String? filterType,
     String orderBy = 'id',
     bool orderAscending = false,
+    String? customerId,
+    InvoiceListFilter filter = const InvoiceListFilter(),
   }) =>
       InvoiceService.getInvoicesPaginated(
         page: page,
@@ -73,14 +76,23 @@ class SqliteInvoiceRepository implements InvoiceRepository {
         filterType: filterType,
         orderBy: orderBy,
         orderAscending: orderAscending,
+        customerId: customerId,
+        filter: filter,
       );
   @override
-  Future<int> getInvoiceCount({String searchQuery = '', String? filterType}) =>
-      InvoiceService.getInvoiceCount(searchQuery: searchQuery, filterType: filterType);
+  Future<int> getInvoiceCount({String searchQuery = '', String? filterType, String? customerId,
+          InvoiceListFilter filter = const InvoiceListFilter()}) =>
+      InvoiceService.getInvoiceCount(
+          searchQuery: searchQuery, filterType: filterType, customerId: customerId, filter: filter);
   @override
   Future<void> softDeleteInvoice(String id) => InvoiceService.softDeleteInvoice(id);
   @override
   Future<void> restoreInvoice(String id) => InvoiceService.restoreInvoice(id);
+  @override
+  Future<void> setInvoiceStatus(String id, String status) =>
+      InvoiceService.setInvoiceStatus(id, status);
+  @override
+  Future<void> declineInvoice(String id) => InvoiceService.declineInvoice(id);
   @override
   Future<void> permanentDeleteInvoice(String id) => InvoiceService.permanentDeleteInvoice(id);
   @override
@@ -99,6 +111,12 @@ class SqliteInvoiceRepository implements InvoiceRepository {
   Future<List<Invoice>> getDueSoonInvoices() => InvoiceService.getDueSoonInvoices();
   @override
   Future<List<Invoice>> getOverdueInvoices({int limit = 10}) => InvoiceService.getOverdueInvoices(limit: limit);
+  @override
+  Future<List<Invoice>> getOpenInvoicesForCustomer(String customerId) =>
+      InvoiceService.getOpenInvoicesForCustomer(customerId);
+  @override
+  Future<List<({String id, String name})>> getCustomersWithInvoices({String? filterType}) =>
+      InvoiceService.getCustomersWithInvoices(filterType: filterType);
   @override
   Future<List<Map<String, dynamic>>> getMonthlyRevenue() => InvoiceService.getMonthlyRevenue();
   @override

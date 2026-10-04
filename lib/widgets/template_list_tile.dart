@@ -11,6 +11,9 @@ import 'package:invoiso/l10n/app_localizations.dart';
 /// live in this static data).
 final templateCatalog = [
   {
+    "template": InvoiceTemplate.gridClassic,
+  },
+  {
     "template": InvoiceTemplate.classic,
     "image": "assets/templates/classic.png",
   },
@@ -29,9 +32,6 @@ final templateCatalog = [
   },
   {
     "template": InvoiceTemplate.thermal,
-  },
-  {
-    "template": InvoiceTemplate.gridClassic,
   },
 ];
 

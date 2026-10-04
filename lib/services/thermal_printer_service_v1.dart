@@ -182,11 +182,16 @@ class ThermalPrinterService {
     }
     hr();
     line(invoice.type.toUpperCase(), align: PosAlign.center, bold: true);
+    if (invoice.status == 'declined') {
+      line('*** DECLINED ***', align: PosAlign.center, bold: true);
+    }
     hr();
 
     // ── Invoice meta ──
     final dateFormatter = DateFormat(dateFmt.key, 'en_US');
-    final dateStr = dateFormatter.format(invoice.date);
+    final dateStr = settings.showTimeInPdf
+        ? '${dateFormatter.format(invoice.date)} ${DateFormat(settings.pdfTimeFormat == '12' ? 'h:mm a' : 'HH:mm', 'en_US').format(invoice.date)}'
+        : dateFormatter.format(invoice.date);
     final numberText = invoice.pdfNumberText(settings.invoicePrefix,
         showLeadingZeros: settings.showLeadingZeros);
     twoCol(numberText != null ? 'Inv No: $numberText' : '', 'Date: $dateStr');
@@ -197,13 +202,16 @@ class ThermalPrinterService {
 
     // ── Customer ──
     line('Name: ${invoice.customer.name}', bold: true);
-    if (invoice.customer.businessName.isNotEmpty) {
+    if (settings.showCustomerBusinessName &&
+        invoice.customer.businessName.isNotEmpty) {
       line(invoice.customer.businessName);
     }
-    if (invoice.customer.phone.isNotEmpty) {
+    if (settings.showCustomerPhone && invoice.customer.phone.isNotEmpty) {
       line('Ph: ${invoice.customer.phone}');
     }
-    if (settings.showGst && invoice.customer.gstin.isNotEmpty) {
+    if (settings.showGst &&
+        settings.showCustomerGstin &&
+        invoice.customer.gstin.isNotEmpty) {
       line('${taxLabel(company?.country)}: ${invoice.customer.gstin}');
     }
     hr();
@@ -257,6 +265,9 @@ class ThermalPrinterService {
         detailParts.add(total);
         line('  ${detailParts.join('  ')}');
       }
+      if (settings.showDescription && item.printedDescription.isNotEmpty) {
+        line('  ${item.printedDescription}');
+      }
       if (settings.showDiscount && item.totalDiscount > 0) {
         line('  Disc: -${item.totalDiscount.toStringAsFixed(2)}');
       }
@@ -272,8 +283,11 @@ class ThermalPrinterService {
       twoCol(invoiceTaxLabel(invoice), '$currency ${invoice.tax.toStringAsFixed(2)}');
     }
     for (final c in invoice.additionalCosts) {
-      twoCol(c.label.isEmpty ? 'Extra Cost' : c.label,
-          '$currency ${c.amount.toStringAsFixed(2)}');
+      twoCol(
+          c.label.isEmpty ? 'Extra Cost' : c.label,
+          c.amount < 0
+              ? '-$currency ${(-c.amount).toStringAsFixed(2)}'
+              : '$currency ${c.amount.toStringAsFixed(2)}');
     }
     if (effectivePreviousBalance > 0) {
       twoCol('Prev Balance:',
@@ -291,7 +305,9 @@ class ThermalPrinterService {
       hr();
       line('=== TAX SUMMARY ===', align: PosAlign.center, bold: true);
       twoCol('Taxable Amt:', '$currency ${invoice.subtotal.toStringAsFixed(2)}');
-      if (isIndia) {
+      if (isIndia && invoice.isInterState) {
+        twoCol('IGST:', '$currency ${invoice.tax.toStringAsFixed(2)}');
+      } else if (isIndia) {
         twoCol('SGST:', '$currency ${(invoice.tax / 2).toStringAsFixed(2)}');
         twoCol('CGST:', '$currency ${(invoice.tax / 2).toStringAsFixed(2)}');
       }

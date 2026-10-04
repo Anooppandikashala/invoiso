@@ -206,6 +206,19 @@ void main() {
     expect(user['salt'], isNull); // no salt was ever set for this legacy row
     expect(user['password_changed'], 0); // forced reset for admin, per v8 step
 
+    // v41 added the per-line description. Pre-v41 rows stay NULL, and nothing
+    // falls back to product_description, so reprinting an old invoice renders
+    // exactly what it rendered before.
+    expect(item.containsKey('description'), isTrue);
+    expect(item['description'], isNull);
+
+    // v49 added quotation status + quote<->invoice links. Legacy rows stay
+    // NULL (read as 'draft', no link).
+    expect(invoice.containsKey('status'), isTrue);
+    expect(invoice['status'], isNull);
+    expect(invoice['converted_to_invoice_id'], isNull);
+    expect(invoice['converted_from_invoice_id'], isNull);
+
     final companyInfo = (await db.query('company_info')).first;
     expect(companyInfo['country'], 'India');
     expect(companyInfo['pan_number'], '');

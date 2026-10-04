@@ -1,4 +1,5 @@
 import 'package:invoiso/common/common.dart';
+import 'package:invoiso/models/custom_field_def.dart';
 
 abstract class SettingsRepository {
   Future<void> setSetting(SettingKey key, String value);
@@ -17,10 +18,16 @@ abstract class SettingsRepository {
   Future<CurrencyOption> getCurrency();
   Future<List<UpiEntry>> getUpiIds();
   Future<void> setUpiIds(List<UpiEntry> entries);
+  Future<List<CustomFieldDef>> getCustomFieldDefs();
+  Future<void> setCustomFieldDefs(List<CustomFieldDef> defs);
   Future<List<BankAccount>> getBankAccounts();
   Future<void> setBankAccounts(List<BankAccount> accounts);
   Future<ProductColumnsConfig> getProductColumnsConfig();
   Future<void> setProductColumnsConfig(ProductColumnsConfig config);
+  Future<Map<String, bool>> getProductListColumns();
+  Future<void> setProductListColumns(Map<String, bool> cols);
+  Future<Map<String, bool>> getInvoicePdfMetadataColumns();
+  Future<void> setInvoicePdfMetadataColumns(Map<String, bool> cols);
   Future<bool> getShowBankDetails();
   Future<void> setShowBankDetails(bool show);
   Future<bool> getShowPhone();
@@ -39,6 +46,24 @@ abstract class SettingsRepository {
   Future<void> setShowAddress(bool show);
   Future<bool> getShowLogo();
   Future<void> setShowLogo(bool show);
+  Future<bool> getShowCustomerBusinessName();
+  Future<void> setShowCustomerBusinessName(bool show);
+  Future<bool> getShowCustomerAddress();
+  Future<void> setShowCustomerAddress(bool show);
+  Future<bool> getShowCustomerPhone();
+  Future<void> setShowCustomerPhone(bool show);
+  Future<bool> getShowCustomerEmail();
+  Future<void> setShowCustomerEmail(bool show);
+  Future<bool> getShowCustomerGstin();
+  Future<void> setShowCustomerGstin(bool show);
+  Future<bool> getShowTimeInPdf();
+  Future<void> setShowTimeInPdf(bool show);
+  Future<String> getPdfTimeFormat();
+  Future<void> setPdfTimeFormat(String format);
+  Future<bool> getShowSlNoInPdf();
+  Future<void> setShowSlNoInPdf(bool show);
+  Future<bool> getPdfLandscape();
+  Future<void> setPdfLandscape(bool landscape);
   Future<bool> getShowGstFields();
   Future<bool> getShowInvoiceFooterBranding();
   Future<bool> getFractionalQuantity();
@@ -59,6 +84,8 @@ abstract class SettingsRepository {
   Future<String?> getWatermarkImage();
   Future<void> setWatermarkOpacity(double opacity);
   Future<double> getWatermarkOpacity();
+  Future<void> setWatermarkFullPage(bool fullPage);
+  Future<bool> getWatermarkFullPage();
   Future<void> setDefaultInvoiceTitle(String? title);
   Future<String?> getDefaultInvoiceTitle();
   Future<String> getSignaturePosition();

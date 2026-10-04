@@ -7,8 +7,9 @@ import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/domain/invoice_calculator.dart';
 import 'package:invoiso/common/invoiso_colors.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
+import 'package:invoiso/models/customer.dart';
 import 'package:invoiso/models/invoice.dart';
-import 'package:invoiso/providers/invoice_provider.dart';
+import 'package:invoiso/models/invoice_list_filter.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:invoiso/services/backend_services.dart';
@@ -27,7 +28,11 @@ class InvoiceManagementScreenV2 extends ConsumerStatefulWidget {
   final Function(Invoice) onEditInvoice;
   final Function(Invoice, String) onCloneInvoice;
   final User user;
-  final String filterType; // 'Invoice' | 'Quotation'
+  final String filterType; // 'Invoice' | 'Quotation' | 'Receipt'
+  // Opens the create form with [filterType] preselected. Null hides the button.
+  final void Function(String type)? onCreateNew;
+  // Converts a quotation to an invoice. Only wired for the Quotation list.
+  final void Function(Invoice quotation)? onConvertToInvoice;
 
   const InvoiceManagementScreenV2({
     super.key,
@@ -35,6 +40,8 @@ class InvoiceManagementScreenV2 extends ConsumerStatefulWidget {
     required this.onCloneInvoice,
     required this.user,
     this.filterType = 'Invoice',
+    this.onCreateNew,
+    this.onConvertToInvoice,
   });
 
   @override
@@ -44,12 +51,28 @@ class InvoiceManagementScreenV2 extends ConsumerStatefulWidget {
 
 class _InvoiceManagementScreenV2State
     extends ConsumerState<InvoiceManagementScreenV2> {
+  // Localized label for widget.filterType ('Invoice' | 'Quotation' | 'Receipt').
+  String get _typeLabel {
+    final l10n = AppLocalizations.of(context)!;
+    switch (widget.filterType) {
+      case 'Quotation':
+        return l10n.labelQuotation;
+      case 'Receipt':
+        return l10n.labelReceipt;
+      default:
+        return l10n.labelInvoice;
+    }
+  }
+
   int _currentPage = 0;
   int _pageSize = 10;
   String _searchQuery = '';
+  String? _selectedCustomerId;
+  String? _selectedCustomerName;
   bool _isLoadingPage = false;
   bool _isBulkLoading = false;
   bool _hidePaid = false;
+  bool _hideDeclined = false;
   String _dueDateFilter =
       'all'; // 'all' | 'overdue' | 'due_today' | 'due_week' | 'due_month'
   String _paymentStatusFilterV2 = 'all'; // 'all' | 'paid' | 'partial' | 'unpaid'
@@ -119,6 +142,19 @@ class _InvoiceManagementScreenV2State
       _selectedIds.clear(); // selection reset on every page/search change
     });
     try {
+      // Filters run in the query, before pagination (Issues.md #39) — so
+      // pages stay full and the total/page count match the filtered set.
+      final filter = InvoiceListFilter(
+        dateFrom: _invoiceDateFrom,
+        dateTo: _invoiceDateTo,
+        numberFrom: _idRangeFrom,
+        numberTo: _idRangeTo,
+        dueDate: _dueDateFilter,
+        paymentStatus:
+            widget.filterType == 'Invoice' ? _paymentStatusFilterV2 : 'all',
+        hidePaid: _hidePaid,
+        hideDeclined: widget.filterType == 'Invoice' && _hideDeclined,
+      );
       final results = await Future.wait([
         ref.read(invoiceRepositoryProvider).getInvoicesPaginated(
           page: _currentPage,
@@ -127,90 +163,19 @@ class _InvoiceManagementScreenV2State
           filterType: widget.filterType,
           orderBy: _sortField,
           orderAscending: _sortAscending,
+          customerId: _selectedCustomerId,
+          filter: filter,
         ),
         ref.read(invoiceRepositoryProvider).getInvoiceCount(
           searchQuery: _searchQuery,
           filterType: widget.filterType,
+          customerId: _selectedCustomerId,
+          filter: filter,
         ),
       ]);
       if (mounted) {
-        var pageInvoices = results[0] as List<Invoice>;
-        if (_hidePaid) {
-          // Keep Quotations; for Invoices only keep those with an outstanding balance
-          pageInvoices = pageInvoices
-              .where((inv) =>
-                  inv.type != 'Invoice' ||
-                  inv.outstandingBalance > InvoiceCalculator.moneyEpsilon)
-              .toList();
-        }
-        if (_dueDateFilter != 'all') {
-          pageInvoices = pageInvoices.where((inv) {
-            if (inv.dueDate == null) return false;
-            final today = InvoiceCalculator.dateOnly(DateTime.now());
-            final due = InvoiceCalculator.dateOnly(inv.dueDate!);
-            switch (_dueDateFilter) {
-              case 'overdue':
-                return InvoiceCalculator.isOverdue(
-                  dueDate: inv.dueDate,
-                  outstanding: inv.outstandingBalance,
-                );
-              case 'due_today':
-                return due == today;
-              case 'due_week':
-                return !due.isBefore(today) &&
-                    due.isBefore(today.add(const Duration(days: 7)));
-              case 'due_month':
-                return !due.isBefore(today) &&
-                    due.isBefore(
-                        DateTime(today.year, today.month + 1, today.day));
-              default:
-                return true;
-            }
-          }).toList();
-        }
-        // V2: additional payment-status filter (All / Paid / Partial /
-        // Unpaid) — same client-side-on-the-loaded-page approach as the
-        // existing hidePaid/dueDate filters above, for consistency.
-        if (widget.filterType == 'Invoice' && _paymentStatusFilterV2 != 'all') {
-          pageInvoices = pageInvoices.where((inv) {
-            switch (_paymentStatusFilterV2) {
-              case 'paid':
-                return inv.paymentStatus == PaymentStatus.paid;
-              case 'partial':
-                return inv.paymentStatus == PaymentStatus.partial;
-              case 'unpaid':
-                return inv.paymentStatus == PaymentStatus.unpaid;
-              default:
-                return true;
-            }
-          }).toList();
-        }
-        if (_invoiceDateFrom != null || _invoiceDateTo != null) {
-          pageInvoices = pageInvoices.where((inv) {
-            final d = InvoiceCalculator.dateOnly(inv.date);
-            if (_invoiceDateFrom != null &&
-                d.isBefore(InvoiceCalculator.dateOnly(_invoiceDateFrom!))) {
-              return false;
-            }
-            if (_invoiceDateTo != null &&
-                d.isAfter(InvoiceCalculator.dateOnly(_invoiceDateTo!))) {
-              return false;
-            }
-            return true;
-          }).toList();
-        }
-        if (_idRangeFrom != null || _idRangeTo != null) {
-          pageInvoices = pageInvoices.where((inv) {
-            final n = int.tryParse(
-                (inv.invoiceNumber ?? inv.id).replaceAll(RegExp(r'\D'), ''));
-            if (n == null) return false;
-            if (_idRangeFrom != null && n < _idRangeFrom!) return false;
-            if (_idRangeTo != null && n > _idRangeTo!) return false;
-            return true;
-          }).toList();
-        }
         setState(() {
-          _pageInvoices = pageInvoices;
+          _pageInvoices = results[0] as List<Invoice>;
           _totalCount = results[1] as int;
           _isLoadingPage = false;
         });
@@ -303,6 +268,41 @@ class _InvoiceManagementScreenV2State
     }
   }
 
+  Future<void> _setQuotationStatus(Invoice quotation, String status) async {
+    await ref
+        .read(invoiceRepositoryProvider)
+        .setInvoiceStatus(quotation.id, status);
+    if (!mounted) return;
+    _currentPage = 0;
+    await _loadPage();
+  }
+
+  Future<void> _confirmAndConvert(Invoice quotation) async {
+    if (widget.onConvertToInvoice == null) return;
+    if (quotation.status == 'converted') {
+      final l10n = AppLocalizations.of(context)!;
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(l10n.invoiceMgmtConvertAgainTitle),
+          content: Text(l10n.invoiceMgmtConvertAgainBody(
+              quotation.invoiceNumber ?? quotation.id)),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(l10n.actionCancel)),
+            FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: Text(l10n.invoiceMgmtConvertToInvoiceAction)),
+          ],
+        ),
+      );
+      if (proceed != true) return;
+    }
+    widget.onConvertToInvoice!(quotation);
+  }
+
   Future<void> _softDelete(Invoice invoice) async {
     final l10n = AppLocalizations.of(context)!;
     final confirmed = await AppError.confirm(
@@ -315,10 +315,32 @@ class _InvoiceManagementScreenV2State
     if (!confirmed) return;
 
     await ref.read(invoiceRepositoryProvider).softDeleteInvoice(invoice.id);
-    ref.read(invoicesProvider.notifier).refresh();
     await _loadPage();
     if (mounted) {
       AppError.showSuccess(context, AppLocalizations.of(context)!.invoiceMgmtMovedToTrashMessage);
+    }
+  }
+
+  Future<void> _declineInvoice(Invoice invoice) async {
+    final l10n = AppLocalizations.of(context)!;
+    if (invoice.payments.isNotEmpty) {
+      AppError.show(context,
+          l10n.invoiceMgmtDeclineHasPaymentsMessage(invoice.invoiceNumber ?? invoice.id));
+      return;
+    }
+    final confirmed = await AppError.confirm(
+      context,
+      title: l10n.invoiceMgmtDeclineInvoiceTitle,
+      message: l10n.invoiceMgmtDeclineInvoiceBody(invoice.invoiceNumber ?? invoice.id),
+      confirmLabel: l10n.invoiceMgmtMarkAsDeclined,
+      confirmColor: Colors.red,
+    );
+    if (!confirmed) return;
+
+    await ref.read(invoiceRepositoryProvider).declineInvoice(invoice.id);
+    await _loadPage();
+    if (mounted) {
+      AppError.showSuccess(context, l10n.invoiceMgmtDeclinedSuccessMessage);
     }
   }
 
@@ -464,6 +486,7 @@ class _InvoiceManagementScreenV2State
       );
       final path = await ExportService.exportInvoicesToCsv(invoices,
           type: widget.filterType);
+      if (path == null) return; // user cancelled the save dialog
       if (mounted) {
         AppError.showSuccess(context,
             AppLocalizations.of(context)!.invoiceMgmtExportedRecordsMessage(invoices.length, path));
@@ -485,7 +508,6 @@ class _InvoiceManagementScreenV2State
         deletedInvoices: deleted,
         datePattern: _datePattern,
         onRestored: () async {
-          ref.read(invoicesProvider.notifier).refresh();
           await _loadPage();
         },
       ),
@@ -511,7 +533,6 @@ class _InvoiceManagementScreenV2State
       for (final id in List<String>.from(_selectedIds)) {
         await ref.read(invoiceRepositoryProvider).softDeleteInvoice(id);
       }
-      ref.read(invoicesProvider.notifier).refresh();
       await _loadPage(); // also clears _selectedIds
       if (mounted) {
         AppError.showSuccess(
@@ -534,6 +555,7 @@ class _InvoiceManagementScreenV2State
     setState(() => _isBulkLoading = true);
     try {
       final path = await ExportService.exportInvoicesToCsv(selected);
+      if (path == null) return; // user cancelled the save dialog
       if (mounted) {
         AppError.showSuccess(context,
             AppLocalizations.of(context)!.invoiceMgmtBulkExportedCsvMessage(selected.length));
@@ -1005,6 +1027,7 @@ class _InvoiceManagementScreenV2State
     final unpaid = _pageInvoices
         .where((inv) =>
             _selectedIds.contains(inv.id) &&
+            inv.status != 'declined' &&
             inv.outstandingBalance > InvoiceCalculator.moneyEpsilon)
         .toList();
     final alreadyPaid = _selectedIds.length - unpaid.length;
@@ -1031,7 +1054,6 @@ class _InvoiceManagementScreenV2State
         invoices: unpaid,
         datePaid: DateTime.now(),
       );
-      ref.read(invoicesProvider.notifier).refresh();
       await _loadPage();
       if (mounted) {
         AppError.showSuccess(
@@ -1082,6 +1104,7 @@ class _InvoiceManagementScreenV2State
     {'value': 'paid', 'color': Colors.green},
     {'value': 'partial', 'color': Colors.orange},
     {'value': 'unpaid', 'color': Colors.red},
+    {'value': 'declined', 'color': Colors.red},
   ];
 
   static String _paymentStatusFilterLabel(AppLocalizations l10n, String value) {
@@ -1089,12 +1112,122 @@ class _InvoiceManagementScreenV2State
       'paid' => l10n.paymentStatusPaid,
       'partial' => l10n.paymentStatusPartial,
       'unpaid' => l10n.paymentStatusUnpaid,
+      'declined' => l10n.invoiceStatusDeclinedBadge,
       _ => l10n.invoiceMgmtStatusAllLabel,
     };
   }
 
+  // Deliberately separate from _showFilterDialogV2 — picking a customer is
+  // its own control, not one more field inside the Filter dialog.
+  Future<void> _pickCustomerFilterV2() async {
+    final results = await Future.wait([
+      ref.read(customerRepositoryProvider).getAllCustomers(),
+      ref.read(invoiceRepositoryProvider).getCustomersWithInvoices(filterType: widget.filterType),
+    ]);
+    final allCustomers = results[0] as List<Customer>;
+    final invoiceCustomers = results[1] as List<({String id, String name})>;
+    final byId = {for (final c in allCustomers) c.id: c};
+    // Customers typed directly on an invoice without being saved to the
+    // Customers list still get a real (random) customer_id on the invoice —
+    // show them too, using the invoice's snapshotted name, instead of
+    // silently dropping anything that isn't a saved Customer record.
+    final savedIds = byId.keys.toSet();
+    final customers = invoiceCustomers.map((ic) {
+      return byId[ic.id] ??
+          Customer(
+            id: ic.id,
+            name: ic.name.isEmpty ? 'Unknown' : ic.name,
+            email: '',
+            phone: '',
+            address: '',
+            gstin: '',
+          );
+    }).toList()
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    if (!mounted) return;
+    final selected = await showDialog<Customer?>(
+      context: context,
+      builder: (dialogContext) {
+        String query = '';
+        return StatefulBuilder(builder: (dialogContext, setDialogState) {
+          final filtered = query.isEmpty
+              ? customers
+              : customers
+                  .where((c) => c.name.toLowerCase().contains(query.toLowerCase()))
+                  .toList();
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Text('Filter by Customer'),
+            content: SizedBox(
+              width: 380,
+              height: 440,
+              child: Column(
+                children: [
+                  TextField(
+                    autofocus: true,
+                    decoration: const InputDecoration(
+                      hintText: 'Search customers…',
+                      prefixIcon: Icon(Icons.search, size: 20),
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    onChanged: (v) => setDialogState(() => query = v),
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: filtered.isEmpty
+                        ? const Center(child: Text('No customers found'))
+                        : ListView.builder(
+                            itemCount: filtered.length,
+                            itemBuilder: (context, i) {
+                              final c = filtered[i];
+                              final isSaved = savedIds.contains(c.id);
+                              return ListTile(
+                                title: Text(c.name),
+                                subtitle: !isSaved
+                                    ? const Text('Not saved as a customer')
+                                    : c.businessName.isNotEmpty
+                                        ? Text(c.businessName)
+                                        : null,
+                                onTap: () => Navigator.pop(dialogContext, c),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Cancel'),
+              ),
+            ],
+          );
+        });
+      },
+    );
+    if (selected == null || !mounted) return;
+    setState(() {
+      _selectedCustomerId = selected.id;
+      _selectedCustomerName = selected.name;
+      _currentPage = 0;
+    });
+    _loadPage();
+  }
+
+  void _clearCustomerFilterV2() {
+    setState(() {
+      _selectedCustomerId = null;
+      _selectedCustomerName = null;
+      _currentPage = 0;
+    });
+    _loadPage();
+  }
+
   int get _activeFilterCountV2 =>
       (_hidePaid ? 1 : 0) +
+      (_hideDeclined ? 1 : 0) +
       (_dueDateFilter != 'all' ? 1 : 0) +
       (_paymentStatusFilterV2 != 'all' ? 1 : 0) +
       (_invoiceDateFrom != null || _invoiceDateTo != null ? 1 : 0) +
@@ -1103,6 +1236,7 @@ class _InvoiceManagementScreenV2State
 
   Future<void> _showFilterDialogV2() async {
     bool tempHidePaid = _hidePaid;
+    bool tempHideDeclined = _hideDeclined;
     String tempDue = _dueDateFilter;
     String tempStatus = _paymentStatusFilterV2;
     DateTime? tempDateFrom = _invoiceDateFrom;
@@ -1133,6 +1267,14 @@ class _InvoiceManagementScreenV2State
                       onChanged: (v) => setDialogState(() => tempHidePaid = v),
                       activeColor: Theme.of(dialogContext).primaryColor,
                     ),
+                    if (widget.filterType == 'Invoice')
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(AppLocalizations.of(context)!.invoiceMgmtHideDeclinedLabel),
+                        value: tempHideDeclined,
+                        onChanged: (v) => setDialogState(() => tempHideDeclined = v),
+                        activeColor: Theme.of(dialogContext).primaryColor,
+                      ),
                     const SizedBox(height: 8),
                     Text(AppLocalizations.of(context)!.invoiceMgmtPaymentStatusLabel,
                         style: TextStyle(
@@ -1246,6 +1388,7 @@ class _InvoiceManagementScreenV2State
                 onPressed: () {
                   setDialogState(() {
                     tempHidePaid = false;
+                    tempHideDeclined = false;
                     tempDue = 'all';
                     tempStatus = 'all';
                     tempDateFrom = null;
@@ -1268,6 +1411,7 @@ class _InvoiceManagementScreenV2State
                       Navigator.pop(dialogContext);
                       setState(() {
                         _hidePaid = tempHidePaid;
+                        _hideDeclined = tempHideDeclined;
                         _dueDateFilter = tempDue;
                         _paymentStatusFilterV2 = tempStatus;
                         _invoiceDateFrom = tempDateFrom;
@@ -1408,6 +1552,20 @@ class _InvoiceManagementScreenV2State
       },
     );
 
+    final customerButton = _selectedCustomerId == null
+        ? OutlinedButton.icon(
+            onPressed: _pickCustomerFilterV2,
+            icon: const Icon(Icons.person_outline, size: 18),
+            label: const Text('Customer'),
+          )
+        : InputChip(
+            avatar: const Icon(Icons.person, size: 16),
+            label: Text(_selectedCustomerName ?? '',
+                overflow: TextOverflow.ellipsis, maxLines: 1),
+            onPressed: _pickCustomerFilterV2,
+            onDeleted: _clearCustomerFilterV2,
+          );
+
     final filterButton = widget.filterType != 'Invoice'
         ? const SizedBox.shrink()
         : Stack(
@@ -1442,6 +1600,15 @@ class _InvoiceManagementScreenV2State
       label: Text(AppLocalizations.of(context)!.invoiceMgmtSortLabel),
     );
 
+    final newButton = widget.onCreateNew == null
+        ? null
+        : FilledButton.icon(
+            onPressed: () => widget.onCreateNew!(widget.filterType),
+            icon: const Icon(Icons.add, size: 18),
+            label: Text(AppLocalizations.of(context)!
+                .invoiceMgmtNewDocumentButton(_typeLabel)),
+          );
+
     final statText = Text(
       AppLocalizations.of(context)!.invoiceMgmtTotalPageStatusLabel(
           _totalCount, _currentPage + 1, _totalPages > 0 ? _totalPages : 1),
@@ -1454,8 +1621,11 @@ class _InvoiceManagementScreenV2State
     if (isWide) {
       return Row(
         children: [
+          if (newButton != null) ...[newButton, const SizedBox(width: 12)],
           Expanded(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 480), child: searchField)),
           const SizedBox(width: 12),
+          customerButton,
+          const SizedBox(width: 8),
           filterButton,
           if (widget.filterType == 'Invoice') const SizedBox(width: 8),
           sortButton,
@@ -1467,10 +1637,16 @@ class _InvoiceManagementScreenV2State
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (newButton != null) ...[
+          Align(alignment: Alignment.centerLeft, child: newButton),
+          const SizedBox(height: 10),
+        ],
         searchField,
         const SizedBox(height: 10),
         Row(
           children: [
+            customerButton,
+            const SizedBox(width: 8),
             filterButton,
             if (widget.filterType == 'Invoice') const SizedBox(width: 8),
             sortButton,
@@ -1555,16 +1731,51 @@ class _InvoiceManagementScreenV2State
   // those are visible, so the menu carries all of them.
   List<PopupMenuEntry<String>> _rowActionMenuItemsV2(Invoice invoice, bool isWide) {
     final l10n = AppLocalizations.of(context)!;
+    final isDeclined = widget.filterType == 'Invoice' && invoice.status == 'declined';
     return [
       if (!isWide) ...[
         PopupMenuItem(value: 'view', child: _MenuRow(Icons.visibility_outlined, l10n.actionView, Colors.green)),
-        PopupMenuItem(value: 'edit', child: _MenuRow(Icons.edit_outlined, l10n.actionEdit, Colors.blue)),
-        if (widget.filterType == 'Invoice')
+        if (!isDeclined)
+          PopupMenuItem(value: 'edit', child: _MenuRow(Icons.edit_outlined, l10n.actionEdit, Colors.blue)),
+        if (widget.filterType == 'Invoice' && !isDeclined)
           PopupMenuItem(
             value: 'pay',
             child: _MenuRow(Icons.payments_outlined, l10n.actionApplyPayment,
                 invoice.paymentStatus == PaymentStatus.paid ? Colors.green : Colors.purple),
           ),
+        // Declined: read-only history (dialog opens read-only for declined).
+        if (isDeclined && invoice.payments.isNotEmpty)
+          PopupMenuItem(
+            value: 'pay',
+            child: _MenuRow(Icons.history, l10n.paymentDialogHistoryTitle, Colors.blueGrey),
+          ),
+      ],
+      if (widget.filterType == 'Invoice' && !isDeclined) ...[
+        PopupMenuItem(
+            value: 'decline_invoice',
+            child: _MenuRow(Icons.cancel_outlined, l10n.invoiceMgmtMarkAsDeclined, Colors.red)),
+        const PopupMenuDivider(),
+      ],
+      if (widget.filterType == 'Quotation') ...[
+        if (widget.onConvertToInvoice != null)
+          PopupMenuItem(
+              value: 'convert',
+              child: _MenuRow(Icons.swap_horiz, l10n.invoiceMgmtConvertToInvoiceAction, Colors.indigo)),
+        if ((invoice.status ?? 'draft') != 'converted') ...[
+          if ((invoice.status ?? 'draft') != 'sent')
+            PopupMenuItem(
+                value: 'mark_sent',
+                child: _MenuRow(Icons.send_outlined, l10n.invoiceMgmtMarkAsSent, Colors.blue)),
+          if ((invoice.status ?? 'draft') != 'accepted')
+            PopupMenuItem(
+                value: 'mark_accepted',
+                child: _MenuRow(Icons.check_circle_outline, l10n.invoiceMgmtMarkAsAccepted, Colors.green)),
+          if ((invoice.status ?? 'draft') != 'declined')
+            PopupMenuItem(
+                value: 'mark_declined',
+                child: _MenuRow(Icons.cancel_outlined, l10n.invoiceMgmtMarkAsDeclined, Colors.red)),
+        ],
+        const PopupMenuDivider(),
       ],
       PopupMenuItem(value: 'duplicate', child: _MenuRow(Icons.copy_all_outlined, l10n.actionDuplicate, Colors.teal)),
       if (!isWide) ...[
@@ -1588,6 +1799,16 @@ class _InvoiceManagementScreenV2State
         widget.onEditInvoice(invoice);
       case 'pay':
         _showApplyPaymentDialog(invoice);
+      case 'decline_invoice':
+        _declineInvoice(invoice);
+      case 'convert':
+        _confirmAndConvert(invoice);
+      case 'mark_sent':
+        _setQuotationStatus(invoice, 'sent');
+      case 'mark_accepted':
+        _setQuotationStatus(invoice, 'accepted');
+      case 'mark_declined':
+        _setQuotationStatus(invoice, 'declined');
       case 'duplicate':
         _showCloneDialog(invoice);
       case 'preview':
@@ -1603,6 +1824,7 @@ class _InvoiceManagementScreenV2State
 
   Widget _rowActionsV2(Invoice invoice, bool isWide) {
     final l10n = AppLocalizations.of(context)!;
+    final isDeclined = widget.filterType == 'Invoice' && invoice.status == 'declined';
     final menu = PopupMenuButton<String>(
       icon: const Icon(Icons.more_vert, size: 20),
       tooltip: l10n.invoiceMgmtMoreActionsTooltip,
@@ -1618,15 +1840,19 @@ class _InvoiceManagementScreenV2State
       children: [
         _buildActionButton(Icons.visibility_outlined, Colors.green, l10n.actionView,
             () => InvoicePdfServices.showInvoiceDetails(context, invoice)),
-        _buildActionButton(
-            Icons.edit_outlined, Colors.blue, l10n.actionEdit, () => widget.onEditInvoice(invoice)),
-        if (widget.filterType == 'Invoice')
+        if (!isDeclined)
+          _buildActionButton(
+              Icons.edit_outlined, Colors.blue, l10n.actionEdit, () => widget.onEditInvoice(invoice)),
+        if (widget.filterType == 'Invoice' && !isDeclined)
           _buildActionButton(
             Icons.payments_outlined,
             invoice.paymentStatus == PaymentStatus.paid ? Colors.green : Colors.purple,
             l10n.actionApplyPayment,
             () => _showApplyPaymentDialog(invoice),
           ),
+        if (isDeclined && invoice.payments.isNotEmpty)
+          _buildActionButton(Icons.history, Colors.blueGrey, l10n.paymentDialogHistoryTitle,
+              () => _showApplyPaymentDialog(invoice)),
         _buildActionButton(Icons.picture_as_pdf_outlined, Colors.orange, l10n.actionPdfPreview,
             () => InvoicePdfServices.previewPDF(context, invoice)),
         _buildActionButton(Icons.download_outlined, Colors.deepPurple, l10n.actionDownloadPdf,
@@ -1674,6 +1900,8 @@ class _InvoiceManagementScreenV2State
             SizedBox(width: 76, child: Text(l10n.invoiceMgmtColStatus, style: style)),
             Expanded(child: Text(l10n.invoiceMgmtColOutstanding, style: style)),
           ],
+          if (widget.filterType == 'Quotation')
+            SizedBox(width: 96, child: Text(l10n.invoiceMgmtColStatus, style: style)),
           SizedBox(width: isWide ? 300 : 48, child: Text(l10n.invoiceMgmtColActions, style: style)),
         ],
       ),
@@ -1803,11 +2031,13 @@ class _InvoiceManagementScreenV2State
               width: 76,
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: _buildPaymentStatusChip(invoice.paymentStatus),
+                child: invoice.status == 'declined'
+                    ? _statusPill(AppLocalizations.of(context)!.invoiceStatusDeclinedBadge, Colors.red)
+                    : _buildPaymentStatusChip(invoice.paymentStatus),
               ),
             ),
             Expanded(
-              child: invoice.paymentStatus == PaymentStatus.paid
+              child: invoice.status == 'declined' || invoice.paymentStatus == PaymentStatus.paid
                   ? Text('—', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))
                   : Text(
                       '${invoice.currencySymbol} ${invoice.outstandingBalance.toStringAsFixed(2)}',
@@ -1822,6 +2052,14 @@ class _InvoiceManagementScreenV2State
                     ),
             ),
           ],
+          if (widget.filterType == 'Quotation')
+            SizedBox(
+              width: 96,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: _buildQuotationStatusChip(invoice.status),
+              ),
+            ),
           SizedBox(width: isWide ? 300 : 48, child: _rowActionsV2(invoice, isWide)),
         ],
       ),
@@ -1924,6 +2162,14 @@ class _InvoiceManagementScreenV2State
                 : l10n.invoiceMgmtTryAdjustingFiltersMessage,
             style: TextStyle(fontSize: 13.5, color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
+          if (_searchQuery.isEmpty && widget.onCreateNew != null) ...[
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: () => widget.onCreateNew!(widget.filterType),
+              icon: const Icon(Icons.add, size: 18),
+              label: Text(l10n.invoiceMgmtNewDocumentButton(_typeLabel)),
+            ),
+          ],
         ],
       ),
     );
@@ -2211,6 +2457,35 @@ class _InvoiceManagementScreenV2State
         color = Colors.red;
         label = l10n.paymentStatusUnpaid;
     }
+    return _statusPill(label, color);
+  }
+
+  // Quotation lifecycle chip. status null -> 'draft'.
+  Widget _buildQuotationStatusChip(String? status) {
+    final l10n = AppLocalizations.of(context)!;
+    final Color color;
+    final String label;
+    switch (status ?? 'draft') {
+      case 'sent':
+        color = Colors.blue;
+        label = l10n.quotationStatusSent;
+      case 'accepted':
+        color = Colors.green;
+        label = l10n.quotationStatusAccepted;
+      case 'declined':
+        color = Colors.red;
+        label = l10n.quotationStatusDeclined;
+      case 'converted':
+        color = Colors.indigo;
+        label = l10n.quotationStatusConverted;
+      default:
+        color = Colors.blueGrey;
+        label = l10n.quotationStatusDraft;
+    }
+    return _statusPill(label, color);
+  }
+
+  Widget _statusPill(String label, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
       decoration: BoxDecoration(
@@ -2233,7 +2508,6 @@ class _InvoiceManagementScreenV2State
       builder: (ctx) => ApplyPaymentDialog(
         invoice: invoice,
         onPaymentRecorded: () {
-          ref.read(invoicesProvider.notifier).refresh();
           _loadPage();
         },
       ),
@@ -2299,7 +2573,9 @@ class _TrashDialogState extends ConsumerState<_TrashDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: Text(AppLocalizations.of(context)!.invoiceMgmtInvoiceRestoredMessage),
-            backgroundColor: Colors.green),
+            backgroundColor: Colors.green,
+            showCloseIcon: true,
+            closeIconColor: Colors.white),
       );
     }
   }

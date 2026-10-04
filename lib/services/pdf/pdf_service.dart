@@ -117,6 +117,26 @@ class PDFService {
       BackendServices.settings.getShowLogo(), // 37
       BackendServices.settings.getSetting(SettingKey.thermalCompanyNameSize), // 38
       BackendServices.settings.getSetting(SettingKey.invoiceLeadingZeros), // 39
+      BackendServices.settings.getSetting(SettingKey.showDescriptionInPdf), // 40
+      BackendServices.settings.getSetting(SettingKey.descriptionNewLineInPdf), // 41
+      BackendServices.settings.getShowCustomerBusinessName(), // 42
+      BackendServices.settings.getShowCustomerAddress(), // 43
+      BackendServices.settings.getShowCustomerPhone(), // 44
+      BackendServices.settings.getShowCustomerEmail(), // 45
+      BackendServices.settings.getShowCustomerGstin(), // 46
+      BackendServices.settings.getShowTimeInPdf(), // 47
+      BackendServices.settings.getPdfTimeFormat(), // 48
+      BackendServices.settings.getShowSlNoInPdf(), // 49
+      BackendServices.settings.getPdfLandscape(), // 50
+      BackendServices.settings.getWatermarkFullPage(), // 51
+      BackendServices.settings.getInvoicePdfMetadataColumns(), // 52
+      BackendServices.settings.getSetting(SettingKey.showTaxColumn), // 53
+      BackendServices.settings.getSetting(SettingKey.pdfFontSize), // 54
+      BackendServices.settings.getSetting(SettingKey.pdfCompanyNameFontSize), // 55
+      BackendServices.settings.getSetting(SettingKey.pdfDocTitleFontSize), // 56
+      BackendServices.settings.getSetting(SettingKey.pdfTableHeaderFontSize), // 57
+      BackendServices.settings.getSetting(SettingKey.pdfTableItemsFontSize), // 58
+      BackendServices.settings.getSetting(SettingKey.pdfTotalsFontSize), // 59
     ]);
 
     final rawPrefix = (results[2] as String?) ?? 'INV';
@@ -132,6 +152,7 @@ class PDFService {
         ? base64Decode(base64Sig)
         : null;
     final pdfTheme = await PdfFontService.loadTheme();
+    final fontSizeScale = pdfFontSizeFromKey(results[54] as String?).scale;
 
     return PdfGenerationSettings(
       company: results[0] as CompanyInfo?,
@@ -167,6 +188,7 @@ class PDFService {
       watermarkBytes: _cachedWatermarkBytes(results[26] as String?),
       watermarkOpacity: results[27] as double,
       showCgstSgst: (results[28] as String?) == 'true',
+      showTaxColumn: (results[53] as String?) != 'false',
       showRoundOff: (results[29] as String?) == 'true',
       showPhone: results[30] as bool,
       showEmail: results[31] as bool,
@@ -178,6 +200,25 @@ class PDFService {
       showLogo: results[37] as bool,
       thermalCompanyNameSize: (results[38] as String?) ?? 'medium',
       showLeadingZeros: (results[39] as String?) != 'false',
+      showDescription: (results[40] as String?) == 'true',
+      descriptionNewLine: (results[41] as String?) == 'true',
+      showCustomerBusinessName: results[42] as bool,
+      showCustomerAddress: results[43] as bool,
+      showCustomerPhone: results[44] as bool,
+      showCustomerEmail: results[45] as bool,
+      showCustomerGstin: results[46] as bool,
+      showTimeInPdf: results[47] as bool,
+      pdfTimeFormat: results[48] as String,
+      showSlNo: results[49] as bool,
+      landscape: results[50] as bool,
+      watermarkFullPage: results[51] as bool,
+      metadataColumns: results[52] as Map<String, bool>,
+      fontSizeScale: fontSizeScale,
+      companyNameScale: pdfSectionScale(results[55] as String?, fontSizeScale),
+      docTitleScale: pdfSectionScale(results[56] as String?, fontSizeScale),
+      tableHeaderScale: pdfSectionScale(results[57] as String?, fontSizeScale),
+      tableItemsScale: pdfSectionScale(results[58] as String?, fontSizeScale),
+      totalsScale: pdfSectionScale(results[59] as String?, fontSizeScale),
     );
   }
 
@@ -191,8 +232,12 @@ class PDFService {
     final effectivePreviousBalance =
         s.showPreviousBalance ? previousBalanceDue : 0.0;
     final pdfTheme = s.pdfTheme;
-    final effectiveShowCgstSgst =
-        s.showCgstSgst && isIndiaCountry(s.company?.country);
+    final gstSplitOn = s.showCgstSgst &&
+        isIndiaCountry(s.company?.country) &&
+        invoice.taxMode != TaxMode.none;
+    // Interstate supply → one IGST line; else the CGST/SGST 50/50 split.
+    final showIgst = gstSplitOn && invoice.isInterState;
+    final effectiveShowCgstSgst = gstSplitOn && !invoice.isInterState;
 
     String? effectiveUpiId = invoice.upiId;
     if (effectiveUpiId == null || effectiveUpiId.trim().isEmpty) {
@@ -203,8 +248,10 @@ class PDFService {
       effectiveUpiId = effectiveUpiId.trim();
     }
     final showUpiQr = s.showQrStr == 'true' &&
+        invoice.status != 'declined' &&
         effectiveUpiId != null &&
-        effectiveUpiId.isNotEmpty;
+        effectiveUpiId.isNotEmpty &&
+        invoice.outstandingBalance > 0;
 
     BankAccount? effectiveBank;
     if (s.showBankDetails) {
@@ -224,13 +271,23 @@ class PDFService {
           s.company,
           currencySymbol,
           s.invoicePrefix,
+          showCustomerBusinessName: s.showCustomerBusinessName,
+          showCustomerAddress: s.showCustomerAddress,
+          showCustomerPhone: s.showCustomerPhone,
+          showCustomerEmail: s.showCustomerEmail,
+          showCustomerGstin: s.showCustomerGstin,
+          showTimeInPdf: s.showTimeInPdf,
+          pdfTimeFormat: s.pdfTimeFormat,
           upiId: effectiveUpiId,
           showUpiQr: showUpiQr,
           showGst: s.showGst,
+          showSlNo: s.showSlNo,
           showQuantity: s.showQuantity,
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
           showAliasName: s.showAliasName,
+          showDescription: s.showDescription,
+          descriptionNewLine: s.descriptionNewLine,
           businessType: s.businessType,
           bankAccount: effectiveBank,
           datePattern: s.datePattern,
@@ -245,10 +302,20 @@ class PDFService {
           signatureSizePx: s.signatureSizePx,
           previousBalanceDue: effectivePreviousBalance,
           pageFormat: s.pageFormat,
+          metadataColumns: s.metadataColumns,
+          fontSizeScale: s.fontSizeScale,
+          companyNameScale: s.companyNameScale,
+          docTitleScale: s.docTitleScale,
+          tableHeaderScale: s.tableHeaderScale,
+          tableItemsScale: s.tableItemsScale,
+          totalsScale: s.totalsScale,
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
+          watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
+          showIgst: showIgst,
+          showTaxColumn: s.showTaxColumn,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
@@ -266,13 +333,23 @@ class PDFService {
           s.company,
           currencySymbol,
           s.invoicePrefix,
+          showCustomerBusinessName: s.showCustomerBusinessName,
+          showCustomerAddress: s.showCustomerAddress,
+          showCustomerPhone: s.showCustomerPhone,
+          showCustomerEmail: s.showCustomerEmail,
+          showCustomerGstin: s.showCustomerGstin,
+          showTimeInPdf: s.showTimeInPdf,
+          pdfTimeFormat: s.pdfTimeFormat,
           upiId: effectiveUpiId,
           showUpiQr: showUpiQr,
           showGst: s.showGst,
+          showSlNo: s.showSlNo,
           showQuantity: s.showQuantity,
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
           showAliasName: s.showAliasName,
+          showDescription: s.showDescription,
+          descriptionNewLine: s.descriptionNewLine,
           businessType: s.businessType,
           bankAccount: effectiveBank,
           datePattern: s.datePattern,
@@ -287,10 +364,20 @@ class PDFService {
           signatureSizePx: s.signatureSizePx,
           previousBalanceDue: effectivePreviousBalance,
           pageFormat: s.pageFormat,
+          metadataColumns: s.metadataColumns,
+          fontSizeScale: s.fontSizeScale,
+          companyNameScale: s.companyNameScale,
+          docTitleScale: s.docTitleScale,
+          tableHeaderScale: s.tableHeaderScale,
+          tableItemsScale: s.tableItemsScale,
+          totalsScale: s.totalsScale,
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
+          watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
+          showIgst: showIgst,
+          showTaxColumn: s.showTaxColumn,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
@@ -308,13 +395,23 @@ class PDFService {
           s.company,
           currencySymbol,
           s.invoicePrefix,
+          showCustomerBusinessName: s.showCustomerBusinessName,
+          showCustomerAddress: s.showCustomerAddress,
+          showCustomerPhone: s.showCustomerPhone,
+          showCustomerEmail: s.showCustomerEmail,
+          showCustomerGstin: s.showCustomerGstin,
+          showTimeInPdf: s.showTimeInPdf,
+          pdfTimeFormat: s.pdfTimeFormat,
           upiId: effectiveUpiId,
           showUpiQr: showUpiQr,
           showGst: s.showGst,
+          showSlNo: s.showSlNo,
           showQuantity: s.showQuantity,
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
           showAliasName: s.showAliasName,
+          showDescription: s.showDescription,
+          descriptionNewLine: s.descriptionNewLine,
           businessType: s.businessType,
           bankAccount: effectiveBank,
           datePattern: s.datePattern,
@@ -329,10 +426,20 @@ class PDFService {
           signatureSizePx: s.signatureSizePx,
           previousBalanceDue: effectivePreviousBalance,
           pageFormat: s.pageFormat,
+          metadataColumns: s.metadataColumns,
+          fontSizeScale: s.fontSizeScale,
+          companyNameScale: s.companyNameScale,
+          docTitleScale: s.docTitleScale,
+          tableHeaderScale: s.tableHeaderScale,
+          tableItemsScale: s.tableItemsScale,
+          totalsScale: s.totalsScale,
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
+          watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
+          showIgst: showIgst,
+          showTaxColumn: s.showTaxColumn,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
@@ -350,13 +457,23 @@ class PDFService {
           s.company,
           currencySymbol,
           s.invoicePrefix,
+          showCustomerBusinessName: s.showCustomerBusinessName,
+          showCustomerAddress: s.showCustomerAddress,
+          showCustomerPhone: s.showCustomerPhone,
+          showCustomerEmail: s.showCustomerEmail,
+          showCustomerGstin: s.showCustomerGstin,
+          showTimeInPdf: s.showTimeInPdf,
+          pdfTimeFormat: s.pdfTimeFormat,
           upiId: effectiveUpiId,
           showUpiQr: showUpiQr,
           showGst: s.showGst,
+          showSlNo: s.showSlNo,
           showQuantity: s.showQuantity,
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
           showAliasName: s.showAliasName,
+          showDescription: s.showDescription,
+          descriptionNewLine: s.descriptionNewLine,
           businessType: s.businessType,
           bankAccount: effectiveBank,
           datePattern: s.datePattern,
@@ -371,10 +488,20 @@ class PDFService {
           signatureSizePx: s.signatureSizePx,
           previousBalanceDue: effectivePreviousBalance,
           pageFormat: s.pageFormat,
+          metadataColumns: s.metadataColumns,
+          fontSizeScale: s.fontSizeScale,
+          companyNameScale: s.companyNameScale,
+          docTitleScale: s.docTitleScale,
+          tableHeaderScale: s.tableHeaderScale,
+          tableItemsScale: s.tableItemsScale,
+          totalsScale: s.totalsScale,
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
+          watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
+          showIgst: showIgst,
+          showTaxColumn: s.showTaxColumn,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
@@ -392,13 +519,21 @@ class PDFService {
           s.company,
           currencySymbol,
           s.invoicePrefix,
+          showCustomerBusinessName: s.showCustomerBusinessName,
+          showCustomerAddress: s.showCustomerAddress,
+          showCustomerGstin: s.showCustomerGstin,
+          showTimeInPdf: s.showTimeInPdf,
+          pdfTimeFormat: s.pdfTimeFormat,
           upiId: effectiveUpiId,
           showUpiQr: showUpiQr,
           showGst: s.showGst,
+          showSlNo: s.showSlNo,
           showQuantity: s.showQuantity,
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
           showAliasName: s.showAliasName,
+          showDescription: s.showDescription,
+          descriptionNewLine: s.descriptionNewLine,
           businessType: s.businessType,
           bankAccount: effectiveBank,
           datePattern: s.datePattern,
@@ -414,10 +549,20 @@ class PDFService {
           previousBalanceDue: effectivePreviousBalance,
           showTotalQuantity: s.showTotalQuantity,
           pageFormat: s.pageFormat,
+          metadataColumns: s.metadataColumns,
+          fontSizeScale: s.fontSizeScale,
+          companyNameScale: s.companyNameScale,
+          docTitleScale: s.docTitleScale,
+          tableHeaderScale: s.tableHeaderScale,
+          tableItemsScale: s.tableItemsScale,
+          totalsScale: s.totalsScale,
           pdfTheme: pdfTheme,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
+          watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
+          showIgst: showIgst,
+          showTaxColumn: s.showTaxColumn,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
@@ -433,10 +578,16 @@ class PDFService {
           s.company,
           currencySymbol,
           s.invoicePrefix,
+          showCustomerBusinessName: s.showCustomerBusinessName,
+          showCustomerPhone: s.showCustomerPhone,
+          showCustomerGstin: s.showCustomerGstin,
+          showTimeInPdf: s.showTimeInPdf,
+          pdfTimeFormat: s.pdfTimeFormat,
           showGst: s.showGst,
           showQuantity: s.showQuantity,
           showDiscount: s.showDiscount,
           showAliasName: s.showAliasName,
+          showDescription: s.showDescription,
           datePattern: s.datePattern,
           thankYouNote: s.thankYouNote,
           showFooterBranding: s.showFooterBranding,
@@ -453,18 +604,29 @@ class PDFService {
           showAddress: s.showAddress,
         ));
       case InvoiceTemplate.gridClassic:
-        pdf.addPage(buildGridClassicTemplate(
+        pw.MultiPage gridPage({required bool brandingInFrame}) =>
+            buildGridClassicTemplate(
           invoice,
           s.company,
           currencySymbol,
           s.invoicePrefix,
+          showCustomerBusinessName: s.showCustomerBusinessName,
+          showCustomerAddress: s.showCustomerAddress,
+          showCustomerPhone: s.showCustomerPhone,
+          showCustomerEmail: s.showCustomerEmail,
+          showCustomerGstin: s.showCustomerGstin,
+          showTimeInPdf: s.showTimeInPdf,
+          pdfTimeFormat: s.pdfTimeFormat,
           upiId: effectiveUpiId,
           showUpiQr: showUpiQr,
           showGst: s.showGst,
+          showSlNo: s.showSlNo,
           showQuantity: s.showQuantity,
           showDiscount: s.showDiscount,
           showTypeTag: s.showTypeTag,
           showAliasName: s.showAliasName,
+          showDescription: s.showDescription,
+          descriptionNewLine: s.descriptionNewLine,
           showTotalQuantity: s.showTotalQuantity,
           businessType: s.businessType,
           bankAccount: effectiveBank,
@@ -479,11 +641,22 @@ class PDFService {
           signatureSizePx: s.signatureSizePx,
           previousBalanceDue: effectivePreviousBalance,
           pageFormat: s.pageFormat,
+          landscape: s.landscape,
+          metadataColumns: s.metadataColumns,
+          fontSizeScale: s.fontSizeScale,
+          companyNameScale: s.companyNameScale,
+          docTitleScale: s.docTitleScale,
+          tableHeaderScale: s.tableHeaderScale,
+          tableItemsScale: s.tableItemsScale,
+          totalsScale: s.totalsScale,
           pdfTheme: pdfTheme,
           logoPosition: s.logoPosition,
           watermarkBytes: s.watermarkBytes,
           watermarkOpacity: s.watermarkOpacity,
+          watermarkFullPage: s.watermarkFullPage,
           showCgstSgst: effectiveShowCgstSgst,
+          showIgst: showIgst,
+          showTaxColumn: s.showTaxColumn,
           showRoundOff: s.showRoundOff,
           showLeadingZeros: s.showLeadingZeros,
           showPhone: s.showPhone,
@@ -492,7 +665,17 @@ class PDFService {
           showFssai: s.showFssai,
           showAddress: s.showAddress,
           showLogo: s.showLogo,
-        ));
+          brandingInFrame: brandingInFrame,
+        );
+        // Single page: branding inside the frame (can't be cropped off).
+        // Multi-page: re-render with branding in the page footer only, so the
+        // in-frame branding line can never push a near-empty extra page.
+        pdf.addPage(gridPage(brandingInFrame: true));
+        if (s.showFooterBranding && pdf.document.pdfPageList.pages.length > 1) {
+          final multiPagePdf = pw.Document(theme: s.pdfTheme);
+          multiPagePdf.addPage(gridPage(brandingInFrame: false));
+          return multiPagePdf;
+        }
     }
     return pdf;
   }
@@ -536,14 +719,21 @@ class PDFService {
       bytes: Platform.isAndroid ? pdfBytes : null,
     );
     if (savePath == null) return;
+    var finalPath = savePath;
     if (!Platform.isAndroid) {
-      await File(savePath).writeAsBytes(pdfBytes);
+      // file_picker's native save dialog doesn't reliably keep the .pdf
+      // extension on desktop (observed writing "Invoice.file") — enforce it
+      // before we write the bytes ourselves. Android writes via `bytes`
+      // above straight to the URI the picker returned, so it can't be
+      // renamed after the fact.
+      if (!finalPath.toLowerCase().endsWith('.pdf')) finalPath += '.pdf';
+      await File(finalPath).writeAsBytes(pdfBytes);
     }
-    await OpenFile.open(savePath);
+    await OpenFile.open(finalPath);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Saved: $savePath'),
+          content: Text('Saved: $finalPath'),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -609,7 +799,10 @@ class PDFService {
                         await ThermalPrinterService.printInvoice(
                             dialogContext, invoice);
                       } else {
+                        final pageSize =
+                            await BackendServices.settings.getPageSize();
                         await Printing.layoutPdf(
+                            format: pageSizeToFormat(pageSize),
                             onLayout: (_) async => pdfBytes);
                       }
                     },

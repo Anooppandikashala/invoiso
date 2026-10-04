@@ -8,8 +8,8 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:invoiso/common/app_config.dart';
 import 'package:invoiso/common/constants.dart';
+import 'package:invoiso/common/app_config.dart';
 import 'package:invoiso/providers/app_config_provider.dart';
 import 'package:invoiso/providers/purchase_bills_settings_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
@@ -21,6 +21,11 @@ import 'package:invoiso/common/invoiso_colors.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/product.dart';
 import 'package:invoiso/common/common.dart';
+import 'package:invoiso/database/company_registry_service.dart';
+import 'package:invoiso/models/company_profile.dart';
+import 'package:invoiso/screens/settings/company_management_screen.dart';
+import 'package:invoiso/utils/company_switch_navigation.dart';
+import 'package:invoiso/screens/help/help_search_screen.dart';
 import 'package:invoiso/screens/settings/settings_screen.dart';
 import 'package:invoiso/services/invoice_pdf_services.dart';
 import 'package:invoiso/services/pdf_service.dart';
@@ -73,10 +78,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   bool _sidebarExpanded = true;
   late User _currentUser;
   String? _pendingReportsStatementCustomerKey;
+  String? _companyName;
+  List<CompanyProfile> _companies = [];
+  String? _activeCompanyId;
 
   Invoice? invoiceToEdit;
   Invoice? _invoiceToClone;
   String _cloneType = 'Invoice';
+  // Document type preselected on the create form for a brand-new doc, set by
+  // the "New {type}" button on each management screen. Reset to 'Invoice' by
+  // the nav-rail New Invoice action.
+  String _newInvoiceType = 'Invoice';
+  // Id of the quotation being converted to an invoice (drives the create
+  // form's convert mode). Null unless a conversion is in flight.
+  String? _convertSourceQuotationId;
   bool _hasUpdate = false;
   String _createInvoiceLayout = 'v2';
   int? _accessibilityJumpToken;
@@ -89,6 +104,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     super.initState();
     _currentUser = widget.loggedInUser;
     _loadCreateInvoiceLayout();
+    _loadCompanies();
     SessionManager.initialize(_onSessionTimeout);
     if (ref.read(appEditionConfigProvider).enableUpdateCheck) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _checkForUpdates());
@@ -102,12 +118,116 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     }
   }
 
+  Future<void> _loadCompanies() async {
+    final companies = await CompanyRegistryService.listCompanies();
+    final activeId = await CompanyRegistryService.getActiveCompanyId();
+    if (!mounted) return;
+    setState(() {
+      _companies = companies;
+      _activeCompanyId = activeId;
+      _companyName = companies.where((c) => c.id == activeId).firstOrNull?.name;
+    });
+  }
+
+  Future<void> _switchCompany(CompanyProfile company) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.companyMgmtSwitchConfirmTitle),
+        content: Text(l10n.companyMgmtSwitchConfirmBody(company.name)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.actionCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.companyMgmtSwitchButton),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await CompanyRegistryService.switchToCompany(company.id);
+    } catch (e) {
+      if (!mounted) return;
+      _showErrorDialog(l10n.companyMgmtSwitchErrorMessage(e.toString()));
+      return;
+    }
+    if (!mounted) return;
+    await returnToLoginAfterCompanyChange(context, ref);
+  }
+
+  void _showErrorDialog(String message) {
+    final l10n = AppLocalizations.of(context)!;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.commonErrorTitle),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(l10n.actionOk),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _loadCreateInvoiceLayout() async {
     final layout = await ref
         .read(settingsRepositoryProvider)
         .getSetting(SettingKey.createInvoiceLayout);
     if (!mounted) return;
     setState(() => _createInvoiceLayout = layout ?? 'v2');
+    if (_createInvoiceLayout == 'v1') {
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _showV1DeprecationNotice());
+    }
+  }
+
+  Future<void> _showV1DeprecationNotice() async {
+    if (!mounted) return;
+    final switchNow = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.info_outline, color: Theme.of(context).primaryColor),
+            const SizedBox(width: 12),
+            const Flexible(child: Text('Classic invoice layout is going away')),
+          ],
+        ),
+        content: const Text(
+          "You're using the classic Create Invoice layout. In an upcoming "
+          "release this will be removed and everyone moves to the new layout. "
+          "Try it now so you're comfortable with it before the switch — you "
+          "can always go back from Settings until then.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Maybe later'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Try new layout now'),
+          ),
+        ],
+      ),
+    );
+    if (switchNow == true && mounted) {
+      await ref
+          .read(settingsRepositoryProvider)
+          .setSetting(SettingKey.createInvoiceLayout, 'v2');
+      if (!mounted) return;
+      setState(() => _createInvoiceLayout = 'v2');
+    }
   }
 
   Future<void> _checkForUpdates() async {
@@ -135,9 +255,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   void _onSessionTimeout() {
     if (!mounted) return;
-    Navigator.pushReplacement(
-      context,
+    // Clear the whole stack — a dialog or pushed screen may be on top, and
+    // pushReplacement would leave the dashboard reachable behind Login.
+    Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => const LoginScreen()),
+      (_) => false,
     );
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -166,13 +288,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             onCloneInvoice: cloneInvoice,
             user: _currentUser);
       case 1:
+        final isNewDoc = invoiceToEdit == null && _invoiceToClone == null;
         final createInvoiceKey = ValueKey(
-            'create_invoice_${invoiceToEdit?.id ?? 'new'}_${_invoiceToClone?.id ?? ''}');
+            'create_invoice_${invoiceToEdit?.id ?? 'new'}_${_invoiceToClone?.id ?? ''}_${isNewDoc ? _newInvoiceType : ''}_${_convertSourceQuotationId ?? ''}');
         void onCreateNewInvoice() {
           if (!mounted) return;
           setState(() {
             invoiceToEdit = null;
             _invoiceToClone = null;
+            _newInvoiceType = 'Invoice';
+            _convertSourceQuotationId = null;
           });
         }
         return _createInvoiceLayout == 'v1'
@@ -181,6 +306,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 invoiceToEdit: invoiceToEdit,
                 cloneFrom: _invoiceToClone,
                 cloneType: _invoiceToClone != null ? _cloneType : null,
+                initialType: isNewDoc ? _newInvoiceType : null,
+                convertFromQuotationId: _convertSourceQuotationId,
                 guard: _invoiceFormGuardV1,
                 onCreateNewInvoice: onCreateNewInvoice,
               )
@@ -189,6 +316,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 invoiceToEdit: invoiceToEdit,
                 cloneFrom: _invoiceToClone,
                 cloneType: _invoiceToClone != null ? _cloneType : null,
+                initialType: isNewDoc ? _newInvoiceType : null,
+                convertFromQuotationId: _convertSourceQuotationId,
                 guard: _invoiceFormGuard,
                 onCreateNewInvoice: onCreateNewInvoice,
               );
@@ -197,6 +326,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           key: const ValueKey('invoice_list'),
           onEditInvoice: editInvoice,
           onCloneInvoice: cloneInvoice,
+          onCreateNew: _createDocumentOfType,
           user: _currentUser,
           filterType: 'Invoice',
         );
@@ -205,6 +335,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           key: const ValueKey('quotation_list'),
           onEditInvoice: editInvoice,
           onCloneInvoice: cloneInvoice,
+          onCreateNew: _createDocumentOfType,
+          onConvertToInvoice: _convertQuotationToInvoice,
           user: _currentUser,
           filterType: 'Quotation',
         );
@@ -213,6 +345,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           key: const ValueKey('receipt_list'),
           onEditInvoice: editInvoice,
           onCloneInvoice: cloneInvoice,
+          onCreateNew: _createDocumentOfType,
           user: _currentUser,
           filterType: 'Receipt',
         );
@@ -317,6 +450,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       _selectedIndex = 1;
       invoiceToEdit = invoice;
       _invoiceToClone = null;
+      _convertSourceQuotationId = null;
     });
     _shortcutsFocusNode.unfocus();
   }
@@ -333,6 +467,40 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       invoiceToEdit = null;
       _invoiceToClone = invoice;
       _cloneType = type;
+      _convertSourceQuotationId = null;
+    });
+    _shortcutsFocusNode.unfocus();
+  }
+
+  // "New {type}" button on the Invoice / Quotation / Receipt management screens
+  // — opens the create form with that document type preselected.
+  Future<void> _createDocumentOfType(String type) async {
+    if (!await _canLeaveInvoiceForm()) return;
+    await _loadCreateInvoiceLayout();
+    if (!mounted) return;
+    setState(() {
+      _selectedIndex = 1;
+      invoiceToEdit = null;
+      _invoiceToClone = null;
+      _newInvoiceType = type;
+      _convertSourceQuotationId = null;
+    });
+    _shortcutsFocusNode.unfocus();
+  }
+
+  // "Convert to Invoice" action on a quotation row — opens the create form
+  // pre-filled from the quotation, locked to Invoice type; on save the
+  // quotation is stamped 'converted' and the two are linked.
+  Future<void> _convertQuotationToInvoice(Invoice quotation) async {
+    if (!await _canLeaveInvoiceForm()) return;
+    await _loadCreateInvoiceLayout();
+    if (!mounted) return;
+    setState(() {
+      _selectedIndex = 1;
+      invoiceToEdit = null;
+      _invoiceToClone = quotation;
+      _cloneType = 'Invoice';
+      _convertSourceQuotationId = quotation.id;
     });
     _shortcutsFocusNode.unfocus();
   }
@@ -355,6 +523,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       if (index != 1) {
         invoiceToEdit = null;
         _invoiceToClone = null;
+        _convertSourceQuotationId = null;
+      } else {
+        // Nav-rail "New Invoice" always means a plain, blank invoice.
+        _newInvoiceType = 'Invoice';
+        _invoiceToClone = null;
+        _convertSourceQuotationId = null;
       }
     });
     // See initState: only hold shortcuts focus for non-create-invoice tabs.
@@ -430,46 +604,166 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           children: [
             // ── Logo + toggle ──────────────────────────
             if (expanded)
-              SizedBox(
-                height: 76,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Positioned(
-                      left: 16,
-                      right: 36,
-                      child: Image.asset(
-                        Theme.of(context).brightness == Brightness.dark
-                            ? 'assets/images/logo_dark.png'
-                            : 'assets/images/logo.png',
-                        height: 36,
-                        fit: BoxFit.fitHeight,
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    height: 76,
+                    child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Positioned(
+                            left: 16,
+                            right: 36,
+                            child: Image.asset(
+                              Theme.of(context).brightness == Brightness.dark
+                                  ? 'assets/images/logo_dark.png'
+                                  : 'assets/images/logo.png',
+                              height: 36,
+                              fit: BoxFit.fitHeight,
+                            ),
+                          ),
+                          Positioned(
+                            right: 6,
+                            child: Tooltip(
+                              message: AppLocalizations.of(context)!
+                                  .dashboardCollapseSidebarTooltip,
+                              child: InkWell(
+                                onTap: () {
+                                  if (!mounted) return;
+                                  setState(() => _sidebarExpanded = false);
+                                },
+                                borderRadius: BorderRadius.circular(6),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(6),
+                                  child: Icon(Icons.chevron_left_rounded,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                      size: 20),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    Positioned(
-                      right: 6,
-                      child: Tooltip(
-                        message: AppLocalizations.of(context)!
-                            .dashboardCollapseSidebarTooltip,
-                        child: InkWell(
-                          onTap: () {
-                            if (!mounted) return;
-                            setState(() => _sidebarExpanded = false);
+                    if (_companyName?.isNotEmpty == true)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+                        child: PopupMenuButton<String>(
+                          tooltip: '',
+                          padding: EdgeInsets.zero,
+                          offset: const Offset(0, 40),
+                          itemBuilder: (context) => [
+                            for (final company in _companies)
+                              PopupMenuItem<String>(
+                                value: company.id,
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      company.id == _activeCompanyId
+                                          ? Icons.check_circle
+                                          : Icons.circle_outlined,
+                                      size: 18,
+                                      color: company.id == _activeCompanyId
+                                          ? Colors.green
+                                          : Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Flexible(
+                                        child: Text(company.name,
+                                            overflow: TextOverflow.ellipsis)),
+                                  ],
+                                ),
+                              ),
+                            const PopupMenuDivider(),
+                            PopupMenuItem<String>(
+                              value: '__manage__',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.settings_outlined,
+                                      size: 18,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant),
+                                  const SizedBox(width: 10),
+                                  Text(AppLocalizations.of(context)!
+                                      .companyMgmtTitle),
+                                ],
+                              ),
+                            ),
+                          ],
+                          onSelected: (value) {
+                            if (value == '__manage__') {
+                              Navigator.of(context).push(MaterialPageRoute(
+                                builder: (_) => CompanyManagementScreen(
+                                    currentUser: _currentUser),
+                              ));
+                            } else if (value != _activeCompanyId) {
+                              final company = _companies
+                                  .where((c) => c.id == value)
+                                  .firstOrNull;
+                              if (company != null) _switchCompany(company);
+                            }
                           },
-                          borderRadius: BorderRadius.circular(6),
-                          child: Padding(
-                            padding: const EdgeInsets.all(6),
-                            child: Icon(Icons.chevron_left_rounded,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
-                                size: 20),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            // `expanded` flips true while the sidebar is still ~64px
+                            // wide mid-animation; give the row a minimum width and
+                            // clip the excess instead of overflowing.
+                            child: LayoutBuilder(
+                              builder: (context, constraints) => UnconstrainedBox(
+                                constrainedAxis: Axis.vertical,
+                                alignment: Alignment.centerLeft,
+                                clipBehavior: Clip.hardEdge,
+                                child: SizedBox(
+                                  width: constraints.maxWidth < 60
+                                      ? 60
+                                      : constraints.maxWidth,
+                                  child: Row(
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 11,
+                                        backgroundColor: primary,
+                                        child: Text(
+                                          _companyName!.trim()[0].toUpperCase(),
+                                          style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          _companyName!,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 12.5,
+                                            fontWeight: FontWeight.w600,
+                                            color: primary,
+                                          ),
+                                        ),
+                                      ),
+                                      Icon(Icons.expand_more, size: 16, color: primary),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
+                ],
               )
             else
               SizedBox(
@@ -477,15 +771,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: Image.asset(
-                        Theme.of(context).brightness == Brightness.dark
-                            ? 'assets/images/logo_v_dark.png'
-                            : 'assets/images/logo_v.png',
-                        width: 38,
-                        height: 38,
-                        fit: BoxFit.cover,
+                    Tooltip(
+                      message: _companyName ?? '',
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.asset(
+                          Theme.of(context).brightness == Brightness.dark
+                              ? 'assets/images/logo_v_dark.png'
+                              : 'assets/images/logo_v.png',
+                          width: 38,
+                          height: 38,
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -565,6 +862,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
             ),
 
+            // ── Search Help & Settings ──────────────────
+            _buildSearchNavItem(),
+            const SizedBox(height: 4),
+
             // ── User Info ──────────────────────────────
             Divider(
                 color: Theme.of(context).colorScheme.outlineVariant,
@@ -572,7 +873,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 thickness: 1),
             LayoutBuilder(
               builder: (context, constraints) {
-                final useExpanded = constraints.maxWidth > 110;
+                // Row below needs ~178px of fixed content (padding + avatar +
+                // 3 icon buttons) — switch only once it fits, not at 110.
+                final useExpanded = constraints.maxWidth > 180;
                 if (useExpanded) {
                   return Padding(
                     padding: const EdgeInsets.fromLTRB(14, 12, 10, 10),
@@ -628,11 +931,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             ),
                             Tooltip(
                               message: AppLocalizations.of(context)!
-                                  .dashboardSupportTooltip,
+                                  .buyMeCoffeeLabel,
                               child: InkWell(
                                 onTap: () => launchUrl(
-                                    Uri.parse(AppConfig.supportForm),
+                                    Uri.parse(AppConfig.buyMeCoffee),
                                     mode: LaunchMode.externalApplication),
+                                borderRadius: BorderRadius.circular(6),
+                                child: const Padding(
+                                  padding: EdgeInsets.all(6),
+                                  child: Icon(Icons.coffee_outlined,
+                                      color: Color(0xFFD97706), size: 18),
+                                ),
+                              ),
+                            ),
+                            Tooltip(
+                              message: AppLocalizations.of(context)!
+                                  .dashboardSupportTooltip,
+                              child: InkWell(
+                                onTap: () => showHelpSearchDialog(context),
                                 borderRadius: BorderRadius.circular(6),
                                 child: Padding(
                                   padding: EdgeInsets.all(6),
@@ -727,11 +1043,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       Center(
                         child: Tooltip(
                           message: AppLocalizations.of(context)!
-                              .dashboardSupportTooltip,
+                              .buyMeCoffeeLabel,
                           child: InkWell(
                             onTap: () => launchUrl(
-                                Uri.parse(AppConfig.supportForm),
+                                Uri.parse(AppConfig.buyMeCoffee),
                                 mode: LaunchMode.externalApplication),
+                            borderRadius: BorderRadius.circular(6),
+                            child: const Padding(
+                              padding: EdgeInsets.all(6),
+                              child: Icon(Icons.coffee_outlined,
+                                  color: Color(0xFFD97706), size: 18),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Center(
+                        child: Tooltip(
+                          message: AppLocalizations.of(context)!
+                              .dashboardSupportTooltip,
+                          child: InkWell(
+                            onTap: () => showHelpSearchDialog(context),
                             borderRadius: BorderRadius.circular(6),
                             child: Padding(
                               padding: EdgeInsets.all(6),
@@ -1022,6 +1354,74 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSearchNavItem() {
+    final primary = Theme.of(context).primaryColor;
+    final label = AppLocalizations.of(context)!.helpSearchTooltip;
+    final onSurfaceVariant = Theme.of(context).colorScheme.onSurfaceVariant;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useExpanded = constraints.maxWidth > 110;
+
+        if (!useExpanded) {
+          return Tooltip(
+            message: label,
+            preferBelow: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+                child: InkWell(
+                  onTap: () => showHelpSearchDialog(context),
+                  borderRadius: BorderRadius.circular(8),
+                  hoverColor: primary.withValues(alpha: 0.06),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Icon(Icons.search, color: onSurfaceVariant, size: 20),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            child: InkWell(
+              onTap: () => showHelpSearchDialog(context),
+              borderRadius: BorderRadius.circular(8),
+              hoverColor: primary.withValues(alpha: 0.06),
+              splashColor: primary.withValues(alpha: 0.1),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                child: Row(
+                  children: [
+                    Icon(Icons.search, color: onSurfaceVariant, size: 18),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                          color: onSurfaceVariant,
+                          fontWeight: FontWeight.w400,
+                          fontSize: 13.5,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -1879,8 +2279,10 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                               Colors.blue,
                                               AppLocalizations.of(context)!
                                                   .actionEdit,
-                                              () => widget
-                                                  .onEditInvoice(invoice)),
+                                              invoice.status == 'declined'
+                                                  ? null
+                                                  : () => widget
+                                                      .onEditInvoice(invoice)),
                                           _buildActionButton(
                                               Icons.copy_all_outlined,
                                               Colors.teal,
@@ -1915,7 +2317,11 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                               Colors.purple,
                                               AppLocalizations.of(context)!
                                                   .actionPayment,
-                                              invoice.type == 'Invoice'
+                                              invoice.type == 'Invoice' &&
+                                                      (invoice.status !=
+                                                              'declined' ||
+                                                          invoice.payments
+                                                              .isNotEmpty)
                                                   ? () => showDialog(
                                                         context: context,
                                                         barrierDismissible:
@@ -3488,8 +3894,17 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
             child: Row(
               children: [
                 Expanded(
+                    flex: 3,
+                    child: Text(
+                        AppLocalizations.of(context)!.dashboardColDocumentNo,
+                        style: TextStyle(
+                            fontSize: 11,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600))),
+                Expanded(
                     flex: 2,
-                    child: Text(AppLocalizations.of(context)!.labelInvoice,
+                    child: Text(AppLocalizations.of(context)!.dashboardColType,
                         style: TextStyle(
                             fontSize: 11,
                             color:
@@ -3504,7 +3919,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                 Theme.of(context).colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w600))),
                 Expanded(
-                    flex: 2,
+                    flex: 3,
                     child: Text(AppLocalizations.of(context)!.labelAmount,
                         textAlign: TextAlign.right,
                         style: TextStyle(
@@ -3543,34 +3958,48 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     final Color statusColor;
     final String statusLabel;
     final l10n = AppLocalizations.of(context)!;
-    switch (status) {
-      case PaymentStatus.paid:
-        statusColor = const Color(0xFF2E7D32);
-        statusLabel = l10n.paymentStatusPaid;
-        break;
-      case PaymentStatus.partial:
-        statusColor = const Color(0xFFF57C00);
-        statusLabel = l10n.paymentStatusPartial;
-        break;
-      default:
-        final isOver = InvoiceCalculator.isOverdue(
-            dueDate: inv.dueDate, outstanding: inv.outstandingBalance);
-        statusColor =
-            isOver ? const Color(0xFFC62828) : const Color(0xFF546E7A);
-        statusLabel = isOver
-            ? l10n.dashboardOverdueSectionTitle
-            : l10n.paymentStatusUnpaid;
+    if (inv.status == 'declined') {
+      statusColor = const Color(0xFFC62828);
+      statusLabel = l10n.invoiceStatusDeclinedBadge;
+    } else {
+      switch (status) {
+        case PaymentStatus.paid:
+          statusColor = const Color(0xFF2E7D32);
+          statusLabel = l10n.paymentStatusPaid;
+          break;
+        case PaymentStatus.partial:
+          statusColor = const Color(0xFFF57C00);
+          statusLabel = l10n.paymentStatusPartial;
+          break;
+        default:
+          final isOver = InvoiceCalculator.isOverdue(
+              dueDate: inv.dueDate, outstanding: inv.outstandingBalance);
+          statusColor =
+              isOver ? const Color(0xFFC62828) : const Color(0xFF546E7A);
+          statusLabel = isOver
+              ? l10n.dashboardOverdueSectionTitle
+              : l10n.paymentStatusUnpaid;
+      }
     }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(
         children: [
           Expanded(
-            flex: 2,
+            flex: 3,
             child: Text(
-                '#${inv.id.length > 8 ? inv.id.substring(inv.id.length - 8) : inv.id}',
+                '#${inv.invoiceNumber ?? inv.id}',
                 style:
                     const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis),
+          ),
+          Expanded(
+            flex: 2,
+            child: Text(_invoiceTypeLabel(context, inv.type),
+                style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis),
           ),
@@ -3584,7 +4013,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                 overflow: TextOverflow.ellipsis),
           ),
           Expanded(
-            flex: 2,
+            flex: 3,
             child: Text('$_currencySymbol ${_fmtAmt(inv.total)}',
                 style:
                     const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
@@ -3604,20 +4033,22 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                     fontWeight: FontWeight.w700)),
           ),
           const SizedBox(width: 8),
-          Tooltip(
-            message: 'Edit',
-            child: InkWell(
-              onTap: () => widget.onEditInvoice(inv),
-              borderRadius: BorderRadius.circular(6),
-              child: Padding(
-                padding: const EdgeInsets.all(4),
-                child: Icon(Icons.edit_outlined,
-                    size: 15,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant),
+          if (inv.status != 'declined') ...[
+            Tooltip(
+              message: 'Edit',
+              child: InkWell(
+                onTap: () => widget.onEditInvoice(inv),
+                borderRadius: BorderRadius.circular(6),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(Icons.edit_outlined,
+                      size: 15,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant),
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 2),
+            const SizedBox(width: 2),
+          ],
           Tooltip(
             message: 'Download PDF',
             child: InkWell(
@@ -4261,16 +4692,17 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
         }
       },
       itemBuilder: (ctx) => [
-        PopupMenuItem(
-          value: 'payment',
-          child: Row(children: [
-            const Icon(Icons.payments_outlined,
-                size: 16, color: Color(0xFF6A1B9A)),
-            const SizedBox(width: 10),
-            Text(AppLocalizations.of(context)!.actionRecordPayment,
-                style: const TextStyle(fontSize: 13)),
-          ]),
-        ),
+        if (inv.status != 'declined')
+          PopupMenuItem(
+            value: 'payment',
+            child: Row(children: [
+              const Icon(Icons.payments_outlined,
+                  size: 16, color: Color(0xFF6A1B9A)),
+              const SizedBox(width: 10),
+              Text(AppLocalizations.of(context)!.actionRecordPayment,
+                  style: const TextStyle(fontSize: 13)),
+            ]),
+          ),
         PopupMenuItem(
           value: 'preview',
           child: Row(children: [

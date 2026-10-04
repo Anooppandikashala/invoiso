@@ -15,6 +15,8 @@ class PdfGenerationSettings {
   final bool showDiscount;
   final bool showTypeTag;
   final bool showAliasName;
+  final bool showDescription;
+  final bool descriptionNewLine;
   final BusinessType businessType;
   final List<UpiEntry> upiEntries;
   final String? showQrStr;
@@ -27,6 +29,13 @@ class PdfGenerationSettings {
   final bool showWebsite;
   final bool showAddress;
   final bool showLogo;
+  final bool showCustomerBusinessName;
+  final bool showCustomerAddress;
+  final bool showCustomerPhone;
+  final bool showCustomerEmail;
+  final bool showCustomerGstin;
+  final bool showTimeInPdf;
+  final String pdfTimeFormat;
   final List<BankAccount> bankAccounts;
   final LogoPosition logoPosition;
   final double logoSizePx;
@@ -47,9 +56,23 @@ class PdfGenerationSettings {
   final String thermalCompanyNameSize;
   final Uint8List? watermarkBytes;
   final double watermarkOpacity;
+  final bool watermarkFullPage;
   final bool showCgstSgst;
+  final bool showTaxColumn;
   final bool showRoundOff;
   final bool showLeadingZeros;
+  final bool showSlNo;
+  final bool landscape;
+  // Which product-metadata columns print in the Grid Classic A4 items table.
+  final Map<String, bool> metadataColumns;
+  // Multiplier for every font in non-thermal templates (PdfFontSize.scale).
+  final double fontSizeScale;
+  // Resolved per-section scales (section preset, else fontSizeScale).
+  final double companyNameScale;
+  final double docTitleScale;
+  final double tableHeaderScale;
+  final double tableItemsScale;
+  final double totalsScale;
 
   const PdfGenerationSettings({
     required this.company,
@@ -77,14 +100,18 @@ class PdfGenerationSettings {
     required this.showTotalQuantity,
     required this.pdfTheme,
     required this.showCgstSgst,
+    this.showTaxColumn = true,
     this.thermalItemLayout = 'table',
     this.thermalCompanyNameSize = 'medium',
     this.signatureBytes,
     this.signaturePosition = 'left',
     this.signatureSizePx = 50,
     this.showAliasName = false,
+    this.showDescription = false,
+    this.descriptionNewLine = false,
     this.watermarkBytes,
     this.watermarkOpacity = 0.12,
+    this.watermarkFullPage = false,
     this.showRoundOff = false,
     this.showPhone = true,
     this.showEmail = true,
@@ -94,6 +121,22 @@ class PdfGenerationSettings {
     this.showWebsite = true,
     this.showAddress = true,
     this.showLogo = true,
+    this.showCustomerBusinessName = true,
+    this.showCustomerAddress = true,
+    this.showCustomerPhone = true,
+    this.showCustomerEmail = true,
+    this.showCustomerGstin = true,
+    this.showTimeInPdf = true,
+    this.pdfTimeFormat = '24',
     this.showLeadingZeros = true,
+    this.showSlNo = true,
+    this.landscape = false,
+    this.metadataColumns = const {},
+    this.fontSizeScale = 1.0,
+    this.companyNameScale = 1.0,
+    this.docTitleScale = 1.0,
+    this.tableHeaderScale = 1.0,
+    this.tableItemsScale = 1.0,
+    this.totalsScale = 1.0,
   });
 }

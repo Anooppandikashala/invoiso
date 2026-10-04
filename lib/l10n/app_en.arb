@@ -102,6 +102,7 @@
   "dashboardRoleAdmin": "Admin",
   "dashboardRoleUser": "User",
   "dashboardSupportTooltip": "Support",
+  "buyMeCoffeeLabel": "Buy me a coffee",
   "dashboardLogoutTooltip": "Logout",
   "dashboardTestBuildBadge": "TEST BUILD",
   "dashboardTestBadgeShort": "TEST",
@@ -128,6 +129,7 @@
   "dashboardSupportAction": "Support",
   "dashboardOverviewTitle": "Dashboard Overview",
   "actionRefresh": "Refresh",
+  "helpSearchTooltip": "Search Help & Settings",
   "dashboardOutOfStockCountLabel": "{count} out of stock",
   "@dashboardOutOfStockCountLabel": {
     "placeholders": {
@@ -146,8 +148,10 @@
       }
     }
   },
-  "dashboardRecentInvoicesTitle": "Recent Invoices",
-  "dashboardLastFiveInvoicesLabel": "Last 5 invoices",
+  "dashboardRecentInvoicesTitle": "Recent Documents",
+  "dashboardLastFiveInvoicesLabel": "Last 5 documents",
+  "dashboardColDocumentNo": "Document no.",
+  "dashboardColType": "Type",
   "dashboardNoInvoicesYetTitle": "No invoices yet",
   "dashboardNoInvoicesYetSubtitle": "Create your first invoice to see it here",
   "actionView": "View",
@@ -448,6 +452,14 @@
       }
     }
   },
+  "createInvoiceTotalBelowPaidMessage": "The new total is less than the {paid} already paid. Delete payments in Apply Payment first, or keep the total at or above that amount.",
+  "@createInvoiceTotalBelowPaidMessage": {
+    "placeholders": {
+      "paid": {
+        "type": "String"
+      }
+    }
+  },
   "createInvoiceErrorUpdatingMessage": "Error updating invoice: {e}",
   "@createInvoiceErrorUpdatingMessage": {
     "placeholders": {
@@ -544,12 +556,14 @@
   "createInvoiceTypeFieldLabel": "Invoice type",
   "createInvoiceTypeLockedHelperText": "Type can't be changed after creation",
   "createInvoiceOrderDateLabel": "Order date",
+  "createInvoiceOrderTimeLabel": "Order time",
   "createInvoiceDueDateLabel": "Due date",
   "createInvoiceGstTitleLabel": "GST title",
   "createInvoiceTaxTitleLabel": "Tax title",
   "gstTitleTaxInvoiceLabel": "Tax Invoice",
   "gstTitleBillOfSupplyLabel": "Bill of Supply",
   "gstTitleInvoiceCumBillLabel": "Invoice-cum-Bill of Supply",
+  "gstTitleCashBillLabel": "Cash Bill",
   "gstTitleCreditNoteLabel": "Credit Note",
   "gstTitleDebitNoteLabel": "Debit Note",
   "gstTitleRevisedInvoiceLabel": "Revised Invoice",
@@ -590,6 +604,7 @@
   "createInvoicePerItemRateTooltip": "Per item rate",
   "createInvoiceDefaultTaxRateLabel": "Default tax rate",
   "createInvoiceTaxRateFromProductMessage": "Tax rate from each product",
+  "createInvoiceInterStateLabel": "Interstate supply (IGST)",
   "createInvoicePaymentUpiAccountLabel": "Payment UPI account",
   "commonNoneLabel": "None",
   "createInvoiceBankAccountLabel": "Bank account",
@@ -791,6 +806,7 @@
   },
   "invoiceMgmtFilterInvoicesTitle": "Filter Invoices",
   "invoiceMgmtHideFullyPaidLabel": "Hide fully paid invoices",
+  "invoiceMgmtHideDeclinedLabel": "Hide declined invoices",
   "invoiceMgmtPaymentStatusLabel": "Payment status",
   "invoiceMgmtDueDateLabel": "Due date",
   "invoiceMgmtInvoiceDateRangeLabel": "Invoice date range",
@@ -890,6 +906,62 @@
       }
     }
   },
+  "invoiceMgmtNewDocumentButton": "New {type}",
+  "@invoiceMgmtNewDocumentButton": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtConvertToInvoiceAction": "Convert to Invoice",
+  "invoiceMgmtConvertAgainTitle": "Convert again?",
+  "invoiceMgmtConvertAgainBody": "Quotation {number} was already converted to an invoice. Create another invoice from it?",
+  "@invoiceMgmtConvertAgainBody": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtMarkAsSent": "Mark as sent",
+  "invoiceMgmtMarkAsAccepted": "Mark as accepted",
+  "invoiceMgmtMarkAsDeclined": "Mark as declined",
+  "quotationStatusDraft": "Draft",
+  "quotationStatusSent": "Sent",
+  "quotationStatusAccepted": "Accepted",
+  "quotationStatusDeclined": "Declined",
+  "quotationStatusConverted": "Converted",
+  "invoiceMgmtDeclineInvoiceTitle": "Decline invoice?",
+  "invoiceMgmtDeclineInvoiceBody": "This will mark invoice #{number} as declined and return its items to stock. This can't be undone.",
+  "@invoiceMgmtDeclineInvoiceBody": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtDeclineHasPaymentsMessage": "Invoice #{number} has payments recorded. Delete them in Apply Payment before declining.",
+  "@invoiceMgmtDeclineHasPaymentsMessage": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtDeclinedSuccessMessage": "Invoice declined, stock restored.",
+  "invoiceStatusDeclinedBadge": "Declined",
+  "createInvoiceConvertTitle": "Convert to Invoice",
+  "createInvoiceConvertedSuccessMessage": "Converted to Invoice #{invoiceNumber}",
+  "@createInvoiceConvertedSuccessMessage": {
+    "placeholders": {
+      "invoiceNumber": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceTrashQuotationAction": "Trash quote",
+  "createInvoiceQuotationTrashedMessage": "Quotation moved to trash",
   "invoiceMgmtOverdueBadge": "Overdue",
   "invoiceMgmtTodayBadge": "Today",
   "invoiceMgmtTrashIsEmptyLabel": "Trash is empty",
@@ -1199,6 +1271,9 @@
   "customerMgmtSortNameZA": "Name Z-A",
   "customerMgmtSortIdOldest": "ID (oldest first)",
   "customerMgmtSortIdNewest": "ID (newest first)",
+  "customerMgmtSortOutstandingHighLow": "Outstanding (high-low)",
+  "customerMgmtSortOutstandingLowHigh": "Outstanding (low-high)",
+  "customerMgmtWithOutstandingLabel": "With Outstanding",
   "customerMgmtSearchHint": "Search customers by name, business, phone, {taxWord}, email…",
   "@customerMgmtSearchHint": {
     "placeholders": {
@@ -1350,6 +1425,7 @@
   "productMgmtBatchNumberLabel": "Batch Number",
   "productMgmtExpiryDateLabel": "Expiry Date",
   "productMgmtManufactureDateLabel": "Manufacture Date",
+  "productMgmtManufactureNameLabel": "Manufacturer Name",
   "productMgmtSupplierNameLabel": "Supplier Name",
   "productMgmtSkuCodeLabel": "SKU Code",
   "productMgmtNotesLabel": "Notes",
@@ -1375,6 +1451,7 @@
   "productMgmtCsvDescBatchNumber": "Batch/lot number",
   "productMgmtCsvDescExpiryDate": "Expiry date",
   "productMgmtCsvDescManufactureDate": "Manufacture date",
+  "productMgmtCsvDescManufactureName": "Manufacturer name",
   "productMgmtCsvDescSupplierName": "Supplier name",
   "productMgmtCsvDescSkuCode": "SKU code",
   "productMgmtCsvDescNotes": "Free-text notes",
@@ -1462,6 +1539,16 @@
   "productMgmtColStock": "STOCK",
   "productMgmtColTaxPercent": "TAX %",
   "productMgmtColExpiryDate": "EXPIRY DATE",
+  "productMgmtCustomizeColumnsLabel": "Customize Product Columns",
+  "productMgmtShowColumnsLabel": "Show Columns",
+  "productMgmtShowColumnsMaxHint": "Show up to {max} columns",
+  "@productMgmtShowColumnsMaxHint": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "productMgmtShowingRangeLabel": "Showing {from} to {to} of {total} products",
   "@productMgmtShowingRangeLabel": {
     "placeholders": {
@@ -1556,6 +1643,7 @@
     }
   },
   "reportsAllCurrenciesLabel": "All currencies",
+  "reportsArAgingSummaryTitle": "A/R Aging Summary",
   "reportsAvgInvoiceValueLabel": "Avg Invoice Value",
   "reportsBalanceColumnLabel": "Balance",
   "reportsBilledLabel": "Billed",
@@ -1641,11 +1729,35 @@
   },
   "reportsMonthYearLabel": "Month & Year",
   "reportsMonthlyRevenueTrendTitle": "Monthly Revenue Trend",
+  "reportsMonthlyBreakdownTitle": "Monthly Breakdown",
+  "reportsMonthColumnLabel": "Month",
+  "reportsTotalRowLabel": "Total",
   "reportsNavDailyReportLabel": "Daily Report",
+  "reportsNavInventoryLabel": "Inventory",
   "reportsNavInvoiceStatusLabel": "Invoice Status",
   "reportsNavReceivablesLabel": "Receivables",
   "reportsNavRevenueLabel": "Revenue",
   "reportsNavTaxLabel": "Tax",
+  "reportsInventoryBlockedValueLabel": "Inventory Value Blocked",
+  "reportsInventoryPotentialSaleValueLabel": "Potential Sale Value",
+  "reportsInventoryLockedProfitLabel": "Profit Locked in Stock",
+  "reportsInventoryTotalUnitsLabel": "Total Units",
+  "reportsInventoryProductCountLabel": "Products Tracked",
+  "reportsInventoryBreakdownTitle": "Product Breakdown",
+  "reportsNoInventoryDataMessage": "No inventory data",
+  "reportsInventoryProductColumnLabel": "Product",
+  "reportsInventoryStockColumnLabel": "Stock",
+  "reportsInventoryPurchasePriceColumnLabel": "Purchase Price",
+  "reportsInventoryStockValueColumnLabel": "Stock Value",
+  "reportsInventorySaleValueColumnLabel": "Sale Value",
+  "reportsInventoryExcludedBannerMessage": "{count, plural, =1{1 item is excluded from inventory value — it's a service or has unlimited stock tracking on.} other{{count} items are excluded from inventory value — they're services or have unlimited stock tracking on.}}",
+  "@reportsInventoryExcludedBannerMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "reportsNoCustomerDataMessage": "No customer data in this period",
   "reportsNoCustomersMatchSearchMessage": "No customers match this search",
   "reportsNoCustomersWithInvoicesMessage": "No customers with invoices",
@@ -1714,8 +1826,11 @@
   },
   "reportsSlColumnLabel": "SL",
   "reportsStatementsLabel": "Statements",
-  "reportsTaxCollectedByRateTitle": "Tax Collected by Rate",
-  "reportsTaxCollectedLabel": "Tax Collected",
+  "reportsTaxCollectedByRateTitle": "Tax by Rate",
+  "reportsTaxCollectedLabel": "Tax",
+  "reportsTaxableAmountLabel": "Taxable Amount",
+  "reportsGrossAmountLabel": "Gross",
+  "reportsTaxAccrualNote": "Tax charged on invoices dated in this period — accrual basis, before payment.",
   "reportsTaxRateBucketsLabel": "Tax Rate Buckets",
   "reportsTodayLabel": "Today",
   "reportsTopCustomersByRevenueTitle": "Top {count} Customers by Revenue",
@@ -1749,8 +1864,9 @@
     }
   },
   "reportsTotalInvoicesLabel": "Total Invoices",
+  "reportsRealizedProfitLabel": "Realized Profit",
   "reportsTotalProfitLabel": "Total Profit",
-  "reportsTotalTaxCollectedLabel": "Total Tax Collected",
+  "reportsTotalTaxCollectedLabel": "Total Tax Charged",
   "reportsTypeColumnLabel": "Type",
   "reportsUnitsSoldColumnLabel": "Units Sold",
   "userMgmtLoadErrorMessage": "Error loading users: {error}",
@@ -1795,6 +1911,9 @@
   "userMgmtActionCannotBeUndoneMessage": "This action cannot be undone.",
   "userMgmtDeletedMessage": "User deleted successfully",
   "userMgmtCantDeleteOwnAccountMessage": "You can't delete your own account",
+  "userMgmtCantDemoteLastAdminMessage": "You can't change the role of the only admin",
+  "userMgmtCantChangeOwnRoleMessage": "You can't change your own role",
+  "userMgmtUsernameTakenMessage": "That username is already taken",
   "userMgmtDeleteSelectedTitle": "Delete selected users?",
   "userMgmtBulkDeleteBody": "{count, plural, =1{This will permanently delete 1 user. This action cannot be undone.} other{This will permanently delete {count} users. This action cannot be undone.}}",
   "@userMgmtBulkDeleteBody": {
@@ -1882,6 +2001,37 @@
   "invoiceSettingsSectionSuppliers": "Suppliers",
   "settingsEnablePurchaseBillsSuppliersLabel": "Enable Purchase Bills & Suppliers",
   "settingsEnablePurchaseBillsSuppliersSubtitle": "Shows Purchase Bills and Suppliers in the dashboard menu",
+  "invoiceSettingsSectionCustomer": "Customer Details",
+  "invoiceSettingsSectionColumns": "Invoice Columns",
+  "invoiceSettingsColumnsSectionHint": "Choose which columns appear in the invoice PDF items table. Item Name, Price and Total are always shown.",
+  "invoiceSettingsShowSlNoLabel": "Sl No column",
+  "invoiceSettingsShowSlNoSubtitle": "Print the serial-number column on A4/Letter invoices",
+  "invoiceSettingsColumnHsnLabel": "HSN/SAC column",
+  "invoiceSettingsColumnHsnSubtitle": "Print the HSN/SAC code column (tied to Show GST Fields)",
+  "invoiceSettingsColumnTaxLabel": "Show tax column",
+  "invoiceSettingsColumnTaxSubtitle": "Show the tax % and amount for each item, for global and per-item tax",
+  "invoiceSettingsSplitCgstSgstLabel": "Split CGST / SGST",
+  "invoiceSettingsSplitCgstSgstSubtitle": "Split the tax into CGST/SGST, or IGST for interstate (India GST)",
+  "invoiceSettingsColumnRequiredSubtitle": "Always shown",
+  "invoiceSettingsColumnItemNameLabel": "Item Name column",
+  "invoiceSettingsColumnPriceLabel": "Price / Rate column",
+  "invoiceSettingsColumnTotalLabel": "Total column",
+  "invoiceSettingsCustomerSectionHint": "Choose which customer details print on invoice PDFs and thermal receipts. A field only shows when it's enabled and the customer has a value for it. Customer name is always shown.",
+  "invoiceSettingsShowCustomerBusinessNameLabel": "Show Business Name",
+  "invoiceSettingsShowCustomerBusinessNameSubtitle": "Print the customer's business name under their name",
+  "invoiceSettingsShowCustomerAddressLabel": "Show Address",
+  "invoiceSettingsShowCustomerAddressSubtitle": "Print the customer's address in the Bill To block",
+  "invoiceSettingsShowCustomerPhoneLabel": "Show Phone",
+  "invoiceSettingsShowCustomerPhoneSubtitle": "Print the customer's phone number",
+  "invoiceSettingsShowCustomerEmailLabel": "Show Email",
+  "invoiceSettingsShowCustomerEmailSubtitle": "Print the customer's email address (not shown on thermal receipts)",
+  "invoiceSettingsShowCustomerGstinLabel": "Show GSTIN / Tax ID",
+  "invoiceSettingsShowCustomerGstinSubtitle": "Print the customer's GSTIN / tax id (requires GST fields on)",
+  "invoiceSettingsShowTimeInPdfLabel": "Show Time on PDF",
+  "invoiceSettingsShowTimeInPdfSubtitle": "Append the invoice creation time next to the date on PDFs and thermal receipts",
+  "invoiceSettingsTimeFormatLabel": "Time Format",
+  "invoiceSettingsTimeFormat24": "24-hour (14:30)",
+  "invoiceSettingsTimeFormat12": "12-hour (2:30 PM)",
   "invoiceSettingsPrefixLabel": "Invoice Prefix",
   "invoiceSettingsStartingNumberHelper": "First invoice will start from this number",
   "invoiceSettingsStartingNumberLockedMessage": "Invoice starting number cannot be changed while invoices exist. Please permanently delete all invoices/quotations (including trash) and try again.",
@@ -1902,8 +2052,8 @@
   "invoiceSettingsTaxModePerItem": "Per Item",
   "invoiceSettingsShowGstFieldsLabel": "Show GST Fields",
   "invoiceSettingsShowGstFieldsSubtitle": "Display GSTIN fields (HSN/SAC) on invoices, PDFs, and CSV exports",
-  "invoiceSettingsShowCgstSgstLabel": "Show CGST/SGST",
-  "invoiceSettingsShowCgstSgstSubtitle": "Split tax into CGST + SGST on invoices (India only).",
+  "invoiceSettingsShowCgstSgstLabel": "Show CGST/SGST/IGST",
+  "invoiceSettingsShowCgstSgstSubtitle": "Split tax into CGST + SGST, or IGST for interstate invoices (India only).",
   "invoiceSettingsDefaultGstTitleLabel": "Default GST Invoice Title",
   "invoiceSettingsDefaultTaxTitleLabel": "Default TAX Invoice Title",
   "invoiceSettingsGstTitleHelperGst": "Preselected on new invoices — e.g. \"Bill of Supply\" for GST Composition Scheme dealers",
@@ -1912,6 +2062,10 @@
   "invoiceSettingsShowRoundOffSubtitle": "Show a Round Off row + Net Amount (rounded to nearest) and amount in words on invoice PDFs.",
   "invoiceSettingsShowAliasNameLabel": "Show Alias Name in PDF",
   "invoiceSettingsShowAliasNameSubtitle": "Print a product's local-language alias (if set) instead of its actual name on PDFs",
+  "invoiceSettingsShowDescriptionLabel": "Show Product Description",
+  "invoiceSettingsShowDescriptionSubtitle": "Print each item's description as a row under it on A4 PDFs (not on thermal receipts)",
+  "invoiceSettingsDescriptionNewLineLabel": "Description on a New Line",
+  "invoiceSettingsDescriptionNewLineSubtitle": "Print the description as a full-width row below the item instead of a line under its name",
   "invoiceSettingsAllowFractionalQtyLabel": "Allow Fractional Quantities",
   "invoiceSettingsAllowFractionalQtySubtitle": "Enable decimal quantities (e.g. 1.5 hrs, 0.5 kg)",
   "invoiceSettingsShowQuantityLabel": "Show Quantity Field",
@@ -1936,9 +2090,12 @@
   "invoiceSettingsSignatureSizeLabel": "Signature Size",
   "invoiceSettingsSignaturePositionLabel": "Signature Position",
   "invoiceSettingsWatermarkImageLabel": "Watermark Image",
-  "invoiceSettingsWatermarkImageSubtitle": "Shown behind the items table on invoice PDFs (not printed on thermal receipts)",
+  "invoiceSettingsWatermarkImageSubtitle": "Shown on invoice PDFs (not printed on thermal receipts)",
   "invoiceSettingsChangeWatermarkButton": "Change Watermark",
   "invoiceSettingsUploadWatermarkButton": "Upload Watermark",
+  "invoiceSettingsWatermarkPlacementLabel": "Watermark placement",
+  "invoiceSettingsWatermarkPlacementItemsTable": "Items table",
+  "invoiceSettingsWatermarkPlacementFullPage": "Full page",
   "invoiceSettingsOpacityLabel": "Opacity: {value}%",
   "@invoiceSettingsOpacityLabel": {
     "placeholders": {
@@ -1976,11 +2133,24 @@
   "commonUnavailableLabel": "Unavailable",
   "pdfSettingsDisplayOptionsLabel": "Display Options",
   "pdfSettingsShowTotalQtyRowLabel": "Show total quantity row",
+  "pdfSettingsOrientationLabel": "Orientation",
+  "pdfSettingsOrientationPortrait": "Portrait",
+  "pdfSettingsOrientationLandscape": "Landscape",
+  "pdfSettingsMetadataColumnsLabel": "Product metadata columns",
+  "pdfSettingsMetadataColumnsHint": "Print product metadata as extra columns in the items table.",
+  "pdfSettingsMetadataColumnsWarning": "Metadata columns print on any A4 template (not A5/A6 or thermal receipts). Each one narrows the others — if the table looks cramped, turn a few off, or switch Grid Classic to Landscape above. Values are captured when an item is added; editing the product later won't change past invoices.",
   "pdfSettingsItemLayoutLabel": "Item layout",
   "pdfSettingsItemLayoutTableLabel": "Table",
   "pdfSettingsItemLayoutDetailedLabel": "Detailed",
   "pdfSettingsItemLayoutHelpText": "Table: one line per item (Sl/Name/Qty/Rate/Total). Detailed: name on its own line, then Qty/Rate/Total below it.",
   "pdfSettingsCompanyNameSizeLabel": "Company name size",
+  "pdfSettingsFontSizeLabel": "PDF text size",
+  "pdfSettingsSectionSizesLabel": "Section sizes",
+  "pdfSettingsDocTitleSizeLabel": "Document title size",
+  "pdfSettingsTableHeaderSizeLabel": "Table header size",
+  "pdfSettingsTableItemsSizeLabel": "Table items size",
+  "pdfSettingsTotalsSizeLabel": "Totals size",
+  "pdfFontSizeSameAsOverallLabel": "Same as overall",
   "pdfSettingsThemeColorLabel": "Theme Color",
   "pdfSettingsHexErrorText": "Use #RRGGBB",
   "pdfSettingsPickColorTooltip": "Open color picker",
@@ -2019,6 +2189,7 @@
   "fieldTaxVatNoLabel": "Tax/VAT No",
   "fieldPanLabel": "PAN",
   "fieldTinLabel": "TIN",
+  "fieldVatRegNoLabel": "VAT Registration Number",
   "companyInfoFssaiCodeLabel": "FSSAI Code",
   "companyInfoPhoneHelperText": "Multiple numbers: separate with comma",
   "fieldWebsiteLabel": "Website",
@@ -2035,7 +2206,10 @@
   "fieldBankNameLabel": "Bank Name",
   "fieldAccountNumberLabel": "Account Number",
   "fieldIfscCodeLabel": "IFSC Code",
+  "fieldIbanLabel": "IBAN",
   "companyInfoAddBankAccountButton": "Add Bank Account",
+  "companyInfoEditBankAccountTitle": "Edit Bank Account",
+  "fieldBankAccountNameLabel": "Account Name",
   "tooltipShowOnInvoicePdf": "Show on invoice PDF",
   "companyInfoSavedSuccessMessage": "Company info saved successfully",
   "companyInfoImageTooLargeMessage": "Image file must be less than 2 MB.",
@@ -2192,12 +2366,13 @@
   "productColumnsProductServiceTypeLabel": "Product/Service Type",
   "productColumnsProductServiceTypeSubtitle": "Segmented Product vs Service selector.",
   "productColumnsMetadataLabel": "Product Metadata",
-  "productColumnsMetadataSubtitle": "Storage location, container/batch number, expiry, manufacture date, supplier, SKU, notes.",
+  "productColumnsMetadataSubtitle": "Storage location, container/batch number, expiry, manufacture date, manufacturer, supplier, SKU, notes.",
   "productColumnsMetaStorageLocationLabel": "Storage Location",
   "productColumnsMetaContainerNumberLabel": "Container Number",
   "productColumnsMetaBatchNumberLabel": "Batch Number",
   "productColumnsMetaExpiryDateLabel": "Expiry Date",
   "productColumnsMetaManufactureDateLabel": "Manufacture Date",
+  "productColumnsMetaManufactureNameLabel": "Manufacturer Name",
   "productColumnsMetaSupplierNameLabel": "Supplier Name",
   "productColumnsMetaSkuCodeLabel": "SKU Code",
   "productColumnsMetaNotesLabel": "Notes",
@@ -2205,6 +2380,7 @@
   "productColumnsExtraCostSubtitle": "Optional flat extra charge on an invoice line item.",
   "settingsOptionsComingSoonMessage": "Options coming soon...",
   "settingsNavCompanyInfoLabel": "Company Info",
+  "settingsNavCompaniesLabel": "Companies",
   "settingsNavTeamLabel": "Team",
   "settingsNavBackupLabel": "Backup",
   "settingsNavUsersLabel": "Users",
@@ -2212,6 +2388,49 @@
   "settingsNavCustomizeLabel": "Customize",
   "settingsNavAccessibilityLabel": "Accessibility",
   "settingsNavSoftwareInfoLabel": "Software Info",
+  "companyMgmtTitle": "Manage Companies",
+  "companyMgmtActiveBadge": "Active",
+  "companyMgmtSwitchButton": "Switch",
+  "companyMgmtSwitchConfirmTitle": "Switch Company?",
+  "companyMgmtSwitchConfirmBody": "Invoiso will restart to switch to \"{name}\".",
+  "@companyMgmtSwitchConfirmBody": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "companyMgmtNewCompanyButton": "+ New Company",
+  "companyMgmtNewCompanyTitle": "New Company",
+  "companyMgmtAdminAccountSectionLabel": "Admin Account",
+  "companyMgmtCreateButton": "Create",
+  "companyMgmtDeleteButton": "Delete This Company",
+  "companyMgmtDeleteConfirmTitle": "Delete \"{name}\"?",
+  "@companyMgmtDeleteConfirmTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "companyMgmtDeleteConfirmBody": "This permanently deletes all of this company's data and cannot be undone. Type the company name to confirm.",
+  "companyMgmtRenameTooltip": "Rename",
+  "companyMgmtRenameTitle": "Rename Company",
+  "companyMgmtNameTakenMessage": "A company with this name already exists",
+  "companyMgmtSwitchErrorMessage": "Failed to switch company: {error}",
+  "@companyMgmtSwitchErrorMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "companyMgmtSwitchRestartTitle": "Company Switched",
+  "companyMgmtSwitchRestartBody": "Invoiso needs to restart to finish switching companies. Please close and reopen the application.",
+  "companyMgmtCreateRestartTitle": "Company Created",
+  "companyMgmtCreateRestartBody": "Your new company is ready. Please close and reopen the application to continue.",
+  "companyMgmtDeletedMessage": "Company deleted",
+  "companyMgmtDeleteRestartTitle": "Company Deleted",
+  "companyMgmtDeleteRestartBody": "The company was deleted and Invoiso switched to another one. Please close and reopen the application to continue.",
+  "companyMgmtOnlyCompanyTooltip": "You need at least one other company before you can delete this one",
+  "loginCompanyGearTooltip": "Manage companies",
+  "loginCompanySelectorLabel": "Company",
   "customizationEyebrowLabel": "CUSTOMIZATION",
   "customizationHeadline": "Tailored just for your business",
   "customizationSubtitle": "Pick what you need and send a request. We'll get back to you within 24 hours.",
@@ -2343,6 +2562,7 @@
   "sizeSmallLabel": "Small",
   "sizeMediumLabel": "Medium",
   "sizeLargeLabel": "Large",
+  "sizeXLargeLabel": "Extra Large",
   "shortcutNewInvoiceDescription": "New Invoice (from Dashboard) / Reset form (in Create Invoice)",
   "shortcutSaveInvoiceDescription": "Save / create the invoice",
   "shortcutAddProductDescription": "Add product to invoice",
@@ -2477,5 +2697,7 @@
   "purchaseBillMgmtColItem": "Item",
   "purchaseBillMgmtColCost": "Cost",
   "purchaseBillMgmtColTaxPercent": "Tax %",
-  "purchaseBillMgmtPaymentRecordedMessage": "Payment recorded."
+  "purchaseBillMgmtPaymentRecordedMessage": "Payment recorded.",
+  "invoiceSettingsMetadataColumnsGridClassicNote": "Note: Metadata columns print on A4 PDF templates only (not A5/A6 or thermal receipts).",
+  "invoiceSettingsCustomFieldsPageSupportNote": "Custom fields print on every PDF template except thermal receipts."
 }

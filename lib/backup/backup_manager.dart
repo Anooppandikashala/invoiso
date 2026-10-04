@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:invoiso/common/app_config.dart';
+import 'package:invoiso/database/company_registry_service.dart';
 import 'package:invoiso/database/database_helper.dart';
+import 'package:invoiso/utils/fs_utils.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
@@ -33,19 +35,24 @@ class BackupManager {
 
   // Create backup of the entire database
   Future<BackupResult> createBackup({
+    required String companyId,
+    required String companyName,
     String? customPath,
     BackupType type = BackupType.database,
   }) async {
     try {
       final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-');
-      final backupName = 'invoice_backup_$timestamp';
+      final backupName =
+          'invoice_backup_${_sanitizeForFilename(companyName)}_$timestamp';
 
       String backupPath;
 
       if (type == BackupType.database) {
-        backupPath = await _createDatabaseBackup(backupName, customPath);
+        backupPath =
+            await _createDatabaseBackup(backupName, customPath, companyId);
       } else {
-        backupPath = await _createJsonBackup(backupName, customPath);
+        backupPath =
+            await _createJsonBackup(backupName, customPath, companyId);
       }
 
       return BackupResult(
@@ -67,9 +74,12 @@ class BackupManager {
   Future<String> _createDatabaseBackup(
       String backupName,
       String? customPath,
+      String companyId,
       ) async {
     final dbPath = DatabaseHelper.path!;
-    final backupDir = customPath ?? await _getBackupDirectory();
+    final backupDir = customPath != null
+        ? (await ensureDirectory(customPath)).path
+        : await _getBackupDirectory(companyId);
     final backupPath = join(backupDir, '$backupName$_backupExtension');
 
     await File(dbPath).copy(backupPath);
@@ -81,8 +91,11 @@ class BackupManager {
   Future<String> _createJsonBackup(
       String backupName,
       String? customPath,
+      String companyId,
       ) async {
-    final backupDir = customPath ?? await _getBackupDirectory();
+    final backupDir = customPath != null
+        ? (await ensureDirectory(customPath)).path
+        : await _getBackupDirectory(companyId);
     final backupPath = join(backupDir, '$backupName$_jsonExtension');
 
     final backupData = await _exportDataToJson(await DatabaseHelper().database);
@@ -171,11 +184,14 @@ class BackupManager {
   // singleton so all subsequent DB calls get a live connection.
   Future<void> _restoreFromDatabaseBackup(String backupPath) async {
     final dbPath = DatabaseHelper.path!;
-    final safetyPath = '$dbPath.pre_restore_backup';
+    // Timestamped so a copy kept by an earlier failed restore isn't overwritten.
+    final safetyPath =
+        '$dbPath.pre_restore_backup_${DateTime.now().millisecondsSinceEpoch}';
 
     // Safety copy of current database
     await File(dbPath).copy(safetyPath);
 
+    var keepSafetyCopy = false;
     try {
       // Close singleton and null its reference
       await DatabaseHelper().close();
@@ -191,12 +207,22 @@ class BackupManager {
         await DatabaseHelper().close();
         await File(safetyPath).copy(dbPath);
         await DatabaseHelper().reinitialize();
-      } catch (_) {}
+      } catch (rollbackError) {
+        // Rollback failed — the safety copy is now the only good copy of the
+        // user's data, so keep it and tell the user where it is.
+        keepSafetyCopy = true;
+        throw Exception(
+          'Restore failed ($e) and rollback failed ($rollbackError). '
+          'Your previous data is saved at: $safetyPath',
+        );
+      }
       rethrow;
     } finally {
-      // Clean up safety copy
-      final safetyFile = File(safetyPath);
-      if (await safetyFile.exists()) await safetyFile.delete();
+      // Clean up safety copy only once the live DB is known-good
+      if (!keepSafetyCopy) {
+        final safetyFile = File(safetyPath);
+        if (await safetyFile.exists()) await safetyFile.delete();
+      }
     }
   }
 
@@ -255,41 +281,47 @@ class BackupManager {
     });
   }
 
-  // Get list of available backups
-  Future<List<BackupInfo>> getBackupList() async {
-    final backupDir = await _getBackupDirectory();
-    final directory = Directory(backupDir);
+  // Get list of a company's available backups (its own store, plus — for the
+  // default company only — the pre-multi-company flat store and the legacy
+  // Documents store, so users upgrading from an earlier build still see the
+  // backups they made before companies existed).
+  Future<List<BackupInfo>> getBackupList(String companyId) async {
+    final backups = <String, BackupInfo>{};
 
-    if (!await directory.exists()) {
-      return [];
-    }
+    for (final dirPath in {
+      await _getBackupDirectory(companyId),
+      if (companyId == defaultCompanyId) ...[
+        await _legacyFlatBackupDirectory(),
+        await _legacyBackupDirectory(),
+      ],
+    }) {
+      final directory = Directory(dirPath);
+      if (!await directory.exists()) continue;
 
-    final files = await directory.list().toList();
-    final backups = <BackupInfo>[];
-
-    for (final file in files) {
-      if (file is File) {
+      for (final file in await directory.list().toList()) {
+        if (file is! File) continue;
         final fileName = basename(file.path);
-        if (fileName.endsWith(_backupExtension) || fileName.endsWith(_jsonExtension)) {
-          final stat = await file.stat();
-          final type = fileName.endsWith(_backupExtension)
-              ? BackupType.database
-              : BackupType.json;
-
-          backups.add(BackupInfo(
-            fileName: fileName,
-            filePath: file.path,
-            size: stat.size,
-            createdAt: stat.modified,
-            type: type,
-          ));
+        if (!fileName.endsWith(_backupExtension) &&
+            !fileName.endsWith(_jsonExtension)) {
+          continue;
         }
+        if (backups.containsKey(fileName)) continue;
+        final stat = await file.stat();
+        backups[fileName] = BackupInfo(
+          fileName: fileName,
+          filePath: file.path,
+          size: stat.size,
+          createdAt: stat.modified,
+          type: fileName.endsWith(_backupExtension)
+              ? BackupType.database
+              : BackupType.json,
+        );
       }
     }
 
-    backups.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-    return backups;
+    final list = backups.values.toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return list;
   }
 
   // Delete backup file
@@ -315,19 +347,31 @@ class BackupManager {
   }
 
   // Auto backup (scheduled)
-  Future<void> performAutoBackup(Database database) async {
-    final backups = await getBackupList();
+  Future<void> performAutoBackup(
+      Database database, String companyId, String companyName) async {
+    final backups = await getBackupList(companyId);
 
     if (backups.isEmpty ||
         DateTime.now().difference(backups.first.createdAt).inDays >= 7) {
-      await createBackup();
-      await _cleanupOldBackups();
+      await createBackup(companyId: companyId, companyName: companyName);
+      await _cleanupOldBackups(companyId);
     }
   }
 
+  // Filesystem-safe fragment for a backup filename — strips characters
+  // invalid on Windows/Android and collapses whitespace so a business name
+  // like "Acme / Sons: Ltd." doesn't break path handling on any platform.
+  String _sanitizeForFilename(String name) {
+    final cleaned = name
+        .replaceAll(RegExp(r'[<>:"/\\|?*\x00-\x1F]'), '')
+        .trim()
+        .replaceAll(RegExp(r'\s+'), '_');
+    return cleaned.isEmpty ? 'company' : cleaned;
+  }
+
   // Clean up old backups
-  Future<void> _cleanupOldBackups() async {
-    final backups = await getBackupList();
+  Future<void> _cleanupOldBackups(String companyId) async {
+    final backups = await getBackupList(companyId);
 
     if (backups.length > 5) {
       final oldBackups = backups.skip(5);
@@ -411,16 +455,31 @@ class BackupManager {
     }
   }
 
-  // Get backup directory
-  Future<String> _getBackupDirectory() async {
-    final appDir = await getApplicationDocumentsDirectory();
-    final backupDir = Directory(join(appDir.path, 'backups'));
+  // App-managed store for a company's rolling automatic backups. Lives
+  // beside the database (getApplicationSupportDirectory) — a directory the
+  // app already created and can always write to — so it never fails even
+  // when the user's Documents folder is missing or redirected (Windows +
+  // OneDrive). Grouped under the company's id so switching companies can't
+  // mix one company's backups into another's list. Users get a copy
+  // elsewhere via the Download / Share actions on each backup.
+  Future<String> _getBackupDirectory(String companyId) async {
+    final supportDir = await getApplicationSupportDirectory();
+    return (await ensureDirectory(join(supportDir.path, 'backups', companyId)))
+        .path;
+  }
 
-    if (!await backupDir.exists()) {
-      await backupDir.create(recursive: true);
-    }
+  // Where backups landed before per-company grouping existed; kept only for
+  // [getBackupList] on the default company, so upgrading users still see
+  // backups they made before companies existed.
+  Future<String> _legacyFlatBackupDirectory() async {
+    final supportDir = await getApplicationSupportDirectory();
+    return join(supportDir.path, 'backups');
+  }
 
-    return backupDir.path;
+  // Where even older builds saved backups; kept only for [getBackupList].
+  Future<String> _legacyBackupDirectory() async {
+    final docsDir = await getApplicationDocumentsDirectory();
+    return join(docsDir.path, 'backups');
   }
 
   Future<Directory> _getDownloadsDirectory() async {
@@ -431,10 +490,10 @@ class BackupManager {
 
     if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
       final path = (await getDownloadsDirectory())?.path ?? '';
-      final dir = Directory(path);
-      if (await dir.exists()) return dir;
+      if (path.isNotEmpty) return ensureDirectory(path);
     }
 
-    return await getApplicationDocumentsDirectory();
+    final docs = await getApplicationDocumentsDirectory();
+    return ensureDirectory(docs.path);
   }
 }

@@ -60,8 +60,33 @@ void main() {
         'currency_symbol',
         'tax_mode',
         'invoice_number',
+        'status',
+        'converted_to_invoice_id',
+        'converted_from_invoice_id',
       ]),
     );
+
+    await db.close();
+  });
+
+  test('fresh create invoice_items has the per-line description column',
+      () async {
+    final db = await openDatabase(
+      inMemoryDatabasePath,
+      version: currentVersion,
+      onCreate: (db, v) => DatabaseHelper().createDbForTest(db, v),
+    );
+
+    final cols = await db.rawQuery('PRAGMA table_info(invoice_items)');
+    final colNames = cols.map((r) => r['name']).toSet();
+
+    // `description` is the line-level text typed on the invoice;
+    // `product_description` is the product's own text, snapshotted at
+    // invoice time. Both must exist — the first falls back to the second.
+    expect(colNames, containsAll(['description', 'product_description']));
+
+    // v44: JSON snapshot of the product's metadata for the Grid Classic PDF.
+    expect(colNames, contains('line_metadata'));
 
     await db.close();
   });

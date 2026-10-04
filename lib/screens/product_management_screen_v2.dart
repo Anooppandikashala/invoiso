@@ -16,6 +16,7 @@ import 'package:intl/intl.dart';
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/models/product.dart';
+import 'package:invoiso/models/product_list_stats.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/utils/formatters.dart';
 import 'package:invoiso/screens/settings/product_columns_settings_screen.dart';
@@ -66,6 +67,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
   final _storageLocationController = TextEditingController();
   final _containerNumberController = TextEditingController();
   final _batchNumberController = TextEditingController();
+  final _manufactureNameController = TextEditingController();
   final _supplierNameController = TextEditingController();
   final _skuCodeController = TextEditingController();
   final _notesController = TextEditingController();
@@ -75,18 +77,22 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
 
   String _currencySymbol = '₹';
   BusinessType _businessType = BusinessType.both;
-  String _typeFilter = 'both'; // 'both' | 'product' | 'service'
   String _newItemType = 'product'; // type for the add-product form
   bool _unlimitedStock = false;
   bool _priceIncludesTax = false;
 
   // ── V2 state ──────────────────────────────────────────────────────────
-  // V2 loads the full product list once (for the stat cards / tab counts)
-  // and does all filtering, search, sort, and pagination against that
-  // in-memory list, rather than round-tripping to the paginated server
-  // query for every interaction. _products/_totalProducts/_currentPage/
-  // _pageSize are the same fields v1 uses — just populated differently.
-  List<Product> _allProductsV2 = [];
+  // Only the visible page is loaded (tab/search/sort/paging in SQL, see
+  // _loadProducts); stat cards / tab counts come from one aggregate query
+  // (_statsV2) — never the whole catalog (Issues.md #42).
+  ProductListStats _statsV2 = (
+    all: 0,
+    products: 0,
+    services: 0,
+    lowStock: 0,
+    outOfStock: 0,
+    expired: 0,
+  );
   Map<String, ProductMetadata> _productMetadataV2 = {};
   bool _statsLoadingV2 = false;
   int _activeTabV2 = 0; // 0 all, 1 products, 2 services, 3 low stock, 4 out of stock
@@ -115,6 +121,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     'batch_number',
     'expiry_date',
     'manufacture_date',
+    'manufacture_name',
     'supplier_name',
     'sku_code',
     'notes',
@@ -126,7 +133,6 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     _taxRateController.text = "18";
     _defaultDiscountController.text = "0";
     _loadBusinessType();
-    _loadProducts();
     _loadCurrency();
     _loadDateFormat();
     _loadStatsV2();
@@ -155,11 +161,38 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     if (!mounted) return;
     setState(() => _datePattern = fmt.key);
     _loadColumnsConfig();
+    _loadListColumnsV2();
     _loadColumnsBannerDismissed();
   }
 
   ProductColumnsConfig _columnsConfig = const ProductColumnsConfig();
   bool _showColumnsBanner = false;
+
+  // Which optional columns show in the list table. Independent of the
+  // form-field config above; a column still needs its form field on too.
+  // 'aliasName' is not a column — it shows "(alias)" under the product name —
+  // so it is excluded from the max-columns count.
+  static const int _maxVisibleListColumns = 10;
+  static const Map<String, bool> _listColumnDefaults = {
+    'aliasName': true,
+    'description': false,
+    'hsncode': true,
+    'purchasePrice': true,
+    'stock': true,
+    'taxRate': true,
+    'unit': false,
+    'defaultDiscount': false,
+    'storageLocation': false,
+    'containerNumber': false,
+    'batchNumber': false,
+    'expiryDate': true,
+    'manufactureDate': false,
+    'manufactureName': false,
+    'supplierName': false,
+    'skuCode': false,
+    'notes': false,
+  };
+  Map<String, bool> _listColumnsV2 = Map.of(_listColumnDefaults);
 
   Future<void> _loadColumnsConfig() async {
     final config = await ref.read(settingsRepositoryProvider).getProductColumnsConfig();
@@ -168,6 +201,76 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
       _columnsConfig = config;
       if (!config.stock) _unlimitedStock = true;
     });
+  }
+
+  Future<void> _loadListColumnsV2() async {
+    final saved =
+        await ref.read(settingsRepositoryProvider).getProductListColumns();
+    if (!mounted) return;
+    setState(() => _listColumnsV2 = {..._listColumnDefaults, ...saved});
+  }
+
+  // A form field being disabled hides its list column entirely (as before).
+  bool _listColumnFieldEnabled(String key) {
+    final c = _columnsConfig;
+    switch (key) {
+      case 'aliasName':
+        return c.aliasName;
+      case 'description':
+        return c.description;
+      case 'hsncode':
+        return c.hsncode;
+      case 'purchasePrice':
+        return c.purchasePrice;
+      case 'stock':
+        return c.stock;
+      case 'taxRate':
+        return c.taxRate;
+      case 'unit':
+        return c.unit;
+      case 'defaultDiscount':
+        return c.defaultDiscount;
+      case 'storageLocation':
+        return c.productMetadata && c.metaStorageLocation;
+      case 'containerNumber':
+        return c.productMetadata && c.metaContainerNumber;
+      case 'batchNumber':
+        return c.productMetadata && c.metaBatchNumber;
+      case 'expiryDate':
+        return c.productMetadata && c.metaExpiryDate;
+      case 'manufactureDate':
+        return c.productMetadata && c.metaManufactureDate;
+      case 'manufactureName':
+        return c.productMetadata && c.metaManufactureName;
+      case 'supplierName':
+        return c.productMetadata && c.metaSupplierName;
+      case 'skuCode':
+        return c.productMetadata && c.metaSkuCode;
+      case 'notes':
+        return c.productMetadata && c.metaNotes;
+      default:
+        return false;
+    }
+  }
+
+  bool _showListCol(String key) =>
+      _listColumnFieldEnabled(key) && (_listColumnsV2[key] ?? false);
+
+  // 'aliasName' is a name-cell subtitle, not a table column — excluded here.
+  int get _visibleListColumnCount => _listColumnDefaults.keys
+      .where((k) => k != 'aliasName' && _showListCol(k))
+      .length;
+
+  Future<void> _toggleListColumnV2(String key) async {
+    final currentlyOn = _showListCol(key);
+    if (key != 'aliasName' &&
+        !currentlyOn &&
+        _visibleListColumnCount >= _maxVisibleListColumns) {
+      return;
+    }
+    final next = {..._listColumnsV2, key: !(_listColumnsV2[key] ?? false)};
+    setState(() => _listColumnsV2 = next);
+    await ref.read(settingsRepositoryProvider).setProductListColumns(next);
   }
 
   Future<void> _loadColumnsBannerDismissed() async {
@@ -257,7 +360,6 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     final bt = await ref.read(settingsRepositoryProvider).getBusinessType();
     setState(() {
       _businessType = bt;
-      _typeFilter = bt == BusinessType.both ? 'both' : bt.key;
       _newItemType = bt == BusinessType.service ? 'service' : 'product';
     });
   }
@@ -285,6 +387,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     _storageLocationController.dispose();
     _containerNumberController.dispose();
     _batchNumberController.dispose();
+    _manufactureNameController.dispose();
     _supplierNameController.dispose();
     _skuCodeController.dispose();
     _notesController.dispose();
@@ -294,30 +397,42 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     super.dispose();
   }
 
+  // Loads just the visible page — active tab, search, sort and paging all
+  // in SQL — plus metadata for those rows only (Issues.md #42).
   Future<void> _loadProducts() async {
     final requestId = ++_loadRequestId;
     if(!mounted) return;
     setState(() => _isLoading = true);
     try {
       final productRepo = ref.read(productRepositoryProvider);
+      final tab = _tabKeyV2;
+      Future<List<Product>> page() => productRepo.getProductListPage(
+          offset: _currentPage * _pageSize,
+          limit: _pageSize,
+          query: _searchQuery,
+          tab: tab,
+          orderBy: _sortBy,
+          ascending: _isAscending);
       final results = await Future.wait([
-        productRepo.getProductsPaginated(
-            offset: _currentPage * _pageSize,
-            limit: _pageSize,
-            query: _searchQuery,
-            orderBy: _sortBy,
-            orderASC: _isAscending,
-            type: _typeFilter),
-        productRepo.getTotalProductCount(),
+        page(),
+        productRepo.getProductListCount(query: _searchQuery, tab: tab),
       ]);
-      final result = results[0] as List<Product>;
-      final allCount = results[1] as int;
+      var result = results[0] as List<Product>;
+      final total = results[1] as int;
+      // Current page fell off the end (e.g. last row on the last page deleted).
+      final maxPage = total == 0 ? 0 : (total - 1) ~/ _pageSize;
+      if (_currentPage > maxPage) {
+        _currentPage = maxPage;
+        result = await page();
+      }
+      final metadata = await productRepo
+          .getProductMetadataForIds(result.map((p) => p.id).toList());
 
       if (requestId != _loadRequestId || !mounted) return;
       setState(() {
         _products = result;
-        _totalProducts = allCount;
-        _allProductsCount = allCount;
+        _totalProducts = total;
+        _productMetadataV2 = metadata;
       });
     } catch (e) {
       if (requestId != _loadRequestId || !mounted) return;
@@ -368,6 +483,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
               batchNumber: _batchNumberController.text.trim(),
               expiryDate: _isoDate(_expiryDate),
               manufactureDate: _isoDate(_manufactureDate),
+              manufactureName: _manufactureNameController.text.trim(),
               supplierName: _supplierNameController.text.trim(),
               skuCode: _skuCodeController.text.trim(),
               notes: _notesController.text.trim(),
@@ -399,6 +515,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     _storageLocationController.clear();
     _containerNumberController.clear();
     _batchNumberController.clear();
+    _manufactureNameController.clear();
     _supplierNameController.clear();
     _skuCodeController.clear();
     _notesController.clear();
@@ -477,6 +594,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     required TextEditingController storageLocationCtrl,
     required TextEditingController containerNumberCtrl,
     required TextEditingController batchNumberCtrl,
+    required TextEditingController manufactureNameCtrl,
     required TextEditingController supplierNameCtrl,
     required TextEditingController skuCodeCtrl,
     required TextEditingController notesCtrl,
@@ -564,6 +682,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
             dateField(l10n.productMgmtExpiryDateLabel, expiryDate, onExpiryChanged),
           if (_columnsConfig.metaManufactureDate)
             dateField(l10n.productMgmtManufactureDateLabel, manufactureDate, onManufactureChanged),
+          if (_columnsConfig.metaManufactureName)
+            field(manufactureNameCtrl, l10n.productMgmtManufactureNameLabel, Icons.factory_outlined),
           if (_columnsConfig.metaSupplierName)
             field(supplierNameCtrl, l10n.productMgmtSupplierNameLabel, Icons.local_shipping_outlined),
           if (_columnsConfig.metaSkuCode)
@@ -691,7 +811,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
 
   Future<void> _downloadSampleCSV() async {
     const sample =
-        '"name","hsn_code","description","price","tax_rate","stock","type","default_discount","purchase_price","alias_name","unit","unlimited_stock","price_includes_tax","storage_location","container_number","batch_number","expiry_date","manufacture_date","supplier_name","sku_code","notes"\n'
+        '"name","hsn_code","description","price","tax_rate","stock","type","default_discount","purchase_price","alias_name","unit","unlimited_stock","price_includes_tax","storage_location","container_number","batch_number","expiry_date","manufacture_date","manufacture_name","supplier_name","sku_code","notes"\n'
         '"Wireless Mouse","84716010","Ergonomic wireless mouse","599.00","18","50","product","5.00","400.00","","pcs","0","0","Rack A1","","","","","","",""\n'
         '"USB Hub","84734000","4-port USB 3.0 hub","299.00","18","100","product","0","180.00","","pcs","0","0","","CNT-1023","","","","","",""\n'
         '"Annual Support","998314","Annual technical support plan","4999.00","18","0","service","10.00","0","","unit","1","1","","","","","","","",""\n';
@@ -772,6 +892,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                     _csvRuleRow(context, 'batch_number', false, l10n.productMgmtCsvDescBatchNumber),
                     _csvRuleRow(context, 'expiry_date', false, l10n.productMgmtCsvDescExpiryDate),
                     _csvRuleRow(context, 'manufacture_date', false, l10n.productMgmtCsvDescManufactureDate),
+                    _csvRuleRow(context, 'manufacture_name', false, l10n.productMgmtCsvDescManufactureName),
                     _csvRuleRow(context, 'supplier_name', false, l10n.productMgmtCsvDescSupplierName),
                     _csvRuleRow(context, 'sku_code', false, l10n.productMgmtCsvDescSkuCode),
                     _csvRuleRow(context, 'notes', false, l10n.productMgmtCsvDescNotes),
@@ -930,7 +1051,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
 
       String getField(List<dynamic> row, String col) {
         final i = headers.indexOf(col);
-        return i < 0 || i >= row.length ? '' : row[i].toString().trim();
+        return i < 0 || i >= row.length ? '' : stripCsvFormulaGuard(row[i].toString().trim());
       }
 
       final List<Product> valid = [];
@@ -1027,6 +1148,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
           batchNumber: getField(row, 'batch_number'),
           expiryDate: getField(row, 'expiry_date'),
           manufactureDate: getField(row, 'manufacture_date'),
+          manufactureName: getField(row, 'manufacture_name'),
           supplierName: getField(row, 'supplier_name'),
           skuCode: getField(row, 'sku_code'),
           notes: getField(row, 'notes'),
@@ -1283,7 +1405,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
       final allProducts = await repo.getAllProducts();
       final allMetadata = await repo.getAllProductMetadata();
       final List<List<dynamic>> rows = [
-        ['name', 'hsn_code', 'description', 'price', 'tax_rate', 'stock', 'type', 'default_discount', 'purchase_price', 'alias_name', 'unit', 'unlimited_stock', 'price_includes_tax', 'storage_location', 'container_number', 'batch_number', 'expiry_date', 'manufacture_date', 'supplier_name', 'sku_code', 'notes'],
+        ['name', 'hsn_code', 'description', 'price', 'tax_rate', 'stock', 'type', 'default_discount', 'purchase_price', 'alias_name', 'unit', 'unlimited_stock', 'price_includes_tax', 'storage_location', 'container_number', 'batch_number', 'expiry_date', 'manufacture_date', 'manufacture_name', 'supplier_name', 'sku_code', 'notes'],
         ...allProducts.map((p) {
           final meta = allMetadata[p.id];
           return [
@@ -1305,6 +1427,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
               meta?.batchNumber ?? '',
               meta?.expiryDate ?? '',
               meta?.manufactureDate ?? '',
+              meta?.manufactureName ?? '',
               meta?.supplierName ?? '',
               meta?.skuCode ?? '',
               meta?.notes ?? '',
@@ -1430,8 +1553,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
   // ============================================================
   // V2 — flat / modern layout. Reuses all v1 state, controllers,
   // validation, and repository calls. New pieces:
-  //  - stats loaded once as a full list, filtering/search/sort/paging
-  //    done in-memory against it (see _applyClientFilterV2)
+  //  - stat counts from one SQL aggregate; the table loads one page at a
+  //    time (see _loadProducts)
   //  - a slide-out "Add New Product" panel (Basic/Advanced tabs)
   //    instead of the always-visible left sidebar form
   //  - flat table/cards instead of Card/DataTable chrome
@@ -1441,15 +1564,16 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     if (!mounted) return;
     setState(() => _statsLoadingV2 = true);
     try {
-      final repo = ref.read(productRepositoryProvider);
-      final all = await repo.getAllProducts();
-      final metadata = await repo.getAllProductMetadata();
+      final results = await Future.wait([
+        ref.read(productRepositoryProvider).getProductListStats(),
+        _loadProducts(),
+      ]);
+      final stats = results[0] as ProductListStats;
       if (!mounted) return;
       setState(() {
-        _allProductsV2 = all;
-        _productMetadataV2 = metadata;
+        _statsV2 = stats;
+        _allProductsCount = stats.all;
       });
-      _applyClientFilterV2();
     } catch (e) {
       if (!mounted) return;
       _showSnackBar(AppLocalizations.of(context)!.productMgmtLoadErrorMessage(e.toString()), isError: true);
@@ -1464,71 +1588,16 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     return DateTime.tryParse(raw);
   }
 
-  bool _isExpiredV2(Product p) {
-    final d = _expiryDateOfV2(p);
-    return d != null && d.isBefore(DateTime.now());
-  }
+  int get _allCountV2 => _statsV2.all;
+  int get _productsCountV2 => _statsV2.products;
+  int get _servicesCountV2 => _statsV2.services;
+  int get _lowStockCountV2 => _statsV2.lowStock;
+  int get _outOfStockCountV2 => _statsV2.outOfStock;
+  int get _expiredCountV2 => _statsV2.expired;
 
-  int get _allCountV2 => _allProductsV2.length;
-  int get _productsCountV2 =>
-      _allProductsV2.where((p) => p.type == 'product').length;
-  int get _servicesCountV2 =>
-      _allProductsV2.where((p) => p.type == 'service').length;
-  int get _lowStockCountV2 => _allProductsV2
-      .where((p) => !p.unlimitedStock && p.stock > 0 && p.stock <= 10)
-      .length;
-  int get _outOfStockCountV2 =>
-      _allProductsV2.where((p) => !p.unlimitedStock && p.stock <= 0).length;
-  int get _expiredCountV2 => _allProductsV2.where(_isExpiredV2).length;
-
-  // Applies the active tab (type + stock-status), search text, and sort
-  // to the full in-memory list, then slices out the current page.
-  void _applyClientFilterV2() {
-    Iterable<Product> list = _allProductsV2;
-    if (_activeTabV2 == 1) list = list.where((p) => p.type == 'product');
-    if (_activeTabV2 == 2) list = list.where((p) => p.type == 'service');
-    if (_activeTabV2 == 3) {
-      list = list.where((p) => !p.unlimitedStock && p.stock > 0 && p.stock <= 10);
-    }
-    if (_activeTabV2 == 4) {
-      list = list.where((p) => !p.unlimitedStock && p.stock <= 0);
-    }
-    if (_activeTabV2 == 5) {
-      list = list.where(_isExpiredV2);
-    }
-    if (_searchQuery.trim().isNotEmpty) {
-      final q = _searchQuery.trim().toLowerCase();
-      list = list.where((p) =>
-          p.name.toLowerCase().contains(q) ||
-          (p.aliasName ?? '').toLowerCase().contains(q) ||
-          p.hsncode.toLowerCase().contains(q));
-    }
-    final sorted = list.toList()
-      ..sort((a, b) {
-        int cmp;
-        switch (_sortBy) {
-          case 'price':
-            cmp = a.price.compareTo(b.price);
-            break;
-          case 'stock':
-            cmp = a.stock.compareTo(b.stock);
-            break;
-          default:
-            cmp = a.name.toLowerCase().compareTo(b.name.toLowerCase());
-        }
-        return _isAscending ? cmp : -cmp;
-      });
-    final total = sorted.length;
-    final maxPage = total == 0 ? 0 : ((total - 1) / _pageSize).floor();
-    if (_currentPage > maxPage) _currentPage = maxPage;
-    final start = (_currentPage * _pageSize).clamp(0, total);
-    final end = (start + _pageSize).clamp(0, total);
-    if (!mounted) return;
-    setState(() {
-      _totalProducts = total;
-      _products = sorted.sublist(start, end);
-    });
-  }
+  // _activeTabV2 index → ProductService list tab key.
+  String get _tabKeyV2 =>
+      const ['all', 'product', 'service', 'low', 'out', 'expired'][_activeTabV2];
 
   void _selectTabV2(int index) {
     if (!mounted) return;
@@ -1536,7 +1605,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
       _activeTabV2 = index;
       _currentPage = 0;
     });
-    _applyClientFilterV2();
+    _loadProducts();
   }
 
   void _onSearchChangedV2(String query) {
@@ -1547,7 +1616,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     });
     _searchDebounce?.cancel();
     _searchDebounce =
-        Timer(const Duration(milliseconds: 300), _applyClientFilterV2);
+        Timer(const Duration(milliseconds: 300), _loadProducts);
   }
 
   // Combines v1's separate sort-field + sort-direction controls into the
@@ -1559,13 +1628,13 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
       _isAscending = ascending;
       _currentPage = 0;
     });
-    _applyClientFilterV2();
+    _loadProducts();
   }
 
   void _changePageV2(int page) {
     if (!mounted) return;
     setState(() => _currentPage = page);
-    _applyClientFilterV2();
+    _loadProducts();
   }
 
   Future<void> _addProductV2() async {
@@ -1645,6 +1714,203 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
           const SizedBox(width: 4),
           Icon(Icons.arrow_drop_down,
               size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+        ],
+      ),
+    );
+  }
+
+  String _listColLabel(AppLocalizations l10n, String key) {
+    switch (key) {
+      case 'aliasName':
+        return l10n.productColumnsAliasNameLabel;
+      case 'description':
+        return l10n.productColumnsDescriptionLabel;
+      case 'hsncode':
+        return l10n.productColumnsHsnSacLabel;
+      case 'purchasePrice':
+        return l10n.productColumnsPurchasePriceLabel;
+      case 'stock':
+        return l10n.productColumnsStockLabel;
+      case 'taxRate':
+        return l10n.productColumnsTaxRateLabel;
+      case 'unit':
+        return l10n.productColumnsUnitLabel;
+      case 'defaultDiscount':
+        return l10n.productColumnsDefaultDiscountLabel;
+      case 'storageLocation':
+        return l10n.productColumnsMetaStorageLocationLabel;
+      case 'containerNumber':
+        return l10n.productColumnsMetaContainerNumberLabel;
+      case 'batchNumber':
+        return l10n.productColumnsMetaBatchNumberLabel;
+      case 'expiryDate':
+        return l10n.productColumnsMetaExpiryDateLabel;
+      case 'manufactureDate':
+        return l10n.productColumnsMetaManufactureDateLabel;
+      case 'manufactureName':
+        return l10n.productColumnsMetaManufactureNameLabel;
+      case 'supplierName':
+        return l10n.productColumnsMetaSupplierNameLabel;
+      case 'skuCode':
+        return l10n.productColumnsMetaSkuCodeLabel;
+      case 'notes':
+        return l10n.productColumnsMetaNotesLabel;
+      default:
+        return key;
+    }
+  }
+
+  int _listColFlex(String key) {
+    switch (key) {
+      case 'stock':
+      case 'taxRate':
+      case 'unit':
+      case 'defaultDiscount':
+        return 1;
+      case 'description':
+      case 'notes':
+        return 3;
+      default:
+        return 2;
+    }
+  }
+
+  String _fmtMetaDateV2(String? raw) {
+    if (raw == null || raw.isEmpty) return '';
+    final d = DateTime.tryParse(raw);
+    return d == null ? raw : DateFormat(_datePattern).format(d);
+  }
+
+  // Header cells for the optional list columns, in _listColumnDefaults order.
+  List<Widget> _optionalHeaderCellsV2(TextStyle style) {
+    final l10n = AppLocalizations.of(context)!;
+    final cells = <Widget>[];
+    for (final key in _listColumnDefaults.keys) {
+      if (key == 'aliasName' || !_showListCol(key)) continue;
+      cells.add(Expanded(
+        flex: _listColFlex(key),
+        child: Text(_listColLabel(l10n, key).toUpperCase(), style: style),
+      ));
+    }
+    return cells;
+  }
+
+  // Row cells matching _optionalHeaderCellsV2, same order/flex.
+  List<Widget> _optionalRowCellsV2(Product p) {
+    final meta = _productMetadataV2[p.id];
+    final muted =
+        TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant);
+    Widget text(String v) => Text(v.isEmpty ? '—' : v,
+        maxLines: 1, overflow: TextOverflow.ellipsis, style: muted);
+
+    final cells = <Widget>[];
+    for (final key in _listColumnDefaults.keys) {
+      if (key == 'aliasName' || !_showListCol(key)) continue;
+      Widget child;
+      switch (key) {
+        case 'description':
+          child = text(p.description);
+          break;
+        case 'hsncode':
+          child = text(p.hsncode);
+          break;
+        case 'purchasePrice':
+          child = text(p.purchasePrice > 0
+              ? '$_currencySymbol${p.purchasePrice.toStringAsFixed(2)}'
+              : '');
+          break;
+        case 'stock':
+          child = _stockCellV2(p);
+          break;
+        case 'taxRate':
+          child = Text('${p.tax_rate}%');
+          break;
+        case 'unit':
+          child = text(p.unit);
+          break;
+        case 'defaultDiscount':
+          child = text(p.defaultDiscount > 0
+              ? p.defaultDiscount.toStringAsFixed(2)
+              : '');
+          break;
+        case 'storageLocation':
+          child = text(meta?.storageLocation ?? '');
+          break;
+        case 'containerNumber':
+          child = text(meta?.containerNumber ?? '');
+          break;
+        case 'batchNumber':
+          child = text(meta?.batchNumber ?? '');
+          break;
+        case 'expiryDate':
+          child = _expiryCellV2(p);
+          break;
+        case 'manufactureDate':
+          child = text(_fmtMetaDateV2(meta?.manufactureDate));
+          break;
+        case 'manufactureName':
+          child = text(meta?.manufactureName ?? '');
+          break;
+        case 'supplierName':
+          child = text(meta?.supplierName ?? '');
+          break;
+        case 'skuCode':
+          child = text(meta?.skuCode ?? '');
+          break;
+        case 'notes':
+          child = text(meta?.notes ?? '');
+          break;
+        default:
+          continue;
+      }
+      cells.add(Expanded(flex: _listColFlex(key), child: child));
+    }
+    return cells;
+  }
+
+  Widget _expiryCellV2(Product p) {
+    final expiryDate = _expiryDateOfV2(p);
+    if (expiryDate == null) {
+      return Text('—',
+          style:
+              TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant));
+    }
+    final isExpired = expiryDate.isBefore(DateTime.now());
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (isExpired)
+          const Padding(
+            padding: EdgeInsets.only(right: 4),
+            child: Icon(Icons.error_outline, size: 14, color: Colors.red),
+          ),
+        Text(DateFormat(_datePattern).format(expiryDate),
+            style: TextStyle(
+                fontWeight: isExpired ? FontWeight.bold : FontWeight.normal,
+                color: isExpired
+                    ? Colors.red
+                    : Theme.of(context).colorScheme.onSurface)),
+      ],
+    );
+  }
+
+  PopupMenuItem<String> _listColMenuItemV2(String key, String label) {
+    final visible = _showListCol(key);
+    final canToggle = key == 'aliasName' ||
+        visible ||
+        _visibleListColumnCount < _maxVisibleListColumns;
+    return PopupMenuItem<String>(
+      value: key,
+      enabled: canToggle,
+      child: Row(
+        children: [
+          Icon(visible ? Icons.check_box : Icons.check_box_outline_blank,
+              size: 18,
+              color: canToggle
+                  ? null
+                  : Theme.of(context).colorScheme.onSurfaceVariant),
+          const SizedBox(width: 8),
+          Text(label),
         ],
       ),
     );
@@ -1928,7 +2194,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                       _ => (_activeTabV2 >= 3 && _activeTabV2 <= 5) ? 0 : _activeTabV2,
                     };
                   });
-                  _applyClientFilterV2();
+                  _loadProducts();
                 },
                 itemBuilder: (ctx) => [
                   PopupMenuItem(value: 'all', child: Text(l10n.productMgmtAllStockLevelsLabel)),
@@ -1951,8 +2217,30 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
               ),
               OutlinedButton.icon(
                 onPressed: _openColumnsSettingsV2,
-                icon: const Icon(Icons.view_column_outlined, size: 16),
-                label: Text(l10n.customerMgmtColumnsLabel),
+                icon: const Icon(Icons.tune, size: 16),
+                label: Text(l10n.productMgmtCustomizeColumnsLabel),
+              ),
+              PopupMenuButton<String>(
+                tooltip: l10n.productMgmtShowColumnsLabel,
+                onSelected: _toggleListColumnV2,
+                itemBuilder: (ctx) => [
+                  PopupMenuItem<String>(
+                    enabled: false,
+                    child: Text(
+                        l10n.productMgmtShowColumnsMaxHint(
+                            _maxVisibleListColumns),
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant)),
+                  ),
+                  for (final key in _listColumnDefaults.keys)
+                    if (_listColumnFieldEnabled(key))
+                      _listColMenuItemV2(key, _listColLabel(l10n, key)),
+                ],
+                child: _menuButtonLookV2(
+                    Icons.view_column_outlined, l10n.productMgmtShowColumnsLabel),
               ),
               IconButton(
                 tooltip: _showStatsCardsV2
@@ -2043,9 +2331,6 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
 
   Widget _tableRowV2(Product p, int index) {
     final serial = _currentPage * _pageSize + index + 1;
-    final showExpiry = _columnsConfig.productMetadata && _columnsConfig.metaExpiryDate;
-    final expiryDate = showExpiry ? _expiryDateOfV2(p) : null;
-    final isExpired = expiryDate != null && expiryDate.isBefore(DateTime.now());
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 12, 4, 12),
       decoration: BoxDecoration(
@@ -2072,77 +2357,29 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                 Text(p.name,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontWeight: FontWeight.w600)),
-                if ((p.aliasName ?? '').isNotEmpty || _columnsConfig.type)
+                if (_businessType == BusinessType.both && _columnsConfig.type)
                   Padding(
                     padding: const EdgeInsets.only(top: 2),
-                    child: Row(
-                      children: [
-                        if (_businessType == BusinessType.both && _columnsConfig.type)
-                          _typeTagV2(p.type),
-                        if ((p.aliasName ?? '').isNotEmpty) ...[
-                          if (_businessType == BusinessType.both && _columnsConfig.type)
-                            const SizedBox(width: 6),
-                          Flexible(
-                            child: Text(p.aliasName!,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                    fontSize: 12,
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                          ),
-                        ],
-                      ],
-                    ),
+                    child: _typeTagV2(p.type),
+                  ),
+                if (_showListCol('aliasName') && (p.aliasName ?? '').isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text('(${p.aliasName})',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant)),
                   ),
               ],
             ),
           ),
-          if (_columnsConfig.hsncode)
-            Expanded(
-              flex: 2,
-              child: Text(p.hsncode.isEmpty ? '—' : p.hsncode,
-                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
-            ),
           Expanded(
             flex: 2,
             child: Text('$_currencySymbol${p.price.toStringAsFixed(2)}',
                 style: const TextStyle(fontWeight: FontWeight.w600)),
           ),
-          if (_columnsConfig.purchasePrice)
-            Expanded(
-              flex: 2,
-              child: Text(
-                  p.purchasePrice > 0
-                      ? '$_currencySymbol${p.purchasePrice.toStringAsFixed(2)}'
-                      : '—',
-                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
-            ),
-          if (_columnsConfig.stock)
-            Expanded(flex: 1, child: _stockCellV2(p)),
-          if (_columnsConfig.taxRate)
-            Expanded(flex: 1, child: Text('${p.tax_rate}%')),
-          if (showExpiry)
-            Expanded(
-              flex: 2,
-              child: expiryDate == null
-                  ? Text('—',
-                      style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))
-                  : Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (isExpired)
-                          const Padding(
-                            padding: EdgeInsets.only(right: 4),
-                            child: Icon(Icons.error_outline, size: 14, color: Colors.red),
-                          ),
-                        Text(DateFormat(_datePattern).format(expiryDate),
-                            style: TextStyle(
-                                fontWeight: isExpired ? FontWeight.bold : FontWeight.normal,
-                                color: isExpired
-                                    ? Colors.red
-                                    : Theme.of(context).colorScheme.onSurface)),
-                      ],
-                    ),
-            ),
+          ..._optionalRowCellsV2(p),
           SizedBox(
             width: 116,
             child: Row(
@@ -2193,14 +2430,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         children: [
           SizedBox(width: 56, child: Text(l10n.productMgmtColSlNo, style: style)),
           Expanded(flex: 3, child: Text(l10n.productMgmtColNameAlias, style: style)),
-          if (_columnsConfig.hsncode) Expanded(flex: 2, child: Text(l10n.productMgmtColHsnSac, style: style)),
           Expanded(flex: 2, child: Text(l10n.productMgmtColPrice, style: style)),
-          if (_columnsConfig.purchasePrice)
-            Expanded(flex: 2, child: Text(l10n.productMgmtColPurchase, style: style)),
-          if (_columnsConfig.stock) Expanded(flex: 1, child: Text(l10n.productMgmtColStock, style: style)),
-          if (_columnsConfig.taxRate) Expanded(flex: 1, child: Text(l10n.productMgmtColTaxPercent, style: style)),
-          if (_columnsConfig.productMetadata && _columnsConfig.metaExpiryDate)
-            Expanded(flex: 2, child: Text(l10n.productMgmtColExpiryDate, style: style)),
+          ..._optionalHeaderCellsV2(style),
           SizedBox(width: 116, child: Text('', style: style)),
         ],
       ),
@@ -2223,7 +2454,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         mainAxisSize: MainAxisSize.min,
         children: [
           _tableHeaderRowV2(),
-          _statsLoadingV2 && _allProductsV2.isEmpty
+          _statsLoadingV2 && _products.isEmpty
               ? const SizedBox(
                   height: 240, child: Center(child: CircularProgressIndicator()))
               : _products.isEmpty
@@ -2293,7 +2524,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                     _pageSize = n;
                     _currentPage = 0;
                   });
-                  _applyClientFilterV2();
+                  _loadProducts();
                 },
               ),
               const SizedBox(width: 12),
@@ -2489,6 +2720,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
             storageLocationCtrl: _storageLocationController,
             containerNumberCtrl: _containerNumberController,
             batchNumberCtrl: _batchNumberController,
+            manufactureNameCtrl: _manufactureNameController,
             supplierNameCtrl: _supplierNameController,
             skuCodeCtrl: _skuCodeController,
             notesCtrl: _notesController,
@@ -2695,6 +2927,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     final storageCtrl = TextEditingController(text: metadata?.storageLocation ?? '');
     final containerCtrl = TextEditingController(text: metadata?.containerNumber ?? '');
     final batchCtrl = TextEditingController(text: metadata?.batchNumber ?? '');
+    final manufactureNameCtrl =
+        TextEditingController(text: metadata?.manufactureName ?? '');
     final supplierCtrl = TextEditingController(text: metadata?.supplierName ?? '');
     final skuCtrl = TextEditingController(text: metadata?.skuCode ?? '');
     final notesCtrl = TextEditingController(text: metadata?.notes ?? '');
@@ -2723,6 +2957,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
       storageCtrl.dispose();
       containerCtrl.dispose();
       batchCtrl.dispose();
+      manufactureNameCtrl.dispose();
       supplierCtrl.dispose();
       skuCtrl.dispose();
       notesCtrl.dispose();
@@ -2809,6 +3044,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                       batchNumber: batchCtrl.text.trim(),
                       expiryDate: _isoDate(expiryDate),
                       manufactureDate: _isoDate(manufactureDate),
+                      manufactureName: manufactureNameCtrl.text.trim(),
                       supplierName: supplierCtrl.text.trim(),
                       skuCode: skuCtrl.text.trim(),
                       notes: notesCtrl.text.trim(),
@@ -3059,6 +3295,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                                 storageLocationCtrl: storageCtrl,
                                 containerNumberCtrl: containerCtrl,
                                 batchNumberCtrl: batchCtrl,
+                                manufactureNameCtrl: manufactureNameCtrl,
                                 supplierNameCtrl: supplierCtrl,
                                 skuCodeCtrl: skuCtrl,
                                 notesCtrl: notesCtrl,

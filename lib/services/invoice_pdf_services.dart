@@ -21,7 +21,9 @@ class InvoicePdfServices {
         final dateFmt = await BackendServices.settings.getDateFormat();
         final pdf = await PDFService.generateInvoicePDF(invoice,
             datePattern: dateFmt.key);
+        final pageSize = await BackendServices.settings.getPageSize();
         await Printing.layoutPdf(
+            format: PDFService.pageSizeToFormat(pageSize),
             onLayout: (PdfPageFormat format) async => pdf.save());
       }
     } catch (e) {
@@ -75,6 +77,10 @@ class InvoicePdfServices {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (invoice.status == 'declined')
+                const Text('DECLINED',
+                    style: TextStyle(
+                        color: Colors.red, fontWeight: FontWeight.bold)),
               Text('Customer: ${invoice.customer.name}'),
               Text('Date: ${AppFormatters.formatShortDate(invoice.date)}'),
               const SizedBox(height: 16),

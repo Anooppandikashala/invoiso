@@ -963,9 +963,9 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                                 .outlineVariant),
                                       ),
                                       child: SwitchListTile(
-                                        title: const Text('Show CGST/SGST'),
+                                        title: const Text('Show CGST/SGST/IGST'),
                                         subtitle: const Text(
-                                          "Split tax into CGST + SGST on invoices (India only).",
+                                          "Split tax into CGST + SGST, or IGST for interstate invoices (India only).",
                                         ),
                                         secondary: Icon(
                                           Icons.percent_rounded,
@@ -1199,6 +1199,9 @@ class _InvoiceSettingsScreenState extends ConsumerState<InvoiceSettingsScreen> {
                                                       'Invoice-cum-Bill of Supply',
                                                   child: Text(
                                                       'Invoice-cum-Bill of Supply')),
+                                              DropdownMenuItem(
+                                                  value: 'Cash Bill',
+                                                  child: Text('Cash Bill')),
                                               DropdownMenuItem(
                                                   value: 'Credit Note',
                                                   child: Text('Credit Note')),

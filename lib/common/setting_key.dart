@@ -48,6 +48,7 @@ enum SettingKey {
   themeMode, // app theme: 'light' | 'dark' | 'system'
   watermarkImage, // base64-encoded watermark image shown behind invoice items table
   watermarkOpacity, // watermark opacity 0.0-1.0 as string; default '0.12'
+  watermarkFullPage, // 'true' to render watermark across the whole page instead of only behind the items table (default false)
   defaultInvoiceTitle, // GST document title preselected on new invoices: 'Tax Invoice' | 'Bill of Supply' | etc; null/empty = plain 'Invoice'
   allowDuplicateInvoiceItems, // whether the same product can be added twice to one invoice (default false)
   showCgstSgst, // whether to split tax into CGST/SGST (India, 50/50)
@@ -63,14 +64,38 @@ enum SettingKey {
   thermalCompanyNameSize, // 'xsmall' | 'small' | 'medium' | 'large' — company name font size on thermal receipts; default 'medium'
   lastUsedThermalPrinter, // JSON-encoded Printer of the last device successfully printed to, used to skip a full rescan on next open
   productColumnsConfig, // JSON ProductColumnsConfig — which optional product fields (and invoice extra cost) are visible/editable
+  productListColumnsConfig, // JSON Map<String,bool> — which optional columns show in the product list table
+  invoicePdfMetadataColumns, // JSON Map<String,bool> — which product-metadata columns print in the Grid Classic A4 invoice PDF
   shortcutsBannerDismissed, // '1' once user dismisses the keyboard-shortcuts discovery banner
   createInvoiceLayout, // which create-invoice screen layout to use: 'v1' | 'v2'
   showCustomerStatsCards, // whether the stat cards row is shown on customer management v2 (default true)
   showProductStatsCards, // whether the stat cards row is shown on product management v2 (default true)
   hideInvoiceNumberByDefault, // whether the "Hide invoice number in PDF" toggle is on by default for new invoices (default false)
+  showDescriptionInPdf, // whether to print a product's description as a full-width row under each invoice item on A4 PDFs (default false)
+  descriptionNewLineInPdf, // when showDescriptionInPdf is on: print the description as a full-width row below the item instead of a line under the item name (default false)
   appLocale, // app UI language code, e.g. 'en' | 'ne' | 'bo' | 'fr' | 'es' | 'hi' | 'zh'; unset/empty = follow system locale
   onboardingCompleted, // '1' once the first-login onboarding wizard has been finished or skipped
   enablePurchaseBillsAndSuppliers, // whether the Purchase Bills / Suppliers dashboard tabs are shown (default false, opt-in)
+  showCustomerBusinessNameInPdf, // whether to show the customer's business name on PDFs/thermal receipts (default true; only shown when non-empty)
+  showCustomerAddressInPdf, // whether to show the customer's address on PDFs (default true; only shown when non-empty)
+  showCustomerPhoneInPdf, // whether to show the customer's phone on PDFs/thermal receipts (default true; only shown when non-empty)
+  showCustomerEmailInPdf, // whether to show the customer's email on PDFs (default true; only shown when non-empty)
+  showCustomerGstinInPdf, // whether to show the customer's GSTIN/tax id on PDFs/thermal receipts (default true; only shown when non-empty and GST fields are on)
+  showTimeInPdf, // whether the invoice creation time is appended to the date on PDFs/thermal receipts (default true)
+  pdfTimeFormat, // time format used when showTimeInPdf is on: '24' (HH:mm) | '12' (h:mm a); default '24'
+  showSlNoInPdf, // whether to print the Sl No column in the A4/Letter invoice items table (default true)
+  pdfLandscape, // whether the Grid Classic invoice PDF renders in landscape orientation (default false)
+  customFieldsEnabled, // whether the user-defined Custom Fields feature is on (default false)
+  customFieldDefs, // JSON list of CustomFieldDef objects
+  faqCache, // cached JSON string of the last successfully fetched faq.json, used offline/on fetch failure
+  lastFaqFetch, // ISO timestamp of last successful faq.json fetch
+  showTaxColumn, // whether to show the per-item Tax column on A4 PDFs, for both global and per-item tax modes (default true); showCgstSgst only matters when this is on
+  pdfFontSize, // 'small' | 'medium' | 'large' | 'xlarge' — text size multiplier for non-thermal invoice PDFs; default 'medium'
+  pdfCompanyNameFontSize, // PdfFontSize key for the company name; empty/absent = same as pdfFontSize
+  pdfDocTitleFontSize, // PdfFontSize key for the document title; empty/absent = same as pdfFontSize
+  pdfTableHeaderFontSize, // PdfFontSize key for the items table header; empty/absent = same as pdfFontSize
+  pdfTableItemsFontSize, // PdfFontSize key for the items table rows; empty/absent = same as pdfFontSize
+  pdfTotalsFontSize, // PdfFontSize key for the totals block; empty/absent = same as pdfFontSize
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -174,6 +199,8 @@ extension SettingKeyExtension on SettingKey {
         return 'watermark_image';
       case SettingKey.watermarkOpacity:
         return 'watermark_opacity';
+      case SettingKey.watermarkFullPage:
+        return 'watermark_full_page';
       case SettingKey.defaultInvoiceTitle:
         return 'default_invoice_title';
       case SettingKey.allowDuplicateInvoiceItems:
@@ -204,6 +231,10 @@ extension SettingKeyExtension on SettingKey {
         return 'last_used_thermal_printer';
       case SettingKey.productColumnsConfig:
         return 'product_columns_config';
+      case SettingKey.productListColumnsConfig:
+        return 'product_list_columns_config';
+      case SettingKey.invoicePdfMetadataColumns:
+        return 'invoice_pdf_metadata_columns';
       case SettingKey.shortcutsBannerDismissed:
         return 'shortcuts_banner_dismissed';
       case SettingKey.createInvoiceLayout:
@@ -214,12 +245,56 @@ extension SettingKeyExtension on SettingKey {
         return 'show_product_stats_cards';
       case SettingKey.hideInvoiceNumberByDefault:
         return 'hide_invoice_number_by_default';
+      case SettingKey.showDescriptionInPdf:
+        return 'show_description_in_pdf';
+      case SettingKey.descriptionNewLineInPdf:
+        return 'description_new_line_in_pdf';
       case SettingKey.appLocale:
         return 'app_locale';
       case SettingKey.onboardingCompleted:
         return 'onboarding_completed';
       case SettingKey.enablePurchaseBillsAndSuppliers:
         return 'enable_purchase_bills_and_suppliers';
+      case SettingKey.showCustomerBusinessNameInPdf:
+        return 'show_customer_business_name_in_pdf';
+      case SettingKey.showCustomerAddressInPdf:
+        return 'show_customer_address_in_pdf';
+      case SettingKey.showCustomerPhoneInPdf:
+        return 'show_customer_phone_in_pdf';
+      case SettingKey.showCustomerEmailInPdf:
+        return 'show_customer_email_in_pdf';
+      case SettingKey.showCustomerGstinInPdf:
+        return 'show_customer_gstin_in_pdf';
+      case SettingKey.showTimeInPdf:
+        return 'show_time_in_pdf';
+      case SettingKey.pdfTimeFormat:
+        return 'pdf_time_format';
+      case SettingKey.showSlNoInPdf:
+        return 'show_sl_no_in_pdf';
+      case SettingKey.pdfLandscape:
+        return 'pdf_landscape';
+      case SettingKey.customFieldsEnabled:
+        return 'custom_fields_enabled';
+      case SettingKey.customFieldDefs:
+        return 'custom_field_defs';
+      case SettingKey.faqCache:
+        return 'faq_cache';
+      case SettingKey.lastFaqFetch:
+        return 'last_faq_fetch';
+      case SettingKey.showTaxColumn:
+        return 'show_tax_column';
+      case SettingKey.pdfFontSize:
+        return 'pdf_font_size';
+      case SettingKey.pdfCompanyNameFontSize:
+        return 'pdf_company_name_font_size';
+      case SettingKey.pdfDocTitleFontSize:
+        return 'pdf_doc_title_font_size';
+      case SettingKey.pdfTableHeaderFontSize:
+        return 'pdf_table_header_font_size';
+      case SettingKey.pdfTableItemsFontSize:
+        return 'pdf_table_items_font_size';
+      case SettingKey.pdfTotalsFontSize:
+        return 'pdf_totals_font_size';
 
     }
   }

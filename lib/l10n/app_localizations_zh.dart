@@ -231,6 +231,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get dashboardSupportTooltip => '支持';
 
   @override
+  String get buyMeCoffeeLabel => 'Buy me a coffee';
+
+  @override
   String get dashboardLogoutTooltip => '退出登录';
 
   @override
@@ -294,6 +297,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get actionRefresh => '刷新';
 
   @override
+  String get helpSearchTooltip => 'Search Help & Settings';
+
+  @override
   String dashboardOutOfStockCountLabel(int count) {
     return '$count 件缺货';
   }
@@ -310,10 +316,16 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get dashboardRecentInvoicesTitle => '最近发票';
+  String get dashboardRecentInvoicesTitle => '最近文档';
 
   @override
-  String get dashboardLastFiveInvoicesLabel => '最近 5 张发票';
+  String get dashboardLastFiveInvoicesLabel => '最近 5 个文档';
+
+  @override
+  String get dashboardColDocumentNo => '单据编号';
+
+  @override
+  String get dashboardColType => '类型';
 
   @override
   String get dashboardNoInvoicesYetTitle => '暂无发票';
@@ -763,6 +775,11 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String createInvoiceTotalBelowPaidMessage(String paid) {
+    return '新的总额低于已支付的 $paid。请先在“应用付款”中删除付款，或将总额保持在该金额或以上。';
+  }
+
+  @override
   String createInvoiceErrorUpdatingMessage(String e) {
     return '更新发票时出错：$e';
   }
@@ -890,6 +907,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get createInvoiceOrderDateLabel => '订单日期';
 
   @override
+  String get createInvoiceOrderTimeLabel => '订单时间';
+
+  @override
   String get createInvoiceDueDateLabel => '到期日期';
 
   @override
@@ -906,6 +926,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get gstTitleInvoiceCumBillLabel => '发票兼供货单';
+
+  @override
+  String get gstTitleCashBillLabel => 'Cash Bill';
 
   @override
   String get gstTitleCreditNoteLabel => '贷项通知单';
@@ -988,6 +1011,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get createInvoiceTaxRateFromProductMessage => '使用各产品自身的税率';
+
+  @override
+  String get createInvoiceInterStateLabel => 'Interstate supply (IGST)';
 
   @override
   String get createInvoicePaymentUpiAccountLabel => '收款 UPI 账户';
@@ -1240,6 +1266,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get invoiceMgmtHideFullyPaidLabel => '隐藏已全额付款的发票';
 
   @override
+  String get invoiceMgmtHideDeclinedLabel => '隐藏已拒绝的发票';
+
+  @override
   String get invoiceMgmtPaymentStatusLabel => '付款状态';
 
   @override
@@ -1375,6 +1404,79 @@ class AppLocalizationsZh extends AppLocalizations {
   String invoiceMgmtManagementTitle(String type) {
     return '$type管理';
   }
+
+  @override
+  String invoiceMgmtNewDocumentButton(String type) {
+    return '新建$type';
+  }
+
+  @override
+  String get invoiceMgmtConvertToInvoiceAction => '转换为发票';
+
+  @override
+  String get invoiceMgmtConvertAgainTitle => '再次转换？';
+
+  @override
+  String invoiceMgmtConvertAgainBody(String number) {
+    return '报价单 $number 已转换为发票。要从它再创建一张发票吗？';
+  }
+
+  @override
+  String get invoiceMgmtMarkAsSent => '标记为已发送';
+
+  @override
+  String get invoiceMgmtMarkAsAccepted => '标记为已接受';
+
+  @override
+  String get invoiceMgmtMarkAsDeclined => '标记为已拒绝';
+
+  @override
+  String get quotationStatusDraft => '草稿';
+
+  @override
+  String get quotationStatusSent => '已发送';
+
+  @override
+  String get quotationStatusAccepted => '已接受';
+
+  @override
+  String get quotationStatusDeclined => '已拒绝';
+
+  @override
+  String get quotationStatusConverted => '已转换';
+
+  @override
+  String get invoiceMgmtDeclineInvoiceTitle => '拒绝此发票？';
+
+  @override
+  String invoiceMgmtDeclineInvoiceBody(String number) {
+    return '这将把发票 #$number 标记为已拒绝，并将其商品归还库存。此操作无法撤销。';
+  }
+
+  @override
+  String invoiceMgmtDeclineHasPaymentsMessage(String number) {
+    return '发票 #$number 已有付款记录。拒绝前请先在“应用付款”中删除这些付款。';
+  }
+
+  @override
+  String get invoiceMgmtDeclinedSuccessMessage => '发票已拒绝，库存已归还。';
+
+  @override
+  String get invoiceStatusDeclinedBadge => '已拒绝';
+
+  @override
+  String get createInvoiceConvertTitle => '转换为发票';
+
+  @override
+  String createInvoiceConvertedSuccessMessage(String invoiceNumber) {
+    return '已转换为发票 #$invoiceNumber';
+  }
+
+  @override
+  String get createInvoiceTrashQuotationAction => '删除报价';
+
+  @override
+  String get createInvoiceQuotationTrashedMessage => '报价单已移至回收站';
 
   @override
   String get invoiceMgmtOverdueBadge => '已逾期';
@@ -1797,6 +1899,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get customerMgmtSortIdNewest => 'ID（最新优先）';
 
   @override
+  String get customerMgmtSortOutstandingHighLow => '未结余额（从高到低）';
+
+  @override
+  String get customerMgmtSortOutstandingLowHigh => '未结余额（从低到高）';
+
+  @override
+  String get customerMgmtWithOutstandingLabel => '有未结余额';
+
+  @override
   String customerMgmtSearchHint(String taxWord) {
     return '按姓名、企业、电话、$taxWord、邮箱搜索客户…';
   }
@@ -1953,6 +2064,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get productMgmtManufactureDateLabel => '生产日期';
 
   @override
+  String get productMgmtManufactureNameLabel => 'Manufacturer Name';
+
+  @override
   String get productMgmtSupplierNameLabel => '供应商名称';
 
   @override
@@ -2026,6 +2140,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get productMgmtCsvDescManufactureDate => '生产日期';
+
+  @override
+  String get productMgmtCsvDescManufactureName => 'Manufacturer name';
 
   @override
   String get productMgmtCsvDescSupplierName => '供应商名称';
@@ -2189,6 +2306,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String get productMgmtColExpiryDate => '有效期';
 
   @override
+  String get productMgmtCustomizeColumnsLabel => 'Customize Product Columns';
+
+  @override
+  String get productMgmtShowColumnsLabel => 'Show Columns';
+
+  @override
+  String productMgmtShowColumnsMaxHint(int max) {
+    return 'Show up to $max columns';
+  }
+
+  @override
   String productMgmtShowingRangeLabel(int from, int to, int total) {
     return '显示第 $from 至 $to 项，共 $total 个产品';
   }
@@ -2347,6 +2475,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get reportsAllCurrenciesLabel => '所有货币';
 
   @override
+  String get reportsArAgingSummaryTitle => '应收账款账龄摘要';
+
+  @override
   String get reportsAvgInvoiceValueLabel => '平均发票金额';
 
   @override
@@ -2482,7 +2613,19 @@ class AppLocalizationsZh extends AppLocalizations {
   String get reportsMonthlyRevenueTrendTitle => '月度收入趋势';
 
   @override
+  String get reportsMonthlyBreakdownTitle => '月度明细';
+
+  @override
+  String get reportsMonthColumnLabel => '月份';
+
+  @override
+  String get reportsTotalRowLabel => '合计';
+
+  @override
   String get reportsNavDailyReportLabel => '每日报告';
+
+  @override
+  String get reportsNavInventoryLabel => 'Inventory';
 
   @override
   String get reportsNavInvoiceStatusLabel => '发票状态';
@@ -2495,6 +2638,55 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get reportsNavTaxLabel => '税';
+
+  @override
+  String get reportsInventoryBlockedValueLabel => 'Inventory Value Blocked';
+
+  @override
+  String get reportsInventoryPotentialSaleValueLabel => 'Potential Sale Value';
+
+  @override
+  String get reportsInventoryLockedProfitLabel => 'Profit Locked in Stock';
+
+  @override
+  String get reportsInventoryTotalUnitsLabel => 'Total Units';
+
+  @override
+  String get reportsInventoryProductCountLabel => 'Products Tracked';
+
+  @override
+  String get reportsInventoryBreakdownTitle => 'Product Breakdown';
+
+  @override
+  String get reportsNoInventoryDataMessage => 'No inventory data';
+
+  @override
+  String get reportsInventoryProductColumnLabel => 'Product';
+
+  @override
+  String get reportsInventoryStockColumnLabel => 'Stock';
+
+  @override
+  String get reportsInventoryPurchasePriceColumnLabel => 'Purchase Price';
+
+  @override
+  String get reportsInventoryStockValueColumnLabel => 'Stock Value';
+
+  @override
+  String get reportsInventorySaleValueColumnLabel => 'Sale Value';
+
+  @override
+  String reportsInventoryExcludedBannerMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count items are excluded from inventory value — they\'re services or have unlimited stock tracking on.',
+      one:
+          '1 item is excluded from inventory value — it\'s a service or has unlimited stock tracking on.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get reportsNoCustomerDataMessage => '此期间无客户数据';
@@ -2632,6 +2824,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get reportsTaxCollectedLabel => '已收税款';
 
   @override
+  String get reportsTaxableAmountLabel => '应税金额';
+
+  @override
+  String get reportsGrossAmountLabel => '总额';
+
+  @override
+  String get reportsTaxAccrualNote => '按本期开票日期计提的税款 — 权责发生制，付款前。';
+
+  @override
   String get reportsTaxRateBucketsLabel => '税率分组';
 
   @override
@@ -2669,6 +2870,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get reportsTotalInvoicesLabel => '发票总数';
+
+  @override
+  String get reportsRealizedProfitLabel => '已实现利润';
 
   @override
   String get reportsTotalProfitLabel => '总利润';
@@ -2750,6 +2954,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get userMgmtCantDeleteOwnAccountMessage => '您不能删除自己的账户';
+
+  @override
+  String get userMgmtCantDemoteLastAdminMessage => '您不能更改唯一管理员的角色';
+
+  @override
+  String get userMgmtCantChangeOwnRoleMessage => '您不能更改自己的角色';
+
+  @override
+  String get userMgmtUsernameTakenMessage => '该用户名已被使用';
 
   @override
   String get userMgmtDeleteSelectedTitle => '删除选中的用户？';
@@ -2913,6 +3126,112 @@ class AppLocalizationsZh extends AppLocalizations {
       '在仪表盘菜单中显示采购账单与供应商';
 
   @override
+  String get invoiceSettingsSectionCustomer => 'Customer Details';
+
+  @override
+  String get invoiceSettingsSectionColumns => 'Invoice Columns';
+
+  @override
+  String get invoiceSettingsColumnsSectionHint =>
+      'Choose which columns appear in the invoice PDF items table. Item Name, Price and Total are always shown.';
+
+  @override
+  String get invoiceSettingsShowSlNoLabel => 'Sl No column';
+
+  @override
+  String get invoiceSettingsShowSlNoSubtitle =>
+      'Print the serial-number column on A4/Letter invoices';
+
+  @override
+  String get invoiceSettingsColumnHsnLabel => 'HSN/SAC column';
+
+  @override
+  String get invoiceSettingsColumnHsnSubtitle =>
+      'Print the HSN/SAC code column (tied to Show GST Fields)';
+
+  @override
+  String get invoiceSettingsColumnTaxLabel => 'Show tax column';
+
+  @override
+  String get invoiceSettingsColumnTaxSubtitle =>
+      'Show the tax % and amount for each item, for global and per-item tax';
+
+  @override
+  String get invoiceSettingsSplitCgstSgstLabel => 'Split CGST / SGST';
+
+  @override
+  String get invoiceSettingsSplitCgstSgstSubtitle =>
+      'Split the tax into CGST/SGST, or IGST for interstate (India GST)';
+
+  @override
+  String get invoiceSettingsColumnRequiredSubtitle => 'Always shown';
+
+  @override
+  String get invoiceSettingsColumnItemNameLabel => 'Item Name column';
+
+  @override
+  String get invoiceSettingsColumnPriceLabel => 'Price / Rate column';
+
+  @override
+  String get invoiceSettingsColumnTotalLabel => 'Total column';
+
+  @override
+  String get invoiceSettingsCustomerSectionHint =>
+      'Choose which customer details print on invoice PDFs and thermal receipts. A field only shows when it\'s enabled and the customer has a value for it. Customer name is always shown.';
+
+  @override
+  String get invoiceSettingsShowCustomerBusinessNameLabel =>
+      'Show Business Name';
+
+  @override
+  String get invoiceSettingsShowCustomerBusinessNameSubtitle =>
+      'Print the customer\'s business name under their name';
+
+  @override
+  String get invoiceSettingsShowCustomerAddressLabel => 'Show Address';
+
+  @override
+  String get invoiceSettingsShowCustomerAddressSubtitle =>
+      'Print the customer\'s address in the Bill To block';
+
+  @override
+  String get invoiceSettingsShowCustomerPhoneLabel => 'Show Phone';
+
+  @override
+  String get invoiceSettingsShowCustomerPhoneSubtitle =>
+      'Print the customer\'s phone number';
+
+  @override
+  String get invoiceSettingsShowCustomerEmailLabel => 'Show Email';
+
+  @override
+  String get invoiceSettingsShowCustomerEmailSubtitle =>
+      'Print the customer\'s email address (not shown on thermal receipts)';
+
+  @override
+  String get invoiceSettingsShowCustomerGstinLabel => 'Show GSTIN / Tax ID';
+
+  @override
+  String get invoiceSettingsShowCustomerGstinSubtitle =>
+      'Print the customer\'s GSTIN / tax id (requires GST fields on)';
+
+  @override
+  String get invoiceSettingsShowTimeInPdfLabel => 'Show Time on PDF';
+
+  @override
+  String get invoiceSettingsShowTimeInPdfSubtitle =>
+      'Append the invoice creation time next to the date on PDFs and thermal receipts';
+
+  @override
+  String get invoiceSettingsTimeFormatLabel => 'Time Format';
+
+  @override
+  String get invoiceSettingsTimeFormat24 => '24-hour (14:30)';
+
+  @override
+  String get invoiceSettingsTimeFormat12 => '12-hour (2:30 PM)';
+
+  @override
   String get invoiceSettingsPrefixLabel => '发票前缀';
 
   @override
@@ -3010,6 +3329,20 @@ class AppLocalizationsZh extends AppLocalizations {
       '在 PDF 上打印产品的本地语言别名（如已设置）而非其实际名称';
 
   @override
+  String get invoiceSettingsShowDescriptionLabel => '显示产品描述';
+
+  @override
+  String get invoiceSettingsShowDescriptionSubtitle =>
+      '在 A4 PDF 中将每个项目的描述作为其下方的一行打印（不适用于热敏收据）';
+
+  @override
+  String get invoiceSettingsDescriptionNewLineLabel => '描述另起一行';
+
+  @override
+  String get invoiceSettingsDescriptionNewLineSubtitle =>
+      '将描述作为项目下方的整行打印，而不是名称下方的一行';
+
+  @override
   String get invoiceSettingsAllowFractionalQtyLabel => '允许小数数量';
 
   @override
@@ -3083,14 +3416,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get invoiceSettingsWatermarkImageLabel => '水印图片';
 
   @override
-  String get invoiceSettingsWatermarkImageSubtitle =>
-      '显示在发票 PDF 的项目表格后面（不会打印在热敏小票上）';
+  String get invoiceSettingsWatermarkImageSubtitle => '显示在发票 PDF 上（不会打印在热敏小票上）';
 
   @override
   String get invoiceSettingsChangeWatermarkButton => '更换水印';
 
   @override
   String get invoiceSettingsUploadWatermarkButton => '上传水印';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementLabel => '水印位置';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementItemsTable => '商品表格';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementFullPage => '整页';
 
   @override
   String invoiceSettingsOpacityLabel(int value) {
@@ -3147,6 +3488,26 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pdfSettingsShowTotalQtyRowLabel => '显示总数量行';
 
   @override
+  String get pdfSettingsOrientationLabel => 'Orientation';
+
+  @override
+  String get pdfSettingsOrientationPortrait => 'Portrait';
+
+  @override
+  String get pdfSettingsOrientationLandscape => 'Landscape';
+
+  @override
+  String get pdfSettingsMetadataColumnsLabel => 'Product metadata columns';
+
+  @override
+  String get pdfSettingsMetadataColumnsHint =>
+      'Print product metadata as extra columns in the items table.';
+
+  @override
+  String get pdfSettingsMetadataColumnsWarning =>
+      'Metadata columns print on any A4 template (not A5/A6 or thermal receipts). Each one narrows the others — if the table looks cramped, turn a few off, or switch Grid Classic to Landscape above. Values are captured when an item is added; editing the product later won\'t change past invoices.';
+
+  @override
   String get pdfSettingsItemLayoutLabel => '项目布局';
 
   @override
@@ -3161,6 +3522,27 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get pdfSettingsCompanyNameSizeLabel => '公司名称大小';
+
+  @override
+  String get pdfSettingsFontSizeLabel => 'PDF 文字大小';
+
+  @override
+  String get pdfSettingsSectionSizesLabel => '分区大小';
+
+  @override
+  String get pdfSettingsDocTitleSizeLabel => '单据标题大小';
+
+  @override
+  String get pdfSettingsTableHeaderSizeLabel => '表头大小';
+
+  @override
+  String get pdfSettingsTableItemsSizeLabel => '表格项目大小';
+
+  @override
+  String get pdfSettingsTotalsSizeLabel => '合计大小';
+
+  @override
+  String get pdfFontSizeSameAsOverallLabel => '与整体相同';
 
   @override
   String get pdfSettingsThemeColorLabel => '主题颜色';
@@ -3278,6 +3660,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get fieldTinLabel => 'TIN';
 
   @override
+  String get fieldVatRegNoLabel => '增值税登记号';
+
+  @override
   String get companyInfoFssaiCodeLabel => 'FSSAI 代码';
 
   @override
@@ -3326,7 +3711,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get fieldIfscCodeLabel => 'IFSC 代码';
 
   @override
+  String get fieldIbanLabel => 'IBAN';
+
+  @override
   String get companyInfoAddBankAccountButton => '添加银行账户';
+
+  @override
+  String get companyInfoEditBankAccountTitle => '编辑银行账户';
+
+  @override
+  String get fieldBankAccountNameLabel => '账户名称';
 
   @override
   String get tooltipShowOnInvoicePdf => '在发票PDF中显示';
@@ -3610,6 +4004,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get productColumnsMetaManufactureDateLabel => '生产日期';
 
   @override
+  String get productColumnsMetaManufactureNameLabel => 'Manufacturer Name';
+
+  @override
   String get productColumnsMetaSupplierNameLabel => '供应商名称';
 
   @override
@@ -3631,6 +4028,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsNavCompanyInfoLabel => '公司信息';
 
   @override
+  String get settingsNavCompaniesLabel => '公司';
+
+  @override
   String get settingsNavTeamLabel => '团队';
 
   @override
@@ -3650,6 +4050,93 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsNavSoftwareInfoLabel => '软件信息';
+
+  @override
+  String get companyMgmtTitle => '管理公司';
+
+  @override
+  String get companyMgmtActiveBadge => '当前';
+
+  @override
+  String get companyMgmtSwitchButton => '切换';
+
+  @override
+  String get companyMgmtSwitchConfirmTitle => '切换公司？';
+
+  @override
+  String companyMgmtSwitchConfirmBody(String name) {
+    return 'Invoiso 将重启以切换到“$name”。';
+  }
+
+  @override
+  String get companyMgmtNewCompanyButton => '+ 新建公司';
+
+  @override
+  String get companyMgmtNewCompanyTitle => '新建公司';
+
+  @override
+  String get companyMgmtAdminAccountSectionLabel => '管理员账户';
+
+  @override
+  String get companyMgmtCreateButton => '创建';
+
+  @override
+  String get companyMgmtDeleteButton => '删除此公司';
+
+  @override
+  String companyMgmtDeleteConfirmTitle(String name) {
+    return '删除“$name”？';
+  }
+
+  @override
+  String get companyMgmtDeleteConfirmBody =>
+      '此操作将永久删除该公司的所有数据，且无法撤销。请输入公司名称以确认。';
+
+  @override
+  String get companyMgmtRenameTooltip => '重命名';
+
+  @override
+  String get companyMgmtRenameTitle => '重命名公司';
+
+  @override
+  String get companyMgmtNameTakenMessage => '已存在同名公司';
+
+  @override
+  String companyMgmtSwitchErrorMessage(String error) {
+    return '切换公司失败：$error';
+  }
+
+  @override
+  String get companyMgmtSwitchRestartTitle => '公司已切换';
+
+  @override
+  String get companyMgmtSwitchRestartBody =>
+      'Invoiso 需要重启才能完成公司切换。请关闭并重新打开应用程序。';
+
+  @override
+  String get companyMgmtCreateRestartTitle => '公司已创建';
+
+  @override
+  String get companyMgmtCreateRestartBody => '您的新公司已准备就绪。请关闭并重新打开应用程序以继续。';
+
+  @override
+  String get companyMgmtDeletedMessage => '公司已删除';
+
+  @override
+  String get companyMgmtDeleteRestartTitle => '公司已删除';
+
+  @override
+  String get companyMgmtDeleteRestartBody =>
+      '该公司已被删除，Invoiso 已切换到另一家公司。请关闭并重新打开应用程序以继续。';
+
+  @override
+  String get companyMgmtOnlyCompanyTooltip => '删除此公司前，您至少需要另一家公司';
+
+  @override
+  String get loginCompanyGearTooltip => '管理公司';
+
+  @override
+  String get loginCompanySelectorLabel => '公司';
 
   @override
   String get customizationEyebrowLabel => '定制服务';
@@ -3889,6 +4376,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get sizeLargeLabel => '大';
+
+  @override
+  String get sizeXLargeLabel => '特大';
 
   @override
   String get shortcutNewInvoiceDescription => '新建发票（从仪表盘）／重置表单（在创建发票中）';
@@ -4217,4 +4707,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get purchaseBillMgmtPaymentRecordedMessage => '付款已记录。';
+
+  @override
+  String get invoiceSettingsMetadataColumnsGridClassicNote =>
+      'Note: Metadata columns print on A4 PDF templates only (not A5/A6 or thermal receipts).';
+
+  @override
+  String get invoiceSettingsCustomFieldsPageSupportNote =>
+      'Custom fields print on every PDF template except thermal receipts.';
 }

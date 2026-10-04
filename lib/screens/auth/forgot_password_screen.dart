@@ -20,6 +20,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   final _confirmPasswordController = TextEditingController();
 
   String? _installationId;
+  String? _companyName;
   String? _verifiedUserId;
   bool _codeJustVerified = false;
   String? _verifiedUsername;
@@ -32,12 +33,23 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   void initState() {
     super.initState();
     _loadInstallationId();
+    _loadCompanyName();
   }
 
   Future<void> _loadInstallationId() async {
     final id = await BackendServices.installation.getOrCreateInstallationId();
     if (!mounted) return;
     setState(() => _installationId = id);
+  }
+
+  // Whichever company is currently active is whose `users` table the
+  // username below gets looked up against — surfaced here so it's obvious
+  // which company's login is about to be reset (relevant once more than one
+  // company is registered on this device).
+  Future<void> _loadCompanyName() async {
+    final info = await ref.read(companyInfoRepositoryProvider).getCompanyInfo();
+    if (!mounted) return;
+    setState(() => _companyName = info?.name);
   }
 
   @override
@@ -223,6 +235,16 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                       'Successfully verified. Enter your new password.',
                     )
                   else ...[
+                    if (_companyName != null && _companyName!.isNotEmpty) ...[
+                      Text(
+                        'Resetting a login for: $_companyName',
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      ),
+                      AppSpacing.hSmall,
+                    ],
                     TextField(
                       controller: _usernameController,
                       decoration: const InputDecoration(

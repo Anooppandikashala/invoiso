@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:invoiso/common/common.dart';
+import 'package:invoiso/domain/invoice_calculator.dart';
 import 'package:invoiso/domain/invoice_totals_calculator.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/providers/app_config_provider.dart';
@@ -18,6 +19,8 @@ import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/invoice_item.dart';
 import 'package:invoiso/models/product.dart';
 import 'package:invoiso/models/additional_cost.dart';
+import 'package:invoiso/models/custom_field_def.dart';
+import 'package:invoiso/models/custom_field_value.dart';
 import 'package:invoiso/services/invoice_pdf_services.dart';
 import 'package:invoiso/services/pdf_service.dart';
 import 'package:invoiso/common/constants.dart';
@@ -37,6 +40,16 @@ class CreateInvoiceScreenV2 extends ConsumerStatefulWidget {
   /// Defaults to the source invoice type when null.
   final String? cloneType;
 
+  /// Document type to preselect for a brand-new form ('Invoice' | 'Quotation'
+  /// | 'Receipt'). Ignored when editing or cloning.
+  final String? initialType;
+
+  /// Set when this form is a quotation→invoice conversion: the id of the source
+  /// quotation. On save the quotation is stamped 'converted' and linked, and
+  /// the new invoice records it as its source. Implies cloneFrom is that
+  /// quotation and cloneType == 'Invoice'.
+  final String? convertFromQuotationId;
+
   /// Called when the user taps "New Invoice" while in edit mode.
   /// The parent (DashboardScreen) resets invoiceToEdit to null.
   final VoidCallback? onCreateNewInvoice;
@@ -47,6 +60,8 @@ class CreateInvoiceScreenV2 extends ConsumerStatefulWidget {
     this.invoiceToEdit,
     this.cloneFrom,
     this.cloneType,
+    this.initialType,
+    this.convertFromQuotationId,
     this.onCreateNewInvoice,
     this.guard,
   });
@@ -58,11 +73,17 @@ class CreateInvoiceScreenV2 extends ConsumerStatefulWidget {
 class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   final FocusNode _screenFocusNode = FocusNode();
   ProductColumnsConfig _columnsConfig = const ProductColumnsConfig();
+  bool _showDescriptionInPdf = false;
 
   Future<void> _loadColumnsConfig() async {
-    final config = await ref.read(settingsRepositoryProvider).getProductColumnsConfig();
+    final repo = ref.read(settingsRepositoryProvider);
+    final config = await repo.getProductColumnsConfig();
+    final showDesc = await repo.getSetting(SettingKey.showDescriptionInPdf);
     if (!mounted) return;
-    setState(() => _columnsConfig = config);
+    setState(() {
+      _columnsConfig = config;
+      _showDescriptionInPdf = showDesc == 'true';
+    });
   }
 
   Customer? selectedCustomer;
@@ -71,18 +92,38 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   List<Product> products = [];
   List<Product> filteredProducts = [];
   Map<String, ProductMetadata> _productMetadata = {};
+
+  // Freeze a detached copy of the product's current metadata onto a new line so
+  // it can print on the PDF and never shift if the catalogue product is edited.
+  ProductMetadata? _snapshotMetadata(String productId) {
+    final m = _productMetadata[productId];
+    return (m == null || m.isEmpty) ? null : m.copy();
+  }
+
   Timer? _productSearchDebounce;
   int _productSearchRequestId = 0;
   static const int _productFetchLimit = 30;
   Timer? _customerSearchDebounce;
   int _customerSearchRequestId = 0;
   static const int _customerFetchLimit = 30;
+
+  /// Puts [c] into the local customer list (replaced by id, else prepended)
+  /// instead of re-fetching every customer after one add/edit — the list is
+  /// only ever the first [_customerFetchLimit] anyway (Issues.md #43).
+  void _upsertLocalCustomer(Customer c) {
+    customers = customers.any((x) => x.id == c.id)
+        ? [for (final x in customers) x.id == c.id ? c : x]
+        : [c, ...customers];
+    filteredCustomers = List.from(customers);
+  }
   List<InvoiceItem> invoiceItems = [];
   final Set<String> _savedAdHocIds =
       {}; // tracks custom item IDs already saved to products
   final List<({TextEditingController label, TextEditingController amount})>
       _additionalCostControllers = [];
   bool _showAdditionalCosts = false;
+  bool _invoiceDetailsExpanded = true;
+  bool _customerDetailsExpanded = true;
   InvoiceDiscountType _invoiceDiscountType = InvoiceDiscountType.percent;
   final _invoiceDiscountController = TextEditingController();
 
@@ -109,6 +150,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
 
   bool _isTaxEnabled = true;
   bool _isPerItem = false;
+  bool _isInterState = false; // India: interstate supply → IGST instead of CGST/SGST
   bool isEditing = false;
   bool isLoading = false;
   // V2: inline product search dropdown (replaces click-to-open popup;
@@ -134,17 +176,26 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   String _quantityLabel = '';
   bool _showQuantity = true;
   bool _showPreviousBalance = false;
+  bool _showTimeInPdf = false; // order-time field shown only when PDFs print the time
+  String _pdfTimeFormat = '24'; // '12' | '24'
   bool _showAliasNameInPdf = false;
   bool _allowDuplicateInvoiceItems = false;
   double _previousBalanceDue = 0.0;
   bool _isPreviousBalanceLoading = false;
   bool _isSavingCustomer = false;
+  bool _customerFieldsUnlocked = false;
+  bool get _customerFieldsLocked =>
+      selectedCustomer != null && !_customerFieldsUnlocked;
   int _previousBalanceRequestSerial = 0;
   BusinessType _businessType = BusinessType.both;
   String _datePattern = 'dd/MM/yyyy';
   String _adHocItemType = 'product'; // type for custom items added inline
   String? _cleanFormSnapshot;
   int _pendingInitialLoads = 2;
+  bool _customFieldsEnabled = false;
+  List<CustomFieldDef> _customFieldDefs = [];
+  Map<String, String> _customFieldValues = {}; // defId -> value, filled via _showCustomFieldsDialogV2
+  bool _customFieldsCollapsed = false;
 
   TaxMode get _taxMode {
     if (!_isTaxEnabled) return TaxMode.none;
@@ -171,6 +222,16 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       }
     });
     taxRateController.text = (taxRate * 100).toStringAsFixed(1);
+    // Resolve the document type before the first load so the previewed number
+    // uses the right series — Invoice and Quotation have separate sequences,
+    // and _loadCustomersAndProducts peeks the next number using invoiceType.
+    if (widget.invoiceToEdit == null) {
+      if (widget.cloneFrom != null) {
+        invoiceType = widget.cloneType ?? widget.cloneFrom!.type;
+      } else if (widget.initialType != null) {
+        invoiceType = widget.initialType!;
+      }
+    }
     _loadCustomersAndProducts(widget.invoiceToEdit != null);
     _loadColumnsConfig();
     _selectedOrderDate = DateTime.now();
@@ -191,6 +252,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       taxRateController.text = (taxRate * 100).toStringAsFixed(1);
       _isTaxEnabled = _invoice!.taxMode != TaxMode.none;
       _isPerItem = _invoice!.taxMode == TaxMode.perItem;
+      _isInterState = _invoice!.isInterState;
       invoiceType = _invoice!.type;
       invoiceTitle = _invoice!.invoiceTitle;
       currentInvoiceNumber = _invoice!.invoiceNumber ?? _invoice!.id;
@@ -211,6 +273,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         ));
       }
       if (_additionalCostControllers.isNotEmpty) _showAdditionalCosts = true;
+      _customFieldValues = {
+        for (final cf in _invoice!.customFields) cf.defId: cf.value,
+      };
       _invoiceDiscountType = _invoice!.invoiceDiscountType;
       if (_invoice!.invoiceDiscountValue > 0) {
         _invoiceDiscountController.text =
@@ -229,6 +294,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                 unitPrice: i.unitPrice,
                 extraCost: i.extraCost,
                 unit: i.unit,
+                description: i.description,
+                metadata: i.metadata,
                 discountPerUnit: i.discountPerUnit,
                 isProductSaved: i.isProductSaved,
               ))
@@ -243,10 +310,13 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       taxRateController.text = (taxRate * 100).toStringAsFixed(1);
       _isTaxEnabled = src.taxMode != TaxMode.none;
       _isPerItem = src.taxMode == TaxMode.perItem;
+      _isInterState = src.isInterState;
       invoiceType = widget.cloneType ?? src.type;
       invoiceTitle = invoiceType == src.type ? src.invoiceTitle : null;
       _quantityLabel = src.quantityLabel ?? '';
       // Custom PDF number is invoice-specific; don't carry it into a clone.
+      // Same reasoning for custom fields (Vehicle No, Delivery Note, etc.) —
+      // shipment-specific, left blank for the user to fill fresh.
       for (final c in src.additionalCosts) {
         _additionalCostControllers.add((
           label: TextEditingController(text: c.label),
@@ -395,6 +465,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       'invoiceType': invoiceType,
       'taxEnabled': _isTaxEnabled,
       'perItemTax': _isPerItem,
+      'interState': _isInterState,
       'taxRate': taxRate,
       'taxRateText': taxRateController.text.trim(),
       'date': _selectedOrderDate.toIso8601String(),
@@ -479,6 +550,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         settingsRepo.getAllowDuplicateInvoiceItems(), // 16
         settingsRepo.getDefaultTaxMode(), // 17
         settingsRepo.getHideInvoiceNumberByDefault(), // 18
+        settingsRepo.getSetting(SettingKey.customFieldsEnabled), // 19
+        settingsRepo.getCustomFieldDefs(), // 20
+        settingsRepo.getShowTimeInPdf(), // 21
+        settingsRepo.getPdfTimeFormat(), // 22
       ]);
 
       final c = results[0] as List<Customer>;
@@ -523,6 +598,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       final allowDuplicateInvoiceItems = results[16] as bool;
       final defaultTaxMode = results[17] as String;
       final hideInvoiceNumberByDefault = results[18] as bool;
+      final customFieldsEnabled = (results[19] as String?) == 'true';
+      final customFieldDefs = results[20] as List<CustomFieldDef>;
+      final showTimeInPdf = results[21] as bool;
+      final pdfTimeFormat = results[22] as String;
 
       // Determine which UPI to pre-select.
       String? existingUpiId;
@@ -591,6 +670,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           _isPerItem = defaultTaxMode == 'perItem';
           _hideInvoiceNumber = hideInvoiceNumberByDefault;
         }
+        _customFieldsEnabled = customFieldsEnabled;
+        _customFieldDefs = customFieldDefs;
         _businessType = businessType;
         _adHocItemType =
             businessType == BusinessType.service ? 'service' : 'product';
@@ -600,6 +681,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           invoiceTitle = invoiceType == 'Invoice' ? defaultInvoiceTitle : null;
         }
         _datePattern = dateFormatOpt.key;
+        _showTimeInPdf = showTimeInPdf;
+        _pdfTimeFormat = pdfTimeFormat;
         dateController.text =
             DateFormat(_datePattern).format(_selectedOrderDate);
         if (_selectedDueDate != null) {
@@ -649,6 +732,11 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         TextEditingController(text: product.price.toString());
     final extraCostController = TextEditingController();
     final unitController = TextEditingController(text: product.unit);
+    // Seed from the product's own description so the user starts from it and
+    // can tweak it for this line; what they leave is snapshotted on the item.
+    // Only when the field is actually shown, else nothing is silently stored.
+    final descriptionController = TextEditingController(
+        text: _showDescriptionInPdf ? product.description : '');
 
     bool discountPerUnit = true;
     String dialogUnit = product.unit;
@@ -709,6 +797,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   unitPrice: unitPrice,
                   extraCost: extraCost,
                   unit: dialogUnit.trim(),
+                  description: descriptionController.text.trim(),
+                  metadata: _snapshotMetadata(product.id),
                   discountPerUnit: discountPerUnit),
               insertAt: insertAt);
         }
@@ -744,6 +834,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   unitPrice: unitPrice,
                   extraCost: extraCost,
                   unit: dialogUnit.trim(),
+                  description: descriptionController.text.trim(),
+                  metadata: _snapshotMetadata(product.id),
                   discountPerUnit: discountPerUnit),
               insertAt: insertAt);
         }
@@ -757,6 +849,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                 unitPrice: unitPrice,
                 extraCost: extraCost,
                 unit: dialogUnit.trim(),
+                description: descriptionController.text.trim(),
+                metadata: _snapshotMetadata(product.id),
                 discountPerUnit: discountPerUnit),
             insertAt: insertAt);
       }
@@ -1005,6 +1099,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                     ],
                   ),
                 ],
+                if (_showDescriptionInPdf) ...[
+                  const SizedBox(height: 16),
+                  _buildItemDescriptionField(descriptionController),
+                ],
                 if (invoiceItems.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   const Divider(height: 1),
@@ -1119,15 +1217,18 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   /// customer's id — doing so would link invoiceId -> customerId while the
   /// snapshot's name/address/etc silently disagree with that customer's
   /// actual row. Falls back to a fresh, unlinked id in that case.
+  /// Address is excluded (edited often, not identity-bearing) and the rest
+  /// compare case-insensitively so minor casing/whitespace edits don't
+  /// fragment the same customer into a new id.
   bool get _customerFormMatchesSelected {
     final sel = selectedCustomer;
-    return sel != null &&
-        sel.name == nameController.text &&
-        sel.email == emailController.text &&
-        sel.phone == phoneController.text &&
-        sel.address == addressController.text &&
-        sel.gstin == gstinController.text &&
-        sel.businessName == businessNameController.text;
+    if (sel == null) return false;
+    bool eq(String a, String b) => a.trim().toLowerCase() == b.trim().toLowerCase();
+    return eq(sel.name, nameController.text) &&
+        eq(sel.email, emailController.text) &&
+        eq(sel.phone, phoneController.text) &&
+        eq(sel.gstin, gstinController.text) &&
+        eq(sel.businessName, businessNameController.text);
   }
 
   Customer _resolveInvoiceCustomer() {
@@ -1214,17 +1315,20 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         currencyCode: _currencyCode,
         currencySymbol: _currencySymbol,
         taxMode: _taxMode,
+        isInterState: _isInterState,
         upiId: _selectedUpi?.id,
         bankAccountId: _selectedBankAccount?.accountNumber,
         quantityLabel:
             _quantityLabel.trim().isEmpty ? null : _quantityLabel.trim(),
         additionalCosts: _buildAdditionalCosts(),
+        customFields: _buildCustomFields(),
         invoiceDiscountType: _invoiceDiscountType,
         invoiceDiscountValue: _invoiceDiscountValue,
         hideInvoiceNumber: _hideInvoiceNumber,
         customInvoiceNumber: customInvoiceNumberController.text.trim().isEmpty
             ? null
             : customInvoiceNumberController.text.trim(),
+        convertedFromInvoiceId: widget.convertFromQuotationId,
       );
 
       await ref.read(invoiceRepositoryProvider).insertInvoice(invoice);
@@ -1237,18 +1341,46 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       });
       _markFormClean();
 
+      final l10n = AppLocalizations.of(context)!;
+      final convertedFromId = widget.convertFromQuotationId;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
             children: [
               const Icon(Icons.check_circle, color: Colors.white),
               const SizedBox(width: 12),
-              Text(AppLocalizations.of(context)!.createInvoiceCreatedSuccessMessage(_invoiceTypeLabel(invoiceType))),
+              Expanded(
+                child: Text(convertedFromId != null
+                    ? l10n.createInvoiceConvertedSuccessMessage(
+                        invoice.invoiceNumber ?? invoice.id)
+                    : l10n.createInvoiceCreatedSuccessMessage(
+                        _invoiceTypeLabel(invoiceType))),
+              ),
             ],
           ),
           backgroundColor: Colors.green,
           behavior: SnackBarBehavior.floating,
           showCloseIcon: true,
+          duration: convertedFromId != null
+              ? const Duration(seconds: 8)
+              : const Duration(seconds: 4),
+          action: convertedFromId == null
+              ? null
+              : SnackBarAction(
+                  label: l10n.createInvoiceTrashQuotationAction,
+                  textColor: Colors.white,
+                  onPressed: () async {
+                    await ref
+                        .read(invoiceRepositoryProvider)
+                        .softDeleteInvoice(convertedFromId);
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text(l10n.createInvoiceQuotationTrashedMessage),
+                      behavior: SnackBarBehavior.floating,
+                      showCloseIcon: true,
+                    ));
+                  },
+                ),
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         ),
@@ -1281,11 +1413,16 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         text: item.extraCost != null ? item.extraCost.toString() : '');
     bool discountPerUnit = item.discountPerUnit;
     final unitController = TextEditingController(text: item.effectiveUnit.toString());
+    final descriptionController =
+        TextEditingController(text: item.effectiveDescription);
     String dialogUnit = item.effectiveUnit.toString();
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
+          // The extra description field can push this past the viewport on
+          // short windows; the add-item dialog already scrolls its content.
+          scrollable: true,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Row(
@@ -1497,6 +1634,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                     ],
                   ),
                 ],
+                if (_showDescriptionInPdf) ...[
+                  const SizedBox(height: 16),
+                  _buildItemDescriptionField(descriptionController),
+                ],
               ],
             ),
           ),
@@ -1536,6 +1677,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   unitPrice: unitPrice,
                   extraCost: extraCost,
                   unit: dialogUnit.trim(),
+                  description: descriptionController.text.trim(),
+                  metadata: item.metadata,
                   discountPerUnit: discountPerUnit,
                 );
                 if(!mounted) return;
@@ -1562,6 +1705,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     final taxRateController = TextEditingController(text: '0');
     final extraCostController = TextEditingController();
     final unitController = TextEditingController();
+    final descriptionController = TextEditingController();
 
     bool discountPerUnit = true;
     bool dialogPriceIncludesTax = false;
@@ -1623,6 +1767,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               discount: double.tryParse(discountController.text) ?? 0.0,
               extraCost: extraCost,
               unit: selectedUnit.trim(),
+              description: descriptionController.text.trim(),
               discountPerUnit: discountPerUnit,
             );
             Navigator.pop(context);
@@ -1822,6 +1967,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                         () => dialogPriceIncludesTax = val ?? false),
                   ),
                 ],
+                if (_showDescriptionInPdf) ...[
+                  const SizedBox(height: 16),
+                  _buildItemDescriptionField(descriptionController),
+                ],
                 if (invoiceItems.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   const Divider(height: 1),
@@ -1942,6 +2091,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       addressController.text = customer?.address ?? '';
       gstinController.text = customer?.gstin ?? '';
       businessNameController.text = customer?.businessName ?? '';
+      _customerFieldsUnlocked = false;
     });
     await _loadPreviousBalanceDue(customer);
   }
@@ -2146,12 +2296,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           businessName: businessNameController.text.trim(),
         );
         await ref.read(customerRepositoryProvider).updateCustomer(updated);
-        final reloaded = await ref.read(customerRepositoryProvider).getAllCustomers();
         if (!mounted) return;
         setState(() {
           selectedCustomer = updated;
-          customers = reloaded;
-          filteredCustomers = reloaded;
+          _upsertLocalCustomer(updated);
         });
         await _loadPreviousBalanceDue(updated);
         if (mounted) {
@@ -2247,12 +2395,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         businessName: businessNameController.text.trim(),
       );
       await ref.read(customerRepositoryProvider).updateCustomer(updated);
-      final reloaded = await ref.read(customerRepositoryProvider).getAllCustomers();
       if(!mounted) return;
       setState(() {
         selectedCustomer = updated;
-        customers = reloaded;
-        filteredCustomers = reloaded;
+        _upsertLocalCustomer(updated);
       });
       await _loadPreviousBalanceDue(updated);
       if (mounted) {
@@ -2275,12 +2421,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         businessName: businessNameController.text.trim(),
       );
       await ref.read(customerRepositoryProvider).insertCustomer(newCustomer);
-      final reloaded = await ref.read(customerRepositoryProvider).getAllCustomers();
       if(!mounted) return;
       setState(() {
         selectedCustomer = newCustomer;
-        customers = reloaded;
-        filteredCustomers = reloaded;
+        _upsertLocalCustomer(newCustomer);
       });
       await _loadPreviousBalanceDue(newCustomer);
       if (mounted) {
@@ -2322,6 +2466,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       addressController.text = latest.address;
       gstinController.text = latest.gstin;
       businessNameController.text = latest.businessName;
+      _customerFieldsUnlocked = false;
     });
     if(!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -2343,18 +2488,318 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       businessNameController.clear();
       _previousBalanceDue = 0.0;
       _isPreviousBalanceLoading = false;
+      _customerFieldsUnlocked = false;
     });
   }
 
   double get _invoiceDiscountValue =>
       double.tryParse(_invoiceDiscountController.text) ?? 0.0;
 
+  List<CustomFieldValue> _buildCustomFields() {
+    final values = <CustomFieldValue>[];
+    for (final def in _customFieldDefs) {
+      final value = (_customFieldValues[def.id] ?? '').trim();
+      if (value.isNotEmpty) {
+        values.add(CustomFieldValue(defId: def.id, label: def.label, value: value));
+      }
+    }
+    return values;
+  }
+
+  // Shown at equal width beside the Customer form (see _buildDesktopLayoutV2)
+  // so it reads as a peer section, not a narrow sidebar. Not directly
+  // editable inline like the Customer form though — these are optional
+  // metadata that shouldn't grow the row unpredictably based on how many
+  // fields are defined — so it displays whatever's already filled and a
+  // button opens _showCustomFieldsDialogV2 to fill/change values.
+  Widget _customFieldsSummaryCardV2() {
+    if (!_customFieldsEnabled || _customFieldDefs.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final filled = _customFieldDefs
+        .map((d) => (label: d.label, value: (_customFieldValues[d.id] ?? '').trim()))
+        .where((e) => e.value.isNotEmpty)
+        .toList();
+
+    Widget tile(({String label, String value})? f) => Expanded(
+          child: f == null
+              ? const SizedBox()
+              : Padding(
+                  padding: const EdgeInsets.only(bottom: 10, right: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(f.label,
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                      Text(f.value,
+                          style: const TextStyle(
+                              fontSize: 13, fontWeight: FontWeight.w500),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2),
+                    ],
+                  ),
+                ),
+        );
+
+    // Fixed height (roughly the Customer Details card's own height) instead
+    // of sizing to content — with 1 field or 13 filled, the row this card
+    // sits in should still line up with the Customer form, not balloon out
+    // or shrink to almost nothing. Overflow scrolls internally.
+    return Container(
+      height: _customFieldsCollapsed ? null : 165,
+      decoration: _flatCardDecorationV2(context),
+      padding: const EdgeInsets.all(AppPadding.medium),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize:
+            _customFieldsCollapsed ? MainAxisSize.min : MainAxisSize.max,
+        children: [
+          Builder(builder: (context) {
+            final title = InkWell(
+              onTap: () {
+                if (!mounted) return;
+                setState(
+                    () => _customFieldsCollapsed = !_customFieldsCollapsed);
+              },
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                      _customFieldsCollapsed
+                          ? Icons.chevron_right
+                          : Icons.expand_more,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  const SizedBox(width: 4),
+                  Icon(Icons.dashboard_customize_outlined,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      'CUSTOM FIELDS',
+                      style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.6),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            );
+            final controls = Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '${filled.length}/${_customFieldDefs.length}',
+                    style: const TextStyle(
+                        fontSize: 11,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                OutlinedButton.icon(
+                  onPressed: _showCustomFieldsDialogV2,
+                  icon: const Icon(Icons.edit_outlined, size: 16),
+                  label: Text(filled.isEmpty ? 'Add' : 'Edit'),
+                  style: OutlinedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    shape: RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.circular(AppBorderRadius.xsmall)),
+                  ),
+                ),
+              ],
+            );
+            // Original single-row header; falls back to title-above-controls
+            // once the column gets too narrow for both to fit side by side
+            // (e.g. the Custom Fields card in a 3-column desktop layout).
+            return LayoutBuilder(builder: (context, constraints) {
+              if (constraints.maxWidth < 260) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [title, const SizedBox(height: 6), controls],
+                );
+              }
+              return Row(
+                children: [Expanded(child: title), const SizedBox(width: 8), controls],
+              );
+            });
+          }),
+          if (!_customFieldsCollapsed) ...[
+            const SizedBox(height: 12),
+            Expanded(
+              child: filled.isEmpty
+                  ? Align(
+                      alignment: Alignment.topLeft,
+                      child: Text(
+                        'No custom fields filled yet.',
+                        style: TextStyle(
+                            fontSize: 12,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant),
+                      ),
+                    )
+                  : SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          for (var i = 0; i < filled.length; i += 2)
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                tile(filled[i]),
+                                tile(i + 1 < filled.length
+                                    ? filled[i + 1]
+                                    : null),
+                              ],
+                            ),
+                        ],
+                      ),
+                    ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _showCustomFieldsDialogV2() {
+    final controllers = {
+      for (final def in _customFieldDefs)
+        def.id: TextEditingController(text: _customFieldValues[def.id] ?? ''),
+    };
+    showDialog(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 680, maxHeight: 560),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Text('Custom Fields',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold)),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        for (var i = 0; i < _customFieldDefs.length; i += 2)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: TextField(
+                                    controller: controllers[_customFieldDefs[i].id],
+                                    decoration: _flatFieldDecorationV2(
+                                        _customFieldDefs[i].label,
+                                        suffixIcon: IconButton(
+                                          icon: const Icon(Icons.open_in_full, size: 16),
+                                          tooltip: AppLocalizations.of(context)!
+                                              .tooltipEditInLargerView,
+                                          onPressed: () => _editLongTextDialogV2(
+                                            title: _customFieldDefs[i].label,
+                                            controller: controllers[_customFieldDefs[i].id]!,
+                                          ),
+                                        )),
+                                  ),
+                                ),
+                                if (i + 1 < _customFieldDefs.length) ...[
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: TextField(
+                                      controller:
+                                          controllers[_customFieldDefs[i + 1].id],
+                                      decoration: _flatFieldDecorationV2(
+                                          _customFieldDefs[i + 1].label,
+                                          suffixIcon: IconButton(
+                                            icon: const Icon(Icons.open_in_full, size: 16),
+                                            tooltip: AppLocalizations.of(context)!
+                                                .tooltipEditInLargerView,
+                                            onPressed: () => _editLongTextDialogV2(
+                                              title: _customFieldDefs[i + 1].label,
+                                              controller:
+                                                  controllers[_customFieldDefs[i + 1].id]!,
+                                            ),
+                                          )),
+                                    ),
+                                  ),
+                                ] else
+                                  const Expanded(child: SizedBox()),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      child: Text(AppLocalizations.of(context)!.actionCancel),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton(
+                      onPressed: () {
+                        final updated = {
+                          for (final def in _customFieldDefs)
+                            def.id: controllers[def.id]!.text,
+                        };
+                        Navigator.of(dialogContext).pop();
+                        if (!mounted) return;
+                        setState(() => _customFieldValues = updated);
+                      },
+                      child: Text(AppLocalizations.of(context)!.actionSave),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   List<AdditionalCost> _buildAdditionalCosts() {
     final costs = <AdditionalCost>[];
     for (final row in _additionalCostControllers) {
       final label = row.label.text.trim();
       final amount = double.tryParse(row.amount.text) ?? 0.0;
-      if (label.isNotEmpty && amount > 0) {
+      if (label.isNotEmpty && amount != 0) {
         costs.add(AdditionalCost(label: label, amount: amount));
       }
     }
@@ -2388,7 +2833,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                       size: 18, color: Colors.teal[700]),
                   const SizedBox(width: 8),
                   Text(
-                    'Additional Costs',
+                    'Charges & Adjustments',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -2433,6 +2878,16 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               padding: const EdgeInsets.all(12),
               child: Column(
                 children: [
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        'Use a minus sign for deductions (e.g. freight paid by buyer).',
+                        style: TextStyle(fontSize: 11, color: Colors.teal[700]),
+                      ),
+                    ),
+                  ),
                   ..._additionalCostControllers.asMap().entries.map((entry) {
                     final i = entry.key;
                     final row = entry.value;
@@ -2452,6 +2907,18 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                                 labelText: AppLocalizations.of(context)!.fieldLabelLabel,
                                 hintText: AppLocalizations.of(context)!.hintLabelExample,
                                 isDense: true,
+                                suffixIcon: PopupMenuButton<String>(
+                                  icon: const Icon(Icons.arrow_drop_down),
+                                  tooltip: '',
+                                  onSelected: (v) {
+                                    if (!mounted) return;
+                                    setState(() => row.label.text = v);
+                                  },
+                                  itemBuilder: (_) => AdjustmentLabels.presets
+                                      .map((l) => PopupMenuItem(
+                                          value: l, child: Text(l)))
+                                      .toList(),
+                                ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(
                                       AppBorderRadius.xsmall),
@@ -2472,7 +2939,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                               },
                               keyboardType:
                                   const TextInputType.numberWithOptions(
-                                      decimal: true),
+                                      decimal: true, signed: true),
                               decoration: InputDecoration(
                                 labelText: AppLocalizations.of(context)!.labelAmount,
                                 prefixText: '$_currencySymbol ',
@@ -2550,6 +3017,29 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         ),
         Switch(value: value, onChanged: onChanged),
       ],
+    );
+  }
+
+  // Optional per-line description, stored on the invoice item. The
+  // add-product dialog seeds it from the product's own description; the
+  // ad-hoc dialog starts empty. Whatever is left here is snapshotted on
+  // the item and prints under the item name.
+  Widget _buildItemDescriptionField(TextEditingController controller) {
+    return TextField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: 'Description (optional)',
+        hintText: 'Extra detail printed under the item name',
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+        prefixIcon: const Icon(Icons.notes_outlined, size: 18),
+        filled: true,
+        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+      ),
+      minLines: 1,
+      maxLines: 3,
+      keyboardType: TextInputType.multiline,
+      textCapitalization: TextCapitalization.sentences,
     );
   }
 
@@ -2899,11 +3389,13 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         currencyCode: _currencyCode,
         currencySymbol: _currencySymbol,
         taxMode: _taxMode,
+        isInterState: _isInterState,
         upiId: _selectedUpi?.id,
         bankAccountId: _selectedBankAccount?.accountNumber,
         quantityLabel:
             _quantityLabel.trim().isEmpty ? null : _quantityLabel.trim(),
         additionalCosts: _buildAdditionalCosts(),
+        customFields: _buildCustomFields(),
         invoiceDiscountType: _invoiceDiscountType,
         invoiceDiscountValue: _invoiceDiscountValue,
         hideInvoiceNumber: _hideInvoiceNumber,
@@ -2911,6 +3403,24 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
             ? null
             : customInvoiceNumberController.text.trim(),
       );
+
+      // Block edits that drop the total below what's already been paid.
+      final paid = await ref
+          .read(paymentRepositoryProvider)
+          .getTotalPaidForInvoice(updatedInvoice.id);
+      if (paid - updatedInvoice.total > InvoiceCalculator.moneyEpsilon) {
+        if (!mounted) return false;
+        setState(() => isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(AppLocalizations.of(context)!
+              .createInvoiceTotalBelowPaidMessage(
+                  '$_currencySymbol ${paid.toStringAsFixed(2)}')),
+          backgroundColor: Colors.red,
+          showCloseIcon: true,
+          behavior: SnackBarBehavior.floating,
+        ));
+        return false;
+      }
 
       await ref.read(invoiceRepositoryProvider).updateInvoice(updatedInvoice);
 
@@ -3143,13 +3653,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                             if (existing == null) {
                               await ref.read(customerRepositoryProvider).insertCustomer(newCustomer);
                             }
-                            final reloaded =
-                                await ref.read(customerRepositoryProvider).getAllCustomers();
                             if (mounted) {
                               setState(() {
                                 selectedCustomer = newCustomer;
-                                customers = reloaded;
-                                filteredCustomers = reloaded;
+                                _upsertLocalCustomer(newCustomer);
                               });
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
@@ -3364,9 +3871,11 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                               ? AppLocalizations.of(context)!.createInvoiceCreatedTitleShort(_invoiceTypeLabel(invoiceType))
                               : widget.invoiceToEdit != null
                                   ? AppLocalizations.of(context)!.createInvoiceEditTitle(_invoiceTypeLabel(invoiceType))
-                                  : widget.cloneFrom != null
-                                      ? AppLocalizations.of(context)!.createInvoiceDuplicateAsTitle(_invoiceTypeLabel(invoiceType))
-                                      : AppLocalizations.of(context)!.createInvoiceAppBarTitle(_invoiceTypeLabel(invoiceType)),
+                                  : widget.convertFromQuotationId != null
+                                      ? AppLocalizations.of(context)!.createInvoiceConvertTitle
+                                      : widget.cloneFrom != null
+                                          ? AppLocalizations.of(context)!.createInvoiceDuplicateAsTitle(_invoiceTypeLabel(invoiceType))
+                                          : AppLocalizations.of(context)!.createInvoiceAppBarTitle(_invoiceTypeLabel(invoiceType)),
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
                         ),
@@ -3524,6 +4033,38 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     }
   }
 
+  // Order time, next to the order date. Uses the PDF's 12/24-hour setting.
+  Widget _orderTimeFieldV2() {
+    final text = DateFormat(_pdfTimeFormat == '12' ? 'h:mm a' : 'HH:mm', 'en_US')
+        .format(_selectedOrderDate);
+    return TextFormField(
+      key: ValueKey('order-time-$text'), // rebuild when the time changes
+      initialValue: text,
+      readOnly: true,
+      decoration: _flatFieldDecorationV2(
+          AppLocalizations.of(context)!.createInvoiceOrderTimeLabel,
+          suffixIcon: const Icon(Icons.access_time, size: 16)),
+      onTap: () async {
+        final picked = await showTimePicker(
+          context: context,
+          initialTime: TimeOfDay.fromDateTime(_selectedOrderDate),
+          builder: (ctx, child) => MediaQuery(
+            data: MediaQuery.of(ctx)
+                .copyWith(alwaysUse24HourFormat: _pdfTimeFormat != '12'),
+            child: child!,
+          ),
+        );
+        if (picked == null || !mounted) return;
+        setState(() => _selectedOrderDate = DateTime(
+            _selectedOrderDate.year,
+            _selectedOrderDate.month,
+            _selectedOrderDate.day,
+            picked.hour,
+            picked.minute));
+      },
+    );
+  }
+
   InputDecoration _flatFieldDecorationV2(
     String label, {
     String? hint,
@@ -3602,7 +4143,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   spacing: 4,
                   runSpacing: 4,
                   children: [
-                    if (selectedCustomer == null || !_customerFormMatchesSelected)
+                    if (nameController.text.trim().isNotEmpty &&
+                        (selectedCustomer == null || !_customerFormMatchesSelected))
                       TextButton.icon(
                         onPressed: _isSavingCustomer ? null : _saveCustomer,
                         icon: _isSavingCustomer
@@ -3634,6 +4176,14 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                     ),
                     if (selectedCustomer != null &&
                         selectedCustomer!.id.trim().isNotEmpty) ...[
+                      if (!_customerFieldsUnlocked)
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined, size: 18),
+                          tooltip: 'Edit customer details',
+                          visualDensity: VisualDensity.compact,
+                          onPressed: () =>
+                              setState(() => _customerFieldsUnlocked = true),
+                        ),
                       IconButton(
                         icon: const Icon(Icons.refresh, size: 18),
                         tooltip: AppLocalizations.of(context)!.createInvoiceRefreshCustomerTooltip,
@@ -3650,15 +4200,46 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   ],
                 ),
               ),
+              IconButton(
+                icon: Icon(
+                  _customerDetailsExpanded
+                      ? Icons.expand_less
+                      : Icons.expand_more,
+                  size: 20,
+                ),
+                visualDensity: VisualDensity.compact,
+                tooltip: _customerDetailsExpanded
+                    ? MaterialLocalizations.of(context).expandedIconTapHint
+                    : MaterialLocalizations.of(context).collapsedIconTapHint,
+                onPressed: () {
+                  if (!mounted) return;
+                  setState(() =>
+                      _customerDetailsExpanded = !_customerDetailsExpanded);
+                },
+              ),
             ],
           ),
-          const SizedBox(height: 14),
+          if (_customerDetailsExpanded) ...[
+          const SizedBox(height: 2),
+          if (selectedCustomer == null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Text(
+                'New or walk-in customer — enter their details below.',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontStyle: FontStyle.italic,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: TextField(
                   controller: nameController,
+                  readOnly: _customerFieldsLocked,
                   onChanged: (_) => setState(() {}),
                   decoration: _flatFieldDecorationV2(AppLocalizations.of(context)!.fieldCustomerNameRequiredLabel),
                 ),
@@ -3667,6 +4248,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               Expanded(
                 child: TextField(
                   controller: businessNameController,
+                  readOnly: _customerFieldsLocked,
                   onChanged: (_) => setState(() {}),
                   decoration: _flatFieldDecorationV2(AppLocalizations.of(context)!.fieldBusinessNameLabel),
                 ),
@@ -3675,28 +4257,31 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               Expanded(
                 child: TextField(
                   controller: phoneController,
+                  readOnly: _customerFieldsLocked,
                   onChanged: (_) => setState(() {}),
                   decoration: _flatFieldDecorationV2(AppLocalizations.of(context)!.fieldPhoneLabel),
                 ),
               ),
-              if (_showGstFields) ...[
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: gstinController,
-                    onChanged: (_) => setState(() {}),
-                    decoration: _flatFieldDecorationV2(AppLocalizations.of(context)!.fieldGstinVatLabel),
-                  ),
-                ),
-              ],
             ],
           ),
           const SizedBox(height: 12),
           Row(
             children: [
+              if (_showGstFields) ...[
+                Expanded(
+                  child: TextField(
+                    controller: gstinController,
+                    readOnly: _customerFieldsLocked,
+                    onChanged: (_) => setState(() {}),
+                    decoration: _flatFieldDecorationV2(AppLocalizations.of(context)!.fieldGstinVatLabel),
+                  ),
+                ),
+                const SizedBox(width: 12),
+              ],
               Expanded(
                 child: TextField(
                   controller: emailController,
+                  readOnly: _customerFieldsLocked,
                   onChanged: (_) => setState(() {}),
                   decoration: _flatFieldDecorationV2(AppLocalizations.of(context)!.fieldEmailLabel),
                 ),
@@ -3719,6 +4304,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               ),
             ],
           ),
+          ],
         ],
       ),
     );
@@ -3821,54 +4407,94 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            AppLocalizations.of(context)!.createInvoiceDetailsHeading(_invoiceTypeLabel(invoiceType).toUpperCase()),
-            style: const TextStyle(
-                fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.6),
+          InkWell(
+            onTap: () {
+              if (!mounted) return;
+              setState(() => _invoiceDetailsExpanded = !_invoiceDetailsExpanded);
+            },
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    AppLocalizations.of(context)!.createInvoiceDetailsHeading(_invoiceTypeLabel(invoiceType).toUpperCase()),
+                    style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.6),
+                  ),
+                ),
+                Icon(
+                  _invoiceDetailsExpanded
+                      ? Icons.expand_less
+                      : Icons.expand_more,
+                  size: 20,
+                ),
+              ],
+            ),
           ),
+          if (_invoiceDetailsExpanded) ...[
           const SizedBox(height: 14),
           DropdownButtonFormField<String>(
             isExpanded: true,
             value: invoiceType,
             decoration: _flatFieldDecorationV2(
               AppLocalizations.of(context)!.createInvoiceTypeFieldLabel,
-              helperText:
-                  isEditing ? AppLocalizations.of(context)!.createInvoiceTypeLockedHelperText : null,
+              helperText: (isEditing || widget.convertFromQuotationId != null)
+                  ? AppLocalizations.of(context)!.createInvoiceTypeLockedHelperText
+                  : null,
             ),
             items: [
               DropdownMenuItem(value: 'Invoice', child: Text(AppLocalizations.of(context)!.labelInvoice)),
               DropdownMenuItem(value: 'Quotation', child: Text(AppLocalizations.of(context)!.labelQuotation)),
               DropdownMenuItem(value: 'Receipt', child: Text(AppLocalizations.of(context)!.labelReceipt)),
             ],
-            onChanged: isEditing
+            onChanged: (isEditing || widget.convertFromQuotationId != null)
                 ? null
                 : (value) {
                     if (value != null) resetInvoiceType(value);
                   },
           ),
           const SizedBox(height: 12),
-          TextField(
-            controller: dateController,
-            readOnly: true,
-            decoration: _flatFieldDecorationV2(AppLocalizations.of(context)!.createInvoiceOrderDateLabel,
-                suffixIcon: const Icon(Icons.calendar_today, size: 16)),
-            onTap: () async {
-              final picked = await showDatePicker(
-                context: context,
-                initialDate: _selectedOrderDate,
-                firstDate: DateTime(2000),
-                lastDate: DateTime(2100),
-              );
-              if (picked != null) {
-                if (!mounted) return;
-                setState(() {
-                  _selectedOrderDate = picked;
-                  dateController.text =
-                      DateFormat(_datePattern).format(picked);
-                });
-                await _loadPreviousBalanceDue(selectedCustomer);
-              }
-            },
+          Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: TextField(
+                  controller: dateController,
+                  readOnly: true,
+                  decoration: _flatFieldDecorationV2(AppLocalizations.of(context)!.createInvoiceOrderDateLabel,
+                      suffixIcon: const Icon(Icons.calendar_today, size: 16)),
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: _selectedOrderDate,
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100),
+                    );
+                    if (picked != null) {
+                      if (!mounted) return;
+                      setState(() {
+                        // Keep the invoice's existing time — the picker returns midnight.
+                        _selectedOrderDate = DateTime(
+                            picked.year,
+                            picked.month,
+                            picked.day,
+                            _selectedOrderDate.hour,
+                            _selectedOrderDate.minute,
+                            _selectedOrderDate.second);
+                        dateController.text =
+                            DateFormat(_datePattern).format(picked);
+                      });
+                      await _loadPreviousBalanceDue(selectedCustomer);
+                    }
+                  },
+                ),
+              ),
+              if (_showTimeInPdf) ...[
+                const SizedBox(width: 8),
+                Expanded(flex: 2, child: _orderTimeFieldV2()),
+              ],
+            ],
           ),
           const SizedBox(height: 12),
           TextField(
@@ -3923,6 +4549,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                     value: 'Invoice-cum-Bill of Supply',
                     child: Text(AppLocalizations.of(context)!.gstTitleInvoiceCumBillLabel)),
                 DropdownMenuItem(
+                    value: 'Cash Bill', child: Text(AppLocalizations.of(context)!.gstTitleCashBillLabel)),
+                DropdownMenuItem(
                     value: 'Credit Note', child: Text(AppLocalizations.of(context)!.gstTitleCreditNoteLabel)),
                 DropdownMenuItem(
                     value: 'Debit Note', child: Text(AppLocalizations.of(context)!.gstTitleDebitNoteLabel)),
@@ -3934,6 +4562,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           ],
           const SizedBox(height: 12),
           _pdfNumberOverrideFieldV2(),
+          ],
         ],
       ),
     );
@@ -4173,7 +4802,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     final newProduct = Product(
       id: const Uuid().v4(),
       name: item.product.name,
-      description: '',
+      description: item.effectiveDescription,
       price: item.effectivePrice,
       stock: 0,
       hsncode: item.product.hsncode,
@@ -4295,6 +4924,21 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                     ],
                   ],
                 ),
+                if (_columnsConfig.description &&
+                    item.effectiveDescription.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 3, right: 8),
+                    child: Text(
+                      item.effectiveDescription,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontStyle: FontStyle.italic,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
                 Padding(
                   padding: const EdgeInsets.only(top: 6),
                   child: Wrap(
@@ -4860,6 +5504,27 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                 ],
               ),
             ),
+          if (_showGstFields) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(AppLocalizations.of(context)!.createInvoiceInterStateLabel,
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                ),
+                Transform.scale(
+                  scale: 0.8,
+                  child: Switch(
+                    value: _isInterState,
+                    onChanged: (value) {
+                      if (!mounted) return;
+                      setState(() => _isInterState = value);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
         if (_upiEntries.isNotEmpty) ...[
           const SizedBox(height: 12),
@@ -5155,7 +5820,17 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           flex: 3,
           child: Column(
             children: [
-              _customerDetailsFormV2(),
+              if (_customFieldsEnabled && _customFieldDefs.isNotEmpty)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(flex: 2, child: _customerDetailsFormV2()),
+                    AppSpacing.wSmall,
+                    Expanded(flex: 1, child: _customFieldsSummaryCardV2()),
+                  ],
+                )
+              else
+                _customerDetailsFormV2(),
               AppSpacing.hSmall,
               Expanded(child: _itemsTableSectionV2()),
             ],
@@ -5163,7 +5838,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         ),
         AppSpacing.wSmall,
         SizedBox(
-          width: Platform.isAndroid ? 300 : 360,
+          width: Platform.isAndroid ? 300 : 420,
           child: _rightPanelV2(tax, subtotal, total, grossSubtotal,
               totalDiscount, invoiceDiscountAmount),
         ),
@@ -5182,6 +5857,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _customerDetailsFormV2(),
+        if (_customFieldsEnabled && _customFieldDefs.isNotEmpty) ...[
+          AppSpacing.hSmall,
+          _customFieldsSummaryCardV2(),
+        ],
         AppSpacing.hSmall,
         _invoiceDetailsFormV2(),
         AppSpacing.hSmall,

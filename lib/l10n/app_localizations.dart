@@ -534,6 +534,12 @@ abstract class AppLocalizations {
   /// **'Support'**
   String get dashboardSupportTooltip;
 
+  /// No description provided for @buyMeCoffeeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Buy me a coffee'**
+  String get buyMeCoffeeLabel;
+
   /// No description provided for @dashboardLogoutTooltip.
   ///
   /// In en, this message translates to:
@@ -648,6 +654,12 @@ abstract class AppLocalizations {
   /// **'Refresh'**
   String get actionRefresh;
 
+  /// No description provided for @helpSearchTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Help & Settings'**
+  String get helpSearchTooltip;
+
   /// No description provided for @dashboardOutOfStockCountLabel.
   ///
   /// In en, this message translates to:
@@ -675,14 +687,26 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardRecentInvoicesTitle.
   ///
   /// In en, this message translates to:
-  /// **'Recent Invoices'**
+  /// **'Recent Documents'**
   String get dashboardRecentInvoicesTitle;
 
   /// No description provided for @dashboardLastFiveInvoicesLabel.
   ///
   /// In en, this message translates to:
-  /// **'Last 5 invoices'**
+  /// **'Last 5 documents'**
   String get dashboardLastFiveInvoicesLabel;
+
+  /// No description provided for @dashboardColDocumentNo.
+  ///
+  /// In en, this message translates to:
+  /// **'Document no.'**
+  String get dashboardColDocumentNo;
+
+  /// No description provided for @dashboardColType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get dashboardColType;
 
   /// No description provided for @dashboardNoInvoicesYetTitle.
   ///
@@ -1440,6 +1464,12 @@ abstract class AppLocalizations {
   /// **'{invoiceTypeLabel} updated successfully!'**
   String createInvoiceUpdatedSuccessMessage(String invoiceTypeLabel);
 
+  /// No description provided for @createInvoiceTotalBelowPaidMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The new total is less than the {paid} already paid. Delete payments in Apply Payment first, or keep the total at or above that amount.'**
+  String createInvoiceTotalBelowPaidMessage(String paid);
+
   /// No description provided for @createInvoiceErrorUpdatingMessage.
   ///
   /// In en, this message translates to:
@@ -1662,6 +1692,12 @@ abstract class AppLocalizations {
   /// **'Order date'**
   String get createInvoiceOrderDateLabel;
 
+  /// No description provided for @createInvoiceOrderTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Order time'**
+  String get createInvoiceOrderTimeLabel;
+
   /// No description provided for @createInvoiceDueDateLabel.
   ///
   /// In en, this message translates to:
@@ -1697,6 +1733,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Invoice-cum-Bill of Supply'**
   String get gstTitleInvoiceCumBillLabel;
+
+  /// No description provided for @gstTitleCashBillLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash Bill'**
+  String get gstTitleCashBillLabel;
 
   /// No description provided for @gstTitleCreditNoteLabel.
   ///
@@ -1853,6 +1895,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tax rate from each product'**
   String get createInvoiceTaxRateFromProductMessage;
+
+  /// No description provided for @createInvoiceInterStateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Interstate supply (IGST)'**
+  String get createInvoiceInterStateLabel;
 
   /// No description provided for @createInvoicePaymentUpiAccountLabel.
   ///
@@ -2208,6 +2256,12 @@ abstract class AppLocalizations {
   /// **'Hide fully paid invoices'**
   String get invoiceMgmtHideFullyPaidLabel;
 
+  /// No description provided for @invoiceMgmtHideDeclinedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide declined invoices'**
+  String get invoiceMgmtHideDeclinedLabel;
+
   /// No description provided for @invoiceMgmtPaymentStatusLabel.
   ///
   /// In en, this message translates to:
@@ -2453,6 +2507,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{type} Management'**
   String invoiceMgmtManagementTitle(String type);
+
+  /// No description provided for @invoiceMgmtNewDocumentButton.
+  ///
+  /// In en, this message translates to:
+  /// **'New {type}'**
+  String invoiceMgmtNewDocumentButton(String type);
+
+  /// No description provided for @invoiceMgmtConvertToInvoiceAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert to Invoice'**
+  String get invoiceMgmtConvertToInvoiceAction;
+
+  /// No description provided for @invoiceMgmtConvertAgainTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert again?'**
+  String get invoiceMgmtConvertAgainTitle;
+
+  /// No description provided for @invoiceMgmtConvertAgainBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Quotation {number} was already converted to an invoice. Create another invoice from it?'**
+  String invoiceMgmtConvertAgainBody(String number);
+
+  /// No description provided for @invoiceMgmtMarkAsSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as sent'**
+  String get invoiceMgmtMarkAsSent;
+
+  /// No description provided for @invoiceMgmtMarkAsAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as accepted'**
+  String get invoiceMgmtMarkAsAccepted;
+
+  /// No description provided for @invoiceMgmtMarkAsDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as declined'**
+  String get invoiceMgmtMarkAsDeclined;
+
+  /// No description provided for @quotationStatusDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get quotationStatusDraft;
+
+  /// No description provided for @quotationStatusSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent'**
+  String get quotationStatusSent;
+
+  /// No description provided for @quotationStatusAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get quotationStatusAccepted;
+
+  /// No description provided for @quotationStatusDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'Declined'**
+  String get quotationStatusDeclined;
+
+  /// No description provided for @quotationStatusConverted.
+  ///
+  /// In en, this message translates to:
+  /// **'Converted'**
+  String get quotationStatusConverted;
+
+  /// No description provided for @invoiceMgmtDeclineInvoiceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline invoice?'**
+  String get invoiceMgmtDeclineInvoiceTitle;
+
+  /// No description provided for @invoiceMgmtDeclineInvoiceBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This will mark invoice #{number} as declined and return its items to stock. This can\'t be undone.'**
+  String invoiceMgmtDeclineInvoiceBody(String number);
+
+  /// No description provided for @invoiceMgmtDeclineHasPaymentsMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice #{number} has payments recorded. Delete them in Apply Payment before declining.'**
+  String invoiceMgmtDeclineHasPaymentsMessage(String number);
+
+  /// No description provided for @invoiceMgmtDeclinedSuccessMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice declined, stock restored.'**
+  String get invoiceMgmtDeclinedSuccessMessage;
+
+  /// No description provided for @invoiceStatusDeclinedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Declined'**
+  String get invoiceStatusDeclinedBadge;
+
+  /// No description provided for @createInvoiceConvertTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert to Invoice'**
+  String get createInvoiceConvertTitle;
+
+  /// No description provided for @createInvoiceConvertedSuccessMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Converted to Invoice #{invoiceNumber}'**
+  String createInvoiceConvertedSuccessMessage(String invoiceNumber);
+
+  /// No description provided for @createInvoiceTrashQuotationAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Trash quote'**
+  String get createInvoiceTrashQuotationAction;
+
+  /// No description provided for @createInvoiceQuotationTrashedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Quotation moved to trash'**
+  String get createInvoiceQuotationTrashedMessage;
 
   /// No description provided for @invoiceMgmtOverdueBadge.
   ///
@@ -3096,6 +3276,24 @@ abstract class AppLocalizations {
   /// **'ID (newest first)'**
   String get customerMgmtSortIdNewest;
 
+  /// No description provided for @customerMgmtSortOutstandingHighLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Outstanding (high-low)'**
+  String get customerMgmtSortOutstandingHighLow;
+
+  /// No description provided for @customerMgmtSortOutstandingLowHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'Outstanding (low-high)'**
+  String get customerMgmtSortOutstandingLowHigh;
+
+  /// No description provided for @customerMgmtWithOutstandingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'With Outstanding'**
+  String get customerMgmtWithOutstandingLabel;
+
   /// No description provided for @customerMgmtSearchHint.
   ///
   /// In en, this message translates to:
@@ -3342,6 +3540,12 @@ abstract class AppLocalizations {
   /// **'Manufacture Date'**
   String get productMgmtManufactureDateLabel;
 
+  /// No description provided for @productMgmtManufactureNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Manufacturer Name'**
+  String get productMgmtManufactureNameLabel;
+
   /// No description provided for @productMgmtSupplierNameLabel.
   ///
   /// In en, this message translates to:
@@ -3491,6 +3695,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Manufacture date'**
   String get productMgmtCsvDescManufactureDate;
+
+  /// No description provided for @productMgmtCsvDescManufactureName.
+  ///
+  /// In en, this message translates to:
+  /// **'Manufacturer name'**
+  String get productMgmtCsvDescManufactureName;
 
   /// No description provided for @productMgmtCsvDescSupplierName.
   ///
@@ -3768,6 +3978,24 @@ abstract class AppLocalizations {
   /// **'EXPIRY DATE'**
   String get productMgmtColExpiryDate;
 
+  /// No description provided for @productMgmtCustomizeColumnsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Customize Product Columns'**
+  String get productMgmtCustomizeColumnsLabel;
+
+  /// No description provided for @productMgmtShowColumnsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Columns'**
+  String get productMgmtShowColumnsLabel;
+
+  /// No description provided for @productMgmtShowColumnsMaxHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Show up to {max} columns'**
+  String productMgmtShowColumnsMaxHint(int max);
+
   /// No description provided for @productMgmtShowingRangeLabel.
   ///
   /// In en, this message translates to:
@@ -4044,6 +4272,12 @@ abstract class AppLocalizations {
   /// **'All currencies'**
   String get reportsAllCurrenciesLabel;
 
+  /// No description provided for @reportsArAgingSummaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A/R Aging Summary'**
+  String get reportsArAgingSummaryTitle;
+
   /// No description provided for @reportsAvgInvoiceValueLabel.
   ///
   /// In en, this message translates to:
@@ -4260,11 +4494,35 @@ abstract class AppLocalizations {
   /// **'Monthly Revenue Trend'**
   String get reportsMonthlyRevenueTrendTitle;
 
+  /// No description provided for @reportsMonthlyBreakdownTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly Breakdown'**
+  String get reportsMonthlyBreakdownTitle;
+
+  /// No description provided for @reportsMonthColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get reportsMonthColumnLabel;
+
+  /// No description provided for @reportsTotalRowLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get reportsTotalRowLabel;
+
   /// No description provided for @reportsNavDailyReportLabel.
   ///
   /// In en, this message translates to:
   /// **'Daily Report'**
   String get reportsNavDailyReportLabel;
+
+  /// No description provided for @reportsNavInventoryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory'**
+  String get reportsNavInventoryLabel;
 
   /// No description provided for @reportsNavInvoiceStatusLabel.
   ///
@@ -4289,6 +4547,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tax'**
   String get reportsNavTaxLabel;
+
+  /// No description provided for @reportsInventoryBlockedValueLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory Value Blocked'**
+  String get reportsInventoryBlockedValueLabel;
+
+  /// No description provided for @reportsInventoryPotentialSaleValueLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Potential Sale Value'**
+  String get reportsInventoryPotentialSaleValueLabel;
+
+  /// No description provided for @reportsInventoryLockedProfitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Profit Locked in Stock'**
+  String get reportsInventoryLockedProfitLabel;
+
+  /// No description provided for @reportsInventoryTotalUnitsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Units'**
+  String get reportsInventoryTotalUnitsLabel;
+
+  /// No description provided for @reportsInventoryProductCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Products Tracked'**
+  String get reportsInventoryProductCountLabel;
+
+  /// No description provided for @reportsInventoryBreakdownTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Product Breakdown'**
+  String get reportsInventoryBreakdownTitle;
+
+  /// No description provided for @reportsNoInventoryDataMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No inventory data'**
+  String get reportsNoInventoryDataMessage;
+
+  /// No description provided for @reportsInventoryProductColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Product'**
+  String get reportsInventoryProductColumnLabel;
+
+  /// No description provided for @reportsInventoryStockColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock'**
+  String get reportsInventoryStockColumnLabel;
+
+  /// No description provided for @reportsInventoryPurchasePriceColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase Price'**
+  String get reportsInventoryPurchasePriceColumnLabel;
+
+  /// No description provided for @reportsInventoryStockValueColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock Value'**
+  String get reportsInventoryStockValueColumnLabel;
+
+  /// No description provided for @reportsInventorySaleValueColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sale Value'**
+  String get reportsInventorySaleValueColumnLabel;
+
+  /// No description provided for @reportsInventoryExcludedBannerMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item is excluded from inventory value — it\'s a service or has unlimited stock tracking on.} other{{count} items are excluded from inventory value — they\'re services or have unlimited stock tracking on.}}'**
+  String reportsInventoryExcludedBannerMessage(int count);
 
   /// No description provided for @reportsNoCustomerDataMessage.
   ///
@@ -4539,14 +4875,32 @@ abstract class AppLocalizations {
   /// No description provided for @reportsTaxCollectedByRateTitle.
   ///
   /// In en, this message translates to:
-  /// **'Tax Collected by Rate'**
+  /// **'Tax by Rate'**
   String get reportsTaxCollectedByRateTitle;
 
   /// No description provided for @reportsTaxCollectedLabel.
   ///
   /// In en, this message translates to:
-  /// **'Tax Collected'**
+  /// **'Tax'**
   String get reportsTaxCollectedLabel;
+
+  /// No description provided for @reportsTaxableAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Taxable Amount'**
+  String get reportsTaxableAmountLabel;
+
+  /// No description provided for @reportsGrossAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Gross'**
+  String get reportsGrossAmountLabel;
+
+  /// No description provided for @reportsTaxAccrualNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax charged on invoices dated in this period — accrual basis, before payment.'**
+  String get reportsTaxAccrualNote;
 
   /// No description provided for @reportsTaxRateBucketsLabel.
   ///
@@ -4596,6 +4950,12 @@ abstract class AppLocalizations {
   /// **'Total Invoices'**
   String get reportsTotalInvoicesLabel;
 
+  /// No description provided for @reportsRealizedProfitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Realized Profit'**
+  String get reportsRealizedProfitLabel;
+
   /// No description provided for @reportsTotalProfitLabel.
   ///
   /// In en, this message translates to:
@@ -4605,7 +4965,7 @@ abstract class AppLocalizations {
   /// No description provided for @reportsTotalTaxCollectedLabel.
   ///
   /// In en, this message translates to:
-  /// **'Total Tax Collected'**
+  /// **'Total Tax Charged'**
   String get reportsTotalTaxCollectedLabel;
 
   /// No description provided for @reportsTypeColumnLabel.
@@ -4745,6 +5105,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You can\'t delete your own account'**
   String get userMgmtCantDeleteOwnAccountMessage;
+
+  /// No description provided for @userMgmtCantDemoteLastAdminMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You can\'t change the role of the only admin'**
+  String get userMgmtCantDemoteLastAdminMessage;
+
+  /// No description provided for @userMgmtCantChangeOwnRoleMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You can\'t change your own role'**
+  String get userMgmtCantChangeOwnRoleMessage;
+
+  /// No description provided for @userMgmtUsernameTakenMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'That username is already taken'**
+  String get userMgmtUsernameTakenMessage;
 
   /// No description provided for @userMgmtDeleteSelectedTitle.
   ///
@@ -5022,6 +5400,192 @@ abstract class AppLocalizations {
   /// **'Shows Purchase Bills and Suppliers in the dashboard menu'**
   String get settingsEnablePurchaseBillsSuppliersSubtitle;
 
+  /// No description provided for @invoiceSettingsSectionCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer Details'**
+  String get invoiceSettingsSectionCustomer;
+
+  /// No description provided for @invoiceSettingsSectionColumns.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice Columns'**
+  String get invoiceSettingsSectionColumns;
+
+  /// No description provided for @invoiceSettingsColumnsSectionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose which columns appear in the invoice PDF items table. Item Name, Price and Total are always shown.'**
+  String get invoiceSettingsColumnsSectionHint;
+
+  /// No description provided for @invoiceSettingsShowSlNoLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sl No column'**
+  String get invoiceSettingsShowSlNoLabel;
+
+  /// No description provided for @invoiceSettingsShowSlNoSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Print the serial-number column on A4/Letter invoices'**
+  String get invoiceSettingsShowSlNoSubtitle;
+
+  /// No description provided for @invoiceSettingsColumnHsnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'HSN/SAC column'**
+  String get invoiceSettingsColumnHsnLabel;
+
+  /// No description provided for @invoiceSettingsColumnHsnSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Print the HSN/SAC code column (tied to Show GST Fields)'**
+  String get invoiceSettingsColumnHsnSubtitle;
+
+  /// No description provided for @invoiceSettingsColumnTaxLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show tax column'**
+  String get invoiceSettingsColumnTaxLabel;
+
+  /// No description provided for @invoiceSettingsColumnTaxSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the tax % and amount for each item, for global and per-item tax'**
+  String get invoiceSettingsColumnTaxSubtitle;
+
+  /// No description provided for @invoiceSettingsSplitCgstSgstLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Split CGST / SGST'**
+  String get invoiceSettingsSplitCgstSgstLabel;
+
+  /// No description provided for @invoiceSettingsSplitCgstSgstSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Split the tax into CGST/SGST, or IGST for interstate (India GST)'**
+  String get invoiceSettingsSplitCgstSgstSubtitle;
+
+  /// No description provided for @invoiceSettingsColumnRequiredSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Always shown'**
+  String get invoiceSettingsColumnRequiredSubtitle;
+
+  /// No description provided for @invoiceSettingsColumnItemNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Item Name column'**
+  String get invoiceSettingsColumnItemNameLabel;
+
+  /// No description provided for @invoiceSettingsColumnPriceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Price / Rate column'**
+  String get invoiceSettingsColumnPriceLabel;
+
+  /// No description provided for @invoiceSettingsColumnTotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total column'**
+  String get invoiceSettingsColumnTotalLabel;
+
+  /// No description provided for @invoiceSettingsCustomerSectionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose which customer details print on invoice PDFs and thermal receipts. A field only shows when it\'s enabled and the customer has a value for it. Customer name is always shown.'**
+  String get invoiceSettingsCustomerSectionHint;
+
+  /// No description provided for @invoiceSettingsShowCustomerBusinessNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Business Name'**
+  String get invoiceSettingsShowCustomerBusinessNameLabel;
+
+  /// No description provided for @invoiceSettingsShowCustomerBusinessNameSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Print the customer\'s business name under their name'**
+  String get invoiceSettingsShowCustomerBusinessNameSubtitle;
+
+  /// No description provided for @invoiceSettingsShowCustomerAddressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Address'**
+  String get invoiceSettingsShowCustomerAddressLabel;
+
+  /// No description provided for @invoiceSettingsShowCustomerAddressSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Print the customer\'s address in the Bill To block'**
+  String get invoiceSettingsShowCustomerAddressSubtitle;
+
+  /// No description provided for @invoiceSettingsShowCustomerPhoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Phone'**
+  String get invoiceSettingsShowCustomerPhoneLabel;
+
+  /// No description provided for @invoiceSettingsShowCustomerPhoneSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Print the customer\'s phone number'**
+  String get invoiceSettingsShowCustomerPhoneSubtitle;
+
+  /// No description provided for @invoiceSettingsShowCustomerEmailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Email'**
+  String get invoiceSettingsShowCustomerEmailLabel;
+
+  /// No description provided for @invoiceSettingsShowCustomerEmailSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Print the customer\'s email address (not shown on thermal receipts)'**
+  String get invoiceSettingsShowCustomerEmailSubtitle;
+
+  /// No description provided for @invoiceSettingsShowCustomerGstinLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show GSTIN / Tax ID'**
+  String get invoiceSettingsShowCustomerGstinLabel;
+
+  /// No description provided for @invoiceSettingsShowCustomerGstinSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Print the customer\'s GSTIN / tax id (requires GST fields on)'**
+  String get invoiceSettingsShowCustomerGstinSubtitle;
+
+  /// No description provided for @invoiceSettingsShowTimeInPdfLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Time on PDF'**
+  String get invoiceSettingsShowTimeInPdfLabel;
+
+  /// No description provided for @invoiceSettingsShowTimeInPdfSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Append the invoice creation time next to the date on PDFs and thermal receipts'**
+  String get invoiceSettingsShowTimeInPdfSubtitle;
+
+  /// No description provided for @invoiceSettingsTimeFormatLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Time Format'**
+  String get invoiceSettingsTimeFormatLabel;
+
+  /// No description provided for @invoiceSettingsTimeFormat24.
+  ///
+  /// In en, this message translates to:
+  /// **'24-hour (14:30)'**
+  String get invoiceSettingsTimeFormat24;
+
+  /// No description provided for @invoiceSettingsTimeFormat12.
+  ///
+  /// In en, this message translates to:
+  /// **'12-hour (2:30 PM)'**
+  String get invoiceSettingsTimeFormat12;
+
   /// No description provided for @invoiceSettingsPrefixLabel.
   ///
   /// In en, this message translates to:
@@ -5145,13 +5709,13 @@ abstract class AppLocalizations {
   /// No description provided for @invoiceSettingsShowCgstSgstLabel.
   ///
   /// In en, this message translates to:
-  /// **'Show CGST/SGST'**
+  /// **'Show CGST/SGST/IGST'**
   String get invoiceSettingsShowCgstSgstLabel;
 
   /// No description provided for @invoiceSettingsShowCgstSgstSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Split tax into CGST + SGST on invoices (India only).'**
+  /// **'Split tax into CGST + SGST, or IGST for interstate invoices (India only).'**
   String get invoiceSettingsShowCgstSgstSubtitle;
 
   /// No description provided for @invoiceSettingsDefaultGstTitleLabel.
@@ -5201,6 +5765,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Print a product\'s local-language alias (if set) instead of its actual name on PDFs'**
   String get invoiceSettingsShowAliasNameSubtitle;
+
+  /// No description provided for @invoiceSettingsShowDescriptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Product Description'**
+  String get invoiceSettingsShowDescriptionLabel;
+
+  /// No description provided for @invoiceSettingsShowDescriptionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Print each item\'s description as a row under it on A4 PDFs (not on thermal receipts)'**
+  String get invoiceSettingsShowDescriptionSubtitle;
+
+  /// No description provided for @invoiceSettingsDescriptionNewLineLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description on a New Line'**
+  String get invoiceSettingsDescriptionNewLineLabel;
+
+  /// No description provided for @invoiceSettingsDescriptionNewLineSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Print the description as a full-width row below the item instead of a line under its name'**
+  String get invoiceSettingsDescriptionNewLineSubtitle;
 
   /// No description provided for @invoiceSettingsAllowFractionalQtyLabel.
   ///
@@ -5349,7 +5937,7 @@ abstract class AppLocalizations {
   /// No description provided for @invoiceSettingsWatermarkImageSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Shown behind the items table on invoice PDFs (not printed on thermal receipts)'**
+  /// **'Shown on invoice PDFs (not printed on thermal receipts)'**
   String get invoiceSettingsWatermarkImageSubtitle;
 
   /// No description provided for @invoiceSettingsChangeWatermarkButton.
@@ -5363,6 +5951,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Upload Watermark'**
   String get invoiceSettingsUploadWatermarkButton;
+
+  /// No description provided for @invoiceSettingsWatermarkPlacementLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Watermark placement'**
+  String get invoiceSettingsWatermarkPlacementLabel;
+
+  /// No description provided for @invoiceSettingsWatermarkPlacementItemsTable.
+  ///
+  /// In en, this message translates to:
+  /// **'Items table'**
+  String get invoiceSettingsWatermarkPlacementItemsTable;
+
+  /// No description provided for @invoiceSettingsWatermarkPlacementFullPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Full page'**
+  String get invoiceSettingsWatermarkPlacementFullPage;
 
   /// No description provided for @invoiceSettingsOpacityLabel.
   ///
@@ -5460,6 +6066,42 @@ abstract class AppLocalizations {
   /// **'Show total quantity row'**
   String get pdfSettingsShowTotalQtyRowLabel;
 
+  /// No description provided for @pdfSettingsOrientationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Orientation'**
+  String get pdfSettingsOrientationLabel;
+
+  /// No description provided for @pdfSettingsOrientationPortrait.
+  ///
+  /// In en, this message translates to:
+  /// **'Portrait'**
+  String get pdfSettingsOrientationPortrait;
+
+  /// No description provided for @pdfSettingsOrientationLandscape.
+  ///
+  /// In en, this message translates to:
+  /// **'Landscape'**
+  String get pdfSettingsOrientationLandscape;
+
+  /// No description provided for @pdfSettingsMetadataColumnsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Product metadata columns'**
+  String get pdfSettingsMetadataColumnsLabel;
+
+  /// No description provided for @pdfSettingsMetadataColumnsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Print product metadata as extra columns in the items table.'**
+  String get pdfSettingsMetadataColumnsHint;
+
+  /// No description provided for @pdfSettingsMetadataColumnsWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Metadata columns print on any A4 template (not A5/A6 or thermal receipts). Each one narrows the others — if the table looks cramped, turn a few off, or switch Grid Classic to Landscape above. Values are captured when an item is added; editing the product later won\'t change past invoices.'**
+  String get pdfSettingsMetadataColumnsWarning;
+
   /// No description provided for @pdfSettingsItemLayoutLabel.
   ///
   /// In en, this message translates to:
@@ -5489,6 +6131,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Company name size'**
   String get pdfSettingsCompanyNameSizeLabel;
+
+  /// No description provided for @pdfSettingsFontSizeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF text size'**
+  String get pdfSettingsFontSizeLabel;
+
+  /// No description provided for @pdfSettingsSectionSizesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Section sizes'**
+  String get pdfSettingsSectionSizesLabel;
+
+  /// No description provided for @pdfSettingsDocTitleSizeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Document title size'**
+  String get pdfSettingsDocTitleSizeLabel;
+
+  /// No description provided for @pdfSettingsTableHeaderSizeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Table header size'**
+  String get pdfSettingsTableHeaderSizeLabel;
+
+  /// No description provided for @pdfSettingsTableItemsSizeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Table items size'**
+  String get pdfSettingsTableItemsSizeLabel;
+
+  /// No description provided for @pdfSettingsTotalsSizeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Totals size'**
+  String get pdfSettingsTotalsSizeLabel;
+
+  /// No description provided for @pdfFontSizeSameAsOverallLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Same as overall'**
+  String get pdfFontSizeSameAsOverallLabel;
 
   /// No description provided for @pdfSettingsThemeColorLabel.
   ///
@@ -5718,6 +6402,12 @@ abstract class AppLocalizations {
   /// **'TIN'**
   String get fieldTinLabel;
 
+  /// No description provided for @fieldVatRegNoLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'VAT Registration Number'**
+  String get fieldVatRegNoLabel;
+
   /// No description provided for @companyInfoFssaiCodeLabel.
   ///
   /// In en, this message translates to:
@@ -5814,11 +6504,29 @@ abstract class AppLocalizations {
   /// **'IFSC Code'**
   String get fieldIfscCodeLabel;
 
+  /// No description provided for @fieldIbanLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'IBAN'**
+  String get fieldIbanLabel;
+
   /// No description provided for @companyInfoAddBankAccountButton.
   ///
   /// In en, this message translates to:
   /// **'Add Bank Account'**
   String get companyInfoAddBankAccountButton;
+
+  /// No description provided for @companyInfoEditBankAccountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Bank Account'**
+  String get companyInfoEditBankAccountTitle;
+
+  /// No description provided for @fieldBankAccountNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Name'**
+  String get fieldBankAccountNameLabel;
 
   /// No description provided for @tooltipShowOnInvoicePdf.
   ///
@@ -6303,7 +7011,7 @@ abstract class AppLocalizations {
   /// No description provided for @productColumnsMetadataSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Storage location, container/batch number, expiry, manufacture date, supplier, SKU, notes.'**
+  /// **'Storage location, container/batch number, expiry, manufacture date, manufacturer, supplier, SKU, notes.'**
   String get productColumnsMetadataSubtitle;
 
   /// No description provided for @productColumnsMetaStorageLocationLabel.
@@ -6335,6 +7043,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Manufacture Date'**
   String get productColumnsMetaManufactureDateLabel;
+
+  /// No description provided for @productColumnsMetaManufactureNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Manufacturer Name'**
+  String get productColumnsMetaManufactureNameLabel;
 
   /// No description provided for @productColumnsMetaSupplierNameLabel.
   ///
@@ -6378,6 +7092,12 @@ abstract class AppLocalizations {
   /// **'Company Info'**
   String get settingsNavCompanyInfoLabel;
 
+  /// No description provided for @settingsNavCompaniesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Companies'**
+  String get settingsNavCompaniesLabel;
+
   /// No description provided for @settingsNavTeamLabel.
   ///
   /// In en, this message translates to:
@@ -6419,6 +7139,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Software Info'**
   String get settingsNavSoftwareInfoLabel;
+
+  /// No description provided for @companyMgmtTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage Companies'**
+  String get companyMgmtTitle;
+
+  /// No description provided for @companyMgmtActiveBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get companyMgmtActiveBadge;
+
+  /// No description provided for @companyMgmtSwitchButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch'**
+  String get companyMgmtSwitchButton;
+
+  /// No description provided for @companyMgmtSwitchConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch Company?'**
+  String get companyMgmtSwitchConfirmTitle;
+
+  /// No description provided for @companyMgmtSwitchConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoiso will restart to switch to \"{name}\".'**
+  String companyMgmtSwitchConfirmBody(String name);
+
+  /// No description provided for @companyMgmtNewCompanyButton.
+  ///
+  /// In en, this message translates to:
+  /// **'+ New Company'**
+  String get companyMgmtNewCompanyButton;
+
+  /// No description provided for @companyMgmtNewCompanyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New Company'**
+  String get companyMgmtNewCompanyTitle;
+
+  /// No description provided for @companyMgmtAdminAccountSectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin Account'**
+  String get companyMgmtAdminAccountSectionLabel;
+
+  /// No description provided for @companyMgmtCreateButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get companyMgmtCreateButton;
+
+  /// No description provided for @companyMgmtDeleteButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete This Company'**
+  String get companyMgmtDeleteButton;
+
+  /// No description provided for @companyMgmtDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete \"{name}\"?'**
+  String companyMgmtDeleteConfirmTitle(String name);
+
+  /// No description provided for @companyMgmtDeleteConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This permanently deletes all of this company\'s data and cannot be undone. Type the company name to confirm.'**
+  String get companyMgmtDeleteConfirmBody;
+
+  /// No description provided for @companyMgmtRenameTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get companyMgmtRenameTooltip;
+
+  /// No description provided for @companyMgmtRenameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename Company'**
+  String get companyMgmtRenameTitle;
+
+  /// No description provided for @companyMgmtNameTakenMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'A company with this name already exists'**
+  String get companyMgmtNameTakenMessage;
+
+  /// No description provided for @companyMgmtSwitchErrorMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to switch company: {error}'**
+  String companyMgmtSwitchErrorMessage(String error);
+
+  /// No description provided for @companyMgmtSwitchRestartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Company Switched'**
+  String get companyMgmtSwitchRestartTitle;
+
+  /// No description provided for @companyMgmtSwitchRestartBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoiso needs to restart to finish switching companies. Please close and reopen the application.'**
+  String get companyMgmtSwitchRestartBody;
+
+  /// No description provided for @companyMgmtCreateRestartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Company Created'**
+  String get companyMgmtCreateRestartTitle;
+
+  /// No description provided for @companyMgmtCreateRestartBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your new company is ready. Please close and reopen the application to continue.'**
+  String get companyMgmtCreateRestartBody;
+
+  /// No description provided for @companyMgmtDeletedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Company deleted'**
+  String get companyMgmtDeletedMessage;
+
+  /// No description provided for @companyMgmtDeleteRestartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Company Deleted'**
+  String get companyMgmtDeleteRestartTitle;
+
+  /// No description provided for @companyMgmtDeleteRestartBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The company was deleted and Invoiso switched to another one. Please close and reopen the application to continue.'**
+  String get companyMgmtDeleteRestartBody;
+
+  /// No description provided for @companyMgmtOnlyCompanyTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'You need at least one other company before you can delete this one'**
+  String get companyMgmtOnlyCompanyTooltip;
+
+  /// No description provided for @loginCompanyGearTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage companies'**
+  String get loginCompanyGearTooltip;
+
+  /// No description provided for @loginCompanySelectorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Company'**
+  String get loginCompanySelectorLabel;
 
   /// No description provided for @customizationEyebrowLabel.
   ///
@@ -6857,6 +7733,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Large'**
   String get sizeLargeLabel;
+
+  /// No description provided for @sizeXLargeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Extra Large'**
+  String get sizeXLargeLabel;
 
   /// No description provided for @shortcutNewInvoiceDescription.
   ///
@@ -7469,6 +8351,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Payment recorded.'**
   String get purchaseBillMgmtPaymentRecordedMessage;
+
+  /// No description provided for @invoiceSettingsMetadataColumnsGridClassicNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note: Metadata columns print on A4 PDF templates only (not A5/A6 or thermal receipts).'**
+  String get invoiceSettingsMetadataColumnsGridClassicNote;
+
+  /// No description provided for @invoiceSettingsCustomFieldsPageSupportNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom fields print on every PDF template except thermal receipts.'**
+  String get invoiceSettingsCustomFieldsPageSupportNote;
 }
 
 class _AppLocalizationsDelegate

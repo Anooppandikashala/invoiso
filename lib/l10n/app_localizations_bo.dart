@@ -240,6 +240,9 @@ class AppLocalizationsBo extends AppLocalizations {
   String get dashboardSupportTooltip => 'རོགས་སྐྱོར།';
 
   @override
+  String get buyMeCoffeeLabel => 'Buy me a coffee';
+
+  @override
   String get dashboardLogoutTooltip => 'ཕྱིར་འཐོན།';
 
   @override
@@ -305,6 +308,9 @@ class AppLocalizationsBo extends AppLocalizations {
   String get actionRefresh => 'གསར་སྒྱུར།';
 
   @override
+  String get helpSearchTooltip => 'Search Help & Settings';
+
+  @override
   String dashboardOutOfStockCountLabel(int count) {
     return '$count ཚོང་ཟོག་ཟད་སོང་།';
   }
@@ -321,10 +327,16 @@ class AppLocalizationsBo extends AppLocalizations {
   }
 
   @override
-  String get dashboardRecentInvoicesTitle => 'ད་ལྟའི་ཁྲལ་ཤོག';
+  String get dashboardRecentInvoicesTitle => 'ད་ལྟའི་ཡིག་ཆ།';
 
   @override
-  String get dashboardLastFiveInvoicesLabel => 'མཐའ་མའི་ཁྲལ་ཤོག 5';
+  String get dashboardLastFiveInvoicesLabel => 'མཐའ་མའི་ཡིག་ཆ 5';
+
+  @override
+  String get dashboardColDocumentNo => 'ཡིག་ཆའི་ཨང་།';
+
+  @override
+  String get dashboardColType => 'རིགས།';
 
   @override
   String get dashboardNoInvoicesYetTitle => 'ད་དུང་ཁྲལ་ཤོག་མེད།';
@@ -785,6 +797,11 @@ class AppLocalizationsBo extends AppLocalizations {
   }
 
   @override
+  String createInvoiceTotalBelowPaidMessage(String paid) {
+    return 'བསྡོམས་གསར་པ་དེ་སྔོན་ལ་སྤྲད་ཟིན་པའི་ $paid ལས་ཉུང་། སྔོན་ལ་སྤྲོད་ཆད་སྤྱོད་ནང་སྤྲོད་ཆད་སུབ་པའམ། བསྡོམས་དེ་དངུལ་འབོར་དེ་དང་མཉམ་པའམ་མང་བ་ཉར་རོགས།';
+  }
+
+  @override
   String createInvoiceErrorUpdatingMessage(String e) {
     return 'ཁྲལ་ཤོག་གསར་བཅོས་བྱེད་པར་ནོར་འཁྲུལ།: $e';
   }
@@ -918,6 +935,9 @@ class AppLocalizationsBo extends AppLocalizations {
   String get createInvoiceOrderDateLabel => 'མངགས་ཞུའི་ཚེས་གྲངས།';
 
   @override
+  String get createInvoiceOrderTimeLabel => 'མངགས་ཞུའི་དུས་ཚོད།';
+
+  @override
   String get createInvoiceDueDateLabel => 'འབབ་ཚེས།';
 
   @override
@@ -934,6 +954,9 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get gstTitleInvoiceCumBillLabel => 'ཁྲལ་ཤོག-སྤྲོད་ཐོ།';
+
+  @override
+  String get gstTitleCashBillLabel => 'Cash Bill';
 
   @override
   String get gstTitleCreditNoteLabel => 'སྐྱོན་བཅོས་ཐོ (ཡར)';
@@ -1023,6 +1046,9 @@ class AppLocalizationsBo extends AppLocalizations {
   @override
   String get createInvoiceTaxRateFromProductMessage =>
       'ཐོན་རྫས་སོ་སོའི་ཁྲལ་ཚད།';
+
+  @override
+  String get createInvoiceInterStateLabel => 'Interstate supply (IGST)';
 
   @override
   String get createInvoicePaymentUpiAccountLabel => 'འཇལ་བའི UPI རྩིས་ཐོ།';
@@ -1279,6 +1305,9 @@ class AppLocalizationsBo extends AppLocalizations {
   String get invoiceMgmtHideFullyPaidLabel => 'ཁྲལ་ཤོག་ཚང་མར་སྤྲད་ཟིན་པ་སྦེད།';
 
   @override
+  String get invoiceMgmtHideDeclinedLabel => 'ཁས་མི་ལེན་པའི་ཁྲལ་ཤོག་སྦེད།';
+
+  @override
   String get invoiceMgmtPaymentStatusLabel => 'སྤྲོད་ཆད་གནས་བབ།';
 
   @override
@@ -1417,6 +1446,81 @@ class AppLocalizationsBo extends AppLocalizations {
   String invoiceMgmtManagementTitle(String type) {
     return '$type དོ་དམ།';
   }
+
+  @override
+  String invoiceMgmtNewDocumentButton(String type) {
+    return '$type གསར་བཟོ།';
+  }
+
+  @override
+  String get invoiceMgmtConvertToInvoiceAction => 'ཁྲལ་ཤོག་ཏུ་བསྒྱུར།';
+
+  @override
+  String get invoiceMgmtConvertAgainTitle => 'ཡང་བསྐྱར་བསྒྱུར་རམ།';
+
+  @override
+  String invoiceMgmtConvertAgainBody(String number) {
+    return 'འབོར་ཚད་ $number སྔོན་ནས་ཁྲལ་ཤོག་ཏུ་བསྒྱུར་ཟིན། དེ་ནས་ཁྲལ་ཤོག་གཞན་ཞིག་བཟོ་དགོས་སམ།';
+  }
+
+  @override
+  String get invoiceMgmtMarkAsSent => 'བཏང་ཟིན་པར་རྟགས་རྒྱོབ།';
+
+  @override
+  String get invoiceMgmtMarkAsAccepted => 'ངོས་ལེན་བྱས་པར་རྟགས་རྒྱོབ།';
+
+  @override
+  String get invoiceMgmtMarkAsDeclined => 'ཁས་མི་ལེན་པར་རྟགས་རྒྱོབ།';
+
+  @override
+  String get quotationStatusDraft => 'ཟིན་བྲིས།';
+
+  @override
+  String get quotationStatusSent => 'བཏང་ཟིན།';
+
+  @override
+  String get quotationStatusAccepted => 'ངོས་ལེན་བྱས།';
+
+  @override
+  String get quotationStatusDeclined => 'ཁས་མ་བླངས།';
+
+  @override
+  String get quotationStatusConverted => 'བསྒྱུར་ཟིན།';
+
+  @override
+  String get invoiceMgmtDeclineInvoiceTitle => 'ཁྲལ་ཤོག་ཁས་མི་ལེན་ནམ།';
+
+  @override
+  String invoiceMgmtDeclineInvoiceBody(String number) {
+    return 'འདིས་ཁྲལ་ཤོག་ #$number ཁས་མི་ལེན་པར་རྟགས་རྒྱོབ་ནས་དེའི་ནང་དོན་ཚང་མ་ཅ་དངོས་ལ་སློག་ཡོང་། འདི་ལོག་སྟེ་བཟོ་མི་ཐུབ།';
+  }
+
+  @override
+  String invoiceMgmtDeclineHasPaymentsMessage(String number) {
+    return 'ཁྲལ་ཤོག་ #$number ལ་སྤྲོད་ཆད་ཐོ་འགོད་ཡོད། ཁས་མི་ལེན་གོང་ལ་སྤྲོད་ཆད་སྤྱོད་ནང་དེ་དག་སུབ་རོགས།';
+  }
+
+  @override
+  String get invoiceMgmtDeclinedSuccessMessage =>
+      'ཁྲལ་ཤོག་ཁས་མི་ལེན་པར་བརྟགས་ཟིན་པ་དང་ཅ་དངོས་སློག་ཟིན།';
+
+  @override
+  String get invoiceStatusDeclinedBadge => 'ཁས་མི་ལེན་པ།';
+
+  @override
+  String get createInvoiceConvertTitle => 'ཁྲལ་ཤོག་ཏུ་བསྒྱུར།';
+
+  @override
+  String createInvoiceConvertedSuccessMessage(String invoiceNumber) {
+    return 'ཁྲལ་ཤོག་ #$invoiceNumber ཏུ་བསྒྱུར་ཟིན།';
+  }
+
+  @override
+  String get createInvoiceTrashQuotationAction => 'འབོར་ཚད་གནས་སྤོ།';
+
+  @override
+  String get createInvoiceQuotationTrashedMessage =>
+      'འབོར་ཚད་སྙིགས་སྣོད་དུ་སྤོས་ཟིན།';
 
   @override
   String get invoiceMgmtOverdueBadge => 'དུས་འགོར།';
@@ -1858,6 +1962,15 @@ class AppLocalizationsBo extends AppLocalizations {
   String get customerMgmtSortIdNewest => 'ID (གསར་ཤོས་ཐོག་མར)';
 
   @override
+  String get customerMgmtSortOutstandingHighLow => 'ལྷག་ལུས། (མང་ཤོས་ཐོག་མར)';
+
+  @override
+  String get customerMgmtSortOutstandingLowHigh => 'ལྷག་ལུས། (ཉུང་ཤོས་ཐོག་མར)';
+
+  @override
+  String get customerMgmtWithOutstandingLabel => 'ལྷག་ལུས་ཡོད་པ';
+
+  @override
   String customerMgmtSearchHint(String taxWord) {
     return 'མིང་, ཚོང་ལས་, ཁ་པར་, $taxWord, གློག་འཕྲིན་ཐོག་ནས་མཉོགས་མི་འཚོལ...';
   }
@@ -2017,6 +2130,9 @@ class AppLocalizationsBo extends AppLocalizations {
   String get productMgmtManufactureDateLabel => 'བཟོ་སྐྲུན་ཉིན་ཚེས།';
 
   @override
+  String get productMgmtManufactureNameLabel => 'Manufacturer Name';
+
+  @override
   String get productMgmtSupplierNameLabel => 'སྐྱེལ་འདྲེན་པའི་མིང་།';
 
   @override
@@ -2095,6 +2211,9 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get productMgmtCsvDescManufactureDate => 'བཟོ་སྐྲུན་ཉིན་ཚེས།';
+
+  @override
+  String get productMgmtCsvDescManufactureName => 'Manufacturer name';
 
   @override
   String get productMgmtCsvDescSupplierName => 'སྐྱེལ་འདྲེན་པའི་མིང་།';
@@ -2265,6 +2384,17 @@ class AppLocalizationsBo extends AppLocalizations {
   String get productMgmtColExpiryDate => 'དུས་ཚད་ཉིན།';
 
   @override
+  String get productMgmtCustomizeColumnsLabel => 'Customize Product Columns';
+
+  @override
+  String get productMgmtShowColumnsLabel => 'Show Columns';
+
+  @override
+  String productMgmtShowColumnsMaxHint(int max) {
+    return 'Show up to $max columns';
+  }
+
+  @override
   String productMgmtShowingRangeLabel(int from, int to, int total) {
     return 'ཐོན་ཟོག $total ནང་ནས $from ནས $to བར་སྟོན་བཞིན།';
   }
@@ -2429,6 +2559,9 @@ class AppLocalizationsBo extends AppLocalizations {
   String get reportsAllCurrenciesLabel => 'དངུལ་རིགས་ཚང་མ།';
 
   @override
+  String get reportsArAgingSummaryTitle => 'A/R Aging Summary';
+
+  @override
   String get reportsAvgInvoiceValueLabel => 'ཁྲལ་ཤོག་ཐུན་མོང་གོང་ཚད།';
 
   @override
@@ -2570,7 +2703,19 @@ class AppLocalizationsBo extends AppLocalizations {
   String get reportsMonthlyRevenueTrendTitle => 'ཟླ་རེའི་འབབ་འོང་འགྱུར་རིམ།';
 
   @override
+  String get reportsMonthlyBreakdownTitle => 'Monthly Breakdown';
+
+  @override
+  String get reportsMonthColumnLabel => 'Month';
+
+  @override
+  String get reportsTotalRowLabel => 'Total';
+
+  @override
   String get reportsNavDailyReportLabel => 'ཉིན་རེའི་སྙན་ཞུ།';
+
+  @override
+  String get reportsNavInventoryLabel => 'Inventory';
 
   @override
   String get reportsNavInvoiceStatusLabel => 'ཁྲལ་ཤོག་གནས་ཚུལ།';
@@ -2583,6 +2728,55 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get reportsNavTaxLabel => 'ཁྲལ།';
+
+  @override
+  String get reportsInventoryBlockedValueLabel => 'Inventory Value Blocked';
+
+  @override
+  String get reportsInventoryPotentialSaleValueLabel => 'Potential Sale Value';
+
+  @override
+  String get reportsInventoryLockedProfitLabel => 'Profit Locked in Stock';
+
+  @override
+  String get reportsInventoryTotalUnitsLabel => 'Total Units';
+
+  @override
+  String get reportsInventoryProductCountLabel => 'Products Tracked';
+
+  @override
+  String get reportsInventoryBreakdownTitle => 'Product Breakdown';
+
+  @override
+  String get reportsNoInventoryDataMessage => 'No inventory data';
+
+  @override
+  String get reportsInventoryProductColumnLabel => 'Product';
+
+  @override
+  String get reportsInventoryStockColumnLabel => 'Stock';
+
+  @override
+  String get reportsInventoryPurchasePriceColumnLabel => 'Purchase Price';
+
+  @override
+  String get reportsInventoryStockValueColumnLabel => 'Stock Value';
+
+  @override
+  String get reportsInventorySaleValueColumnLabel => 'Sale Value';
+
+  @override
+  String reportsInventoryExcludedBannerMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count items are excluded from inventory value — they\'re services or have unlimited stock tracking on.',
+      one:
+          '1 item is excluded from inventory value — it\'s a service or has unlimited stock tracking on.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get reportsNoCustomerDataMessage => 'དུས་ཡུན་འདིར་ཉོ་མཁན་གནས་ཚུལ་མེད།';
@@ -2727,6 +2921,16 @@ class AppLocalizationsBo extends AppLocalizations {
   String get reportsTaxCollectedLabel => 'བསྡུས་པའི་ཁྲལ།';
 
   @override
+  String get reportsTaxableAmountLabel => 'Taxable Amount';
+
+  @override
+  String get reportsGrossAmountLabel => 'Gross';
+
+  @override
+  String get reportsTaxAccrualNote =>
+      'Tax charged on invoices dated in this period — accrual basis, before payment.';
+
+  @override
   String get reportsTaxRateBucketsLabel => 'ཁྲལ་ཐང་སྡེ་ཚན།';
 
   @override
@@ -2765,6 +2969,9 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get reportsTotalInvoicesLabel => 'ཁྲལ་ཤོག་སྤྱིའི་གྲངས།';
+
+  @override
+  String get reportsRealizedProfitLabel => 'Realized Profit';
 
   @override
   String get reportsTotalProfitLabel => 'ཁེ་སྐྱེད་སྤྱི།';
@@ -2851,6 +3058,17 @@ class AppLocalizationsBo extends AppLocalizations {
   @override
   String get userMgmtCantDeleteOwnAccountMessage =>
       'ཁྱེད་རང་གི་ཁ་ཡིག་བསུབ་མི་ཐུབ།';
+
+  @override
+  String get userMgmtCantDemoteLastAdminMessage =>
+      'You can\'t change the role of the only admin';
+
+  @override
+  String get userMgmtCantChangeOwnRoleMessage =>
+      'You can\'t change your own role';
+
+  @override
+  String get userMgmtUsernameTakenMessage => 'That username is already taken';
 
   @override
   String get userMgmtDeleteSelectedTitle => 'འདེམས་ཟིན་པའི་སྤྱོད་མཁན་བསུབ་ངམ།';
@@ -3022,6 +3240,112 @@ class AppLocalizationsBo extends AppLocalizations {
       'ཌེཤ་བོརཌ་དཀར་ཆག་ནང་ཉོ་ཐོ་དང་སྤྲོད་མཁན་སྟོན་གྱི་རེད།';
 
   @override
+  String get invoiceSettingsSectionCustomer => 'Customer Details';
+
+  @override
+  String get invoiceSettingsSectionColumns => 'Invoice Columns';
+
+  @override
+  String get invoiceSettingsColumnsSectionHint =>
+      'Choose which columns appear in the invoice PDF items table. Item Name, Price and Total are always shown.';
+
+  @override
+  String get invoiceSettingsShowSlNoLabel => 'Sl No column';
+
+  @override
+  String get invoiceSettingsShowSlNoSubtitle =>
+      'Print the serial-number column on A4/Letter invoices';
+
+  @override
+  String get invoiceSettingsColumnHsnLabel => 'HSN/SAC column';
+
+  @override
+  String get invoiceSettingsColumnHsnSubtitle =>
+      'Print the HSN/SAC code column (tied to Show GST Fields)';
+
+  @override
+  String get invoiceSettingsColumnTaxLabel => 'Show tax column';
+
+  @override
+  String get invoiceSettingsColumnTaxSubtitle =>
+      'Show the tax % and amount for each item, for global and per-item tax';
+
+  @override
+  String get invoiceSettingsSplitCgstSgstLabel => 'Split CGST / SGST';
+
+  @override
+  String get invoiceSettingsSplitCgstSgstSubtitle =>
+      'Split the tax into CGST/SGST, or IGST for interstate (India GST)';
+
+  @override
+  String get invoiceSettingsColumnRequiredSubtitle => 'Always shown';
+
+  @override
+  String get invoiceSettingsColumnItemNameLabel => 'Item Name column';
+
+  @override
+  String get invoiceSettingsColumnPriceLabel => 'Price / Rate column';
+
+  @override
+  String get invoiceSettingsColumnTotalLabel => 'Total column';
+
+  @override
+  String get invoiceSettingsCustomerSectionHint =>
+      'Choose which customer details print on invoice PDFs and thermal receipts. A field only shows when it\'s enabled and the customer has a value for it. Customer name is always shown.';
+
+  @override
+  String get invoiceSettingsShowCustomerBusinessNameLabel =>
+      'Show Business Name';
+
+  @override
+  String get invoiceSettingsShowCustomerBusinessNameSubtitle =>
+      'Print the customer\'s business name under their name';
+
+  @override
+  String get invoiceSettingsShowCustomerAddressLabel => 'Show Address';
+
+  @override
+  String get invoiceSettingsShowCustomerAddressSubtitle =>
+      'Print the customer\'s address in the Bill To block';
+
+  @override
+  String get invoiceSettingsShowCustomerPhoneLabel => 'Show Phone';
+
+  @override
+  String get invoiceSettingsShowCustomerPhoneSubtitle =>
+      'Print the customer\'s phone number';
+
+  @override
+  String get invoiceSettingsShowCustomerEmailLabel => 'Show Email';
+
+  @override
+  String get invoiceSettingsShowCustomerEmailSubtitle =>
+      'Print the customer\'s email address (not shown on thermal receipts)';
+
+  @override
+  String get invoiceSettingsShowCustomerGstinLabel => 'Show GSTIN / Tax ID';
+
+  @override
+  String get invoiceSettingsShowCustomerGstinSubtitle =>
+      'Print the customer\'s GSTIN / tax id (requires GST fields on)';
+
+  @override
+  String get invoiceSettingsShowTimeInPdfLabel => 'Show Time on PDF';
+
+  @override
+  String get invoiceSettingsShowTimeInPdfSubtitle =>
+      'Append the invoice creation time next to the date on PDFs and thermal receipts';
+
+  @override
+  String get invoiceSettingsTimeFormatLabel => 'Time Format';
+
+  @override
+  String get invoiceSettingsTimeFormat24 => '24-hour (14:30)';
+
+  @override
+  String get invoiceSettingsTimeFormat12 => '12-hour (2:30 PM)';
+
+  @override
   String get invoiceSettingsPrefixLabel => 'ཁྲལ་ཤོག་སྔོན་སྐྱོན།';
 
   @override
@@ -3127,6 +3451,22 @@ class AppLocalizationsBo extends AppLocalizations {
       'ཐོན་རྫས་ཀྱི་ངོ་མའི་མིང་ཚབ་ PDF ནང་ས་གནས་སྐད་ཡིག་གི་མིང་གཞན (སྒྲིག་ཡོད་ན) པར་སྐྲུན་རོགས།';
 
   @override
+  String get invoiceSettingsShowDescriptionLabel =>
+      'ཐོན་རྫས་ཀྱི་འགྲེལ་བཤད་སྟོན་པ།';
+
+  @override
+  String get invoiceSettingsShowDescriptionSubtitle =>
+      'A4 PDF ནང་ཅ་དངོས་རེ་རེའི་འགྲེལ་བཤད་དེའི་འོག་ཏུ་གྲལ་ཐིག་གཅིག་ཏུ་པར་སྐྲུན་བྱེད་པ (ཚ་དྲོད་ཟིན་ཐོ་ནང་མིན)';
+
+  @override
+  String get invoiceSettingsDescriptionNewLineLabel =>
+      'Description on a New Line';
+
+  @override
+  String get invoiceSettingsDescriptionNewLineSubtitle =>
+      'Print the description as a full-width row below the item instead of a line under its name';
+
+  @override
   String get invoiceSettingsAllowFractionalQtyLabel => 'ཆ་ཤས་གྲངས་ཀ་ཆོག་པ།';
 
   @override
@@ -3208,13 +3548,22 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get invoiceSettingsWatermarkImageSubtitle =>
-      'ཁྲལ་ཤོག PDF ནང་རས་ཆས་ཐིག་ཁྲམ་རྒྱབ་ཏུ་སྟོན (མེ་འཁོར་ལག་དེབ་ཐོག་མི་འཁོད)';
+      'ཁྲལ་ཤོག PDF ཐོག་སྟོན (མེ་འཁོར་ལག་དེབ་ཐོག་མི་འཁོད)';
 
   @override
   String get invoiceSettingsChangeWatermarkButton => 'ཆུ་རྟགས་བརྗེ་བ།';
 
   @override
   String get invoiceSettingsUploadWatermarkButton => 'ཆུ་རྟགས་སྤར་གཞུག';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementLabel => 'ཆུ་རྟགས་འཇོག་ས།';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementItemsTable => 'རས་ཆས་ཐིག་ཁྲམ།';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementFullPage => 'ཤོག་ངོས་ཧྲིལ་པོ།';
 
   @override
   String invoiceSettingsOpacityLabel(int value) {
@@ -3275,6 +3624,26 @@ class AppLocalizationsBo extends AppLocalizations {
       'ཡོངས་བསྡོམས་གྲངས་ཀའི་གྲལ་བ་སྟོན།';
 
   @override
+  String get pdfSettingsOrientationLabel => 'Orientation';
+
+  @override
+  String get pdfSettingsOrientationPortrait => 'Portrait';
+
+  @override
+  String get pdfSettingsOrientationLandscape => 'Landscape';
+
+  @override
+  String get pdfSettingsMetadataColumnsLabel => 'Product metadata columns';
+
+  @override
+  String get pdfSettingsMetadataColumnsHint =>
+      'Print product metadata as extra columns in the items table.';
+
+  @override
+  String get pdfSettingsMetadataColumnsWarning =>
+      'Metadata columns print on any A4 template (not A5/A6 or thermal receipts). Each one narrows the others — if the table looks cramped, turn a few off, or switch Grid Classic to Landscape above. Values are captured when an item is added; editing the product later won\'t change past invoices.';
+
+  @override
   String get pdfSettingsItemLayoutLabel => 'རྣམ་གྲངས་བཀོད་པ།';
 
   @override
@@ -3289,6 +3658,27 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get pdfSettingsCompanyNameSizeLabel => 'ཚོང་ལས་མིང་གི་ཚད།';
+
+  @override
+  String get pdfSettingsFontSizeLabel => 'PDF ཡི་གེའི་ཚད།';
+
+  @override
+  String get pdfSettingsSectionSizesLabel => 'སྡེ་ཚན་གྱི་ཚད།';
+
+  @override
+  String get pdfSettingsDocTitleSizeLabel => 'ཡིག་ཆའི་མགོ་མིང་གི་ཚད།';
+
+  @override
+  String get pdfSettingsTableHeaderSizeLabel => 'རེའུ་མིག་མགོ་བྱང་གི་ཚད།';
+
+  @override
+  String get pdfSettingsTableItemsSizeLabel => 'རེའུ་མིག་དངོས་པོའི་ཚད།';
+
+  @override
+  String get pdfSettingsTotalsSizeLabel => 'བསྡོམས་འབོར་གྱི་ཚད།';
+
+  @override
+  String get pdfFontSizeSameAsOverallLabel => 'ཡོངས་ཁྱབ་དང་མཚུངས།';
 
   @override
   String get pdfSettingsThemeColorLabel => 'བཀོད་པའི་ཚོན་མདོག';
@@ -3414,6 +3804,9 @@ class AppLocalizationsBo extends AppLocalizations {
   String get fieldTinLabel => 'TIN';
 
   @override
+  String get fieldVatRegNoLabel => 'VAT ཐོ་འགོད་ཨང་གྲངས།';
+
+  @override
   String get companyInfoFssaiCodeLabel => 'FSSAI ཨང་རྟགས།';
 
   @override
@@ -3467,7 +3860,16 @@ class AppLocalizationsBo extends AppLocalizations {
   String get fieldIfscCodeLabel => 'IFSC ཨང་རྟགས།';
 
   @override
+  String get fieldIbanLabel => 'IBAN';
+
+  @override
   String get companyInfoAddBankAccountButton => 'དངུལ་ཁང་རྩིས་ཁྲ་སྣོན།';
+
+  @override
+  String get companyInfoEditBankAccountTitle => 'དངུལ་ཁང་རྩིས་ཁྲ་ཞུ་དག';
+
+  @override
+  String get fieldBankAccountNameLabel => 'རྩིས་ཁྲའི་མིང་།';
 
   @override
   String get tooltipShowOnInvoicePdf => 'ཁྲལ་ཤོག PDF ནང་སྟོན།';
@@ -3763,6 +4165,9 @@ class AppLocalizationsBo extends AppLocalizations {
   String get productColumnsMetaManufactureDateLabel => 'བཟོ་བསྐྲུན་ཚེས་གྲངས།';
 
   @override
+  String get productColumnsMetaManufactureNameLabel => 'Manufacturer Name';
+
+  @override
   String get productColumnsMetaSupplierNameLabel => 'སྤྲོད་མཁན་མིང་།';
 
   @override
@@ -3786,6 +4191,9 @@ class AppLocalizationsBo extends AppLocalizations {
   String get settingsNavCompanyInfoLabel => 'ཚོང་ལས་ཆ་འཕྲིན།';
 
   @override
+  String get settingsNavCompaniesLabel => 'ཚོང་ལས་ཁག';
+
+  @override
   String get settingsNavTeamLabel => 'སྡེ་ཚན།';
 
   @override
@@ -3805,6 +4213,95 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get settingsNavSoftwareInfoLabel => 'མཉེན་ཆས་ཆ་འཕྲིན།';
+
+  @override
+  String get companyMgmtTitle => 'ཚོང་ལས་དོ་དམ།';
+
+  @override
+  String get companyMgmtActiveBadge => 'ད་ལྟ་བཀོལ་བཞིན་པ།';
+
+  @override
+  String get companyMgmtSwitchButton => 'བརྗེ་བ།';
+
+  @override
+  String get companyMgmtSwitchConfirmTitle => 'ཚོང་ལས་བརྗེ་དགོས་སམ།';
+
+  @override
+  String companyMgmtSwitchConfirmBody(String name) {
+    return '\"$name\" ལ་བརྗེ་བར་ Invoiso ཡང་བསྐྱར་འགོ་འཛུགས་འགྲོ།';
+  }
+
+  @override
+  String get companyMgmtNewCompanyButton => '+ ཚོང་ལས་གསར་པ།';
+
+  @override
+  String get companyMgmtNewCompanyTitle => 'ཚོང་ལས་གསར་པ།';
+
+  @override
+  String get companyMgmtAdminAccountSectionLabel => 'དོ་དམ་པའི་ཞིབ་ཕྲ།';
+
+  @override
+  String get companyMgmtCreateButton => 'གསར་བཟོ།';
+
+  @override
+  String get companyMgmtDeleteButton => 'ཚོང་ལས་འདི་བསུབ།';
+
+  @override
+  String companyMgmtDeleteConfirmTitle(String name) {
+    return '\"$name\" བསུབ་དགོས་སམ།';
+  }
+
+  @override
+  String get companyMgmtDeleteConfirmBody =>
+      'འདིས་ཚོང་ལས་འདིའི་ཆ་འཕྲིན་ཡོངས་རྫོགས་གཏན་གྱིས་བསུབ་གྱི་རེད། ངེས་གཏན་བྱེད་ཆེད་ཚོང་ལས་མིང་འཇུག་རོགས།';
+
+  @override
+  String get companyMgmtRenameTooltip => 'མིང་བསྒྱུར།';
+
+  @override
+  String get companyMgmtRenameTitle => 'ཚོང་ལས་མིང་བསྒྱུར།';
+
+  @override
+  String get companyMgmtNameTakenMessage => 'མིང་འདི་ཐོག་ཚོང་ལས་ཡོད་ཟིན།';
+
+  @override
+  String companyMgmtSwitchErrorMessage(String error) {
+    return 'ཚོང་ལས་བརྗེས་བ་མ་གྲུབ། $error';
+  }
+
+  @override
+  String get companyMgmtSwitchRestartTitle => 'ཚོང་ལས་བརྗེས་ཟིན།';
+
+  @override
+  String get companyMgmtSwitchRestartBody =>
+      'ཚོང་ལས་བརྗེ་བ་མཇུག་སྐྱོང་ཆེད་ Invoiso ཡང་བསྐྱར་འགོ་འཛུགས་དགོས། ཐུགས་རྗེས་ཉར་ཚགས་ཁ་བརྒྱབ་ནས་ཡང་བསྐྱར་ཕྱེ་རོགས།';
+
+  @override
+  String get companyMgmtCreateRestartTitle => 'ཚོང་ལས་གསར་བཟོས་ཟིན།';
+
+  @override
+  String get companyMgmtCreateRestartBody =>
+      'ཁྱེད་ཀྱི་ཚོང་ལས་གསར་པ་གྲ་སྒྲིག་ཟིན། མུ་མཐུད་ཆེད་ཐུགས་རྗེས་ཉར་ཚགས་ཁ་བརྒྱབ་ནས་ཡང་བསྐྱར་ཕྱེ་རོགས།';
+
+  @override
+  String get companyMgmtDeletedMessage => 'ཚོང་ལས་བསུབས་ཟིན།';
+
+  @override
+  String get companyMgmtDeleteRestartTitle => 'ཚོང་ལས་བསུབས་ཟིན།';
+
+  @override
+  String get companyMgmtDeleteRestartBody =>
+      'ཚོང་ལས་བསུབས་ཤིང་ Invoiso ཚོང་ལས་གཞན་ཞིག་ལ་བརྗེས་སོང་། མུ་མཐུད་ཆེད་ཐུགས་རྗེས་ཉར་ཚགས་ཁ་བརྒྱབ་ནས་ཡང་བསྐྱར་ཕྱེ་རོགས།';
+
+  @override
+  String get companyMgmtOnlyCompanyTooltip =>
+      'འདི་བསུབ་གོང་ཁྱེད་ལ་ཚོང་ལས་གཞན་ཞིག་དགོས།';
+
+  @override
+  String get loginCompanyGearTooltip => 'ཚོང་ལས་དོ་དམ།';
+
+  @override
+  String get loginCompanySelectorLabel => 'ཚོང་ལས།';
 
   @override
   String get customizationEyebrowLabel => 'སྒེར་སྒྲིག';
@@ -4050,6 +4547,9 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get sizeLargeLabel => 'ཆེན་པོ།';
+
+  @override
+  String get sizeXLargeLabel => 'ཧ་ཅང་ཆེན་པོ།';
 
   @override
   String get shortcutNewInvoiceDescription =>
@@ -4397,4 +4897,12 @@ class AppLocalizationsBo extends AppLocalizations {
   @override
   String get purchaseBillMgmtPaymentRecordedMessage =>
       'འཇལ་བ་ཐོ་འགོད་བྱས་སོང་།';
+
+  @override
+  String get invoiceSettingsMetadataColumnsGridClassicNote =>
+      'Note: Metadata columns print on A4 PDF templates only (not A5/A6 or thermal receipts).';
+
+  @override
+  String get invoiceSettingsCustomFieldsPageSupportNote =>
+      'Custom fields print on every PDF template except thermal receipts.';
 }

@@ -238,6 +238,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get dashboardSupportTooltip => 'सहायता';
 
   @override
+  String get buyMeCoffeeLabel => 'Buy me a coffee';
+
+  @override
   String get dashboardLogoutTooltip => 'लॉगआउट';
 
   @override
@@ -302,6 +305,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get actionRefresh => 'रीफ्रेश करें';
 
   @override
+  String get helpSearchTooltip => 'Search Help & Settings';
+
+  @override
   String dashboardOutOfStockCountLabel(int count) {
     return '$count स्टॉक में नहीं';
   }
@@ -318,10 +324,16 @@ class AppLocalizationsHi extends AppLocalizations {
   }
 
   @override
-  String get dashboardRecentInvoicesTitle => 'हाल के इनवॉइस';
+  String get dashboardRecentInvoicesTitle => 'हाल के दस्तावेज़';
 
   @override
-  String get dashboardLastFiveInvoicesLabel => 'पिछले 5 इनवॉइस';
+  String get dashboardLastFiveInvoicesLabel => 'पिछले 5 दस्तावेज़';
+
+  @override
+  String get dashboardColDocumentNo => 'दस्तावेज़ सं.';
+
+  @override
+  String get dashboardColType => 'प्रकार';
 
   @override
   String get dashboardNoInvoicesYetTitle => 'अभी तक कोई इनवॉइस नहीं';
@@ -785,6 +797,11 @@ class AppLocalizationsHi extends AppLocalizations {
   }
 
   @override
+  String createInvoiceTotalBelowPaidMessage(String paid) {
+    return 'नया कुल पहले से भुगतान किए गए $paid से कम है। पहले भुगतान लागू करें में भुगतान हटाएँ, या कुल को इस राशि के बराबर या अधिक रखें।';
+  }
+
+  @override
   String createInvoiceErrorUpdatingMessage(String e) {
     return 'इनवॉइस अपडेट करने में त्रुटि: $e';
   }
@@ -919,6 +936,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get createInvoiceOrderDateLabel => 'ऑर्डर तिथि';
 
   @override
+  String get createInvoiceOrderTimeLabel => 'ऑर्डर समय';
+
+  @override
   String get createInvoiceDueDateLabel => 'देय तिथि';
 
   @override
@@ -935,6 +955,9 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get gstTitleInvoiceCumBillLabel => 'इनवॉइस-सह-आपूर्ति बिल';
+
+  @override
+  String get gstTitleCashBillLabel => 'Cash Bill';
 
   @override
   String get gstTitleCreditNoteLabel => 'क्रेडिट नोट';
@@ -1021,6 +1044,9 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get createInvoiceTaxRateFromProductMessage =>
       'प्रत्येक उत्पाद से टैक्स दर';
+
+  @override
+  String get createInvoiceInterStateLabel => 'Interstate supply (IGST)';
 
   @override
   String get createInvoicePaymentUpiAccountLabel => 'भुगतान यूपीआई खाता';
@@ -1286,6 +1312,9 @@ class AppLocalizationsHi extends AppLocalizations {
       'पूरी तरह भुगतान किए गए चालान छिपाएँ';
 
   @override
+  String get invoiceMgmtHideDeclinedLabel => 'अस्वीकृत चालान छिपाएँ';
+
+  @override
   String get invoiceMgmtPaymentStatusLabel => 'भुगतान स्थिति';
 
   @override
@@ -1425,6 +1454,81 @@ class AppLocalizationsHi extends AppLocalizations {
   String invoiceMgmtManagementTitle(String type) {
     return '$type प्रबंधन';
   }
+
+  @override
+  String invoiceMgmtNewDocumentButton(String type) {
+    return 'नया $type';
+  }
+
+  @override
+  String get invoiceMgmtConvertToInvoiceAction => 'इनवॉइस में बदलें';
+
+  @override
+  String get invoiceMgmtConvertAgainTitle => 'फिर से बदलें?';
+
+  @override
+  String invoiceMgmtConvertAgainBody(String number) {
+    return 'कोटेशन $number पहले ही इनवॉइस में बदला जा चुका है। इससे एक और इनवॉइस बनाएं?';
+  }
+
+  @override
+  String get invoiceMgmtMarkAsSent => 'भेजा गया चिह्नित करें';
+
+  @override
+  String get invoiceMgmtMarkAsAccepted => 'स्वीकृत चिह्नित करें';
+
+  @override
+  String get invoiceMgmtMarkAsDeclined => 'अस्वीकृत चिह्नित करें';
+
+  @override
+  String get quotationStatusDraft => 'ड्राफ़्ट';
+
+  @override
+  String get quotationStatusSent => 'भेजा गया';
+
+  @override
+  String get quotationStatusAccepted => 'स्वीकृत';
+
+  @override
+  String get quotationStatusDeclined => 'अस्वीकृत';
+
+  @override
+  String get quotationStatusConverted => 'परिवर्तित';
+
+  @override
+  String get invoiceMgmtDeclineInvoiceTitle => 'इनवॉइस अस्वीकार करें?';
+
+  @override
+  String invoiceMgmtDeclineInvoiceBody(String number) {
+    return 'इससे इनवॉइस #$number को अस्वीकृत के रूप में चिह्नित किया जाएगा और इसके आइटम स्टॉक में वापस कर दिए जाएंगे। इसे पूर्ववत नहीं किया जा सकता।';
+  }
+
+  @override
+  String invoiceMgmtDeclineHasPaymentsMessage(String number) {
+    return 'चालान #$number पर भुगतान दर्ज हैं। अस्वीकृत करने से पहले उन्हें भुगतान लागू करें में हटाएँ।';
+  }
+
+  @override
+  String get invoiceMgmtDeclinedSuccessMessage =>
+      'इनवॉइस अस्वीकृत, स्टॉक वापस कर दिया गया।';
+
+  @override
+  String get invoiceStatusDeclinedBadge => 'अस्वीकृत';
+
+  @override
+  String get createInvoiceConvertTitle => 'इनवॉइस में बदलें';
+
+  @override
+  String createInvoiceConvertedSuccessMessage(String invoiceNumber) {
+    return 'इनवॉइस #$invoiceNumber में बदला गया';
+  }
+
+  @override
+  String get createInvoiceTrashQuotationAction => 'कोटेशन हटाएं';
+
+  @override
+  String get createInvoiceQuotationTrashedMessage =>
+      'कोटेशन ट्रैश में ले जाया गया';
 
   @override
   String get invoiceMgmtOverdueBadge => 'अतिदेय';
@@ -1868,6 +1972,15 @@ class AppLocalizationsHi extends AppLocalizations {
   String get customerMgmtSortIdNewest => 'ID (सबसे नया पहले)';
 
   @override
+  String get customerMgmtSortOutstandingHighLow => 'बकाया (अधिक से कम)';
+
+  @override
+  String get customerMgmtSortOutstandingLowHigh => 'बकाया (कम से अधिक)';
+
+  @override
+  String get customerMgmtWithOutstandingLabel => 'बकाया वाले';
+
+  @override
   String customerMgmtSearchHint(String taxWord) {
     return 'नाम, व्यवसाय, फ़ोन, $taxWord, ईमेल से ग्राहक खोजें…';
   }
@@ -2028,6 +2141,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get productMgmtManufactureDateLabel => 'निर्माण तिथि';
 
   @override
+  String get productMgmtManufactureNameLabel => 'Manufacturer Name';
+
+  @override
   String get productMgmtSupplierNameLabel => 'आपूर्तिकर्ता का नाम';
 
   @override
@@ -2108,6 +2224,9 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get productMgmtCsvDescManufactureDate => 'निर्माण तिथि';
+
+  @override
+  String get productMgmtCsvDescManufactureName => 'Manufacturer name';
 
   @override
   String get productMgmtCsvDescSupplierName => 'आपूर्तिकर्ता का नाम';
@@ -2279,6 +2398,17 @@ class AppLocalizationsHi extends AppLocalizations {
   String get productMgmtColExpiryDate => 'समाप्ति तिथि';
 
   @override
+  String get productMgmtCustomizeColumnsLabel => 'Customize Product Columns';
+
+  @override
+  String get productMgmtShowColumnsLabel => 'Show Columns';
+
+  @override
+  String productMgmtShowColumnsMaxHint(int max) {
+    return 'Show up to $max columns';
+  }
+
+  @override
   String productMgmtShowingRangeLabel(int from, int to, int total) {
     return '$total उत्पादों में से $from से $to दिखाया जा रहा है';
   }
@@ -2442,6 +2572,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get reportsAllCurrenciesLabel => 'सभी मुद्राएं';
 
   @override
+  String get reportsArAgingSummaryTitle => 'प्राप्य आयु सारांश';
+
+  @override
   String get reportsAvgInvoiceValueLabel => 'औसत इनवॉइस मूल्य';
 
   @override
@@ -2583,7 +2716,19 @@ class AppLocalizationsHi extends AppLocalizations {
   String get reportsMonthlyRevenueTrendTitle => 'मासिक राजस्व रुझान';
 
   @override
+  String get reportsMonthlyBreakdownTitle => 'मासिक विवरण';
+
+  @override
+  String get reportsMonthColumnLabel => 'महीना';
+
+  @override
+  String get reportsTotalRowLabel => 'कुल';
+
+  @override
   String get reportsNavDailyReportLabel => 'दैनिक रिपोर्ट';
+
+  @override
+  String get reportsNavInventoryLabel => 'Inventory';
 
   @override
   String get reportsNavInvoiceStatusLabel => 'इनवॉइस स्थिति';
@@ -2596,6 +2741,55 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get reportsNavTaxLabel => 'टैक्स';
+
+  @override
+  String get reportsInventoryBlockedValueLabel => 'Inventory Value Blocked';
+
+  @override
+  String get reportsInventoryPotentialSaleValueLabel => 'Potential Sale Value';
+
+  @override
+  String get reportsInventoryLockedProfitLabel => 'Profit Locked in Stock';
+
+  @override
+  String get reportsInventoryTotalUnitsLabel => 'Total Units';
+
+  @override
+  String get reportsInventoryProductCountLabel => 'Products Tracked';
+
+  @override
+  String get reportsInventoryBreakdownTitle => 'Product Breakdown';
+
+  @override
+  String get reportsNoInventoryDataMessage => 'No inventory data';
+
+  @override
+  String get reportsInventoryProductColumnLabel => 'Product';
+
+  @override
+  String get reportsInventoryStockColumnLabel => 'Stock';
+
+  @override
+  String get reportsInventoryPurchasePriceColumnLabel => 'Purchase Price';
+
+  @override
+  String get reportsInventoryStockValueColumnLabel => 'Stock Value';
+
+  @override
+  String get reportsInventorySaleValueColumnLabel => 'Sale Value';
+
+  @override
+  String reportsInventoryExcludedBannerMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count items are excluded from inventory value — they\'re services or have unlimited stock tracking on.',
+      one:
+          '1 item is excluded from inventory value — it\'s a service or has unlimited stock tracking on.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get reportsNoCustomerDataMessage => 'इस अवधि में कोई ग्राहक डेटा नहीं';
@@ -2740,6 +2934,16 @@ class AppLocalizationsHi extends AppLocalizations {
   String get reportsTaxCollectedLabel => 'एकत्रित कर';
 
   @override
+  String get reportsTaxableAmountLabel => 'कर योग्य राशि';
+
+  @override
+  String get reportsGrossAmountLabel => 'सकल';
+
+  @override
+  String get reportsTaxAccrualNote =>
+      'इस अवधि की तारीख वाले चालानों पर लगाया गया कर — प्रोद्भवन आधार, भुगतान से पहले।';
+
+  @override
   String get reportsTaxRateBucketsLabel => 'कर दर समूह';
 
   @override
@@ -2778,6 +2982,9 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get reportsTotalInvoicesLabel => 'कुल इनवॉइस';
+
+  @override
+  String get reportsRealizedProfitLabel => 'प्राप्त लाभ';
 
   @override
   String get reportsTotalProfitLabel => 'कुल लाभ';
@@ -2866,6 +3073,18 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get userMgmtCantDeleteOwnAccountMessage =>
       'आप अपना खुद का खाता नहीं हटा सकते';
+
+  @override
+  String get userMgmtCantDemoteLastAdminMessage =>
+      'आप एकमात्र एडमिन की भूमिका नहीं बदल सकते';
+
+  @override
+  String get userMgmtCantChangeOwnRoleMessage =>
+      'आप अपनी खुद की भूमिका नहीं बदल सकते';
+
+  @override
+  String get userMgmtUsernameTakenMessage =>
+      'यह उपयोगकर्ता नाम पहले से मौजूद है';
 
   @override
   String get userMgmtDeleteSelectedTitle => 'चयनित उपयोगकर्ताओं को हटाएं?';
@@ -3038,6 +3257,112 @@ class AppLocalizationsHi extends AppLocalizations {
       'डैशबोर्ड मेनू में खरीद बिल और आपूर्तिकर्ता दिखाता है';
 
   @override
+  String get invoiceSettingsSectionCustomer => 'Customer Details';
+
+  @override
+  String get invoiceSettingsSectionColumns => 'Invoice Columns';
+
+  @override
+  String get invoiceSettingsColumnsSectionHint =>
+      'Choose which columns appear in the invoice PDF items table. Item Name, Price and Total are always shown.';
+
+  @override
+  String get invoiceSettingsShowSlNoLabel => 'Sl No column';
+
+  @override
+  String get invoiceSettingsShowSlNoSubtitle =>
+      'Print the serial-number column on A4/Letter invoices';
+
+  @override
+  String get invoiceSettingsColumnHsnLabel => 'HSN/SAC column';
+
+  @override
+  String get invoiceSettingsColumnHsnSubtitle =>
+      'Print the HSN/SAC code column (tied to Show GST Fields)';
+
+  @override
+  String get invoiceSettingsColumnTaxLabel => 'Show tax column';
+
+  @override
+  String get invoiceSettingsColumnTaxSubtitle =>
+      'Show the tax % and amount for each item, for global and per-item tax';
+
+  @override
+  String get invoiceSettingsSplitCgstSgstLabel => 'Split CGST / SGST';
+
+  @override
+  String get invoiceSettingsSplitCgstSgstSubtitle =>
+      'Split the tax into CGST/SGST, or IGST for interstate (India GST)';
+
+  @override
+  String get invoiceSettingsColumnRequiredSubtitle => 'Always shown';
+
+  @override
+  String get invoiceSettingsColumnItemNameLabel => 'Item Name column';
+
+  @override
+  String get invoiceSettingsColumnPriceLabel => 'Price / Rate column';
+
+  @override
+  String get invoiceSettingsColumnTotalLabel => 'Total column';
+
+  @override
+  String get invoiceSettingsCustomerSectionHint =>
+      'Choose which customer details print on invoice PDFs and thermal receipts. A field only shows when it\'s enabled and the customer has a value for it. Customer name is always shown.';
+
+  @override
+  String get invoiceSettingsShowCustomerBusinessNameLabel =>
+      'Show Business Name';
+
+  @override
+  String get invoiceSettingsShowCustomerBusinessNameSubtitle =>
+      'Print the customer\'s business name under their name';
+
+  @override
+  String get invoiceSettingsShowCustomerAddressLabel => 'Show Address';
+
+  @override
+  String get invoiceSettingsShowCustomerAddressSubtitle =>
+      'Print the customer\'s address in the Bill To block';
+
+  @override
+  String get invoiceSettingsShowCustomerPhoneLabel => 'Show Phone';
+
+  @override
+  String get invoiceSettingsShowCustomerPhoneSubtitle =>
+      'Print the customer\'s phone number';
+
+  @override
+  String get invoiceSettingsShowCustomerEmailLabel => 'Show Email';
+
+  @override
+  String get invoiceSettingsShowCustomerEmailSubtitle =>
+      'Print the customer\'s email address (not shown on thermal receipts)';
+
+  @override
+  String get invoiceSettingsShowCustomerGstinLabel => 'Show GSTIN / Tax ID';
+
+  @override
+  String get invoiceSettingsShowCustomerGstinSubtitle =>
+      'Print the customer\'s GSTIN / tax id (requires GST fields on)';
+
+  @override
+  String get invoiceSettingsShowTimeInPdfLabel => 'Show Time on PDF';
+
+  @override
+  String get invoiceSettingsShowTimeInPdfSubtitle =>
+      'Append the invoice creation time next to the date on PDFs and thermal receipts';
+
+  @override
+  String get invoiceSettingsTimeFormatLabel => 'Time Format';
+
+  @override
+  String get invoiceSettingsTimeFormat24 => '24-hour (14:30)';
+
+  @override
+  String get invoiceSettingsTimeFormat12 => '12-hour (2:30 PM)';
+
+  @override
   String get invoiceSettingsPrefixLabel => 'इनवॉइस प्रीफ़िक्स';
 
   @override
@@ -3142,6 +3467,20 @@ class AppLocalizationsHi extends AppLocalizations {
       'PDF पर उत्पाद के वास्तविक नाम के बजाय उसका स्थानीय-भाषा उपनाम (यदि सेट है) प्रिंट करें';
 
   @override
+  String get invoiceSettingsShowDescriptionLabel => 'उत्पाद विवरण दिखाएं';
+
+  @override
+  String get invoiceSettingsShowDescriptionSubtitle =>
+      'प्रत्येक आइटम का विवरण A4 PDF में उसके नीचे एक पंक्ति के रूप में छापें (थर्मल रसीदों पर नहीं)';
+
+  @override
+  String get invoiceSettingsDescriptionNewLineLabel => 'विवरण नई पंक्ति में';
+
+  @override
+  String get invoiceSettingsDescriptionNewLineSubtitle =>
+      'विवरण को आइटम के नाम के नीचे एक पंक्ति के बजाय आइटम के नीचे पूरी-चौड़ाई की पंक्ति के रूप में छापें';
+
+  @override
   String get invoiceSettingsAllowFractionalQtyLabel =>
       'भिन्नात्मक मात्रा की अनुमति दें';
 
@@ -3224,13 +3563,22 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get invoiceSettingsWatermarkImageSubtitle =>
-      'इनवॉइस PDF पर आइटम तालिका के पीछे दिखाया जाता है (थर्मल रसीदों पर मुद्रित नहीं)';
+      'इनवॉइस PDF पर दिखाया जाता है (थर्मल रसीदों पर मुद्रित नहीं)';
 
   @override
   String get invoiceSettingsChangeWatermarkButton => 'वॉटरमार्क बदलें';
 
   @override
   String get invoiceSettingsUploadWatermarkButton => 'वॉटरमार्क अपलोड करें';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementLabel => 'वॉटरमार्क स्थान';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementItemsTable => 'आइटम तालिका';
+
+  @override
+  String get invoiceSettingsWatermarkPlacementFullPage => 'पूरा पृष्ठ';
 
   @override
   String invoiceSettingsOpacityLabel(int value) {
@@ -3289,6 +3637,26 @@ class AppLocalizationsHi extends AppLocalizations {
   String get pdfSettingsShowTotalQtyRowLabel => 'कुल मात्रा पंक्ति दिखाएं';
 
   @override
+  String get pdfSettingsOrientationLabel => 'Orientation';
+
+  @override
+  String get pdfSettingsOrientationPortrait => 'Portrait';
+
+  @override
+  String get pdfSettingsOrientationLandscape => 'Landscape';
+
+  @override
+  String get pdfSettingsMetadataColumnsLabel => 'Product metadata columns';
+
+  @override
+  String get pdfSettingsMetadataColumnsHint =>
+      'Print product metadata as extra columns in the items table.';
+
+  @override
+  String get pdfSettingsMetadataColumnsWarning =>
+      'Metadata columns print on any A4 template (not A5/A6 or thermal receipts). Each one narrows the others — if the table looks cramped, turn a few off, or switch Grid Classic to Landscape above. Values are captured when an item is added; editing the product later won\'t change past invoices.';
+
+  @override
   String get pdfSettingsItemLayoutLabel => 'आइटम लेआउट';
 
   @override
@@ -3303,6 +3671,27 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get pdfSettingsCompanyNameSizeLabel => 'कंपनी नाम का आकार';
+
+  @override
+  String get pdfSettingsFontSizeLabel => 'PDF टेक्स्ट का आकार';
+
+  @override
+  String get pdfSettingsSectionSizesLabel => 'सेक्शन के आकार';
+
+  @override
+  String get pdfSettingsDocTitleSizeLabel => 'दस्तावेज़ शीर्षक का आकार';
+
+  @override
+  String get pdfSettingsTableHeaderSizeLabel => 'टेबल हेडर का आकार';
+
+  @override
+  String get pdfSettingsTableItemsSizeLabel => 'टेबल आइटम का आकार';
+
+  @override
+  String get pdfSettingsTotalsSizeLabel => 'कुल राशि का आकार';
+
+  @override
+  String get pdfFontSizeSameAsOverallLabel => 'सामान्य के समान';
 
   @override
   String get pdfSettingsThemeColorLabel => 'थीम रंग';
@@ -3428,6 +3817,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get fieldTinLabel => 'TIN';
 
   @override
+  String get fieldVatRegNoLabel => 'वैट पंजीकरण संख्या';
+
+  @override
   String get companyInfoFssaiCodeLabel => 'FSSAI कोड';
 
   @override
@@ -3480,7 +3872,16 @@ class AppLocalizationsHi extends AppLocalizations {
   String get fieldIfscCodeLabel => 'IFSC कोड';
 
   @override
+  String get fieldIbanLabel => 'IBAN';
+
+  @override
   String get companyInfoAddBankAccountButton => 'बैंक खाता जोड़ें';
+
+  @override
+  String get companyInfoEditBankAccountTitle => 'बैंक खाता संपादित करें';
+
+  @override
+  String get fieldBankAccountNameLabel => 'खाता नाम';
 
   @override
   String get tooltipShowOnInvoicePdf => 'इनवॉइस PDF पर दिखाएं';
@@ -3777,6 +4178,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get productColumnsMetaManufactureDateLabel => 'निर्माण तिथि';
 
   @override
+  String get productColumnsMetaManufactureNameLabel => 'Manufacturer Name';
+
+  @override
   String get productColumnsMetaSupplierNameLabel => 'आपूर्तिकर्ता नाम';
 
   @override
@@ -3799,6 +4203,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get settingsNavCompanyInfoLabel => 'कंपनी जानकारी';
 
   @override
+  String get settingsNavCompaniesLabel => 'कंपनियाँ';
+
+  @override
   String get settingsNavTeamLabel => 'टीम';
 
   @override
@@ -3818,6 +4225,95 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get settingsNavSoftwareInfoLabel => 'सॉफ़्टवेयर जानकारी';
+
+  @override
+  String get companyMgmtTitle => 'कंपनियाँ प्रबंधित करें';
+
+  @override
+  String get companyMgmtActiveBadge => 'सक्रिय';
+
+  @override
+  String get companyMgmtSwitchButton => 'स्विच करें';
+
+  @override
+  String get companyMgmtSwitchConfirmTitle => 'कंपनी स्विच करें?';
+
+  @override
+  String companyMgmtSwitchConfirmBody(String name) {
+    return '\"$name\" पर स्विच करने के लिए Invoiso पुनः आरंभ होगा।';
+  }
+
+  @override
+  String get companyMgmtNewCompanyButton => '+ नई कंपनी';
+
+  @override
+  String get companyMgmtNewCompanyTitle => 'नई कंपनी';
+
+  @override
+  String get companyMgmtAdminAccountSectionLabel => 'एडमिन खाता';
+
+  @override
+  String get companyMgmtCreateButton => 'बनाएं';
+
+  @override
+  String get companyMgmtDeleteButton => 'यह कंपनी हटाएं';
+
+  @override
+  String companyMgmtDeleteConfirmTitle(String name) {
+    return '\"$name\" हटाएं?';
+  }
+
+  @override
+  String get companyMgmtDeleteConfirmBody =>
+      'इससे इस कंपनी का सारा डेटा स्थायी रूप से हट जाएगा और इसे पूर्ववत नहीं किया जा सकता। पुष्टि के लिए कंपनी का नाम टाइप करें।';
+
+  @override
+  String get companyMgmtRenameTooltip => 'नाम बदलें';
+
+  @override
+  String get companyMgmtRenameTitle => 'कंपनी का नाम बदलें';
+
+  @override
+  String get companyMgmtNameTakenMessage => 'इस नाम की कंपनी पहले से मौजूद है';
+
+  @override
+  String companyMgmtSwitchErrorMessage(String error) {
+    return 'कंपनी स्विच करने में विफल: $error';
+  }
+
+  @override
+  String get companyMgmtSwitchRestartTitle => 'कंपनी स्विच हो गई';
+
+  @override
+  String get companyMgmtSwitchRestartBody =>
+      'कंपनी स्विच पूरा करने के लिए Invoiso को पुनः आरंभ करना होगा। कृपया एप्लिकेशन बंद करके फिर से खोलें।';
+
+  @override
+  String get companyMgmtCreateRestartTitle => 'कंपनी बन गई';
+
+  @override
+  String get companyMgmtCreateRestartBody =>
+      'आपकी नई कंपनी तैयार है। जारी रखने के लिए कृपया एप्लिकेशन बंद करके फिर से खोलें।';
+
+  @override
+  String get companyMgmtDeletedMessage => 'कंपनी हटा दी गई';
+
+  @override
+  String get companyMgmtDeleteRestartTitle => 'कंपनी हटा दी गई';
+
+  @override
+  String get companyMgmtDeleteRestartBody =>
+      'कंपनी हटा दी गई और Invoiso दूसरी कंपनी में स्विच हो गया। जारी रखने के लिए कृपया एप्लिकेशन बंद करके फिर से खोलें।';
+
+  @override
+  String get companyMgmtOnlyCompanyTooltip =>
+      'इसे हटाने से पहले आपके पास कम से कम एक और कंपनी होनी चाहिए';
+
+  @override
+  String get loginCompanyGearTooltip => 'कंपनियाँ प्रबंधित करें';
+
+  @override
+  String get loginCompanySelectorLabel => 'कंपनी';
 
   @override
   String get customizationEyebrowLabel => 'कस्टमाइज़ेशन';
@@ -4066,6 +4562,9 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get sizeLargeLabel => 'बड़ा';
+
+  @override
+  String get sizeXLargeLabel => 'बहुत बड़ा';
 
   @override
   String get shortcutNewInvoiceDescription =>
@@ -4416,4 +4915,12 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get purchaseBillMgmtPaymentRecordedMessage => 'भुगतान दर्ज किया गया।';
+
+  @override
+  String get invoiceSettingsMetadataColumnsGridClassicNote =>
+      'Note: Metadata columns print on A4 PDF templates only (not A5/A6 or thermal receipts).';
+
+  @override
+  String get invoiceSettingsCustomFieldsPageSupportNote =>
+      'Custom fields print on every PDF template except thermal receipts.';
 }
