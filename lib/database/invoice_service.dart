@@ -79,6 +79,7 @@ class InvoiceService {
           'quantity': item.quantity,
           'discount': item.discount,
           'discount_per_unit': item.discountPerUnit ? 1 : 0,
+          'discount_is_percent': item.discountIsPercent ? 1 : 0,
           'unit_price': item.unitPrice,
           'extra_cost': item.extraCost,
           'is_product_saved': item.isProductSaved ? 1 : 0,
@@ -194,6 +195,7 @@ class InvoiceService {
           'quantity': item.quantity,
           'discount': item.discount,
           'discount_per_unit': item.discountPerUnit ? 1 : 0,
+          'discount_is_percent': item.discountIsPercent ? 1 : 0,
           'unit_price': item.unitPrice,
           'extra_cost': item.extraCost,
           'is_product_saved': item.isProductSaved ? 1 : 0,
@@ -300,7 +302,7 @@ class InvoiceService {
     // Subquery instead of one `?` per id — see Issues.md #36.
     final itemRows = await db.rawQuery(
       'SELECT invoice_id, unit_price, product_price, quantity, discount, '
-      'discount_per_unit, extra_cost, product_tax_rate, product_price_includes_tax '
+      'discount_per_unit, discount_is_percent, extra_cost, product_tax_rate, product_price_includes_tax '
       'FROM invoice_items WHERE invoice_id IN '
       '(SELECT id FROM invoices WHERE $invoiceWhere) ORDER BY rowid ASC',
       invoiceArgs,
@@ -407,6 +409,7 @@ class InvoiceService {
               ? (row['discount'] as int).toDouble()
               : (row['discount'] ?? 0.0) as double,
           discountPerUnit: (row['discount_per_unit'] as int? ?? 0) == 1,
+          discountIsPercent: (row['discount_is_percent'] as int? ?? 0) == 1,
           unitPrice: unitPrice,
           extraCost: extraCost,
           unit: row['unit'] as String?,
@@ -719,7 +722,7 @@ class InvoiceService {
     final subquery = '(SELECT id FROM invoices WHERE $where)';
     final itemRows = await db.rawQuery(
       'SELECT invoice_id, unit_price, product_price, quantity, discount, '
-      'discount_per_unit, extra_cost, product_tax_rate, product_price_includes_tax '
+      'discount_per_unit, discount_is_percent, extra_cost, product_tax_rate, product_price_includes_tax '
       'FROM invoice_items WHERE invoice_id IN $subquery ORDER BY rowid ASC',
       whereArgs,
     );
@@ -1078,7 +1081,7 @@ class InvoiceService {
 
     final itemRows = await db.rawQuery(
       'SELECT invoice_id, unit_price, product_price, quantity, discount, '
-      'discount_per_unit, extra_cost, product_tax_rate, product_price_includes_tax '
+      'discount_per_unit, discount_is_percent, extra_cost, product_tax_rate, product_price_includes_tax '
       'FROM invoice_items WHERE invoice_id IN $invoiceSubquery ORDER BY rowid ASC',
     );
 

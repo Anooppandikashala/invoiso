@@ -16,7 +16,7 @@ class DatabaseHelper {
   static String? get path => _path;
   static Database? _database;
   static String _dbFileName = 'invoice_manager.db';
-  final dbVersion = 49;
+  final dbVersion = 50;
 
   /// Startup only, before anything has opened a connection yet — just points
   /// at the right file for the first `_initDB()` call. No close/reopen, so
@@ -158,6 +158,7 @@ class DatabaseHelper {
         unit_price REAL,
         extra_cost REAL,
         discount_per_unit INTEGER DEFAULT 0,
+        discount_is_percent INTEGER DEFAULT 0,
         is_product_saved INTEGER DEFAULT 0,
         product_type TEXT DEFAULT 'product',
         product_purchase_price REAL DEFAULT 0.0,
@@ -828,6 +829,16 @@ class DatabaseHelper {
             'ALTER TABLE invoices ADD COLUMN converted_to_invoice_id TEXT');
         await db.execute(
             'ALTER TABLE invoices ADD COLUMN converted_from_invoice_id TEXT');
+      });
+    }
+
+    if (oldVersion < 50) {
+      // Percentage line-item discount. Default 0 → every existing line keeps
+      // its amount-based discount.
+      await _runMigrationStep(
+          db, 50, 'add_discount_is_percent_to_invoice_items', () async {
+        await db.execute(
+            'ALTER TABLE invoice_items ADD COLUMN discount_is_percent INTEGER DEFAULT 0');
       });
     }
   }

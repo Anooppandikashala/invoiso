@@ -130,6 +130,7 @@ extension _InvoiceItemTotals on InvoiceItem {
         quantity: quantity,
         discount: discount,
         discountPerUnit: discountPerUnit,
+        discountIsPercent: discountIsPercent,
         extraCost: extraCost ?? 0.0,
         taxRatePercent: product.tax_rate.toDouble(),
         priceIncludesTax: product.priceIncludesTax,

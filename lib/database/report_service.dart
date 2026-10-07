@@ -76,12 +76,17 @@ class _StatementLineDraft {
 
 class ReportService {
   static final _db = DatabaseHelper();
-  static const _invoiceItemNetSql = 'CASE WHEN ii.discount_per_unit = 1 '
+  static const _invoiceItemNetSql = 'CASE WHEN ii.discount_is_percent = 1 '
+      'THEN COALESCE(ii.unit_price, ii.product_price) * ii.quantity '
+      '* (1 - ii.discount / 100.0) + COALESCE(ii.extra_cost, 0) '
+      'WHEN ii.discount_per_unit = 1 '
       'THEN (COALESCE(ii.unit_price, ii.product_price) - ii.discount) * ii.quantity '
       '+ COALESCE(ii.extra_cost, 0) '
       'ELSE COALESCE(ii.unit_price, ii.product_price) * ii.quantity '
       '- ii.discount + COALESCE(ii.extra_cost, 0) END';
-  static const _invoiceItemDiscountSql = 'CASE WHEN ii.discount_per_unit = 1 '
+  static const _invoiceItemDiscountSql = 'CASE WHEN ii.discount_is_percent = 1 '
+      'THEN COALESCE(ii.unit_price, ii.product_price) * ii.quantity * ii.discount / 100.0 '
+      'WHEN ii.discount_per_unit = 1 '
       'THEN ii.discount * ii.quantity ELSE ii.discount END';
   // Revenue basis for P&L/dashboard: backs out embedded tax for
   // tax-inclusive-priced items so "revenue" stays a tax-exclusive figure,
@@ -152,7 +157,7 @@ class ReportService {
 
     final itemRows = await db.rawQuery(
       'SELECT invoice_id, quantity, unit_price, product_price, discount, '
-      'discount_per_unit, extra_cost, product_tax_rate, product_price_includes_tax, '
+      'discount_per_unit, discount_is_percent, extra_cost, product_tax_rate, product_price_includes_tax, '
       'product_purchase_price '
       'FROM invoice_items WHERE invoice_id IN $invSubquery',
       args,
@@ -597,7 +602,7 @@ class ReportService {
       // Subquery instead of one `?` per id — see Issues.md #36.
       final itemRows = await db.rawQuery(
         "SELECT invoice_id, quantity, unit_price, product_price, discount, "
-        "discount_per_unit, extra_cost, product_tax_rate, product_price_includes_tax "
+        "discount_per_unit, discount_is_percent, extra_cost, product_tax_rate, product_price_includes_tax "
         "FROM invoice_items WHERE invoice_id IN ("
         "SELECT i.id FROM invoices i "
         "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
