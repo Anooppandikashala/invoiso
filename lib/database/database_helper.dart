@@ -16,7 +16,7 @@ class DatabaseHelper {
   static String? get path => _path;
   static Database? _database;
   static String _dbFileName = 'invoice_manager.db';
-  final dbVersion = 51;
+  final dbVersion = 52;
 
   /// Startup only, before anything has opened a connection yet — just points
   /// at the right file for the first `_initDB()` call. No close/reopen, so
@@ -159,6 +159,7 @@ class DatabaseHelper {
         unit_price REAL,
         extra_cost REAL,
         discount_per_unit INTEGER DEFAULT 0,
+        discount_is_percent INTEGER DEFAULT 0,
         is_product_saved INTEGER DEFAULT 0,
         product_type TEXT DEFAULT 'product',
         product_purchase_price REAL DEFAULT 0.0,
@@ -825,26 +826,11 @@ class DatabaseHelper {
     }
 
     if (oldVersion < 49) {
-      // Cash / UPI-Bank exchange ledger (CashUpiExchangeImplementationPlan.md).
-      await _runMigrationStep(db, 49, 'create_cash_ledger', () async {
-        await db.execute(_cashLedgerTableSql
-            .replaceFirst('CREATE TABLE', 'CREATE TABLE IF NOT EXISTS'));
-        await db.execute(
-            'CREATE INDEX IF NOT EXISTS idx_cash_ledger_date ON cash_ledger(date_time)');
-      });
-
-      // Per-product low-stock limit. NULL = default (10).
-      await _runMigrationStep(db, 49, 'add_low_stock_limit_to_products', () async {
-        await db.execute('ALTER TABLE products ADD COLUMN low_stock_limit INTEGER');
-      });
-    }
-
-    if (oldVersion < 50) {
       // Quotation lifecycle status + quote<->invoice links. NULL on every
-      // pre-v50 row = no status (read as 'draft') and no link, behaves
+      // pre-v49 row = no status (read as 'draft') and no link, behaves
       // exactly as before.
       await _runMigrationStep(
-          db, 50, 'add_quotation_status_and_links', () async {
+          db, 49, 'add_quotation_status_and_links', () async {
         await db.execute('ALTER TABLE invoices ADD COLUMN status TEXT');
         await db.execute(
             'ALTER TABLE invoices ADD COLUMN converted_to_invoice_id TEXT');
@@ -853,15 +839,40 @@ class DatabaseHelper {
       });
     }
 
+    if (oldVersion < 50) {
+      // Percentage line-item discount. Default 0 → every existing line keeps
+      // its amount-based discount.
+      await _runMigrationStep(
+          db, 50, 'add_discount_is_percent_to_invoice_items', () async {
+        await db.execute(
+            'ALTER TABLE invoice_items ADD COLUMN discount_is_percent INTEGER DEFAULT 0');
+      });
+    }
+
     if (oldVersion < 51) {
+      // Cash / UPI-Bank exchange ledger (CashUpiExchangeImplementationPlan.md).
+      await _runMigrationStep(db, 51, 'create_cash_ledger', () async {
+        await db.execute(_cashLedgerTableSql
+            .replaceFirst('CREATE TABLE', 'CREATE TABLE IF NOT EXISTS'));
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_cash_ledger_date ON cash_ledger(date_time)');
+      });
+
+      // Per-product low-stock limit. NULL = default (10).
+      await _runMigrationStep(db, 51, 'add_low_stock_limit_to_products', () async {
+        await db.execute('ALTER TABLE products ADD COLUMN low_stock_limit INTEGER');
+      });
+    }
+
+    if (oldVersion < 52) {
       // Cash ledger edit log: real entry time, a history of old versions
       // (edits and deletes), and created_by as a user id instead of a
       // username. Separate steps: a "duplicate column" skip (table made by
-      // the v49 step with the current SQL) mustn't skip the others.
-      await _runMigrationStep(db, 51, 'add_created_at_to_cash_ledger', () async {
+      // the v51 step with the current SQL) mustn't skip the others.
+      await _runMigrationStep(db, 52, 'add_created_at_to_cash_ledger', () async {
         await db.execute('ALTER TABLE cash_ledger ADD COLUMN created_at TEXT');
       });
-      await _runMigrationStep(db, 51, 'create_cash_ledger_history', () async {
+      await _runMigrationStep(db, 52, 'create_cash_ledger_history', () async {
         await db.execute(_cashLedgerHistoryTableSql
             .replaceFirst('CREATE TABLE', 'CREATE TABLE IF NOT EXISTS'));
         await db.execute(
@@ -872,11 +883,18 @@ class DatabaseHelper {
       });
       // Usernames of users that no longer exist stay as they are and match
       // no id, so only admins can change those rows.
-      await _runMigrationStep(db, 51, 'cash_ledger_created_by_user_id', () async {
+      await _runMigrationStep(db, 52, 'cash_ledger_created_by_user_id', () async {
         await db.execute(
             'UPDATE cash_ledger SET created_by = (SELECT id FROM users '
             'WHERE users.username = cash_ledger.created_by) '
             'WHERE created_by IN (SELECT username FROM users)');
+      });
+      // Test builds (test-v1.3.3) reached v51 with the cash-upi numbering,
+      // which never had the v50 percent-discount step. Duplicate column → skip.
+      await _runMigrationStep(
+          db, 52, 'add_discount_is_percent_to_invoice_items', () async {
+        await db.execute(
+            'ALTER TABLE invoice_items ADD COLUMN discount_is_percent INTEGER DEFAULT 0');
       });
     }
   }

@@ -1006,6 +1006,7 @@ pw.Widget buildInvoiceTable(Invoice invoice,
             vertical: (showItemDescription ||
                     showTypeTag && businessType == BusinessType.both ||
                     showDiscount &&
+                        !item.discountIsPercent &&
                         item.discountPerUnit &&
                         item.discount > 0)
                 ? cellPaddingV * 0.5
@@ -1037,6 +1038,7 @@ pw.Widget buildInvoiceTable(Invoice invoice,
                   ),
                 ),
               if (showDiscount &&
+                  !item.discountIsPercent &&
                   item.discountPerUnit &&
                   item.discount > 0)
                 pw.Text(
@@ -1102,7 +1104,10 @@ pw.Widget buildInvoiceTable(Invoice invoice,
               cellPaddingV: cellPaddingV,
               textAlign: centerOnGridClassic),
         if (showDiscount)
-          buildTableCell(item.totalDiscount.toStringAsFixed(2),
+          buildTableCell(
+              item.discountIsPercent && item.discount > 0
+                  ? '${item.totalDiscount.toStringAsFixed(2)}\n(${item.discount == item.discount.roundToDouble() ? item.discount.toInt() : item.discount}%)'
+                  : item.totalDiscount.toStringAsFixed(2),
               fontSize: tableFontSize,
               cellPaddingH: cellPaddingH,
               cellPaddingV: cellPaddingV,

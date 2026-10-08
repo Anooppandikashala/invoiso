@@ -95,15 +95,19 @@ class InvoiceTotalsCalculator {
     required double quantity,
     required double discount,
     required bool discountPerUnit,
+    bool discountIsPercent = false,
     double extraCost = 0,
     double taxRatePercent = 0,
     bool priceIncludesTax = false,
     TaxMode taxMode = TaxMode.perItem,
     double globalTaxRatePercent = 0,
   }) {
-    final displayTotal = discountPerUnit
-        ? (price - discount) * quantity + extraCost
-        : (price * quantity) - discount + extraCost;
+    // % discount applies to price × qty (before extra cost); per-unit vs
+    // flat makes no difference for a percentage.
+    final discountTotal = discountIsPercent
+        ? price * quantity * discount / 100
+        : (discountPerUnit ? discount * quantity : discount);
+    final displayTotal = price * quantity - discountTotal + extraCost;
     // When price is tax-inclusive, back out the tax so lineTotal holds the
     // taxable base — itemTax and every downstream subtotal/tax sum then
     // stay correct without touching the totals() aggregation formula.
@@ -124,7 +128,7 @@ class InvoiceTotalsCalculator {
       // with a discount flips the displayed pre-discount figure between
       // tax-inclusive and tax-exclusive depending on which is shown.
       grossTotal: (price * quantity + extraCost) / taxDivisor,
-      discountTotal: discountPerUnit ? discount * quantity : discount,
+      discountTotal: discountTotal,
       taxRatePercent: taxRatePercent,
       displayTotal: displayTotal,
     );
@@ -143,6 +147,7 @@ class InvoiceTotalsCalculator {
       quantity: (row['quantity'] as num?)?.toDouble() ?? 0.0,
       discount: (row['discount'] as num?)?.toDouble() ?? 0.0,
       discountPerUnit: (row['discount_per_unit'] as int?) == 1,
+      discountIsPercent: (row['discount_is_percent'] as int?) == 1,
       extraCost: (row['extra_cost'] as num?)?.toDouble() ?? 0.0,
       taxRatePercent: (row['product_tax_rate'] as num?)?.toDouble() ?? 0.0,
       priceIncludesTax: (row['product_price_includes_tax'] as int?) == 1,
