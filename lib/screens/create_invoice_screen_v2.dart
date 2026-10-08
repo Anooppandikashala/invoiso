@@ -4787,7 +4787,29 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 8),
+        if (!kIsWeb && (Platform.isAndroid || Platform.isIOS))
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: IconButton(
+              onPressed: () => showCameraScannerDialog(
+                context,
+                title: 'Scan Barcode',
+                onScan: _handleScannedBarcode,
+              ),
+              icon: const Icon(Icons.qr_code_scanner),
+              tooltip: 'Scan barcode with camera',
+              style: IconButton.styleFrom(
+                padding: const EdgeInsets.all(13),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                ),
+                side: BorderSide(
+                  color: Theme.of(context).colorScheme.outline,
+                ),
+              ),
+            ),
+          ),
         OutlinedButton.icon(
           onPressed: _addAdHocItemDialog,
           icon: const Icon(Icons.add, size: 16),
