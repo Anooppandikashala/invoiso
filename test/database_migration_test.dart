@@ -219,10 +219,63 @@ void main() {
     expect(invoice['converted_to_invoice_id'], isNull);
     expect(invoice['converted_from_invoice_id'], isNull);
 
+    // v52 added purchase bills / suppliers / stock tracking.
+    for (final table in [
+      'suppliers',
+      'purchase_bills',
+      'purchase_bill_items',
+      'stock_transactions',
+      'supplier_payments',
+    ]) {
+      expect(await db.query(table), isEmpty);
+    }
+    final product = (await db.query('products')).first;
+    expect(product.containsKey('last_purchase_date'), isTrue);
+    expect(product['last_purchase_date'], isNull);
+    final billItemCols =
+        await db.rawQuery('PRAGMA table_info(purchase_bill_items)');
+    expect(billItemCols.map((c) => c['name']), contains('cost_includes_tax'));
+    final billCols = await db.rawQuery('PRAGMA table_info(purchase_bills)');
+    expect(billCols.map((c) => c['name']), contains('is_draft'));
+
     final companyInfo = (await db.query('company_info')).first;
     expect(companyInfo['country'], 'India');
     expect(companyInfo['pan_number'], '');
     expect(companyInfo['fssai_code'], '');
+
+    await db.close();
+  });
+
+  // The purchase-bills branch used v41/v42 for its own steps before main was
+  // merged in, so a dev DB from that build sits at v42 without main's
+  // invoice_items.description. The v52 block must re-add it.
+  test('DB at old branch v42 without description column gets it back',
+      () async {
+    final db = await _openV4WithSampleData();
+    final helper = DatabaseHelper();
+    await helper.upgradeDbForTest(db, 4, helper.dbVersion);
+    await db.execute('ALTER TABLE invoice_items DROP COLUMN description');
+
+    await helper.upgradeDbForTest(db, 42, helper.dbVersion);
+
+    final cols = await db.rawQuery('PRAGMA table_info(invoice_items)');
+    expect(cols.map((c) => c['name']), contains('description'));
+
+    await db.close();
+  });
+  // purchase_bills.is_draft was first added inside the v52 block, after dev
+  // DBs (and backups taken from them) had already reached v52 — a v52 DB
+  // without the column must still get it.
+  test('DB at v52 without purchase_bills.is_draft gets it', () async {
+    final db = await _openV4WithSampleData();
+    final helper = DatabaseHelper();
+    await helper.upgradeDbForTest(db, 4, helper.dbVersion);
+    await db.execute('ALTER TABLE purchase_bills DROP COLUMN is_draft');
+
+    await helper.upgradeDbForTest(db, 52, helper.dbVersion);
+
+    final cols = await db.rawQuery('PRAGMA table_info(purchase_bills)');
+    expect(cols.map((c) => c['name']), contains('is_draft'));
 
     await db.close();
   });

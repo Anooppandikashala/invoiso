@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/common/constants.dart';
+import 'package:invoiso/common/setting_key.dart';
 import 'package:invoiso/database/company_registry_service.dart';
 import 'package:invoiso/database/user_service.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
@@ -8,6 +9,7 @@ import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/company_profile.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/providers/locale_provider.dart';
+import 'package:invoiso/providers/purchase_bills_settings_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/providers/theme_provider.dart';
 import 'package:invoiso/utils/company_switch_navigation.dart';
@@ -80,9 +82,14 @@ class _CompanyManagementScreenState
     }
     final themeKey = await ref.read(settingsRepositoryProvider).getThemeMode();
     final localeKey = await ref.read(settingsRepositoryProvider).getAppLocale();
+    final purchaseBills = await ref
+        .read(settingsRepositoryProvider)
+        .getSetting(SettingKey.enablePurchaseBillsAndSuppliers);
     if (!mounted) return;
     ref.read(themeModeProvider.notifier).state = themeModeFromKey(themeKey);
     applyAppLocale(ref, localeFromKey(localeKey));
+    ref.read(enablePurchaseBillsAndSuppliersProvider.notifier).state =
+        purchaseBills == 'true';
     await _load();
   }
 
@@ -330,9 +337,14 @@ class _CompanyManagementScreenState
     if (_isPreLogin) {
       final themeKey = await ref.read(settingsRepositoryProvider).getThemeMode();
       final localeKey = await ref.read(settingsRepositoryProvider).getAppLocale();
+      final purchaseBills = await ref
+          .read(settingsRepositoryProvider)
+          .getSetting(SettingKey.enablePurchaseBillsAndSuppliers);
       if (!mounted) return;
       ref.read(themeModeProvider.notifier).state = themeModeFromKey(themeKey);
       applyAppLocale(ref, localeFromKey(localeKey));
+      ref.read(enablePurchaseBillsAndSuppliersProvider.notifier).state =
+          purchaseBills == 'true';
       await _load();
       return;
     }

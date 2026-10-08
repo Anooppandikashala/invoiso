@@ -8,6 +8,9 @@ import 'package:invoiso/utils/password_utils.dart';
 
 const _tag = 'DatabaseHelper';
 
+/// Placeholder `company_info.name` seeded by `_createDB`.
+const seedCompanyName = 'Your Company Name';
+
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   factory DatabaseHelper() => _instance;
@@ -16,7 +19,7 @@ class DatabaseHelper {
   static String? get path => _path;
   static Database? _database;
   static String _dbFileName = 'invoice_manager.db';
-  final dbVersion = 50;
+  final dbVersion = 53;
 
   /// Startup only, before anything has opened a connection yet — just points
   /// at the right file for the first `_initDB()` call. No close/reopen, so
@@ -86,7 +89,8 @@ class DatabaseHelper {
         alias_name TEXT,
         unit TEXT DEFAULT '',
         unlimited_stock INTEGER DEFAULT 0,
-        price_includes_tax INTEGER DEFAULT 0
+        price_includes_tax INTEGER DEFAULT 0,
+        last_purchase_date TEXT
       )
     ''');
 
@@ -231,6 +235,86 @@ class DatabaseHelper {
       )
     ''');
 
+    // product_metadata.supplier_name (above) is a pre-existing free-text
+    // field. It is intentionally NOT reconciled with the normalized
+    // `suppliers` table below — no fuzzy-match/reconciliation migration,
+    // out of scope for this pass.
+    await db.execute('''
+      CREATE TABLE suppliers (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        business_name TEXT DEFAULT '',
+        phone TEXT DEFAULT '',
+        email TEXT DEFAULT '',
+        address TEXT DEFAULT '',
+        gstin TEXT DEFAULT '',
+        notes TEXT DEFAULT '',
+        deleted_at TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE purchase_bills (
+        id TEXT PRIMARY KEY,
+        supplier_id TEXT,
+        supplier_name TEXT,
+        bill_number TEXT,
+        bill_date TEXT,
+        notes TEXT,
+        attachment_path TEXT,
+        subtotal REAL DEFAULT 0.0,
+        tax_amount REAL DEFAULT 0.0,
+        total_amount REAL DEFAULT 0.0,
+        deleted_at TEXT,
+        created_at TEXT,
+        is_draft INTEGER DEFAULT 0
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE purchase_bill_items (
+        id TEXT PRIMARY KEY,
+        bill_id TEXT,
+        product_id TEXT,
+        product_name TEXT,
+        product_description TEXT,
+        quantity REAL,
+        cost_per_unit REAL,
+        tax_rate REAL DEFAULT 0,
+        cost_includes_tax INTEGER DEFAULT 0,
+        line_total REAL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE stock_transactions (
+        id TEXT PRIMARY KEY,
+        product_id TEXT NOT NULL,
+        transaction_type TEXT NOT NULL,
+        reference_id TEXT,
+        quantity_change REAL NOT NULL,
+        stock_before REAL NOT NULL,
+        stock_after REAL NOT NULL,
+        unit_cost REAL,
+        transaction_date TEXT NOT NULL,
+        notes TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE supplier_payments (
+        id TEXT PRIMARY KEY,
+        bill_id TEXT NOT NULL,
+        supplier_id TEXT,
+        amount_paid REAL NOT NULL,
+        previously_paid REAL NOT NULL DEFAULT 0,
+        balance_after REAL NOT NULL,
+        date_paid TEXT NOT NULL,
+        payment_method TEXT,
+        notes TEXT
+      )
+    ''');
+
     // Indexes
     await db.execute('CREATE INDEX idx_invoices_customer ON invoices(customer_name)');
     await db.execute('CREATE INDEX idx_invoices_date ON invoices(date)');
@@ -240,6 +324,14 @@ class DatabaseHelper {
     await db.execute('CREATE INDEX idx_invoice_items_invoice ON invoice_items(invoice_id)');
     await db.execute('CREATE INDEX idx_payments_invoice ON invoice_payments(invoice_id)');
     await db.execute('CREATE INDEX idx_payments_date ON invoice_payments(date_paid)');
+    await db.execute('CREATE INDEX idx_suppliers_name ON suppliers(name)');
+    await db.execute('CREATE INDEX idx_purchase_bills_date ON purchase_bills(bill_date)');
+    await db.execute('CREATE INDEX idx_purchase_bills_supplier ON purchase_bills(supplier_id)');
+    await db.execute('CREATE INDEX idx_purchase_bill_items_bill ON purchase_bill_items(bill_id)');
+    await db.execute('CREATE INDEX idx_purchase_bill_items_product ON purchase_bill_items(product_id)');
+    await db.execute('CREATE INDEX idx_stock_tx_product_date ON stock_transactions(product_id, transaction_date)');
+    await db.execute('CREATE INDEX idx_supplier_payments_bill ON supplier_payments(bill_id)');
+    await db.execute('CREATE INDEX idx_supplier_payments_supplier ON supplier_payments(supplier_id)');
     await db.execute('CREATE INDEX idx_inv_type_del_id ON invoices(type, deleted_at, id)');
     await db.execute('CREATE INDEX idx_inv_customer_id ON invoices(customer_id, type, date)');
     await db.execute('CREATE INDEX idx_inv_type_num ON invoices(type, invoice_number)');
@@ -251,7 +343,7 @@ class DatabaseHelper {
 
     // Insert dummy company info
     await db.insert('company_info', {
-      'name': 'Your Company Name',
+      'name': seedCompanyName,
       'address': '123 Street \nCity, State 12345',
       'phone': '9876543210',
       'email': 'info@yourcompany.com',
@@ -839,6 +931,143 @@ class DatabaseHelper {
           db, 50, 'add_discount_is_percent_to_invoice_items', () async {
         await db.execute(
             'ALTER TABLE invoice_items ADD COLUMN discount_is_percent INTEGER DEFAULT 0');
+      });
+    }
+
+    if (oldVersion < 52) {
+      // Purchase bills / suppliers / stock tracking. Was v41/v42 on the
+      // feature branch; renumbered after merging main (which claimed v41-v49).
+      // v50/v51 skipped: claimed by cash-upi-exchange-service (shipped to a
+      // client at v51) and customer-additional-columns.
+      await _runMigrationStep(
+          db, 52, 'create_purchase_bills_suppliers_tables', () async {
+        // product_metadata.supplier_name is a pre-existing free-text field,
+        // intentionally not reconciled with this new normalized table.
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS suppliers (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            business_name TEXT DEFAULT '',
+            phone TEXT DEFAULT '',
+            email TEXT DEFAULT '',
+            address TEXT DEFAULT '',
+            gstin TEXT DEFAULT '',
+            notes TEXT DEFAULT '',
+            deleted_at TEXT
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS purchase_bills (
+            id TEXT PRIMARY KEY,
+            supplier_id TEXT,
+            supplier_name TEXT,
+            bill_number TEXT,
+            bill_date TEXT,
+            notes TEXT,
+            attachment_path TEXT,
+            subtotal REAL DEFAULT 0.0,
+            tax_amount REAL DEFAULT 0.0,
+            total_amount REAL DEFAULT 0.0,
+            deleted_at TEXT,
+            created_at TEXT,
+            is_draft INTEGER DEFAULT 0
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS purchase_bill_items (
+            id TEXT PRIMARY KEY,
+            bill_id TEXT,
+            product_id TEXT,
+            product_name TEXT,
+            product_description TEXT,
+            quantity REAL,
+            cost_per_unit REAL,
+            tax_rate REAL DEFAULT 0,
+            cost_includes_tax INTEGER DEFAULT 0,
+            line_total REAL
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS stock_transactions (
+            id TEXT PRIMARY KEY,
+            product_id TEXT NOT NULL,
+            transaction_type TEXT NOT NULL,
+            reference_id TEXT,
+            quantity_change REAL NOT NULL,
+            stock_before REAL NOT NULL,
+            stock_after REAL NOT NULL,
+            unit_cost REAL,
+            transaction_date TEXT NOT NULL,
+            notes TEXT
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS supplier_payments (
+            id TEXT PRIMARY KEY,
+            bill_id TEXT NOT NULL,
+            supplier_id TEXT,
+            amount_paid REAL NOT NULL,
+            previously_paid REAL NOT NULL DEFAULT 0,
+            balance_after REAL NOT NULL,
+            date_paid TEXT NOT NULL,
+            payment_method TEXT,
+            notes TEXT
+          )
+        ''');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_suppliers_name ON suppliers(name)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_purchase_bills_date ON purchase_bills(bill_date)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_purchase_bills_supplier ON purchase_bills(supplier_id)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_purchase_bill_items_bill ON purchase_bill_items(bill_id)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_purchase_bill_items_product ON purchase_bill_items(product_id)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_stock_tx_product_date ON stock_transactions(product_id, transaction_date)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_supplier_payments_bill ON supplier_payments(bill_id)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_supplier_payments_supplier ON supplier_payments(supplier_id)');
+      });
+
+      // D2: products.stock stays INTEGER (rounds) while purchase_bill_items
+      // .quantity / stock_transactions.quantity_change stay REAL, preserving
+      // full precision in the audit trail even though the stock counter rounds.
+      await _runMigrationStep(db, 52, 'add_last_purchase_date_to_products',
+          () async {
+        await db.execute(
+          'ALTER TABLE products ADD COLUMN last_purchase_date TEXT',
+        );
+      });
+
+      await _runMigrationStep(
+          db, 52, 'add_cost_includes_tax_to_purchase_bill_items', () async {
+        await db.execute(
+          'ALTER TABLE purchase_bill_items ADD COLUMN cost_includes_tax INTEGER DEFAULT 0',
+        );
+      });
+
+      // Re-run of main's v42 step: DBs that ran this branch's old v42 skipped
+      // it. Duplicate column is tolerated by _runMigrationStep.
+      await _runMigrationStep(
+          db, 52, 'add_description_to_invoice_items', () async {
+        await db.execute(
+          'ALTER TABLE invoice_items ADD COLUMN description TEXT',
+        );
+      });
+    }
+
+    if (oldVersion < 53) {
+      // Draft purchase bills don't touch stock; 0 = final. Own version (not
+      // folded into v52) because dev DBs were already at v52 before this
+      // column existed, and a v52 step never re-runs for them.
+      await _runMigrationStep(
+          db, 53, 'add_is_draft_to_purchase_bills', () async {
+        await db.execute(
+          'ALTER TABLE purchase_bills ADD COLUMN is_draft INTEGER DEFAULT 0',
+        );
       });
     }
   }

@@ -75,6 +75,7 @@ enum SettingKey {
   descriptionNewLineInPdf, // when showDescriptionInPdf is on: print the description as a full-width row below the item instead of a line under the item name (default false)
   appLocale, // app UI language code, e.g. 'en' | 'ne' | 'bo' | 'fr' | 'es' | 'hi' | 'zh'; unset/empty = follow system locale
   onboardingCompleted, // '1' once the first-login onboarding wizard has been finished or skipped
+  enablePurchaseBillsAndSuppliers, // whether the Purchase Bills / Suppliers dashboard tabs are shown (default false, opt-in)
   showCustomerBusinessNameInPdf, // whether to show the customer's business name on PDFs/thermal receipts (default true; only shown when non-empty)
   showCustomerAddressInPdf, // whether to show the customer's address on PDFs (default true; only shown when non-empty)
   showCustomerPhoneInPdf, // whether to show the customer's phone on PDFs/thermal receipts (default true; only shown when non-empty)
@@ -252,6 +253,8 @@ extension SettingKeyExtension on SettingKey {
         return 'app_locale';
       case SettingKey.onboardingCompleted:
         return 'onboarding_completed';
+      case SettingKey.enablePurchaseBillsAndSuppliers:
+        return 'enable_purchase_bills_and_suppliers';
       case SettingKey.showCustomerBusinessNameInPdf:
         return 'show_customer_business_name_in_pdf';
       case SettingKey.showCustomerAddressInPdf:

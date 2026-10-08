@@ -6,15 +6,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image/image.dart' as img;
 import 'package:invoiso/common/common.dart';
+import 'package:invoiso/database/company_registry_service.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/user.dart';
+import 'package:invoiso/providers/purchase_bills_settings_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/screens/dashboard_screen.dart';
 import 'package:invoiso/screens/onboarding/onboarding_step_appearance.dart';
 import 'package:invoiso/screens/onboarding/onboarding_step_company.dart';
 import 'package:invoiso/screens/onboarding/onboarding_step_done.dart';
 import 'package:invoiso/screens/onboarding/onboarding_step_invoice.dart';
+import 'package:invoiso/screens/onboarding/onboarding_step_purchase_bills.dart';
 
 /// One-time, skippable first-login setup wizard. Each step persists its own
 /// fields immediately on "Next" so progress survives even if the app is
@@ -30,7 +33,7 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 }
 
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
-  static const _stepCount = 4;
+  static const _stepCount = 5;
   // Keeps form fields readable instead of stretching edge-to-edge on
   // desktop/tablet windows; has no effect once the window is narrower
   // than this (mobile just fills the available width as before).
@@ -54,7 +57,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   bool _leadingZeros = true;
   final _taxRateController = TextEditingController(text: '18');
 
-  // Step 3 — Appearance
+  // Step 3 — Purchase Bills & Suppliers
+  bool _enablePurchaseBillsAndSuppliers = false;
+
+  // Step 4 — Appearance
   PageSize _pageSize = PageSize.a4;
   InvoiceTemplate _template = InvoiceTemplate.classic;
 
@@ -78,6 +84,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       settingsRepo.getSetting(SettingKey.defaultTaxRate),
       settingsRepo.getPageSize(),
       settingsRepo.getInvoiceTemplate(),
+      settingsRepo.getSetting(SettingKey.enablePurchaseBillsAndSuppliers),
     ]);
 
     if (!mounted) return;
@@ -97,6 +104,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       _taxRateController.text = (results[6] as String?) ?? '18';
       _pageSize = results[7] as PageSize;
       _template = results[8] as InvoiceTemplate;
+      _enablePurchaseBillsAndSuppliers = (results[9] as String?) == 'true';
     });
   }
 
@@ -152,6 +160,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           : companyRepo.updateCompanyInfo(newInfo),
       if (_base64Logo != null) settingsRepo.setCompanyLogo(_base64Logo!),
     ]);
+    // Keep the registry label in sync, as Company Info does — it's what the
+    // company pickers show while this company isn't the active one.
+    final activeCompanyId = await CompanyRegistryService.getActiveCompanyId();
+    if (activeCompanyId != null) {
+      await CompanyRegistryService.renameCompany(activeCompanyId, newInfo.name);
+    }
     _existingCompanyInfo = newInfo;
   }
 
@@ -171,6 +185,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       settingsRepo.setSetting(
           SettingKey.defaultTaxRate, taxRate.clamp(0, 100).toStringAsFixed(1)),
     ]);
+  }
+
+  Future<void> _savePurchaseBillsStep() async {
+    final settingsRepo = ref.read(settingsRepositoryProvider);
+    await settingsRepo.setSetting(SettingKey.enablePurchaseBillsAndSuppliers,
+        _enablePurchaseBillsAndSuppliers.toString());
+    ref.read(enablePurchaseBillsAndSuppliersProvider.notifier).state =
+        _enablePurchaseBillsAndSuppliers;
   }
 
   Future<void> _saveAppearanceStep() async {
@@ -200,6 +222,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         case 1:
           await _saveInvoiceStep();
         case 2:
+          await _savePurchaseBillsStep();
+        case 3:
           await _saveAppearanceStep();
       }
       if (!mounted) return;
@@ -238,6 +262,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           icon: Icons.receipt_long_rounded,
           title: l10n.onboardingStepInvoiceTitle,
           subtitle: l10n.onboardingStepInvoiceSubtitle
+        ),
+      2 => (
+          icon: Icons.local_shipping_rounded,
+          title: l10n.onboardingStepPurchaseBillsTitle,
+          subtitle: l10n.onboardingStepPurchaseBillsSubtitle
         ),
       _ => (
           icon: Icons.palette_rounded,
@@ -313,7 +342,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                   ),
                               ],
                             ),
-                            if (_currentStep < 3)
+                            if (_currentStep < 4)
                               Positioned(
                                 right: 0,
                                 child: TextButton(
@@ -325,7 +354,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         ),
                       ),
                     ),
-                    if (_currentStep < 3) ...[
+                    if (_currentStep < 4) ...[
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(
@@ -386,6 +415,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                 setState(() => _leadingZeros = v),
                             taxRateController: _taxRateController,
                           ),
+                          OnboardingStepPurchaseBills(
+                            enabled: _enablePurchaseBillsAndSuppliers,
+                            onChanged: (v) => setState(
+                                () => _enablePurchaseBillsAndSuppliers = v),
+                          ),
                           OnboardingStepAppearance(
                             pageSize: _pageSize,
                             template: _template,
@@ -415,17 +449,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           FilledButton.icon(
                             onPressed: _isBusy
                                 ? null
-                                : (_currentStep < 3 ? _handleNext : _finish),
+                                : (_currentStep < 4 ? _handleNext : _finish),
                             icon: _isBusy
                                 ? const SizedBox(
                                     width: 16,
                                     height: 16,
                                     child: CircularProgressIndicator(
                                         strokeWidth: 2))
-                                : Icon(_currentStep < 3
+                                : Icon(_currentStep < 4
                                     ? Icons.arrow_forward_rounded
                                     : Icons.rocket_launch_rounded),
-                            label: Text(_currentStep < 3
+                            label: Text(_currentStep < 4
                                 ? l10n.actionNext
                                 : l10n.actionGetStarted),
                           ),
