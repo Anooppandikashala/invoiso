@@ -381,6 +381,73 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     _completeInitialLoad();
   }
 
+  /// Opens a text-input dialog for desktop users with USB/Bluetooth barcode scanners.
+  /// The auto-focused field accepts scanner keystrokes (HID wedge) or manual entry.
+  void _showBarcodeEntryDialog() {
+    final controller = TextEditingController();
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Row(
+          children: [
+            Icon(Icons.qr_code_scanner, size: 24),
+            SizedBox(width: 12),
+            Text('Scan Barcode'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Point your USB or Bluetooth scanner at a barcode, or type it manually.',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              autofocus: true,
+              decoration: InputDecoration(
+                labelText: 'Barcode',
+                prefixIcon: const Icon(Icons.barcode_reader, size: 20),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                ),
+              ),
+              onSubmitted: (value) {
+                final barcode = value.trim();
+                if (barcode.isNotEmpty) {
+                  Navigator.of(ctx).pop();
+                  _handleScannedBarcode(barcode);
+                }
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final barcode = controller.text.trim();
+              if (barcode.isNotEmpty) {
+                Navigator.of(ctx).pop();
+                _handleScannedBarcode(barcode);
+              }
+            },
+            child: const Text('Search'),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Handle barcode scans from keyboard wedge or serial scanners
   /// Handle barcode scans from keyboard wedge or serial scanners
   Future<void> _handleScannedBarcode(String barcode) async {
@@ -4788,17 +4855,25 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           ),
         ),
         const SizedBox(width: 8),
-        if (!kIsWeb && (Platform.isAndroid || Platform.isIOS))
+        if (!kIsWeb)
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: IconButton(
-              onPressed: () => showCameraScannerDialog(
-                context,
-                title: 'Scan Barcode',
-                onScan: _handleScannedBarcode,
-              ),
+              onPressed: () {
+                if (Platform.isAndroid || Platform.isIOS) {
+                  showCameraScannerDialog(
+                    context,
+                    title: 'Scan Barcode',
+                    onScan: _handleScannedBarcode,
+                  );
+                } else {
+                  _showBarcodeEntryDialog();
+                }
+              },
               icon: const Icon(Icons.qr_code_scanner),
-              tooltip: 'Scan barcode with camera',
+              tooltip: Platform.isAndroid || Platform.isIOS
+                  ? 'Scan barcode with camera'
+                  : 'Scan barcode (USB / Bluetooth scanner)',
               style: IconButton.styleFrom(
                 padding: const EdgeInsets.all(13),
                 shape: RoundedRectangleBorder(
