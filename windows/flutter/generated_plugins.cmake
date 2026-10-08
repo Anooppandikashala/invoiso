@@ -3,6 +3,7 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  flutter_libserialport
   permission_handler_windows
   printing
   screen_retriever_windows

@@ -368,4 +368,16 @@ class ProductService {
       });
     }
   }
+
+  /// Search products by barcode (exact match)
+  static Future<List<Product>> searchByBarcode(String barcode) async {
+    if (barcode.trim().isEmpty) return [];
+    final db = await dbHelper.database;
+    final maps = await db.query(
+      'products',
+      where: 'barcode = ? OR hsncode = ? OR id = ?',
+      whereArgs: [barcode, barcode, barcode],
+    );
+    return maps.map((map) => Product.fromMap(map)).toList();
+  }
 }

@@ -40,4 +40,5 @@ abstract class ProductRepository {
   Future<Map<String, ProductMetadata>> getAllProductMetadata();
   Future<Map<String, ProductMetadata>> getProductMetadataForIds(List<String> productIds);
   Future<void> upsertProductMetadata(ProductMetadata metadata);
+  Future<List<Product>> searchByBarcode(String barcode);
 }

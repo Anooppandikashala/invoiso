@@ -344,6 +344,7 @@
   "actionAdd": "Add",
   "createInvoiceProductAlreadyAddedMessage": "This product has already been added",
   "createInvoiceCustomerNameRequiredMessage": "Please provide customer name",
+  "createInvoiceDefaultCustomerName": "Walk-in Customer",
   "createInvoiceAtLeastOneItemRequiredMessage": "Please add at least one item",
   "createInvoiceCreatedSuccessMessage": "{invoiceTypeLabel} created successfully!",
   "@createInvoiceCreatedSuccessMessage": {

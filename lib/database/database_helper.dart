@@ -16,7 +16,7 @@ class DatabaseHelper {
   static String? get path => _path;
   static Database? _database;
   static String _dbFileName = 'invoice_manager.db';
-  final dbVersion = 50;
+  final dbVersion = 51;
 
   /// Startup only, before anything has opened a connection yet — just points
   /// at the right file for the first `_initDB()` call. No close/reopen, so
@@ -86,7 +86,8 @@ class DatabaseHelper {
         alias_name TEXT,
         unit TEXT DEFAULT '',
         unlimited_stock INTEGER DEFAULT 0,
-        price_includes_tax INTEGER DEFAULT 0
+        price_includes_tax INTEGER DEFAULT 0,
+        barcode TEXT
       )
     ''');
 
@@ -839,6 +840,15 @@ class DatabaseHelper {
           db, 50, 'add_discount_is_percent_to_invoice_items', () async {
         await db.execute(
             'ALTER TABLE invoice_items ADD COLUMN discount_is_percent INTEGER DEFAULT 0');
+      });
+    }
+
+    if (oldVersion < 51) {
+      // Barcode/IR code field for barcode scanner support
+      await _runMigrationStep(
+          db, 51, 'add_barcode_to_products', () async {
+        await db.execute(
+            'ALTER TABLE products ADD COLUMN barcode TEXT');
       });
     }
   }

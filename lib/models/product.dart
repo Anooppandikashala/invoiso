@@ -16,6 +16,7 @@ class Product {
   String unit;
   bool unlimitedStock;
   bool priceIncludesTax;
+  String? barcode; // Barcode/IR code for scanning
 
   Product({
     required this.id,
@@ -33,6 +34,7 @@ class Product {
     this.unit = '',
     this.unlimitedStock = false,
     this.priceIncludesTax = false,
+    this.barcode,
   });
 
   // Convert a Map into a Product object
@@ -54,6 +56,7 @@ class Product {
       unit: map['unit'] as String? ?? '',
       unlimitedStock: (map['unlimited_stock'] ?? 0) == 1,
       priceIncludesTax: (map['price_includes_tax'] ?? 0) == 1,
+      barcode: map['barcode'] as String?,
     );
   }
 
@@ -74,6 +77,7 @@ class Product {
       aliasName: map['product_alias_name'] as String?,
       unit: map['product_unit'] as String? ?? '',
       priceIncludesTax: (map['product_price_includes_tax'] ?? 0) == 1,
+      barcode: map['product_barcode'] as String?,
     );
   }
 
@@ -94,6 +98,7 @@ class Product {
       'unit': unit,
       'unlimited_stock': unlimitedStock ? 1 : 0,
       'price_includes_tax': priceIncludesTax ? 1 : 0,
+      'barcode': barcode,
     };
   }
 

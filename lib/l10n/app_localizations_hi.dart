@@ -635,6 +635,9 @@ class AppLocalizationsHi extends AppLocalizations {
       'कृपया ग्राहक का नाम दर्ज करें';
 
   @override
+  String get createInvoiceDefaultCustomerName => 'Walk-in Customer';
+
+  @override
   String get createInvoiceAtLeastOneItemRequiredMessage =>
       'कृपया कम से कम एक आइटम जोड़ें';
 

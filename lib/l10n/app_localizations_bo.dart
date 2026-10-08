@@ -634,6 +634,9 @@ class AppLocalizationsBo extends AppLocalizations {
       'ཉོ་མཁན་གྱི་མིང་གནང་རོགས།';
 
   @override
+  String get createInvoiceDefaultCustomerName => 'Walk-in Customer';
+
+  @override
   String get createInvoiceAtLeastOneItemRequiredMessage =>
       'ཉུང་མཐར་རྫས་གཅིག་སྣོན་རོགས།';
 

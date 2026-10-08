@@ -640,6 +640,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'Indique el nombre del cliente';
 
   @override
+  String get createInvoiceDefaultCustomerName => 'Walk-in Customer';
+
+  @override
   String get createInvoiceAtLeastOneItemRequiredMessage =>
       'Agregue al menos un artículo';
 

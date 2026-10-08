@@ -23,6 +23,8 @@ import 'package:invoiso/models/custom_field_def.dart';
 import 'package:invoiso/models/custom_field_value.dart';
 import 'package:invoiso/services/invoice_pdf_services.dart';
 import 'package:invoiso/services/pdf_service.dart';
+import 'package:invoiso/services/barcode_scanner_service.dart';
+import 'package:invoiso/widgets/camera_scanner_dialog.dart';
 import 'package:invoiso/common/constants.dart';
 
 class InvoiceFormGuard {
@@ -197,6 +199,11 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   Map<String, String> _customFieldValues = {}; // defId -> value, filled via _showCustomFieldsDialogV2
   bool _customFieldsCollapsed = false;
 
+  // Barcode scanner support
+  final _barcodeScanner = BarcodeScannerService();
+  StreamSubscription<String>? _keyboardScanSubscription;
+  StreamSubscription<String>? _serialScanSubscription;
+
   TaxMode get _taxMode {
     if (!_isTaxEnabled) return TaxMode.none;
     return _isPerItem ? TaxMode.perItem : TaxMode.global;
@@ -206,6 +213,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   void initState() {
     super.initState();
     widget.guard?.canLeave = _confirmLeaveIfDirty;
+
+    // Listen for barcode scans from keyboard wedge scanners
+    _keyboardScanSubscription = _barcodeScanner.keyboardScans.listen(_handleScannedBarcode);
+    _serialScanSubscription = _barcodeScanner.serialScans.listen(_handleScannedBarcode);
     // V2: close the inline product dropdown a beat after the field loses
     // focus, so a tap on a dropdown row still registers as a selection
     // before the list disappears.
@@ -370,6 +381,64 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     _completeInitialLoad();
   }
 
+  /// Handle barcode scans from keyboard wedge or serial scanners
+  /// Handle barcode scans from keyboard wedge or serial scanners
+  Future<void> _handleScannedBarcode(String barcode) async {
+    if (!mounted) return;
+
+    // First, search in currently loaded products by barcode field
+    var matchingProduct = filteredProducts.firstWhere(
+      (product) =>
+        product.barcode == barcode ||
+        product.id == barcode ||
+        product.hsncode == barcode,
+      orElse: () => Product(
+        id: '',
+        name: '',
+        description: '',
+        price: 0,
+        stock: 0,
+        hsncode: '',
+        tax_rate: 0,
+        unit: '',
+        type: 'product',
+      ),
+    );
+
+    // If not found in filtered list, search the database
+    if (matchingProduct.id.isEmpty) {
+      try {
+        final results = await ref.read(productRepositoryProvider).searchByBarcode(barcode);
+        if (results.isNotEmpty) {
+          matchingProduct = results.first;
+        }
+      } catch (e) {
+        if (kDebugMode) print('Barcode search error: $e');
+      }
+    }
+
+    if (matchingProduct.id.isNotEmpty && mounted) {
+      // Product found - add it to invoice
+      addInvoiceProductPrompt(matchingProduct);
+    } else if (mounted) {
+      // Product not found - show message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.search_off, color: Colors.white),
+              const SizedBox(width: 12),
+              Text('No product found for barcode: $barcode'),
+            ],
+          ),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+          showCloseIcon: true,
+        ),
+      );
+    }
+  }
+
   @override
   void dispose() {
     _screenFocusNode.dispose();
@@ -377,6 +446,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     _productDropdownScrollControllerV2.dispose();
     _productSearchDebounce?.cancel();
     _customerSearchDebounce?.cancel();
+    _keyboardScanSubscription?.cancel();
+    _serialScanSubscription?.cancel();
     if (widget.guard?.canLeave == _confirmLeaveIfDirty) {
       widget.guard?.canLeave = null;
     }
@@ -1264,24 +1335,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   }
 
   Future<bool> _createInvoice() async {
-    if (nameController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.error_outline, color: Colors.white),
-              const SizedBox(width: 12),
-              Text(AppLocalizations.of(context)!.createInvoiceCustomerNameRequiredMessage),
-            ],
-          ),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          showCloseIcon: true,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
-        ),
-      );
-      return false;
+    // Use default customer name if none provided
+    if (nameController.text.trim().isEmpty) {
+      nameController.text = AppLocalizations.of(context)!.createInvoiceDefaultCustomerName;
     }
 
     if (invoiceItems.isEmpty) {

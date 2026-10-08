@@ -3,6 +3,7 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  flutter_libserialport
   open_file_linux
   printing
   screen_retriever_linux

@@ -620,6 +620,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get createInvoiceCustomerNameRequiredMessage => '请提供客户名称';
 
   @override
+  String get createInvoiceDefaultCustomerName => 'Walk-in Customer';
+
+  @override
   String get createInvoiceAtLeastOneItemRequiredMessage => '请至少添加一个项目';
 
   @override

@@ -1194,6 +1194,12 @@ abstract class AppLocalizations {
   /// **'Please provide customer name'**
   String get createInvoiceCustomerNameRequiredMessage;
 
+  /// No description provided for @createInvoiceDefaultCustomerName.
+  ///
+  /// In en, this message translates to:
+  /// **'Walk-in Customer'**
+  String get createInvoiceDefaultCustomerName;
+
   /// No description provided for @createInvoiceAtLeastOneItemRequiredMessage.
   ///
   /// In en, this message translates to:

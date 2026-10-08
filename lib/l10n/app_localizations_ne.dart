@@ -638,6 +638,9 @@ class AppLocalizationsNe extends AppLocalizations {
       'कृपया ग्राहकको नाम दिनुहोस्';
 
   @override
+  String get createInvoiceDefaultCustomerName => 'Walk-in Customer';
+
+  @override
   String get createInvoiceAtLeastOneItemRequiredMessage =>
       'कृपया कम्तीमा एउटा वस्तु थप्नुहोस्';
 

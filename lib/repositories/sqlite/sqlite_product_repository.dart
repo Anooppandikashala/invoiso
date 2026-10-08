@@ -89,4 +89,7 @@ class SqliteProductRepository implements ProductRepository {
   @override
   Future<void> upsertProductMetadata(ProductMetadata metadata) =>
       ProductService.upsertProductMetadata(metadata);
+  @override
+  Future<List<Product>> searchByBarcode(String barcode) =>
+      ProductService.searchByBarcode(barcode);
 }

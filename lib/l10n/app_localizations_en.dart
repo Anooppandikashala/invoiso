@@ -635,6 +635,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Please provide customer name';
 
   @override
+  String get createInvoiceDefaultCustomerName => 'Walk-in Customer';
+
+  @override
   String get createInvoiceAtLeastOneItemRequiredMessage =>
       'Please add at least one item';
 
