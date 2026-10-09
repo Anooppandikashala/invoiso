@@ -212,7 +212,7 @@ void main() {
     expect(item.containsKey('description'), isTrue);
     expect(item['description'], isNull);
 
-    // v49 added quotation status + quote<->invoice links. Legacy rows stay
+    // v50 added quotation status + quote<->invoice links. Legacy rows stay
     // NULL (read as 'draft', no link).
     expect(invoice.containsKey('status'), isTrue);
     expect(invoice['status'], isNull);
@@ -224,6 +224,50 @@ void main() {
     expect(companyInfo['pan_number'], '');
     expect(companyInfo['fssai_code'], '');
 
+    // v49: exchange ledger table and per-product low-stock limit (NULL =
+    // default, so old products keep the old threshold of 10).
+    final ledgerCols = (await db.rawQuery('PRAGMA table_info(cash_ledger)'))
+        .map((r) => r['name'])
+        .toSet();
+    expect(ledgerCols, containsAll(['entry_type', 'cash_delta', 'upi_delta']));
+    final product = (await db.query('products')).first;
+    expect(product.containsKey('low_stock_limit'), isTrue);
+    expect(product['low_stock_limit'], isNull);
+
+    await db.close();
+  });
+
+  test('v52: created_by usernames become user ids; edit log table added',
+      () async {
+    final db = await openDatabase(inMemoryDatabasePath);
+    await db.execute(
+        'CREATE TABLE users (id TEXT PRIMARY KEY, username TEXT UNIQUE)');
+    // cash_ledger as it was at v51.
+    await db.execute('''
+      CREATE TABLE cash_ledger (
+        id TEXT PRIMARY KEY, entry_type TEXT NOT NULL,
+        cash_delta REAL NOT NULL DEFAULT 0, upi_delta REAL NOT NULL DEFAULT 0,
+        date_time TEXT NOT NULL, created_by TEXT)''');
+    // v52 also re-adds invoice_items.discount_is_percent.
+    await db.execute('CREATE TABLE invoice_items (id TEXT PRIMARY KEY)');
+    await db.insert('users', {'id': 'user-001', 'username': 'admin'});
+    await db.insert('users', {'id': '[#a1b2c]', 'username': 'staff'});
+    for (final (id, by) in [('1', 'staff'), ('2', 'admin'), ('3', 'gone'), ('4', null)]) {
+      await db.insert('cash_ledger', {
+        'id': id,
+        'entry_type': 'expense',
+        'date_time': '2026-09-25T10:00:00.000',
+        'created_by': by,
+      });
+    }
+
+    await DatabaseHelper().upgradeDbForTest(db, 51, 52);
+
+    final rows = await db.query('cash_ledger', orderBy: 'id');
+    expect(rows.map((r) => r['created_by']),
+        ['[#a1b2c]', 'user-001', 'gone', null]);
+    expect(rows.first.containsKey('created_at'), isTrue);
+    expect(await db.query('cash_ledger_history'), isEmpty);
     await db.close();
   });
 }

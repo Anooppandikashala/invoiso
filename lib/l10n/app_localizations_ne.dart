@@ -193,6 +193,9 @@ class AppLocalizationsNe extends AppLocalizations {
   String get navInvoices => 'बीजकहरू';
 
   @override
+  String get navServices => 'नगद विनिमय सेवाहरू';
+
+  @override
   String get navQuotations => 'कोटेसनहरू';
 
   @override
@@ -765,6 +768,17 @@ class AppLocalizationsNe extends AppLocalizations {
 
   @override
   String get createInvoicePreviousBalanceDueLabel => 'अघिल्लो बाँकी रकम';
+
+  @override
+  String get createInvoicePaymentSectionLabel => 'भुक्तानी';
+
+  @override
+  String get createInvoiceBalanceDueLabel => 'बाँकी रकम';
+
+  @override
+  String createInvoicePaymentNotRecordedMessage(String error) {
+    return 'बीजक सुरक्षित भयो, तर भुक्तानी रेकर्ड भएन: $error. यसलाई बीजक सूचीबाट थप्नुहोस्।';
+  }
 
   @override
   String get createInvoiceDueShortLabel => 'बाँकी';
@@ -2200,6 +2214,10 @@ class AppLocalizationsNe extends AppLocalizations {
       'मूल्यमा कर समावेश भए 1/true, पूर्वनिर्धारित ०';
 
   @override
+  String get productMgmtCsvDescLowStockLimit =>
+      'यस उत्पादको कम स्टक सीमा, खाली = पूर्वनिर्धारित 10';
+
+  @override
   String get productMgmtCsvDescStorageLocation => 'गोदाम/दराज स्थान';
 
   @override
@@ -2474,6 +2492,13 @@ class AppLocalizationsNe extends AppLocalizations {
   @override
   String get productMgmtTrackInfiniteStockSubtitle =>
       'यस उत्पादनको लागि असीमित स्टक ट्र्याक गर्नुहोस्';
+
+  @override
+  String get productMgmtLowStockLimitLabel => 'कम स्टक सीमा';
+
+  @override
+  String get productMgmtLowStockLimitHelper =>
+      'स्टक यो सङ्ख्या बराबर वा कम हुँदा कम स्टकमा देखिन्छ। पूर्वनिर्धारित (10) का लागि खाली छोड्नुहोस्।';
 
   @override
   String get productMgmtTipEnableCustomFieldsMessage =>
@@ -4127,6 +4152,22 @@ class AppLocalizationsNe extends AppLocalizations {
       'मार्जिन ट्र्याकिङका लागि लागत मूल्य।';
 
   @override
+  String get productColumnsPurchasePriceAdminOnlyLabel =>
+      'खरिद मूल्य: एडमिन मात्र';
+
+  @override
+  String get productColumnsPurchasePriceAdminOnlySubtitle =>
+      'गैर-एडमिन प्रयोगकर्ताहरूबाट खरिद मूल्य, नाफा र स्टक मूल्य लुकाउनुहोस्।';
+
+  @override
+  String get productColumnsStockEditAdminOnlyLabel =>
+      'स्टक सम्पादन: एडमिन मात्र';
+
+  @override
+  String get productColumnsStockEditAdminOnlySubtitle =>
+      'गैर-एडमिन प्रयोगकर्ताहरूले स्टक परिमाण सेट वा परिवर्तन गर्न, वा CSV बाट उत्पादनहरू आयात गर्न सक्दैनन्।';
+
+  @override
   String get productColumnsDefaultDiscountLabel => 'पूर्वनिर्धारित छुट';
 
   @override
@@ -4499,7 +4540,227 @@ class AppLocalizationsNe extends AppLocalizations {
   String get paymentMethodOnline => 'अनलाइन';
 
   @override
+  String get paymentMethodUpi => 'UPI';
+
+  @override
   String get paymentMethodOther => 'अन्य';
+
+  @override
+  String get accessibilityOptionalFeaturesSectionTitle => 'वैकल्पिक सुविधाहरू';
+
+  @override
+  String get accessibilityCashExchangeLabel => 'नगद / UPI विनिमय सेवा';
+
+  @override
+  String get accessibilityCashExchangeSubtitle =>
+      'नयाँ बीजकपछि नगद विनिमय सेवाहरू मेनु थप्छ, जसले UPI ↔ नगद विनिमय, सेवा शुल्क र नगद कारोबार रेकर्ड गर्छ, नगद र UPI/बैंक मौज्दातसहित।';
+
+  @override
+  String get accessibilityReportsAdminOnlyLabel => 'रिपोर्ट: एडमिन मात्र';
+
+  @override
+  String get accessibilityReportsAdminOnlySubtitle =>
+      'गैर-एडमिन प्रयोगकर्ताहरूबाट रिपोर्ट मेनु लुकाउनुहोस्।';
+
+  @override
+  String get cashExchangeCashLabel => 'नगद';
+
+  @override
+  String get cashExchangeUpiBankLabel => 'UPI/बैंक';
+
+  @override
+  String get cashExchangeTotalLabel => 'कुल मौज्दात';
+
+  @override
+  String get cashExchangeIncomeTodayLabel => 'सेवा आम्दानी (आज)';
+
+  @override
+  String get cashExchangeIncomeMonthLabel => 'सेवा आम्दानी (यो महिना)';
+
+  @override
+  String get reportsServiceIncomeLabel => 'सेवा आम्दानी';
+
+  @override
+  String get reportsTxnsLabel => 'कारोबार';
+
+  @override
+  String get reportsInvoiceProfitLabel => 'बीजक नाफा';
+
+  @override
+  String get reportsTransactionsLabel => 'कारोबार';
+
+  @override
+  String get reportsCashExchangeTypeLabel => 'नगद विनिमय';
+
+  @override
+  String get reportsCountColumnLabel => 'संख्या';
+
+  @override
+  String get cashExchangeExpensesMonthLabel => 'खर्च (यो महिना)';
+
+  @override
+  String get cashExchangeSetupTitle => 'सुरुवाती मौज्दात सेट गर्नुहोस्';
+
+  @override
+  String get cashExchangeSetupMessage =>
+      'यो मितिमा तपाईंसँग भएको नगद र UPI/बैंक रकम प्रविष्ट गर्नुहोस्। यो मितिदेखिका बीजक भुक्तानीहरू मौज्दातमा थपिन्छन्।';
+
+  @override
+  String get cashExchangeSetupAdminOnlyMessage =>
+      'सुरुवाती मौज्दात सेट गर्न एडमिनलाई भन्नुहोस्।';
+
+  @override
+  String get cashExchangeUpiToCash => 'UPI → नगद';
+
+  @override
+  String get cashExchangeCashToUpi => 'नगद → UPI';
+
+  @override
+  String get cashExchangeExpense => 'खर्च';
+
+  @override
+  String get cashExchangeWithdrawal => 'निकासी';
+
+  @override
+  String get cashExchangeBankDeposit => 'बैंक जम्मा';
+
+  @override
+  String get cashExchangeOpeningBalance => 'सुरुवाती मौज्दात';
+
+  @override
+  String get cashExchangeAdjustment => 'समायोजन';
+
+  @override
+  String get cashExchangeInvoicePayment => 'बीजक भुक्तानी';
+
+  @override
+  String get cashExchangeAmountLabel => 'रकम';
+
+  @override
+  String get cashExchangeFeeLabel => 'सेवा शुल्क';
+
+  @override
+  String get cashExchangeFeePaidByLabel => 'सेवा शुल्क भुक्तानी माध्यम';
+
+  @override
+  String get cashExchangeFromAccountLabel => 'भुक्तानी खाता';
+
+  @override
+  String get cashExchangeCustomerNameLabel => 'ग्राहकको नाम (वैकल्पिक)';
+
+  @override
+  String get cashExchangeCustomerSearchHint =>
+      'ग्राहक खोज्नुहोस् वा नयाँ नाम लेख्नुहोस्';
+
+  @override
+  String get cashExchangeCustomerPhoneLabel => 'फोन (वैकल्पिक)';
+
+  @override
+  String get cashExchangeNotesLabel => 'टिप्पणी (वैकल्पिक)';
+
+  @override
+  String get cashExchangeDateTimeLabel => 'मिति र समय';
+
+  @override
+  String get cashExchangeDateLabel => 'मिति';
+
+  @override
+  String get cashExchangeCashDeltaLabel => 'नगद परिवर्तन (+ / −)';
+
+  @override
+  String get cashExchangeUpiDeltaLabel => 'UPI/बैंक परिवर्तन (+ / −)';
+
+  @override
+  String get cashExchangeDeleteTitle => 'प्रविष्टि मेटाउनुहोस्';
+
+  @override
+  String get cashExchangeDeleteMessage =>
+      'यो प्रविष्टि मेटाउने? मौज्दात पुनः गणना हुनेछ।';
+
+  @override
+  String get cashExchangeEditTitle => 'प्रविष्टि सम्पादन गर्नुहोस्';
+
+  @override
+  String get cashExchangeEdited => 'सम्पादित';
+
+  @override
+  String get cashExchangeHistoryTitle => 'परिवर्तन इतिहास';
+
+  @override
+  String get cashExchangeHistoryCurrent => 'हालको';
+
+  @override
+  String cashExchangeHistoryEdited(String user, String date) {
+    return '$user द्वारा सम्पादित · $date';
+  }
+
+  @override
+  String cashExchangeHistoryDeleted(String user, String date) {
+    return '$user द्वारा मेटाइएको · $date';
+  }
+
+  @override
+  String get cashExchangeChangeLog => 'परिवर्तन लग';
+
+  @override
+  String get cashExchangeDeleted => 'मेटाइएको';
+
+  @override
+  String get cashExchangeNoChanges => 'कुनै परिवर्तन दर्ता छैन।';
+
+  @override
+  String get cashExchangeChangeFailed =>
+      'यो प्रविष्टि अब परिवर्तन गर्न सकिँदैन। यो मेटाइएको हुन सक्छ, वा २४ घण्टाको सम्पादन अवधि सकिएको छ।';
+
+  @override
+  String get cashExchangeEmpty => 'यो अवधिमा कुनै प्रविष्टि छैन।';
+
+  @override
+  String get cashExchangePeriodToday => 'आज';
+
+  @override
+  String get cashExchangePeriodMonth => 'यो महिना';
+
+  @override
+  String get cashExchangePeriodAll => 'सबै समय';
+
+  @override
+  String get cashExchangePeriodCustom => 'अनुकूल मिति';
+
+  @override
+  String get cashExchangeShowingLabel => 'देखाउँदै';
+
+  @override
+  String get cashExchangeChangeDates => 'मितिहरू बदल्नुहोस्';
+
+  @override
+  String get cashExchangeClosingBalance => 'अन्तिम मौज्दात';
+
+  @override
+  String get cashExchangeShowBalances => 'मौज्दात देखाउनुहोस्';
+
+  @override
+  String get cashExchangeHideBalances => 'मौज्दात लुकाउनुहोस्';
+
+  @override
+  String get cashExchangeAllTypes => 'सबै प्रकार';
+
+  @override
+  String cashExchangeSummaryUpiToCash(
+      String amount, String fee, String method) {
+    return 'ग्राहकले UPI/बैंकबाट $amount पठाउँछ • तपाईं $amount नगद दिनुहुन्छ • शुल्क $fee $method बाट';
+  }
+
+  @override
+  String cashExchangeSummaryCashToUpi(
+      String amount, String fee, String method) {
+    return 'ग्राहकले $amount नगद दिन्छ • तपाईं UPI/बैंकबाट $amount पठाउनुहुन्छ • शुल्क $fee $method बाट';
+  }
+
+  @override
+  String cashExchangeLowBalanceWarning(String balance, String account) {
+    return '$account मा $balance मात्र उपलब्ध छ।';
+  }
 
   @override
   String get customerInfoButtonTooltip => 'सम्पर्क विवरण हेर्नुहोस्';

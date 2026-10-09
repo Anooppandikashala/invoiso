@@ -192,6 +192,9 @@ class AppLocalizationsBo extends AppLocalizations {
   String get navInvoices => 'ཁྲལ་ཤོག་རྣམས།';
 
   @override
+  String get navServices => 'དངུལ་ལག་བརྗེ་རེས་ཞབས་ཞུ།';
+
+  @override
   String get navQuotations => 'རིན་གྲངས།';
 
   @override
@@ -763,6 +766,17 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get createInvoicePreviousBalanceDueLabel => 'སྔོན་གྱི་ཁེ་ལྷག';
+
+  @override
+  String get createInvoicePaymentSectionLabel => 'དངུལ་སྤྲོད།';
+
+  @override
+  String get createInvoiceBalanceDueLabel => 'ལྷག་མའི་བུ་ལོན།';
+
+  @override
+  String createInvoicePaymentNotRecordedMessage(String error) {
+    return 'ཐོ་ཡིག་ཉར་ཚགས་བྱས་ཟིན། འོན་ཀྱང་དངུལ་སྤྲོད་ཐོ་འགོད་མ་བྱུང་། $error། ཐོ་ཡིག་ཐོ་གཞུང་ནས་སྣོན་རོགས།';
+  }
 
   @override
   String get createInvoiceDueShortLabel => 'འབབ།';
@@ -2177,6 +2191,10 @@ class AppLocalizationsBo extends AppLocalizations {
       'གོང་ཚད་ནང་ཁྲལ་ཚུད་ན 1/true, སྔར་སྒྲིག 0';
 
   @override
+  String get productMgmtCsvDescLowStockLimit =>
+      'ཐོན་རྫས་འདིའི་ཚོང་ཟོག་ཉུང་བའི་ཚད། སྟོང་པ = སྔོན་སྒྲིག 10';
+
+  @override
   String get productMgmtCsvDescStorageLocation => 'མཛོད་ཁང་། /དབང་ཤོག་ས་ཆ།';
 
   @override
@@ -2447,6 +2465,13 @@ class AppLocalizationsBo extends AppLocalizations {
   @override
   String get productMgmtTrackInfiniteStockSubtitle =>
       'ཐོན་ཟོག་འདིའི་ཚད་མེད་ཉར་ཚད་རྗེས་འདེད།';
+
+  @override
+  String get productMgmtLowStockLimitLabel => 'ཚོང་ཟོག་ཉུང་བའི་ཚད།';
+
+  @override
+  String get productMgmtLowStockLimitHelper =>
+      'ཚོང་ཟོག་གྲངས་འདི་དང་མཉམ་པའམ་དེ་ལས་ཉུང་ན་ཚོང་ཟོག་ཉུང་བའི་ནང་མངོན། སྔོན་སྒྲིག (10) ཆེད་སྟོང་པ་བཞག';
 
   @override
   String get productMgmtTipEnableCustomFieldsMessage =>
@@ -4091,6 +4116,22 @@ class AppLocalizationsBo extends AppLocalizations {
       'ཁེ་འབབ་རྗེས་འདེད་ཆེད་གོང་རྐང་།';
 
   @override
+  String get productColumnsPurchasePriceAdminOnlyLabel =>
+      'ཉོ་གོང་། དོ་དམ་པ་ཁོ་ན།';
+
+  @override
+  String get productColumnsPurchasePriceAdminOnlySubtitle =>
+      'དོ་དམ་པ་མ་ཡིན་པའི་སྤྱོད་མཁན་ལ་ཉོ་གོང་དང་ཁེ་འབབ། ཚོང་ཟོག་གི་རིན་ཐང་སྦས།';
+
+  @override
+  String get productColumnsStockEditAdminOnlyLabel =>
+      'ཚོང་ཟོག་བཟོ་བཅོས། དོ་དམ་པ་ཁོ་ན།';
+
+  @override
+  String get productColumnsStockEditAdminOnlySubtitle =>
+      'དོ་དམ་པ་མ་ཡིན་པའི་སྤྱོད་མཁན་གྱིས་ཚོང་ཟོག་གི་གྲངས་འབོར་གཏན་འཁེལ་དང་བསྒྱུར་བཅོས། CSV ནས་ཐོན་རྫས་ནང་འདྲེན་བྱེད་མི་ཆོག';
+
+  @override
   String get productColumnsDefaultDiscountLabel => 'སྔར་སྒྲིག་ཐོ་ཆད།';
 
   @override
@@ -4462,7 +4503,226 @@ class AppLocalizationsBo extends AppLocalizations {
   String get paymentMethodOnline => 'དྲ་ཐོག';
 
   @override
+  String get paymentMethodUpi => 'UPI';
+
+  @override
   String get paymentMethodOther => 'གཞན།';
+
+  @override
+  String get accessibilityOptionalFeaturesSectionTitle => 'འདེམས་རུང་ནུས་པ།';
+
+  @override
+  String get accessibilityCashExchangeLabel => 'དངུལ་ལག / UPI བརྗེ་རེས་ཞབས་ཞུ།';
+
+  @override
+  String get accessibilityCashExchangeSubtitle =>
+      'ཐོ་ཡིག་གསར་པའི་རྗེས་སུ་དངུལ་ལག་བརྗེ་རེས་ཞབས་ཞུའི་འདེམས་ཐོ་སྣོན་ནས། UPI ↔ དངུལ་ལག་བརྗེ་རེས་དང་ཞབས་ཞུའི་གླ་ཆ། དངུལ་ལག་འགྲོ་སོང་བཅས་ཐོ་འགོད་བྱེད། དངུལ་ལག་དང་ UPI/དངུལ་ཁང་གི་ལྷག་བསགས་དང་མཉམ་དུ།';
+
+  @override
+  String get accessibilityReportsAdminOnlyLabel => 'སྙན་ཐོ། དོ་དམ་པ་ཁོ་ན།';
+
+  @override
+  String get accessibilityReportsAdminOnlySubtitle =>
+      'དོ་དམ་པ་མ་ཡིན་པའི་སྤྱོད་མཁན་ལ་སྙན་ཐོའི་འདེམས་ཐོ་སྦས།';
+
+  @override
+  String get cashExchangeCashLabel => 'དངུལ་ལག';
+
+  @override
+  String get cashExchangeUpiBankLabel => 'UPI/དངུལ་ཁང་།';
+
+  @override
+  String get cashExchangeTotalLabel => 'ལྷག་བསགས་ཡོངས་བསྡོམས།';
+
+  @override
+  String get cashExchangeIncomeTodayLabel => 'ཞབས་ཞུའི་ཡོང་འབབ། (དེ་རིང་)';
+
+  @override
+  String get cashExchangeIncomeMonthLabel => 'ཞབས་ཞུའི་ཡོང་འབབ། (ཟླ་བ་འདི)';
+
+  @override
+  String get reportsServiceIncomeLabel => 'ཞབས་ཞུའི་ཡོང་འབབ།';
+
+  @override
+  String get reportsTxnsLabel => 'ལས་འགན།';
+
+  @override
+  String get reportsInvoiceProfitLabel => 'ཁྲལ་ཤོག་གི་ཁེ་སྐྱེད།';
+
+  @override
+  String get reportsTransactionsLabel => 'ལས་འགན།';
+
+  @override
+  String get reportsCashExchangeTypeLabel => 'དངུལ་སྒོར་བརྗེ་རེས།';
+
+  @override
+  String get reportsCountColumnLabel => 'གྲངས།';
+
+  @override
+  String get cashExchangeExpensesMonthLabel => 'འགྲོ་སོང་། (ཟླ་བ་འདི)';
+
+  @override
+  String get cashExchangeSetupTitle => 'འགོ་འཛུགས་ལྷག་བསགས་གཏན་འཁེལ།';
+
+  @override
+  String get cashExchangeSetupMessage =>
+      'ཚེས་གྲངས་འདིར་ཁྱེད་ལ་ཡོད་པའི་དངུལ་ལག་དང་ UPI/དངུལ་ཁང་གི་དངུལ་འབོར་འཇུག་རོགས། ཚེས་གྲངས་འདི་ནས་བཟུང་ཐོ་ཡིག་གི་དངུལ་སྤྲོད་ལྷག་བསགས་ནང་སྣོན་གྱི་ཡོད།';
+
+  @override
+  String get cashExchangeSetupAdminOnlyMessage =>
+      'འགོ་འཛུགས་ལྷག་བསགས་གཏན་འཁེལ་བྱེད་པར་དོ་དམ་པར་ཞུ་རོགས།';
+
+  @override
+  String get cashExchangeUpiToCash => 'UPI → དངུལ་ལག';
+
+  @override
+  String get cashExchangeCashToUpi => 'དངུལ་ལག → UPI';
+
+  @override
+  String get cashExchangeExpense => 'འགྲོ་སོང་།';
+
+  @override
+  String get cashExchangeWithdrawal => 'དངུལ་ཕྱིར་འདོན།';
+
+  @override
+  String get cashExchangeBankDeposit => 'དངུལ་ཁང་དུ་འཇོག་པ།';
+
+  @override
+  String get cashExchangeOpeningBalance => 'འགོ་འཛུགས་ལྷག་བསགས།';
+
+  @override
+  String get cashExchangeAdjustment => 'བསྒྱུར་བཅོས།';
+
+  @override
+  String get cashExchangeInvoicePayment => 'ཐོ་ཡིག་གི་དངུལ་སྤྲོད།';
+
+  @override
+  String get cashExchangeAmountLabel => 'དངུལ་འབོར།';
+
+  @override
+  String get cashExchangeFeeLabel => 'ཞབས་ཞུའི་གླ་ཆ།';
+
+  @override
+  String get cashExchangeFeePaidByLabel => 'ཞབས་ཞུའི་གླ་ཆ་སྤྲོད་ཐབས།';
+
+  @override
+  String get cashExchangeFromAccountLabel => 'སྤྲོད་ས།';
+
+  @override
+  String get cashExchangeCustomerNameLabel => 'ཚོང་པའི་མིང་། (འདེམས་རུང་)';
+
+  @override
+  String get cashExchangeCustomerSearchHint => 'ཚོང་པ་འཚོལ་བའམ་མིང་གསར་པ་འབྲི།';
+
+  @override
+  String get cashExchangeCustomerPhoneLabel => 'ཁ་པར། (འདེམས་རུང་)';
+
+  @override
+  String get cashExchangeNotesLabel => 'མཆན། (འདེམས་རུང་)';
+
+  @override
+  String get cashExchangeDateTimeLabel => 'ཚེས་གྲངས་དང་དུས་ཚོད།';
+
+  @override
+  String get cashExchangeDateLabel => 'ཚེས་གྲངས།';
+
+  @override
+  String get cashExchangeCashDeltaLabel => 'དངུལ་ལག་འགྱུར་བ། (+ / −)';
+
+  @override
+  String get cashExchangeUpiDeltaLabel => 'UPI/དངུལ་ཁང་འགྱུར་བ། (+ / −)';
+
+  @override
+  String get cashExchangeDeleteTitle => 'ཐོ་འགོད་སུབ་པ།';
+
+  @override
+  String get cashExchangeDeleteMessage =>
+      'ཐོ་འགོད་འདི་སུབ་བམ། ལྷག་བསགས་བསྐྱར་རྩིས་བྱེད་ངེས།';
+
+  @override
+  String get cashExchangeEditTitle => 'ཐོ་འགོད་བཟོ་བཅོས།';
+
+  @override
+  String get cashExchangeEdited => 'བཟོ་བཅོས་བྱས་ཟིན།';
+
+  @override
+  String get cashExchangeHistoryTitle => 'བཟོ་བཅོས་ལོ་རྒྱུས།';
+
+  @override
+  String get cashExchangeHistoryCurrent => 'ད་ལྟའི།';
+
+  @override
+  String cashExchangeHistoryEdited(String user, String date) {
+    return '$user ཡིས་བཟོ་བཅོས་བྱས། · $date';
+  }
+
+  @override
+  String cashExchangeHistoryDeleted(String user, String date) {
+    return '$user ཡིས་སུབ་པ། · $date';
+  }
+
+  @override
+  String get cashExchangeChangeLog => 'བཟོ་བཅོས་ཐོ་གཞུང་།';
+
+  @override
+  String get cashExchangeDeleted => 'སུབ་ཟིན།';
+
+  @override
+  String get cashExchangeNoChanges => 'བཟོ་བཅོས་ཐོ་འགོད་མེད།';
+
+  @override
+  String get cashExchangeChangeFailed =>
+      'ཐོ་འགོད་འདི་ད་ནས་བཟོ་བཅོས་བྱེད་མི་ཐུབ། སུབ་ཟིན་པའམ། ཡང་ན་ཆུ་ཚོད་ ༢༤ ཡི་བཟོ་བཅོས་དུས་ཚོད་འདས་ཟིན།';
+
+  @override
+  String get cashExchangeEmpty => 'དུས་ཡུན་འདིར་ཐོ་འགོད་མེད།';
+
+  @override
+  String get cashExchangePeriodToday => 'དེ་རིང་།';
+
+  @override
+  String get cashExchangePeriodMonth => 'ཟླ་བ་འདི།';
+
+  @override
+  String get cashExchangePeriodAll => 'དུས་ཡོངས།';
+
+  @override
+  String get cashExchangePeriodCustom => 'རང་འདེམས་ཚེས་གྲངས།';
+
+  @override
+  String get cashExchangeShowingLabel => 'སྟོན་བཞིན་པ།';
+
+  @override
+  String get cashExchangeChangeDates => 'ཚེས་གྲངས་བསྒྱུར།';
+
+  @override
+  String get cashExchangeClosingBalance => 'མཇུག་གི་ལྷག་བསགས།';
+
+  @override
+  String get cashExchangeShowBalances => 'ལྷག་བསགས་སྟོན།';
+
+  @override
+  String get cashExchangeHideBalances => 'ལྷག་བསགས་སྦས།';
+
+  @override
+  String get cashExchangeAllTypes => 'རིགས་ཡོངས།';
+
+  @override
+  String cashExchangeSummaryUpiToCash(
+      String amount, String fee, String method) {
+    return 'ཚོང་པས་ UPI/དངུལ་ཁང་ནས་ $amount གཏོང་། • ཁྱེད་ཀྱིས་དངུལ་ལག་ $amount སྤྲོད། • གླ་ཆ་ $fee $method ནས།';
+  }
+
+  @override
+  String cashExchangeSummaryCashToUpi(
+      String amount, String fee, String method) {
+    return 'ཚོང་པས་དངུལ་ལག་ $amount སྤྲོད། • ཁྱེད་ཀྱིས་ UPI/དངུལ་ཁང་ནས་ $amount གཏོང་། • གླ་ཆ་ $fee $method ནས།';
+  }
+
+  @override
+  String cashExchangeLowBalanceWarning(String balance, String account) {
+    return '$account ནང་ $balance ཁོ་ན་ཡོད།';
+  }
 
   @override
   String get customerInfoButtonTooltip => 'འབྲེལ་གནས་ཞིབ་ཕྲ་སྟོན།';

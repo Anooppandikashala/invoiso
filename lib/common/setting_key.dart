@@ -89,6 +89,8 @@ enum SettingKey {
   faqCache, // cached JSON string of the last successfully fetched faq.json, used offline/on fetch failure
   lastFaqFetch, // ISO timestamp of last successful faq.json fetch
   showTaxColumn, // whether to show the per-item Tax column on A4 PDFs, for both global and per-item tax modes (default true); showCgstSgst only matters when this is on
+  cashUpiExchangeEnabled, // whether the Cash/UPI-Bank exchange Services tab is on (default false)
+  reportsAdminOnly, // whether Reports is hidden from non-admin users (default false)
   pdfFontSize, // 'small' | 'medium' | 'large' | 'xlarge' — text size multiplier for non-thermal invoice PDFs; default 'medium'
   pdfCompanyNameFontSize, // PdfFontSize key for the company name; empty/absent = same as pdfFontSize
   pdfDocTitleFontSize, // PdfFontSize key for the document title; empty/absent = same as pdfFontSize
@@ -280,6 +282,10 @@ extension SettingKeyExtension on SettingKey {
         return 'last_faq_fetch';
       case SettingKey.showTaxColumn:
         return 'show_tax_column';
+      case SettingKey.cashUpiExchangeEnabled:
+        return 'cash_upi_exchange_enabled';
+      case SettingKey.reportsAdminOnly:
+        return 'reports_admin_only';
       case SettingKey.pdfFontSize:
         return 'pdf_font_size';
       case SettingKey.pdfCompanyNameFontSize:

@@ -16,7 +16,7 @@ class DatabaseHelper {
   static String? get path => _path;
   static Database? _database;
   static String _dbFileName = 'invoice_manager.db';
-  final dbVersion = 50;
+  final dbVersion = 52;
 
   /// Startup only, before anything has opened a connection yet — just points
   /// at the right file for the first `_initDB()` call. No close/reopen, so
@@ -86,7 +86,8 @@ class DatabaseHelper {
         alias_name TEXT,
         unit TEXT DEFAULT '',
         unlimited_stock INTEGER DEFAULT 0,
-        price_includes_tax INTEGER DEFAULT 0
+        price_includes_tax INTEGER DEFAULT 0,
+        low_stock_limit INTEGER
       )
     ''');
 
@@ -231,6 +232,9 @@ class DatabaseHelper {
       )
     ''');
 
+    await db.execute(_cashLedgerTableSql);
+    await db.execute(_cashLedgerHistoryTableSql);
+
     // Indexes
     await db.execute('CREATE INDEX idx_invoices_customer ON invoices(customer_name)');
     await db.execute('CREATE INDEX idx_invoices_date ON invoices(date)');
@@ -248,6 +252,9 @@ class DatabaseHelper {
     await db.execute('CREATE INDEX idx_customers_name_nc ON customers(name COLLATE NOCASE)');
     await db.execute('CREATE INDEX idx_customers_email ON customers(email)');
     await db.execute('CREATE INDEX idx_customers_phone ON customers(phone)');
+    await db.execute('CREATE INDEX idx_cash_ledger_date ON cash_ledger(date_time)');
+    await db.execute('CREATE INDEX idx_cash_ledger_history_entry ON cash_ledger_history(entry_id)');
+    await db.execute('CREATE INDEX idx_cash_ledger_history_action ON cash_ledger_history(action, changed_at)');
 
     // Insert dummy company info
     await db.insert('company_info', {
@@ -841,7 +848,92 @@ class DatabaseHelper {
             'ALTER TABLE invoice_items ADD COLUMN discount_is_percent INTEGER DEFAULT 0');
       });
     }
+
+    if (oldVersion < 51) {
+      // Cash / UPI-Bank exchange ledger (CashUpiExchangeImplementationPlan.md).
+      await _runMigrationStep(db, 51, 'create_cash_ledger', () async {
+        await db.execute(_cashLedgerTableSql
+            .replaceFirst('CREATE TABLE', 'CREATE TABLE IF NOT EXISTS'));
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_cash_ledger_date ON cash_ledger(date_time)');
+      });
+
+      // Per-product low-stock limit. NULL = default (10).
+      await _runMigrationStep(db, 51, 'add_low_stock_limit_to_products', () async {
+        await db.execute('ALTER TABLE products ADD COLUMN low_stock_limit INTEGER');
+      });
+    }
+
+    if (oldVersion < 52) {
+      // Cash ledger edit log: real entry time, a history of old versions
+      // (edits and deletes), and created_by as a user id instead of a
+      // username. Separate steps: a "duplicate column" skip (table made by
+      // the v51 step with the current SQL) mustn't skip the others.
+      await _runMigrationStep(db, 52, 'add_created_at_to_cash_ledger', () async {
+        await db.execute('ALTER TABLE cash_ledger ADD COLUMN created_at TEXT');
+      });
+      await _runMigrationStep(db, 52, 'create_cash_ledger_history', () async {
+        await db.execute(_cashLedgerHistoryTableSql
+            .replaceFirst('CREATE TABLE', 'CREATE TABLE IF NOT EXISTS'));
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_cash_ledger_history_entry ON cash_ledger_history(entry_id)');
+        // Deleted-entries list: one page, newest first, without a scan.
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_cash_ledger_history_action ON cash_ledger_history(action, changed_at)');
+      });
+      // Usernames of users that no longer exist stay as they are and match
+      // no id, so only admins can change those rows.
+      await _runMigrationStep(db, 52, 'cash_ledger_created_by_user_id', () async {
+        await db.execute(
+            'UPDATE cash_ledger SET created_by = (SELECT id FROM users '
+            'WHERE users.username = cash_ledger.created_by) '
+            'WHERE created_by IN (SELECT username FROM users)');
+      });
+      // Test builds (test-v1.3.3) reached v51 with the cash-upi numbering,
+      // which never had the v50 percent-discount step. Duplicate column → skip.
+      await _runMigrationStep(
+          db, 52, 'add_discount_is_percent_to_invoice_items', () async {
+        await db.execute(
+            'ALTER TABLE invoice_items ADD COLUMN discount_is_percent INTEGER DEFAULT 0');
+      });
+    }
   }
+
+  // Signed per-account deltas are computed once at write time; balances are
+  // SUMs, never stored. upi_delta is the combined UPI/Bank account.
+  static const _cashLedgerTableSql = '''
+      CREATE TABLE cash_ledger (
+        id              TEXT PRIMARY KEY,
+        entry_type      TEXT NOT NULL,
+        receipt_number  TEXT,
+        exchange_amount REAL NOT NULL DEFAULT 0,
+        service_fee     REAL NOT NULL DEFAULT 0,
+        fee_method      TEXT,
+        cash_delta      REAL NOT NULL DEFAULT 0,
+        upi_delta       REAL NOT NULL DEFAULT 0,
+        customer_id     TEXT,
+        customer_name   TEXT,
+        customer_phone  TEXT,
+        date_time       TEXT NOT NULL,
+        notes           TEXT,
+        created_by      TEXT,
+        created_at      TEXT
+      )
+    ''';
+
+  // Old versions of edited / deleted cash_ledger rows (old_data = the row's
+  // JSON). The current version is the cash_ledger row itself.
+  static const _cashLedgerHistoryTableSql = '''
+      CREATE TABLE cash_ledger_history (
+        id              TEXT PRIMARY KEY,
+        entry_id        TEXT NOT NULL,
+        action          TEXT NOT NULL,
+        old_data        TEXT NOT NULL,
+        changed_by      TEXT,
+        changed_by_name TEXT,
+        changed_at      TEXT NOT NULL
+      )
+    ''';
 
   Future<void> _runMigrationStep(
     Database db,
