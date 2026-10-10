@@ -78,6 +78,8 @@ class SqliteProductRepository implements ProductRepository {
   @override
   Future<List<Product>> getOutOfStockProducts() => ProductService.getOutOfStockProducts();
   @override
+  Future<List<Product>> getLowStockProducts() => ProductService.getLowStockProducts();
+  @override
   Future<ProductMetadata?> getProductMetadata(String productId) =>
       ProductService.getProductMetadata(productId);
   @override

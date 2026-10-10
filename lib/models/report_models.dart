@@ -58,18 +58,47 @@ class DailyPoint {
   final int invoiceCount;
   final double billed;
   final double cogs;
+  // Cash/UPI exchange feature (0 when it's off). cash / upiBank: net change
+  // from ledger movements (exchanges, expenses, ...); paidCash / paidUpi:
+  // invoice payments received. Together = the accounts' net change that day.
+  final double cash;
+  final double upiBank;
+  final double paidCash;
+  final double paidUpi;
+  // Exchange service fees that day and number of exchanges.
+  final double serviceIncome;
+  final int exchangeCount;
 
   const DailyPoint({
     required this.date,
     required this.invoiceCount,
     required this.billed,
     this.cogs = 0.0,
+    this.cash = 0.0,
+    this.upiBank = 0.0,
+    this.paidCash = 0.0,
+    this.paidUpi = 0.0,
+    this.serviceIncome = 0.0,
+    this.exchangeCount = 0,
   });
 
   double get profit => billed - cogs;
 
+  /// Invoice profit plus exchange service fees.
+  double get totalProfit => profit + serviceIncome;
+
   double get marginPercent => billed == 0 ? 0.0 : (profit / billed) * 100;
+
+  bool get hasInvoiceActivity =>
+      invoiceCount > 0 || paidCash != 0 || paidUpi != 0;
+
+  bool get hasExchangeActivity =>
+      exchangeCount > 0 || cash != 0 || upiBank != 0 || serviceIncome != 0;
 }
+
+/// One Daily Report table line: a day's invoices, or its cash-exchange
+/// ledger activity ([exchange]).
+typedef DailyLine = ({DailyPoint d, bool exchange});
 
 class StatusBreakdown {
   final int paid;

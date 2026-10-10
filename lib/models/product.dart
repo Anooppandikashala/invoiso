@@ -17,6 +17,7 @@ class Product {
   bool unlimitedStock;
   bool priceIncludesTax;
   DateTime? lastPurchaseDate;
+  int? lowStockLimit; // null = default low-stock limit (10)
 
   Product({
     required this.id,
@@ -35,6 +36,7 @@ class Product {
     this.unlimitedStock = false,
     this.priceIncludesTax = false,
     this.lastPurchaseDate,
+    this.lowStockLimit,
   });
 
   // Convert a Map into a Product object
@@ -59,6 +61,7 @@ class Product {
       lastPurchaseDate: map['last_purchase_date'] != null
           ? DateTime.tryParse(map['last_purchase_date'] as String)
           : null,
+      lowStockLimit: (map['low_stock_limit'] as num?)?.toInt(),
     );
   }
 
@@ -100,6 +103,7 @@ class Product {
       'unlimited_stock': unlimitedStock ? 1 : 0,
       'price_includes_tax': priceIncludesTax ? 1 : 0,
       'last_purchase_date': lastPurchaseDate?.toIso8601String(),
+      'low_stock_limit': lowStockLimit,
     };
   }
 

@@ -36,7 +36,7 @@ class _ApplyCustomerPaymentDialogState extends ConsumerState<ApplyCustomerPaymen
   DateTime _selectedDate = DateTime.now();
   String? _selectedMethod;
 
-  static const _methods = ['Cash', 'Bank Transfer', 'Check', 'Online', 'Other'];
+  static const _methods = ['Cash', 'UPI', 'Bank Transfer', 'Check', 'Online', 'Other'];
 
   @override
   void initState() {

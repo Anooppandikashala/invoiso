@@ -42,7 +42,7 @@ void main() {
     return path;
   }
 
-  // A v49 (v4.4.6) database: current schema minus everything v52 added.
+  // A v49 (v4.4.6) database: current schema minus the purchase-bill tables.
   Future<String> makeV49Backup() async {
     final path = join(tmp.path, 'old_v49.invoicedb');
     final db = await openDatabase(path,
@@ -134,7 +134,7 @@ void main() {
     await db.insert('customers', {'id': 'keep', 'name': 'Keep Me'});
 
     for (final data in [
-      {'cash_ledger': [{'id': 'x'}]},
+      {'future_table': [{'id': 'x'}]},
       {'customers': [{'id': 'c1', 'name': 'New', 'loyalty_tier': 'gold'}]},
     ]) {
       final result = await BackupManager()

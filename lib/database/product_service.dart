@@ -43,6 +43,17 @@ class ProductService {
     return maps.map((p) => Product.fromMap(p)).toList();
   }
 
+  /// In stock but at or below the product's own low-stock limit (default 10).
+  static Future<List<Product>> getLowStockProducts() async {
+    final db = await dbHelper.database;
+    final maps = await db.query(
+      'products',
+      where: _lowStockWhere,
+      orderBy: 'name COLLATE NOCASE ASC',
+    );
+    return maps.map((p) => Product.fromMap(p)).toList();
+  }
+
   static Future<Product?> getProductById(String id) async {
     final db = await dbHelper.database;
     final maps = await db.query(
@@ -166,6 +177,8 @@ class ProductService {
   static const _typeExpr = "COALESCE(type, 'product')";
   static const _trackedExpr = 'COALESCE(unlimited_stock, 0) = 0';
   static const _stockExpr = 'COALESCE(stock, 0)';
+  static const _lowStockWhere = '$_trackedExpr AND $_stockExpr > 0 '
+      'AND $_stockExpr <= COALESCE(low_stock_limit, 10)';
   // Only ISO-looking dates count (DateTime.tryParse fails on others).
   static const _expiredIdsSql = 'SELECT product_id FROM product_metadata '
       "WHERE expiry_date GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]*' "
@@ -191,7 +204,7 @@ class ProductService {
         parts.add('$_typeExpr = ?');
         args.add(tab);
       case 'low':
-        parts.add('$_trackedExpr AND $_stockExpr > 0 AND $_stockExpr <= 10');
+        parts.add(_lowStockWhere);
       case 'out':
         parts.add('$_trackedExpr AND $_stockExpr <= 0');
       case 'expired':
@@ -245,7 +258,7 @@ class ProductService {
       'SELECT COUNT(*) AS all_count, '
       "COALESCE(SUM($_typeExpr = 'product'), 0) AS products, "
       "COALESCE(SUM($_typeExpr = 'service'), 0) AS services, "
-      'COALESCE(SUM($_trackedExpr AND $_stockExpr > 0 AND $_stockExpr <= 10), 0) AS low_stock, '
+      'COALESCE(SUM($_lowStockWhere), 0) AS low_stock, '
       'COALESCE(SUM($_trackedExpr AND $_stockExpr <= 0), 0) AS out_of_stock, '
       'COALESCE(SUM(id IN ($_expiredIdsSql)), 0) AS expired '
       'FROM products',

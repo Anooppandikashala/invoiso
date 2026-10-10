@@ -485,6 +485,12 @@ class ProductColumnsConfig {
   final bool metaSupplierName;
   final bool metaSkuCode;
   final bool metaNotes;
+  // Not a column: when true, purchase price is hidden from non-admin users
+  // (product screen, CSV export, cost/profit reports). Default false.
+  final bool purchasePriceAdminOnly;
+  // Not a column: when true, non-admin users can't set or change stock
+  // (add form, edit dialog, CSV import). Default false.
+  final bool stockEditAdminOnly;
 
   const ProductColumnsConfig({
     this.aliasName = true,
@@ -507,6 +513,8 @@ class ProductColumnsConfig {
     this.metaSupplierName = true,
     this.metaSkuCode = true,
     this.metaNotes = true,
+    this.purchasePriceAdminOnly = false,
+    this.stockEditAdminOnly = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -530,6 +538,8 @@ class ProductColumnsConfig {
         'metaSupplierName': metaSupplierName,
         'metaSkuCode': metaSkuCode,
         'metaNotes': metaNotes,
+        'purchasePriceAdminOnly': purchasePriceAdminOnly,
+        'stockEditAdminOnly': stockEditAdminOnly,
       };
 
   factory ProductColumnsConfig.fromJson(Map<String, dynamic> json) =>
@@ -554,6 +564,9 @@ class ProductColumnsConfig {
         metaSupplierName: json['metaSupplierName'] as bool? ?? true,
         metaSkuCode: json['metaSkuCode'] as bool? ?? true,
         metaNotes: json['metaNotes'] as bool? ?? true,
+        purchasePriceAdminOnly:
+            json['purchasePriceAdminOnly'] as bool? ?? false,
+        stockEditAdminOnly: json['stockEditAdminOnly'] as bool? ?? false,
       );
 
   ProductColumnsConfig copyWith({
@@ -577,6 +590,8 @@ class ProductColumnsConfig {
     bool? metaSupplierName,
     bool? metaSkuCode,
     bool? metaNotes,
+    bool? purchasePriceAdminOnly,
+    bool? stockEditAdminOnly,
   }) =>
       ProductColumnsConfig(
         aliasName: aliasName ?? this.aliasName,
@@ -599,6 +614,9 @@ class ProductColumnsConfig {
         metaSupplierName: metaSupplierName ?? this.metaSupplierName,
         metaSkuCode: metaSkuCode ?? this.metaSkuCode,
         metaNotes: metaNotes ?? this.metaNotes,
+        purchasePriceAdminOnly:
+            purchasePriceAdminOnly ?? this.purchasePriceAdminOnly,
+        stockEditAdminOnly: stockEditAdminOnly ?? this.stockEditAdminOnly,
       );
 }
 
