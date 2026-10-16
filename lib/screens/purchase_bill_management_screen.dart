@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1592,7 +1591,6 @@ class _PurchaseBillFormScreen extends ConsumerStatefulWidget {
 class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen> {
   final _billNumberController = TextEditingController();
   final _notesController = TextEditingController();
-  final _attachmentPathController = TextEditingController();
   final _productSearchController = TextEditingController();
   final _productSearchFocus = FocusNode();
 
@@ -1616,7 +1614,6 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
     if (bill != null) {
       _billNumberController.text = bill.billNumber ?? '';
       _notesController.text = bill.notes ?? '';
-      _attachmentPathController.text = bill.attachmentPath ?? '';
       _supplierId = bill.supplierId;
       _supplierNameController.text = bill.supplierName;
       _useExistingSupplier = bill.supplierId != null;
@@ -1634,7 +1631,6 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
   void dispose() {
     _billNumberController.dispose();
     _notesController.dispose();
-    _attachmentPathController.dispose();
     _productSearchController.dispose();
     _productSearchFocus.dispose();
     _supplierNameController.dispose();
@@ -1660,19 +1656,39 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
     if (picked != null) setState(() => _billDate = picked);
   }
 
-  Future<void> _pickAttachment() async {
-    final result = await FilePicker.platform.pickFiles();
-    if (result != null && result.files.single.path != null) {
-      setState(() => _attachmentPathController.text = result.files.single.path!);
-    }
-  }
-
   void _addItem(PurchaseBillItem item) {
     setState(() => _items.add(item));
   }
 
   void _removeItem(int index) {
     setState(() => _items.removeAt(index));
+  }
+
+  // Quantity field decoration with −/+ steppers (step 1, never to 0 or below).
+  // Shared by the add-product, add-custom-item and edit-item dialogs.
+  InputDecoration _quantityDecoration(
+      AppLocalizations l10n, TextEditingController controller) {
+    void step(int delta) {
+      final q = (double.tryParse(controller.text) ?? 0) + delta;
+      if (q <= 0) return;
+      controller.text =
+          q == q.truncateToDouble() ? q.toInt().toString() : q.toString();
+    }
+
+    return InputDecoration(
+      labelText: l10n.purchaseBillMgmtQuantityLabel,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      prefixIcon: IconButton(
+        icon: const Icon(Icons.remove_circle_outline, size: 20),
+        visualDensity: VisualDensity.compact,
+        onPressed: () => step(-1),
+      ),
+      suffixIcon: IconButton(
+        icon: const Icon(Icons.add_circle_outline, size: 20),
+        visualDensity: VisualDensity.compact,
+        onPressed: () => step(1),
+      ),
+    );
   }
 
   void _editItemDialog(int index, PurchaseBillItem item) {
@@ -1691,7 +1707,11 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
       builder: (ctx) => StatefulBuilder(builder: (ctx, setDialogState) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(l10n.purchaseBillMgmtEditItemTitle),
+          // Catalog items have no name field below, so name them here
+          // (same title as the add dialog).
+          title: isCustom
+              ? Text(l10n.purchaseBillMgmtEditItemTitle)
+              : Text(item.productName, style: const TextStyle(fontSize: 18)),
           content: SizedBox(
             width: 380,
             child: Form(
@@ -1717,7 +1737,8 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
                       Expanded(
                         child: TextFormField(
                           controller: quantityController,
-                          decoration: InputDecoration(labelText: l10n.purchaseBillMgmtQuantityLabel, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                          textAlign: TextAlign.center,
+                          decoration: _quantityDecoration(l10n, quantityController),
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
                           validator: (v) => (double.tryParse(v ?? '') ?? 0) <= 0 ? l10n.purchaseBillMgmtInvalidValueMessage : null,
@@ -1803,7 +1824,6 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
         billNumber: _billNumberController.text.trim().isEmpty ? null : _billNumberController.text.trim(),
         billDate: _billDate,
         notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
-        attachmentPath: _attachmentPathController.text.trim().isEmpty ? null : _attachmentPathController.text.trim(),
         items: _items,
         payments: widget.billToEdit?.payments ?? const [],
         createdAt: widget.billToEdit?.createdAt,
@@ -1946,7 +1966,8 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
                       Expanded(
                         child: TextFormField(
                           controller: quantityController,
-                          decoration: InputDecoration(labelText: l10n.purchaseBillMgmtQuantityLabel, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                          textAlign: TextAlign.center,
+                          decoration: _quantityDecoration(l10n, quantityController),
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
                           validator: (v) => (double.tryParse(v ?? '') ?? 0) <= 0 ? l10n.purchaseBillMgmtInvalidValueMessage : null,
@@ -2034,7 +2055,8 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
                       Expanded(
                         child: TextFormField(
                           controller: quantityController,
-                          decoration: InputDecoration(labelText: l10n.purchaseBillMgmtQuantityLabel, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                          textAlign: TextAlign.center,
+                          decoration: _quantityDecoration(l10n, quantityController),
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
                           validator: (v) => (double.tryParse(v ?? '') ?? 0) <= 0 ? l10n.purchaseBillMgmtInvalidValueMessage : null,
@@ -2296,29 +2318,8 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
             ),
             maxLines: 3,
           ),
-          const SizedBox(height: 16),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: TextFormField(
-                  controller: _attachmentPathController,
-                  decoration: InputDecoration(
-                    labelText: l10n.purchaseBillMgmtAttachmentOptionalLabel,
-                    hintText: l10n.purchaseBillMgmtAttachFileHint,
-                    prefixIcon: const Icon(Icons.attach_file),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: const Icon(Icons.folder_open),
-                tooltip: l10n.purchaseBillMgmtBrowseTooltip,
-                onPressed: _pickAttachment,
-              ),
-            ],
-          ),
+          // Attachment field removed: only the file's path was stored, so
+          // backups/restores lost the file.
           const SizedBox(height: 20),
           Divider(color: Theme.of(context).colorScheme.outlineVariant),
           const SizedBox(height: 12),
@@ -2628,6 +2629,16 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
             decoration: InputDecoration(
               hintText: l10n.purchaseBillMgmtSearchProductsHint,
               prefixIcon: const Icon(Icons.search),
+              suffixIcon: _productQuery.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 18),
+                      tooltip: l10n.actionClear,
+                      onPressed: () {
+                        _productSearchController.clear();
+                        setState(() => _productQuery = '');
+                      },
+                    )
+                  : null,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
               filled: true,
               fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
