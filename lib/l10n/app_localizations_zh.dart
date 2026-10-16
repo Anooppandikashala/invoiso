@@ -255,6 +255,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get dashboardShortcutsBannerSubtitle => 'Ctrl+Q 新建发票，Ctrl+S 保存，还有更多。';
 
   @override
+  String get dashboardPurchaseBannerTitle => '新功能：采购账单与供应商';
+
+  @override
+  String get dashboardPurchaseBannerSubtitle => '记录供应商账单，自动更新库存，并跟踪欠每个供应商的款项。';
+
+  @override
+  String get dashboardPurchaseBannerAction => '启用';
+
+  @override
   String get dashboardViewAllAction => '查看全部';
 
   @override

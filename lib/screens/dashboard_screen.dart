@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/common/app_config.dart';
 import 'package:invoiso/providers/app_config_provider.dart';
+import 'package:invoiso/providers/cash_exchange_settings_provider.dart';
 import 'package:invoiso/providers/purchase_bills_settings_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/services/update_service.dart';
@@ -76,7 +77,6 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   int _selectedIndex = 0;
-  bool _servicesEnabled = false;
   bool _reportsAdminOnly = false;
   // Reports hidden for this user (Settings → Accessibility).
   bool get _reportsLocked => _reportsAdminOnly && !_currentUser.isAdmin();
@@ -191,7 +191,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         .read(settingsRepositoryProvider)
         .getSetting(SettingKey.cashUpiExchangeEnabled);
     if (!mounted) return;
-    setState(() => _servicesEnabled = v == 'true');
+    ref.read(cashUpiExchangeEnabledProvider.notifier).state = v == 'true';
   }
 
   Future<void> _loadReportsAdminOnly() async {
@@ -858,7 +858,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         AppLocalizations.of(context)!.navDashboard),
                     _buildNavItem(1, Icons.receipt_outlined, Icons.receipt,
                         AppLocalizations.of(context)!.navNewInvoice),
-                    if (_servicesEnabled)
+                    if (ref.watch(cashUpiExchangeEnabledProvider))
                       _buildNavItem(9, Icons.currency_exchange,
                           Icons.currency_exchange,
                           AppLocalizations.of(context)!.navServices),
@@ -1507,6 +1507,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
   bool _showLayoutBanner = false;
   bool _showThemeBanner = false;
   bool _showShortcutsBanner = false;
+  bool _showPurchaseBanner = false;
   bool _showSupportBanner = false;
   String _supportMilestone = '';
   List<Map<String, dynamic>> _monthlyRevenue = [];
@@ -1552,6 +1553,9 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
           .getSetting(SettingKey.shortcutsBannerDismissed), // 15
       ref.read(productRepositoryProvider).getLowStockProducts(), // 16
       ref.read(settingsRepositoryProvider).getProductColumnsConfig(), // 17
+      ref
+          .read(settingsRepositoryProvider)
+          .getSetting(SettingKey.purchaseBillsBannerDismissed), // 18
     ]);
 
     final customerCount = results[0] as int;
@@ -1604,6 +1608,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
       _showLayoutBanner = bannerDismissed != '1';
       _showThemeBanner = themeBannerDismissed != '1';
       _showShortcutsBanner = shortcutsBannerDismissed != '1';
+      _showPurchaseBanner = (results[18] as String?) != '1';
       _supportMilestone = milestone;
       _showSupportBanner =
           milestone.isNotEmpty && supportDismissed != milestone;
@@ -1637,6 +1642,23 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
         .read(settingsRepositoryProvider)
         .setSetting(SettingKey.shortcutsBannerDismissed, '1');
     if (mounted) setState(() => _showShortcutsBanner = false);
+  }
+
+  Future<void> _dismissPurchaseBanner() async {
+    await ref
+        .read(settingsRepositoryProvider)
+        .setSetting(SettingKey.purchaseBillsBannerDismissed, '1');
+    if (mounted) setState(() => _showPurchaseBanner = false);
+  }
+
+  // Same as the Settings → Accessibility toggle; the sidebar picks it up
+  // from the provider immediately.
+  Future<void> _enablePurchaseBills() async {
+    await ref
+        .read(settingsRepositoryProvider)
+        .setSetting(SettingKey.enablePurchaseBillsAndSuppliers, 'true');
+    ref.read(enablePurchaseBillsAndSuppliersProvider.notifier).state = true;
+    await _dismissPurchaseBanner();
   }
 
   void _showShortcutsDialog() {
@@ -1721,6 +1743,36 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
       actionColor: const Color(0xFF059669),
       onDismiss: _dismissShortcutsBanner,
       dismissIconColor: const Color(0xFF6EE7B7),
+    );
+  }
+
+  // Admin-only (Settings, where the feature is toggled, is admin-only);
+  // hidden once the feature is on.
+  Widget _buildPurchaseDiscoveryBanner() {
+    return DiscoveryBanner(
+      visible: _showPurchaseBanner &&
+          widget.user.isAdmin() &&
+          !ref.watch(enablePurchaseBillsAndSuppliersProvider),
+      icon: Icons.local_shipping_outlined,
+      iconColor: const Color(0xFF0891B2),
+      backgroundColor: const Color(0xFFECFEFF),
+      borderColor: const Color(0xFFA5F3FC),
+      title: Text(
+        AppLocalizations.of(context)!.dashboardPurchaseBannerTitle,
+        style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+            color: Color(0xFF155E75)),
+      ),
+      subtitle: Text(
+        AppLocalizations.of(context)!.dashboardPurchaseBannerSubtitle,
+        style: const TextStyle(fontSize: 12, color: Color(0xFF0891B2)),
+      ),
+      actionLabel: AppLocalizations.of(context)!.dashboardPurchaseBannerAction,
+      onAction: _enablePurchaseBills,
+      actionColor: const Color(0xFF0891B2),
+      onDismiss: _dismissPurchaseBanner,
+      dismissIconColor: const Color(0xFF67E8F9),
     );
   }
 
@@ -1875,6 +1927,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _buildPurchaseDiscoveryBanner(),
               _buildLayoutDiscoveryBanner(),
               _buildThemeDiscoveryBanner(),
               _buildShortcutsDiscoveryBanner(),
@@ -3391,6 +3444,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _buildPurchaseDiscoveryBanner(),
               _buildLayoutDiscoveryBanner(),
               _buildThemeDiscoveryBanner(),
               _buildShortcutsDiscoveryBanner(),
@@ -3497,6 +3551,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _buildPurchaseDiscoveryBanner(),
               _buildLayoutDiscoveryBanner(),
               _buildThemeDiscoveryBanner(),
               _buildShortcutsDiscoveryBanner(),
@@ -4567,6 +4622,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _buildPurchaseDiscoveryBanner(),
               _buildLayoutDiscoveryBanner(),
               _buildThemeDiscoveryBanner(),
               _buildShortcutsDiscoveryBanner(),

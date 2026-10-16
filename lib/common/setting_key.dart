@@ -98,6 +98,7 @@ enum SettingKey {
   pdfTableHeaderFontSize, // PdfFontSize key for the items table header; empty/absent = same as pdfFontSize
   pdfTableItemsFontSize, // PdfFontSize key for the items table rows; empty/absent = same as pdfFontSize
   pdfTotalsFontSize, // PdfFontSize key for the totals block; empty/absent = same as pdfFontSize
+  purchaseBillsBannerDismissed, // '1' once user dismisses the purchase-bills/suppliers discovery banner
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -301,6 +302,8 @@ extension SettingKeyExtension on SettingKey {
         return 'pdf_table_items_font_size';
       case SettingKey.pdfTotalsFontSize:
         return 'pdf_totals_font_size';
+      case SettingKey.purchaseBillsBannerDismissed:
+        return 'purchase_bills_banner_dismissed';
 
     }
   }

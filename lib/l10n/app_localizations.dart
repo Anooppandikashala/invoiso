@@ -582,6 +582,24 @@ abstract class AppLocalizations {
   /// **'Ctrl+Q for a new invoice, Ctrl+S to save, and more.'**
   String get dashboardShortcutsBannerSubtitle;
 
+  /// No description provided for @dashboardPurchaseBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New: Purchase Bills & Suppliers'**
+  String get dashboardPurchaseBannerTitle;
+
+  /// No description provided for @dashboardPurchaseBannerSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Record supplier bills, update stock automatically, and track what you owe each supplier.'**
+  String get dashboardPurchaseBannerSubtitle;
+
+  /// No description provided for @dashboardPurchaseBannerAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable'**
+  String get dashboardPurchaseBannerAction;
+
   /// No description provided for @dashboardViewAllAction.
   ///
   /// In en, this message translates to:

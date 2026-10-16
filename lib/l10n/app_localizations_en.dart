@@ -263,6 +263,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Ctrl+Q for a new invoice, Ctrl+S to save, and more.';
 
   @override
+  String get dashboardPurchaseBannerTitle => 'New: Purchase Bills & Suppliers';
+
+  @override
+  String get dashboardPurchaseBannerSubtitle =>
+      'Record supplier bills, update stock automatically, and track what you owe each supplier.';
+
+  @override
+  String get dashboardPurchaseBannerAction => 'Enable';
+
+  @override
   String get dashboardViewAllAction => 'View all';
 
   @override

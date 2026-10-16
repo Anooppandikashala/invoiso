@@ -263,6 +263,16 @@ class AppLocalizationsHi extends AppLocalizations {
       'नए इनवॉइस के लिए Ctrl+Q, सहेजने के लिए Ctrl+S, और भी बहुत कुछ।';
 
   @override
+  String get dashboardPurchaseBannerTitle => 'नया: खरीद बिल और आपूर्तिकर्ता';
+
+  @override
+  String get dashboardPurchaseBannerSubtitle =>
+      'आपूर्तिकर्ता बिल दर्ज करें, स्टॉक अपने आप अपडेट करें, और हर आपूर्तिकर्ता का बकाया ट्रैक करें।';
+
+  @override
+  String get dashboardPurchaseBannerAction => 'चालू करें';
+
+  @override
   String get dashboardViewAllAction => 'सभी देखें';
 
   @override

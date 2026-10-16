@@ -265,6 +265,16 @@ class AppLocalizationsBo extends AppLocalizations {
       'ཁྲལ་ཤོག་གསར་པར Ctrl+Q, ཉར་ཚགས་ལ Ctrl+S, སོགས།';
 
   @override
+  String get dashboardPurchaseBannerTitle => 'གསར་པ: ཉོ་ཐོ་དང་སྤྲོད་མཁན།';
+
+  @override
+  String get dashboardPurchaseBannerSubtitle =>
+      'ཉོ་ཐོ་ཉར་ཚགས་བྱེད། ཅ་དངོས་གྲངས་ཀ་རང་འགུལ་གྱིས་གསར་བསྒྱུར་བྱེད།';
+
+  @override
+  String get dashboardPurchaseBannerAction => 'སྤྱོད་ཆོག་པར་བྱེད།';
+
+  @override
   String get dashboardViewAllAction => 'ཡོངས་རྫོགས་ལྟ།';
 
   @override

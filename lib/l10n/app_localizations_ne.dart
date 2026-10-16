@@ -266,6 +266,16 @@ class AppLocalizationsNe extends AppLocalizations {
       'नयाँ बीजकको लागि Ctrl+Q, सुरक्षित गर्न Ctrl+S, र थप धेरै।';
 
   @override
+  String get dashboardPurchaseBannerTitle => 'नयाँ: खरिद बिल र आपूर्तिकर्ता';
+
+  @override
+  String get dashboardPurchaseBannerSubtitle =>
+      'आपूर्तिकर्ताका बिल दर्ता गर्नुहोस्, स्टक स्वतः अद्यावधिक गर्नुहोस्, र प्रत्येक आपूर्तिकर्तालाई तिर्न बाँकी रकम हेर्नुहोस्।';
+
+  @override
+  String get dashboardPurchaseBannerAction => 'सक्षम गर्नुहोस्';
+
+  @override
   String get dashboardViewAllAction => 'सबै हेर्नुहोस्';
 
   @override

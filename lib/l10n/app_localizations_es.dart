@@ -268,6 +268,17 @@ class AppLocalizationsEs extends AppLocalizations {
       'Ctrl+Q para una nueva factura, Ctrl+S para guardar, y más.';
 
   @override
+  String get dashboardPurchaseBannerTitle =>
+      'Nuevo: Facturas de compra y Proveedores';
+
+  @override
+  String get dashboardPurchaseBannerSubtitle =>
+      'Registra facturas de proveedores, actualiza el stock automáticamente y controla lo que debes a cada proveedor.';
+
+  @override
+  String get dashboardPurchaseBannerAction => 'Activar';
+
+  @override
   String get dashboardViewAllAction => 'Ver todo';
 
   @override

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
+import 'package:invoiso/providers/cash_exchange_settings_provider.dart';
 import 'package:invoiso/providers/purchase_bills_settings_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
 
@@ -59,6 +60,7 @@ class _AccessibilityScreenState extends ConsumerState<AccessibilityScreen> {
         .setSetting(SettingKey.cashUpiExchangeEnabled, value.toString());
     if (!mounted) return;
     setState(() => _cashExchangeEnabled = value);
+    ref.read(cashUpiExchangeEnabledProvider.notifier).state = value;
   }
 
   Future<void> _loadCreateInvoiceLayout() async {
