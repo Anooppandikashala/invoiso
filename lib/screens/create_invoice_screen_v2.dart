@@ -5299,7 +5299,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               left: 0,
               right: 0,
               bottom: 68,
-              child: _productDropdownListV2(),
+              // Counts as "inside" the search field, so a mouse-down on a
+              // row doesn't unfocus it and hide the list before the click lands.
+              child: TextFieldTapRegion(child: _productDropdownListV2()),
             ),
         ],
       ),
