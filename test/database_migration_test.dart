@@ -219,6 +219,25 @@ void main() {
     expect(invoice['converted_to_invoice_id'], isNull);
     expect(invoice['converted_from_invoice_id'], isNull);
 
+    // v53 added purchase bills / suppliers / stock tracking.
+    for (final table in [
+      'suppliers',
+      'purchase_bills',
+      'purchase_bill_items',
+      'stock_transactions',
+      'supplier_payments',
+    ]) {
+      expect(await db.query(table), isEmpty);
+    }
+    final product = (await db.query('products')).first;
+    expect(product.containsKey('last_purchase_date'), isTrue);
+    expect(product['last_purchase_date'], isNull);
+    final billItemCols =
+        await db.rawQuery('PRAGMA table_info(purchase_bill_items)');
+    expect(billItemCols.map((c) => c['name']), contains('cost_includes_tax'));
+    final billCols = await db.rawQuery('PRAGMA table_info(purchase_bills)');
+    expect(billCols.map((c) => c['name']), contains('is_draft'));
+
     final companyInfo = (await db.query('company_info')).first;
     expect(companyInfo['country'], 'India');
     expect(companyInfo['pan_number'], '');
@@ -230,7 +249,6 @@ void main() {
         .map((r) => r['name'])
         .toSet();
     expect(ledgerCols, containsAll(['entry_type', 'cash_delta', 'upi_delta']));
-    final product = (await db.query('products')).first;
     expect(product.containsKey('low_stock_limit'), isTrue);
     expect(product['low_stock_limit'], isNull);
 
@@ -250,6 +268,8 @@ void main() {
         date_time TEXT NOT NULL, created_by TEXT)''');
     // v52 also re-adds invoice_items.discount_is_percent.
     await db.execute('CREATE TABLE invoice_items (id TEXT PRIMARY KEY)');
+    // Later blocks (v53 purchase bills, v54) also run and alter products.
+    await db.execute('CREATE TABLE products (id TEXT PRIMARY KEY)');
     await db.insert('users', {'id': 'user-001', 'username': 'admin'});
     await db.insert('users', {'id': '[#a1b2c]', 'username': 'staff'});
     for (final (id, by) in [('1', 'staff'), ('2', 'admin'), ('3', 'gone'), ('4', null)]) {
@@ -268,6 +288,61 @@ void main() {
         ['[#a1b2c]', 'user-001', 'gone', null]);
     expect(rows.first.containsKey('created_at'), isTrue);
     expect(await db.query('cash_ledger_history'), isEmpty);
+    await db.close();
+  });
+
+  // The purchase-bills branch used v41/v42 for its own steps before main was
+  // merged in, so a dev DB from that build sits at v42 without main's
+  // invoice_items.description. The v53 block must re-add it.
+  test('DB at old branch v42 without description column gets it back',
+      () async {
+    final db = await _openV4WithSampleData();
+    final helper = DatabaseHelper();
+    await helper.upgradeDbForTest(db, 4, helper.dbVersion);
+    await db.execute('ALTER TABLE invoice_items DROP COLUMN description');
+
+    await helper.upgradeDbForTest(db, 42, helper.dbVersion);
+
+    final cols = await db.rawQuery('PRAGMA table_info(invoice_items)');
+    expect(cols.map((c) => c['name']), contains('description'));
+
+    await db.close();
+  });
+  // purchase_bills.is_draft was first added inside the v52 block, after dev
+  // DBs (and backups taken from them) had already reached v52 — a v52 DB
+  // without the column must still get it.
+  test('DB at v52 without purchase_bills.is_draft gets it', () async {
+    final db = await _openV4WithSampleData();
+    final helper = DatabaseHelper();
+    await helper.upgradeDbForTest(db, 4, helper.dbVersion);
+    await db.execute('ALTER TABLE purchase_bills DROP COLUMN is_draft');
+
+    await helper.upgradeDbForTest(db, 52, helper.dbVersion);
+
+    final cols = await db.rawQuery('PRAGMA table_info(purchase_bills)');
+    expect(cols.map((c) => c['name']), contains('is_draft'));
+
+    await db.close();
+  });
+
+  // Dev DBs / backups of the purchase-bills branch reached v53 (its old
+  // numbering) without main's cash ledger (v51/v52). The v54 block re-runs it.
+  test('DB at branch v53 without cash ledger gets it', () async {
+    final db = await _openV4WithSampleData();
+    final helper = DatabaseHelper();
+    await helper.upgradeDbForTest(db, 4, helper.dbVersion);
+    await db.execute('DROP TABLE cash_ledger');
+    await db.execute('DROP TABLE cash_ledger_history');
+    await db.execute('ALTER TABLE products DROP COLUMN low_stock_limit');
+
+    await helper.upgradeDbForTest(db, 53, helper.dbVersion);
+
+    final ledgerCols = await db.rawQuery('PRAGMA table_info(cash_ledger)');
+    expect(ledgerCols.map((c) => c['name']), contains('created_at'));
+    expect(await db.query('cash_ledger_history'), isEmpty);
+    final productCols = await db.rawQuery('PRAGMA table_info(products)');
+    expect(productCols.map((c) => c['name']), contains('low_stock_limit'));
+
     await db.close();
   });
 }

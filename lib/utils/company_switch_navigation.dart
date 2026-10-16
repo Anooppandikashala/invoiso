@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:invoiso/common/setting_key.dart';
 import 'package:invoiso/providers/invoice_provider.dart';
 import 'package:invoiso/providers/locale_provider.dart';
+import 'package:invoiso/providers/purchase_bills_settings_provider.dart';
 import 'package:invoiso/providers/product_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/providers/theme_provider.dart';
@@ -15,7 +17,7 @@ import 'package:invoiso/screens/auth/login_screen.dart';
 ///   cache their list once fetched; the container that holds them lives
 ///   above the Navigator, so simply pushing a new screen doesn't re-run
 ///   them — invalidate so the next read re-fetches from the now-active file.
-/// - Theme/locale are stored per-company (that company's own `settings`
+/// - Theme/locale/Purchase Bills toggle are stored per-company (that company's own `settings`
 ///   table), so re-read them for whichever company is now active, same as
 ///   the pre-login switcher on the Login screen itself already does.
 /// - Clearing the whole navigator stack down to Login disposes every
@@ -29,9 +31,14 @@ Future<void> returnToLoginAfterCompanyChange(
 
   final themeKey = await ref.read(settingsRepositoryProvider).getThemeMode();
   final localeKey = await ref.read(settingsRepositoryProvider).getAppLocale();
+  final purchaseBills = await ref
+      .read(settingsRepositoryProvider)
+      .getSetting(SettingKey.enablePurchaseBillsAndSuppliers);
   if (!context.mounted) return;
   ref.read(themeModeProvider.notifier).state = themeModeFromKey(themeKey);
   applyAppLocale(ref, localeFromKey(localeKey));
+  ref.read(enablePurchaseBillsAndSuppliersProvider.notifier).state =
+      purchaseBills == 'true';
 
   if (!context.mounted) return;
   Navigator.of(context).pushAndRemoveUntil(

@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/common/app_config.dart';
 import 'package:invoiso/providers/app_config_provider.dart';
+import 'package:invoiso/providers/purchase_bills_settings_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/services/update_service.dart';
 import 'package:invoiso/widgets/update_dialog.dart';
@@ -46,6 +47,8 @@ import 'package:invoiso/screens/invoice_management_screen_v2.dart';
 import 'package:invoiso/screens/cash_exchange_screen.dart';
 import 'package:invoiso/screens/auth/login_screen.dart';
 import 'package:invoiso/screens/reports_screen.dart';
+import 'package:invoiso/screens/purchase_bill_management_screen.dart';
+import 'package:invoiso/screens/supplier_management_screen.dart';
 
 // invoice.type is a raw internal value ('Invoice'/'Quotation'/'Receipt') used
 // for comparisons throughout this file — only the displayed label is localized.
@@ -398,6 +401,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         );
       case 9: // Services (Cash / UPI-Bank exchange); shown after New Invoice
         return CashExchangeScreen(user: _currentUser);
+      case 10:
+        return ref.watch(enablePurchaseBillsAndSuppliersProvider)
+            ? PurchaseBillManagementScreen(user: _currentUser)
+            : Center(
+                child: Text(
+                    AppLocalizations.of(context)!.dashboardUnknownTabLabel));
+      case 11:
+        return ref.watch(enablePurchaseBillsAndSuppliersProvider)
+            ? SupplierManagementScreen(user: _currentUser)
+            : Center(
+                child: Text(
+                    AppLocalizations.of(context)!.dashboardUnknownTabLabel));
       default:
         return Center(
             child:
@@ -604,6 +619,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final expanded = _sidebarExpanded;
     final primary = Theme.of(context).primaryColor;
     final cfg = ref.watch(appEditionConfigProvider);
+    final showPurchaseBillsAndSuppliers =
+        ref.watch(enablePurchaseBillsAndSuppliersProvider);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 220),
@@ -870,6 +887,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     if (!_reportsLocked)
                       _buildNavItem(7, Icons.bar_chart_outlined, Icons.bar_chart,
                           AppLocalizations.of(context)!.navReports),
+                    if (showPurchaseBillsAndSuppliers) ...[
+                      _buildNavItem(10, Icons.shopping_cart_outlined,
+                          Icons.shopping_cart, AppLocalizations.of(context)!.navPurchaseBills),
+                      _buildNavItem(11, Icons.local_shipping_outlined,
+                          Icons.local_shipping, AppLocalizations.of(context)!.navSuppliers),
+                    ],
                     _buildNavItem(8, Icons.settings_outlined, Icons.settings,
                         AppLocalizations.of(context)!.navSettings,
                         showDot: _hasUpdate),

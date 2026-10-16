@@ -9,6 +9,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:uuid/uuid.dart';
 
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/models/backup_info.dart';
@@ -31,6 +32,11 @@ class BackupManager {
     'invoices',
     'invoice_items',
     'invoice_payments',
+    'suppliers',
+    'purchase_bills',
+    'purchase_bill_items',
+    'supplier_payments',
+    'stock_transactions',
   ];
 
   // Create backup of the entire database
@@ -183,6 +189,19 @@ class BackupManager {
   // Takes a safety copy first, then replaces the file and re-initializes the
   // singleton so all subsequent DB calls get a live connection.
   Future<void> _restoreFromDatabaseBackup(String backupPath) async {
+    // Reopening a newer file would silently stamp it down to our version
+    // (no onDowngrade) and run the app on a schema it doesn't know.
+    final backupDb =
+        await openDatabase(backupPath, readOnly: true, singleInstance: false);
+    final backupVersion = await backupDb.getVersion();
+    await backupDb.close();
+    if (backupVersion > DatabaseHelper().dbVersion) {
+      throw Exception(
+        'This backup was created by a newer version of the app '
+        '(database v$backupVersion). Update the app to restore it.',
+      );
+    }
+
     final dbPath = DatabaseHelper.path!;
     // Timestamped so a copy kept by an earlier failed restore isn't overwritten.
     final safetyPath =
@@ -246,7 +265,35 @@ class BackupManager {
 
     final database = await DatabaseHelper().database;
 
+    // A backup from a newer build can carry tables/columns we don't have —
+    // refuse up front instead of failing mid-restore with a raw SQL error.
+    for (final entry in backupData.entries) {
+      // android_metadata is sqflite's own table on Android, not app data.
+      if (entry.key.startsWith('_') || entry.key == 'android_metadata') continue;
+      final cols = (await database.rawQuery('PRAGMA table_info(${entry.key})'))
+          .map((c) => c['name'] as String)
+          .toSet();
+      final unknown = cols.isEmpty
+          ? entry.key
+          : (entry.value as List<dynamic>)
+              .expand((row) => (row as Map<String, dynamic>).keys)
+              .where((k) => !cols.contains(k))
+              .map((k) => '${entry.key}.$k')
+              .firstOrNull;
+      if (unknown != null) {
+        throw Exception(
+          'This backup was created by a newer version of the app '
+          '(unknown $unknown). Update the app to restore it.',
+        );
+      }
+    }
+
     await database.transaction((txn) async {
+      // Onboarding is device setup, not company data — a backup taken before
+      // the wizard existed must not send the user through it again.
+      final onboarding = await txn.query('settings',
+          where: 'key = ?', whereArgs: ['onboarding_completed']);
+
       // Clear existing data in reverse FK order
       for (final tableName in _restoreTableOrder.reversed) {
         await txn.delete(tableName);
@@ -257,17 +304,26 @@ class BackupManager {
         if (!backupData.containsKey(tableName)) continue;
         final tableData = backupData[tableName] as List<dynamic>;
         for (final row in tableData) {
+          final values = Map<String, dynamic>.from(row as Map<String, dynamic>);
+          // Pre-v37 backups have no invoice_items.id.
+          if (tableName == 'invoice_items' && values['id'] == null) {
+            values['id'] = const Uuid().v4();
+          }
           await txn.insert(
             tableName,
-            row as Map<String, dynamic>,
+            values,
             conflictAlgorithm: ConflictAlgorithm.replace,
           );
         }
       }
+      if (onboarding.isNotEmpty) {
+        await txn.insert('settings', onboarding.first,
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
 
       // Restore any tables not in the ordered list (excluding metadata keys)
       for (final entry in backupData.entries) {
-        if (entry.key.startsWith('_')) continue;
+        if (entry.key.startsWith('_') || entry.key == 'android_metadata') continue;
         if (_restoreTableOrder.contains(entry.key)) continue;
         final tableData = entry.value as List<dynamic>;
         for (final row in tableData) {
