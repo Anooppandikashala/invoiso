@@ -3492,6 +3492,11 @@ class AppLocalizationsFr extends AppLocalizations {
       'Non imprimé sur le PDF — cliquez pour imprimer';
 
   @override
+  String customFieldMaxReachedHint(int max) {
+    return 'Vous pouvez ajouter jusqu\'à $max champs.';
+  }
+
+  @override
   String get customerFieldDobLabel => 'Date de naissance';
 
   @override
@@ -3526,6 +3531,10 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get customerFieldShippingSameAsBillingLabel =>
       'Adresse de livraison identique à la facturation';
+
+  @override
+  String get customerFieldShipToNotPrintedHint =>
+      'Tant que cette case est cochée, seule l\'adresse de facturation est imprimée sur le PDF.';
 
   @override
   String get customerFieldShipToHeader => 'Livrer à';

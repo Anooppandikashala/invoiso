@@ -8,7 +8,8 @@ import 'package:invoiso/widgets/custom_field_defs_editor.dart';
 void main() {
   late List<CustomFieldDef> defs;
 
-  Future<void> pump(WidgetTester tester, {bool showPdfToggle = false}) async {
+  Future<void> pump(WidgetTester tester,
+      {bool showPdfToggle = false, int? maxFields}) async {
     await tester.pumpWidget(MaterialApp(
       localizationsDelegates: const [
         AppLocalizations.delegate,
@@ -28,6 +29,7 @@ void main() {
               decoration: (label, hint) =>
                   InputDecoration(labelText: label, hintText: hint),
               showPdfToggle: showPdfToggle,
+              maxFields: maxFields,
             ),
           ),
         ),
@@ -52,6 +54,16 @@ void main() {
     expect(defs.last.sortOrder, 2);
     expect(tester.widget<TextField>(find.byType(TextField).last).controller!.text,
         isEmpty);
+  });
+
+  testWidgets('maxFields reached: add disabled, hint shown', (tester) async {
+    await pump(tester, maxFields: 2);
+    expect(tester.widget<TextField>(find.byType(TextField).last).enabled,
+        isFalse);
+    await tester.tap(find.text('Add'));
+    await tester.pump();
+    expect(defs, hasLength(2));
+    expect(find.text('You can add up to 2 fields.'), findsOneWidget);
   });
 
   testWidgets('blank label is not added', (tester) async {

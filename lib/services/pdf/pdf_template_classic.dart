@@ -227,7 +227,7 @@ pw.MultiPage buildClassicTemplate(
                     for (final line in customerExtraLines(
                         invoice.customer, customerFields, invoice.date, datePattern))
                       pw.Text(line,
-                          style: pw.TextStyle(fontSize: classicPdfStyle.bodyFontSize)),
+                          style: pw.TextStyle(fontSize: style.bodyFontSize)),
                   ],
                 ),
               ),
@@ -238,23 +238,23 @@ pw.MultiPage buildClassicTemplate(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
                 pw.Container(
-                  padding: pw.EdgeInsets.symmetric(horizontal: classicPdfStyle.sectionPadding, vertical: classicPdfStyle.sectionPadding),
+                  padding: pw.EdgeInsets.symmetric(horizontal: style.sectionPadding, vertical: style.sectionPadding),
                   color: PdfColors.grey200,
                   child: pw.Text("SHIP TO",
                       style: pw.TextStyle(
                           fontWeight: pw.FontWeight.bold,
-                          fontSize: classicPdfStyle.labelFontSize,
+                          fontSize: style.labelFontSize,
                           color: PdfColors.grey700)),
                 ),
                 pw.Padding(
-                  padding: pw.EdgeInsets.symmetric(horizontal: classicPdfStyle.sectionPadding, vertical: classicPdfStyle.sectionPadding),
+                  padding: pw.EdgeInsets.symmetric(horizontal: style.sectionPadding, vertical: style.sectionPadding),
                   child: pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      pw.SizedBox(height: classicPdfStyle.headerGap),
+                      pw.SizedBox(height: style.headerGap),
                       for (final line in shipToLines(invoice.customer))
                         pw.Text(line,
-                            style: pw.TextStyle(fontSize: classicPdfStyle.bodyFontSize)),
+                            style: pw.TextStyle(fontSize: style.bodyFontSize)),
                     ],
                   ),
                 ),

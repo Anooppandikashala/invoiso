@@ -2061,6 +2061,14 @@
   "invoiceSettingsPrintOnPdfSubtitle": "Show this field on invoice PDFs and thermal receipts",
   "customFieldPrintedOnPdfTooltip": "Printed on PDF — click to hide",
   "customFieldNotPrintedOnPdfTooltip": "Not printed on PDF — click to print",
+  "customFieldMaxReachedHint": "You can add up to {max} fields.",
+  "@customFieldMaxReachedHint": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "customerFieldDobLabel": "Date of Birth",
   "customerFieldClearDobTooltip": "Clear date of birth",
   "customerFieldAgeLabel": "Age",
@@ -2072,6 +2080,7 @@
   "customerFieldGenderFemale": "Female",
   "customerFieldGenderOther": "Other",
   "customerFieldShippingSameAsBillingLabel": "Shipping address same as billing",
+  "customerFieldShipToNotPrintedHint": "Only the Bill To address prints on the PDF while this is ticked.",
   "customerFieldShipToHeader": "Ship To",
   "createInvoiceCustomerDetailsDialogTitle": "Customer Details",
   "customerFieldPersonalDetailsHeader": "Personal Details",

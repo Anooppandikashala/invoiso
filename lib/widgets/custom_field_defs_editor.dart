@@ -15,6 +15,8 @@ class CustomFieldDefsEditor extends StatefulWidget {
   final InputDecoration Function(String label, String? hint) decoration;
   // Per-row "print on PDF" toggle (customer custom fields).
   final bool showPdfToggle;
+  // Cap on the number of fields; null = unlimited.
+  final int? maxFields;
 
   const CustomFieldDefsEditor({
     super.key,
@@ -24,6 +26,7 @@ class CustomFieldDefsEditor extends StatefulWidget {
     required this.newFieldHint,
     required this.decoration,
     this.showPdfToggle = false,
+    this.maxFields,
   });
 
   @override
@@ -43,9 +46,12 @@ class _CustomFieldDefsEditorState extends State<CustomFieldDefsEditor> {
         for (var i = 0; i < defs.length; i++) defs[i].copyWith(sortOrder: i),
       ];
 
+  bool get _full =>
+      widget.maxFields != null && widget.defs.length >= widget.maxFields!;
+
   void _add() {
     final label = _newFieldController.text.trim();
-    if (label.isEmpty) return;
+    if (label.isEmpty || _full) return;
     widget.onChanged([
       ...widget.defs,
       CustomFieldDef(
@@ -138,6 +144,7 @@ class _CustomFieldDefsEditorState extends State<CustomFieldDefsEditor> {
             Expanded(
               child: TextField(
                 controller: _newFieldController,
+                enabled: !_full,
                 decoration:
                     widget.decoration('New field label', widget.newFieldHint),
                 onSubmitted: (_) => _add(),
@@ -145,12 +152,21 @@ class _CustomFieldDefsEditorState extends State<CustomFieldDefsEditor> {
             ),
             const SizedBox(width: 8),
             FilledButton.icon(
-              onPressed: _add,
+              onPressed: _full ? null : _add,
               icon: const Icon(Icons.add),
               label: const Text('Add'),
             ),
           ],
         ),
+        if (_full) ...[
+          const SizedBox(height: 6),
+          Text(
+              AppLocalizations.of(context)!
+                  .customFieldMaxReachedHint(widget.maxFields!),
+              style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant)),
+        ],
       ],
     );
   }

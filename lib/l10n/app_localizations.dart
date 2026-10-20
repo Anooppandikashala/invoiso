@@ -5718,6 +5718,12 @@ abstract class AppLocalizations {
   /// **'Not printed on PDF — click to print'**
   String get customFieldNotPrintedOnPdfTooltip;
 
+  /// No description provided for @customFieldMaxReachedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You can add up to {max} fields.'**
+  String customFieldMaxReachedHint(int max);
+
   /// No description provided for @customerFieldDobLabel.
   ///
   /// In en, this message translates to:
@@ -5783,6 +5789,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Shipping address same as billing'**
   String get customerFieldShippingSameAsBillingLabel;
+
+  /// No description provided for @customerFieldShipToNotPrintedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the Bill To address prints on the PDF while this is ticked.'**
+  String get customerFieldShipToNotPrintedHint;
 
   /// No description provided for @customerFieldShipToHeader.
   ///

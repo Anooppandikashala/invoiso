@@ -3426,6 +3426,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Not printed on PDF — click to print';
 
   @override
+  String customFieldMaxReachedHint(int max) {
+    return 'You can add up to $max fields.';
+  }
+
+  @override
   String get customerFieldDobLabel => 'Date of Birth';
 
   @override
@@ -3458,6 +3463,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get customerFieldShippingSameAsBillingLabel =>
       'Shipping address same as billing';
+
+  @override
+  String get customerFieldShipToNotPrintedHint =>
+      'Only the Bill To address prints on the PDF while this is ticked.';
 
   @override
   String get customerFieldShipToHeader => 'Ship To';

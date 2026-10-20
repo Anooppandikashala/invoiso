@@ -336,6 +336,14 @@ class _CustomerExtraFieldsState extends State<CustomerExtraFields> {
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                 ),
               ),
+            if (c.shippingSameAsBilling && s.shipToInPdf)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Text(l10n.customerFieldShipToNotPrintedHint,
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              ),
             InkWell(
               borderRadius: BorderRadius.circular(4),
               onTap: ro

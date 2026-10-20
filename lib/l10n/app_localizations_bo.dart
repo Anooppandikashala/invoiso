@@ -3426,6 +3426,11 @@ class AppLocalizationsBo extends AppLocalizations {
       'PDF ཐོག་པར་དུ་མི་འཁོད། — པར་དུ་འགོད་པར་མནན།';
 
   @override
+  String customFieldMaxReachedHint(int max) {
+    return 'ཡིག་སྒྲོམ་མང་ཤོས་ $max བར་སྣོན་ཆོག';
+  }
+
+  @override
   String get customerFieldDobLabel => 'སྐྱེས་ཚེས།';
 
   @override
@@ -3458,6 +3463,10 @@ class AppLocalizationsBo extends AppLocalizations {
   @override
   String get customerFieldShippingSameAsBillingLabel =>
       'སྐྱེལ་སའི་གནས་ཡུལ་རིན་ཐོའི་གནས་ཡུལ་དང་གཅིག་མཚུངས།';
+
+  @override
+  String get customerFieldShipToNotPrintedHint =>
+      'འདི་འདེམས་ཡོད་རིང་ PDF ཐོག་རིན་ཐོའི་གནས་ཡུལ་ཁོ་ན་པར་དུ་འཁོད།';
 
   @override
   String get customerFieldShipToHeader => 'སྐྱེལ་ཡུལ།';

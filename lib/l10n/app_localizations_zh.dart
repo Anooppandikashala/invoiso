@@ -3303,6 +3303,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get customFieldNotPrintedOnPdfTooltip => '不打印到 PDF — 点击打印';
 
   @override
+  String customFieldMaxReachedHint(int max) {
+    return '最多可添加 $max 个字段。';
+  }
+
+  @override
   String get customerFieldDobLabel => '出生日期';
 
   @override
@@ -3334,6 +3339,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get customerFieldShippingSameAsBillingLabel => '收货地址与账单地址相同';
+
+  @override
+  String get customerFieldShipToNotPrintedHint => '勾选此项时，PDF 上只打印账单地址。';
 
   @override
   String get customerFieldShipToHeader => '收货信息';

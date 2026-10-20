@@ -1826,6 +1826,7 @@ class _InvoiceSettingsScreenV2State
                     setState(() => _customerCustomFieldDefs = defs),
                 idPrefix: 'ccf',
                 showPdfToggle: true,
+                maxFields: 5,
                 newFieldHint: l10n.invoiceSettingsCustomerCustomFieldHint,
                 decoration: (label, hint) =>
                     _fieldDecorationV2(context, label: label, hint: hint),

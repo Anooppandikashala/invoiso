@@ -3442,6 +3442,11 @@ class AppLocalizationsHi extends AppLocalizations {
       'PDF पर प्रिंट नहीं होता — प्रिंट करने के लिए क्लिक करें';
 
   @override
+  String customFieldMaxReachedHint(int max) {
+    return 'आप अधिकतम $max फ़ील्ड जोड़ सकते हैं।';
+  }
+
+  @override
   String get customerFieldDobLabel => 'जन्म तिथि';
 
   @override
@@ -3474,6 +3479,10 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get customerFieldShippingSameAsBillingLabel =>
       'शिपिंग पता बिलिंग पते जैसा';
+
+  @override
+  String get customerFieldShipToNotPrintedHint =>
+      'यह चुना होने पर PDF पर केवल बिलिंग पता छपता है।';
 
   @override
   String get customerFieldShipToHeader => 'शिप टू';
