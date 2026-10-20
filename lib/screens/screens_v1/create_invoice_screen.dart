@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:invoiso/common/common.dart';
+import 'package:invoiso/domain/invoice_calculator.dart';
 import 'package:invoiso/domain/invoice_totals_calculator.dart';
 import 'package:invoiso/providers/app_config_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
@@ -43,6 +44,10 @@ class CreateInvoiceScreen extends ConsumerStatefulWidget {
   /// | 'Receipt'). Ignored when editing or cloning.
   final String? initialType;
 
+  /// Set for a quotation→invoice conversion: id of the source quotation.
+  /// On save the quotation is stamped 'converted' and linked.
+  final String? convertFromQuotationId;
+
   /// Called when the user taps "New Invoice" while in edit mode.
   /// The parent (DashboardScreen) resets invoiceToEdit to null.
   final VoidCallback? onCreateNewInvoice;
@@ -54,6 +59,7 @@ class CreateInvoiceScreen extends ConsumerStatefulWidget {
     this.cloneFrom,
     this.cloneType,
     this.initialType,
+    this.convertFromQuotationId,
     this.onCreateNewInvoice,
     this.guard,
   });
@@ -151,6 +157,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   String _quantityLabel = '';
   bool _showQuantity = true;
   bool _showPreviousBalance = false;
+  bool _showTimeInPdf = false; // order-time field shown only when PDFs print the time
+  String _pdfTimeFormat = '24'; // '12' | '24'
   bool _showAliasNameInPdf = false;
   bool _allowDuplicateInvoiceItems = false;
   double _previousBalanceDue = 0.0;
@@ -251,6 +259,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 unit: i.unit,
                 description: i.description,
                 discountPerUnit: i.discountPerUnit,
+                discountIsPercent: i.discountIsPercent,
                 isProductSaved: i.isProductSaved,
               ))
           .toList();
@@ -407,6 +416,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           'quantity': item.quantity,
           'discount': item.discount,
           'discountPerUnit': item.discountPerUnit,
+          'discountIsPercent': item.discountIsPercent,
           'extraCost': item.extraCost ?? 0.0,
           'taxRate': product.tax_rate,
           'hsn': product.hsncode,
@@ -512,7 +522,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         settingsRepo.getHideInvoiceNumberByDefault(), // 18
         settingsRepo.getSetting(SettingKey.customFieldsEnabled), // 19
         settingsRepo.getCustomFieldDefs(), // 20
-        CustomerFieldSettings.load(settingsRepo), // 21
+        settingsRepo.getShowTimeInPdf(), // 21
+        settingsRepo.getPdfTimeFormat(), // 22
+        CustomerFieldSettings.load(settingsRepo), // 23
       ]);
 
       final c = results[0] as List<Customer>;
@@ -559,7 +571,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       final hideInvoiceNumberByDefault = results[18] as bool;
       final customFieldsEnabled = (results[19] as String?) == 'true';
       final customFieldDefs = results[20] as List<CustomFieldDef>;
-      final customerFieldSettings = results[21] as CustomerFieldSettings;
+      final showTimeInPdf = results[21] as bool;
+      final pdfTimeFormat = results[22] as String;
+      final customerFieldSettings = results[23] as CustomerFieldSettings;
 
       // Determine which UPI to pre-select.
       String? existingUpiId;
@@ -645,6 +659,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           invoiceTitle = invoiceType == 'Invoice' ? defaultInvoiceTitle : null;
         }
         _datePattern = dateFormatOpt.key;
+        _showTimeInPdf = showTimeInPdf;
+        _pdfTimeFormat = pdfTimeFormat;
         dateController.text =
             DateFormat(_datePattern).format(_selectedOrderDate);
         if (_selectedDueDate != null) {
@@ -701,6 +717,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         text: _showDescriptionInPdf ? product.description : '');
 
     bool discountPerUnit = true;
+    bool discountIsPercent = false;
     String dialogUnit = product.unit;
     int insertAt = invoiceItems.length + 1;
 
@@ -712,8 +729,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           ? (double.tryParse(quantityController.text) ?? 1.0)
           : (int.tryParse(quantityController.text) ?? 1)
           .toDouble();
-      final discount =
-          double.tryParse(discountController.text) ?? 0.0;
+      final discount = _clampLineDiscount(
+          double.tryParse(discountController.text) ?? 0.0, discountIsPercent);
       final parsedUnitPrice =
       double.tryParse(unitPriceController.text);
       final unitPrice = (parsedUnitPrice != null &&
@@ -760,7 +777,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   extraCost: extraCost,
                   unit: dialogUnit.trim(),
                   description: descriptionController.text.trim(),
-                  discountPerUnit: discountPerUnit),
+                  discountPerUnit: discountPerUnit,
+                  discountIsPercent: discountIsPercent),
               insertAt: insertAt);
         }
       } else if (!product.unlimitedStock && product.stock <= 0) {
@@ -796,7 +814,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   extraCost: extraCost,
                   unit: dialogUnit.trim(),
                   description: descriptionController.text.trim(),
-                  discountPerUnit: discountPerUnit),
+                  discountPerUnit: discountPerUnit,
+                  discountIsPercent: discountIsPercent),
               insertAt: insertAt);
         }
       } else {
@@ -810,7 +829,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 extraCost: extraCost,
                 unit: dialogUnit.trim(),
                 description: descriptionController.text.trim(),
-                discountPerUnit: discountPerUnit),
+                discountPerUnit: discountPerUnit,
+                discountIsPercent: discountIsPercent),
             insertAt: insertAt);
       }
     }
@@ -998,6 +1018,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     controller: discountController,
                     decoration: InputDecoration(
                       labelText: 'Discount',
+                      suffixIcon: _buildDiscountTypeSelector(discountIsPercent,
+                          (val) => setDialogState(() => discountIsPercent = val)),
                       border: OutlineInputBorder(
                           borderRadius:
                               BorderRadius.circular(AppBorderRadius.xsmall)),
@@ -1010,9 +1032,11 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  _buildDiscountPerUnitToggle(discountPerUnit,
-                      (val) => setDialogState(() => discountPerUnit = val)),
+                  if (!discountIsPercent) ...[
+                    const SizedBox(height: 8),
+                    _buildDiscountPerUnitToggle(discountPerUnit,
+                        (val) => setDialogState(() => discountPerUnit = val)),
+                  ],
                   const SizedBox(height: 16),
                 ],
                 TextField(
@@ -1288,6 +1312,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         customInvoiceNumber: customInvoiceNumberController.text.trim().isEmpty
             ? null
             : customInvoiceNumberController.text.trim(),
+        convertedFromInvoiceId: widget.convertFromQuotationId,
       );
 
       await ref.read(invoiceRepositoryProvider).insertInvoice(invoice);
@@ -1342,10 +1367,16 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     final extraCostController = TextEditingController(
         text: item.extraCost != null ? item.extraCost.toString() : '');
     bool discountPerUnit = item.discountPerUnit;
+    bool discountIsPercent = item.discountIsPercent;
     final unitController = TextEditingController(text: item.effectiveUnit.toString());
     final descriptionController =
         TextEditingController(text: item.effectiveDescription);
     String dialogUnit = item.effectiveUnit.toString();
+    // Ad-hoc items have no catalog entry to fix a typo in, so their name is
+    // editable here. Catalog products keep their catalog name.
+    final isAdHoc = item.product.id.startsWith('custom-');
+    final nameController = TextEditingController(text: item.product.name);
+    String? nameError;
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -1419,6 +1450,25 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     ],
                   ),
                 ),
+                if (isAdHoc) ...[
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: nameController,
+                    decoration: InputDecoration(
+                      labelText: 'Item Name',
+                      errorText: nameError,
+                      border: OutlineInputBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppBorderRadius.xsmall)),
+                      prefixIcon: const Icon(Icons.label),
+                      filled: true,
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    ),
+                    onChanged: (_) {
+                      if (nameError != null) setDialogState(() => nameError = null);
+                    },
+                  ),
+                ],
                 Builder(builder: (context) {
                   if (!_columnsConfig.productMetadata) return const SizedBox.shrink();
                   final meta = _productMetadata[item.product.id];
@@ -1506,6 +1556,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     controller: discountController,
                     decoration: InputDecoration(
                       labelText: 'Discount',
+                      suffixIcon: _buildDiscountTypeSelector(discountIsPercent,
+                          (val) => setDialogState(() => discountIsPercent = val)),
                       border: OutlineInputBorder(
                           borderRadius:
                               BorderRadius.circular(AppBorderRadius.xsmall)),
@@ -1518,9 +1570,11 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  _buildDiscountPerUnitToggle(discountPerUnit,
-                      (val) => setDialogState(() => discountPerUnit = val)),
+                  if (!discountIsPercent) ...[
+                    const SizedBox(height: 8),
+                    _buildDiscountPerUnitToggle(discountPerUnit,
+                        (val) => setDialogState(() => discountPerUnit = val)),
+                  ],
                 ],
                 const SizedBox(height: 16),
                 TextField(
@@ -1584,6 +1638,11 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
               onPressed: () {
+                final newName = nameController.text.trim();
+                if (isAdHoc && newName.isEmpty) {
+                  setDialogState(() => nameError = 'Required');
+                  return;
+                }
                 final parsedUnitPrice = double.tryParse(unitPriceController.text);
                 final unitPrice = (parsedUnitPrice != null &&
                         parsedUnitPrice != item.product.price)
@@ -1591,7 +1650,11 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     : null;
                 final extraCost = double.tryParse(extraCostController.text);
                 final updatedItem = InvoiceItem(
-                  product: item.product,
+                  // Copy rather than mutate: the original Product may be
+                  // shared with the unsaved source invoice (edit/clone).
+                  product: isAdHoc && newName != item.product.name
+                      ? Product.fromMap({...item.product.toMap(), 'name': newName})
+                      : item.product,
                   quantity: !_showQuantity
                       ? 1.0
                       : _fractionalQuantity
@@ -1602,13 +1665,15 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                       ?.toInt() ??
                                   item.quantity.toInt())
                               .toDouble(),
-                  discount:
+                  discount: _clampLineDiscount(
                       double.tryParse(discountController.text) ?? item.discount,
+                      discountIsPercent),
                   unitPrice: unitPrice,
                   extraCost: extraCost,
                   unit: dialogUnit.trim(),
                   description: descriptionController.text.trim(),
                   discountPerUnit: discountPerUnit,
+                  discountIsPercent: discountIsPercent,
                 );
                 if(!mounted) return;
                 setState(() {
@@ -1808,6 +1873,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     final descriptionController = TextEditingController();
 
     bool discountPerUnit = true;
+    bool discountIsPercent = false;
     bool dialogPriceIncludesTax = false;
     String dialogItemType = _adHocItemType;
     int insertAt = invoiceItems.length + 1;
@@ -1864,11 +1930,14 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       ? (double.tryParse(quantityController.text) ?? 1.0)
                       : (int.tryParse(quantityController.text) ?? 1)
                           .toDouble(),
-              discount: double.tryParse(discountController.text) ?? 0.0,
+              discount: _clampLineDiscount(
+                  double.tryParse(discountController.text) ?? 0.0,
+                  discountIsPercent),
               extraCost: extraCost,
               unit: selectedUnit.trim(),
               description: descriptionController.text.trim(),
               discountPerUnit: discountPerUnit,
+              discountIsPercent: discountIsPercent,
             );
             Navigator.pop(context);
             addInvoiceProduct(item, insertAt: insertAt);
@@ -2002,6 +2071,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   controller: discountController,
                   decoration: InputDecoration(
                     labelText: 'Discount',
+                    suffixIcon: _buildDiscountTypeSelector(discountIsPercent,
+                        (val) => setDialogState(() => discountIsPercent = val)),
                     border: OutlineInputBorder(
                         borderRadius:
                             BorderRadius.circular(AppBorderRadius.xsmall)),
@@ -2014,9 +2085,11 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                   ],
                 ),
-                const SizedBox(height: 8),
-                _buildDiscountPerUnitToggle(discountPerUnit,
-                    (val) => setDialogState(() => discountPerUnit = val)),
+                if (!discountIsPercent) ...[
+                  const SizedBox(height: 8),
+                  _buildDiscountPerUnitToggle(discountPerUnit,
+                      (val) => setDialogState(() => discountPerUnit = val)),
+                ],
                 if (_columnsConfig.extraCost) ...[
                   const SizedBox(height: 16),
                   TextField(
@@ -2761,7 +2834,14 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       if (picked != null) {
                         if(!mounted) return;
                         setState(() {
-                          _selectedOrderDate = picked;
+                          // Keep the invoice's existing time — the picker returns midnight.
+                          _selectedOrderDate = DateTime(
+                              picked.year,
+                              picked.month,
+                              picked.day,
+                              _selectedOrderDate.hour,
+                              _selectedOrderDate.minute,
+                              _selectedOrderDate.second);
                           dateController.text =
                               DateFormat(_datePattern).format(picked);
                         });
@@ -2770,6 +2850,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     },
                   ),
                 ),
+                if (_showTimeInPdf) ...[
+                  const SizedBox(width: 12),
+                  Expanded(child: _orderTimeField()),
+                ],
                 const SizedBox(width: 12),
                 Expanded(
                   child: TextField(
@@ -2850,7 +2934,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                           child: Text('Receipt',
                               style: TextStyle(fontSize: AppFontSize.medium))),
                     ],
-                    onChanged: isEditing
+                    onChanged: (isEditing ||
+                            widget.convertFromQuotationId != null)
                         ? null
                         : (value) {
                             if (value != null) resetInvoiceType(value);
@@ -4022,6 +4107,38 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     );
   }
 
+  // A % line discount above 100 would make the line total negative.
+  double _clampLineDiscount(double discount, bool isPercent) =>
+      isPercent ? discount.clamp(0.0, 100.0) : discount;
+
+  // % / Amount dropdown shown inside the line discount field — same control
+  // as the invoice-level discount type.
+  Widget _buildDiscountTypeSelector(bool isPercent, ValueChanged<bool> onChanged) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<bool>(
+          value: isPercent,
+          isDense: true,
+          // Button is only as wide as "%"/symbol; without this the menu
+          // matches that width and wraps "Amount".
+          menuWidth: 120,
+          selectedItemBuilder: (context) => [
+            const Center(child: Text('%')),
+            Center(child: Text(_currencySymbol)),
+          ],
+          items: [
+            const DropdownMenuItem(value: true, child: Text('%')),
+            DropdownMenuItem(value: false, child: Text('Amount')),
+          ],
+          onChanged: (v) {
+            if (v != null) onChanged(v);
+          },
+        ),
+      ),
+    );
+  }
+
   Widget _buildDiscountPerUnitToggle(bool value, ValueChanged<bool> onChanged) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -4593,8 +4710,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                         '${item.effectiveUnit.trim().isEmpty ? '' : ' ${item.effectiveUnit}'}'),
                                   if(_columnsConfig.defaultDiscount || item.discount > 0)
                                     _buildItemDetail('Discount',
-                                        '$_currencySymbol${item.discount.toStringAsFixed(2)}${item.discountPerUnit ? ' ×qty' : ''}'),
-                                  if (item.discountPerUnit && item.discount > 0)
+                                        item.discountIsPercent
+                                            ? '${item.discount.toStringAsFixed(2)}%'
+                                            : '$_currencySymbol${item.discount.toStringAsFixed(2)}${item.discountPerUnit ? ' ×qty' : ''}'),
+                                  if (!item.discountIsPercent && item.discountPerUnit && item.discount > 0)
                                     _buildItemDetail('Net',
                                         '$_currencySymbol${(item.effectivePrice - item.discount).toStringAsFixed(2)}/item',
                                         color: Colors.teal[700]),
@@ -5255,6 +5374,45 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     );
   }
 
+  // Order time, next to the order date. Uses the PDF's 12/24-hour setting.
+  Widget _orderTimeField() {
+    final text = DateFormat(_pdfTimeFormat == '12' ? 'h:mm a' : 'HH:mm', 'en_US')
+        .format(_selectedOrderDate);
+    return TextFormField(
+      key: ValueKey('order-time-$text'), // rebuild when the time changes
+      initialValue: text,
+      readOnly: true,
+      style: TextStyle(fontSize: AppFontSize.medium),
+      decoration: InputDecoration(
+        labelText: 'Order Time',
+        labelStyle: TextStyle(fontSize: AppFontSize.medium),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+        filled: true,
+        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+        suffixIcon: const Icon(Icons.access_time, size: 18),
+      ),
+      onTap: () async {
+        final picked = await showTimePicker(
+          context: context,
+          initialTime: TimeOfDay.fromDateTime(_selectedOrderDate),
+          builder: (ctx, child) => MediaQuery(
+            data: MediaQuery.of(ctx)
+                .copyWith(alwaysUse24HourFormat: _pdfTimeFormat != '12'),
+            child: child!,
+          ),
+        );
+        if (picked == null || !mounted) return;
+        setState(() => _selectedOrderDate = DateTime(
+            _selectedOrderDate.year,
+            _selectedOrderDate.month,
+            _selectedOrderDate.day,
+            picked.hour,
+            picked.minute));
+      },
+    );
+  }
+
   Future<bool> _updateInvoice() async {
     if (_invoice == null) return false;
 
@@ -5332,6 +5490,25 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             ? null
             : customInvoiceNumberController.text.trim(),
       );
+
+      // Block edits that drop the total below what's already been paid.
+      final paid = await ref
+          .read(paymentRepositoryProvider)
+          .getTotalPaidForInvoice(updatedInvoice.id);
+      if (paid - updatedInvoice.total > InvoiceCalculator.moneyEpsilon) {
+        if (!mounted) return false;
+        setState(() => isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('The new total is less than the '
+              '$_currencySymbol ${paid.toStringAsFixed(2)} already paid. '
+              'Delete payments in Apply Payment first, or keep the total at '
+              'or above that amount.'),
+          backgroundColor: Colors.red,
+          showCloseIcon: true,
+          behavior: SnackBarBehavior.floating,
+        ));
+        return false;
+      }
 
       await ref.read(invoiceRepositoryProvider).updateInvoice(updatedInvoice);
 
@@ -5680,6 +5857,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             quantity: item.quantity,
             discount: item.discount,
             discountPerUnit: item.discountPerUnit,
+            discountIsPercent: item.discountIsPercent,
             extraCost: item.extraCost ?? 0.0,
             taxRatePercent: item.product.tax_rate.toDouble(),
             priceIncludesTax: item.product.priceIncludesTax,

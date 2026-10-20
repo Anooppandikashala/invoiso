@@ -8,6 +8,9 @@ import 'package:invoiso/utils/password_utils.dart';
 
 const _tag = 'DatabaseHelper';
 
+/// Placeholder `company_info.name` seeded by `_createDB`.
+const seedCompanyName = 'Your Company Name';
+
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   factory DatabaseHelper() => _instance;
@@ -16,7 +19,7 @@ class DatabaseHelper {
   static String? get path => _path;
   static Database? _database;
   static String _dbFileName = 'invoice_manager.db';
-  final dbVersion = 50;
+  final dbVersion = 55;
 
   /// Startup only, before anything has opened a connection yet — just points
   /// at the right file for the first `_initDB()` call. No close/reopen, so
@@ -94,7 +97,9 @@ class DatabaseHelper {
         alias_name TEXT,
         unit TEXT DEFAULT '',
         unlimited_stock INTEGER DEFAULT 0,
-        price_includes_tax INTEGER DEFAULT 0
+        price_includes_tax INTEGER DEFAULT 0,
+        last_purchase_date TEXT,
+        low_stock_limit INTEGER
       )
     ''');
 
@@ -152,7 +157,10 @@ class DatabaseHelper {
         hide_invoice_number INTEGER DEFAULT 0,
         custom_invoice_number TEXT,
         is_interstate INTEGER DEFAULT 0,
-        custom_fields TEXT
+        custom_fields TEXT,
+        status TEXT,
+        converted_to_invoice_id TEXT,
+        converted_from_invoice_id TEXT
       )
     ''');
 
@@ -171,6 +179,7 @@ class DatabaseHelper {
         unit_price REAL,
         extra_cost REAL,
         discount_per_unit INTEGER DEFAULT 0,
+        discount_is_percent INTEGER DEFAULT 0,
         is_product_saved INTEGER DEFAULT 0,
         product_type TEXT DEFAULT 'product',
         product_purchase_price REAL DEFAULT 0.0,
@@ -243,6 +252,89 @@ class DatabaseHelper {
       )
     ''');
 
+    // product_metadata.supplier_name (above) is a pre-existing free-text
+    // field. It is intentionally NOT reconciled with the normalized
+    // `suppliers` table below — no fuzzy-match/reconciliation migration,
+    // out of scope for this pass.
+    await db.execute('''
+      CREATE TABLE suppliers (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        business_name TEXT DEFAULT '',
+        phone TEXT DEFAULT '',
+        email TEXT DEFAULT '',
+        address TEXT DEFAULT '',
+        gstin TEXT DEFAULT '',
+        notes TEXT DEFAULT '',
+        deleted_at TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE purchase_bills (
+        id TEXT PRIMARY KEY,
+        supplier_id TEXT,
+        supplier_name TEXT,
+        bill_number TEXT,
+        bill_date TEXT,
+        notes TEXT,
+        attachment_path TEXT,
+        subtotal REAL DEFAULT 0.0,
+        tax_amount REAL DEFAULT 0.0,
+        total_amount REAL DEFAULT 0.0,
+        deleted_at TEXT,
+        created_at TEXT,
+        is_draft INTEGER DEFAULT 0
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE purchase_bill_items (
+        id TEXT PRIMARY KEY,
+        bill_id TEXT,
+        product_id TEXT,
+        product_name TEXT,
+        product_description TEXT,
+        quantity REAL,
+        cost_per_unit REAL,
+        tax_rate REAL DEFAULT 0,
+        cost_includes_tax INTEGER DEFAULT 0,
+        line_total REAL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE stock_transactions (
+        id TEXT PRIMARY KEY,
+        product_id TEXT NOT NULL,
+        transaction_type TEXT NOT NULL,
+        reference_id TEXT,
+        quantity_change REAL NOT NULL,
+        stock_before REAL NOT NULL,
+        stock_after REAL NOT NULL,
+        unit_cost REAL,
+        transaction_date TEXT NOT NULL,
+        notes TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE supplier_payments (
+        id TEXT PRIMARY KEY,
+        bill_id TEXT NOT NULL,
+        supplier_id TEXT,
+        amount_paid REAL NOT NULL,
+        previously_paid REAL NOT NULL DEFAULT 0,
+        balance_after REAL NOT NULL,
+        date_paid TEXT NOT NULL,
+        payment_method TEXT,
+        notes TEXT
+      )
+    ''');
+
+    await db.execute(_cashLedgerTableSql);
+    await db.execute(_cashLedgerHistoryTableSql);
+
     // Indexes
     await db.execute('CREATE INDEX idx_invoices_customer ON invoices(customer_name)');
     await db.execute('CREATE INDEX idx_invoices_date ON invoices(date)');
@@ -252,6 +344,14 @@ class DatabaseHelper {
     await db.execute('CREATE INDEX idx_invoice_items_invoice ON invoice_items(invoice_id)');
     await db.execute('CREATE INDEX idx_payments_invoice ON invoice_payments(invoice_id)');
     await db.execute('CREATE INDEX idx_payments_date ON invoice_payments(date_paid)');
+    await db.execute('CREATE INDEX idx_suppliers_name ON suppliers(name)');
+    await db.execute('CREATE INDEX idx_purchase_bills_date ON purchase_bills(bill_date)');
+    await db.execute('CREATE INDEX idx_purchase_bills_supplier ON purchase_bills(supplier_id)');
+    await db.execute('CREATE INDEX idx_purchase_bill_items_bill ON purchase_bill_items(bill_id)');
+    await db.execute('CREATE INDEX idx_purchase_bill_items_product ON purchase_bill_items(product_id)');
+    await db.execute('CREATE INDEX idx_stock_tx_product_date ON stock_transactions(product_id, transaction_date)');
+    await db.execute('CREATE INDEX idx_supplier_payments_bill ON supplier_payments(bill_id)');
+    await db.execute('CREATE INDEX idx_supplier_payments_supplier ON supplier_payments(supplier_id)');
     await db.execute('CREATE INDEX idx_inv_type_del_id ON invoices(type, deleted_at, id)');
     await db.execute('CREATE INDEX idx_inv_customer_id ON invoices(customer_id, type, date)');
     await db.execute('CREATE INDEX idx_inv_type_num ON invoices(type, invoice_number)');
@@ -260,10 +360,13 @@ class DatabaseHelper {
     await db.execute('CREATE INDEX idx_customers_name_nc ON customers(name COLLATE NOCASE)');
     await db.execute('CREATE INDEX idx_customers_email ON customers(email)');
     await db.execute('CREATE INDEX idx_customers_phone ON customers(phone)');
+    await db.execute('CREATE INDEX idx_cash_ledger_date ON cash_ledger(date_time)');
+    await db.execute('CREATE INDEX idx_cash_ledger_history_entry ON cash_ledger_history(entry_id)');
+    await db.execute('CREATE INDEX idx_cash_ledger_history_action ON cash_ledger_history(action, changed_at)');
 
     // Insert dummy company info
     await db.insert('company_info', {
-      'name': 'Your Company Name',
+      'name': seedCompanyName,
       'address': '123 Street \nCity, State 12345',
       'phone': '9876543210',
       'email': 'info@yourcompany.com',
@@ -830,9 +933,244 @@ class DatabaseHelper {
       });
     }
 
-    // v49 is taken by cash-upi-exchange-service (cash ledger), so this
-    // branch uses v50 — see CustomerDemographicsAndShippingAddressPlan.md.
+    if (oldVersion < 49) {
+      // Quotation lifecycle status + quote<->invoice links. NULL on every
+      // pre-v49 row = no status (read as 'draft') and no link, behaves
+      // exactly as before.
+      await _runMigrationStep(
+          db, 49, 'add_quotation_status_and_links', () async {
+        await db.execute('ALTER TABLE invoices ADD COLUMN status TEXT');
+        await db.execute(
+            'ALTER TABLE invoices ADD COLUMN converted_to_invoice_id TEXT');
+        await db.execute(
+            'ALTER TABLE invoices ADD COLUMN converted_from_invoice_id TEXT');
+      });
+    }
+
     if (oldVersion < 50) {
+      // Percentage line-item discount. Default 0 → every existing line keeps
+      // its amount-based discount.
+      await _runMigrationStep(
+          db, 50, 'add_discount_is_percent_to_invoice_items', () async {
+        await db.execute(
+            'ALTER TABLE invoice_items ADD COLUMN discount_is_percent INTEGER DEFAULT 0');
+      });
+    }
+
+    if (oldVersion < 51) {
+      // Cash / UPI-Bank exchange ledger (CashUpiExchangeImplementationPlan.md).
+      await _runMigrationStep(db, 51, 'create_cash_ledger', () async {
+        await db.execute(_cashLedgerTableSql
+            .replaceFirst('CREATE TABLE', 'CREATE TABLE IF NOT EXISTS'));
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_cash_ledger_date ON cash_ledger(date_time)');
+      });
+
+      // Per-product low-stock limit. NULL = default (10).
+      await _runMigrationStep(db, 51, 'add_low_stock_limit_to_products', () async {
+        await db.execute('ALTER TABLE products ADD COLUMN low_stock_limit INTEGER');
+      });
+    }
+
+    if (oldVersion < 52) {
+      // Cash ledger edit log: real entry time, a history of old versions
+      // (edits and deletes), and created_by as a user id instead of a
+      // username. Separate steps: a "duplicate column" skip (table made by
+      // the v51 step with the current SQL) mustn't skip the others.
+      await _runMigrationStep(db, 52, 'add_created_at_to_cash_ledger', () async {
+        await db.execute('ALTER TABLE cash_ledger ADD COLUMN created_at TEXT');
+      });
+      await _runMigrationStep(db, 52, 'create_cash_ledger_history', () async {
+        await db.execute(_cashLedgerHistoryTableSql
+            .replaceFirst('CREATE TABLE', 'CREATE TABLE IF NOT EXISTS'));
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_cash_ledger_history_entry ON cash_ledger_history(entry_id)');
+        // Deleted-entries list: one page, newest first, without a scan.
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_cash_ledger_history_action ON cash_ledger_history(action, changed_at)');
+      });
+      // Usernames of users that no longer exist stay as they are and match
+      // no id, so only admins can change those rows.
+      await _runMigrationStep(db, 52, 'cash_ledger_created_by_user_id', () async {
+        await db.execute(
+            'UPDATE cash_ledger SET created_by = (SELECT id FROM users '
+            'WHERE users.username = cash_ledger.created_by) '
+            'WHERE created_by IN (SELECT username FROM users)');
+      });
+      // Test builds (test-v1.3.3) reached v51 with the cash-upi numbering,
+      // which never had the v50 percent-discount step. Duplicate column → skip.
+      await _runMigrationStep(
+          db, 52, 'add_discount_is_percent_to_invoice_items', () async {
+        await db.execute(
+            'ALTER TABLE invoice_items ADD COLUMN discount_is_percent INTEGER DEFAULT 0');
+      });
+    }
+
+    if (oldVersion < 53) {
+      // Purchase bills / suppliers / stock tracking. Was v41/v42, then v52/v53
+      // on the feature branch; renumbered after merging main (which claimed
+      // v41-v52, cash ledger at v51/v52). Every step is idempotent.
+      await _runMigrationStep(
+          db, 53, 'create_purchase_bills_suppliers_tables', () async {
+        // product_metadata.supplier_name is a pre-existing free-text field,
+        // intentionally not reconciled with this new normalized table.
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS suppliers (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            business_name TEXT DEFAULT '',
+            phone TEXT DEFAULT '',
+            email TEXT DEFAULT '',
+            address TEXT DEFAULT '',
+            gstin TEXT DEFAULT '',
+            notes TEXT DEFAULT '',
+            deleted_at TEXT
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS purchase_bills (
+            id TEXT PRIMARY KEY,
+            supplier_id TEXT,
+            supplier_name TEXT,
+            bill_number TEXT,
+            bill_date TEXT,
+            notes TEXT,
+            attachment_path TEXT,
+            subtotal REAL DEFAULT 0.0,
+            tax_amount REAL DEFAULT 0.0,
+            total_amount REAL DEFAULT 0.0,
+            deleted_at TEXT,
+            created_at TEXT,
+            is_draft INTEGER DEFAULT 0
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS purchase_bill_items (
+            id TEXT PRIMARY KEY,
+            bill_id TEXT,
+            product_id TEXT,
+            product_name TEXT,
+            product_description TEXT,
+            quantity REAL,
+            cost_per_unit REAL,
+            tax_rate REAL DEFAULT 0,
+            cost_includes_tax INTEGER DEFAULT 0,
+            line_total REAL
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS stock_transactions (
+            id TEXT PRIMARY KEY,
+            product_id TEXT NOT NULL,
+            transaction_type TEXT NOT NULL,
+            reference_id TEXT,
+            quantity_change REAL NOT NULL,
+            stock_before REAL NOT NULL,
+            stock_after REAL NOT NULL,
+            unit_cost REAL,
+            transaction_date TEXT NOT NULL,
+            notes TEXT
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS supplier_payments (
+            id TEXT PRIMARY KEY,
+            bill_id TEXT NOT NULL,
+            supplier_id TEXT,
+            amount_paid REAL NOT NULL,
+            previously_paid REAL NOT NULL DEFAULT 0,
+            balance_after REAL NOT NULL,
+            date_paid TEXT NOT NULL,
+            payment_method TEXT,
+            notes TEXT
+          )
+        ''');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_suppliers_name ON suppliers(name)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_purchase_bills_date ON purchase_bills(bill_date)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_purchase_bills_supplier ON purchase_bills(supplier_id)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_purchase_bill_items_bill ON purchase_bill_items(bill_id)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_purchase_bill_items_product ON purchase_bill_items(product_id)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_stock_tx_product_date ON stock_transactions(product_id, transaction_date)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_supplier_payments_bill ON supplier_payments(bill_id)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_supplier_payments_supplier ON supplier_payments(supplier_id)');
+      });
+
+      // D2: products.stock stays INTEGER (rounds) while purchase_bill_items
+      // .quantity / stock_transactions.quantity_change stay REAL, preserving
+      // full precision in the audit trail even though the stock counter rounds.
+      await _runMigrationStep(db, 53, 'add_last_purchase_date_to_products',
+          () async {
+        await db.execute(
+          'ALTER TABLE products ADD COLUMN last_purchase_date TEXT',
+        );
+      });
+
+      await _runMigrationStep(
+          db, 53, 'add_cost_includes_tax_to_purchase_bill_items', () async {
+        await db.execute(
+          'ALTER TABLE purchase_bill_items ADD COLUMN cost_includes_tax INTEGER DEFAULT 0',
+        );
+      });
+
+      // Re-run of main's v42 step: DBs that ran this branch's old v42 skipped
+      // it. Duplicate column is tolerated by _runMigrationStep.
+      await _runMigrationStep(
+          db, 53, 'add_description_to_invoice_items', () async {
+        await db.execute(
+          'ALTER TABLE invoice_items ADD COLUMN description TEXT',
+        );
+      });
+
+      // Draft purchase bills don't touch stock; 0 = final. Was its own v53
+      // on the feature branch (dev DBs at v52 lacked it). New DBs already
+      // have it from the CREATE above → duplicate column → skipped.
+      await _runMigrationStep(
+          db, 53, 'add_is_draft_to_purchase_bills', () async {
+        await db.execute(
+          'ALTER TABLE purchase_bills ADD COLUMN is_draft INTEGER DEFAULT 0',
+        );
+      });
+    }
+
+    if (oldVersion < 54) {
+      // Re-run of main's v51/v52 steps: dev DBs and backups of the purchase
+      // branch were already at v53 (its old numbering) without the cash
+      // ledger, so they skipped both. All idempotent; no-op for main's DBs.
+      // created_by migration not re-run — those DBs have no ledger rows yet.
+      await _runMigrationStep(db, 54, 'create_cash_ledger', () async {
+        await db.execute(_cashLedgerTableSql
+            .replaceFirst('CREATE TABLE', 'CREATE TABLE IF NOT EXISTS'));
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_cash_ledger_date ON cash_ledger(date_time)');
+      });
+      await _runMigrationStep(db, 54, 'add_low_stock_limit_to_products', () async {
+        await db.execute('ALTER TABLE products ADD COLUMN low_stock_limit INTEGER');
+      });
+      await _runMigrationStep(db, 54, 'add_created_at_to_cash_ledger', () async {
+        await db.execute('ALTER TABLE cash_ledger ADD COLUMN created_at TEXT');
+      });
+      await _runMigrationStep(db, 54, 'create_cash_ledger_history', () async {
+        await db.execute(_cashLedgerHistoryTableSql
+            .replaceFirst('CREATE TABLE', 'CREATE TABLE IF NOT EXISTS'));
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_cash_ledger_history_entry ON cash_ledger_history(entry_id)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_cash_ledger_history_action ON cash_ledger_history(action, changed_at)');
+      });
+    }
+
+    // v49–v54 are taken on main (quotation status, % line discount, cash
+    // ledger, purchase bills), so this branch uses v55 — see
+    // CustomerDemographicsAndShippingAddressPlan.md.
+    if (oldVersion < 55) {
       // Shipping address, age/DOB/gender and user-defined custom fields on
       // customers, plus the matching invoice snapshot columns. Defaults keep
       // every existing customer "same as billing", so old invoices print
@@ -848,17 +1186,53 @@ class DatabaseHelper {
         ('custom_fields', 'TEXT'),
       ];
       for (final (name, type) in columns) {
-        await _runMigrationStep(db, 50, 'add_${name}_to_customers', () async {
+        await _runMigrationStep(db, 55, 'add_${name}_to_customers', () async {
           await db.execute('ALTER TABLE customers ADD COLUMN $name $type');
         });
         await _runMigrationStep(
-            db, 50, 'add_customer_${name}_to_invoices', () async {
+            db, 55, 'add_customer_${name}_to_invoices', () async {
           await db.execute(
               'ALTER TABLE invoices ADD COLUMN customer_$name $type');
         });
       }
     }
   }
+
+  // Signed per-account deltas are computed once at write time; balances are
+  // SUMs, never stored. upi_delta is the combined UPI/Bank account.
+  static const _cashLedgerTableSql = '''
+      CREATE TABLE cash_ledger (
+        id              TEXT PRIMARY KEY,
+        entry_type      TEXT NOT NULL,
+        receipt_number  TEXT,
+        exchange_amount REAL NOT NULL DEFAULT 0,
+        service_fee     REAL NOT NULL DEFAULT 0,
+        fee_method      TEXT,
+        cash_delta      REAL NOT NULL DEFAULT 0,
+        upi_delta       REAL NOT NULL DEFAULT 0,
+        customer_id     TEXT,
+        customer_name   TEXT,
+        customer_phone  TEXT,
+        date_time       TEXT NOT NULL,
+        notes           TEXT,
+        created_by      TEXT,
+        created_at      TEXT
+      )
+    ''';
+
+  // Old versions of edited / deleted cash_ledger rows (old_data = the row's
+  // JSON). The current version is the cash_ledger row itself.
+  static const _cashLedgerHistoryTableSql = '''
+      CREATE TABLE cash_ledger_history (
+        id              TEXT PRIMARY KEY,
+        entry_id        TEXT NOT NULL,
+        action          TEXT NOT NULL,
+        old_data        TEXT NOT NULL,
+        changed_by      TEXT,
+        changed_by_name TEXT,
+        changed_at      TEXT NOT NULL
+      )
+    ''';
 
   Future<void> _runMigrationStep(
     Database db,

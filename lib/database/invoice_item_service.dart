@@ -27,6 +27,7 @@ class InvoiceItemService {
       'unit_price': item.unitPrice,
       'extra_cost': item.extraCost,
       'discount_per_unit': item.discountPerUnit ? 1 : 0,
+      'discount_is_percent': item.discountIsPercent ? 1 : 0,
       'is_product_saved': item.isProductSaved ? 1 : 0,
       'product_type': item.product.type,
       'product_unit': item.product.unit,
@@ -69,6 +70,7 @@ class InvoiceItemService {
             description: map['description'] as String?,
             metadata: ProductMetadata.fromJsonString(map['line_metadata']),
             discountPerUnit: (map['discount_per_unit'] as int? ?? 0) == 1,
+            discountIsPercent: (map['discount_is_percent'] as int? ?? 0) == 1,
             isProductSaved: (map['is_product_saved'] as int? ?? 0) == 1,
           ),
         );

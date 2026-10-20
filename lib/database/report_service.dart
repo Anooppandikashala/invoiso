@@ -8,6 +8,7 @@ import 'package:invoiso/domain/customer_identity.dart';
 import 'package:invoiso/domain/invoice_calculator.dart';
 import 'package:invoiso/domain/invoice_totals_calculator.dart';
 import 'package:invoiso/models/additional_cost.dart';
+import 'package:invoiso/models/cash_ledger_entry.dart';
 import 'package:invoiso/utils/app_date.dart';
 import 'package:invoiso/utils/formatters.dart';
 import 'package:invoiso/models/report_models.dart';
@@ -76,12 +77,17 @@ class _StatementLineDraft {
 
 class ReportService {
   static final _db = DatabaseHelper();
-  static const _invoiceItemNetSql = 'CASE WHEN ii.discount_per_unit = 1 '
+  static const _invoiceItemNetSql = 'CASE WHEN ii.discount_is_percent = 1 '
+      'THEN COALESCE(ii.unit_price, ii.product_price) * ii.quantity '
+      '* (1 - ii.discount / 100.0) + COALESCE(ii.extra_cost, 0) '
+      'WHEN ii.discount_per_unit = 1 '
       'THEN (COALESCE(ii.unit_price, ii.product_price) - ii.discount) * ii.quantity '
       '+ COALESCE(ii.extra_cost, 0) '
       'ELSE COALESCE(ii.unit_price, ii.product_price) * ii.quantity '
       '- ii.discount + COALESCE(ii.extra_cost, 0) END';
-  static const _invoiceItemDiscountSql = 'CASE WHEN ii.discount_per_unit = 1 '
+  static const _invoiceItemDiscountSql = 'CASE WHEN ii.discount_is_percent = 1 '
+      'THEN COALESCE(ii.unit_price, ii.product_price) * ii.quantity * ii.discount / 100.0 '
+      'WHEN ii.discount_per_unit = 1 '
       'THEN ii.discount * ii.quantity ELSE ii.discount END';
   // Revenue basis for P&L/dashboard: backs out embedded tax for
   // tax-inclusive-priced items so "revenue" stays a tax-exclusive figure,
@@ -106,7 +112,8 @@ class ReportService {
   }) async {
     final db = await _db.database;
 
-    final sb = StringBuffer('type = ? AND deleted_at IS NULL');
+    final sb = StringBuffer(
+        "type = ? AND deleted_at IS NULL AND (status IS NULL OR status != 'declined')");
     final args = <dynamic>[type];
     if (from != null) {
       sb.write(' AND date >= ?');
@@ -151,7 +158,7 @@ class ReportService {
 
     final itemRows = await db.rawQuery(
       'SELECT invoice_id, quantity, unit_price, product_price, discount, '
-      'discount_per_unit, extra_cost, product_tax_rate, product_price_includes_tax, '
+      'discount_per_unit, discount_is_percent, extra_cost, product_tax_rate, product_price_includes_tax, '
       'product_purchase_price '
       'FROM invoice_items WHERE invoice_id IN $invSubquery',
       args,
@@ -293,6 +300,7 @@ class ReportService {
       "FROM invoice_items ii "
       "JOIN invoices i ON i.id = ii.invoice_id "
       "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "AND (i.status IS NULL OR i.status != 'declined') "
       "AND (ii.product_purchase_price IS NULL OR ii.product_purchase_price = 0) "
       "$ccFilter"
       "AND i.date >= ? AND i.date <= ?",
@@ -328,6 +336,7 @@ class ReportService {
       "FROM invoice_payments ip "
       "JOIN invoices i ON ip.invoice_id = i.id "
       "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "AND (i.status IS NULL OR i.status != 'declined') "
       "$currencyFilter"
       "AND ip.date_paid >= ? AND ip.date_paid <= ? "
       "GROUP BY month ORDER BY month",
@@ -402,6 +411,62 @@ class ReportService {
               cogs: cogsByDay[d] ?? 0.0,
             ))
         .toList();
+  }
+
+  /// Adds each day's net Cash / UPI-Bank change to [rows]. Days with only
+  /// ledger activity get a row with no invoices; the result stays date-sorted.
+  static List<DailyPoint> mergeDailyCashUpi(
+      List<DailyPoint> rows, Map<String, CashDailyNet> net) {
+    final byDate = {for (final d in rows) d.date: d};
+    final days = {...byDate.keys, ...net.keys}.toList()..sort();
+    return days.map((day) {
+      final d = byDate[day];
+      final n = net[day];
+      return DailyPoint(
+        date: day,
+        invoiceCount: d?.invoiceCount ?? 0,
+        billed: d?.billed ?? 0,
+        cogs: d?.cogs ?? 0,
+        cash: n?.cash ?? 0,
+        upiBank: n?.upiBank ?? 0,
+        paidCash: n?.payCash ?? 0,
+        paidUpi: n?.payUpi ?? 0,
+        serviceIncome: n?.fee ?? 0,
+        exchangeCount: n?.exchanges ?? 0,
+      );
+    }).toList();
+  }
+
+  /// Daily Report table lines: per day, an invoice line and/or a cash-exchange
+  /// line, each only when the day has that activity and its type is wanted.
+  static List<DailyLine> dailyLines(List<DailyPoint> rows,
+          {bool invoices = true, bool exchanges = false}) =>
+      [
+        for (final d in rows) ...[
+          if (invoices && d.hasInvoiceActivity) (d: d, exchange: false),
+          if (exchanges && d.hasExchangeActivity) (d: d, exchange: true),
+        ],
+      ];
+
+  /// Cells after the date for one line. With [cashUpi]: Type, Count, Sales,
+  /// COGS, Profit, Margin %, Cash, UPI/Bank — an exchange line's profit is its
+  /// service fee and its Cash / UPI-Bank the ledger movements; an invoice
+  /// line's are the payments received. Without: Invoices .. Margin %.
+  static List<String> _dailyLineCells(DailyLine l, bool cashUpi,
+      String Function(double) money, String Function(double) pct) {
+    final d = l.d;
+    if (l.exchange) {
+      return [
+        'Cash exchange', '${d.exchangeCount}', '', '', money(d.serviceIncome),
+        '', money(d.cash), money(d.upiBank),
+      ];
+    }
+    return [
+      if (cashUpi) 'Invoices',
+      '${d.invoiceCount}', money(d.billed), money(d.cogs), money(d.profit),
+      pct(d.marginPercent),
+      if (cashUpi) ...[money(d.paidCash), money(d.paidUpi)],
+    ];
   }
 
   // ── 3. Payment status breakdown ────────────────────────────────────────────
@@ -562,6 +627,7 @@ class ReportService {
       "FROM invoice_items ii "
       "JOIN invoices i ON i.id = ii.invoice_id "
       "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "AND (i.status IS NULL OR i.status != 'declined') "
       "AND i.tax_mode = 'per_item' "
       "$ccFilter"
       "AND i.date >= ? AND i.date <= ? "
@@ -582,6 +648,7 @@ class ReportService {
       "SELECT i.id, i.tax_rate, i.additional_costs "
       "FROM invoices i "
       "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "AND (i.status IS NULL OR i.status != 'declined') "
       "AND i.tax_mode = 'global' AND i.tax_rate > 0 "
       "$ccFilter"
       "AND i.date >= ? AND i.date <= ?",
@@ -592,7 +659,7 @@ class ReportService {
       // Subquery instead of one `?` per id — see Issues.md #36.
       final itemRows = await db.rawQuery(
         "SELECT invoice_id, quantity, unit_price, product_price, discount, "
-        "discount_per_unit, extra_cost, product_tax_rate, product_price_includes_tax "
+        "discount_per_unit, discount_is_percent, extra_cost, product_tax_rate, product_price_includes_tax "
         "FROM invoice_items WHERE invoice_id IN ("
         "SELECT i.id FROM invoices i "
         "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
@@ -872,6 +939,7 @@ class ReportService {
       "FROM invoice_items ii "
       "JOIN invoices i ON i.id = ii.invoice_id "
       "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "AND (i.status IS NULL OR i.status != 'declined') "
       "$ccFilter"
       "AND i.date >= ? AND i.date <= ? "
       "GROUP BY ii.product_name ORDER BY $orderBy DESC LIMIT ?",
@@ -1118,17 +1186,20 @@ class ReportService {
 
   // ── CSV export helpers ─────────────────────────────────────────────────────
 
-  static String exportDailyReportCsv(List<DailyPoint> rows) {
+  /// [cashUpi] adds the Type column and Cash / UPI-Bank columns, see
+  /// [_dailyLineCells].
+  static String exportDailyReportCsv(List<DailyLine> lines,
+      {bool cashUpi = false}) {
     return buildQuotedCsv([
-      ['Date', 'Invoices', 'Sales', 'COGS', 'Profit', 'Margin %'],
-      for (final d in rows)
+      cashUpi
+          ? ['Date', 'Type', 'Count', 'Sales', 'COGS', 'Profit', 'Margin %',
+              'Cash', 'UPI/Bank']
+          : ['Date', 'Invoices', 'Sales', 'COGS', 'Profit', 'Margin %'],
+      for (final l in lines)
         [
-          d.date,
-          d.invoiceCount,
-          d.billed.toStringAsFixed(2),
-          d.cogs.toStringAsFixed(2),
-          d.profit.toStringAsFixed(2),
-          d.marginPercent.toStringAsFixed(1),
+          l.d.date,
+          ..._dailyLineCells(l, cashUpi, (v) => v.toStringAsFixed(2),
+              (v) => v.toStringAsFixed(1)),
         ],
     ]);
   }
@@ -1448,10 +1519,11 @@ class ReportService {
   // ── PDF export ──────────────────────────────────────────────────────────────
 
   static Future<Uint8List> exportDailyReportPdf(
-    List<DailyPoint> rows, {
+    List<DailyLine> lines, {
     required String currencySymbol,
     required String dateRangeLabel,
     bool showFooterBranding = true,
+    bool cashUpi = false,
   }) async {
     final theme = await PdfFontService.loadTheme();
     final doc = pw.Document(theme: theme);
@@ -1465,11 +1537,19 @@ class ReportService {
       return d == null ? v : DateFormat(dateFmt).format(d);
     }
 
-    final totalInvoices = rows.fold<int>(0, (a, d) => a + d.invoiceCount);
-    final totalSales = rows.fold<double>(0, (a, d) => a + d.billed);
-    final totalCogs = rows.fold<double>(0, (a, d) => a + d.cogs);
+    final inv = [for (final l in lines) if (!l.exchange) l.d];
+    final exc = [for (final l in lines) if (l.exchange) l.d];
+    final totalInvoices = inv.fold<int>(0, (a, d) => a + d.invoiceCount);
+    final totalSales = inv.fold<double>(0, (a, d) => a + d.billed);
+    final totalCogs = inv.fold<double>(0, (a, d) => a + d.cogs);
     final totalProfit = totalSales - totalCogs;
     final totalMargin = totalSales == 0 ? 0.0 : (totalProfit / totalSales) * 100;
+    final paidCash = inv.fold<double>(0, (a, d) => a + d.paidCash);
+    final paidUpi = inv.fold<double>(0, (a, d) => a + d.paidUpi);
+    final totalCash = exc.fold<double>(0, (a, d) => a + d.cash);
+    final totalUpi = exc.fold<double>(0, (a, d) => a + d.upiBank);
+    final totalTxns = exc.fold<int>(0, (a, d) => a + d.exchangeCount);
+    final totalFees = exc.fold<double>(0, (a, d) => a + d.serviceIncome);
 
     doc.addPage(
       pw.MultiPage(
@@ -1497,30 +1577,31 @@ class ReportService {
         ),
         build: (context) => [
           pw.TableHelper.fromTextArray(
-            headers: ['SL', 'Date', 'Invoices', 'Sales', 'COGS', 'Profit', 'Margin %'],
-            data: List<List<String>>.generate(rows.length, (i) {
-              final d = rows[i];
-              return [
-                '${i + 1}',
-                fmtDate(d.date),
-                '${d.invoiceCount}',
-                money(d.billed),
-                money(d.cogs),
-                money(d.profit),
-                '${d.marginPercent.toStringAsFixed(1)}%',
-              ];
-            }),
+            headers: cashUpi
+                ? ['SL', 'Date', 'Type', 'Count', 'Sales', 'COGS', 'Profit',
+                    'Margin %', 'Cash', 'UPI/Bank']
+                : ['SL', 'Date', 'Invoices', 'Sales', 'COGS', 'Profit',
+                    'Margin %'],
+            data: List<List<String>>.generate(lines.length, (i) => [
+                  '${i + 1}',
+                  fmtDate(lines[i].d.date),
+                  ..._dailyLineCells(lines[i], cashUpi, money,
+                      (v) => '${v.toStringAsFixed(1)}%'),
+                ]),
             headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9, color: PdfColors.white),
             cellStyle: const pw.TextStyle(fontSize: 9),
             headerDecoration: const pw.BoxDecoration(color: PdfReportHeader.accentColor),
             cellAlignments: {
               0: pw.Alignment.centerRight,
               1: pw.Alignment.centerLeft,
-              2: pw.Alignment.centerRight,
+              2: cashUpi ? pw.Alignment.centerLeft : pw.Alignment.centerRight,
               3: pw.Alignment.centerRight,
               4: pw.Alignment.centerRight,
               5: pw.Alignment.centerRight,
               6: pw.Alignment.centerRight,
+              7: pw.Alignment.centerRight,
+              8: pw.Alignment.centerRight,
+              9: pw.Alignment.centerRight,
             },
             cellHeight: 22,
             oddRowDecoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF8FAFC)),
@@ -1532,15 +1613,28 @@ class ReportService {
               color: PdfColors.grey100,
               borderRadius: pw.BorderRadius.circular(4),
             ),
-            child: pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.end,
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.end,
               children: [
-                pw.Text(
-                  'Total — Invoices: $totalInvoices   Sales: ${money(totalSales)}   '
-                  'COGS: ${money(totalCogs)}   Profit: ${money(totalProfit)}   '
-                  'Margin: ${totalMargin.toStringAsFixed(1)}%',
-                  style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
-                ),
+                if (inv.isNotEmpty || exc.isEmpty)
+                  pw.Text(
+                    'Invoices: $totalInvoices   Sales: ${money(totalSales)}   '
+                    'COGS: ${money(totalCogs)}   Profit: ${money(totalProfit)}   '
+                    'Margin: ${totalMargin.toStringAsFixed(1)}%'
+                    '${cashUpi ? '   Cash: ${money(paidCash)}   UPI/Bank: ${money(paidUpi)}' : ''}',
+                    style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+                  ),
+                if (exc.isNotEmpty)
+                  pw.Text(
+                    'Cash exchange — Txns: $totalTxns   Service fee: ${money(totalFees)}   '
+                    'Cash: ${money(totalCash)}   UPI/Bank: ${money(totalUpi)}',
+                    style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+                  ),
+                if (inv.isNotEmpty && exc.isNotEmpty)
+                  pw.Text(
+                    'Total profit: ${money(totalProfit + totalFees)}',
+                    style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+                  ),
               ],
             ),
           ),

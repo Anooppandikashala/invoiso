@@ -63,6 +63,13 @@ class AppLocalizationsHi extends AppLocalizations {
   String get onboardingStepInvoiceSubtitle => 'अपने इनवॉइस की सेटिंग करें';
 
   @override
+  String get onboardingStepPurchaseBillsTitle => 'खरीद बिल और आपूर्तिकर्ता';
+
+  @override
+  String get onboardingStepPurchaseBillsSubtitle =>
+      'आपूर्तिकर्ता बिल और स्टॉक खरीद ट्रैक करें (वैकल्पिक)';
+
+  @override
   String get onboardingStepAppearanceTitle => 'इनवॉइस स्वरूप';
 
   @override
@@ -98,6 +105,14 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get onboardingDefaultTaxRateLabel => 'डिफ़ॉल्ट टैक्स दर (%)';
+
+  @override
+  String get onboardingEnablePurchaseBillsSuppliersLabel =>
+      'खरीद बिल और आपूर्तिकर्ता सक्षम करें';
+
+  @override
+  String get onboardingEnablePurchaseBillsSuppliersSubtitle =>
+      'डैशबोर्ड मेनू में खरीद बिल और आपूर्तिकर्ता जोड़ता है। आप इसे कभी भी सेटिंग्स में बदल सकते हैं।';
 
   @override
   String get onboardingPageSizeLabel => 'पेज साइज़';
@@ -190,6 +205,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get navInvoices => 'इनवॉइस';
 
   @override
+  String get navServices => 'नकद विनिमय सेवाएँ';
+
+  @override
   String get navQuotations => 'कोटेशन';
 
   @override
@@ -203,6 +221,12 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get navReports => 'रिपोर्ट';
+
+  @override
+  String get navPurchaseBills => 'खरीद बिल';
+
+  @override
+  String get navSuppliers => 'आपूर्तिकर्ता';
 
   @override
   String get navSettings => 'सेटिंग्स';
@@ -237,6 +261,16 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get dashboardShortcutsBannerSubtitle =>
       'नए इनवॉइस के लिए Ctrl+Q, सहेजने के लिए Ctrl+S, और भी बहुत कुछ।';
+
+  @override
+  String get dashboardPurchaseBannerTitle => 'नया: खरीद बिल और आपूर्तिकर्ता';
+
+  @override
+  String get dashboardPurchaseBannerSubtitle =>
+      'आपूर्तिकर्ता बिल दर्ज करें, स्टॉक अपने आप अपडेट करें, और हर आपूर्तिकर्ता का बकाया ट्रैक करें।';
+
+  @override
+  String get dashboardPurchaseBannerAction => 'चालू करें';
 
   @override
   String get dashboardViewAllAction => 'सभी देखें';
@@ -303,10 +337,16 @@ class AppLocalizationsHi extends AppLocalizations {
   }
 
   @override
-  String get dashboardRecentInvoicesTitle => 'हाल के इनवॉइस';
+  String get dashboardRecentInvoicesTitle => 'हाल के दस्तावेज़';
 
   @override
-  String get dashboardLastFiveInvoicesLabel => 'पिछले 5 इनवॉइस';
+  String get dashboardLastFiveInvoicesLabel => 'पिछले 5 दस्तावेज़';
+
+  @override
+  String get dashboardColDocumentNo => 'दस्तावेज़ सं.';
+
+  @override
+  String get dashboardColType => 'प्रकार';
 
   @override
   String get dashboardNoInvoicesYetTitle => 'अभी तक कोई इनवॉइस नहीं';
@@ -759,6 +799,17 @@ class AppLocalizationsHi extends AppLocalizations {
   String get createInvoicePreviousBalanceDueLabel => 'पिछला बकाया शेष';
 
   @override
+  String get createInvoicePaymentSectionLabel => 'भुगतान';
+
+  @override
+  String get createInvoiceBalanceDueLabel => 'शेष देय राशि';
+
+  @override
+  String createInvoicePaymentNotRecordedMessage(String error) {
+    return 'इनवॉइस सहेजा गया, लेकिन भुगतान दर्ज नहीं हुआ: $error. इसे इनवॉइस सूची से जोड़ें।';
+  }
+
+  @override
   String get createInvoiceDueShortLabel => 'बकाया';
 
   @override
@@ -767,6 +818,11 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String createInvoiceUpdatedSuccessMessage(String invoiceTypeLabel) {
     return '$invoiceTypeLabel सफलतापूर्वक अपडेट किया गया!';
+  }
+
+  @override
+  String createInvoiceTotalBelowPaidMessage(String paid) {
+    return 'नया कुल पहले से भुगतान किए गए $paid से कम है। पहले भुगतान लागू करें में भुगतान हटाएँ, या कुल को इस राशि के बराबर या अधिक रखें।';
   }
 
   @override
@@ -902,6 +958,9 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get createInvoiceOrderDateLabel => 'ऑर्डर तिथि';
+
+  @override
+  String get createInvoiceOrderTimeLabel => 'ऑर्डर समय';
 
   @override
   String get createInvoiceDueDateLabel => 'देय तिथि';
@@ -1277,6 +1336,9 @@ class AppLocalizationsHi extends AppLocalizations {
       'पूरी तरह भुगतान किए गए चालान छिपाएँ';
 
   @override
+  String get invoiceMgmtHideDeclinedLabel => 'अस्वीकृत चालान छिपाएँ';
+
+  @override
   String get invoiceMgmtPaymentStatusLabel => 'भुगतान स्थिति';
 
   @override
@@ -1421,6 +1483,76 @@ class AppLocalizationsHi extends AppLocalizations {
   String invoiceMgmtNewDocumentButton(String type) {
     return 'नया $type';
   }
+
+  @override
+  String get invoiceMgmtConvertToInvoiceAction => 'इनवॉइस में बदलें';
+
+  @override
+  String get invoiceMgmtConvertAgainTitle => 'फिर से बदलें?';
+
+  @override
+  String invoiceMgmtConvertAgainBody(String number) {
+    return 'कोटेशन $number पहले ही इनवॉइस में बदला जा चुका है। इससे एक और इनवॉइस बनाएं?';
+  }
+
+  @override
+  String get invoiceMgmtMarkAsSent => 'भेजा गया चिह्नित करें';
+
+  @override
+  String get invoiceMgmtMarkAsAccepted => 'स्वीकृत चिह्नित करें';
+
+  @override
+  String get invoiceMgmtMarkAsDeclined => 'अस्वीकृत चिह्नित करें';
+
+  @override
+  String get quotationStatusDraft => 'ड्राफ़्ट';
+
+  @override
+  String get quotationStatusSent => 'भेजा गया';
+
+  @override
+  String get quotationStatusAccepted => 'स्वीकृत';
+
+  @override
+  String get quotationStatusDeclined => 'अस्वीकृत';
+
+  @override
+  String get quotationStatusConverted => 'परिवर्तित';
+
+  @override
+  String get invoiceMgmtDeclineInvoiceTitle => 'इनवॉइस अस्वीकार करें?';
+
+  @override
+  String invoiceMgmtDeclineInvoiceBody(String number) {
+    return 'इससे इनवॉइस #$number को अस्वीकृत के रूप में चिह्नित किया जाएगा और इसके आइटम स्टॉक में वापस कर दिए जाएंगे। इसे पूर्ववत नहीं किया जा सकता।';
+  }
+
+  @override
+  String invoiceMgmtDeclineHasPaymentsMessage(String number) {
+    return 'चालान #$number पर भुगतान दर्ज हैं। अस्वीकृत करने से पहले उन्हें भुगतान लागू करें में हटाएँ।';
+  }
+
+  @override
+  String get invoiceMgmtDeclinedSuccessMessage =>
+      'इनवॉइस अस्वीकृत, स्टॉक वापस कर दिया गया।';
+
+  @override
+  String get invoiceStatusDeclinedBadge => 'अस्वीकृत';
+
+  @override
+  String get createInvoiceConvertTitle => 'इनवॉइस में बदलें';
+
+  @override
+  String createInvoiceConvertedSuccessMessage(String invoiceNumber) {
+    return 'इनवॉइस #$invoiceNumber में बदला गया';
+  }
+
+  @override
+  String get createInvoiceTrashQuotationAction => 'कोटेशन हटाएं';
+
+  @override
+  String get createInvoiceQuotationTrashedMessage =>
+      'कोटेशन ट्रैश में ले जाया गया';
 
   @override
   String get invoiceMgmtOverdueBadge => 'अतिदेय';
@@ -2103,6 +2235,10 @@ class AppLocalizationsHi extends AppLocalizations {
       'यदि मूल्य में टैक्स शामिल है तो 1/true, डिफ़ॉल्ट 0';
 
   @override
+  String get productMgmtCsvDescLowStockLimit =>
+      'इस उत्पाद की कम स्टॉक सीमा, खाली = डिफ़ॉल्ट 10';
+
+  @override
   String get productMgmtCsvDescStorageLocation => 'गोदाम/शेल्फ स्थान';
 
   @override
@@ -2374,6 +2510,13 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get productMgmtTrackInfiniteStockSubtitle =>
       'इस उत्पाद के लिए असीमित स्टॉक ट्रैक करें';
+
+  @override
+  String get productMgmtLowStockLimitLabel => 'कम स्टॉक सीमा';
+
+  @override
+  String get productMgmtLowStockLimitHelper =>
+      'स्टॉक इस संख्या के बराबर या कम होने पर कम स्टॉक में दिखता है। डिफ़ॉल्ट (10) के लिए खाली छोड़ें।';
 
   @override
   String get productMgmtTipEnableCustomFieldsMessage =>
@@ -3138,6 +3281,17 @@ class AppLocalizationsHi extends AppLocalizations {
   String get invoiceSettingsSectionItems => 'इनवॉइस आइटम';
 
   @override
+  String get invoiceSettingsSectionSuppliers => 'आपूर्तिकर्ता';
+
+  @override
+  String get settingsEnablePurchaseBillsSuppliersLabel =>
+      'खरीद बिल और आपूर्तिकर्ता सक्षम करें';
+
+  @override
+  String get settingsEnablePurchaseBillsSuppliersSubtitle =>
+      'डैशबोर्ड मेनू में खरीद बिल और आपूर्तिकर्ता दिखाता है';
+
+  @override
   String get invoiceSettingsSectionCustomer => 'Customer Details';
 
   @override
@@ -3701,6 +3855,27 @@ class AppLocalizationsHi extends AppLocalizations {
   String get pdfSettingsCompanyNameSizeLabel => 'कंपनी नाम का आकार';
 
   @override
+  String get pdfSettingsFontSizeLabel => 'PDF टेक्स्ट का आकार';
+
+  @override
+  String get pdfSettingsSectionSizesLabel => 'सेक्शन के आकार';
+
+  @override
+  String get pdfSettingsDocTitleSizeLabel => 'दस्तावेज़ शीर्षक का आकार';
+
+  @override
+  String get pdfSettingsTableHeaderSizeLabel => 'टेबल हेडर का आकार';
+
+  @override
+  String get pdfSettingsTableItemsSizeLabel => 'टेबल आइटम का आकार';
+
+  @override
+  String get pdfSettingsTotalsSizeLabel => 'कुल राशि का आकार';
+
+  @override
+  String get pdfFontSizeSameAsOverallLabel => 'सामान्य के समान';
+
+  @override
   String get pdfSettingsThemeColorLabel => 'थीम रंग';
 
   @override
@@ -4142,6 +4317,22 @@ class AppLocalizationsHi extends AppLocalizations {
       'मार्जिन ट्रैकिंग के लिए लागत मूल्य।';
 
   @override
+  String get productColumnsPurchasePriceAdminOnlyLabel =>
+      'खरीद मूल्य: केवल एडमिन';
+
+  @override
+  String get productColumnsPurchasePriceAdminOnlySubtitle =>
+      'गैर-एडमिन उपयोगकर्ताओं से खरीद मूल्य, लाभ और स्टॉक मूल्य छिपाएँ।';
+
+  @override
+  String get productColumnsStockEditAdminOnlyLabel =>
+      'स्टॉक संपादन: केवल एडमिन';
+
+  @override
+  String get productColumnsStockEditAdminOnlySubtitle =>
+      'गैर-एडमिन उपयोगकर्ता स्टॉक मात्रा सेट या बदल नहीं सकते, न ही CSV से उत्पाद आयात कर सकते हैं।';
+
+  @override
   String get productColumnsDefaultDiscountLabel => 'डिफ़ॉल्ट छूट';
 
   @override
@@ -4515,7 +4706,226 @@ class AppLocalizationsHi extends AppLocalizations {
   String get paymentMethodOnline => 'ऑनलाइन';
 
   @override
+  String get paymentMethodUpi => 'UPI';
+
+  @override
   String get paymentMethodOther => 'अन्य';
+
+  @override
+  String get accessibilityOptionalFeaturesSectionTitle => 'वैकल्पिक सुविधाएँ';
+
+  @override
+  String get accessibilityCashExchangeLabel => 'नकद / UPI विनिमय सेवा';
+
+  @override
+  String get accessibilityCashExchangeSubtitle =>
+      'नया इनवॉइस के बाद नकद विनिमय सेवाएँ मेनू जोड़ता है, जिससे UPI ↔ नकद विनिमय, सेवा शुल्क और नकद लेन-देन दर्ज कर सकें, नकद और UPI/बैंक शेष के साथ।';
+
+  @override
+  String get accessibilityReportsAdminOnlyLabel => 'रिपोर्ट: केवल एडमिन';
+
+  @override
+  String get accessibilityReportsAdminOnlySubtitle =>
+      'गैर-एडमिन उपयोगकर्ताओं से रिपोर्ट मेनू छिपाएँ।';
+
+  @override
+  String get cashExchangeCashLabel => 'नकद';
+
+  @override
+  String get cashExchangeUpiBankLabel => 'UPI/बैंक';
+
+  @override
+  String get cashExchangeTotalLabel => 'कुल शेष';
+
+  @override
+  String get cashExchangeIncomeTodayLabel => 'सेवा आय (आज)';
+
+  @override
+  String get cashExchangeIncomeMonthLabel => 'सेवा आय (इस माह)';
+
+  @override
+  String get reportsServiceIncomeLabel => 'सेवा आय';
+
+  @override
+  String get reportsTxnsLabel => 'लेन-देन';
+
+  @override
+  String get reportsInvoiceProfitLabel => 'इनवॉइस लाभ';
+
+  @override
+  String get reportsTransactionsLabel => 'लेन-देन';
+
+  @override
+  String get reportsCashExchangeTypeLabel => 'नकद विनिमय';
+
+  @override
+  String get reportsCountColumnLabel => 'संख्या';
+
+  @override
+  String get cashExchangeExpensesMonthLabel => 'खर्च (इस माह)';
+
+  @override
+  String get cashExchangeSetupTitle => 'प्रारंभिक शेष सेट करें';
+
+  @override
+  String get cashExchangeSetupMessage =>
+      'इस तारीख को आपके पास मौजूद नकद और UPI/बैंक राशि दर्ज करें। इस तारीख से इनवॉइस भुगतान शेष में जुड़ते हैं।';
+
+  @override
+  String get cashExchangeSetupAdminOnlyMessage =>
+      'प्रारंभिक शेष सेट करने के लिए एडमिन से कहें।';
+
+  @override
+  String get cashExchangeUpiToCash => 'UPI → नकद';
+
+  @override
+  String get cashExchangeCashToUpi => 'नकद → UPI';
+
+  @override
+  String get cashExchangeExpense => 'खर्च';
+
+  @override
+  String get cashExchangeWithdrawal => 'निकासी';
+
+  @override
+  String get cashExchangeBankDeposit => 'बैंक जमा';
+
+  @override
+  String get cashExchangeOpeningBalance => 'प्रारंभिक शेष';
+
+  @override
+  String get cashExchangeAdjustment => 'समायोजन';
+
+  @override
+  String get cashExchangeInvoicePayment => 'इनवॉइस भुगतान';
+
+  @override
+  String get cashExchangeAmountLabel => 'राशि';
+
+  @override
+  String get cashExchangeFeeLabel => 'सेवा शुल्क';
+
+  @override
+  String get cashExchangeFeePaidByLabel => 'सेवा शुल्क भुगतान माध्यम';
+
+  @override
+  String get cashExchangeFromAccountLabel => 'भुगतान खाता';
+
+  @override
+  String get cashExchangeCustomerNameLabel => 'ग्राहक का नाम (वैकल्पिक)';
+
+  @override
+  String get cashExchangeCustomerSearchHint => 'ग्राहक खोजें या नया नाम लिखें';
+
+  @override
+  String get cashExchangeCustomerPhoneLabel => 'फ़ोन (वैकल्पिक)';
+
+  @override
+  String get cashExchangeNotesLabel => 'नोट्स (वैकल्पिक)';
+
+  @override
+  String get cashExchangeDateTimeLabel => 'तारीख और समय';
+
+  @override
+  String get cashExchangeDateLabel => 'तारीख';
+
+  @override
+  String get cashExchangeCashDeltaLabel => 'नकद बदलाव (+ / −)';
+
+  @override
+  String get cashExchangeUpiDeltaLabel => 'UPI/बैंक बदलाव (+ / −)';
+
+  @override
+  String get cashExchangeDeleteTitle => 'प्रविष्टि हटाएँ';
+
+  @override
+  String get cashExchangeDeleteMessage =>
+      'यह प्रविष्टि हटाएँ? शेष दोबारा गणना किया जाएगा।';
+
+  @override
+  String get cashExchangeEditTitle => 'प्रविष्टि संपादित करें';
+
+  @override
+  String get cashExchangeEdited => 'संपादित';
+
+  @override
+  String get cashExchangeHistoryTitle => 'परिवर्तन इतिहास';
+
+  @override
+  String get cashExchangeHistoryCurrent => 'वर्तमान';
+
+  @override
+  String cashExchangeHistoryEdited(String user, String date) {
+    return '$user द्वारा संपादित · $date';
+  }
+
+  @override
+  String cashExchangeHistoryDeleted(String user, String date) {
+    return '$user द्वारा हटाया गया · $date';
+  }
+
+  @override
+  String get cashExchangeChangeLog => 'परिवर्तन लॉग';
+
+  @override
+  String get cashExchangeDeleted => 'हटाया गया';
+
+  @override
+  String get cashExchangeNoChanges => 'कोई परिवर्तन दर्ज नहीं।';
+
+  @override
+  String get cashExchangeChangeFailed =>
+      'यह प्रविष्टि अब बदली नहीं जा सकती। हो सकता है यह हटा दी गई हो, या 24 घंटे की संपादन अवधि समाप्त हो गई हो।';
+
+  @override
+  String get cashExchangeEmpty => 'इस अवधि में कोई प्रविष्टि नहीं।';
+
+  @override
+  String get cashExchangePeriodToday => 'आज';
+
+  @override
+  String get cashExchangePeriodMonth => 'इस माह';
+
+  @override
+  String get cashExchangePeriodAll => 'सभी समय';
+
+  @override
+  String get cashExchangePeriodCustom => 'कस्टम तारीख';
+
+  @override
+  String get cashExchangeShowingLabel => 'दिखा रहे हैं';
+
+  @override
+  String get cashExchangeChangeDates => 'तारीखें बदलें';
+
+  @override
+  String get cashExchangeClosingBalance => 'अंतिम शेष';
+
+  @override
+  String get cashExchangeShowBalances => 'शेष दिखाएँ';
+
+  @override
+  String get cashExchangeHideBalances => 'शेष छिपाएँ';
+
+  @override
+  String get cashExchangeAllTypes => 'सभी प्रकार';
+
+  @override
+  String cashExchangeSummaryUpiToCash(
+      String amount, String fee, String method) {
+    return 'ग्राहक UPI/बैंक से $amount भेजता है • आप $amount नकद देते हैं • शुल्क $fee $method से';
+  }
+
+  @override
+  String cashExchangeSummaryCashToUpi(
+      String amount, String fee, String method) {
+    return 'ग्राहक $amount नकद देता है • आप UPI/बैंक से $amount भेजते हैं • शुल्क $fee $method से';
+  }
+
+  @override
+  String cashExchangeLowBalanceWarning(String balance, String account) {
+    return '$account में केवल $balance उपलब्ध है।';
+  }
 
   @override
   String get customerInfoButtonTooltip => 'संपर्क विवरण देखें';
@@ -4571,6 +4981,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get sizeLargeLabel => 'बड़ा';
 
   @override
+  String get sizeXLargeLabel => 'बहुत बड़ा';
+
+  @override
   String get shortcutNewInvoiceDescription =>
       'नया इनवॉइस (डैशबोर्ड से) / फ़ॉर्म रीसेट करें (इनवॉइस बनाएं में)';
 
@@ -4588,6 +5001,341 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get shortcutPrintPdfDescription => 'इनवॉइस PDF जनरेट/प्रिंट करें';
+
+  @override
+  String supplierMgmtLoadErrorMessage(String error) {
+    return 'आपूर्तिकर्ता लोड करने में विफल: $error';
+  }
+
+  @override
+  String get supplierMgmtAddedMessage => 'आपूर्तिकर्ता सफलतापूर्वक जोड़ा गया!';
+
+  @override
+  String get supplierMgmtUpdatedMessage =>
+      'आपूर्तिकर्ता सफलतापूर्वक अपडेट किया गया!';
+
+  @override
+  String supplierMgmtSaveErrorMessage(String error) {
+    return 'आपूर्तिकर्ता सहेजने में त्रुटि: $error';
+  }
+
+  @override
+  String supplierMgmtOutstandingLabel(String amount) {
+    return 'बकाया: $amount';
+  }
+
+  @override
+  String supplierMgmtMoveToTrashBody(String name) {
+    return '\"$name\" को ट्रैश में ले जाएँ? मौजूदा खरीद बिल आपूर्तिकर्ता का सहेजा हुआ नाम दिखाते रहेंगे।';
+  }
+
+  @override
+  String get supplierMgmtMovedToTrashMessage =>
+      'आपूर्तिकर्ता ट्रैश में ले जाया गया।';
+
+  @override
+  String get supplierMgmtRestoredMessage =>
+      'आपूर्तिकर्ता पुनर्स्थापित किया गया।';
+
+  @override
+  String get supplierMgmtAddSupplierButton => 'आपूर्तिकर्ता जोड़ें';
+
+  @override
+  String get supplierMgmtTitle => 'आपूर्तिकर्ता';
+
+  @override
+  String get supplierMgmtSubtitle =>
+      'उन आपूर्तिकर्ताओं को प्रबंधित करें जिनसे आप स्टॉक खरीदते हैं';
+
+  @override
+  String get supplierMgmtSearchHint =>
+      'नाम, फ़ोन, या GSTIN से आपूर्तिकर्ता खोजें...';
+
+  @override
+  String get supplierMgmtColSupplier => 'आपूर्तिकर्ता';
+
+  @override
+  String get supplierMgmtColGstin => 'GSTIN';
+
+  @override
+  String supplierMgmtTotalCountLabel(int count) {
+    return 'कुल: $count';
+  }
+
+  @override
+  String get supplierMgmtNoSuppliersYetMessage =>
+      'अभी तक कोई आपूर्तिकर्ता नहीं';
+
+  @override
+  String get supplierMgmtNoSuppliersMatchMessage =>
+      'आपकी खोज से कोई आपूर्तिकर्ता मेल नहीं खाता';
+
+  @override
+  String get supplierMgmtAddNewTitle => 'नया आपूर्तिकर्ता जोड़ें';
+
+  @override
+  String get supplierMgmtEditTitle => 'आपूर्तिकर्ता संपादित करें';
+
+  @override
+  String get supplierMgmtSaveChangesButton => 'परिवर्तन सहेजें';
+
+  @override
+  String get supplierMgmtTaxVatNumberLabel => 'टैक्स/वैट नंबर (GSTIN)';
+
+  @override
+  String purchaseBillMgmtLoadErrorMessage(String error) {
+    return 'खरीद बिल लोड करने में विफल: $error';
+  }
+
+  @override
+  String get purchaseBillMgmtAlreadyFullyPaidMessage =>
+      'यह बिल पहले ही पूरी तरह भुगतान किया जा चुका है।';
+
+  @override
+  String purchaseBillMgmtMoveToTrashBody(String billNumber) {
+    return '\"$billNumber\" बिल को ट्रैश में ले जाएँ? स्टॉक वापस समायोजित हो जाएगा।';
+  }
+
+  @override
+  String get purchaseBillMgmtMovedToTrashMessage =>
+      'खरीद बिल ट्रैश में ले जाया गया।';
+
+  @override
+  String get purchaseBillMgmtRestoredMessage =>
+      'खरीद बिल पुनर्स्थापित किया गया।';
+
+  @override
+  String get purchaseBillMgmtSortByTitle => 'इसके अनुसार क्रमबद्ध करें';
+
+  @override
+  String get purchaseBillMgmtSortDateNewest => 'तारीख (नवीनतम पहले)';
+
+  @override
+  String get purchaseBillMgmtSortDateOldest => 'तारीख (सबसे पुराना पहले)';
+
+  @override
+  String get purchaseBillMgmtSortSupplierAZ => 'आपूर्तिकर्ता (A-Z)';
+
+  @override
+  String get purchaseBillMgmtSortSupplierZA => 'आपूर्तिकर्ता (Z-A)';
+
+  @override
+  String get purchaseBillMgmtSortAmountHighest => 'राशि (सर्वाधिक पहले)';
+
+  @override
+  String get purchaseBillMgmtSortAmountLowest => 'राशि (न्यूनतम पहले)';
+
+  @override
+  String get purchaseBillMgmtFilterTitle => 'खरीद बिल फ़िल्टर करें';
+
+  @override
+  String get purchaseBillMgmtPaymentStatusLabel => 'भुगतान स्थिति';
+
+  @override
+  String get purchaseBillMgmtSearchHint =>
+      'बिल नंबर या आपूर्तिकर्ता से खोजें...';
+
+  @override
+  String get purchaseBillMgmtNewBillButton => 'नया खरीद बिल';
+
+  @override
+  String get purchaseBillMgmtColBill => 'बिल';
+
+  @override
+  String get purchaseBillMgmtColBalance => 'शेष';
+
+  @override
+  String purchaseBillMgmtTotalCountLabel(int count) {
+    return 'कुल: $count';
+  }
+
+  @override
+  String get purchaseBillMgmtNoBillsFoundTitle => 'कोई खरीद बिल नहीं मिला';
+
+  @override
+  String get purchaseBillMgmtCreateFirstMessage =>
+      'शुरू करने के लिए अपना पहला खरीद बिल बनाएँ';
+
+  @override
+  String get purchaseBillMgmtTryAdjustingMessage =>
+      'अपनी खोज या फ़िल्टर समायोजित करके देखें';
+
+  @override
+  String get purchaseBillMgmtTitle => 'खरीद बिल';
+
+  @override
+  String get purchaseBillMgmtUnknownSupplierLabel => 'अज्ञात आपूर्तिकर्ता';
+
+  @override
+  String get purchaseBillMgmtNotesSectionLabel => 'नोट्स';
+
+  @override
+  String get purchaseBillMgmtItemsSectionLabel => 'आइटम';
+
+  @override
+  String get purchaseBillMgmtGrandTotalLabel => 'कुल योग';
+
+  @override
+  String get purchaseBillMgmtBillDetailsTitle => 'बिल विवरण';
+
+  @override
+  String get purchaseBillMgmtExistingSupplierLabel => 'मौजूदा आपूर्तिकर्ता';
+
+  @override
+  String get purchaseBillMgmtWalkInSupplierLabel => 'वॉक-इन आपूर्तिकर्ता';
+
+  @override
+  String get purchaseBillMgmtSupplierRequiredLabel => 'आपूर्तिकर्ता *';
+
+  @override
+  String get purchaseBillMgmtBillNumberOptionalLabel => 'बिल नंबर (वैकल्पिक)';
+
+  @override
+  String get purchaseBillMgmtAutoGenerateHint => 'स्वतः जनरेट करें';
+
+  @override
+  String get purchaseBillMgmtBillDateRequiredLabel => 'बिल तिथि *';
+
+  @override
+  String get purchaseBillMgmtPickDateTooltip => 'तारीख चुनें';
+
+  @override
+  String get purchaseBillMgmtAddAnyNotesHint => 'कोई नोट जोड़ें';
+
+  @override
+  String get purchaseBillMgmtAttachmentOptionalLabel => 'अटैचमेंट (वैकल्पिक)';
+
+  @override
+  String get purchaseBillMgmtAttachFileHint => 'फ़ाइल संलग्न करें';
+
+  @override
+  String get purchaseBillMgmtBrowseTooltip => 'ब्राउज़ करें';
+
+  @override
+  String get purchaseBillMgmtSelectSupplierMessage =>
+      'कृपया एक आपूर्तिकर्ता चुनें या वॉक-इन पर स्विच करें।';
+
+  @override
+  String get purchaseBillMgmtEnterSupplierNameMessage =>
+      'कृपया आपूर्तिकर्ता का नाम दर्ज करें।';
+
+  @override
+  String get purchaseBillMgmtAddAtLeastOneItemMessage =>
+      'कम से कम एक आइटम जोड़ें।';
+
+  @override
+  String get purchaseBillMgmtUpdatedMessage => 'खरीद बिल अपडेट किया गया!';
+
+  @override
+  String get purchaseBillMgmtCreatedMessage => 'खरीद बिल बनाया गया!';
+
+  @override
+  String get purchaseBillMgmtDraftSavedMessage =>
+      'ड्राफ़्ट सहेजा गया — स्टॉक अपडेट नहीं हुआ';
+
+  @override
+  String purchaseBillMgmtSaveErrorMessage(String error) {
+    return 'खरीद बिल सहेजने में त्रुटि: $error';
+  }
+
+  @override
+  String get purchaseBillMgmtEnterNameMessage => 'नाम दर्ज करें';
+
+  @override
+  String get purchaseBillMgmtAddCustomItemTitle => 'कस्टम आइटम जोड़ें';
+
+  @override
+  String get purchaseBillMgmtDescriptionOptionalLabel => 'विवरण (वैकल्पिक)';
+
+  @override
+  String get purchaseBillMgmtQuantityLabel => 'मात्रा';
+
+  @override
+  String get purchaseBillMgmtCostPerUnitLabel => 'प्रति यूनिट लागत';
+
+  @override
+  String get purchaseBillMgmtCostIncludesTaxLabel =>
+      'प्रति यूनिट लागत में टैक्स शामिल है';
+
+  @override
+  String get purchaseBillMgmtEnterItemNameMessage => 'आइटम का नाम दर्ज करें';
+
+  @override
+  String get purchaseBillMgmtInvalidValueMessage => 'अमान्य';
+
+  @override
+  String get purchaseBillMgmtEditItemTitle => 'आइटम संपादित करें';
+
+  @override
+  String get purchaseBillMgmtEditItemTooltip => 'आइटम संपादित करें';
+
+  @override
+  String get purchaseBillMgmtRemoveItemTooltip => 'आइटम हटाएं';
+
+  @override
+  String get purchaseBillMgmtNoItemsAddedMessage =>
+      'अभी तक कोई आइटम नहीं जोड़ा गया';
+
+  @override
+  String purchaseBillMgmtLastCostLabel(String amount) {
+    return 'अंतिम लागत: $amount';
+  }
+
+  @override
+  String get purchaseBillMgmtSearchProductsHint =>
+      'जोड़ने के लिए उत्पाद खोजें...';
+
+  @override
+  String get purchaseBillMgmtCustomBadgeLabel => 'कस्टम';
+
+  @override
+  String get purchaseBillMgmtQtyDetailLabel => 'मात्रा';
+
+  @override
+  String get purchaseBillMgmtUnitCostDetailLabel => 'यूनिट लागत';
+
+  @override
+  String purchaseBillMgmtTaxInclusiveLabel(String rate) {
+    return '$rate% सम्मिलित';
+  }
+
+  @override
+  String get purchaseBillMgmtNetCostDetailLabel => 'शुद्ध लागत';
+
+  @override
+  String get purchaseBillMgmtEditPurchaseBillTitle => 'खरीद बिल संपादित करें';
+
+  @override
+  String get purchaseBillMgmtUpdateSubtitle => 'इस खरीद बिल को अपडेट करें';
+
+  @override
+  String get purchaseBillMgmtCreateSubtitle =>
+      'अपने आपूर्तिकर्ता के लिए नया खरीद बिल बनाएँ';
+
+  @override
+  String get purchaseBillMgmtSaveDraftButton => 'ड्राफ्ट सहेजें';
+
+  @override
+  String get purchaseBillMgmtSavePurchaseBillButton => 'खरीद बिल सहेजें';
+
+  @override
+  String get purchaseBillMgmtSelectSupplierFromListMessage =>
+      'सूची से एक आपूर्तिकर्ता चुनें';
+
+  @override
+  String get purchaseBillMgmtSearchSupplierHint => 'आपूर्तिकर्ता खोजें';
+
+  @override
+  String get purchaseBillMgmtColItem => 'आइटम';
+
+  @override
+  String get purchaseBillMgmtColCost => 'लागत';
+
+  @override
+  String get purchaseBillMgmtColTaxPercent => 'टैक्स %';
+
+  @override
+  String get purchaseBillMgmtPaymentRecordedMessage => 'भुगतान दर्ज किया गया।';
 
   @override
   String get invoiceSettingsMetadataColumnsGridClassicNote =>

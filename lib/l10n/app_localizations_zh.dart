@@ -63,6 +63,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get onboardingStepInvoiceSubtitle => '设置发票的工作方式';
 
   @override
+  String get onboardingStepPurchaseBillsTitle => '采购账单与供应商';
+
+  @override
+  String get onboardingStepPurchaseBillsSubtitle => '追踪供应商账单与库存采购（可选）';
+
+  @override
   String get onboardingStepAppearanceTitle => '发票外观';
 
   @override
@@ -97,6 +103,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get onboardingDefaultTaxRateLabel => '默认税率 (%)';
+
+  @override
+  String get onboardingEnablePurchaseBillsSuppliersLabel => '启用采购账单与供应商';
+
+  @override
+  String get onboardingEnablePurchaseBillsSuppliersSubtitle =>
+      '在仪表盘菜单中添加采购账单与供应商。您可以随时在设置中更改此项。';
 
   @override
   String get onboardingPageSizeLabel => '页面大小';
@@ -185,6 +198,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get navInvoices => '发票';
 
   @override
+  String get navServices => '现金兑换服务';
+
+  @override
   String get navQuotations => '报价单';
 
   @override
@@ -198,6 +214,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get navReports => '报表';
+
+  @override
+  String get navPurchaseBills => '采购账单';
+
+  @override
+  String get navSuppliers => '供应商';
 
   @override
   String get navSettings => '设置';
@@ -231,6 +253,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get dashboardShortcutsBannerSubtitle => 'Ctrl+Q 新建发票，Ctrl+S 保存，还有更多。';
+
+  @override
+  String get dashboardPurchaseBannerTitle => '新功能：采购账单与供应商';
+
+  @override
+  String get dashboardPurchaseBannerSubtitle => '记录供应商账单，自动更新库存，并跟踪欠每个供应商的款项。';
+
+  @override
+  String get dashboardPurchaseBannerAction => '启用';
 
   @override
   String get dashboardViewAllAction => '查看全部';
@@ -297,10 +328,16 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get dashboardRecentInvoicesTitle => '最近发票';
+  String get dashboardRecentInvoicesTitle => '最近文档';
 
   @override
-  String get dashboardLastFiveInvoicesLabel => '最近 5 张发票';
+  String get dashboardLastFiveInvoicesLabel => '最近 5 个文档';
+
+  @override
+  String get dashboardColDocumentNo => '单据编号';
+
+  @override
+  String get dashboardColType => '类型';
 
   @override
   String get dashboardNoInvoicesYetTitle => '暂无发票';
@@ -739,6 +776,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String get createInvoicePreviousBalanceDueLabel => '上期应付余额';
 
   @override
+  String get createInvoicePaymentSectionLabel => '付款';
+
+  @override
+  String get createInvoiceBalanceDueLabel => '应付余额';
+
+  @override
+  String createInvoicePaymentNotRecordedMessage(String error) {
+    return '发票已保存，但付款未记录：$error。请从发票列表中添加。';
+  }
+
+  @override
   String get createInvoiceDueShortLabel => '应付';
 
   @override
@@ -747,6 +795,11 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String createInvoiceUpdatedSuccessMessage(String invoiceTypeLabel) {
     return '$invoiceTypeLabel更新成功！';
+  }
+
+  @override
+  String createInvoiceTotalBelowPaidMessage(String paid) {
+    return '新的总额低于已支付的 $paid。请先在“应用付款”中删除付款，或将总额保持在该金额或以上。';
   }
 
   @override
@@ -875,6 +928,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get createInvoiceOrderDateLabel => '订单日期';
+
+  @override
+  String get createInvoiceOrderTimeLabel => '订单时间';
 
   @override
   String get createInvoiceDueDateLabel => '到期日期';
@@ -1233,6 +1289,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get invoiceMgmtHideFullyPaidLabel => '隐藏已全额付款的发票';
 
   @override
+  String get invoiceMgmtHideDeclinedLabel => '隐藏已拒绝的发票';
+
+  @override
   String get invoiceMgmtPaymentStatusLabel => '付款状态';
 
   @override
@@ -1373,6 +1432,74 @@ class AppLocalizationsZh extends AppLocalizations {
   String invoiceMgmtNewDocumentButton(String type) {
     return '新建$type';
   }
+
+  @override
+  String get invoiceMgmtConvertToInvoiceAction => '转换为发票';
+
+  @override
+  String get invoiceMgmtConvertAgainTitle => '再次转换？';
+
+  @override
+  String invoiceMgmtConvertAgainBody(String number) {
+    return '报价单 $number 已转换为发票。要从它再创建一张发票吗？';
+  }
+
+  @override
+  String get invoiceMgmtMarkAsSent => '标记为已发送';
+
+  @override
+  String get invoiceMgmtMarkAsAccepted => '标记为已接受';
+
+  @override
+  String get invoiceMgmtMarkAsDeclined => '标记为已拒绝';
+
+  @override
+  String get quotationStatusDraft => '草稿';
+
+  @override
+  String get quotationStatusSent => '已发送';
+
+  @override
+  String get quotationStatusAccepted => '已接受';
+
+  @override
+  String get quotationStatusDeclined => '已拒绝';
+
+  @override
+  String get quotationStatusConverted => '已转换';
+
+  @override
+  String get invoiceMgmtDeclineInvoiceTitle => '拒绝此发票？';
+
+  @override
+  String invoiceMgmtDeclineInvoiceBody(String number) {
+    return '这将把发票 #$number 标记为已拒绝，并将其商品归还库存。此操作无法撤销。';
+  }
+
+  @override
+  String invoiceMgmtDeclineHasPaymentsMessage(String number) {
+    return '发票 #$number 已有付款记录。拒绝前请先在“应用付款”中删除这些付款。';
+  }
+
+  @override
+  String get invoiceMgmtDeclinedSuccessMessage => '发票已拒绝，库存已归还。';
+
+  @override
+  String get invoiceStatusDeclinedBadge => '已拒绝';
+
+  @override
+  String get createInvoiceConvertTitle => '转换为发票';
+
+  @override
+  String createInvoiceConvertedSuccessMessage(String invoiceNumber) {
+    return '已转换为发票 #$invoiceNumber';
+  }
+
+  @override
+  String get createInvoiceTrashQuotationAction => '删除报价';
+
+  @override
+  String get createInvoiceQuotationTrashedMessage => '报价单已移至回收站';
 
   @override
   String get invoiceMgmtOverdueBadge => '已逾期';
@@ -2023,6 +2150,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get productMgmtCsvDescPriceIncludesTax => '1/true 表示价格已含税，默认 0';
 
   @override
+  String get productMgmtCsvDescLowStockLimit => '该产品的低库存阈值，留空 = 默认 10';
+
+  @override
   String get productMgmtCsvDescStorageLocation => '仓库/货架位置';
 
   @override
@@ -2282,6 +2412,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get productMgmtTrackInfiniteStockSubtitle => '为此产品跟踪无限库存';
+
+  @override
+  String get productMgmtLowStockLimitLabel => '低库存阈值';
+
+  @override
+  String get productMgmtLowStockLimitHelper =>
+      '库存小于或等于此数量时显示在低库存中。留空则使用默认值（10）。';
 
   @override
   String get productMgmtTipEnableCustomFieldsMessage =>
@@ -3012,6 +3149,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get invoiceSettingsSectionItems => '发票项目';
 
   @override
+  String get invoiceSettingsSectionSuppliers => '供应商';
+
+  @override
+  String get settingsEnablePurchaseBillsSuppliersLabel => '启用采购账单与供应商';
+
+  @override
+  String get settingsEnablePurchaseBillsSuppliersSubtitle =>
+      '在仪表盘菜单中显示采购账单与供应商';
+
+  @override
   String get invoiceSettingsSectionCustomer => 'Customer Details';
 
   @override
@@ -3547,6 +3694,27 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pdfSettingsCompanyNameSizeLabel => '公司名称大小';
 
   @override
+  String get pdfSettingsFontSizeLabel => 'PDF 文字大小';
+
+  @override
+  String get pdfSettingsSectionSizesLabel => '分区大小';
+
+  @override
+  String get pdfSettingsDocTitleSizeLabel => '单据标题大小';
+
+  @override
+  String get pdfSettingsTableHeaderSizeLabel => '表头大小';
+
+  @override
+  String get pdfSettingsTableItemsSizeLabel => '表格项目大小';
+
+  @override
+  String get pdfSettingsTotalsSizeLabel => '合计大小';
+
+  @override
+  String get pdfFontSizeSameAsOverallLabel => '与整体相同';
+
+  @override
   String get pdfSettingsThemeColorLabel => '主题颜色';
 
   @override
@@ -3966,6 +4134,20 @@ class AppLocalizationsZh extends AppLocalizations {
   String get productColumnsPurchasePriceSubtitle => '成本价，用于利润追踪。';
 
   @override
+  String get productColumnsPurchasePriceAdminOnlyLabel => '采购价：仅管理员可见';
+
+  @override
+  String get productColumnsPurchasePriceAdminOnlySubtitle =>
+      '对非管理员用户隐藏采购价、利润和库存价值。';
+
+  @override
+  String get productColumnsStockEditAdminOnlyLabel => '库存编辑：仅管理员';
+
+  @override
+  String get productColumnsStockEditAdminOnlySubtitle =>
+      '非管理员用户无法设置或更改库存数量，也无法从 CSV 导入产品。';
+
+  @override
   String get productColumnsDefaultDiscountLabel => '默认折扣';
 
   @override
@@ -4326,7 +4508,222 @@ class AppLocalizationsZh extends AppLocalizations {
   String get paymentMethodOnline => '在线支付';
 
   @override
+  String get paymentMethodUpi => 'UPI';
+
+  @override
   String get paymentMethodOther => '其他';
+
+  @override
+  String get accessibilityOptionalFeaturesSectionTitle => '可选功能';
+
+  @override
+  String get accessibilityCashExchangeLabel => '现金 / UPI 兑换服务';
+
+  @override
+  String get accessibilityCashExchangeSubtitle =>
+      '在“新建发票”之后添加“现金兑换服务”菜单，用于记录 UPI ↔ 现金兑换、服务费和现金收支，并显示现金与 UPI/银行余额。';
+
+  @override
+  String get accessibilityReportsAdminOnlyLabel => '报表：仅管理员';
+
+  @override
+  String get accessibilityReportsAdminOnlySubtitle => '对非管理员用户隐藏报表菜单。';
+
+  @override
+  String get cashExchangeCashLabel => '现金';
+
+  @override
+  String get cashExchangeUpiBankLabel => 'UPI/银行';
+
+  @override
+  String get cashExchangeTotalLabel => '总余额';
+
+  @override
+  String get cashExchangeIncomeTodayLabel => '服务收入（今天）';
+
+  @override
+  String get cashExchangeIncomeMonthLabel => '服务收入（本月）';
+
+  @override
+  String get reportsServiceIncomeLabel => '服务收入';
+
+  @override
+  String get reportsTxnsLabel => '交易笔数';
+
+  @override
+  String get reportsInvoiceProfitLabel => '发票利润';
+
+  @override
+  String get reportsTransactionsLabel => '交易';
+
+  @override
+  String get reportsCashExchangeTypeLabel => '现金兑换';
+
+  @override
+  String get reportsCountColumnLabel => '数量';
+
+  @override
+  String get cashExchangeExpensesMonthLabel => '支出（本月）';
+
+  @override
+  String get cashExchangeSetupTitle => '设置期初余额';
+
+  @override
+  String get cashExchangeSetupMessage =>
+      '输入您在此日期持有的现金和 UPI/银行金额。自此日期起的发票付款将计入余额。';
+
+  @override
+  String get cashExchangeSetupAdminOnlyMessage => '请管理员设置期初余额。';
+
+  @override
+  String get cashExchangeUpiToCash => 'UPI → 现金';
+
+  @override
+  String get cashExchangeCashToUpi => '现金 → UPI';
+
+  @override
+  String get cashExchangeExpense => '支出';
+
+  @override
+  String get cashExchangeWithdrawal => '提取';
+
+  @override
+  String get cashExchangeBankDeposit => '银行存款';
+
+  @override
+  String get cashExchangeOpeningBalance => '期初余额';
+
+  @override
+  String get cashExchangeAdjustment => '调整';
+
+  @override
+  String get cashExchangeInvoicePayment => '发票付款';
+
+  @override
+  String get cashExchangeAmountLabel => '金额';
+
+  @override
+  String get cashExchangeFeeLabel => '服务费';
+
+  @override
+  String get cashExchangeFeePaidByLabel => '服务费支付方式';
+
+  @override
+  String get cashExchangeFromAccountLabel => '支付账户';
+
+  @override
+  String get cashExchangeCustomerNameLabel => '客户名称（可选）';
+
+  @override
+  String get cashExchangeCustomerSearchHint => '搜索客户或输入新名称';
+
+  @override
+  String get cashExchangeCustomerPhoneLabel => '电话（可选）';
+
+  @override
+  String get cashExchangeNotesLabel => '备注（可选）';
+
+  @override
+  String get cashExchangeDateTimeLabel => '日期和时间';
+
+  @override
+  String get cashExchangeDateLabel => '日期';
+
+  @override
+  String get cashExchangeCashDeltaLabel => '现金变动（+ / −）';
+
+  @override
+  String get cashExchangeUpiDeltaLabel => 'UPI/银行变动（+ / −）';
+
+  @override
+  String get cashExchangeDeleteTitle => '删除记录';
+
+  @override
+  String get cashExchangeDeleteMessage => '删除此记录？余额将重新计算。';
+
+  @override
+  String get cashExchangeEditTitle => '编辑记录';
+
+  @override
+  String get cashExchangeEdited => '已编辑';
+
+  @override
+  String get cashExchangeHistoryTitle => '修改历史';
+
+  @override
+  String get cashExchangeHistoryCurrent => '当前';
+
+  @override
+  String cashExchangeHistoryEdited(String user, String date) {
+    return '$user 编辑 · $date';
+  }
+
+  @override
+  String cashExchangeHistoryDeleted(String user, String date) {
+    return '$user 删除 · $date';
+  }
+
+  @override
+  String get cashExchangeChangeLog => '更改记录';
+
+  @override
+  String get cashExchangeDeleted => '已删除';
+
+  @override
+  String get cashExchangeNoChanges => '没有更改记录。';
+
+  @override
+  String get cashExchangeChangeFailed => '此记录已无法更改。它可能已被删除，或已超过 24 小时的编辑期限。';
+
+  @override
+  String get cashExchangeEmpty => '此期间没有记录。';
+
+  @override
+  String get cashExchangePeriodToday => '今天';
+
+  @override
+  String get cashExchangePeriodMonth => '本月';
+
+  @override
+  String get cashExchangePeriodAll => '全部时间';
+
+  @override
+  String get cashExchangePeriodCustom => '自定义日期';
+
+  @override
+  String get cashExchangeShowingLabel => '显示';
+
+  @override
+  String get cashExchangeChangeDates => '更改日期';
+
+  @override
+  String get cashExchangeClosingBalance => '期末余额';
+
+  @override
+  String get cashExchangeShowBalances => '显示余额';
+
+  @override
+  String get cashExchangeHideBalances => '隐藏余额';
+
+  @override
+  String get cashExchangeAllTypes => '所有类型';
+
+  @override
+  String cashExchangeSummaryUpiToCash(
+      String amount, String fee, String method) {
+    return '客户通过 UPI/银行发送 $amount • 您支付现金 $amount • 服务费 $fee，通过 $method';
+  }
+
+  @override
+  String cashExchangeSummaryCashToUpi(
+      String amount, String fee, String method) {
+    return '客户支付现金 $amount • 您通过 UPI/银行发送 $amount • 服务费 $fee，通过 $method';
+  }
+
+  @override
+  String cashExchangeLowBalanceWarning(String balance, String account) {
+    return '$account 中仅有 $balance 可用。';
+  }
 
   @override
   String get customerInfoButtonTooltip => '查看联系方式';
@@ -4380,6 +4777,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sizeLargeLabel => '大';
 
   @override
+  String get sizeXLargeLabel => '特大';
+
+  @override
   String get shortcutNewInvoiceDescription => '新建发票（从仪表盘）／重置表单（在创建发票中）';
 
   @override
@@ -4396,6 +4796,319 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get shortcutPrintPdfDescription => '生成／打印发票 PDF';
+
+  @override
+  String supplierMgmtLoadErrorMessage(String error) {
+    return '加载供应商失败：$error';
+  }
+
+  @override
+  String get supplierMgmtAddedMessage => '供应商添加成功！';
+
+  @override
+  String get supplierMgmtUpdatedMessage => '供应商更新成功！';
+
+  @override
+  String supplierMgmtSaveErrorMessage(String error) {
+    return '保存供应商时出错：$error';
+  }
+
+  @override
+  String supplierMgmtOutstandingLabel(String amount) {
+    return '未结：$amount';
+  }
+
+  @override
+  String supplierMgmtMoveToTrashBody(String name) {
+    return '将“$name”移至回收站？现有采购账单仍会显示已保存的供应商名称。';
+  }
+
+  @override
+  String get supplierMgmtMovedToTrashMessage => '供应商已移至回收站。';
+
+  @override
+  String get supplierMgmtRestoredMessage => '供应商已恢复。';
+
+  @override
+  String get supplierMgmtAddSupplierButton => '添加供应商';
+
+  @override
+  String get supplierMgmtTitle => '供应商';
+
+  @override
+  String get supplierMgmtSubtitle => '管理您向其采购库存的供应商';
+
+  @override
+  String get supplierMgmtSearchHint => '按名称、电话或GSTIN搜索供应商…';
+
+  @override
+  String get supplierMgmtColSupplier => '供应商';
+
+  @override
+  String get supplierMgmtColGstin => 'GSTIN';
+
+  @override
+  String supplierMgmtTotalCountLabel(int count) {
+    return '共计：$count';
+  }
+
+  @override
+  String get supplierMgmtNoSuppliersYetMessage => '尚无供应商';
+
+  @override
+  String get supplierMgmtNoSuppliersMatchMessage => '没有符合搜索条件的供应商';
+
+  @override
+  String get supplierMgmtAddNewTitle => '添加新供应商';
+
+  @override
+  String get supplierMgmtEditTitle => '编辑供应商';
+
+  @override
+  String get supplierMgmtSaveChangesButton => '保存更改';
+
+  @override
+  String get supplierMgmtTaxVatNumberLabel => '税务/增值税号（GSTIN）';
+
+  @override
+  String purchaseBillMgmtLoadErrorMessage(String error) {
+    return '加载采购账单失败：$error';
+  }
+
+  @override
+  String get purchaseBillMgmtAlreadyFullyPaidMessage => '此账单已全部付清。';
+
+  @override
+  String purchaseBillMgmtMoveToTrashBody(String billNumber) {
+    return '将账单“$billNumber”移至回收站？库存将被冲销。';
+  }
+
+  @override
+  String get purchaseBillMgmtMovedToTrashMessage => '采购账单已移至回收站。';
+
+  @override
+  String get purchaseBillMgmtRestoredMessage => '采购账单已恢复。';
+
+  @override
+  String get purchaseBillMgmtSortByTitle => '排序方式';
+
+  @override
+  String get purchaseBillMgmtSortDateNewest => '日期（最新在前）';
+
+  @override
+  String get purchaseBillMgmtSortDateOldest => '日期（最早在前）';
+
+  @override
+  String get purchaseBillMgmtSortSupplierAZ => '供应商（A-Z）';
+
+  @override
+  String get purchaseBillMgmtSortSupplierZA => '供应商（Z-A）';
+
+  @override
+  String get purchaseBillMgmtSortAmountHighest => '金额（从高到低）';
+
+  @override
+  String get purchaseBillMgmtSortAmountLowest => '金额（从低到高）';
+
+  @override
+  String get purchaseBillMgmtFilterTitle => '筛选采购账单';
+
+  @override
+  String get purchaseBillMgmtPaymentStatusLabel => '付款状态';
+
+  @override
+  String get purchaseBillMgmtSearchHint => '按账单号或供应商搜索…';
+
+  @override
+  String get purchaseBillMgmtNewBillButton => '新建采购账单';
+
+  @override
+  String get purchaseBillMgmtColBill => '账单';
+
+  @override
+  String get purchaseBillMgmtColBalance => '余额';
+
+  @override
+  String purchaseBillMgmtTotalCountLabel(int count) {
+    return '共计：$count';
+  }
+
+  @override
+  String get purchaseBillMgmtNoBillsFoundTitle => '未找到采购账单';
+
+  @override
+  String get purchaseBillMgmtCreateFirstMessage => '创建您的第一张采购账单以开始使用';
+
+  @override
+  String get purchaseBillMgmtTryAdjustingMessage => '请尝试调整搜索或筛选条件';
+
+  @override
+  String get purchaseBillMgmtTitle => '采购账单';
+
+  @override
+  String get purchaseBillMgmtUnknownSupplierLabel => '未知供应商';
+
+  @override
+  String get purchaseBillMgmtNotesSectionLabel => '备注';
+
+  @override
+  String get purchaseBillMgmtItemsSectionLabel => '项目';
+
+  @override
+  String get purchaseBillMgmtGrandTotalLabel => '总计';
+
+  @override
+  String get purchaseBillMgmtBillDetailsTitle => '账单详情';
+
+  @override
+  String get purchaseBillMgmtExistingSupplierLabel => '现有供应商';
+
+  @override
+  String get purchaseBillMgmtWalkInSupplierLabel => '临时供应商';
+
+  @override
+  String get purchaseBillMgmtSupplierRequiredLabel => '供应商 *';
+
+  @override
+  String get purchaseBillMgmtBillNumberOptionalLabel => '账单号（可选）';
+
+  @override
+  String get purchaseBillMgmtAutoGenerateHint => '自动生成';
+
+  @override
+  String get purchaseBillMgmtBillDateRequiredLabel => '账单日期 *';
+
+  @override
+  String get purchaseBillMgmtPickDateTooltip => '选择日期';
+
+  @override
+  String get purchaseBillMgmtAddAnyNotesHint => '添加备注';
+
+  @override
+  String get purchaseBillMgmtAttachmentOptionalLabel => '附件（可选）';
+
+  @override
+  String get purchaseBillMgmtAttachFileHint => '附加文件';
+
+  @override
+  String get purchaseBillMgmtBrowseTooltip => '浏览';
+
+  @override
+  String get purchaseBillMgmtSelectSupplierMessage => '请选择供应商或切换为临时供应商。';
+
+  @override
+  String get purchaseBillMgmtEnterSupplierNameMessage => '请输入供应商名称。';
+
+  @override
+  String get purchaseBillMgmtAddAtLeastOneItemMessage => '请至少添加一个项目。';
+
+  @override
+  String get purchaseBillMgmtUpdatedMessage => '采购账单已更新！';
+
+  @override
+  String get purchaseBillMgmtCreatedMessage => '采购账单已创建！';
+
+  @override
+  String get purchaseBillMgmtDraftSavedMessage => '草稿已保存 — 库存未更新';
+
+  @override
+  String purchaseBillMgmtSaveErrorMessage(String error) {
+    return '保存采购账单时出错：$error';
+  }
+
+  @override
+  String get purchaseBillMgmtEnterNameMessage => '请输入名称';
+
+  @override
+  String get purchaseBillMgmtAddCustomItemTitle => '添加自定义项目';
+
+  @override
+  String get purchaseBillMgmtDescriptionOptionalLabel => '描述（可选）';
+
+  @override
+  String get purchaseBillMgmtQuantityLabel => '数量';
+
+  @override
+  String get purchaseBillMgmtCostPerUnitLabel => '单位成本';
+
+  @override
+  String get purchaseBillMgmtCostIncludesTaxLabel => '单位成本已含税';
+
+  @override
+  String get purchaseBillMgmtEnterItemNameMessage => '请输入项目名称';
+
+  @override
+  String get purchaseBillMgmtInvalidValueMessage => '无效';
+
+  @override
+  String get purchaseBillMgmtEditItemTitle => '编辑项目';
+
+  @override
+  String get purchaseBillMgmtEditItemTooltip => '编辑项目';
+
+  @override
+  String get purchaseBillMgmtRemoveItemTooltip => '删除项目';
+
+  @override
+  String get purchaseBillMgmtNoItemsAddedMessage => '尚未添加任何项目';
+
+  @override
+  String purchaseBillMgmtLastCostLabel(String amount) {
+    return '最近成本：$amount';
+  }
+
+  @override
+  String get purchaseBillMgmtSearchProductsHint => '搜索要添加的产品…';
+
+  @override
+  String get purchaseBillMgmtCustomBadgeLabel => '自定义';
+
+  @override
+  String get purchaseBillMgmtQtyDetailLabel => '数量';
+
+  @override
+  String get purchaseBillMgmtUnitCostDetailLabel => '单位成本';
+
+  @override
+  String purchaseBillMgmtTaxInclusiveLabel(String rate) {
+    return '$rate% 含税';
+  }
+
+  @override
+  String get purchaseBillMgmtNetCostDetailLabel => '净成本';
+
+  @override
+  String get purchaseBillMgmtEditPurchaseBillTitle => '编辑采购账单';
+
+  @override
+  String get purchaseBillMgmtUpdateSubtitle => '更新此采购账单';
+
+  @override
+  String get purchaseBillMgmtCreateSubtitle => '为您的供应商创建新的采购账单';
+
+  @override
+  String get purchaseBillMgmtSaveDraftButton => '保存草稿';
+
+  @override
+  String get purchaseBillMgmtSavePurchaseBillButton => '保存采购账单';
+
+  @override
+  String get purchaseBillMgmtSelectSupplierFromListMessage => '从列表中选择供应商';
+
+  @override
+  String get purchaseBillMgmtSearchSupplierHint => '搜索供应商';
+
+  @override
+  String get purchaseBillMgmtColItem => '项目';
+
+  @override
+  String get purchaseBillMgmtColCost => '成本';
+
+  @override
+  String get purchaseBillMgmtColTaxPercent => '税率 %';
+
+  @override
+  String get purchaseBillMgmtPaymentRecordedMessage => '付款已记录。';
 
   @override
   String get invoiceSettingsMetadataColumnsGridClassicNote =>

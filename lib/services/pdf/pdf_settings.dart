@@ -68,6 +68,14 @@ class PdfGenerationSettings {
   final Map<String, bool> metadataColumns;
   // Optional customer fields (Ship To, age/DOB/gender, custom fields).
   final CustomerFieldSettings customerFields;
+  // Multiplier for every font in non-thermal templates (PdfFontSize.scale).
+  final double fontSizeScale;
+  // Resolved per-section scales (section preset, else fontSizeScale).
+  final double companyNameScale;
+  final double docTitleScale;
+  final double tableHeaderScale;
+  final double tableItemsScale;
+  final double totalsScale;
 
   const PdfGenerationSettings({
     required this.company,
@@ -128,5 +136,11 @@ class PdfGenerationSettings {
     this.landscape = false,
     this.metadataColumns = const {},
     this.customerFields = const CustomerFieldSettings(),
+    this.fontSizeScale = 1.0,
+    this.companyNameScale = 1.0,
+    this.docTitleScale = 1.0,
+    this.tableHeaderScale = 1.0,
+    this.tableItemsScale = 1.0,
+    this.totalsScale = 1.0,
   });
 }

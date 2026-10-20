@@ -36,6 +36,7 @@ abstract class ProductRepository {
   Future<void> deleteAllProducts();
   Future<void> insertBatch(List<Product> products, {int batchSize = 50});
   Future<List<Product>> getOutOfStockProducts();
+  Future<List<Product>> getLowStockProducts();
   Future<ProductMetadata?> getProductMetadata(String productId);
   Future<Map<String, ProductMetadata>> getAllProductMetadata();
   Future<Map<String, ProductMetadata>> getProductMetadataForIds(List<String> productIds);

@@ -64,6 +64,13 @@ class AppLocalizationsBo extends AppLocalizations {
       'ཁྱེད་ཀྱི་ཁྲལ་ཤོག་ཇི་ལྟར་བྱེད་མིན་སྒྲིག་རོགས།';
 
   @override
+  String get onboardingStepPurchaseBillsTitle => 'ཉོ་ཐོ་དང་སྤྲོད་མཁན།';
+
+  @override
+  String get onboardingStepPurchaseBillsSubtitle =>
+      'སྤྲོད་མཁན་གྱི་ཐོ་དང་ཆ་ཚང་ཉོ་སྒྲུབ་ལམ་ལུགས་བརྟག་དཔྱད་བྱེད་པ (འདེམས་ཐང་)';
+
+  @override
   String get onboardingStepAppearanceTitle => 'ཁྲལ་ཤོག་བཀོད་པ།';
 
   @override
@@ -100,6 +107,14 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get onboardingDefaultTaxRateLabel => 'སྔར་སྒྲིག་ཁྲལ་ཚད (%)';
+
+  @override
+  String get onboardingEnablePurchaseBillsSuppliersLabel =>
+      'ཉོ་ཐོ་དང་སྤྲོད་མཁན་སྤྱོད་ཆོག་པར་བྱེད།';
+
+  @override
+  String get onboardingEnablePurchaseBillsSuppliersSubtitle =>
+      'ཌེཤ་བོརཌ་དཀར་ཆག་ནང་ཉོ་ཐོ་དང་སྤྲོད་མཁན་སྣོན་གྱི་ཡོད། ཁྱེད་ཀྱིས་ནམ་ཡང་སྒྲིག་འགོད་ནང་བསྒྱུར་བཅོས་བྱེད་ཆོག';
 
   @override
   String get onboardingPageSizeLabel => 'ཤོག་ངོས་ཚད།';
@@ -192,6 +207,9 @@ class AppLocalizationsBo extends AppLocalizations {
   String get navInvoices => 'ཁྲལ་ཤོག་རྣམས།';
 
   @override
+  String get navServices => 'དངུལ་ལག་བརྗེ་རེས་ཞབས་ཞུ།';
+
+  @override
   String get navQuotations => 'རིན་གྲངས།';
 
   @override
@@ -205,6 +223,12 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get navReports => 'སྙན་ཐོ།';
+
+  @override
+  String get navPurchaseBills => 'ཉོ་ཐོ།';
+
+  @override
+  String get navSuppliers => 'སྤྲོད་མཁན།';
 
   @override
   String get navSettings => 'སྒྲིག་འགོད།';
@@ -239,6 +263,16 @@ class AppLocalizationsBo extends AppLocalizations {
   @override
   String get dashboardShortcutsBannerSubtitle =>
       'ཁྲལ་ཤོག་གསར་པར Ctrl+Q, ཉར་ཚགས་ལ Ctrl+S, སོགས།';
+
+  @override
+  String get dashboardPurchaseBannerTitle => 'གསར་པ: ཉོ་ཐོ་དང་སྤྲོད་མཁན།';
+
+  @override
+  String get dashboardPurchaseBannerSubtitle =>
+      'ཉོ་ཐོ་ཉར་ཚགས་བྱེད། ཅ་དངོས་གྲངས་ཀ་རང་འགུལ་གྱིས་གསར་བསྒྱུར་བྱེད།';
+
+  @override
+  String get dashboardPurchaseBannerAction => 'སྤྱོད་ཆོག་པར་བྱེད།';
 
   @override
   String get dashboardViewAllAction => 'ཡོངས་རྫོགས་ལྟ།';
@@ -306,10 +340,16 @@ class AppLocalizationsBo extends AppLocalizations {
   }
 
   @override
-  String get dashboardRecentInvoicesTitle => 'ད་ལྟའི་ཁྲལ་ཤོག';
+  String get dashboardRecentInvoicesTitle => 'ད་ལྟའི་ཡིག་ཆ།';
 
   @override
-  String get dashboardLastFiveInvoicesLabel => 'མཐའ་མའི་ཁྲལ་ཤོག 5';
+  String get dashboardLastFiveInvoicesLabel => 'མཐའ་མའི་ཡིག་ཆ 5';
+
+  @override
+  String get dashboardColDocumentNo => 'ཡིག་ཆའི་ཨང་།';
+
+  @override
+  String get dashboardColType => 'རིགས།';
 
   @override
   String get dashboardNoInvoicesYetTitle => 'ད་དུང་ཁྲལ་ཤོག་མེད།';
@@ -759,6 +799,17 @@ class AppLocalizationsBo extends AppLocalizations {
   String get createInvoicePreviousBalanceDueLabel => 'སྔོན་གྱི་ཁེ་ལྷག';
 
   @override
+  String get createInvoicePaymentSectionLabel => 'དངུལ་སྤྲོད།';
+
+  @override
+  String get createInvoiceBalanceDueLabel => 'ལྷག་མའི་བུ་ལོན།';
+
+  @override
+  String createInvoicePaymentNotRecordedMessage(String error) {
+    return 'ཐོ་ཡིག་ཉར་ཚགས་བྱས་ཟིན། འོན་ཀྱང་དངུལ་སྤྲོད་ཐོ་འགོད་མ་བྱུང་། $error། ཐོ་ཡིག་ཐོ་གཞུང་ནས་སྣོན་རོགས།';
+  }
+
+  @override
   String get createInvoiceDueShortLabel => 'འབབ།';
 
   @override
@@ -767,6 +818,11 @@ class AppLocalizationsBo extends AppLocalizations {
   @override
   String createInvoiceUpdatedSuccessMessage(String invoiceTypeLabel) {
     return '$invoiceTypeLabel ལེགས་གསར་བཅོས་བྱུང་།';
+  }
+
+  @override
+  String createInvoiceTotalBelowPaidMessage(String paid) {
+    return 'བསྡོམས་གསར་པ་དེ་སྔོན་ལ་སྤྲད་ཟིན་པའི་ $paid ལས་ཉུང་། སྔོན་ལ་སྤྲོད་ཆད་སྤྱོད་ནང་སྤྲོད་ཆད་སུབ་པའམ། བསྡོམས་དེ་དངུལ་འབོར་དེ་དང་མཉམ་པའམ་མང་བ་ཉར་རོགས།';
   }
 
   @override
@@ -901,6 +957,9 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get createInvoiceOrderDateLabel => 'མངགས་ཞུའི་ཚེས་གྲངས།';
+
+  @override
+  String get createInvoiceOrderTimeLabel => 'མངགས་ཞུའི་དུས་ཚོད།';
 
   @override
   String get createInvoiceDueDateLabel => 'འབབ་ཚེས།';
@@ -1270,6 +1329,9 @@ class AppLocalizationsBo extends AppLocalizations {
   String get invoiceMgmtHideFullyPaidLabel => 'ཁྲལ་ཤོག་ཚང་མར་སྤྲད་ཟིན་པ་སྦེད།';
 
   @override
+  String get invoiceMgmtHideDeclinedLabel => 'ཁས་མི་ལེན་པའི་ཁྲལ་ཤོག་སྦེད།';
+
+  @override
   String get invoiceMgmtPaymentStatusLabel => 'སྤྲོད་ཆད་གནས་བབ།';
 
   @override
@@ -1413,6 +1475,76 @@ class AppLocalizationsBo extends AppLocalizations {
   String invoiceMgmtNewDocumentButton(String type) {
     return '$type གསར་བཟོ།';
   }
+
+  @override
+  String get invoiceMgmtConvertToInvoiceAction => 'ཁྲལ་ཤོག་ཏུ་བསྒྱུར།';
+
+  @override
+  String get invoiceMgmtConvertAgainTitle => 'ཡང་བསྐྱར་བསྒྱུར་རམ།';
+
+  @override
+  String invoiceMgmtConvertAgainBody(String number) {
+    return 'འབོར་ཚད་ $number སྔོན་ནས་ཁྲལ་ཤོག་ཏུ་བསྒྱུར་ཟིན། དེ་ནས་ཁྲལ་ཤོག་གཞན་ཞིག་བཟོ་དགོས་སམ།';
+  }
+
+  @override
+  String get invoiceMgmtMarkAsSent => 'བཏང་ཟིན་པར་རྟགས་རྒྱོབ།';
+
+  @override
+  String get invoiceMgmtMarkAsAccepted => 'ངོས་ལེན་བྱས་པར་རྟགས་རྒྱོབ།';
+
+  @override
+  String get invoiceMgmtMarkAsDeclined => 'ཁས་མི་ལེན་པར་རྟགས་རྒྱོབ།';
+
+  @override
+  String get quotationStatusDraft => 'ཟིན་བྲིས།';
+
+  @override
+  String get quotationStatusSent => 'བཏང་ཟིན།';
+
+  @override
+  String get quotationStatusAccepted => 'ངོས་ལེན་བྱས།';
+
+  @override
+  String get quotationStatusDeclined => 'ཁས་མ་བླངས།';
+
+  @override
+  String get quotationStatusConverted => 'བསྒྱུར་ཟིན།';
+
+  @override
+  String get invoiceMgmtDeclineInvoiceTitle => 'ཁྲལ་ཤོག་ཁས་མི་ལེན་ནམ།';
+
+  @override
+  String invoiceMgmtDeclineInvoiceBody(String number) {
+    return 'འདིས་ཁྲལ་ཤོག་ #$number ཁས་མི་ལེན་པར་རྟགས་རྒྱོབ་ནས་དེའི་ནང་དོན་ཚང་མ་ཅ་དངོས་ལ་སློག་ཡོང་། འདི་ལོག་སྟེ་བཟོ་མི་ཐུབ།';
+  }
+
+  @override
+  String invoiceMgmtDeclineHasPaymentsMessage(String number) {
+    return 'ཁྲལ་ཤོག་ #$number ལ་སྤྲོད་ཆད་ཐོ་འགོད་ཡོད། ཁས་མི་ལེན་གོང་ལ་སྤྲོད་ཆད་སྤྱོད་ནང་དེ་དག་སུབ་རོགས།';
+  }
+
+  @override
+  String get invoiceMgmtDeclinedSuccessMessage =>
+      'ཁྲལ་ཤོག་ཁས་མི་ལེན་པར་བརྟགས་ཟིན་པ་དང་ཅ་དངོས་སློག་ཟིན།';
+
+  @override
+  String get invoiceStatusDeclinedBadge => 'ཁས་མི་ལེན་པ།';
+
+  @override
+  String get createInvoiceConvertTitle => 'ཁྲལ་ཤོག་ཏུ་བསྒྱུར།';
+
+  @override
+  String createInvoiceConvertedSuccessMessage(String invoiceNumber) {
+    return 'ཁྲལ་ཤོག་ #$invoiceNumber ཏུ་བསྒྱུར་ཟིན།';
+  }
+
+  @override
+  String get createInvoiceTrashQuotationAction => 'འབོར་ཚད་གནས་སྤོ།';
+
+  @override
+  String get createInvoiceQuotationTrashedMessage =>
+      'འབོར་ཚད་སྙིགས་སྣོད་དུ་སྤོས་ཟིན།';
 
   @override
   String get invoiceMgmtOverdueBadge => 'དུས་འགོར།';
@@ -2090,6 +2222,10 @@ class AppLocalizationsBo extends AppLocalizations {
       'གོང་ཚད་ནང་ཁྲལ་ཚུད་ན 1/true, སྔར་སྒྲིག 0';
 
   @override
+  String get productMgmtCsvDescLowStockLimit =>
+      'ཐོན་རྫས་འདིའི་ཚོང་ཟོག་ཉུང་བའི་ཚད། སྟོང་པ = སྔོན་སྒྲིག 10';
+
+  @override
   String get productMgmtCsvDescStorageLocation => 'མཛོད་ཁང་། /དབང་ཤོག་ས་ཆ།';
 
   @override
@@ -2360,6 +2496,13 @@ class AppLocalizationsBo extends AppLocalizations {
   @override
   String get productMgmtTrackInfiniteStockSubtitle =>
       'ཐོན་ཟོག་འདིའི་ཚད་མེད་ཉར་ཚད་རྗེས་འདེད།';
+
+  @override
+  String get productMgmtLowStockLimitLabel => 'ཚོང་ཟོག་ཉུང་བའི་ཚད།';
+
+  @override
+  String get productMgmtLowStockLimitHelper =>
+      'ཚོང་ཟོག་གྲངས་འདི་དང་མཉམ་པའམ་དེ་ལས་ཉུང་ན་ཚོང་ཟོག་ཉུང་བའི་ནང་མངོན། སྔོན་སྒྲིག (10) ཆེད་སྟོང་པ་བཞག';
 
   @override
   String get productMgmtTipEnableCustomFieldsMessage =>
@@ -3121,6 +3264,17 @@ class AppLocalizationsBo extends AppLocalizations {
   String get invoiceSettingsSectionItems => 'ཁྲལ་ཤོག་རས་ཆས།';
 
   @override
+  String get invoiceSettingsSectionSuppliers => 'སྤྲོད་མཁན།';
+
+  @override
+  String get settingsEnablePurchaseBillsSuppliersLabel =>
+      'ཉོ་ཐོ་དང་སྤྲོད་མཁན་སྤྱོད་ཆོག་པར་བྱེད།';
+
+  @override
+  String get settingsEnablePurchaseBillsSuppliersSubtitle =>
+      'ཌེཤ་བོརཌ་དཀར་ཆག་ནང་ཉོ་ཐོ་དང་སྤྲོད་མཁན་སྟོན་གྱི་རེད།';
+
+  @override
   String get invoiceSettingsSectionCustomer => 'Customer Details';
 
   @override
@@ -3688,6 +3842,27 @@ class AppLocalizationsBo extends AppLocalizations {
   String get pdfSettingsCompanyNameSizeLabel => 'ཚོང་ལས་མིང་གི་ཚད།';
 
   @override
+  String get pdfSettingsFontSizeLabel => 'PDF ཡི་གེའི་ཚད།';
+
+  @override
+  String get pdfSettingsSectionSizesLabel => 'སྡེ་ཚན་གྱི་ཚད།';
+
+  @override
+  String get pdfSettingsDocTitleSizeLabel => 'ཡིག་ཆའི་མགོ་མིང་གི་ཚད།';
+
+  @override
+  String get pdfSettingsTableHeaderSizeLabel => 'རེའུ་མིག་མགོ་བྱང་གི་ཚད།';
+
+  @override
+  String get pdfSettingsTableItemsSizeLabel => 'རེའུ་མིག་དངོས་པོའི་ཚད།';
+
+  @override
+  String get pdfSettingsTotalsSizeLabel => 'བསྡོམས་འབོར་གྱི་ཚད།';
+
+  @override
+  String get pdfFontSizeSameAsOverallLabel => 'ཡོངས་ཁྱབ་དང་མཚུངས།';
+
+  @override
   String get pdfSettingsThemeColorLabel => 'བཀོད་པའི་ཚོན་མདོག';
 
   @override
@@ -4130,6 +4305,22 @@ class AppLocalizationsBo extends AppLocalizations {
       'ཁེ་འབབ་རྗེས་འདེད་ཆེད་གོང་རྐང་།';
 
   @override
+  String get productColumnsPurchasePriceAdminOnlyLabel =>
+      'ཉོ་གོང་། དོ་དམ་པ་ཁོ་ན།';
+
+  @override
+  String get productColumnsPurchasePriceAdminOnlySubtitle =>
+      'དོ་དམ་པ་མ་ཡིན་པའི་སྤྱོད་མཁན་ལ་ཉོ་གོང་དང་ཁེ་འབབ། ཚོང་ཟོག་གི་རིན་ཐང་སྦས།';
+
+  @override
+  String get productColumnsStockEditAdminOnlyLabel =>
+      'ཚོང་ཟོག་བཟོ་བཅོས། དོ་དམ་པ་ཁོ་ན།';
+
+  @override
+  String get productColumnsStockEditAdminOnlySubtitle =>
+      'དོ་དམ་པ་མ་ཡིན་པའི་སྤྱོད་མཁན་གྱིས་ཚོང་ཟོག་གི་གྲངས་འབོར་གཏན་འཁེལ་དང་བསྒྱུར་བཅོས། CSV ནས་ཐོན་རྫས་ནང་འདྲེན་བྱེད་མི་ཆོག';
+
+  @override
   String get productColumnsDefaultDiscountLabel => 'སྔར་སྒྲིག་ཐོ་ཆད།';
 
   @override
@@ -4501,7 +4692,226 @@ class AppLocalizationsBo extends AppLocalizations {
   String get paymentMethodOnline => 'དྲ་ཐོག';
 
   @override
+  String get paymentMethodUpi => 'UPI';
+
+  @override
   String get paymentMethodOther => 'གཞན།';
+
+  @override
+  String get accessibilityOptionalFeaturesSectionTitle => 'འདེམས་རུང་ནུས་པ།';
+
+  @override
+  String get accessibilityCashExchangeLabel => 'དངུལ་ལག / UPI བརྗེ་རེས་ཞབས་ཞུ།';
+
+  @override
+  String get accessibilityCashExchangeSubtitle =>
+      'ཐོ་ཡིག་གསར་པའི་རྗེས་སུ་དངུལ་ལག་བརྗེ་རེས་ཞབས་ཞུའི་འདེམས་ཐོ་སྣོན་ནས། UPI ↔ དངུལ་ལག་བརྗེ་རེས་དང་ཞབས་ཞུའི་གླ་ཆ། དངུལ་ལག་འགྲོ་སོང་བཅས་ཐོ་འགོད་བྱེད། དངུལ་ལག་དང་ UPI/དངུལ་ཁང་གི་ལྷག་བསགས་དང་མཉམ་དུ།';
+
+  @override
+  String get accessibilityReportsAdminOnlyLabel => 'སྙན་ཐོ། དོ་དམ་པ་ཁོ་ན།';
+
+  @override
+  String get accessibilityReportsAdminOnlySubtitle =>
+      'དོ་དམ་པ་མ་ཡིན་པའི་སྤྱོད་མཁན་ལ་སྙན་ཐོའི་འདེམས་ཐོ་སྦས།';
+
+  @override
+  String get cashExchangeCashLabel => 'དངུལ་ལག';
+
+  @override
+  String get cashExchangeUpiBankLabel => 'UPI/དངུལ་ཁང་།';
+
+  @override
+  String get cashExchangeTotalLabel => 'ལྷག་བསགས་ཡོངས་བསྡོམས།';
+
+  @override
+  String get cashExchangeIncomeTodayLabel => 'ཞབས་ཞུའི་ཡོང་འབབ། (དེ་རིང་)';
+
+  @override
+  String get cashExchangeIncomeMonthLabel => 'ཞབས་ཞུའི་ཡོང་འབབ། (ཟླ་བ་འདི)';
+
+  @override
+  String get reportsServiceIncomeLabel => 'ཞབས་ཞུའི་ཡོང་འབབ།';
+
+  @override
+  String get reportsTxnsLabel => 'ལས་འགན།';
+
+  @override
+  String get reportsInvoiceProfitLabel => 'ཁྲལ་ཤོག་གི་ཁེ་སྐྱེད།';
+
+  @override
+  String get reportsTransactionsLabel => 'ལས་འགན།';
+
+  @override
+  String get reportsCashExchangeTypeLabel => 'དངུལ་སྒོར་བརྗེ་རེས།';
+
+  @override
+  String get reportsCountColumnLabel => 'གྲངས།';
+
+  @override
+  String get cashExchangeExpensesMonthLabel => 'འགྲོ་སོང་། (ཟླ་བ་འདི)';
+
+  @override
+  String get cashExchangeSetupTitle => 'འགོ་འཛུགས་ལྷག་བསགས་གཏན་འཁེལ།';
+
+  @override
+  String get cashExchangeSetupMessage =>
+      'ཚེས་གྲངས་འདིར་ཁྱེད་ལ་ཡོད་པའི་དངུལ་ལག་དང་ UPI/དངུལ་ཁང་གི་དངུལ་འབོར་འཇུག་རོགས། ཚེས་གྲངས་འདི་ནས་བཟུང་ཐོ་ཡིག་གི་དངུལ་སྤྲོད་ལྷག་བསགས་ནང་སྣོན་གྱི་ཡོད།';
+
+  @override
+  String get cashExchangeSetupAdminOnlyMessage =>
+      'འགོ་འཛུགས་ལྷག་བསགས་གཏན་འཁེལ་བྱེད་པར་དོ་དམ་པར་ཞུ་རོགས།';
+
+  @override
+  String get cashExchangeUpiToCash => 'UPI → དངུལ་ལག';
+
+  @override
+  String get cashExchangeCashToUpi => 'དངུལ་ལག → UPI';
+
+  @override
+  String get cashExchangeExpense => 'འགྲོ་སོང་།';
+
+  @override
+  String get cashExchangeWithdrawal => 'དངུལ་ཕྱིར་འདོན།';
+
+  @override
+  String get cashExchangeBankDeposit => 'དངུལ་ཁང་དུ་འཇོག་པ།';
+
+  @override
+  String get cashExchangeOpeningBalance => 'འགོ་འཛུགས་ལྷག་བསགས།';
+
+  @override
+  String get cashExchangeAdjustment => 'བསྒྱུར་བཅོས།';
+
+  @override
+  String get cashExchangeInvoicePayment => 'ཐོ་ཡིག་གི་དངུལ་སྤྲོད།';
+
+  @override
+  String get cashExchangeAmountLabel => 'དངུལ་འབོར།';
+
+  @override
+  String get cashExchangeFeeLabel => 'ཞབས་ཞུའི་གླ་ཆ།';
+
+  @override
+  String get cashExchangeFeePaidByLabel => 'ཞབས་ཞུའི་གླ་ཆ་སྤྲོད་ཐབས།';
+
+  @override
+  String get cashExchangeFromAccountLabel => 'སྤྲོད་ས།';
+
+  @override
+  String get cashExchangeCustomerNameLabel => 'ཚོང་པའི་མིང་། (འདེམས་རུང་)';
+
+  @override
+  String get cashExchangeCustomerSearchHint => 'ཚོང་པ་འཚོལ་བའམ་མིང་གསར་པ་འབྲི།';
+
+  @override
+  String get cashExchangeCustomerPhoneLabel => 'ཁ་པར། (འདེམས་རུང་)';
+
+  @override
+  String get cashExchangeNotesLabel => 'མཆན། (འདེམས་རུང་)';
+
+  @override
+  String get cashExchangeDateTimeLabel => 'ཚེས་གྲངས་དང་དུས་ཚོད།';
+
+  @override
+  String get cashExchangeDateLabel => 'ཚེས་གྲངས།';
+
+  @override
+  String get cashExchangeCashDeltaLabel => 'དངུལ་ལག་འགྱུར་བ། (+ / −)';
+
+  @override
+  String get cashExchangeUpiDeltaLabel => 'UPI/དངུལ་ཁང་འགྱུར་བ། (+ / −)';
+
+  @override
+  String get cashExchangeDeleteTitle => 'ཐོ་འགོད་སུབ་པ།';
+
+  @override
+  String get cashExchangeDeleteMessage =>
+      'ཐོ་འགོད་འདི་སུབ་བམ། ལྷག་བསགས་བསྐྱར་རྩིས་བྱེད་ངེས།';
+
+  @override
+  String get cashExchangeEditTitle => 'ཐོ་འགོད་བཟོ་བཅོས།';
+
+  @override
+  String get cashExchangeEdited => 'བཟོ་བཅོས་བྱས་ཟིན།';
+
+  @override
+  String get cashExchangeHistoryTitle => 'བཟོ་བཅོས་ལོ་རྒྱུས།';
+
+  @override
+  String get cashExchangeHistoryCurrent => 'ད་ལྟའི།';
+
+  @override
+  String cashExchangeHistoryEdited(String user, String date) {
+    return '$user ཡིས་བཟོ་བཅོས་བྱས། · $date';
+  }
+
+  @override
+  String cashExchangeHistoryDeleted(String user, String date) {
+    return '$user ཡིས་སུབ་པ། · $date';
+  }
+
+  @override
+  String get cashExchangeChangeLog => 'བཟོ་བཅོས་ཐོ་གཞུང་།';
+
+  @override
+  String get cashExchangeDeleted => 'སུབ་ཟིན།';
+
+  @override
+  String get cashExchangeNoChanges => 'བཟོ་བཅོས་ཐོ་འགོད་མེད།';
+
+  @override
+  String get cashExchangeChangeFailed =>
+      'ཐོ་འགོད་འདི་ད་ནས་བཟོ་བཅོས་བྱེད་མི་ཐུབ། སུབ་ཟིན་པའམ། ཡང་ན་ཆུ་ཚོད་ ༢༤ ཡི་བཟོ་བཅོས་དུས་ཚོད་འདས་ཟིན།';
+
+  @override
+  String get cashExchangeEmpty => 'དུས་ཡུན་འདིར་ཐོ་འགོད་མེད།';
+
+  @override
+  String get cashExchangePeriodToday => 'དེ་རིང་།';
+
+  @override
+  String get cashExchangePeriodMonth => 'ཟླ་བ་འདི།';
+
+  @override
+  String get cashExchangePeriodAll => 'དུས་ཡོངས།';
+
+  @override
+  String get cashExchangePeriodCustom => 'རང་འདེམས་ཚེས་གྲངས།';
+
+  @override
+  String get cashExchangeShowingLabel => 'སྟོན་བཞིན་པ།';
+
+  @override
+  String get cashExchangeChangeDates => 'ཚེས་གྲངས་བསྒྱུར།';
+
+  @override
+  String get cashExchangeClosingBalance => 'མཇུག་གི་ལྷག་བསགས།';
+
+  @override
+  String get cashExchangeShowBalances => 'ལྷག་བསགས་སྟོན།';
+
+  @override
+  String get cashExchangeHideBalances => 'ལྷག་བསགས་སྦས།';
+
+  @override
+  String get cashExchangeAllTypes => 'རིགས་ཡོངས།';
+
+  @override
+  String cashExchangeSummaryUpiToCash(
+      String amount, String fee, String method) {
+    return 'ཚོང་པས་ UPI/དངུལ་ཁང་ནས་ $amount གཏོང་། • ཁྱེད་ཀྱིས་དངུལ་ལག་ $amount སྤྲོད། • གླ་ཆ་ $fee $method ནས།';
+  }
+
+  @override
+  String cashExchangeSummaryCashToUpi(
+      String amount, String fee, String method) {
+    return 'ཚོང་པས་དངུལ་ལག་ $amount སྤྲོད། • ཁྱེད་ཀྱིས་ UPI/དངུལ་ཁང་ནས་ $amount གཏོང་། • གླ་ཆ་ $fee $method ནས།';
+  }
+
+  @override
+  String cashExchangeLowBalanceWarning(String balance, String account) {
+    return '$account ནང་ $balance ཁོ་ན་ཡོད།';
+  }
 
   @override
   String get customerInfoButtonTooltip => 'འབྲེལ་གནས་ཞིབ་ཕྲ་སྟོན།';
@@ -4556,6 +4966,9 @@ class AppLocalizationsBo extends AppLocalizations {
   String get sizeLargeLabel => 'ཆེན་པོ།';
 
   @override
+  String get sizeXLargeLabel => 'ཧ་ཅང་ཆེན་པོ།';
+
+  @override
   String get shortcutNewInvoiceDescription =>
       'ཁྲལ་ཤོག་གསར་པ (ཌེཤ་བོརྡ་ནས) / ཡིག་ཆ་སླར་སྒྲིག (ཁྲལ་ཤོག་བཟོ་བའི་ནང་)';
 
@@ -4573,6 +4986,338 @@ class AppLocalizationsBo extends AppLocalizations {
 
   @override
   String get shortcutPrintPdfDescription => 'ཁྲལ་ཤོག PDF བཟོ/པར་སྐྲུན།';
+
+  @override
+  String supplierMgmtLoadErrorMessage(String error) {
+    return 'སྤྲོད་མཁན་འདྲེན་སྐབས་ནོར་འཁྲུལ།: $error';
+  }
+
+  @override
+  String get supplierMgmtAddedMessage => 'སྤྲོད་མཁན་ལེགས་གྲུབ་ངང་སྣོན་སོང་།';
+
+  @override
+  String get supplierMgmtUpdatedMessage =>
+      'སྤྲོད་མཁན་གསར་བཅོས་ལེགས་གྲུབ་བྱུང་།';
+
+  @override
+  String supplierMgmtSaveErrorMessage(String error) {
+    return 'སྤྲོད་མཁན་ཉར་ཚགས་སྐབས་ནོར་འཁྲུལ།: $error';
+  }
+
+  @override
+  String supplierMgmtOutstandingLabel(String amount) {
+    return 'ལྷག་ལུས།: $amount';
+  }
+
+  @override
+  String supplierMgmtMoveToTrashBody(String name) {
+    return '\"$name\" ཕྱགས་སྣོད་དུ་སྤོ་དགོས་སམ། ད་ཡོད་ཉོ་ཐོ་རྣམས་ཀྱིས་སྔར་གྱི་སྤྲོད་མཁན་མིང་སྟོན་གྱི་རེད།';
+  }
+
+  @override
+  String get supplierMgmtMovedToTrashMessage =>
+      'སྤྲོད་མཁན་ཕྱགས་སྣོད་དུ་སྤོས་སོང་།';
+
+  @override
+  String get supplierMgmtRestoredMessage => 'སྤྲོད་མཁན་སླར་གསོ་བྱས་སོང་།';
+
+  @override
+  String get supplierMgmtAddSupplierButton => 'སྤྲོད་མཁན་སྣོན་པ།';
+
+  @override
+  String get supplierMgmtTitle => 'སྤྲོད་མཁན།';
+
+  @override
+  String get supplierMgmtSubtitle =>
+      'ཁྱེད་ཀྱིས་ཆ་ཚང་ཉོ་སའི་སྤྲོད་མཁན་རྣམས་དོ་དམ་བྱེད།';
+
+  @override
+  String get supplierMgmtSearchHint =>
+      'མིང་, ཁ་པར་, ཡང་ན GSTIN ཐོག་ནས་སྤྲོད་མཁན་འཚོལ...';
+
+  @override
+  String get supplierMgmtColSupplier => 'སྤྲོད་མཁན།';
+
+  @override
+  String get supplierMgmtColGstin => 'GSTIN';
+
+  @override
+  String supplierMgmtTotalCountLabel(int count) {
+    return 'བསྡོམས།: $count';
+  }
+
+  @override
+  String get supplierMgmtNoSuppliersYetMessage => 'དེང་སང་སྤྲོད་མཁན་མེད།';
+
+  @override
+  String get supplierMgmtNoSuppliersMatchMessage =>
+      'ཁྱེད་ཀྱི་འཚོལ་བར་མཐུན་པའི་སྤྲོད་མཁན་མི་འདུག';
+
+  @override
+  String get supplierMgmtAddNewTitle => 'སྤྲོད་མཁན་གསར་པ་སྣོན་པ།';
+
+  @override
+  String get supplierMgmtEditTitle => 'སྤྲོད་མཁན་ཞུ་དག';
+
+  @override
+  String get supplierMgmtSaveChangesButton => 'བསྒྱུར་བཅོས་ཉར་ཚགས།';
+
+  @override
+  String get supplierMgmtTaxVatNumberLabel => 'ཁྲལ་/ཝི་ཨེ་ཊི་ཨང་གྲངས། (GSTIN)';
+
+  @override
+  String purchaseBillMgmtLoadErrorMessage(String error) {
+    return 'ཉོ་ཐོ་འདྲེན་སྐབས་ནོར་འཁྲུལ།: $error';
+  }
+
+  @override
+  String get purchaseBillMgmtAlreadyFullyPaidMessage =>
+      'ཐོ་འདི་སྔོན་ནས་ཆ་ཚང་འཇལ་ཟིན།';
+
+  @override
+  String purchaseBillMgmtMoveToTrashBody(String billNumber) {
+    return 'ཐོ་ \"$billNumber\" ཕྱགས་སྣོད་དུ་སྤོ་དགོས་སམ། ཆ་ཚང་ཚད་ལྡོག་འགྱུར་གྱི་རེད།';
+  }
+
+  @override
+  String get purchaseBillMgmtMovedToTrashMessage =>
+      'ཉོ་ཐོ་ཕྱགས་སྣོད་དུ་སྤོས་སོང་།';
+
+  @override
+  String get purchaseBillMgmtRestoredMessage => 'ཉོ་ཐོ་སླར་གསོ་བྱས་སོང་།';
+
+  @override
+  String get purchaseBillMgmtSortByTitle => 'གོ་རིམ';
+
+  @override
+  String get purchaseBillMgmtSortDateNewest => 'ཚེས་གྲངས། (གསར་ཤོས་སྔོན་ལ)';
+
+  @override
+  String get purchaseBillMgmtSortDateOldest => 'ཚེས་གྲངས། (རྙིང་ཤོས་སྔོན་ལ)';
+
+  @override
+  String get purchaseBillMgmtSortSupplierAZ => 'སྤྲོད་མཁན། (A-Z)';
+
+  @override
+  String get purchaseBillMgmtSortSupplierZA => 'སྤྲོད་མཁན། (Z-A)';
+
+  @override
+  String get purchaseBillMgmtSortAmountHighest => 'གྲངས་འབོར། (མང་ཤོས་སྔོན་ལ)';
+
+  @override
+  String get purchaseBillMgmtSortAmountLowest => 'གྲངས་འབོར། (ཉུང་ཤོས་སྔོན་ལ)';
+
+  @override
+  String get purchaseBillMgmtFilterTitle => 'ཉོ་ཐོ་འདེམས་སྒྲུག';
+
+  @override
+  String get purchaseBillMgmtPaymentStatusLabel => 'འཇལ་བའི་གནས་བབ།';
+
+  @override
+  String get purchaseBillMgmtSearchHint => 'ཐོ་ཨང་ངམ་སྤྲོད་མཁན་ཐོག་ནས་འཚོལ...';
+
+  @override
+  String get purchaseBillMgmtNewBillButton => 'ཉོ་ཐོ་གསར་པ།';
+
+  @override
+  String get purchaseBillMgmtColBill => 'ཐོ།';
+
+  @override
+  String get purchaseBillMgmtColBalance => 'ལྷག་ལུས།';
+
+  @override
+  String purchaseBillMgmtTotalCountLabel(int count) {
+    return 'བསྡོམས།: $count';
+  }
+
+  @override
+  String get purchaseBillMgmtNoBillsFoundTitle => 'ཉོ་ཐོ་མ་རྙེད།';
+
+  @override
+  String get purchaseBillMgmtCreateFirstMessage =>
+      'འགོ་འཛུགས་ཆེད་ཁྱེད་ཀྱི་ཉོ་ཐོ་དང་པོ་བཟོས།';
+
+  @override
+  String get purchaseBillMgmtTryAdjustingMessage =>
+      'འཚོལ་བ་ཡང་ན་འདེམས་སྒྲུག་བསྒྱུར་བཅོས་གྱིས།';
+
+  @override
+  String get purchaseBillMgmtTitle => 'ཉོ་ཐོ།';
+
+  @override
+  String get purchaseBillMgmtUnknownSupplierLabel => 'སྤྲོད་མཁན་མི་ཤེས།';
+
+  @override
+  String get purchaseBillMgmtNotesSectionLabel => 'ཟིན་བྲིས།';
+
+  @override
+  String get purchaseBillMgmtItemsSectionLabel => 'རས་ཆས།';
+
+  @override
+  String get purchaseBillMgmtGrandTotalLabel => 'སྤྱིའི་བསྡོམས།';
+
+  @override
+  String get purchaseBillMgmtBillDetailsTitle => 'ཐོ་ཡིག་ཞིབ་ཕྲ།';
+
+  @override
+  String get purchaseBillMgmtExistingSupplierLabel => 'ད་ཡོད་སྤྲོད་མཁན།';
+
+  @override
+  String get purchaseBillMgmtWalkInSupplierLabel => 'འགྲོ་འོང་སྤྲོད་མཁན།';
+
+  @override
+  String get purchaseBillMgmtSupplierRequiredLabel => 'སྤྲོད་མཁན། *';
+
+  @override
+  String get purchaseBillMgmtBillNumberOptionalLabel => 'ཐོ་ཨང་། (འདེམས་ཐང་)';
+
+  @override
+  String get purchaseBillMgmtAutoGenerateHint => 'རང་འགུལ་བཟོ་བ།';
+
+  @override
+  String get purchaseBillMgmtBillDateRequiredLabel => 'ཐོའི་ཚེས་གྲངས། *';
+
+  @override
+  String get purchaseBillMgmtPickDateTooltip => 'ཚེས་གྲངས་འདེམས་པ།';
+
+  @override
+  String get purchaseBillMgmtAddAnyNotesHint => 'ཟིན་བྲིས་གང་རུང་སྣོན་པ།';
+
+  @override
+  String get purchaseBillMgmtAttachmentOptionalLabel => 'སྦྲེལ་ཡིག (འདེམས་ཐང་)';
+
+  @override
+  String get purchaseBillMgmtAttachFileHint => 'ཡིག་ཆ་སྦྲེལ་བ།';
+
+  @override
+  String get purchaseBillMgmtBrowseTooltip => 'བལྟ་ཞིབ';
+
+  @override
+  String get purchaseBillMgmtSelectSupplierMessage =>
+      'སྤྲོད་མཁན་ཞིག་འདེམས་རོགས་ཡང་ན་འགྲོ་འོང་སྤྲོད་མཁན་ལ་བརྗེ་རོགས།';
+
+  @override
+  String get purchaseBillMgmtEnterSupplierNameMessage =>
+      'སྤྲོད་མཁན་གྱི་མིང་འཇུག་རོགས།';
+
+  @override
+  String get purchaseBillMgmtAddAtLeastOneItemMessage =>
+      'རས་ཆས་གཅིག་ཙམ་ཡང་སྣོན་རོགས།';
+
+  @override
+  String get purchaseBillMgmtUpdatedMessage =>
+      'ཉོ་ཐོ་གསར་བཅོས་ལེགས་གྲུབ་བྱུང་།';
+
+  @override
+  String get purchaseBillMgmtCreatedMessage => 'ཉོ་ཐོ་ལེགས་གྲུབ་ངང་བཟོས་སོང་།';
+
+  @override
+  String get purchaseBillMgmtDraftSavedMessage =>
+      'ཟིན་བྲིས་ཉར་ཚགས་བྱས་སོང་། — ཚོང་ཟོག་གསར་བཅོས་མ་བྱས།';
+
+  @override
+  String purchaseBillMgmtSaveErrorMessage(String error) {
+    return 'ཉོ་ཐོ་ཉར་ཚགས་སྐབས་ནོར་འཁྲུལ།: $error';
+  }
+
+  @override
+  String get purchaseBillMgmtEnterNameMessage => 'མིང་ཞིག་འཇུག་རོགས།';
+
+  @override
+  String get purchaseBillMgmtAddCustomItemTitle => 'རང་བཟོའི་རས་ཆས་སྣོན་པ།';
+
+  @override
+  String get purchaseBillMgmtDescriptionOptionalLabel =>
+      'འགྲེལ་བཤད། (འདེམས་ཐང་)';
+
+  @override
+  String get purchaseBillMgmtQuantityLabel => 'གྲངས་ཀ།';
+
+  @override
+  String get purchaseBillMgmtCostPerUnitLabel => 'ཆ་རེའི་གོང་ཚད།';
+
+  @override
+  String get purchaseBillMgmtCostIncludesTaxLabel =>
+      'ཆ་རེའི་གོང་ཚད་ནང་ཁྲལ་ཚུད་ཡོད།';
+
+  @override
+  String get purchaseBillMgmtEnterItemNameMessage => 'རས་ཆས་ཀྱི་མིང་འཇུག་རོགས།';
+
+  @override
+  String get purchaseBillMgmtInvalidValueMessage => 'མི་འཐད།';
+
+  @override
+  String get purchaseBillMgmtEditItemTitle => 'རས་ཆས་ཞུ་དག';
+
+  @override
+  String get purchaseBillMgmtEditItemTooltip => 'རས་ཆས་ཞུ་དག';
+
+  @override
+  String get purchaseBillMgmtRemoveItemTooltip => 'རས་ཆས་བསུབ་པ།';
+
+  @override
+  String get purchaseBillMgmtNoItemsAddedMessage => 'དེང་སང་རས་ཆས་སྣོན་མེད།';
+
+  @override
+  String purchaseBillMgmtLastCostLabel(String amount) {
+    return 'མཐའ་མའི་ཉོ་གོང་།: $amount';
+  }
+
+  @override
+  String get purchaseBillMgmtSearchProductsHint => 'སྣོན་ཆེད་ཐོན་རྫས་འཚོལ...';
+
+  @override
+  String get purchaseBillMgmtCustomBadgeLabel => 'རང་བཟོ།';
+
+  @override
+  String get purchaseBillMgmtQtyDetailLabel => 'གྲངས་ཀ།';
+
+  @override
+  String get purchaseBillMgmtUnitCostDetailLabel => 'ཆ་རེའི་གོང་ཚད།';
+
+  @override
+  String purchaseBillMgmtTaxInclusiveLabel(String rate) {
+    return '$rate% ཁྲལ་ཚུད།';
+  }
+
+  @override
+  String get purchaseBillMgmtNetCostDetailLabel => 'རྩ་བའི་གོང་ཚད།';
+
+  @override
+  String get purchaseBillMgmtEditPurchaseBillTitle => 'ཉོ་ཐོ་ཞུ་དག';
+
+  @override
+  String get purchaseBillMgmtUpdateSubtitle => 'ཉོ་ཐོ་འདི་གསར་བཅོས་གྱིས།';
+
+  @override
+  String get purchaseBillMgmtCreateSubtitle =>
+      'ཁྱེད་ཀྱི་སྤྲོད་མཁན་ཆེད་ཉོ་ཐོ་གསར་པ་བཟོས།';
+
+  @override
+  String get purchaseBillMgmtSaveDraftButton => 'ཟིན་བྲིས་ཉར་ཚགས།';
+
+  @override
+  String get purchaseBillMgmtSavePurchaseBillButton => 'ཉོ་ཐོ་ཉར་ཚགས།';
+
+  @override
+  String get purchaseBillMgmtSelectSupplierFromListMessage =>
+      'ཐོ་གནས་ནས་སྤྲོད་མཁན་ཞིག་འདེམས།';
+
+  @override
+  String get purchaseBillMgmtSearchSupplierHint => 'སྤྲོད་མཁན་འཚོལ';
+
+  @override
+  String get purchaseBillMgmtColItem => 'རས་ཆས།';
+
+  @override
+  String get purchaseBillMgmtColCost => 'ཉོ་གོང་།';
+
+  @override
+  String get purchaseBillMgmtColTaxPercent => 'ཁྲལ། %';
+
+  @override
+  String get purchaseBillMgmtPaymentRecordedMessage =>
+      'འཇལ་བ་ཐོ་འགོད་བྱས་སོང་།';
 
   @override
   String get invoiceSettingsMetadataColumnsGridClassicNote =>

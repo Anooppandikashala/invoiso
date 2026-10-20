@@ -64,6 +64,14 @@ class AppLocalizationsEs extends AppLocalizations {
       'Configura cómo funcionan tus facturas';
 
   @override
+  String get onboardingStepPurchaseBillsTitle =>
+      'Facturas de compra y proveedores';
+
+  @override
+  String get onboardingStepPurchaseBillsSubtitle =>
+      'Registra facturas de proveedores y compras de stock (opcional)';
+
+  @override
   String get onboardingStepAppearanceTitle => 'Apariencia de la factura';
 
   @override
@@ -102,6 +110,14 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get onboardingDefaultTaxRateLabel =>
       'Tasa de impuesto predeterminada (%)';
+
+  @override
+  String get onboardingEnablePurchaseBillsSuppliersLabel =>
+      'Habilitar Facturas de compra y Proveedores';
+
+  @override
+  String get onboardingEnablePurchaseBillsSuppliersSubtitle =>
+      'Añade Facturas de compra y Proveedores al menú del panel. Puedes cambiarlo en cualquier momento en Configuración.';
 
   @override
   String get onboardingPageSizeLabel => 'Tamaño de página';
@@ -194,6 +210,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get navInvoices => 'Facturas';
 
   @override
+  String get navServices => 'Servicios de cambio de efectivo';
+
+  @override
   String get navQuotations => 'Presupuestos';
 
   @override
@@ -207,6 +226,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get navReports => 'Informes';
+
+  @override
+  String get navPurchaseBills => 'Facturas de compra';
+
+  @override
+  String get navSuppliers => 'Proveedores';
 
   @override
   String get navSettings => 'Configuración';
@@ -241,6 +266,17 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get dashboardShortcutsBannerSubtitle =>
       'Ctrl+Q para una nueva factura, Ctrl+S para guardar, y más.';
+
+  @override
+  String get dashboardPurchaseBannerTitle =>
+      'Nuevo: Facturas de compra y Proveedores';
+
+  @override
+  String get dashboardPurchaseBannerSubtitle =>
+      'Registra facturas de proveedores, actualiza el stock automáticamente y controla lo que debes a cada proveedor.';
+
+  @override
+  String get dashboardPurchaseBannerAction => 'Activar';
 
   @override
   String get dashboardViewAllAction => 'Ver todo';
@@ -307,10 +343,16 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get dashboardRecentInvoicesTitle => 'Facturas recientes';
+  String get dashboardRecentInvoicesTitle => 'Documentos recientes';
 
   @override
-  String get dashboardLastFiveInvoicesLabel => 'Últimas 5 facturas';
+  String get dashboardLastFiveInvoicesLabel => 'Últimos 5 documentos';
+
+  @override
+  String get dashboardColDocumentNo => 'N.º de documento';
+
+  @override
+  String get dashboardColType => 'Tipo';
 
   @override
   String get dashboardNoInvoicesYetTitle => 'Aún no hay facturas';
@@ -765,6 +807,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get createInvoicePreviousBalanceDueLabel => 'Saldo anterior pendiente';
 
   @override
+  String get createInvoicePaymentSectionLabel => 'Pago';
+
+  @override
+  String get createInvoiceBalanceDueLabel => 'Saldo pendiente';
+
+  @override
+  String createInvoicePaymentNotRecordedMessage(String error) {
+    return 'Factura guardada, pero el pago no se registró: $error. Agréguelo desde la lista de facturas.';
+  }
+
+  @override
   String get createInvoiceDueShortLabel => 'Vence';
 
   @override
@@ -773,6 +826,11 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String createInvoiceUpdatedSuccessMessage(String invoiceTypeLabel) {
     return '¡$invoiceTypeLabel actualizado(a) con éxito!';
+  }
+
+  @override
+  String createInvoiceTotalBelowPaidMessage(String paid) {
+    return 'El nuevo total es menor que los $paid ya pagados. Elimine pagos en Aplicar pago primero o mantenga el total igual o superior a ese importe.';
   }
 
   @override
@@ -909,6 +967,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get createInvoiceOrderDateLabel => 'Fecha del pedido';
+
+  @override
+  String get createInvoiceOrderTimeLabel => 'Hora del pedido';
 
   @override
   String get createInvoiceDueDateLabel => 'Fecha de vencimiento';
@@ -1290,6 +1351,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'Ocultar facturas totalmente pagadas';
 
   @override
+  String get invoiceMgmtHideDeclinedLabel => 'Ocultar facturas rechazadas';
+
+  @override
   String get invoiceMgmtPaymentStatusLabel => 'Estado de pago';
 
   @override
@@ -1434,6 +1498,76 @@ class AppLocalizationsEs extends AppLocalizations {
   String invoiceMgmtNewDocumentButton(String type) {
     return 'Crear $type';
   }
+
+  @override
+  String get invoiceMgmtConvertToInvoiceAction => 'Convertir en factura';
+
+  @override
+  String get invoiceMgmtConvertAgainTitle => '¿Convertir de nuevo?';
+
+  @override
+  String invoiceMgmtConvertAgainBody(String number) {
+    return 'La cotización $number ya se convirtió en una factura. ¿Crear otra factura a partir de ella?';
+  }
+
+  @override
+  String get invoiceMgmtMarkAsSent => 'Marcar como enviada';
+
+  @override
+  String get invoiceMgmtMarkAsAccepted => 'Marcar como aceptada';
+
+  @override
+  String get invoiceMgmtMarkAsDeclined => 'Marcar como rechazada';
+
+  @override
+  String get quotationStatusDraft => 'Borrador';
+
+  @override
+  String get quotationStatusSent => 'Enviada';
+
+  @override
+  String get quotationStatusAccepted => 'Aceptada';
+
+  @override
+  String get quotationStatusDeclined => 'Rechazada';
+
+  @override
+  String get quotationStatusConverted => 'Convertida';
+
+  @override
+  String get invoiceMgmtDeclineInvoiceTitle => '¿Rechazar factura?';
+
+  @override
+  String invoiceMgmtDeclineInvoiceBody(String number) {
+    return 'Esto marcará la factura #$number como rechazada y devolverá sus artículos al stock. Esta acción no se puede deshacer.';
+  }
+
+  @override
+  String invoiceMgmtDeclineHasPaymentsMessage(String number) {
+    return 'La factura #$number tiene pagos registrados. Elimínelos en Aplicar pago antes de rechazarla.';
+  }
+
+  @override
+  String get invoiceMgmtDeclinedSuccessMessage =>
+      'Factura rechazada, stock restaurado.';
+
+  @override
+  String get invoiceStatusDeclinedBadge => 'Rechazada';
+
+  @override
+  String get createInvoiceConvertTitle => 'Convertir en factura';
+
+  @override
+  String createInvoiceConvertedSuccessMessage(String invoiceNumber) {
+    return 'Convertida en factura n.º $invoiceNumber';
+  }
+
+  @override
+  String get createInvoiceTrashQuotationAction => 'Eliminar cotización';
+
+  @override
+  String get createInvoiceQuotationTrashedMessage =>
+      'Cotización movida a la papelera';
 
   @override
   String get invoiceMgmtOverdueBadge => 'Vencida';
@@ -2122,6 +2256,10 @@ class AppLocalizationsEs extends AppLocalizations {
       '1/true si el precio ya incluye impuestos, predeterminado 0';
 
   @override
+  String get productMgmtCsvDescLowStockLimit =>
+      'Umbral de stock bajo del producto, vacío = 10 por defecto';
+
+  @override
   String get productMgmtCsvDescStorageLocation =>
       'Ubicación de almacén/estante';
 
@@ -2400,6 +2538,13 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get productMgmtTrackInfiniteStockSubtitle =>
       'Rastrear stock infinito para este producto';
+
+  @override
+  String get productMgmtLowStockLimitLabel => 'Límite de stock bajo';
+
+  @override
+  String get productMgmtLowStockLimitHelper =>
+      'Aparece en Stock bajo cuando el stock es igual o menor a este número. Déjelo vacío para usar el valor predeterminado (10).';
 
   @override
   String get productMgmtTipEnableCustomFieldsMessage =>
@@ -3179,6 +3324,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get invoiceSettingsSectionItems => 'Artículos de la factura';
 
   @override
+  String get invoiceSettingsSectionSuppliers => 'Proveedores';
+
+  @override
+  String get settingsEnablePurchaseBillsSuppliersLabel =>
+      'Habilitar Facturas de compra y Proveedores';
+
+  @override
+  String get settingsEnablePurchaseBillsSuppliersSubtitle =>
+      'Muestra Facturas de compra y Proveedores en el menú del panel';
+
+  @override
   String get invoiceSettingsSectionCustomer => 'Customer Details';
 
   @override
@@ -3764,6 +3920,29 @@ class AppLocalizationsEs extends AppLocalizations {
       'Tamaño del nombre de la empresa';
 
   @override
+  String get pdfSettingsFontSizeLabel => 'Tamaño del texto del PDF';
+
+  @override
+  String get pdfSettingsSectionSizesLabel => 'Tamaños por sección';
+
+  @override
+  String get pdfSettingsDocTitleSizeLabel => 'Tamaño del título del documento';
+
+  @override
+  String get pdfSettingsTableHeaderSizeLabel =>
+      'Tamaño del encabezado de la tabla';
+
+  @override
+  String get pdfSettingsTableItemsSizeLabel =>
+      'Tamaño de los artículos de la tabla';
+
+  @override
+  String get pdfSettingsTotalsSizeLabel => 'Tamaño de los totales';
+
+  @override
+  String get pdfFontSizeSameAsOverallLabel => 'Igual que el general';
+
+  @override
   String get pdfSettingsThemeColorLabel => 'Color del tema';
 
   @override
@@ -4215,6 +4394,22 @@ class AppLocalizationsEs extends AppLocalizations {
       'Precio de costo, para el seguimiento de márgenes.';
 
   @override
+  String get productColumnsPurchasePriceAdminOnlyLabel =>
+      'Precio de compra: solo administradores';
+
+  @override
+  String get productColumnsPurchasePriceAdminOnlySubtitle =>
+      'Oculta el precio de compra, las ganancias y el valor de inventario a los usuarios que no son administradores.';
+
+  @override
+  String get productColumnsStockEditAdminOnlyLabel =>
+      'Edición de stock: solo administradores';
+
+  @override
+  String get productColumnsStockEditAdminOnlySubtitle =>
+      'Los usuarios que no son administradores no pueden establecer ni cambiar las cantidades de stock ni importar productos desde CSV.';
+
+  @override
   String get productColumnsDefaultDiscountLabel => 'Descuento predeterminado';
 
   @override
@@ -4591,7 +4786,230 @@ class AppLocalizationsEs extends AppLocalizations {
   String get paymentMethodOnline => 'En línea';
 
   @override
+  String get paymentMethodUpi => 'UPI';
+
+  @override
   String get paymentMethodOther => 'Otro';
+
+  @override
+  String get accessibilityOptionalFeaturesSectionTitle =>
+      'Funciones opcionales';
+
+  @override
+  String get accessibilityCashExchangeLabel =>
+      'Servicio de cambio de efectivo / UPI';
+
+  @override
+  String get accessibilityCashExchangeSubtitle =>
+      'Añade un menú Servicios de cambio de efectivo después de Nueva factura para registrar cambios UPI ↔ efectivo, comisiones de servicio y movimientos de efectivo, con saldos de efectivo y UPI/Banco.';
+
+  @override
+  String get accessibilityReportsAdminOnlyLabel =>
+      'Informes: solo administradores';
+
+  @override
+  String get accessibilityReportsAdminOnlySubtitle =>
+      'Oculta el menú Informes a los usuarios que no son administradores.';
+
+  @override
+  String get cashExchangeCashLabel => 'Efectivo';
+
+  @override
+  String get cashExchangeUpiBankLabel => 'UPI/Banco';
+
+  @override
+  String get cashExchangeTotalLabel => 'Saldo total';
+
+  @override
+  String get cashExchangeIncomeTodayLabel => 'Ingresos por servicio (hoy)';
+
+  @override
+  String get cashExchangeIncomeMonthLabel => 'Ingresos por servicio (este mes)';
+
+  @override
+  String get reportsServiceIncomeLabel => 'Ingresos por servicio';
+
+  @override
+  String get reportsTxnsLabel => 'Trans.';
+
+  @override
+  String get reportsInvoiceProfitLabel => 'Ganancia de facturas';
+
+  @override
+  String get reportsTransactionsLabel => 'Transacciones';
+
+  @override
+  String get reportsCashExchangeTypeLabel => 'Cambio de efectivo';
+
+  @override
+  String get reportsCountColumnLabel => 'Cantidad';
+
+  @override
+  String get cashExchangeExpensesMonthLabel => 'Gastos (este mes)';
+
+  @override
+  String get cashExchangeSetupTitle => 'Establecer saldos iniciales';
+
+  @override
+  String get cashExchangeSetupMessage =>
+      'Introduzca el efectivo y el dinero en UPI/Banco que tiene en esta fecha. Los pagos de facturas desde esta fecha se suman a los saldos.';
+
+  @override
+  String get cashExchangeSetupAdminOnlyMessage =>
+      'Pida a un administrador que establezca los saldos iniciales.';
+
+  @override
+  String get cashExchangeUpiToCash => 'UPI → Efectivo';
+
+  @override
+  String get cashExchangeCashToUpi => 'Efectivo → UPI';
+
+  @override
+  String get cashExchangeExpense => 'Gasto';
+
+  @override
+  String get cashExchangeWithdrawal => 'Retiro';
+
+  @override
+  String get cashExchangeBankDeposit => 'Depósito bancario';
+
+  @override
+  String get cashExchangeOpeningBalance => 'Saldo inicial';
+
+  @override
+  String get cashExchangeAdjustment => 'Ajuste';
+
+  @override
+  String get cashExchangeInvoicePayment => 'Pago de factura';
+
+  @override
+  String get cashExchangeAmountLabel => 'Importe';
+
+  @override
+  String get cashExchangeFeeLabel => 'Comisión de servicio';
+
+  @override
+  String get cashExchangeFeePaidByLabel => 'Comisión pagada con';
+
+  @override
+  String get cashExchangeFromAccountLabel => 'Pagado desde';
+
+  @override
+  String get cashExchangeCustomerNameLabel => 'Nombre del cliente (opcional)';
+
+  @override
+  String get cashExchangeCustomerSearchHint =>
+      'Busque clientes o escriba un nombre nuevo';
+
+  @override
+  String get cashExchangeCustomerPhoneLabel => 'Teléfono (opcional)';
+
+  @override
+  String get cashExchangeNotesLabel => 'Notas (opcional)';
+
+  @override
+  String get cashExchangeDateTimeLabel => 'Fecha y hora';
+
+  @override
+  String get cashExchangeDateLabel => 'Fecha';
+
+  @override
+  String get cashExchangeCashDeltaLabel => 'Cambio en efectivo (+ / −)';
+
+  @override
+  String get cashExchangeUpiDeltaLabel => 'Cambio en UPI/Banco (+ / −)';
+
+  @override
+  String get cashExchangeDeleteTitle => 'Eliminar registro';
+
+  @override
+  String get cashExchangeDeleteMessage =>
+      '¿Eliminar este registro? Los saldos se recalcularán.';
+
+  @override
+  String get cashExchangeEditTitle => 'Editar registro';
+
+  @override
+  String get cashExchangeEdited => 'Editado';
+
+  @override
+  String get cashExchangeHistoryTitle => 'Historial de cambios';
+
+  @override
+  String get cashExchangeHistoryCurrent => 'Actual';
+
+  @override
+  String cashExchangeHistoryEdited(String user, String date) {
+    return 'Editado por $user · $date';
+  }
+
+  @override
+  String cashExchangeHistoryDeleted(String user, String date) {
+    return 'Eliminado por $user · $date';
+  }
+
+  @override
+  String get cashExchangeChangeLog => 'Registro de cambios';
+
+  @override
+  String get cashExchangeDeleted => 'Eliminado';
+
+  @override
+  String get cashExchangeNoChanges => 'No hay cambios registrados.';
+
+  @override
+  String get cashExchangeChangeFailed =>
+      'Este registro ya no se puede cambiar. Puede que se haya eliminado o que haya pasado el plazo de 24 horas para editarlo.';
+
+  @override
+  String get cashExchangeEmpty => 'No hay registros en este período.';
+
+  @override
+  String get cashExchangePeriodToday => 'Hoy';
+
+  @override
+  String get cashExchangePeriodMonth => 'Este mes';
+
+  @override
+  String get cashExchangePeriodAll => 'Todo el tiempo';
+
+  @override
+  String get cashExchangePeriodCustom => 'Fecha personalizada';
+
+  @override
+  String get cashExchangeShowingLabel => 'Mostrando';
+
+  @override
+  String get cashExchangeChangeDates => 'Cambiar fechas';
+
+  @override
+  String get cashExchangeClosingBalance => 'Saldo final';
+
+  @override
+  String get cashExchangeShowBalances => 'Mostrar saldos';
+
+  @override
+  String get cashExchangeHideBalances => 'Ocultar saldos';
+
+  @override
+  String get cashExchangeAllTypes => 'Todos los tipos';
+
+  @override
+  String cashExchangeSummaryUpiToCash(
+      String amount, String fee, String method) {
+    return 'El cliente envía $amount por UPI/Banco • Usted entrega $amount en efectivo • Comisión $fee en $method';
+  }
+
+  @override
+  String cashExchangeSummaryCashToUpi(
+      String amount, String fee, String method) {
+    return 'El cliente entrega $amount en efectivo • Usted envía $amount por UPI/Banco • Comisión $fee en $method';
+  }
+
+  @override
+  String cashExchangeLowBalanceWarning(String balance, String account) {
+    return 'Solo hay $balance disponible en $account.';
+  }
 
   @override
   String get customerInfoButtonTooltip => 'Ver datos de contacto';
@@ -4647,6 +5065,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get sizeLargeLabel => 'Grande';
 
   @override
+  String get sizeXLargeLabel => 'Extra grande';
+
+  @override
   String get shortcutNewInvoiceDescription =>
       'Nueva factura (desde el Panel) / Restablecer formulario (en Crear factura)';
 
@@ -4667,6 +5088,347 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get shortcutPrintPdfDescription =>
       'Generar / imprimir el PDF de la factura';
+
+  @override
+  String supplierMgmtLoadErrorMessage(String error) {
+    return 'Error al cargar proveedores: $error';
+  }
+
+  @override
+  String get supplierMgmtAddedMessage => '¡Proveedor agregado correctamente!';
+
+  @override
+  String get supplierMgmtUpdatedMessage =>
+      '¡Proveedor actualizado correctamente!';
+
+  @override
+  String supplierMgmtSaveErrorMessage(String error) {
+    return 'Error al guardar el proveedor: $error';
+  }
+
+  @override
+  String supplierMgmtOutstandingLabel(String amount) {
+    return 'Pendiente: $amount';
+  }
+
+  @override
+  String supplierMgmtMoveToTrashBody(String name) {
+    return '¿Mover \"$name\" a la papelera? Las facturas de compra existentes seguirán mostrando el nombre del proveedor guardado.';
+  }
+
+  @override
+  String get supplierMgmtMovedToTrashMessage =>
+      'Proveedor movido a la papelera.';
+
+  @override
+  String get supplierMgmtRestoredMessage => 'Proveedor restaurado.';
+
+  @override
+  String get supplierMgmtAddSupplierButton => 'Agregar proveedor';
+
+  @override
+  String get supplierMgmtTitle => 'Proveedores';
+
+  @override
+  String get supplierMgmtSubtitle =>
+      'Administra los proveedores a quienes les compras stock';
+
+  @override
+  String get supplierMgmtSearchHint =>
+      'Buscar proveedores por nombre, teléfono o GSTIN...';
+
+  @override
+  String get supplierMgmtColSupplier => 'Proveedor';
+
+  @override
+  String get supplierMgmtColGstin => 'GSTIN';
+
+  @override
+  String supplierMgmtTotalCountLabel(int count) {
+    return 'Total: $count';
+  }
+
+  @override
+  String get supplierMgmtNoSuppliersYetMessage => 'Aún no hay proveedores';
+
+  @override
+  String get supplierMgmtNoSuppliersMatchMessage =>
+      'Ningún proveedor coincide con tu búsqueda';
+
+  @override
+  String get supplierMgmtAddNewTitle => 'Agregar nuevo proveedor';
+
+  @override
+  String get supplierMgmtEditTitle => 'Editar proveedor';
+
+  @override
+  String get supplierMgmtSaveChangesButton => 'Guardar cambios';
+
+  @override
+  String get supplierMgmtTaxVatNumberLabel => 'Número de impuesto/IVA (GSTIN)';
+
+  @override
+  String purchaseBillMgmtLoadErrorMessage(String error) {
+    return 'Error al cargar las facturas de compra: $error';
+  }
+
+  @override
+  String get purchaseBillMgmtAlreadyFullyPaidMessage =>
+      'Esta factura ya está totalmente pagada.';
+
+  @override
+  String purchaseBillMgmtMoveToTrashBody(String billNumber) {
+    return '¿Mover la factura \"$billNumber\" a la papelera? El stock se revertirá.';
+  }
+
+  @override
+  String get purchaseBillMgmtMovedToTrashMessage =>
+      'Factura de compra movida a la papelera.';
+
+  @override
+  String get purchaseBillMgmtRestoredMessage => 'Factura de compra restaurada.';
+
+  @override
+  String get purchaseBillMgmtSortByTitle => 'Ordenar por';
+
+  @override
+  String get purchaseBillMgmtSortDateNewest => 'Fecha (más reciente primero)';
+
+  @override
+  String get purchaseBillMgmtSortDateOldest => 'Fecha (más antigua primero)';
+
+  @override
+  String get purchaseBillMgmtSortSupplierAZ => 'Proveedor (A-Z)';
+
+  @override
+  String get purchaseBillMgmtSortSupplierZA => 'Proveedor (Z-A)';
+
+  @override
+  String get purchaseBillMgmtSortAmountHighest => 'Monto (mayor primero)';
+
+  @override
+  String get purchaseBillMgmtSortAmountLowest => 'Monto (menor primero)';
+
+  @override
+  String get purchaseBillMgmtFilterTitle => 'Filtrar facturas de compra';
+
+  @override
+  String get purchaseBillMgmtPaymentStatusLabel => 'Estado de pago';
+
+  @override
+  String get purchaseBillMgmtSearchHint =>
+      'Buscar por número de factura o proveedor...';
+
+  @override
+  String get purchaseBillMgmtNewBillButton => 'Nueva factura de compra';
+
+  @override
+  String get purchaseBillMgmtColBill => 'Factura';
+
+  @override
+  String get purchaseBillMgmtColBalance => 'Saldo';
+
+  @override
+  String purchaseBillMgmtTotalCountLabel(int count) {
+    return 'Total: $count';
+  }
+
+  @override
+  String get purchaseBillMgmtNoBillsFoundTitle =>
+      'No se encontraron facturas de compra';
+
+  @override
+  String get purchaseBillMgmtCreateFirstMessage =>
+      'Crea tu primera factura de compra para comenzar';
+
+  @override
+  String get purchaseBillMgmtTryAdjustingMessage =>
+      'Intenta ajustar tu búsqueda o filtros';
+
+  @override
+  String get purchaseBillMgmtTitle => 'Facturas de compra';
+
+  @override
+  String get purchaseBillMgmtUnknownSupplierLabel => 'Proveedor desconocido';
+
+  @override
+  String get purchaseBillMgmtNotesSectionLabel => 'Notas';
+
+  @override
+  String get purchaseBillMgmtItemsSectionLabel => 'Artículos';
+
+  @override
+  String get purchaseBillMgmtGrandTotalLabel => 'Total general';
+
+  @override
+  String get purchaseBillMgmtBillDetailsTitle => 'Detalles de la factura';
+
+  @override
+  String get purchaseBillMgmtExistingSupplierLabel => 'Proveedor existente';
+
+  @override
+  String get purchaseBillMgmtWalkInSupplierLabel => 'Proveedor ocasional';
+
+  @override
+  String get purchaseBillMgmtSupplierRequiredLabel => 'Proveedor *';
+
+  @override
+  String get purchaseBillMgmtBillNumberOptionalLabel =>
+      'Número de factura (opcional)';
+
+  @override
+  String get purchaseBillMgmtAutoGenerateHint => 'Generar automáticamente';
+
+  @override
+  String get purchaseBillMgmtBillDateRequiredLabel => 'Fecha de factura *';
+
+  @override
+  String get purchaseBillMgmtPickDateTooltip => 'Elegir fecha';
+
+  @override
+  String get purchaseBillMgmtAddAnyNotesHint => 'Agregar notas';
+
+  @override
+  String get purchaseBillMgmtAttachmentOptionalLabel => 'Adjunto (opcional)';
+
+  @override
+  String get purchaseBillMgmtAttachFileHint => 'Adjuntar archivo';
+
+  @override
+  String get purchaseBillMgmtBrowseTooltip => 'Explorar';
+
+  @override
+  String get purchaseBillMgmtSelectSupplierMessage =>
+      'Selecciona un proveedor o cambia a proveedor ocasional.';
+
+  @override
+  String get purchaseBillMgmtEnterSupplierNameMessage =>
+      'Ingresa el nombre del proveedor.';
+
+  @override
+  String get purchaseBillMgmtAddAtLeastOneItemMessage =>
+      'Agrega al menos un artículo.';
+
+  @override
+  String get purchaseBillMgmtUpdatedMessage =>
+      '¡Factura de compra actualizada!';
+
+  @override
+  String get purchaseBillMgmtCreatedMessage => '¡Factura de compra creada!';
+
+  @override
+  String get purchaseBillMgmtDraftSavedMessage =>
+      'Borrador guardado — stock no actualizado';
+
+  @override
+  String purchaseBillMgmtSaveErrorMessage(String error) {
+    return 'Error al guardar la factura de compra: $error';
+  }
+
+  @override
+  String get purchaseBillMgmtEnterNameMessage => 'Ingresa un nombre';
+
+  @override
+  String get purchaseBillMgmtAddCustomItemTitle =>
+      'Agregar artículo personalizado';
+
+  @override
+  String get purchaseBillMgmtDescriptionOptionalLabel =>
+      'Descripción (opcional)';
+
+  @override
+  String get purchaseBillMgmtQuantityLabel => 'Cantidad';
+
+  @override
+  String get purchaseBillMgmtCostPerUnitLabel => 'Costo/unidad';
+
+  @override
+  String get purchaseBillMgmtCostIncludesTaxLabel =>
+      'El costo/unidad incluye impuesto';
+
+  @override
+  String get purchaseBillMgmtEnterItemNameMessage =>
+      'Ingresa el nombre del artículo';
+
+  @override
+  String get purchaseBillMgmtInvalidValueMessage => 'Inválido';
+
+  @override
+  String get purchaseBillMgmtEditItemTitle => 'Editar artículo';
+
+  @override
+  String get purchaseBillMgmtEditItemTooltip => 'Editar artículo';
+
+  @override
+  String get purchaseBillMgmtRemoveItemTooltip => 'Quitar artículo';
+
+  @override
+  String get purchaseBillMgmtNoItemsAddedMessage =>
+      'Aún no se han agregado artículos';
+
+  @override
+  String purchaseBillMgmtLastCostLabel(String amount) {
+    return 'Último costo: $amount';
+  }
+
+  @override
+  String get purchaseBillMgmtSearchProductsHint =>
+      'Buscar productos para agregar...';
+
+  @override
+  String get purchaseBillMgmtCustomBadgeLabel => 'Personalizado';
+
+  @override
+  String get purchaseBillMgmtQtyDetailLabel => 'Cant.';
+
+  @override
+  String get purchaseBillMgmtUnitCostDetailLabel => 'Costo unitario';
+
+  @override
+  String purchaseBillMgmtTaxInclusiveLabel(String rate) {
+    return '$rate% incluido';
+  }
+
+  @override
+  String get purchaseBillMgmtNetCostDetailLabel => 'Costo neto';
+
+  @override
+  String get purchaseBillMgmtEditPurchaseBillTitle =>
+      'Editar factura de compra';
+
+  @override
+  String get purchaseBillMgmtUpdateSubtitle =>
+      'Actualiza esta factura de compra';
+
+  @override
+  String get purchaseBillMgmtCreateSubtitle =>
+      'Crea una nueva factura de compra para tu proveedor';
+
+  @override
+  String get purchaseBillMgmtSaveDraftButton => 'Guardar borrador';
+
+  @override
+  String get purchaseBillMgmtSavePurchaseBillButton =>
+      'Guardar factura de compra';
+
+  @override
+  String get purchaseBillMgmtSelectSupplierFromListMessage =>
+      'Selecciona un proveedor de la lista';
+
+  @override
+  String get purchaseBillMgmtSearchSupplierHint => 'Buscar proveedor';
+
+  @override
+  String get purchaseBillMgmtColItem => 'Artículo';
+
+  @override
+  String get purchaseBillMgmtColCost => 'Costo';
+
+  @override
+  String get purchaseBillMgmtColTaxPercent => 'Impuesto %';
+
+  @override
+  String get purchaseBillMgmtPaymentRecordedMessage => 'Pago registrado.';
 
   @override
   String get invoiceSettingsMetadataColumnsGridClassicNote =>

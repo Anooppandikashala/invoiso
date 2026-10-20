@@ -45,6 +45,11 @@ abstract class InvoiceRepository {
   });
   Future<void> softDeleteInvoice(String id);
   Future<void> restoreInvoice(String id);
+  /// Sets the lifecycle [status] ('draft'|'sent'|'accepted'|'declined'|
+  /// 'converted') on a quotation.
+  Future<void> setInvoiceStatus(String id, String status);
+  /// Voids invoice [id], returning its stock. One-way — no undo.
+  Future<void> declineInvoice(String id);
   Future<void> permanentDeleteInvoice(String id);
   Future<List<Invoice>> getDeletedInvoices();
   Future<void> deleteInvoice(String id);

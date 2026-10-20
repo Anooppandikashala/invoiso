@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:invoiso/common/common.dart';
+import 'package:invoiso/domain/invoice_calculator.dart';
 import 'package:invoiso/domain/invoice_totals_calculator.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/providers/app_config_provider.dart';
@@ -24,6 +25,7 @@ import 'package:invoiso/models/customer_field_settings.dart';
 import 'package:invoiso/widgets/customer_extra_fields.dart';
 import 'package:invoiso/services/invoice_pdf_services.dart';
 import 'package:invoiso/services/pdf_service.dart';
+import 'package:invoiso/widgets/apply_payment_dialog.dart';
 import 'package:invoiso/common/constants.dart';
 
 class InvoiceFormGuard {
@@ -45,6 +47,12 @@ class CreateInvoiceScreenV2 extends ConsumerStatefulWidget {
   /// | 'Receipt'). Ignored when editing or cloning.
   final String? initialType;
 
+  /// Set when this form is a quotation→invoice conversion: the id of the source
+  /// quotation. On save the quotation is stamped 'converted' and linked, and
+  /// the new invoice records it as its source. Implies cloneFrom is that
+  /// quotation and cloneType == 'Invoice'.
+  final String? convertFromQuotationId;
+
   /// Called when the user taps "New Invoice" while in edit mode.
   /// The parent (DashboardScreen) resets invoiceToEdit to null.
   final VoidCallback? onCreateNewInvoice;
@@ -56,6 +64,7 @@ class CreateInvoiceScreenV2 extends ConsumerStatefulWidget {
     this.cloneFrom,
     this.cloneType,
     this.initialType,
+    this.convertFromQuotationId,
     this.onCreateNewInvoice,
     this.guard,
   });
@@ -120,6 +129,11 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   bool _customerDetailsExpanded = true;
   InvoiceDiscountType _invoiceDiscountType = InvoiceDiscountType.percent;
   final _invoiceDiscountController = TextEditingController();
+  // Payment taken while creating an invoice. Unpaid (default) records no
+  // payment, so saving behaves exactly as before.
+  PaymentStatus _payStatus = PaymentStatus.unpaid;
+  String _payMethod = 'Cash';
+  final _payAmountController = TextEditingController();
 
   final notesController = TextEditingController();
   final customInvoiceNumberController = TextEditingController();
@@ -174,6 +188,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   String _quantityLabel = '';
   bool _showQuantity = true;
   bool _showPreviousBalance = false;
+  bool _showTimeInPdf = false; // order-time field shown only when PDFs print the time
+  String _pdfTimeFormat = '24'; // '12' | '24'
   bool _showAliasNameInPdf = false;
   bool _allowDuplicateInvoiceItems = false;
   double _previousBalanceDue = 0.0;
@@ -294,6 +310,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                 description: i.description,
                 metadata: i.metadata,
                 discountPerUnit: i.discountPerUnit,
+                discountIsPercent: i.discountIsPercent,
                 isProductSaved: i.isProductSaved,
               ))
           .toList();
@@ -400,6 +417,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       row.amount.dispose();
     }
     _invoiceDiscountController.dispose();
+    _payAmountController.dispose();
     super.dispose();
   }
 
@@ -452,6 +470,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           'quantity': item.quantity,
           'discount': item.discount,
           'discountPerUnit': item.discountPerUnit,
+          'discountIsPercent': item.discountIsPercent,
           'extraCost': item.extraCost ?? 0.0,
           'taxRate': product.tax_rate,
           'hsn': product.hsncode,
@@ -481,6 +500,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       'quantityLabel': _quantityLabel.trim(),
       'hideInvoiceNumber': _hideInvoiceNumber,
       'customInvoiceNumber': customInvoiceNumberController.text.trim(),
+      'payStatus': _payStatus.name,
+      'payMethod': _payMethod,
+      'payAmount': _payAmountController.text.trim(),
     });
   }
 
@@ -557,7 +579,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         settingsRepo.getHideInvoiceNumberByDefault(), // 18
         settingsRepo.getSetting(SettingKey.customFieldsEnabled), // 19
         settingsRepo.getCustomFieldDefs(), // 20
-        CustomerFieldSettings.load(settingsRepo), // 21
+        settingsRepo.getShowTimeInPdf(), // 21
+        settingsRepo.getPdfTimeFormat(), // 22
+        CustomerFieldSettings.load(settingsRepo), // 23
       ]);
 
       final c = results[0] as List<Customer>;
@@ -604,7 +628,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       final hideInvoiceNumberByDefault = results[18] as bool;
       final customFieldsEnabled = (results[19] as String?) == 'true';
       final customFieldDefs = results[20] as List<CustomFieldDef>;
-      final customerFieldSettings = results[21] as CustomerFieldSettings;
+      final showTimeInPdf = results[21] as bool;
+      final pdfTimeFormat = results[22] as String;
+      final customerFieldSettings = results[23] as CustomerFieldSettings;
 
       // Determine which UPI to pre-select.
       String? existingUpiId;
@@ -685,6 +711,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           invoiceTitle = invoiceType == 'Invoice' ? defaultInvoiceTitle : null;
         }
         _datePattern = dateFormatOpt.key;
+        _showTimeInPdf = showTimeInPdf;
+        _pdfTimeFormat = pdfTimeFormat;
         dateController.text =
             DateFormat(_datePattern).format(_selectedOrderDate);
         if (_selectedDueDate != null) {
@@ -741,6 +769,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         text: _showDescriptionInPdf ? product.description : '');
 
     bool discountPerUnit = true;
+    bool discountIsPercent = false;
     String dialogUnit = product.unit;
     int insertAt = invoiceItems.length + 1;
 
@@ -752,8 +781,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           ? (double.tryParse(quantityController.text) ?? 1.0)
           : (int.tryParse(quantityController.text) ?? 1)
           .toDouble();
-      final discount =
-          double.tryParse(discountController.text) ?? 0.0;
+      final discount = _clampLineDiscount(
+          double.tryParse(discountController.text) ?? 0.0, discountIsPercent);
       final parsedUnitPrice =
       double.tryParse(unitPriceController.text);
       final unitPrice = (parsedUnitPrice != null &&
@@ -801,7 +830,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   unit: dialogUnit.trim(),
                   description: descriptionController.text.trim(),
                   metadata: _snapshotMetadata(product.id),
-                  discountPerUnit: discountPerUnit),
+                  discountPerUnit: discountPerUnit,
+                  discountIsPercent: discountIsPercent),
               insertAt: insertAt);
         }
       } else if (!product.unlimitedStock && product.stock <= 0) {
@@ -838,7 +868,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   unit: dialogUnit.trim(),
                   description: descriptionController.text.trim(),
                   metadata: _snapshotMetadata(product.id),
-                  discountPerUnit: discountPerUnit),
+                  discountPerUnit: discountPerUnit,
+                  discountIsPercent: discountIsPercent),
               insertAt: insertAt);
         }
       } else {
@@ -853,7 +884,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                 unit: dialogUnit.trim(),
                 description: descriptionController.text.trim(),
                 metadata: _snapshotMetadata(product.id),
-                discountPerUnit: discountPerUnit),
+                discountPerUnit: discountPerUnit,
+                discountIsPercent: discountIsPercent),
             insertAt: insertAt);
       }
     }
@@ -1042,6 +1074,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                     controller: discountController,
                     decoration: InputDecoration(
                       labelText: AppLocalizations.of(context)!.fieldDiscountLabel,
+                      suffixIcon: _buildDiscountTypeSelector(discountIsPercent,
+                          (val) => setDialogState(() => discountIsPercent = val)),
                       border: OutlineInputBorder(
                           borderRadius:
                               BorderRadius.circular(AppBorderRadius.xsmall)),
@@ -1054,9 +1088,11 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                       FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  _buildDiscountPerUnitToggle(discountPerUnit,
-                      (val) => setDialogState(() => discountPerUnit = val)),
+                  if (!discountIsPercent) ...[
+                    const SizedBox(height: 8),
+                    _buildDiscountPerUnitToggle(discountPerUnit,
+                        (val) => setDialogState(() => discountPerUnit = val)),
+                  ],
                   const SizedBox(height: 16),
                 ],
                 TextField(
@@ -1334,9 +1370,53 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         customInvoiceNumber: customInvoiceNumberController.text.trim().isEmpty
             ? null
             : customInvoiceNumberController.text.trim(),
+        convertedFromInvoiceId: widget.convertFromQuotationId,
       );
 
+      final payAmount = invoiceType != 'Invoice'
+          ? 0.0
+          : _payStatus == PaymentStatus.paid
+              ? invoice.total
+              : _payStatus == PaymentStatus.partial
+                  ? (double.tryParse(_payAmountController.text.trim()) ?? 0.0)
+                  : 0.0;
+      if (invoiceType == 'Invoice' &&
+          _payStatus == PaymentStatus.partial &&
+          (payAmount <= 0 || payAmount > invoice.total)) {
+        if (!mounted) return false;
+        setState(() => isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(payAmount <= 0
+                ? AppLocalizations.of(context)!.paymentDialogInvalidAmountError
+                : AppLocalizations.of(context)!.paymentDialogExceedsOutstandingError),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            showCloseIcon: true,
+          ),
+        );
+        return false;
+      }
+
       await ref.read(invoiceRepositoryProvider).insertInvoice(invoice);
+
+      // Separate transaction from the invoice insert: if it fails the
+      // invoice is kept and the user adds the payment from the Invoices list.
+      String? payError;
+      if (payAmount > 0) {
+        try {
+          invoice.payments = [
+            await ref.read(paymentRepositoryProvider).addPayment(
+                  invoice: invoice,
+                  amountPaid: payAmount,
+                  datePaid: DateTime.now(),
+                  paymentMethod: _payMethod,
+                )
+          ];
+        } catch (e) {
+          payError = e.toString();
+        }
+      }
 
       if (!mounted) return true;
       setState(() {
@@ -1346,22 +1426,61 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       });
       _markFormClean();
 
+      final l10n = AppLocalizations.of(context)!;
+      final convertedFromId = widget.convertFromQuotationId;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
             children: [
               const Icon(Icons.check_circle, color: Colors.white),
               const SizedBox(width: 12),
-              Text(AppLocalizations.of(context)!.createInvoiceCreatedSuccessMessage(_invoiceTypeLabel(invoiceType))),
+              Expanded(
+                child: Text(convertedFromId != null
+                    ? l10n.createInvoiceConvertedSuccessMessage(
+                        invoice.invoiceNumber ?? invoice.id)
+                    : l10n.createInvoiceCreatedSuccessMessage(
+                        _invoiceTypeLabel(invoiceType))),
+              ),
             ],
           ),
           backgroundColor: Colors.green,
           behavior: SnackBarBehavior.floating,
           showCloseIcon: true,
+          duration: convertedFromId != null
+              ? const Duration(seconds: 8)
+              : const Duration(seconds: 4),
+          action: convertedFromId == null
+              ? null
+              : SnackBarAction(
+                  label: l10n.createInvoiceTrashQuotationAction,
+                  textColor: Colors.white,
+                  onPressed: () async {
+                    await ref
+                        .read(invoiceRepositoryProvider)
+                        .softDeleteInvoice(convertedFromId);
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text(l10n.createInvoiceQuotationTrashedMessage),
+                      behavior: SnackBarBehavior.floating,
+                      showCloseIcon: true,
+                    ));
+                  },
+                ),
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         ),
       );
+      if (payError != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!
+                .createInvoicePaymentNotRecordedMessage(payError)),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            showCloseIcon: true,
+          ),
+        );
+      }
       return true;
     } catch (e) {
       if (!mounted) return false;
@@ -1389,10 +1508,16 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     final extraCostController = TextEditingController(
         text: item.extraCost != null ? item.extraCost.toString() : '');
     bool discountPerUnit = item.discountPerUnit;
+    bool discountIsPercent = item.discountIsPercent;
     final unitController = TextEditingController(text: item.effectiveUnit.toString());
     final descriptionController =
         TextEditingController(text: item.effectiveDescription);
     String dialogUnit = item.effectiveUnit.toString();
+    // Ad-hoc items have no catalog entry to fix a typo in, so their name is
+    // editable here. Catalog products keep their catalog name.
+    final isAdHoc = item.product.id.startsWith('custom-');
+    final nameController = TextEditingController(text: item.product.name);
+    String? nameError;
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -1466,6 +1591,25 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                     ],
                   ),
                 ),
+                if (isAdHoc) ...[
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: nameController,
+                    decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context)!.fieldItemNameLabel,
+                      errorText: nameError,
+                      border: OutlineInputBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppBorderRadius.xsmall)),
+                      prefixIcon: const Icon(Icons.label),
+                      filled: true,
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    ),
+                    onChanged: (_) {
+                      if (nameError != null) setDialogState(() => nameError = null);
+                    },
+                  ),
+                ],
                 Builder(builder: (context) {
                   if (!_columnsConfig.productMetadata) return const SizedBox.shrink();
                   final meta = _productMetadata[item.product.id];
@@ -1553,6 +1697,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                     controller: discountController,
                     decoration: InputDecoration(
                       labelText: AppLocalizations.of(context)!.fieldDiscountLabel,
+                      suffixIcon: _buildDiscountTypeSelector(discountIsPercent,
+                          (val) => setDialogState(() => discountIsPercent = val)),
                       border: OutlineInputBorder(
                           borderRadius:
                               BorderRadius.circular(AppBorderRadius.xsmall)),
@@ -1565,9 +1711,11 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                       FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  _buildDiscountPerUnitToggle(discountPerUnit,
-                      (val) => setDialogState(() => discountPerUnit = val)),
+                  if (!discountIsPercent) ...[
+                    const SizedBox(height: 8),
+                    _buildDiscountPerUnitToggle(discountPerUnit,
+                        (val) => setDialogState(() => discountPerUnit = val)),
+                  ],
                 ],
                 const SizedBox(height: 16),
                 TextField(
@@ -1631,6 +1779,11 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
               onPressed: () {
+                final newName = nameController.text.trim();
+                if (isAdHoc && newName.isEmpty) {
+                  setDialogState(() => nameError = 'Required');
+                  return;
+                }
                 final parsedUnitPrice = double.tryParse(unitPriceController.text);
                 final unitPrice = (parsedUnitPrice != null &&
                         parsedUnitPrice != item.product.price)
@@ -1638,7 +1791,11 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                     : null;
                 final extraCost = double.tryParse(extraCostController.text);
                 final updatedItem = InvoiceItem(
-                  product: item.product,
+                  // Copy rather than mutate: the original Product may be
+                  // shared with the unsaved source invoice (edit/clone).
+                  product: isAdHoc && newName != item.product.name
+                      ? Product.fromMap({...item.product.toMap(), 'name': newName})
+                      : item.product,
                   quantity: !_showQuantity
                       ? 1.0
                       : _fractionalQuantity
@@ -1649,14 +1806,16 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                                       ?.toInt() ??
                                   item.quantity.toInt())
                               .toDouble(),
-                  discount:
+                  discount: _clampLineDiscount(
                       double.tryParse(discountController.text) ?? item.discount,
+                      discountIsPercent),
                   unitPrice: unitPrice,
                   extraCost: extraCost,
                   unit: dialogUnit.trim(),
                   description: descriptionController.text.trim(),
                   metadata: item.metadata,
                   discountPerUnit: discountPerUnit,
+                  discountIsPercent: discountIsPercent,
                 );
                 if(!mounted) return;
                 setState(() {
@@ -1685,6 +1844,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     final descriptionController = TextEditingController();
 
     bool discountPerUnit = true;
+    bool discountIsPercent = false;
     bool dialogPriceIncludesTax = false;
     String dialogItemType = _adHocItemType;
     int insertAt = invoiceItems.length + 1;
@@ -1741,11 +1901,14 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                       ? (double.tryParse(quantityController.text) ?? 1.0)
                       : (int.tryParse(quantityController.text) ?? 1)
                           .toDouble(),
-              discount: double.tryParse(discountController.text) ?? 0.0,
+              discount: _clampLineDiscount(
+                  double.tryParse(discountController.text) ?? 0.0,
+                  discountIsPercent),
               extraCost: extraCost,
               unit: selectedUnit.trim(),
               description: descriptionController.text.trim(),
               discountPerUnit: discountPerUnit,
+              discountIsPercent: discountIsPercent,
             );
             Navigator.pop(context);
             addInvoiceProduct(item, insertAt: insertAt);
@@ -1880,6 +2043,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   controller: discountController,
                   decoration: InputDecoration(
                     labelText: AppLocalizations.of(context)!.fieldDiscountLabel,
+                    suffixIcon: _buildDiscountTypeSelector(discountIsPercent,
+                        (val) => setDialogState(() => discountIsPercent = val)),
                     border: OutlineInputBorder(
                         borderRadius:
                             BorderRadius.circular(AppBorderRadius.xsmall)),
@@ -1892,9 +2057,11 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                     FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                   ],
                 ),
-                const SizedBox(height: 8),
-                _buildDiscountPerUnitToggle(discountPerUnit,
-                    (val) => setDialogState(() => discountPerUnit = val)),
+                if (!discountIsPercent) ...[
+                  const SizedBox(height: 8),
+                  _buildDiscountPerUnitToggle(discountPerUnit,
+                      (val) => setDialogState(() => discountPerUnit = val)),
+                ],
                 if (_columnsConfig.extraCost) ...[
                   const SizedBox(height: 16),
                   TextField(
@@ -2160,6 +2327,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       dueDateController.clear();
       _previousBalanceDue = 0.0;
       _isPreviousBalanceLoading = false;
+      _payStatus = PaymentStatus.unpaid;
+      _payAmountController.clear();
     });
     await _setAdditionalNote(forceDefault: true);
     _markFormClean();
@@ -2983,6 +3152,38 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     );
   }
 
+  // A % line discount above 100 would make the line total negative.
+  double _clampLineDiscount(double discount, bool isPercent) =>
+      isPercent ? discount.clamp(0.0, 100.0) : discount;
+
+  // % / Amount dropdown shown inside the line discount field — same control
+  // as the invoice-level discount type.
+  Widget _buildDiscountTypeSelector(bool isPercent, ValueChanged<bool> onChanged) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<bool>(
+          value: isPercent,
+          isDense: true,
+          // Button is only as wide as "%"/symbol; without this the menu
+          // matches that width and wraps "Amount".
+          menuWidth: 120,
+          selectedItemBuilder: (context) => [
+            const Center(child: Text('%')),
+            Center(child: Text(_currencySymbol)),
+          ],
+          items: [
+            const DropdownMenuItem(value: true, child: Text('%')),
+            DropdownMenuItem(value: false, child: Text(AppLocalizations.of(context)!.labelAmount)),
+          ],
+          onChanged: (v) {
+            if (v != null) onChanged(v);
+          },
+        ),
+      ),
+    );
+  }
+
   Widget _buildDiscountPerUnitToggle(bool value, ValueChanged<bool> onChanged) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -3393,6 +3594,24 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
             : customInvoiceNumberController.text.trim(),
       );
 
+      // Block edits that drop the total below what's already been paid.
+      final paid = await ref
+          .read(paymentRepositoryProvider)
+          .getTotalPaidForInvoice(updatedInvoice.id);
+      if (paid - updatedInvoice.total > InvoiceCalculator.moneyEpsilon) {
+        if (!mounted) return false;
+        setState(() => isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(AppLocalizations.of(context)!
+              .createInvoiceTotalBelowPaidMessage(
+                  '$_currencySymbol ${paid.toStringAsFixed(2)}')),
+          backgroundColor: Colors.red,
+          showCloseIcon: true,
+          behavior: SnackBarBehavior.floating,
+        ));
+        return false;
+      }
+
       await ref.read(invoiceRepositoryProvider).updateInvoice(updatedInvoice);
 
       final refreshedInvoice =
@@ -3737,6 +3956,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
             quantity: item.quantity,
             discount: item.discount,
             discountPerUnit: item.discountPerUnit,
+            discountIsPercent: item.discountIsPercent,
             extraCost: item.extraCost ?? 0.0,
             taxRatePercent: item.product.tax_rate.toDouble(),
             priceIncludesTax: item.product.priceIncludesTax,
@@ -3842,9 +4062,11 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                               ? AppLocalizations.of(context)!.createInvoiceCreatedTitleShort(_invoiceTypeLabel(invoiceType))
                               : widget.invoiceToEdit != null
                                   ? AppLocalizations.of(context)!.createInvoiceEditTitle(_invoiceTypeLabel(invoiceType))
-                                  : widget.cloneFrom != null
-                                      ? AppLocalizations.of(context)!.createInvoiceDuplicateAsTitle(_invoiceTypeLabel(invoiceType))
-                                      : AppLocalizations.of(context)!.createInvoiceAppBarTitle(_invoiceTypeLabel(invoiceType)),
+                                  : widget.convertFromQuotationId != null
+                                      ? AppLocalizations.of(context)!.createInvoiceConvertTitle
+                                      : widget.cloneFrom != null
+                                          ? AppLocalizations.of(context)!.createInvoiceDuplicateAsTitle(_invoiceTypeLabel(invoiceType))
+                                          : AppLocalizations.of(context)!.createInvoiceAppBarTitle(_invoiceTypeLabel(invoiceType)),
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
                         ),
@@ -4000,6 +4222,38 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       default:
         return AppLocalizations.of(context)!.labelInvoice;
     }
+  }
+
+  // Order time, next to the order date. Uses the PDF's 12/24-hour setting.
+  Widget _orderTimeFieldV2() {
+    final text = DateFormat(_pdfTimeFormat == '12' ? 'h:mm a' : 'HH:mm', 'en_US')
+        .format(_selectedOrderDate);
+    return TextFormField(
+      key: ValueKey('order-time-$text'), // rebuild when the time changes
+      initialValue: text,
+      readOnly: true,
+      decoration: _flatFieldDecorationV2(
+          AppLocalizations.of(context)!.createInvoiceOrderTimeLabel,
+          suffixIcon: const Icon(Icons.access_time, size: 16)),
+      onTap: () async {
+        final picked = await showTimePicker(
+          context: context,
+          initialTime: TimeOfDay.fromDateTime(_selectedOrderDate),
+          builder: (ctx, child) => MediaQuery(
+            data: MediaQuery.of(ctx)
+                .copyWith(alwaysUse24HourFormat: _pdfTimeFormat != '12'),
+            child: child!,
+          ),
+        );
+        if (picked == null || !mounted) return;
+        setState(() => _selectedOrderDate = DateTime(
+            _selectedOrderDate.year,
+            _selectedOrderDate.month,
+            _selectedOrderDate.day,
+            picked.hour,
+            picked.minute));
+      },
+    );
   }
 
   InputDecoration _flatFieldDecorationV2(
@@ -4544,43 +4798,62 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
             value: invoiceType,
             decoration: _flatFieldDecorationV2(
               AppLocalizations.of(context)!.createInvoiceTypeFieldLabel,
-              helperText:
-                  isEditing ? AppLocalizations.of(context)!.createInvoiceTypeLockedHelperText : null,
+              helperText: (isEditing || widget.convertFromQuotationId != null)
+                  ? AppLocalizations.of(context)!.createInvoiceTypeLockedHelperText
+                  : null,
             ),
             items: [
               DropdownMenuItem(value: 'Invoice', child: Text(AppLocalizations.of(context)!.labelInvoice)),
               DropdownMenuItem(value: 'Quotation', child: Text(AppLocalizations.of(context)!.labelQuotation)),
               DropdownMenuItem(value: 'Receipt', child: Text(AppLocalizations.of(context)!.labelReceipt)),
             ],
-            onChanged: isEditing
+            onChanged: (isEditing || widget.convertFromQuotationId != null)
                 ? null
                 : (value) {
                     if (value != null) resetInvoiceType(value);
                   },
           ),
           const SizedBox(height: 12),
-          TextField(
-            controller: dateController,
-            readOnly: true,
-            decoration: _flatFieldDecorationV2(AppLocalizations.of(context)!.createInvoiceOrderDateLabel,
-                suffixIcon: const Icon(Icons.calendar_today, size: 16)),
-            onTap: () async {
-              final picked = await showDatePicker(
-                context: context,
-                initialDate: _selectedOrderDate,
-                firstDate: DateTime(2000),
-                lastDate: DateTime(2100),
-              );
-              if (picked != null) {
-                if (!mounted) return;
-                setState(() {
-                  _selectedOrderDate = picked;
-                  dateController.text =
-                      DateFormat(_datePattern).format(picked);
-                });
-                await _loadPreviousBalanceDue(selectedCustomer);
-              }
-            },
+          Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: TextField(
+                  controller: dateController,
+                  readOnly: true,
+                  decoration: _flatFieldDecorationV2(AppLocalizations.of(context)!.createInvoiceOrderDateLabel,
+                      suffixIcon: const Icon(Icons.calendar_today, size: 16)),
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: _selectedOrderDate,
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100),
+                    );
+                    if (picked != null) {
+                      if (!mounted) return;
+                      setState(() {
+                        // Keep the invoice's existing time — the picker returns midnight.
+                        _selectedOrderDate = DateTime(
+                            picked.year,
+                            picked.month,
+                            picked.day,
+                            _selectedOrderDate.hour,
+                            _selectedOrderDate.minute,
+                            _selectedOrderDate.second);
+                        dateController.text =
+                            DateFormat(_datePattern).format(picked);
+                      });
+                      await _loadPreviousBalanceDue(selectedCustomer);
+                    }
+                  },
+                ),
+              ),
+              if (_showTimeInPdf) ...[
+                const SizedBox(width: 8),
+                Expanded(flex: 2, child: _orderTimeFieldV2()),
+              ],
+            ],
           ),
           const SizedBox(height: 12),
           TextField(
@@ -5062,8 +5335,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                             '${item.effectiveUnit.trim().isEmpty ? '' : ' ${item.effectiveUnit}'}'),
                       if (_columnsConfig.defaultDiscount || item.discount > 0)
                         _buildItemDetail('Discount',
-                            '$_currencySymbol${item.discount.toStringAsFixed(2)}${item.discountPerUnit ? ' ×qty' : ''}'),
-                      if (item.discountPerUnit && item.discount > 0)
+                            item.discountIsPercent
+                                ? '${item.discount.toStringAsFixed(2)}%'
+                                : '$_currencySymbol${item.discount.toStringAsFixed(2)}${item.discountPerUnit ? ' ×qty' : ''}'),
+                      if (!item.discountIsPercent && item.discountPerUnit && item.discount > 0)
                         _buildItemDetail('Net',
                             '$_currencySymbol${(item.effectivePrice - item.discount).toStringAsFixed(2)}/item',
                             color: Colors.teal[700]),
@@ -5226,7 +5501,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               left: 0,
               right: 0,
               bottom: 68,
-              child: _productDropdownListV2(),
+              // Counts as "inside" the search field, so a mouse-down on a
+              // row doesn't unfocus it and hide the list before the click lands.
+              child: TextFieldTapRegion(child: _productDropdownListV2()),
             ),
         ],
       ),
@@ -5303,6 +5580,86 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _paymentSectionV2(double total) {
+    final l10n = AppLocalizations.of(context)!;
+    final paid = _payStatus == PaymentStatus.paid
+        ? total
+        : _payStatus == PaymentStatus.partial
+            ? (double.tryParse(_payAmountController.text.trim()) ?? 0.0)
+            : 0.0;
+    final balanceDue = total - paid;
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.green.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+        border: Border.all(color: Colors.green.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SegmentedButton<PaymentStatus>(
+            showSelectedIcon: false,
+            segments: [
+              ButtonSegment(
+                  value: PaymentStatus.unpaid,
+                  label: Text(l10n.paymentStatusUnpaid)),
+              ButtonSegment(
+                  value: PaymentStatus.partial,
+                  label: Text(l10n.paymentStatusPartial)),
+              ButtonSegment(
+                  value: PaymentStatus.paid,
+                  label: Text(l10n.paymentStatusPaid)),
+            ],
+            selected: {_payStatus},
+            onSelectionChanged: (v) => setState(() => _payStatus = v.first),
+          ),
+          if (_payStatus != PaymentStatus.unpaid) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    value: _payMethod,
+                    decoration: _flatFieldDecorationV2(
+                        l10n.paymentDialogMethodFieldLabel),
+                    items: paymentMethods
+                        .map((m) => DropdownMenuItem(
+                            value: m, child: Text(paymentMethodLabel(l10n, m))))
+                        .toList(),
+                    onChanged: (v) {
+                      if (v != null) setState(() => _payMethod = v);
+                    },
+                  ),
+                ),
+                if (_payStatus == PaymentStatus.partial) ...[
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: _payAmountController,
+                      onChanged: (_) => setState(() {}),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      decoration: _flatFieldDecorationV2(
+                          l10n.paymentDialogAmountPaidLabel,
+                          prefixText: '$_currencySymbol '),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 10),
+            _buildTotalRow(l10n.paymentDialogAmountPaidLabel, paid, false),
+            const SizedBox(height: 4),
+            _buildTotalRow(l10n.createInvoiceBalanceDueLabel,
+                balanceDue < 0 ? 0 : balanceDue, false),
+          ],
         ],
       ),
     );
@@ -5762,6 +6119,12 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                         _buildAdditionalCostsSection(),
                         const SizedBox(height: 12),
                         _invoiceDiscountSectionV2(),
+                        if (!isEditing && invoiceType == 'Invoice') ...[
+                          const SizedBox(height: 18),
+                          _sectionLabelV2(AppLocalizations.of(context)!
+                              .createInvoicePaymentSectionLabel),
+                          _paymentSectionV2(total),
+                        ],
                         const SizedBox(height: 18),
                         _sectionLabelV2('Notes'),
                         _notesFieldV2(),
@@ -5961,6 +6324,12 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               _buildAdditionalCostsSection(),
               const SizedBox(height: 12),
               _invoiceDiscountSectionV2(),
+              if (!isEditing && invoiceType == 'Invoice') ...[
+                const SizedBox(height: 18),
+                _sectionLabelV2(AppLocalizations.of(context)!
+                    .createInvoicePaymentSectionLabel),
+                _paymentSectionV2(total),
+              ],
               const SizedBox(height: 18),
               _sectionLabelV2('Notes'),
               _notesFieldV2(),

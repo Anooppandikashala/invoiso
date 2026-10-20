@@ -75,6 +75,7 @@ enum SettingKey {
   descriptionNewLineInPdf, // when showDescriptionInPdf is on: print the description as a full-width row below the item instead of a line under the item name (default false)
   appLocale, // app UI language code, e.g. 'en' | 'ne' | 'bo' | 'fr' | 'es' | 'hi' | 'zh'; unset/empty = follow system locale
   onboardingCompleted, // '1' once the first-login onboarding wizard has been finished or skipped
+  enablePurchaseBillsAndSuppliers, // whether the Purchase Bills / Suppliers dashboard tabs are shown (default false, opt-in)
   showCustomerBusinessNameInPdf, // whether to show the customer's business name on PDFs/thermal receipts (default true; only shown when non-empty)
   showCustomerAddressInPdf, // whether to show the customer's address on PDFs (default true; only shown when non-empty)
   showCustomerPhoneInPdf, // whether to show the customer's phone on PDFs/thermal receipts (default true; only shown when non-empty)
@@ -99,6 +100,15 @@ enum SettingKey {
   showCustomerDobInPdf, // print customer DOB on PDFs/receipts when customerDobEnabled (default true)
   showCustomerGenderInPdf, // print customer Gender on PDFs/receipts when customerGenderEnabled (default true)
   showShipToInPdf, // print the Ship To block on PDFs/receipts when shippingAddressEnabled (default true)
+  cashUpiExchangeEnabled, // whether the Cash/UPI-Bank exchange Services tab is on (default false)
+  reportsAdminOnly, // whether Reports is hidden from non-admin users (default false)
+  pdfFontSize, // 'small' | 'medium' | 'large' | 'xlarge' — text size multiplier for non-thermal invoice PDFs; default 'medium'
+  pdfCompanyNameFontSize, // PdfFontSize key for the company name; empty/absent = same as pdfFontSize
+  pdfDocTitleFontSize, // PdfFontSize key for the document title; empty/absent = same as pdfFontSize
+  pdfTableHeaderFontSize, // PdfFontSize key for the items table header; empty/absent = same as pdfFontSize
+  pdfTableItemsFontSize, // PdfFontSize key for the items table rows; empty/absent = same as pdfFontSize
+  pdfTotalsFontSize, // PdfFontSize key for the totals block; empty/absent = same as pdfFontSize
+  purchaseBillsBannerDismissed, // '1' once user dismisses the purchase-bills/suppliers discovery banner
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -256,6 +266,8 @@ extension SettingKeyExtension on SettingKey {
         return 'app_locale';
       case SettingKey.onboardingCompleted:
         return 'onboarding_completed';
+      case SettingKey.enablePurchaseBillsAndSuppliers:
+        return 'enable_purchase_bills_and_suppliers';
       case SettingKey.showCustomerBusinessNameInPdf:
         return 'show_customer_business_name_in_pdf';
       case SettingKey.showCustomerAddressInPdf:
@@ -304,6 +316,24 @@ extension SettingKeyExtension on SettingKey {
         return 'show_customer_gender_in_pdf';
       case SettingKey.showShipToInPdf:
         return 'show_ship_to_in_pdf';
+      case SettingKey.cashUpiExchangeEnabled:
+        return 'cash_upi_exchange_enabled';
+      case SettingKey.reportsAdminOnly:
+        return 'reports_admin_only';
+      case SettingKey.pdfFontSize:
+        return 'pdf_font_size';
+      case SettingKey.pdfCompanyNameFontSize:
+        return 'pdf_company_name_font_size';
+      case SettingKey.pdfDocTitleFontSize:
+        return 'pdf_doc_title_font_size';
+      case SettingKey.pdfTableHeaderFontSize:
+        return 'pdf_table_header_font_size';
+      case SettingKey.pdfTableItemsFontSize:
+        return 'pdf_table_items_font_size';
+      case SettingKey.pdfTotalsFontSize:
+        return 'pdf_totals_font_size';
+      case SettingKey.purchaseBillsBannerDismissed:
+        return 'purchase_bills_banner_dismissed';
 
     }
   }

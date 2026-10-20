@@ -36,6 +36,14 @@ class CustomerManagementScreenColors {
   );
 }
 
+class PurchaseBillManagementScreenColors {
+  static final topBarBackgroundGradientColor = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF1E293B), Color(0xFF334155)],
+  );
+}
+
 class DashboardScreenColors {
   static final welcomePanelBackgroundGradientColor = LinearGradient(
     begin: Alignment.topLeft,

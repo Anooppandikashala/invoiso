@@ -4,9 +4,9 @@ import 'package:invoiso/l10n/app_localizations.dart';
 export 'setting_key.dart';
 export 'pdf_styles.dart';
 
-/// Shared "X-Small"/"Small"/"Medium"/"Large" labels for [LogoSize],
-/// [SignatureSize], and [ThermalCompanyNameSize] — same wording, so one
-/// ARB key set covers all three instead of tripling near-identical keys.
+/// Shared "X-Small"/"Small"/"Medium"/"Large"/"Extra Large" labels for
+/// [LogoSize], [SignatureSize], [ThermalCompanyNameSize] and [PdfFontSize] —
+/// same wording, so one ARB key set covers all of them.
 String _genericSizeLabel(BuildContext context, String key) {
   final l10n = AppLocalizations.of(context)!;
   switch (key) {
@@ -16,6 +16,8 @@ String _genericSizeLabel(BuildContext context, String key) {
       return l10n.sizeSmallLabel;
     case 'medium':
       return l10n.sizeMediumLabel;
+    case 'xlarge':
+      return l10n.sizeXLargeLabel;
     default:
       return l10n.sizeLargeLabel;
   }
@@ -483,6 +485,12 @@ class ProductColumnsConfig {
   final bool metaSupplierName;
   final bool metaSkuCode;
   final bool metaNotes;
+  // Not a column: when true, purchase price is hidden from non-admin users
+  // (product screen, CSV export, cost/profit reports). Default false.
+  final bool purchasePriceAdminOnly;
+  // Not a column: when true, non-admin users can't set or change stock
+  // (add form, edit dialog, CSV import). Default false.
+  final bool stockEditAdminOnly;
 
   const ProductColumnsConfig({
     this.aliasName = true,
@@ -505,6 +513,8 @@ class ProductColumnsConfig {
     this.metaSupplierName = true,
     this.metaSkuCode = true,
     this.metaNotes = true,
+    this.purchasePriceAdminOnly = false,
+    this.stockEditAdminOnly = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -528,6 +538,8 @@ class ProductColumnsConfig {
         'metaSupplierName': metaSupplierName,
         'metaSkuCode': metaSkuCode,
         'metaNotes': metaNotes,
+        'purchasePriceAdminOnly': purchasePriceAdminOnly,
+        'stockEditAdminOnly': stockEditAdminOnly,
       };
 
   factory ProductColumnsConfig.fromJson(Map<String, dynamic> json) =>
@@ -552,6 +564,9 @@ class ProductColumnsConfig {
         metaSupplierName: json['metaSupplierName'] as bool? ?? true,
         metaSkuCode: json['metaSkuCode'] as bool? ?? true,
         metaNotes: json['metaNotes'] as bool? ?? true,
+        purchasePriceAdminOnly:
+            json['purchasePriceAdminOnly'] as bool? ?? false,
+        stockEditAdminOnly: json['stockEditAdminOnly'] as bool? ?? false,
       );
 
   ProductColumnsConfig copyWith({
@@ -575,6 +590,8 @@ class ProductColumnsConfig {
     bool? metaSupplierName,
     bool? metaSkuCode,
     bool? metaNotes,
+    bool? purchasePriceAdminOnly,
+    bool? stockEditAdminOnly,
   }) =>
       ProductColumnsConfig(
         aliasName: aliasName ?? this.aliasName,
@@ -597,6 +614,9 @@ class ProductColumnsConfig {
         metaSupplierName: metaSupplierName ?? this.metaSupplierName,
         metaSkuCode: metaSkuCode ?? this.metaSkuCode,
         metaNotes: metaNotes ?? this.metaNotes,
+        purchasePriceAdminOnly:
+            purchasePriceAdminOnly ?? this.purchasePriceAdminOnly,
+        stockEditAdminOnly: stockEditAdminOnly ?? this.stockEditAdminOnly,
       );
 }
 
@@ -668,3 +688,54 @@ ThermalCompanyNameSize thermalCompanyNameSizeFromKey(String? key) {
 String thermalCompanyNameSizeLabel(
         BuildContext context, ThermalCompanyNameSize size) =>
     _genericSizeLabel(context, size.key);
+
+enum PdfFontSize { small, medium, large, xlarge }
+
+extension PdfFontSizeExtension on PdfFontSize {
+  String get key {
+    switch (this) {
+      case PdfFontSize.small:
+        return 'small';
+      case PdfFontSize.medium:
+        return 'medium';
+      case PdfFontSize.large:
+        return 'large';
+      case PdfFontSize.xlarge:
+        return 'xlarge';
+    }
+  }
+
+  /// Multiplier applied to every font in the non-thermal invoice templates.
+  /// 'medium' = 1.0 so existing PDFs don't change by default.
+  double get scale {
+    switch (this) {
+      case PdfFontSize.small:
+        return 0.9;
+      case PdfFontSize.medium:
+        return 1.0;
+      case PdfFontSize.large:
+        return 1.2;
+      case PdfFontSize.xlarge:
+        return 1.4;
+    }
+  }
+}
+
+PdfFontSize pdfFontSizeFromKey(String? key) {
+  return PdfFontSize.values.firstWhere(
+    (s) => s.key == key,
+    orElse: () => PdfFontSize.medium,
+  );
+}
+
+String pdfFontSizeLabel(BuildContext context, PdfFontSize size) =>
+    _genericSizeLabel(context, size.key);
+
+/// Scale for one PDF section (company name, totals…): the section's own
+/// preset replaces the overall size; unset/unknown key = [overall].
+double pdfSectionScale(String? key, double overall) {
+  for (final s in PdfFontSize.values) {
+    if (s.key == key) return s.scale;
+  }
+  return overall;
+}

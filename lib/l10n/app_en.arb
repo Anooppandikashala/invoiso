@@ -21,6 +21,8 @@
   "onboardingStepCompanySubtitle": "Tell us about your business",
   "onboardingStepInvoiceTitle": "Invoice Settings",
   "onboardingStepInvoiceSubtitle": "Set up how your invoices work",
+  "onboardingStepPurchaseBillsTitle": "Purchase Bills & Suppliers",
+  "onboardingStepPurchaseBillsSubtitle": "Track supplier bills and stock purchases (optional)",
   "onboardingStepAppearanceTitle": "Invoice Appearance",
   "onboardingStepAppearanceSubtitle": "Pick a page size and template",
   "onboardingStepDoneTitle": "All Set",
@@ -33,6 +35,8 @@
   "onboardingLeadingZerosLabel": "Leading Zeros",
   "onboardingLeadingZerosSubtitle": "Pad invoice numbers to 8 digits (e.g. 00000007)",
   "onboardingDefaultTaxRateLabel": "Default Tax Rate (%)",
+  "onboardingEnablePurchaseBillsSuppliersLabel": "Enable Purchase Bills & Suppliers",
+  "onboardingEnablePurchaseBillsSuppliersSubtitle": "Adds Purchase Bills and Suppliers to the dashboard menu. You can change this anytime in Settings.",
   "onboardingPageSizeLabel": "Page Size",
   "onboardingTemplateLabel": "Invoice Template",
   "onboardingDoneHeadline": "You're all set!",
@@ -87,11 +91,14 @@
   "navDashboard": "Dashboard",
   "navNewInvoice": "New Invoice",
   "navInvoices": "Invoices",
+  "navServices": "Cash Exchange Services",
   "navQuotations": "Quotations",
   "navReceipts": "Receipts",
   "navCustomers": "Customers",
   "navProducts": "Products",
   "navReports": "Reports",
+  "navPurchaseBills": "Purchase Bills",
+  "navSuppliers": "Suppliers",
   "navSettings": "Settings",
   "dashboardRoleAdmin": "Admin",
   "dashboardRoleUser": "User",
@@ -103,6 +110,9 @@
   "dashboardKeyboardShortcutsTitle": "Keyboard Shortcuts",
   "dashboardShortcutsBannerTitle": "New: Keyboard shortcuts",
   "dashboardShortcutsBannerSubtitle": "Ctrl+Q for a new invoice, Ctrl+S to save, and more.",
+  "dashboardPurchaseBannerTitle": "New: Purchase Bills & Suppliers",
+  "dashboardPurchaseBannerSubtitle": "Record supplier bills, update stock automatically, and track what you owe each supplier.",
+  "dashboardPurchaseBannerAction": "Enable",
   "dashboardViewAllAction": "View all",
   "dashboardLayoutBannerTitle": "New: Multiple dashboard layouts",
   "dashboardLayoutBannerSubtitle": "Switch between Default, Classic, Bento, and Simple Feed using the grid icon in the top-right.",
@@ -142,8 +152,10 @@
       }
     }
   },
-  "dashboardRecentInvoicesTitle": "Recent Invoices",
-  "dashboardLastFiveInvoicesLabel": "Last 5 invoices",
+  "dashboardRecentInvoicesTitle": "Recent Documents",
+  "dashboardLastFiveInvoicesLabel": "Last 5 documents",
+  "dashboardColDocumentNo": "Document no.",
+  "dashboardColType": "Type",
   "dashboardNoInvoicesYetTitle": "No invoices yet",
   "dashboardNoInvoicesYetSubtitle": "Create your first invoice to see it here",
   "actionView": "View",
@@ -434,12 +446,30 @@
   "createInvoiceDiscountPerUnitFormulaOff": "(price × qty) − discount",
   "createInvoicePrevBalanceShortLabel": "Prev. Balance",
   "createInvoicePreviousBalanceDueLabel": "Previous Balance Due",
+  "createInvoicePaymentSectionLabel": "Payment",
+  "createInvoiceBalanceDueLabel": "Balance Due",
+  "createInvoicePaymentNotRecordedMessage": "Invoice saved, but the payment was not recorded: {error}. Add it from the Invoices list.",
+  "@createInvoicePaymentNotRecordedMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "createInvoiceDueShortLabel": "Due",
   "createInvoiceTotalDueLabel": "Total Due",
   "createInvoiceUpdatedSuccessMessage": "{invoiceTypeLabel} updated successfully!",
   "@createInvoiceUpdatedSuccessMessage": {
     "placeholders": {
       "invoiceTypeLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceTotalBelowPaidMessage": "The new total is less than the {paid} already paid. Delete payments in Apply Payment first, or keep the total at or above that amount.",
+  "@createInvoiceTotalBelowPaidMessage": {
+    "placeholders": {
+      "paid": {
         "type": "String"
       }
     }
@@ -540,6 +570,7 @@
   "createInvoiceTypeFieldLabel": "Invoice type",
   "createInvoiceTypeLockedHelperText": "Type can't be changed after creation",
   "createInvoiceOrderDateLabel": "Order date",
+  "createInvoiceOrderTimeLabel": "Order time",
   "createInvoiceDueDateLabel": "Due date",
   "createInvoiceGstTitleLabel": "GST title",
   "createInvoiceTaxTitleLabel": "Tax title",
@@ -789,6 +820,7 @@
   },
   "invoiceMgmtFilterInvoicesTitle": "Filter Invoices",
   "invoiceMgmtHideFullyPaidLabel": "Hide fully paid invoices",
+  "invoiceMgmtHideDeclinedLabel": "Hide declined invoices",
   "invoiceMgmtPaymentStatusLabel": "Payment status",
   "invoiceMgmtDueDateLabel": "Due date",
   "invoiceMgmtInvoiceDateRangeLabel": "Invoice date range",
@@ -896,6 +928,54 @@
       }
     }
   },
+  "invoiceMgmtConvertToInvoiceAction": "Convert to Invoice",
+  "invoiceMgmtConvertAgainTitle": "Convert again?",
+  "invoiceMgmtConvertAgainBody": "Quotation {number} was already converted to an invoice. Create another invoice from it?",
+  "@invoiceMgmtConvertAgainBody": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtMarkAsSent": "Mark as sent",
+  "invoiceMgmtMarkAsAccepted": "Mark as accepted",
+  "invoiceMgmtMarkAsDeclined": "Mark as declined",
+  "quotationStatusDraft": "Draft",
+  "quotationStatusSent": "Sent",
+  "quotationStatusAccepted": "Accepted",
+  "quotationStatusDeclined": "Declined",
+  "quotationStatusConverted": "Converted",
+  "invoiceMgmtDeclineInvoiceTitle": "Decline invoice?",
+  "invoiceMgmtDeclineInvoiceBody": "This will mark invoice #{number} as declined and return its items to stock. This can't be undone.",
+  "@invoiceMgmtDeclineInvoiceBody": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtDeclineHasPaymentsMessage": "Invoice #{number} has payments recorded. Delete them in Apply Payment before declining.",
+  "@invoiceMgmtDeclineHasPaymentsMessage": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtDeclinedSuccessMessage": "Invoice declined, stock restored.",
+  "invoiceStatusDeclinedBadge": "Declined",
+  "createInvoiceConvertTitle": "Convert to Invoice",
+  "createInvoiceConvertedSuccessMessage": "Converted to Invoice #{invoiceNumber}",
+  "@createInvoiceConvertedSuccessMessage": {
+    "placeholders": {
+      "invoiceNumber": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceTrashQuotationAction": "Trash quote",
+  "createInvoiceQuotationTrashedMessage": "Quotation moved to trash",
   "invoiceMgmtOverdueBadge": "Overdue",
   "invoiceMgmtTodayBadge": "Today",
   "invoiceMgmtTrashIsEmptyLabel": "Trash is empty",
@@ -1380,6 +1460,7 @@
   "productMgmtCsvDescUnit": "Unit of measure (e.g. kg, bag, pcs), default pcs",
   "productMgmtCsvDescUnlimitedStock": "1/true for unlimited stock, default 0",
   "productMgmtCsvDescPriceIncludesTax": "1/true if price already includes tax, default 0",
+  "productMgmtCsvDescLowStockLimit": "Low-stock threshold for this product, blank = default 10",
   "productMgmtCsvDescStorageLocation": "Warehouse/shelf location",
   "productMgmtCsvDescContainerNumber": "Container/box number",
   "productMgmtCsvDescBatchNumber": "Batch/lot number",
@@ -1525,6 +1606,8 @@
   "productMgmtSectionInventory": "Inventory",
   "productMgmtUnlimitedStockLabel": "Unlimited stock",
   "productMgmtTrackInfiniteStockSubtitle": "Track infinite stock for this product",
+  "productMgmtLowStockLimitLabel": "Low-stock limit",
+  "productMgmtLowStockLimitHelper": "Shown in Low Stock when stock is at or below this number. Leave blank for the default (10).",
   "productMgmtTipEnableCustomFieldsMessage": "Tip: Enable custom fields from Columns to add more details.",
   "productMgmtEditProductTitle": "Edit Product",
   "productMgmtViewProductTitle": "View Product",
@@ -1932,6 +2015,9 @@
   "invoiceSettingsSectionBranding": "Branding",
   "invoiceSettingsSectionTax": "Tax & GST",
   "invoiceSettingsSectionItems": "Invoice Items",
+  "invoiceSettingsSectionSuppliers": "Suppliers",
+  "settingsEnablePurchaseBillsSuppliersLabel": "Enable Purchase Bills & Suppliers",
+  "settingsEnablePurchaseBillsSuppliersSubtitle": "Shows Purchase Bills and Suppliers in the dashboard menu",
   "invoiceSettingsSectionCustomer": "Customer Details",
   "invoiceSettingsSectionColumns": "Invoice Columns",
   "invoiceSettingsColumnsSectionHint": "Choose which columns appear in the invoice PDF items table. Item Name, Price and Total are always shown.",
@@ -2119,6 +2205,13 @@
   "pdfSettingsItemLayoutDetailedLabel": "Detailed",
   "pdfSettingsItemLayoutHelpText": "Table: one line per item (Sl/Name/Qty/Rate/Total). Detailed: name on its own line, then Qty/Rate/Total below it.",
   "pdfSettingsCompanyNameSizeLabel": "Company name size",
+  "pdfSettingsFontSizeLabel": "PDF text size",
+  "pdfSettingsSectionSizesLabel": "Section sizes",
+  "pdfSettingsDocTitleSizeLabel": "Document title size",
+  "pdfSettingsTableHeaderSizeLabel": "Table header size",
+  "pdfSettingsTableItemsSizeLabel": "Table items size",
+  "pdfSettingsTotalsSizeLabel": "Totals size",
+  "pdfFontSizeSameAsOverallLabel": "Same as overall",
   "pdfSettingsThemeColorLabel": "Theme Color",
   "pdfSettingsHexErrorText": "Use #RRGGBB",
   "pdfSettingsPickColorTooltip": "Open color picker",
@@ -2327,6 +2420,10 @@
   "productColumnsDescriptionSubtitle": "Free-text product description.",
   "productColumnsPurchasePriceLabel": "Purchase Price",
   "productColumnsPurchasePriceSubtitle": "Cost price, for margin tracking.",
+  "productColumnsPurchasePriceAdminOnlyLabel": "Purchase Price: Admins Only",
+  "productColumnsPurchasePriceAdminOnlySubtitle": "Hide purchase price, profit and stock value from non-admin users.",
+  "productColumnsStockEditAdminOnlyLabel": "Stock Editing: Admins Only",
+  "productColumnsStockEditAdminOnlySubtitle": "Non-admin users can't set or change stock quantities, or import products from CSV.",
   "productColumnsDefaultDiscountLabel": "Default Discount",
   "productColumnsDefaultDiscountSubtitle": "Pre-filled discount when adding this product to an invoice.",
   "productColumnsUnitLabel": "Unit",
@@ -2512,7 +2609,130 @@
   "paymentMethodBankTransfer": "Bank Transfer",
   "paymentMethodCheck": "Check",
   "paymentMethodOnline": "Online",
+  "paymentMethodUpi": "UPI",
   "paymentMethodOther": "Other",
+  "accessibilityOptionalFeaturesSectionTitle": "Optional features",
+  "accessibilityCashExchangeLabel": "Cash / UPI Exchange Service",
+  "accessibilityCashExchangeSubtitle": "Adds a Cash Exchange Services menu after New Invoice to record UPI ↔ Cash exchanges, service fees and cash movements, with Cash and UPI/Bank balances.",
+  "accessibilityReportsAdminOnlyLabel": "Reports: Admins Only",
+  "accessibilityReportsAdminOnlySubtitle": "Hides the Reports menu from non-admin users.",
+  "cashExchangeCashLabel": "Cash",
+  "cashExchangeUpiBankLabel": "UPI/Bank",
+  "cashExchangeTotalLabel": "Total balance",
+  "cashExchangeIncomeTodayLabel": "Service income (today)",
+  "cashExchangeIncomeMonthLabel": "Service income (this month)",
+  "reportsServiceIncomeLabel": "Service income",
+  "reportsTxnsLabel": "Txns",
+  "reportsInvoiceProfitLabel": "Invoice profit",
+  "reportsTransactionsLabel": "Transactions",
+  "reportsCashExchangeTypeLabel": "Cash exchange",
+  "reportsCountColumnLabel": "Count",
+  "cashExchangeExpensesMonthLabel": "Expenses (this month)",
+  "cashExchangeSetupTitle": "Set opening balances",
+  "cashExchangeSetupMessage": "Enter the cash and UPI/Bank money you have on this date. Invoice payments from this date on are added to the balances.",
+  "cashExchangeSetupAdminOnlyMessage": "Ask an admin to set the opening balances.",
+  "cashExchangeUpiToCash": "UPI → Cash",
+  "cashExchangeCashToUpi": "Cash → UPI",
+  "cashExchangeExpense": "Expense",
+  "cashExchangeWithdrawal": "Withdrawal",
+  "cashExchangeBankDeposit": "Bank deposit",
+  "cashExchangeOpeningBalance": "Opening balance",
+  "cashExchangeAdjustment": "Adjustment",
+  "cashExchangeInvoicePayment": "Invoice payment",
+  "cashExchangeAmountLabel": "Amount",
+  "cashExchangeFeeLabel": "Service fee",
+  "cashExchangeFeePaidByLabel": "Service fee paid by",
+  "cashExchangeFromAccountLabel": "Paid from",
+  "cashExchangeCustomerNameLabel": "Customer name (optional)",
+  "cashExchangeCustomerSearchHint": "Search customers or type a new name",
+  "cashExchangeCustomerPhoneLabel": "Phone (optional)",
+  "cashExchangeNotesLabel": "Notes (optional)",
+  "cashExchangeDateTimeLabel": "Date & time",
+  "cashExchangeDateLabel": "Date",
+  "cashExchangeCashDeltaLabel": "Cash change (+ / −)",
+  "cashExchangeUpiDeltaLabel": "UPI/Bank change (+ / −)",
+  "cashExchangeDeleteTitle": "Delete entry",
+  "cashExchangeDeleteMessage": "Delete this entry? Balances will be recalculated.",
+  "cashExchangeEditTitle": "Edit entry",
+  "cashExchangeEdited": "Edited",
+  "cashExchangeHistoryTitle": "Change history",
+  "cashExchangeHistoryCurrent": "Current",
+  "cashExchangeHistoryEdited": "Edited by {user} · {date}",
+  "@cashExchangeHistoryEdited": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "cashExchangeHistoryDeleted": "Deleted by {user} · {date}",
+  "@cashExchangeHistoryDeleted": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "cashExchangeChangeLog": "Change log",
+  "cashExchangeDeleted": "Deleted",
+  "cashExchangeNoChanges": "No changes recorded.",
+  "cashExchangeChangeFailed": "This entry can no longer be changed. It may have been deleted, or the 24-hour edit window has passed.",
+  "cashExchangeEmpty": "No entries for this period.",
+  "cashExchangePeriodToday": "Today",
+  "cashExchangePeriodMonth": "This month",
+  "cashExchangePeriodAll": "All time",
+  "cashExchangePeriodCustom": "Custom date",
+  "cashExchangeShowingLabel": "Showing",
+  "cashExchangeChangeDates": "Change dates",
+  "cashExchangeClosingBalance": "Closing balance",
+  "cashExchangeShowBalances": "Show balances",
+  "cashExchangeHideBalances": "Hide balances",
+  "cashExchangeAllTypes": "All types",
+  "cashExchangeSummaryUpiToCash": "Customer sends {amount} by UPI/Bank • You give {amount} cash • Fee {fee} by {method}",
+  "@cashExchangeSummaryUpiToCash": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "fee": {
+        "type": "String"
+      },
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "cashExchangeSummaryCashToUpi": "Customer gives {amount} cash • You send {amount} by UPI/Bank • Fee {fee} by {method}",
+  "@cashExchangeSummaryCashToUpi": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "fee": {
+        "type": "String"
+      },
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "cashExchangeLowBalanceWarning": "Only {balance} available in {account}.",
+  "@cashExchangeLowBalanceWarning": {
+    "placeholders": {
+      "balance": {
+        "type": "String"
+      },
+      "account": {
+        "type": "String"
+      }
+    }
+  },
   "customerInfoButtonTooltip": "View contact details",
   "customerInfoButtonNoContactMessage": "No contact details available.",
   "updateDialogTitle": "Update Available",
@@ -2530,12 +2750,143 @@
   "sizeSmallLabel": "Small",
   "sizeMediumLabel": "Medium",
   "sizeLargeLabel": "Large",
+  "sizeXLargeLabel": "Extra Large",
   "shortcutNewInvoiceDescription": "New Invoice (from Dashboard) / Reset form (in Create Invoice)",
   "shortcutSaveInvoiceDescription": "Save / create the invoice",
   "shortcutAddProductDescription": "Add product to invoice",
   "shortcutAddCustomItemDescription": "Add custom (ad-hoc) item",
   "shortcutPreviewPdfDescription": "Preview invoice PDF",
   "shortcutPrintPdfDescription": "Generate / print invoice PDF",
+  "supplierMgmtLoadErrorMessage": "Failed to load suppliers: {error}",
+  "@supplierMgmtLoadErrorMessage": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "supplierMgmtAddedMessage": "Supplier added successfully!",
+  "supplierMgmtUpdatedMessage": "Supplier updated successfully!",
+  "supplierMgmtSaveErrorMessage": "Error saving supplier: {error}",
+  "@supplierMgmtSaveErrorMessage": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "supplierMgmtOutstandingLabel": "Outstanding: {amount}",
+  "@supplierMgmtOutstandingLabel": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
+  "supplierMgmtMoveToTrashBody": "Move \"{name}\" to trash? Existing purchase bills keep showing their snapshotted supplier name.",
+  "@supplierMgmtMoveToTrashBody": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "supplierMgmtMovedToTrashMessage": "Supplier moved to trash.",
+  "supplierMgmtRestoredMessage": "Supplier restored.",
+  "supplierMgmtAddSupplierButton": "Add Supplier",
+  "supplierMgmtTitle": "Suppliers",
+  "supplierMgmtSubtitle": "Manage the suppliers you purchase stock from",
+  "supplierMgmtSearchHint": "Search suppliers by name, phone, or GSTIN...",
+  "supplierMgmtColSupplier": "Supplier",
+  "supplierMgmtColGstin": "GSTIN",
+  "supplierMgmtTotalCountLabel": "Total: {count}",
+  "@supplierMgmtTotalCountLabel": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "supplierMgmtNoSuppliersYetMessage": "No suppliers yet",
+  "supplierMgmtNoSuppliersMatchMessage": "No suppliers match your search",
+  "supplierMgmtAddNewTitle": "Add New Supplier",
+  "supplierMgmtEditTitle": "Edit Supplier",
+  "supplierMgmtSaveChangesButton": "Save Changes",
+  "supplierMgmtTaxVatNumberLabel": "Tax/VAT Number (GSTIN)",
+  "purchaseBillMgmtLoadErrorMessage": "Failed to load purchase bills: {error}",
+  "@purchaseBillMgmtLoadErrorMessage": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "purchaseBillMgmtAlreadyFullyPaidMessage": "This bill is already fully paid.",
+  "purchaseBillMgmtMoveToTrashBody": "Move bill \"{billNumber}\" to trash? Stock will be reversed.",
+  "@purchaseBillMgmtMoveToTrashBody": {
+    "placeholders": { "billNumber": { "type": "String" } }
+  },
+  "purchaseBillMgmtMovedToTrashMessage": "Purchase bill moved to trash.",
+  "purchaseBillMgmtRestoredMessage": "Purchase bill restored.",
+  "purchaseBillMgmtSortByTitle": "Sort By",
+  "purchaseBillMgmtSortDateNewest": "Date (Newest First)",
+  "purchaseBillMgmtSortDateOldest": "Date (Oldest First)",
+  "purchaseBillMgmtSortSupplierAZ": "Supplier (A-Z)",
+  "purchaseBillMgmtSortSupplierZA": "Supplier (Z-A)",
+  "purchaseBillMgmtSortAmountHighest": "Amount (Highest First)",
+  "purchaseBillMgmtSortAmountLowest": "Amount (Lowest First)",
+  "purchaseBillMgmtFilterTitle": "Filter Purchase Bills",
+  "purchaseBillMgmtPaymentStatusLabel": "Payment Status",
+  "purchaseBillMgmtSearchHint": "Search by bill number or supplier...",
+  "purchaseBillMgmtNewBillButton": "New Purchase Bill",
+  "purchaseBillMgmtColBill": "Bill",
+  "purchaseBillMgmtColBalance": "Balance",
+  "purchaseBillMgmtTotalCountLabel": "Total: {count}",
+  "@purchaseBillMgmtTotalCountLabel": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "purchaseBillMgmtNoBillsFoundTitle": "No purchase bills found",
+  "purchaseBillMgmtCreateFirstMessage": "Create your first purchase bill to get started",
+  "purchaseBillMgmtTryAdjustingMessage": "Try adjusting your search or filters",
+  "purchaseBillMgmtTitle": "Purchase Bills",
+  "purchaseBillMgmtUnknownSupplierLabel": "Unknown supplier",
+  "purchaseBillMgmtNotesSectionLabel": "Notes",
+  "purchaseBillMgmtItemsSectionLabel": "Items",
+  "purchaseBillMgmtGrandTotalLabel": "Grand Total",
+  "purchaseBillMgmtBillDetailsTitle": "Bill Details",
+  "purchaseBillMgmtExistingSupplierLabel": "Existing Supplier",
+  "purchaseBillMgmtWalkInSupplierLabel": "Walk-in Supplier",
+  "purchaseBillMgmtSupplierRequiredLabel": "Supplier *",
+  "purchaseBillMgmtBillNumberOptionalLabel": "Bill Number (optional)",
+  "purchaseBillMgmtAutoGenerateHint": "Auto generate",
+  "purchaseBillMgmtBillDateRequiredLabel": "Bill Date *",
+  "purchaseBillMgmtPickDateTooltip": "Pick date",
+  "purchaseBillMgmtAddAnyNotesHint": "Add any notes",
+  "purchaseBillMgmtAttachmentOptionalLabel": "Attachment (optional)",
+  "purchaseBillMgmtAttachFileHint": "Attach file",
+  "purchaseBillMgmtBrowseTooltip": "Browse",
+  "purchaseBillMgmtSelectSupplierMessage": "Please select a supplier or switch to walk-in.",
+  "purchaseBillMgmtEnterSupplierNameMessage": "Please enter a supplier name.",
+  "purchaseBillMgmtAddAtLeastOneItemMessage": "Add at least one item.",
+  "purchaseBillMgmtUpdatedMessage": "Purchase bill updated!",
+  "purchaseBillMgmtCreatedMessage": "Purchase bill created!",
+  "purchaseBillMgmtDraftSavedMessage": "Draft saved — stock not updated",
+  "purchaseBillMgmtSaveErrorMessage": "Error saving purchase bill: {error}",
+  "@purchaseBillMgmtSaveErrorMessage": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "purchaseBillMgmtEnterNameMessage": "Enter a name",
+  "purchaseBillMgmtAddCustomItemTitle": "Add Custom Item",
+  "purchaseBillMgmtDescriptionOptionalLabel": "Description (optional)",
+  "purchaseBillMgmtQuantityLabel": "Quantity",
+  "purchaseBillMgmtCostPerUnitLabel": "Cost/unit",
+  "purchaseBillMgmtCostIncludesTaxLabel": "Cost/unit includes tax",
+  "purchaseBillMgmtEnterItemNameMessage": "Enter an item name",
+  "purchaseBillMgmtInvalidValueMessage": "Invalid",
+  "purchaseBillMgmtEditItemTitle": "Edit Item",
+  "purchaseBillMgmtEditItemTooltip": "Edit item",
+  "purchaseBillMgmtRemoveItemTooltip": "Remove item",
+  "purchaseBillMgmtNoItemsAddedMessage": "No items added yet",
+  "purchaseBillMgmtLastCostLabel": "Last cost: {amount}",
+  "@purchaseBillMgmtLastCostLabel": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
+  "purchaseBillMgmtSearchProductsHint": "Search products to add...",
+  "purchaseBillMgmtCustomBadgeLabel": "Custom",
+  "purchaseBillMgmtQtyDetailLabel": "Qty",
+  "purchaseBillMgmtUnitCostDetailLabel": "Unit Cost",
+  "purchaseBillMgmtTaxInclusiveLabel": "{rate}% Inclusive",
+  "@purchaseBillMgmtTaxInclusiveLabel": {
+    "placeholders": { "rate": { "type": "String" } }
+  },
+  "purchaseBillMgmtNetCostDetailLabel": "Net Cost",
+  "purchaseBillMgmtEditPurchaseBillTitle": "Edit Purchase Bill",
+  "purchaseBillMgmtUpdateSubtitle": "Update this purchase bill",
+  "purchaseBillMgmtCreateSubtitle": "Create a new purchase bill for your supplier",
+  "purchaseBillMgmtSaveDraftButton": "Save Draft",
+  "purchaseBillMgmtSavePurchaseBillButton": "Save Purchase Bill",
+  "purchaseBillMgmtSelectSupplierFromListMessage": "Select a supplier from the list",
+  "purchaseBillMgmtSearchSupplierHint": "Search supplier",
+  "purchaseBillMgmtColItem": "Item",
+  "purchaseBillMgmtColCost": "Cost",
+  "purchaseBillMgmtColTaxPercent": "Tax %",
+  "purchaseBillMgmtPaymentRecordedMessage": "Payment recorded.",
   "invoiceSettingsMetadataColumnsGridClassicNote": "Note: Metadata columns print on A4 PDF templates only (not A5/A6 or thermal receipts).",
   "invoiceSettingsCustomFieldsPageSupportNote": "Custom fields print on every PDF template except thermal receipts."
 }
