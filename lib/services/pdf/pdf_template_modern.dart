@@ -6,6 +6,7 @@ import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/custom_field_value.dart';
 import 'package:invoiso/models/invoice.dart';
+import 'package:invoiso/models/customer_field_settings.dart';
 import 'pdf_widgets.dart';
 
 pw.MultiPage buildModernTemplate(
@@ -67,6 +68,7 @@ pw.MultiPage buildModernTemplate(
   bool showCustomerPhone = true,
   bool showCustomerEmail = true,
   bool showCustomerGstin = true,
+  CustomerFieldSettings customerFields = const CustomerFieldSettings(),
   bool showTimeInPdf = true,
   String pdfTimeFormat = '24',
 }) {
@@ -241,9 +243,35 @@ pw.MultiPage buildModernTemplate(
                         "${taxLabel(company?.country)}: ${invoice.customer.gstin}",
                         style: pw.TextStyle(
                             fontSize: style.bodyFontSize, fontStyle: pw.FontStyle.italic)),
+                  for (final line in customerExtraLines(
+                      invoice.customer, customerFields, invoice.date, datePattern))
+                    pw.Text(line,
+                        style: pw.TextStyle(fontSize: style.bodyFontSize)),
                 ],
               ),
             ),
+            if (showShipTo(invoice.customer, customerFields))
+              pw.Container(
+                decoration: pw.BoxDecoration(
+                  color: PdfColors.grey100,
+                  borderRadius: pw.BorderRadius.circular(6),
+                ),
+                padding: const pw.EdgeInsets.all(10),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text("SHIP TO",
+                        style: pw.TextStyle(
+                            fontSize: style.labelFontSize,
+                            fontWeight: pw.FontWeight.bold,
+                            color: accentColor)),
+                    pw.SizedBox(height: 4),
+                    for (final line in shipToLines(invoice.customer))
+                      pw.Text(line,
+                          style: pw.TextStyle(fontSize: style.bodyFontSize)),
+                  ],
+                ),
+              ),
             pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.end,
               children: [

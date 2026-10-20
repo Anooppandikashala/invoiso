@@ -19,7 +19,7 @@ class DatabaseHelper {
   static String? get path => _path;
   static Database? _database;
   static String _dbFileName = 'invoice_manager.db';
-  final dbVersion = 54;
+  final dbVersion = 55;
 
   /// Startup only, before anything has opened a connection yet — just points
   /// at the right file for the first `_initDB()` call. No close/reopen, so
@@ -70,7 +70,15 @@ class DatabaseHelper {
         phone TEXT,
         address TEXT,
         gstin TEXT,
-        business_name TEXT DEFAULT ''
+        business_name TEXT DEFAULT '',
+        shipping_same_as_billing INTEGER DEFAULT 1,
+        shipping_name TEXT DEFAULT '',
+        shipping_phone TEXT DEFAULT '',
+        shipping_address TEXT DEFAULT '',
+        dob TEXT DEFAULT '',
+        age INTEGER,
+        gender TEXT DEFAULT '',
+        custom_fields TEXT
       )
     ''');
 
@@ -120,6 +128,14 @@ class DatabaseHelper {
         customer_address TEXT,
         customer_gstin TEXT,
         customer_business_name TEXT DEFAULT '',
+        customer_shipping_same_as_billing INTEGER DEFAULT 1,
+        customer_shipping_name TEXT DEFAULT '',
+        customer_shipping_phone TEXT DEFAULT '',
+        customer_shipping_address TEXT DEFAULT '',
+        customer_dob TEXT DEFAULT '',
+        customer_age INTEGER,
+        customer_gender TEXT DEFAULT '',
+        customer_custom_fields TEXT,
         date TEXT,
         notes TEXT,
         tax_rate REAL,
@@ -1149,6 +1165,36 @@ class DatabaseHelper {
         await db.execute(
             'CREATE INDEX IF NOT EXISTS idx_cash_ledger_history_action ON cash_ledger_history(action, changed_at)');
       });
+    }
+
+    // v49–v54 are taken on main (quotation status, % line discount, cash
+    // ledger, purchase bills), so this branch uses v55 — see
+    // CustomerDemographicsAndShippingAddressPlan.md.
+    if (oldVersion < 55) {
+      // Shipping address, age/DOB/gender and user-defined custom fields on
+      // customers, plus the matching invoice snapshot columns. Defaults keep
+      // every existing customer "same as billing", so old invoices print
+      // exactly as before.
+      const columns = [
+        ('shipping_same_as_billing', 'INTEGER DEFAULT 1'),
+        ('shipping_name', "TEXT DEFAULT ''"),
+        ('shipping_phone', "TEXT DEFAULT ''"),
+        ('shipping_address', "TEXT DEFAULT ''"),
+        ('dob', "TEXT DEFAULT ''"),
+        ('age', 'INTEGER'),
+        ('gender', "TEXT DEFAULT ''"),
+        ('custom_fields', 'TEXT'),
+      ];
+      for (final (name, type) in columns) {
+        await _runMigrationStep(db, 55, 'add_${name}_to_customers', () async {
+          await db.execute('ALTER TABLE customers ADD COLUMN $name $type');
+        });
+        await _runMigrationStep(
+            db, 55, 'add_customer_${name}_to_invoices', () async {
+          await db.execute(
+              'ALTER TABLE invoices ADD COLUMN customer_$name $type');
+        });
+      }
     }
   }
 

@@ -238,6 +238,22 @@ void main() {
     final billCols = await db.rawQuery('PRAGMA table_info(purchase_bills)');
     expect(billCols.map((c) => c['name']), contains('is_draft'));
 
+    // v55: existing customers/invoices default to "same as billing" with no
+    // shipping, personal or custom field data, so they print as before.
+    final customer =
+        (await db.query('customers', where: 'id = ?', whereArgs: ['c1']))
+            .first;
+    expect(customer['shipping_same_as_billing'], 1);
+    expect(customer['shipping_address'], '');
+    expect(customer['dob'], '');
+    expect(customer['age'], isNull);
+    expect(customer['gender'], '');
+    expect(customer['custom_fields'], isNull);
+    expect(invoice['customer_shipping_same_as_billing'], 1);
+    expect(invoice['customer_shipping_address'], '');
+    expect(invoice['customer_age'], isNull);
+    expect(invoice['customer_custom_fields'], isNull);
+
     final companyInfo = (await db.query('company_info')).first;
     expect(companyInfo['country'], 'India');
     expect(companyInfo['pan_number'], '');
@@ -270,6 +286,9 @@ void main() {
     await db.execute('CREATE TABLE invoice_items (id TEXT PRIMARY KEY)');
     // Later blocks (v53 purchase bills, v54) also run and alter products.
     await db.execute('CREATE TABLE products (id TEXT PRIMARY KEY)');
+    // v55 adds customer columns to customers + invoices.
+    await db.execute('CREATE TABLE customers (id TEXT PRIMARY KEY)');
+    await db.execute('CREATE TABLE invoices (id TEXT PRIMARY KEY)');
     await db.insert('users', {'id': 'user-001', 'username': 'admin'});
     await db.insert('users', {'id': '[#a1b2c]', 'username': 'staff'});
     for (final (id, by) in [('1', 'staff'), ('2', 'admin'), ('3', 'gone'), ('4', null)]) {

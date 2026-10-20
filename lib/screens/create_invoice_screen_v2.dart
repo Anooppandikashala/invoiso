@@ -21,6 +21,8 @@ import 'package:invoiso/models/product.dart';
 import 'package:invoiso/models/additional_cost.dart';
 import 'package:invoiso/models/custom_field_def.dart';
 import 'package:invoiso/models/custom_field_value.dart';
+import 'package:invoiso/models/customer_field_settings.dart';
+import 'package:invoiso/widgets/customer_extra_fields.dart';
 import 'package:invoiso/services/invoice_pdf_services.dart';
 import 'package:invoiso/services/pdf_service.dart';
 import 'package:invoiso/widgets/apply_payment_dialog.dart';
@@ -144,6 +146,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   final addressController = TextEditingController();
   final gstinController = TextEditingController();
   final businessNameController = TextEditingController();
+  final _customerExtraFields = CustomerExtraFieldsController();
+  final _customerExtraFormKey = GlobalKey<FormState>();
+  final _customerCardScrollController = ScrollController();
+  CustomerFieldSettings _customerFieldSettings = const CustomerFieldSettings();
   final taxRateController = TextEditingController();
   final dateController = TextEditingController();
   final dueDateController = TextEditingController();
@@ -254,6 +260,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       addressController.text = _invoice!.customer.address;
       gstinController.text = _invoice!.customer.gstin;
       businessNameController.text = _invoice!.customer.businessName;
+      _customerExtraFields.load(_invoice!.customer);
       taxRate = _invoice!.taxRate;
       taxRateController.text = (taxRate * 100).toStringAsFixed(1);
       _isTaxEnabled = _invoice!.taxMode != TaxMode.none;
@@ -313,6 +320,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       addressController.text = src.customer.address;
       gstinController.text = src.customer.gstin;
       businessNameController.text = src.customer.businessName;
+      _customerExtraFields.load(src.customer);
       taxRate = src.taxRate;
       taxRateController.text = (taxRate * 100).toStringAsFixed(1);
       _isTaxEnabled = src.taxMode != TaxMode.none;
@@ -402,6 +410,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     _invoiceItemsScrollController.dispose();
     gstinController.dispose();
     businessNameController.dispose();
+    _customerExtraFields.dispose();
+    _customerCardScrollController.dispose();
     for (final row in _additionalCostControllers) {
       row.label.dispose();
       row.amount.dispose();
@@ -446,6 +456,11 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         'gstin': gstinController.text.trim(),
         'businessName': businessNameController.text.trim(),
       },
+      'customerExtra': _customerExtraFields
+          .applyTo(
+              Customer(id: '', name: '', email: '', phone: '', address: '', gstin: ''),
+              _customerFieldSettings)
+          .toMap(),
       'items': invoiceItems.map((item) {
         final product = item.product;
         return {
@@ -566,6 +581,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         settingsRepo.getCustomFieldDefs(), // 20
         settingsRepo.getShowTimeInPdf(), // 21
         settingsRepo.getPdfTimeFormat(), // 22
+        CustomerFieldSettings.load(settingsRepo), // 23
       ]);
 
       final c = results[0] as List<Customer>;
@@ -614,6 +630,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       final customFieldDefs = results[20] as List<CustomFieldDef>;
       final showTimeInPdf = results[21] as bool;
       final pdfTimeFormat = results[22] as String;
+      final customerFieldSettings = results[23] as CustomerFieldSettings;
 
       // Determine which UPI to pre-select.
       String? existingUpiId;
@@ -684,6 +701,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         }
         _customFieldsEnabled = customFieldsEnabled;
         _customFieldDefs = customFieldDefs;
+        _customerFieldSettings = customerFieldSettings;
         _businessType = businessType;
         _adHocItemType =
             businessType == BusinessType.service ? 'service' : 'product';
@@ -1262,7 +1280,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     final matchesSelected = _customerFormMatchesSelected;
     final sel = selectedCustomer;
 
-    return Customer(
+    return _customerExtraFields.applyTo(Customer(
       id: matchesSelected ? sel!.id : const Uuid().v4(),
       name: name,
       email: email,
@@ -1270,7 +1288,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       address: address,
       gstin: gstin,
       businessName: businessName,
-    );
+    ), _customerFieldSettings);
   }
 
   Future<bool> _createInvoice() async {
@@ -1293,6 +1311,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       );
       return false;
     }
+
+    // Ship To address required when not same-as-billing; age range. Null
+    // when the customer card is collapsed — render falls back to one block.
+    if (!(_customerExtraFormKey.currentState?.validate() ?? true)) return false;
 
     if (invoiceItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2213,6 +2235,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       addressController.text = customer?.address ?? '';
       gstinController.text = customer?.gstin ?? '';
       businessNameController.text = customer?.businessName ?? '';
+      _customerExtraFields.load(customer);
       _customerFieldsUnlocked = false;
     });
     await _loadPreviousBalanceDue(customer);
@@ -2296,6 +2319,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       addressController.clear();
       gstinController.clear();
       businessNameController.clear();
+      _customerExtraFields.load(null);
       taxRate = Tax.defaultTaxRate;
       _selectedOrderDate = DateTime.now();
       dateController.text = DateFormat(_datePattern).format(_selectedOrderDate);
@@ -2360,6 +2384,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       );
       return;
     }
+    if (!(_customerExtraFormKey.currentState?.validate() ?? true)) return;
 
     final phone = phoneController.text.trim();
 
@@ -2410,7 +2435,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           await _showPhoneTakenError(phoneOwner.name);
           return;
         }
-        final updated = Customer(
+        final updated = _customerExtraFields.applyTo(Customer(
           id: sel.id,
           name: name,
           email: emailController.text.trim(),
@@ -2418,7 +2443,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           address: addressController.text.trim(),
           gstin: gstinController.text.trim(),
           businessName: businessNameController.text.trim(),
-        );
+        ), _customerFieldSettings);
         await ref.read(customerRepositoryProvider).updateCustomer(updated);
         if (!mounted) return;
         setState(() {
@@ -2495,6 +2520,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           addressController.text = existing.address;
           gstinController.text = existing.gstin;
           businessNameController.text = existing.businessName;
+          _customerExtraFields.load(existing);
         });
         await _loadPreviousBalanceDue(existing);
         if (mounted) {
@@ -2509,7 +2535,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         return;
       }
 
-      final updated = Customer(
+      // keepFrom: the form wasn't loaded from `existing`, so switched-off
+      // fields must come from its stored row, not the form.
+      final updated = _customerExtraFields.applyTo(Customer(
         id: existing.id,
         name: name,
         email: emailController.text.trim(),
@@ -2517,7 +2545,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         address: addressController.text.trim(),
         gstin: gstinController.text.trim(),
         businessName: businessNameController.text.trim(),
-      );
+      ), _customerFieldSettings, keepFrom: existing);
       await ref.read(customerRepositoryProvider).updateCustomer(updated);
       if(!mounted) return;
       setState(() {
@@ -2535,7 +2563,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         );
       }
     } else {
-      final newCustomer = Customer(
+      final newCustomer = _customerExtraFields.applyTo(Customer(
         id: const Uuid().v4(),
         name: name,
         email: emailController.text.trim(),
@@ -2543,7 +2571,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         address: addressController.text.trim(),
         gstin: gstinController.text.trim(),
         businessName: businessNameController.text.trim(),
-      );
+      ), _customerFieldSettings);
       await ref.read(customerRepositoryProvider).insertCustomer(newCustomer);
       if(!mounted) return;
       setState(() {
@@ -2590,6 +2618,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       addressController.text = latest.address;
       gstinController.text = latest.gstin;
       businessNameController.text = latest.businessName;
+      _customerExtraFields.load(latest);
       _customerFieldsUnlocked = false;
     });
     if(!mounted) return;
@@ -2610,6 +2639,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       addressController.clear();
       gstinController.clear();
       businessNameController.clear();
+      _customerExtraFields.load(null);
       _previousBalanceDue = 0.0;
       _isPreviousBalanceLoading = false;
       _customerFieldsUnlocked = false;
@@ -2672,7 +2702,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     // sits in should still line up with the Customer form, not balloon out
     // or shrink to almost nothing. Overflow scrolls internally.
     return Container(
-      height: _customFieldsCollapsed ? null : 165,
+      height: _customFieldsCollapsed ? null : (_topCardHeightV2 ?? 165),
       decoration: _flatCardDecorationV2(context),
       padding: const EdgeInsets.all(AppPadding.medium),
       child: Column(
@@ -3508,6 +3538,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       return false;
     }
 
+    // Ship To address required when not same-as-billing; age range. Null
+    // when the customer card is collapsed — render falls back to one block.
+    if (!(_customerExtraFormKey.currentState?.validate() ?? true)) return false;
+
     if (invoiceItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -3796,7 +3830,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                                 ? await ref.read(customerRepositoryProvider).findByPhone(phone)
                                 : null;
                             final newCustomer = existing ??
-                                Customer(
+                                _customerExtraFields.applyTo(Customer(
                                   id: const Uuid().v4(),
                                   name: nameController.text.trim(),
                                   email: emailController.text.trim(),
@@ -3805,7 +3839,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                                   gstin: gstinController.text.trim(),
                                   businessName:
                                       businessNameController.text.trim(),
-                                );
+                                ), _customerFieldSettings);
                             if (existing == null) {
                               await ref.read(customerRepositoryProvider).insertCustomer(newCustomer);
                             }
@@ -4274,8 +4308,23 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     );
   }
 
-  Widget _customerDetailsFormV2() {
-    return _flatCardV2(
+  // Desktop, when any extra customer field is on: Customer Details and Custom
+  // Fields cards sit side by side at the same fixed height; overflow scrolls
+  // inside each card under its header. All extras off: null = exactly the
+  // pre-feature layout (customer card natural height, custom fields 165).
+  double? get _topCardHeightV2 => _customerFieldSettings.any ? 215 : null;
+
+  // [height] set (desktop): fixed-height card, fields scroll under the fixed
+  // header with an always-visible scrollbar so users can tell there's more.
+  // Null (stacked layout): natural height, the whole page scrolls.
+  Widget _customerDetailsFormV2({double? height}) {
+    final scroll = height != null && _customerDetailsExpanded;
+    // Same shape as _flatCardV2, plus the optional fixed height (same pattern
+    // as _customFieldsSummaryCardV2).
+    return Container(
+      height: scroll ? height : null,
+      decoration: _flatCardDecorationV2(context),
+      padding: const EdgeInsets.all(AppPadding.medium),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -4357,6 +4406,14 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   ],
                 ),
               ),
+              if (_customerFieldSettings.any)
+                IconButton(
+                  icon: const Icon(Icons.open_in_full, size: 18),
+                  tooltip:
+                      AppLocalizations.of(context)!.tooltipEditInLargerView,
+                  visualDensity: VisualDensity.compact,
+                  onPressed: _showCustomerDetailsDialogV2,
+                ),
               IconButton(
                 icon: Icon(
                   _customerDetailsExpanded
@@ -4376,7 +4433,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               ),
             ],
           ),
-          if (_customerDetailsExpanded) ...[
+          if (_customerDetailsExpanded)
+            _customerCardBodyV2(scroll, [
           const SizedBox(height: 2),
           if (selectedCustomer == null)
             Padding(
@@ -4461,8 +4519,152 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               ),
             ],
           ),
-          ],
+          // Per-invoice values, never locked (like address): editing them
+          // changes only this invoice's snapshot, not the customer record.
+          Form(
+            key: _customerExtraFormKey,
+            child: CustomerExtraFields(
+              controller: _customerExtraFields,
+              settings: _customerFieldSettings,
+              inline: true,
+              decoration: (label) => _flatFieldDecorationV2(label),
+              billingName: nameController,
+              billingPhone: phoneController,
+              billingAddress: addressController,
+              datePattern: _datePattern,
+            ),
+          ),
+          ]),
         ],
+      ),
+    );
+  }
+
+  // Larger view of the whole customer card (base + extra fields) for easier
+  // filling. Edits the same controllers live, so the card reflects every
+  // change; Cancel restores what was there when the dialog opened. Same
+  // locking as the card: base fields read-only for a selected customer
+  // until unlocked; address and extra fields always editable.
+  Future<void> _showCustomerDetailsDialogV2() async {
+    final l10n = AppLocalizations.of(context)!;
+    final base = [
+      nameController,
+      businessNameController,
+      phoneController,
+      emailController,
+      gstinController,
+      addressController,
+    ];
+    final baseBefore = [for (final c in base) c.text];
+    final extraBefore = _customerExtraFields.applyTo(
+        Customer(id: '', name: '', email: '', phone: '', address: '', gstin: ''),
+        _customerFieldSettings);
+    final formKey = GlobalKey<FormState>();
+    final locked = _customerFieldsLocked;
+
+    Widget field(TextEditingController c, String label,
+            {bool readOnly = false, int maxLines = 1}) =>
+        TextField(
+          controller: c,
+          readOnly: readOnly,
+          minLines: 1,
+          maxLines: maxLines,
+          decoration: _flatFieldDecorationV2(label),
+        );
+    Widget row(List<Widget> fields) => Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (var i = 0; i < fields.length; i++) ...[
+              if (i > 0) const SizedBox(width: 12),
+              Expanded(child: fields[i]),
+            ],
+          ],
+        );
+
+    final applied = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.createInvoiceCustomerDetailsDialogTitle),
+        content: SizedBox(
+          width: 760,
+          child: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 4),
+                  row([
+                    field(nameController, l10n.fieldCustomerNameRequiredLabel,
+                        readOnly: locked),
+                    field(businessNameController, l10n.fieldBusinessNameLabel,
+                        readOnly: locked),
+                    field(phoneController, l10n.fieldPhoneLabel,
+                        readOnly: locked),
+                  ]),
+                  const SizedBox(height: 12),
+                  row([
+                    field(emailController, l10n.fieldEmailLabel,
+                        readOnly: locked),
+                    if (_showGstFields)
+                      field(gstinController, l10n.fieldGstinVatLabel,
+                          readOnly: locked),
+                  ]),
+                  const SizedBox(height: 12),
+                  field(addressController, l10n.fieldAddressLabel, maxLines: 3),
+                  CustomerExtraFields(
+                    controller: _customerExtraFields,
+                    settings: _customerFieldSettings,
+                    inline: true,
+                    decoration: (label) => _flatFieldDecorationV2(label),
+                    billingName: nameController,
+                    billingPhone: phoneController,
+                    billingAddress: addressController,
+                    datePattern: _datePattern,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.actionCancel),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) Navigator.pop(ctx, true);
+            },
+            child: Text(l10n.actionApply),
+          ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    if (applied != true) {
+      for (var i = 0; i < base.length; i++) {
+        base[i].text = baseBefore[i];
+      }
+      _customerExtraFields.load(extraBefore);
+    }
+    setState(() {});
+  }
+
+  Widget _customerCardBodyV2(bool scroll, List<Widget> children) {
+    final body =
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: children);
+    if (!scroll) return body;
+    return Expanded(
+      child: Scrollbar(
+        controller: _customerCardScrollController,
+        thumbVisibility: true,
+        child: SingleChildScrollView(
+          controller: _customerCardScrollController,
+          padding: const EdgeInsets.only(right: 12),
+          child: body,
+        ),
       ),
     );
   }
@@ -6071,13 +6273,15 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(flex: 2, child: _customerDetailsFormV2()),
+                    Expanded(
+                        flex: 2,
+                        child: _customerDetailsFormV2(height: _topCardHeightV2)),
                     AppSpacing.wSmall,
                     Expanded(flex: 1, child: _customFieldsSummaryCardV2()),
                   ],
                 )
               else
-                _customerDetailsFormV2(),
+                _customerDetailsFormV2(height: _topCardHeightV2),
               AppSpacing.hSmall,
               Expanded(child: _itemsTableSectionV2()),
             ],

@@ -3,6 +3,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/models/company_info.dart';
+import 'package:invoiso/models/customer_field_settings.dart';
 
 /// All per-session settings needed to render a PDF.
 /// Fetch once via [PDFService.fetchPdfSettings], reuse for every invoice in a batch.
@@ -65,6 +66,8 @@ class PdfGenerationSettings {
   final bool landscape;
   // Which product-metadata columns print in the Grid Classic A4 items table.
   final Map<String, bool> metadataColumns;
+  // Optional customer fields (Ship To, age/DOB/gender, custom fields).
+  final CustomerFieldSettings customerFields;
   // Multiplier for every font in non-thermal templates (PdfFontSize.scale).
   final double fontSizeScale;
   // Resolved per-section scales (section preset, else fontSizeScale).
@@ -132,6 +135,7 @@ class PdfGenerationSettings {
     this.showSlNo = true,
     this.landscape = false,
     this.metadataColumns = const {},
+    this.customerFields = const CustomerFieldSettings(),
     this.fontSizeScale = 1.0,
     this.companyNameScale = 1.0,
     this.docTitleScale = 1.0,

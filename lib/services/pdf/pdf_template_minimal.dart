@@ -6,6 +6,7 @@ import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/custom_field_value.dart';
 import 'package:invoiso/models/invoice.dart';
+import 'package:invoiso/models/customer_field_settings.dart';
 import 'pdf_widgets.dart';
 
 pw.MultiPage buildMinimalTemplate(
@@ -67,6 +68,7 @@ pw.MultiPage buildMinimalTemplate(
   bool showCustomerPhone = true,
   bool showCustomerEmail = true,
   bool showCustomerGstin = true,
+  CustomerFieldSettings customerFields = const CustomerFieldSettings(),
   bool showTimeInPdf = true,
   String pdfTimeFormat = '24',
 }) {
@@ -251,6 +253,28 @@ pw.MultiPage buildMinimalTemplate(
                         fontStyle: pw.FontStyle.italic, fontSize: style.bodyFontSize)),
             ],
           ),
+          // Same row as Bill To: FROM | SHIP TO (centred block, left-aligned
+          // text) | BILL TO.
+          if (showShipTo(invoice.customer, customerFields))
+            pw.Expanded(
+              child: pw.Align(
+                alignment: pw.Alignment.topCenter,
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text("SHIP TO",
+                        style: pw.TextStyle(
+                            fontWeight: pw.FontWeight.bold,
+                            fontSize: style.labelFontSize,
+                            color: accentColor)),
+                    pw.SizedBox(height: style.headerGap),
+                    for (final line in shipToLines(invoice.customer))
+                      pw.Text(line,
+                          style: pw.TextStyle(fontSize: style.bodyFontSize)),
+                  ],
+                ),
+              ),
+            ),
           pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.end,
             children: [
@@ -280,6 +304,10 @@ pw.MultiPage buildMinimalTemplate(
                     "${taxLabel(company?.country)}: ${invoice.customer.gstin}",
                     style: pw.TextStyle(
                         fontStyle: pw.FontStyle.italic, fontSize: style.bodyFontSize)),
+              for (final line in customerExtraLines(
+                  invoice.customer, customerFields, invoice.date, datePattern))
+                pw.Text(line,
+                    style: pw.TextStyle(fontSize: style.bodyFontSize)),
             ],
           ),
         ],
