@@ -19,6 +19,8 @@ class InvoiceItem {
       discountPerUnit; // true  → (price − discount) × qty  (discount multiplied by qty)
   // false → (price × qty) − discount   (flat discount off line total)
   bool
+      discountIsPercent; // true → discount is a % of price × qty (overrides discountPerUnit)
+  bool
       isProductSaved; // true → custom item was saved to product list; hides the save button
   bool
       restocked; // credit note line: returned qty went back to sellable stock (default true; ignored for other types)
@@ -34,6 +36,7 @@ class InvoiceItem {
     this.description,
     this.metadata,
     this.discountPerUnit = false,
+    this.discountIsPercent = false,
     this.isProductSaved = false,
     this.restocked = true,
   }) : id = id ?? const Uuid().v4();
@@ -58,6 +61,7 @@ class InvoiceItem {
         quantity: quantity,
         discount: discount,
         discountPerUnit: discountPerUnit,
+        discountIsPercent: discountIsPercent,
         extraCost: extraCost ?? 0.0,
         taxRatePercent: product.tax_rate.toDouble(),
         priceIncludesTax: product.priceIncludesTax,

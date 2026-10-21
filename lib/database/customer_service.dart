@@ -1,5 +1,6 @@
 import 'package:invoiso/models/customer.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:invoiso/models/customer_list_stats.dart';
 import 'database_helper.dart';
 
 class CustomerService
@@ -154,4 +155,130 @@ class CustomerService
     });
   }
 
+  // ─────────────────────────────────────────────
+  // Customer management list (Issues.md #43) — one page + counts in SQL,
+  // instead of loading every customer into memory. Rules mirror the old
+  // in-memory V2 filter; COALESCE matches Customer.fromMap's '' defaults.
+
+  // Dart's trim() also strips tabs/newlines, not just spaces.
+  static String _isBlank(String col) =>
+      "TRIM(COALESCE($col, ''), ' ' || char(9) || char(10) || char(13)) = ''";
+
+  /// [tab]: 'all' | 'business' | 'individual' | 'tax' | 'no_tax'.
+  static (String?, List<Object?>) _customerListWhere(String query, String tab) {
+    final parts = <String>[];
+    final args = <Object?>[];
+    if (query.isNotEmpty) {
+      final q = query
+          .replaceAll(r'\', r'\\')
+          .replaceAll('%', r'\%')
+          .replaceAll('_', r'\_');
+      const cols = ['name', 'email', 'phone', 'business_name', 'address', 'gstin'];
+      parts.add('(${cols.map((c) => "$c LIKE ? ESCAPE '\\'").join(' OR ')})');
+      args.addAll(List.filled(cols.length, '%$q%'));
+    }
+    switch (tab) {
+      case 'business':
+        parts.add('NOT ${_isBlank('business_name')}');
+      case 'individual':
+        parts.add(_isBlank('business_name'));
+      case 'tax':
+        parts.add('NOT ${_isBlank('gstin')}');
+      case 'no_tax':
+        parts.add(_isBlank('gstin'));
+    }
+    return (parts.isEmpty ? null : parts.join(' AND '), args);
+  }
+
+  static String _customerListOrder(String orderBy, bool ascending) {
+    final dir = ascending ? 'ASC' : 'DESC';
+    return switch (orderBy) {
+      'name' => 'name COLLATE NOCASE $dir, id ASC',
+      'id' => 'id $dir',
+      _ => 'id ASC',
+    };
+  }
+
+  static Future<List<Customer>> getCustomerListPage({
+    required int offset,
+    required int limit,
+    String query = '',
+    String tab = 'all',
+    String orderBy = 'name', // 'name' | 'id'
+    bool ascending = true,
+  }) async {
+    final db = await dbHelper.database;
+    final (where, args) = _customerListWhere(query, tab);
+    final maps = await db.query(
+      'customers',
+      where: where,
+      whereArgs: args,
+      orderBy: _customerListOrder(orderBy, ascending),
+      limit: limit,
+      offset: offset,
+    );
+    return maps.map((m) => Customer.fromMap(m)).toList();
+  }
+
+  static Future<int> getCustomerListCount(
+      {String query = '', String tab = 'all'}) async {
+    final db = await dbHelper.database;
+    final (where, args) = _customerListWhere(query, tab);
+    final rows = await db.rawQuery(
+      'SELECT COUNT(*) FROM customers${where == null ? '' : ' WHERE $where'}',
+      args,
+    );
+    return Sqflite.firstIntValue(rows) ?? 0;
+  }
+
+  /// Ids only (not full rows) of every matching customer, in list order —
+  /// for orderings SQL can't do yet (outstanding, Issues.md #41).
+  static Future<List<String>> getCustomerListIds({
+    String query = '',
+    String tab = 'all',
+    String orderBy = 'name',
+    bool ascending = true,
+  }) async {
+    final db = await dbHelper.database;
+    final (where, args) = _customerListWhere(query, tab);
+    final rows = await db.query(
+      'customers',
+      columns: ['id'],
+      where: where,
+      whereArgs: args,
+      orderBy: _customerListOrder(orderBy, ascending),
+    );
+    return rows.map((r) => r['id'] as String).toList();
+  }
+
+  /// Customers for [ids], returned in the same order as [ids].
+  static Future<List<Customer>> getCustomersByIds(List<String> ids) async {
+    final db = await dbHelper.database;
+    final rows = await queryInChunks(
+      ids,
+      (chunk, placeholders) => db.query('customers',
+          where: 'id IN ($placeholders)', whereArgs: chunk),
+    );
+    final byId = {for (final r in rows) r['id'] as String: Customer.fromMap(r)};
+    return [for (final id in ids) if (byId[id] != null) byId[id]!];
+  }
+
+  static Future<CustomerListStats> getCustomerListStats() async {
+    final db = await dbHelper.database;
+    final r = (await db.rawQuery(
+      'SELECT COUNT(*) AS all_count, '
+      "COALESCE(SUM(NOT ${_isBlank('business_name')}), 0) AS businesses, "
+      "COALESCE(SUM(${_isBlank('business_name')}), 0) AS individuals, "
+      "COALESCE(SUM(NOT ${_isBlank('gstin')}), 0) AS tax_registered "
+      'FROM customers',
+    ))
+        .first;
+    int v(String k) => (r[k] as num?)?.toInt() ?? 0;
+    return (
+      all: v('all_count'),
+      businesses: v('businesses'),
+      individuals: v('individuals'),
+      taxRegistered: v('tax_registered'),
+    );
+  }
 }

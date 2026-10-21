@@ -6,7 +6,8 @@ import 'package:intl/intl.dart';
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/services/pdf/pdf_service.dart';
-import 'package:invoiso/services/pdf/pdf_widgets.dart' show invoiceTaxLabel;
+import 'package:invoiso/services/pdf/pdf_widgets.dart'
+    show invoiceTaxLabel, customerExtraLines, shipToLines, showShipTo;
 import 'package:thermal_printer/thermal_printer.dart';
 
 /// Prints receipts as raw ESC/POS commands sent directly to the printer,
@@ -182,6 +183,9 @@ class ThermalPrinterService {
     }
     hr();
     line(invoice.type.toUpperCase(), align: PosAlign.center, bold: true);
+    if (invoice.status == 'declined') {
+      line('*** DECLINED ***', align: PosAlign.center, bold: true);
+    }
     hr();
 
     // ── Invoice meta ──
@@ -210,6 +214,18 @@ class ThermalPrinterService {
         settings.showCustomerGstin &&
         invoice.customer.gstin.isNotEmpty) {
       line('${taxLabel(company?.country)}: ${invoice.customer.gstin}');
+    }
+    // ASCII separator: '·' isn't in every ESC/POS code page.
+    for (final l in customerExtraLines(invoice.customer,
+        settings.customerFields, invoice.date, settings.datePattern,
+        separator: ' | ')) {
+      line(l);
+    }
+    if (showShipTo(invoice.customer, settings.customerFields)) {
+      line('Ship To:', bold: true);
+      for (final l in shipToLines(invoice.customer, phonePrefix: 'Ph: ')) {
+        line(l);
+      }
     }
     hr();
 

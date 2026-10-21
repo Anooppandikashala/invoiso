@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:invoiso/common/app_config.dart';
+import 'package:invoiso/database/company_registry_service.dart';
 import 'package:invoiso/database/database_helper.dart';
 import 'package:invoiso/utils/fs_utils.dart';
 import 'package:path/path.dart';
@@ -8,6 +9,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:uuid/uuid.dart';
 
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/models/backup_info.dart';
@@ -32,23 +34,33 @@ class BackupManager {
     'invoice_payments',
     'customer_credits',
     'refunds',
+    'suppliers',
+    'purchase_bills',
+    'purchase_bill_items',
+    'supplier_payments',
+    'stock_transactions',
   ];
 
   // Create backup of the entire database
   Future<BackupResult> createBackup({
+    required String companyId,
+    required String companyName,
     String? customPath,
     BackupType type = BackupType.database,
   }) async {
     try {
       final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-');
-      final backupName = 'invoice_backup_$timestamp';
+      final backupName =
+          'invoice_backup_${_sanitizeForFilename(companyName)}_$timestamp';
 
       String backupPath;
 
       if (type == BackupType.database) {
-        backupPath = await _createDatabaseBackup(backupName, customPath);
+        backupPath =
+            await _createDatabaseBackup(backupName, customPath, companyId);
       } else {
-        backupPath = await _createJsonBackup(backupName, customPath);
+        backupPath =
+            await _createJsonBackup(backupName, customPath, companyId);
       }
 
       return BackupResult(
@@ -70,11 +82,12 @@ class BackupManager {
   Future<String> _createDatabaseBackup(
       String backupName,
       String? customPath,
+      String companyId,
       ) async {
     final dbPath = DatabaseHelper.path!;
     final backupDir = customPath != null
         ? (await ensureDirectory(customPath)).path
-        : await _getBackupDirectory();
+        : await _getBackupDirectory(companyId);
     final backupPath = join(backupDir, '$backupName$_backupExtension');
 
     await File(dbPath).copy(backupPath);
@@ -86,10 +99,11 @@ class BackupManager {
   Future<String> _createJsonBackup(
       String backupName,
       String? customPath,
+      String companyId,
       ) async {
     final backupDir = customPath != null
         ? (await ensureDirectory(customPath)).path
-        : await _getBackupDirectory();
+        : await _getBackupDirectory(companyId);
     final backupPath = join(backupDir, '$backupName$_jsonExtension');
 
     final backupData = await _exportDataToJson(await DatabaseHelper().database);
@@ -177,12 +191,28 @@ class BackupManager {
   // Takes a safety copy first, then replaces the file and re-initializes the
   // singleton so all subsequent DB calls get a live connection.
   Future<void> _restoreFromDatabaseBackup(String backupPath) async {
+    // Reopening a newer file would silently stamp it down to our version
+    // (no onDowngrade) and run the app on a schema it doesn't know.
+    final backupDb =
+        await openDatabase(backupPath, readOnly: true, singleInstance: false);
+    final backupVersion = await backupDb.getVersion();
+    await backupDb.close();
+    if (backupVersion > DatabaseHelper().dbVersion) {
+      throw Exception(
+        'This backup was created by a newer version of the app '
+        '(database v$backupVersion). Update the app to restore it.',
+      );
+    }
+
     final dbPath = DatabaseHelper.path!;
-    final safetyPath = '$dbPath.pre_restore_backup';
+    // Timestamped so a copy kept by an earlier failed restore isn't overwritten.
+    final safetyPath =
+        '$dbPath.pre_restore_backup_${DateTime.now().millisecondsSinceEpoch}';
 
     // Safety copy of current database
     await File(dbPath).copy(safetyPath);
 
+    var keepSafetyCopy = false;
     try {
       // Close singleton and null its reference
       await DatabaseHelper().close();
@@ -198,12 +228,22 @@ class BackupManager {
         await DatabaseHelper().close();
         await File(safetyPath).copy(dbPath);
         await DatabaseHelper().reinitialize();
-      } catch (_) {}
+      } catch (rollbackError) {
+        // Rollback failed — the safety copy is now the only good copy of the
+        // user's data, so keep it and tell the user where it is.
+        keepSafetyCopy = true;
+        throw Exception(
+          'Restore failed ($e) and rollback failed ($rollbackError). '
+          'Your previous data is saved at: $safetyPath',
+        );
+      }
       rethrow;
     } finally {
-      // Clean up safety copy
-      final safetyFile = File(safetyPath);
-      if (await safetyFile.exists()) await safetyFile.delete();
+      // Clean up safety copy only once the live DB is known-good
+      if (!keepSafetyCopy) {
+        final safetyFile = File(safetyPath);
+        if (await safetyFile.exists()) await safetyFile.delete();
+      }
     }
   }
 
@@ -227,7 +267,35 @@ class BackupManager {
 
     final database = await DatabaseHelper().database;
 
+    // A backup from a newer build can carry tables/columns we don't have —
+    // refuse up front instead of failing mid-restore with a raw SQL error.
+    for (final entry in backupData.entries) {
+      // android_metadata is sqflite's own table on Android, not app data.
+      if (entry.key.startsWith('_') || entry.key == 'android_metadata') continue;
+      final cols = (await database.rawQuery('PRAGMA table_info(${entry.key})'))
+          .map((c) => c['name'] as String)
+          .toSet();
+      final unknown = cols.isEmpty
+          ? entry.key
+          : (entry.value as List<dynamic>)
+              .expand((row) => (row as Map<String, dynamic>).keys)
+              .where((k) => !cols.contains(k))
+              .map((k) => '${entry.key}.$k')
+              .firstOrNull;
+      if (unknown != null) {
+        throw Exception(
+          'This backup was created by a newer version of the app '
+          '(unknown $unknown). Update the app to restore it.',
+        );
+      }
+    }
+
     await database.transaction((txn) async {
+      // Onboarding is device setup, not company data — a backup taken before
+      // the wizard existed must not send the user through it again.
+      final onboarding = await txn.query('settings',
+          where: 'key = ?', whereArgs: ['onboarding_completed']);
+
       // Clear existing data in reverse FK order
       for (final tableName in _restoreTableOrder.reversed) {
         await txn.delete(tableName);
@@ -238,17 +306,26 @@ class BackupManager {
         if (!backupData.containsKey(tableName)) continue;
         final tableData = backupData[tableName] as List<dynamic>;
         for (final row in tableData) {
+          final values = Map<String, dynamic>.from(row as Map<String, dynamic>);
+          // Pre-v37 backups have no invoice_items.id.
+          if (tableName == 'invoice_items' && values['id'] == null) {
+            values['id'] = const Uuid().v4();
+          }
           await txn.insert(
             tableName,
-            row as Map<String, dynamic>,
+            values,
             conflictAlgorithm: ConflictAlgorithm.replace,
           );
         }
       }
+      if (onboarding.isNotEmpty) {
+        await txn.insert('settings', onboarding.first,
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
 
       // Restore any tables not in the ordered list (excluding metadata keys)
       for (final entry in backupData.entries) {
-        if (entry.key.startsWith('_')) continue;
+        if (entry.key.startsWith('_') || entry.key == 'android_metadata') continue;
         if (_restoreTableOrder.contains(entry.key)) continue;
         final tableData = entry.value as List<dynamic>;
         for (final row in tableData) {
@@ -262,14 +339,19 @@ class BackupManager {
     });
   }
 
-  // Get list of available backups (current store + legacy Documents store,
-  // so users upgrading from a build that saved into Documents still see them).
-  Future<List<BackupInfo>> getBackupList() async {
+  // Get list of a company's available backups (its own store, plus — for the
+  // default company only — the pre-multi-company flat store and the legacy
+  // Documents store, so users upgrading from an earlier build still see the
+  // backups they made before companies existed).
+  Future<List<BackupInfo>> getBackupList(String companyId) async {
     final backups = <String, BackupInfo>{};
 
     for (final dirPath in {
-      await _getBackupDirectory(),
-      await _legacyBackupDirectory(),
+      await _getBackupDirectory(companyId),
+      if (companyId == defaultCompanyId) ...[
+        await _legacyFlatBackupDirectory(),
+        await _legacyBackupDirectory(),
+      ],
     }) {
       final directory = Directory(dirPath);
       if (!await directory.exists()) continue;
@@ -323,19 +405,31 @@ class BackupManager {
   }
 
   // Auto backup (scheduled)
-  Future<void> performAutoBackup(Database database) async {
-    final backups = await getBackupList();
+  Future<void> performAutoBackup(
+      Database database, String companyId, String companyName) async {
+    final backups = await getBackupList(companyId);
 
     if (backups.isEmpty ||
         DateTime.now().difference(backups.first.createdAt).inDays >= 7) {
-      await createBackup();
-      await _cleanupOldBackups();
+      await createBackup(companyId: companyId, companyName: companyName);
+      await _cleanupOldBackups(companyId);
     }
   }
 
+  // Filesystem-safe fragment for a backup filename — strips characters
+  // invalid on Windows/Android and collapses whitespace so a business name
+  // like "Acme / Sons: Ltd." doesn't break path handling on any platform.
+  String _sanitizeForFilename(String name) {
+    final cleaned = name
+        .replaceAll(RegExp(r'[<>:"/\\|?*\x00-\x1F]'), '')
+        .trim()
+        .replaceAll(RegExp(r'\s+'), '_');
+    return cleaned.isEmpty ? 'company' : cleaned;
+  }
+
   // Clean up old backups
-  Future<void> _cleanupOldBackups() async {
-    final backups = await getBackupList();
+  Future<void> _cleanupOldBackups(String companyId) async {
+    final backups = await getBackupList(companyId);
 
     if (backups.length > 5) {
       final oldBackups = backups.skip(5);
@@ -419,17 +513,28 @@ class BackupManager {
     }
   }
 
-  // App-managed store for the rolling automatic backups. Lives beside the
-  // database (getApplicationSupportDirectory) — a directory the app already
-  // created and can always write to — so it never fails even when the user's
-  // Documents folder is missing or redirected (Windows + OneDrive). Users get
-  // a copy elsewhere via the Download / Share actions on each backup.
-  Future<String> _getBackupDirectory() async {
+  // App-managed store for a company's rolling automatic backups. Lives
+  // beside the database (getApplicationSupportDirectory) — a directory the
+  // app already created and can always write to — so it never fails even
+  // when the user's Documents folder is missing or redirected (Windows +
+  // OneDrive). Grouped under the company's id so switching companies can't
+  // mix one company's backups into another's list. Users get a copy
+  // elsewhere via the Download / Share actions on each backup.
+  Future<String> _getBackupDirectory(String companyId) async {
     final supportDir = await getApplicationSupportDirectory();
-    return (await ensureDirectory(join(supportDir.path, 'backups'))).path;
+    return (await ensureDirectory(join(supportDir.path, 'backups', companyId)))
+        .path;
   }
 
-  // Where older builds saved backups; kept only for [getBackupList].
+  // Where backups landed before per-company grouping existed; kept only for
+  // [getBackupList] on the default company, so upgrading users still see
+  // backups they made before companies existed.
+  Future<String> _legacyFlatBackupDirectory() async {
+    final supportDir = await getApplicationSupportDirectory();
+    return join(supportDir.path, 'backups');
+  }
+
+  // Where even older builds saved backups; kept only for [getBackupList].
   Future<String> _legacyBackupDirectory() async {
     final docsDir = await getApplicationDocumentsDirectory();
     return join(docsDir.path, 'backups');

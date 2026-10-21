@@ -1,5 +1,6 @@
 import 'package:invoiso/database/invoice_service.dart';
 import 'package:invoiso/models/invoice.dart';
+import 'package:invoiso/models/invoice_list_filter.dart';
 import 'package:invoiso/repositories/invoice_repository.dart';
 
 class SqliteInvoiceRepository implements InvoiceRepository {
@@ -66,6 +67,7 @@ class SqliteInvoiceRepository implements InvoiceRepository {
     String orderBy = 'id',
     bool orderAscending = false,
     String? customerId,
+    InvoiceListFilter filter = const InvoiceListFilter(),
   }) =>
       InvoiceService.getInvoicesPaginated(
         page: page,
@@ -75,15 +77,22 @@ class SqliteInvoiceRepository implements InvoiceRepository {
         orderBy: orderBy,
         orderAscending: orderAscending,
         customerId: customerId,
+        filter: filter,
       );
   @override
-  Future<int> getInvoiceCount({String searchQuery = '', String? filterType, String? customerId}) =>
+  Future<int> getInvoiceCount({String searchQuery = '', String? filterType, String? customerId,
+          InvoiceListFilter filter = const InvoiceListFilter()}) =>
       InvoiceService.getInvoiceCount(
-          searchQuery: searchQuery, filterType: filterType, customerId: customerId);
+          searchQuery: searchQuery, filterType: filterType, customerId: customerId, filter: filter);
   @override
   Future<void> softDeleteInvoice(String id) => InvoiceService.softDeleteInvoice(id);
   @override
   Future<void> restoreInvoice(String id) => InvoiceService.restoreInvoice(id);
+  @override
+  Future<void> setInvoiceStatus(String id, String status) =>
+      InvoiceService.setInvoiceStatus(id, status);
+  @override
+  Future<void> declineInvoice(String id) => InvoiceService.declineInvoice(id);
   @override
   Future<void> permanentDeleteInvoice(String id) => InvoiceService.permanentDeleteInvoice(id);
   @override

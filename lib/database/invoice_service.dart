@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:sqflite/sqflite.dart';
+
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/database/invoice_item_service.dart';
 import 'package:invoiso/database/settings_service.dart';
@@ -12,6 +14,7 @@ import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/product.dart';
 import 'package:invoiso/models/customer.dart';
 import 'package:invoiso/models/invoice_item.dart';
+import 'package:invoiso/models/invoice_list_filter.dart';
 import 'package:invoiso/models/invoice_payment.dart';
 import 'package:invoiso/utils/app_date.dart';
 import 'package:invoiso/utils/app_logger.dart';
@@ -38,6 +41,16 @@ class InvoiceService {
         'customer_address': invoice.customer.address,
         'customer_gstin': invoice.customer.gstin,
         'customer_business_name': invoice.customer.businessName,
+        'customer_shipping_same_as_billing':
+            invoice.customer.shippingSameAsBilling ? 1 : 0,
+        'customer_shipping_name': invoice.customer.shippingName,
+        'customer_shipping_phone': invoice.customer.shippingPhone,
+        'customer_shipping_address': invoice.customer.shippingAddress,
+        'customer_dob': invoice.customer.dob,
+        'customer_age': invoice.customer.ageOn(invoice.date),
+        'customer_gender': invoice.customer.gender,
+        'customer_custom_fields':
+            CustomFieldValue.listToJson(invoice.customer.customFields),
         'date': invoice.date.toIso8601String(),
         'notes': invoice.notes,
         'tax_rate': invoice.taxRate,
@@ -62,6 +75,9 @@ class InvoiceService {
         'original_invoice_date': invoice.originalInvoiceDate?.toIso8601String(),
         'return_reason': invoice.returnReason,
         'credit_settlement': invoice.creditSettlement?.key,
+        'status': invoice.status,
+        'converted_to_invoice_id': invoice.convertedToInvoiceId,
+        'converted_from_invoice_id': invoice.convertedFromInvoiceId,
       });
 
       for (var item in invoice.items) {
@@ -78,6 +94,7 @@ class InvoiceService {
           'quantity': item.quantity,
           'discount': item.discount,
           'discount_per_unit': item.discountPerUnit ? 1 : 0,
+          'discount_is_percent': item.discountIsPercent ? 1 : 0,
           'unit_price': item.unitPrice,
           'extra_cost': item.extraCost,
           'is_product_saved': item.isProductSaved ? 1 : 0,
@@ -93,9 +110,24 @@ class InvoiceService {
           'restocked': item.restocked ? 1 : 0,
         });
       }
+
+      // Quotation→invoice conversion: stamp the source quotation in the same
+      // transaction so the link can't be half-written.
+      if (invoice.convertedFromInvoiceId != null) {
+        await txn.update(
+          'invoices',
+          {'status': 'converted', 'converted_to_invoice_id': invoice.id},
+          where: 'id = ?',
+          whereArgs: [invoice.convertedFromInvoiceId],
+        );
+      }
     });
 
-    // Stock deduction happens outside the transaction to avoid nested DB calls
+    // Stock deduction happens outside the transaction to avoid nested DB calls.
+    // Quotations are estimates, not completed sales — stock is only deducted
+    // once a quotation is converted to a real Invoice (a fresh insertInvoice
+    // call with type == 'Invoice' at conversion time).
+    if (invoice.type == 'Quotation') return;
     for (var item in invoice.items) {
       final product = await ProductService.getProductById(item.product.id);
       if (product != null && !product.unlimitedStock) {
@@ -107,6 +139,13 @@ class InvoiceService {
 
   static Future<void> updateInvoice(Invoice invoice) async {
     final db = await dbHelper.database;
+
+    // Never let an edit drop the total below what's already been paid.
+    final paid = await PaymentService.getTotalPaidForInvoice(invoice.id);
+    if (paid - invoice.total > InvoiceCalculator.moneyEpsilon) {
+      throw StateError(
+          'Invoice total ${invoice.total} is below amount paid $paid');
+    }
 
     // Fetch existing items before transaction (to restore stock)
     final oldItems = await db.query(
@@ -127,6 +166,17 @@ class InvoiceService {
           'customer_address': invoice.customer.address,
           'customer_gstin': invoice.customer.gstin,
           'customer_business_name': invoice.customer.businessName,
+          'customer_shipping_same_as_billing':
+              invoice.customer.shippingSameAsBilling ? 1 : 0,
+          'customer_shipping_name': invoice.customer.shippingName,
+          'customer_shipping_phone': invoice.customer.shippingPhone,
+          'customer_shipping_address': invoice.customer.shippingAddress,
+          'customer_dob': invoice.customer.dob,
+          'customer_age': invoice.customer.ageOn(invoice.date),
+          'customer_gender': invoice.customer.gender,
+          'customer_custom_fields':
+              CustomFieldValue.listToJson(invoice.customer.customFields),
+          'date': invoice.date.toIso8601String(),
           'notes': invoice.notes,
           'tax_rate': invoice.taxRate,
           'type': invoice.type,
@@ -134,6 +184,7 @@ class InvoiceService {
           'tax_mode': invoice.taxMode.key,
           'is_interstate': invoice.isInterState ? 1 : 0,
           'upi_id': invoice.upiId,
+          'bank_account_id': invoice.bankAccountId,
           'due_date': invoice.dueDate?.toIso8601String(),
           'quantity_label': invoice.quantityLabel,
           'additional_costs':
@@ -176,6 +227,7 @@ class InvoiceService {
           'quantity': item.quantity,
           'discount': item.discount,
           'discount_per_unit': item.discountPerUnit ? 1 : 0,
+          'discount_is_percent': item.discountIsPercent ? 1 : 0,
           'unit_price': item.unitPrice,
           'extra_cost': item.extraCost,
           'is_product_saved': item.isProductSaved ? 1 : 0,
@@ -192,6 +244,10 @@ class InvoiceService {
         });
       }
     });
+
+    // Quotations never touched stock on creation, so editing one doesn't
+    // touch it either — only a real Invoice's edit restores/re-deducts.
+    if (invoice.type == 'Quotation') return;
 
     // Restore stock for old items (outside transaction)
     for (var oldItem in oldItems) {
@@ -251,6 +307,17 @@ class InvoiceService {
     // Debit Notes are supplementary charges — they raise what the customer owes
     // and carry the same total/payment shape as an invoice, so they fold into
     // this calculation exactly like an invoice row does.
+    final invoiceWhere = 'customer_id = ? '
+        "AND type IN ('Invoice', 'Debit Note') "
+        'AND deleted_at IS NULL '
+        "AND (status IS NULL OR status != 'declined') "
+        'AND currency_code = ? '
+        'AND $dateFilter';
+    final invoiceArgs = [
+      normalizedCustomerId,
+      currencyCode,
+      ...dateArgs,
+    ];
     final invoiceRows = await db.query(
       'invoices',
       columns: [
@@ -261,16 +328,8 @@ class InvoiceService {
         'invoice_discount_type',
         'invoice_discount_value',
       ],
-      where: 'customer_id = ? '
-          "AND type IN ('Invoice', 'Debit Note') "
-          'AND deleted_at IS NULL '
-          'AND currency_code = ? '
-          'AND $dateFilter',
-      whereArgs: [
-        normalizedCustomerId,
-        currencyCode,
-        ...dateArgs,
-      ],
+      where: invoiceWhere,
+      whereArgs: invoiceArgs,
     );
 
     // Unused customer credit (from credit notes) offsets the balance.
@@ -285,19 +344,20 @@ class InvoiceService {
 
     if (invoiceRows.isEmpty) return 0.0;
 
-    final ids = invoiceRows.map((row) => row['id'] as String).toList();
-    final placeholders = List.filled(ids.length, '?').join(',');
+    // Subquery instead of one `?` per id — see Issues.md #36.
     final itemRows = await db.rawQuery(
       'SELECT invoice_id, unit_price, product_price, quantity, discount, '
-      'discount_per_unit, extra_cost, product_tax_rate, product_price_includes_tax '
-      'FROM invoice_items WHERE invoice_id IN ($placeholders) ORDER BY rowid ASC',
-      ids,
+      'discount_per_unit, discount_is_percent, extra_cost, product_tax_rate, product_price_includes_tax '
+      'FROM invoice_items WHERE invoice_id IN '
+      '(SELECT id FROM invoices WHERE $invoiceWhere) ORDER BY rowid ASC',
+      invoiceArgs,
     );
     final paymentRows = await db.rawQuery(
       'SELECT invoice_id, COALESCE(SUM(amount_paid), 0.0) as paid '
-      'FROM invoice_payments WHERE invoice_id IN ($placeholders) '
+      'FROM invoice_payments WHERE invoice_id IN '
+      '(SELECT id FROM invoices WHERE $invoiceWhere) '
       'GROUP BY invoice_id',
-      ids,
+      invoiceArgs,
     );
 
     final itemsByInvoice = <String, List<Map<String, dynamic>>>{};
@@ -367,6 +427,14 @@ class InvoiceService {
       'address': i['customer_address'],
       'gstin': i['customer_gstin'],
       'business_name': i['customer_business_name'] ?? '',
+      'shipping_same_as_billing': i['customer_shipping_same_as_billing'],
+      'shipping_name': i['customer_shipping_name'],
+      'shipping_phone': i['customer_shipping_phone'],
+      'shipping_address': i['customer_shipping_address'],
+      'dob': i['customer_dob'],
+      'age': i['customer_age'],
+      'gender': i['customer_gender'],
+      'custom_fields': i['customer_custom_fields'],
     });
 
     final itemRows = await db.query('invoice_items',
@@ -398,6 +466,7 @@ class InvoiceService {
               ? (row['discount'] as int).toDouble()
               : (row['discount'] ?? 0.0) as double,
           discountPerUnit: (row['discount_per_unit'] as int? ?? 0) == 1,
+          discountIsPercent: (row['discount_is_percent'] as int? ?? 0) == 1,
           unitPrice: unitPrice,
           extraCost: extraCost,
           unit: row['unit'] as String?,
@@ -445,6 +514,9 @@ class InvoiceService {
       hideInvoiceNumber: (i['hide_invoice_number'] as int?) == 1,
       customInvoiceNumber: i['custom_invoice_number'] as String?,
       customFields: CustomFieldValue.listFromJson(i['custom_fields'] as String?),
+      status: i['status'] as String?,
+      convertedToInvoiceId: i['converted_to_invoice_id'] as String?,
+      convertedFromInvoiceId: i['converted_from_invoice_id'] as String?,
       payments: payments,
       originalInvoiceId: i['original_invoice_id'] as String?,
       originalInvoiceNumber: i['original_invoice_number'] as String?,
@@ -561,30 +633,32 @@ class InvoiceService {
     String orderBy = 'id',
     bool orderAscending = false,
     String? customerId,
+    InvoiceListFilter filter = const InvoiceListFilter(),
   }) async {
     final db = await dbHelper.database;
 
-    final whereParts = <String>['deleted_at IS NULL'];
-    final whereArgs = <dynamic>[];
-
-    if (searchQuery.isNotEmpty) {
-      whereParts.add('(customer_name LIKE ? OR id LIKE ?)');
-      whereArgs.addAll(['%$searchQuery%', '%$searchQuery%']);
-    }
-    if (filterType != null && filterType.isNotEmpty) {
-      whereParts.add('type = ?');
-      whereArgs.add(filterType);
-    }
-    if (customerId != null && customerId.isNotEmpty) {
-      whereParts.add('customer_id = ?');
-      whereArgs.add(customerId);
-    }
-
-    final where = whereParts.join(' AND ');
+    final (where, whereArgs) =
+        _listWhere(searchQuery, filterType, customerId, filter);
     final order = orderAscending ? 'ASC' : 'DESC';
     final orderClause = orderBy == 'customer_name'
         ? 'customer_name COLLATE NOCASE $order'
         : '$orderBy $order';
+
+    if (filter.needsBalance) {
+      final ids = await _idsPassingBalanceFilter(
+          db, where, whereArgs, filter, orderClause);
+      final pageIds = ids.skip(page * pageSize).take(pageSize).toList();
+      if (pageIds.isEmpty) return [];
+      // pageIds <= pageSize (max 100) — well under the 999-variable limit.
+      final pageMaps = await db.query(
+        'invoices',
+        where: 'id IN (${List.filled(pageIds.length, '?').join(',')})',
+        whereArgs: pageIds,
+        orderBy: orderClause,
+      );
+      return _buildInvoiceList(pageMaps);
+    }
+
     final invoiceMaps = await db.query(
       'invoices',
       where: where,
@@ -601,11 +675,30 @@ class InvoiceService {
     String searchQuery = '',
     String? filterType,
     String? customerId,
+    InvoiceListFilter filter = const InvoiceListFilter(),
   }) async {
     final db = await dbHelper.database;
 
+    final (where, whereArgs) =
+        _listWhere(searchQuery, filterType, customerId, filter);
+    if (filter.needsBalance) {
+      return (await _idsPassingBalanceFilter(
+              db, where, whereArgs, filter, 'id DESC'))
+          .length;
+    }
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) FROM invoices WHERE $where',
+      whereArgs.isEmpty ? null : whereArgs,
+    );
+    return (result.first.values.first as int?) ?? 0;
+  }
+
+  /// WHERE clause shared by [getInvoicesPaginated] and [getInvoiceCount] —
+  /// everything in [filter] that's expressible on stored columns.
+  static (String, List<Object?>) _listWhere(String searchQuery,
+      String? filterType, String? customerId, InvoiceListFilter filter) {
     final whereParts = <String>['deleted_at IS NULL'];
-    final whereArgs = <dynamic>[];
+    final whereArgs = <Object?>[];
 
     if (searchQuery.isNotEmpty) {
       whereParts.add('(customer_name LIKE ? OR id LIKE ?)');
@@ -619,13 +712,153 @@ class InvoiceService {
       whereParts.add('customer_id = ?');
       whereArgs.add(customerId);
     }
+    if (filter.dateFrom != null) {
+      whereParts.add('date >= ?');
+      whereArgs.add(AppDate.dateKeyStart(filter.dateFrom!));
+    }
+    if (filter.dateTo != null) {
+      whereParts.add('date <= ?');
+      whereArgs.add(AppDate.dateKeyEnd(filter.dateTo!));
+    }
+    const numberExpr = 'CAST(COALESCE(invoice_number, id) AS INTEGER)';
+    if (filter.numberFrom != null) {
+      whereParts.add('$numberExpr >= ?');
+      whereArgs.add(filter.numberFrom);
+    }
+    if (filter.numberTo != null) {
+      whereParts.add('$numberExpr <= ?');
+      whereArgs.add(filter.numberTo);
+    }
+    if (filter.dueDate != 'all') {
+      final today = InvoiceCalculator.dateOnly(DateTime.now());
+      final DateTime? end = switch (filter.dueDate) {
+        'due_today' => DateTime(today.year, today.month, today.day + 1),
+        'due_week' => today.add(const Duration(days: 7)),
+        'due_month' => DateTime(today.year, today.month + 1, today.day),
+        _ => null, // 'overdue': due before today; balance checked in Dart
+      };
+      whereParts.add('due_date IS NOT NULL');
+      if (end == null) {
+        whereParts.add('due_date < ?');
+        whereArgs.add(AppDate.dateKeyStart(today));
+      } else {
+        whereParts.add('due_date >= ? AND due_date < ?');
+        whereArgs.addAll([AppDate.dateKeyStart(today), AppDate.dateKeyStart(end)]);
+      }
+    }
+    // Declined is a stored status, so both declined filters run in SQL.
+    if (filter.paymentStatus == 'declined') {
+      whereParts.add("status = 'declined'");
+    } else if (filter.hideDeclined) {
+      whereParts.add("(status IS NULL OR status != 'declined')");
+    }
+    return (whereParts.join(' AND '), whereArgs);
+  }
 
-    final where = whereParts.join(' AND ');
-    final result = await db.rawQuery(
-      'SELECT COUNT(*) FROM invoices WHERE $where',
-      whereArgs.isEmpty ? null : whereArgs,
+  /// Ids (in [orderClause] order) of invoices matching [where] whose balance
+  /// passes [filter]'s hidePaid / overdue / paymentStatus. Invoice totals
+  /// aren't stored, so they're computed here over the SQL-filtered set
+  /// (Issues.md #41 would make this plain SQL).
+  static Future<List<String>> _idsPassingBalanceFilter(
+    Database db,
+    String where,
+    List<Object?> whereArgs,
+    InvoiceListFilter filter,
+    String orderClause,
+  ) async {
+    final rows = await db.query(
+      'invoices',
+      columns: [
+        'id',
+        'type',
+        'status',
+        'due_date',
+        'tax_rate',
+        'tax_mode',
+        'additional_costs',
+        'invoice_discount_type',
+        'invoice_discount_value',
+      ],
+      where: where,
+      whereArgs: whereArgs,
+      orderBy: orderClause,
     );
-    return (result.first.values.first as int?) ?? 0;
+    if (rows.isEmpty) return [];
+
+    final subquery = '(SELECT id FROM invoices WHERE $where)';
+    final itemRows = await db.rawQuery(
+      'SELECT invoice_id, unit_price, product_price, quantity, discount, '
+      'discount_per_unit, discount_is_percent, extra_cost, product_tax_rate, product_price_includes_tax '
+      'FROM invoice_items WHERE invoice_id IN $subquery ORDER BY rowid ASC',
+      whereArgs,
+    );
+    final paymentRows = await db.rawQuery(
+      'SELECT invoice_id, COALESCE(SUM(amount_paid), 0.0) as paid '
+      'FROM invoice_payments WHERE invoice_id IN $subquery '
+      'GROUP BY invoice_id',
+      whereArgs,
+    );
+
+    final itemsByInvoice = <String, List<Map<String, dynamic>>>{};
+    for (final row in itemRows) {
+      itemsByInvoice.putIfAbsent(row['invoice_id'] as String, () => []).add(row);
+    }
+    final paidByInvoice = <String, double>{
+      for (final row in paymentRows)
+        row['invoice_id'] as String: (row['paid'] as num).toDouble()
+    };
+
+    final ids = <String>[];
+    for (final row in rows) {
+      final id = row['id'] as String;
+      // Declined invoices owe nothing — keep them out of overdue/payment-status filters.
+      final paymentFilter = filter.paymentStatus != 'all' &&
+          filter.paymentStatus != 'declined'; // 'declined' is done in SQL
+      if (row['status'] == 'declined' &&
+          (filter.dueDate == 'overdue' || paymentFilter)) {
+        continue;
+      }
+      final taxMode = TaxModeExtension.fromKey(row['tax_mode'] as String?);
+      final taxRate = (row['tax_rate'] as num?)?.toDouble() ?? 0.0;
+      final total = InvoiceTotalsCalculator.totals(
+        lines: (itemsByInvoice[id] ?? []).map((r) =>
+            InvoiceTotalsCalculator.lineFromDbRow(r,
+                taxMode: taxMode, globalTaxRatePercent: taxRate * 100)),
+        taxMode: taxMode,
+        globalTaxRate: taxRate,
+        globalTaxRateFormat: TaxRateFormat.fraction,
+        additionalCostsTotal:
+            AdditionalCost.listFromJson(row['additional_costs'] as String?)
+                .fold(0.0, (sum, cost) => sum + cost.amount),
+        invoiceDiscountType: InvoiceDiscountTypeExtension.fromKey(
+            row['invoice_discount_type'] as String?),
+        invoiceDiscountValue:
+            (row['invoice_discount_value'] as num?)?.toDouble() ?? 0.0,
+      ).total;
+      final paid = paidByInvoice[id] ?? 0.0;
+      final outstanding =
+          InvoiceCalculator.outstanding(total: total, paid: paid);
+
+      if (filter.hidePaid &&
+          row['type'] == 'Invoice' &&
+          outstanding <= InvoiceCalculator.moneyEpsilon) {
+        continue;
+      }
+      if (filter.dueDate == 'overdue' &&
+          !InvoiceCalculator.isOverdue(
+            dueDate: DateTime.tryParse(row['due_date'] as String? ?? ''),
+            outstanding: outstanding,
+          )) {
+        continue;
+      }
+      if (paymentFilter &&
+          InvoiceCalculator.paymentStatus(total: total, paid: paid).name !=
+              filter.paymentStatus) {
+        continue;
+      }
+      ids.add(id);
+    }
+    return ids;
   }
 
   static Future<int> getTotalInvoiceCountIncludingTrashed() async {
@@ -638,27 +871,103 @@ class InvoiceService {
   // Soft Delete
   static Future<void> softDeleteInvoice(String id) async {
     final db = await dbHelper.database;
+    await db.transaction((txn) async {
+      await txn.update(
+        'invoices',
+        {'deleted_at': DateTime.now().toIso8601String()},
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+      await _unlinkSourceQuotation(txn, id);
+    });
+  }
+
+  static Future<void> restoreInvoice(String id) async {
+    final db = await dbHelper.database;
+    await db.transaction((txn) async {
+      await txn.update(
+        'invoices',
+        {'deleted_at': null},
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+      // Re-link the source quotation — unless the invoice is declined or the
+      // quotation was converted into another invoice while this one was trashed.
+      await txn.rawUpdate(
+        "UPDATE invoices SET status = 'converted', converted_to_invoice_id = ? "
+        'WHERE converted_to_invoice_id IS NULL AND id = '
+        '(SELECT converted_from_invoice_id FROM invoices '
+        "WHERE id = ? AND (status IS NULL OR status != 'declined'))",
+        [id, id],
+      );
+    });
+  }
+
+  /// Sends the quotation that was converted into invoice [invoiceId] back to
+  /// 'accepted' and clears its link, so it can be converted again. No-op when
+  /// no quotation currently points at [invoiceId].
+  static Future<void> _unlinkSourceQuotation(
+      Transaction txn, String invoiceId) async {
+    await txn.update(
+      'invoices',
+      {'status': 'accepted', 'converted_to_invoice_id': null},
+      where: 'converted_to_invoice_id = ?',
+      whereArgs: [invoiceId],
+    );
+  }
+
+  // ─────────────────────────────────────────────
+  // Quotation lifecycle
+  static Future<void> setInvoiceStatus(String id, String status) async {
+    final db = await dbHelper.database;
     await db.update(
       'invoices',
-      {'deleted_at': DateTime.now().toIso8601String()},
+      {'status': status},
       where: 'id = ?',
       whereArgs: [id],
     );
   }
 
-  static Future<void> restoreInvoice(String id) async {
+  // ─────────────────────────────────────────────
+  // Invoice decline — voids an invoice and returns its stock. One-way: a
+  // 'declined' invoice can't be un-declined (would need to re-deduct stock
+  // that may no longer be available).
+  static Future<void> declineInvoice(String id) async {
     final db = await dbHelper.database;
-    await db.update(
-      'invoices',
-      {'deleted_at': null},
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    await db.transaction((txn) async {
+      // Status flip + stock return in one transaction. The status guard makes
+      // a repeat call a no-op, so stock is never returned twice.
+      final changed = await txn.update(
+        'invoices',
+        {'status': 'declined'},
+        where: "id = ? AND type = 'Invoice' "
+            "AND (status IS NULL OR status != 'declined') "
+            // Paid money must be removed first — see _declineInvoice in the list.
+            'AND NOT EXISTS (SELECT 1 FROM invoice_payments '
+            'WHERE invoice_payments.invoice_id = invoices.id)',
+        whereArgs: [id],
+      );
+      if (changed == 0) return;
+
+      final items = await txn.query('invoice_items',
+          columns: ['product_id', 'quantity'],
+          where: 'invoice_id = ?',
+          whereArgs: [id]);
+      for (final item in items) {
+        await txn.rawUpdate(
+          'UPDATE products SET stock = stock + ? '
+          'WHERE id = ? AND (unlimited_stock IS NULL OR unlimited_stock = 0)',
+          [(item['quantity'] as num).round(), item['product_id']],
+        );
+      }
+      await _unlinkSourceQuotation(txn, id);
+    });
   }
 
   static Future<void> permanentDeleteInvoice(String id) async {
     final db = await dbHelper.database;
     await db.transaction((txn) async {
+      await _unlinkSourceQuotation(txn, id);
       await txn.delete('invoice_items', where: 'invoice_id = ?', whereArgs: [id]);
       await txn.delete('invoice_payments', where: 'invoice_id = ?', whereArgs: [id]);
       await txn.delete('invoices', where: 'id = ?', whereArgs: [id]);
@@ -708,6 +1017,14 @@ class InvoiceService {
         'address': map['customer_address'],
         'gstin': map['customer_gstin'],
         'business_name': map['customer_business_name'] ?? '',
+        'shipping_same_as_billing': map['customer_shipping_same_as_billing'],
+        'shipping_name': map['customer_shipping_name'],
+        'shipping_phone': map['customer_shipping_phone'],
+        'shipping_address': map['customer_shipping_address'],
+        'dob': map['customer_dob'],
+        'age': map['customer_age'],
+        'gender': map['customer_gender'],
+        'custom_fields': map['customer_custom_fields'],
       });
 
       final items =
@@ -754,6 +1071,9 @@ class InvoiceService {
           returnReason: map['return_reason'] as String?,
           creditSettlement: CreditSettlementExtension.fromKey(
               map['credit_settlement'] as String?),
+          status: map['status'] as String?,
+          convertedToInvoiceId: map['converted_to_invoice_id'] as String?,
+          convertedFromInvoiceId: map['converted_from_invoice_id'] as String?,
         ),
       );
     }
@@ -761,12 +1081,14 @@ class InvoiceService {
     // Batch-load all payments for this page in one query, then assign
     final db = await dbHelper.database;
     final ids = invoices.map((inv) => inv.id).toList();
-    final placeholders = List.filled(ids.length, '?').join(',');
-    final paymentRows = await db.rawQuery(
-      'SELECT * FROM invoice_payments '
-      'WHERE invoice_id IN ($placeholders) '
-      'ORDER BY invoice_id, date_paid ASC, rowid ASC',
+    final paymentRows = await queryInChunks(
       ids,
+      (chunk, placeholders) => db.rawQuery(
+        'SELECT * FROM invoice_payments '
+        'WHERE invoice_id IN ($placeholders) '
+        'ORDER BY invoice_id, date_paid ASC, rowid ASC',
+        chunk,
+      ),
     );
 
     // Group payments by invoice_id
@@ -797,7 +1119,8 @@ class InvoiceService {
 
     // Count
     final countResult = await db.rawQuery(
-      'SELECT COUNT(*) as cnt FROM invoices WHERE type = ? AND deleted_at IS NULL',
+      'SELECT COUNT(*) as cnt FROM invoices WHERE type = ? AND deleted_at IS NULL '
+      "AND (status IS NULL OR status != 'declined')",
       ['Invoice'],
     );
     final count = (countResult.first['cnt'] as int?) ?? 0;
@@ -807,7 +1130,8 @@ class InvoiceService {
       'SELECT COALESCE(SUM(ip.amount_paid), 0.0) as revenue '
       'FROM invoice_payments ip '
       'JOIN invoices i ON ip.invoice_id = i.id '
-      'WHERE i.type = ? AND i.deleted_at IS NULL',
+      'WHERE i.type = ? AND i.deleted_at IS NULL '
+      "AND (i.status IS NULL OR i.status != 'declined')",
       ['Invoice'],
     );
     final revenue = (revenueResult.first['revenue'] as num?)?.toDouble() ?? 0.0;
@@ -823,7 +1147,8 @@ class InvoiceService {
         'invoice_discount_type',
         'invoice_discount_value',
       ],
-      where: 'type = ? AND deleted_at IS NULL',
+      where: "type = ? AND deleted_at IS NULL "
+          "AND (status IS NULL OR status != 'declined')",
       whereArgs: ['Invoice'],
     );
 
@@ -831,21 +1156,21 @@ class InvoiceService {
       return (count: count, revenue: revenue, outstanding: 0.0);
     }
 
-    final ids = invoiceRows.map((r) => r['id'] as String).toList();
-    final placeholders = List.filled(ids.length, '?').join(',');
+    // Subquery instead of one `?` per id — see Issues.md #36.
+    const invoiceSubquery = "(SELECT id FROM invoices "
+        "WHERE type = 'Invoice' AND deleted_at IS NULL "
+        "AND (status IS NULL OR status != 'declined'))";
 
     final itemRows = await db.rawQuery(
       'SELECT invoice_id, unit_price, product_price, quantity, discount, '
-      'discount_per_unit, extra_cost, product_tax_rate, product_price_includes_tax '
-      'FROM invoice_items WHERE invoice_id IN ($placeholders) ORDER BY rowid ASC',
-      ids,
+      'discount_per_unit, discount_is_percent, extra_cost, product_tax_rate, product_price_includes_tax '
+      'FROM invoice_items WHERE invoice_id IN $invoiceSubquery ORDER BY rowid ASC',
     );
 
     final paymentSums = await db.rawQuery(
       'SELECT invoice_id, COALESCE(SUM(amount_paid), 0.0) as paid '
-      'FROM invoice_payments WHERE invoice_id IN ($placeholders) '
+      'FROM invoice_payments WHERE invoice_id IN $invoiceSubquery '
       'GROUP BY invoice_id',
-      ids,
     );
 
     final itemsByInvoice = <String, List<Map<String, dynamic>>>{};
@@ -920,7 +1245,9 @@ class InvoiceService {
     );
     final invoices = await _buildInvoiceList(rows);
     return invoices
-        .where((inv) => inv.outstandingBalance > InvoiceCalculator.moneyEpsilon)
+        .where((inv) =>
+            inv.status != 'declined' &&
+            inv.outstandingBalance > InvoiceCalculator.moneyEpsilon)
         .toList();
   }
 
@@ -939,7 +1266,9 @@ class InvoiceService {
     );
     final invoices = await _buildInvoiceList(rows);
     final overdue = invoices
-        .where((inv) => InvoiceCalculator.isOverdue(
+        .where((inv) =>
+            inv.status != 'declined' &&
+            InvoiceCalculator.isOverdue(
               dueDate: inv.dueDate,
               outstanding: inv.outstandingBalance,
             ))
@@ -959,7 +1288,9 @@ class InvoiceService {
     );
     final invoices = await _buildInvoiceList(rows);
     return invoices
-        .where((inv) => inv.outstandingBalance > InvoiceCalculator.moneyEpsilon)
+        .where((inv) =>
+            inv.status != 'declined' &&
+            inv.outstandingBalance > InvoiceCalculator.moneyEpsilon)
         .toList();
   }
 
@@ -1000,6 +1331,7 @@ class InvoiceService {
       "FROM invoice_payments ip "
       "JOIN invoices i ON ip.invoice_id = i.id "
       "WHERE i.type = 'Invoice' AND i.deleted_at IS NULL "
+      "AND (i.status IS NULL OR i.status != 'declined') "
       "AND substr(ip.date_paid, 1, 10) >= ? "
       "GROUP BY substr(ip.date_paid, 1, 7) "
       "ORDER BY month ASC",
@@ -1024,6 +1356,7 @@ class InvoiceService {
       'FROM invoices i '
       'LEFT JOIN invoice_payments ip ON i.id = ip.invoice_id '
       "WHERE i.type = 'Invoice' AND i.deleted_at IS NULL "
+      "AND (i.status IS NULL OR i.status != 'declined') "
       'GROUP BY i.customer_name '
       'ORDER BY total_paid DESC, invoice_count DESC '
       'LIMIT ?',
@@ -1047,6 +1380,7 @@ class InvoiceService {
       'FROM invoice_items ii '
       'JOIN invoices i ON ii.invoice_id = i.id '
       "WHERE i.type = 'Invoice' AND i.deleted_at IS NULL "
+      "AND (i.status IS NULL OR i.status != 'declined') "
       "AND ii.product_name IS NOT NULL AND ii.product_name != '' "
       'GROUP BY ii.product_name '
       'ORDER BY total_qty DESC '

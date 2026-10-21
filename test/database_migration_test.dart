@@ -212,12 +212,54 @@ void main() {
     expect(item.containsKey('description'), isTrue);
     expect(item['description'], isNull);
 
+    // v50 added quotation status + quote<->invoice links. Legacy rows stay
+    // NULL (read as 'draft', no link).
+    expect(invoice.containsKey('status'), isTrue);
+    expect(invoice['status'], isNull);
+    expect(invoice['converted_to_invoice_id'], isNull);
+    expect(invoice['converted_from_invoice_id'], isNull);
+
+    // v53 added purchase bills / suppliers / stock tracking.
+    for (final table in [
+      'suppliers',
+      'purchase_bills',
+      'purchase_bill_items',
+      'stock_transactions',
+      'supplier_payments',
+    ]) {
+      expect(await db.query(table), isEmpty);
+    }
+    final product = (await db.query('products')).first;
+    expect(product.containsKey('last_purchase_date'), isTrue);
+    expect(product['last_purchase_date'], isNull);
+    final billItemCols =
+        await db.rawQuery('PRAGMA table_info(purchase_bill_items)');
+    expect(billItemCols.map((c) => c['name']), contains('cost_includes_tax'));
+    final billCols = await db.rawQuery('PRAGMA table_info(purchase_bills)');
+    expect(billCols.map((c) => c['name']), contains('is_draft'));
+
+    // v55: existing customers/invoices default to "same as billing" with no
+    // shipping, personal or custom field data, so they print as before.
+    final customer =
+        (await db.query('customers', where: 'id = ?', whereArgs: ['c1']))
+            .first;
+    expect(customer['shipping_same_as_billing'], 1);
+    expect(customer['shipping_address'], '');
+    expect(customer['dob'], '');
+    expect(customer['age'], isNull);
+    expect(customer['gender'], '');
+    expect(customer['custom_fields'], isNull);
+    expect(invoice['customer_shipping_same_as_billing'], 1);
+    expect(invoice['customer_shipping_address'], '');
+    expect(invoice['customer_age'], isNull);
+    expect(invoice['customer_custom_fields'], isNull);
+
     final companyInfo = (await db.query('company_info')).first;
     expect(companyInfo['country'], 'India');
     expect(companyInfo['pan_number'], '');
     expect(companyInfo['fssai_code'], '');
 
-    // v47 — return management. New invoice columns are NULL on legacy rows,
+    // v56 — return management. New invoice columns are NULL on legacy rows,
     // invoice_items.restocked defaults to 1, and the two new tables exist.
     expect(invoice.containsKey('original_invoice_id'), isTrue);
     expect(invoice['original_invoice_id'], isNull);
@@ -229,6 +271,111 @@ void main() {
             where: 'key = ?', whereArgs: ['credit_note_prefix']))
         .first;
     expect(cnPrefix['value'], 'CN-');
+    // v49: exchange ledger table and per-product low-stock limit (NULL =
+    // default, so old products keep the old threshold of 10).
+    final ledgerCols = (await db.rawQuery('PRAGMA table_info(cash_ledger)'))
+        .map((r) => r['name'])
+        .toSet();
+    expect(ledgerCols, containsAll(['entry_type', 'cash_delta', 'upi_delta']));
+    expect(product.containsKey('low_stock_limit'), isTrue);
+    expect(product['low_stock_limit'], isNull);
+
+    await db.close();
+  });
+
+  test('v52: created_by usernames become user ids; edit log table added',
+      () async {
+    final db = await openDatabase(inMemoryDatabasePath);
+    await db.execute(
+        'CREATE TABLE users (id TEXT PRIMARY KEY, username TEXT UNIQUE)');
+    // cash_ledger as it was at v51.
+    await db.execute('''
+      CREATE TABLE cash_ledger (
+        id TEXT PRIMARY KEY, entry_type TEXT NOT NULL,
+        cash_delta REAL NOT NULL DEFAULT 0, upi_delta REAL NOT NULL DEFAULT 0,
+        date_time TEXT NOT NULL, created_by TEXT)''');
+    // v52 also re-adds invoice_items.discount_is_percent.
+    await db.execute('CREATE TABLE invoice_items (id TEXT PRIMARY KEY)');
+    // Later blocks (v53 purchase bills, v54) also run and alter products.
+    await db.execute('CREATE TABLE products (id TEXT PRIMARY KEY)');
+    // v55 adds customer columns to customers + invoices.
+    await db.execute('CREATE TABLE customers (id TEXT PRIMARY KEY)');
+    await db.execute('CREATE TABLE invoices (id TEXT PRIMARY KEY)');
+    // v56 seeds the credit/debit note prefixes.
+    await db.execute(
+        'CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT)');
+    await db.insert('users', {'id': 'user-001', 'username': 'admin'});
+    await db.insert('users', {'id': '[#a1b2c]', 'username': 'staff'});
+    for (final (id, by) in [('1', 'staff'), ('2', 'admin'), ('3', 'gone'), ('4', null)]) {
+      await db.insert('cash_ledger', {
+        'id': id,
+        'entry_type': 'expense',
+        'date_time': '2026-09-25T10:00:00.000',
+        'created_by': by,
+      });
+    }
+
+    await DatabaseHelper().upgradeDbForTest(db, 51, 52);
+
+    final rows = await db.query('cash_ledger', orderBy: 'id');
+    expect(rows.map((r) => r['created_by']),
+        ['[#a1b2c]', 'user-001', 'gone', null]);
+    expect(rows.first.containsKey('created_at'), isTrue);
+    expect(await db.query('cash_ledger_history'), isEmpty);
+    await db.close();
+  });
+
+  // The purchase-bills branch used v41/v42 for its own steps before main was
+  // merged in, so a dev DB from that build sits at v42 without main's
+  // invoice_items.description. The v53 block must re-add it.
+  test('DB at old branch v42 without description column gets it back',
+      () async {
+    final db = await _openV4WithSampleData();
+    final helper = DatabaseHelper();
+    await helper.upgradeDbForTest(db, 4, helper.dbVersion);
+    await db.execute('ALTER TABLE invoice_items DROP COLUMN description');
+
+    await helper.upgradeDbForTest(db, 42, helper.dbVersion);
+
+    final cols = await db.rawQuery('PRAGMA table_info(invoice_items)');
+    expect(cols.map((c) => c['name']), contains('description'));
+
+    await db.close();
+  });
+  // purchase_bills.is_draft was first added inside the v52 block, after dev
+  // DBs (and backups taken from them) had already reached v52 — a v52 DB
+  // without the column must still get it.
+  test('DB at v52 without purchase_bills.is_draft gets it', () async {
+    final db = await _openV4WithSampleData();
+    final helper = DatabaseHelper();
+    await helper.upgradeDbForTest(db, 4, helper.dbVersion);
+    await db.execute('ALTER TABLE purchase_bills DROP COLUMN is_draft');
+
+    await helper.upgradeDbForTest(db, 52, helper.dbVersion);
+
+    final cols = await db.rawQuery('PRAGMA table_info(purchase_bills)');
+    expect(cols.map((c) => c['name']), contains('is_draft'));
+
+    await db.close();
+  });
+
+  // Dev DBs / backups of the purchase-bills branch reached v53 (its old
+  // numbering) without main's cash ledger (v51/v52). The v54 block re-runs it.
+  test('DB at branch v53 without cash ledger gets it', () async {
+    final db = await _openV4WithSampleData();
+    final helper = DatabaseHelper();
+    await helper.upgradeDbForTest(db, 4, helper.dbVersion);
+    await db.execute('DROP TABLE cash_ledger');
+    await db.execute('DROP TABLE cash_ledger_history');
+    await db.execute('ALTER TABLE products DROP COLUMN low_stock_limit');
+
+    await helper.upgradeDbForTest(db, 53, helper.dbVersion);
+
+    final ledgerCols = await db.rawQuery('PRAGMA table_info(cash_ledger)');
+    expect(ledgerCols.map((c) => c['name']), contains('created_at'));
+    expect(await db.query('cash_ledger_history'), isEmpty);
+    final productCols = await db.rawQuery('PRAGMA table_info(products)');
+    expect(productCols.map((c) => c['name']), contains('low_stock_limit'));
 
     await db.close();
   });

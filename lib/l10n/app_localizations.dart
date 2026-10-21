@@ -216,6 +216,18 @@ abstract class AppLocalizations {
   /// **'Set up how your invoices work'**
   String get onboardingStepInvoiceSubtitle;
 
+  /// No description provided for @onboardingStepPurchaseBillsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase Bills & Suppliers'**
+  String get onboardingStepPurchaseBillsTitle;
+
+  /// No description provided for @onboardingStepPurchaseBillsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Track supplier bills and stock purchases (optional)'**
+  String get onboardingStepPurchaseBillsSubtitle;
+
   /// No description provided for @onboardingStepAppearanceTitle.
   ///
   /// In en, this message translates to:
@@ -287,6 +299,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Default Tax Rate (%)'**
   String get onboardingDefaultTaxRateLabel;
+
+  /// No description provided for @onboardingEnablePurchaseBillsSuppliersLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Purchase Bills & Suppliers'**
+  String get onboardingEnablePurchaseBillsSuppliersLabel;
+
+  /// No description provided for @onboardingEnablePurchaseBillsSuppliersSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Adds Purchase Bills and Suppliers to the dashboard menu. You can change this anytime in Settings.'**
+  String get onboardingEnablePurchaseBillsSuppliersSubtitle;
 
   /// No description provided for @onboardingPageSizeLabel.
   ///
@@ -444,6 +468,12 @@ abstract class AppLocalizations {
   /// **'Invoices'**
   String get navInvoices;
 
+  /// No description provided for @navServices.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash Exchange Services'**
+  String get navServices;
+
   /// No description provided for @navQuotations.
   ///
   /// In en, this message translates to:
@@ -486,6 +516,18 @@ abstract class AppLocalizations {
   /// **'Reports'**
   String get navReports;
 
+  /// No description provided for @navPurchaseBills.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase Bills'**
+  String get navPurchaseBills;
+
+  /// No description provided for @navSuppliers.
+  ///
+  /// In en, this message translates to:
+  /// **'Suppliers'**
+  String get navSuppliers;
+
   /// No description provided for @navSettings.
   ///
   /// In en, this message translates to:
@@ -509,6 +551,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Support'**
   String get dashboardSupportTooltip;
+
+  /// No description provided for @buyMeCoffeeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Buy me a coffee'**
+  String get buyMeCoffeeLabel;
 
   /// No description provided for @dashboardLogoutTooltip.
   ///
@@ -545,6 +593,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ctrl+Q for a new invoice, Ctrl+S to save, and more.'**
   String get dashboardShortcutsBannerSubtitle;
+
+  /// No description provided for @dashboardPurchaseBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New: Purchase Bills & Suppliers'**
+  String get dashboardPurchaseBannerTitle;
+
+  /// No description provided for @dashboardPurchaseBannerSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Record supplier bills, update stock automatically, and track what you owe each supplier.'**
+  String get dashboardPurchaseBannerSubtitle;
+
+  /// No description provided for @dashboardPurchaseBannerAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable'**
+  String get dashboardPurchaseBannerAction;
 
   /// No description provided for @dashboardViewAllAction.
   ///
@@ -624,6 +690,12 @@ abstract class AppLocalizations {
   /// **'Refresh'**
   String get actionRefresh;
 
+  /// No description provided for @helpSearchTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Help & Settings'**
+  String get helpSearchTooltip;
+
   /// No description provided for @dashboardOutOfStockCountLabel.
   ///
   /// In en, this message translates to:
@@ -651,14 +723,26 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardRecentInvoicesTitle.
   ///
   /// In en, this message translates to:
-  /// **'Recent Invoices'**
+  /// **'Recent Documents'**
   String get dashboardRecentInvoicesTitle;
 
   /// No description provided for @dashboardLastFiveInvoicesLabel.
   ///
   /// In en, this message translates to:
-  /// **'Last 5 invoices'**
+  /// **'Last 5 documents'**
   String get dashboardLastFiveInvoicesLabel;
+
+  /// No description provided for @dashboardColDocumentNo.
+  ///
+  /// In en, this message translates to:
+  /// **'Document no.'**
+  String get dashboardColDocumentNo;
+
+  /// No description provided for @dashboardColType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get dashboardColType;
 
   /// No description provided for @dashboardNoInvoicesYetTitle.
   ///
@@ -1398,6 +1482,24 @@ abstract class AppLocalizations {
   /// **'Previous Balance Due'**
   String get createInvoicePreviousBalanceDueLabel;
 
+  /// No description provided for @createInvoicePaymentSectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get createInvoicePaymentSectionLabel;
+
+  /// No description provided for @createInvoiceBalanceDueLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance Due'**
+  String get createInvoiceBalanceDueLabel;
+
+  /// No description provided for @createInvoicePaymentNotRecordedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice saved, but the payment was not recorded: {error}. Add it from the Invoices list.'**
+  String createInvoicePaymentNotRecordedMessage(String error);
+
   /// No description provided for @createInvoiceDueShortLabel.
   ///
   /// In en, this message translates to:
@@ -1415,6 +1517,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{invoiceTypeLabel} updated successfully!'**
   String createInvoiceUpdatedSuccessMessage(String invoiceTypeLabel);
+
+  /// No description provided for @createInvoiceTotalBelowPaidMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The new total is less than the {paid} already paid. Delete payments in Apply Payment first, or keep the total at or above that amount.'**
+  String createInvoiceTotalBelowPaidMessage(String paid);
 
   /// No description provided for @createInvoiceErrorUpdatingMessage.
   ///
@@ -1637,6 +1745,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Order date'**
   String get createInvoiceOrderDateLabel;
+
+  /// No description provided for @createInvoiceOrderTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Order time'**
+  String get createInvoiceOrderTimeLabel;
 
   /// No description provided for @createInvoiceDueDateLabel.
   ///
@@ -2196,6 +2310,12 @@ abstract class AppLocalizations {
   /// **'Hide fully paid invoices'**
   String get invoiceMgmtHideFullyPaidLabel;
 
+  /// No description provided for @invoiceMgmtHideDeclinedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide declined invoices'**
+  String get invoiceMgmtHideDeclinedLabel;
+
   /// No description provided for @invoiceMgmtPaymentStatusLabel.
   ///
   /// In en, this message translates to:
@@ -2447,6 +2567,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'New {type}'**
   String invoiceMgmtNewDocumentButton(String type);
+
+  /// No description provided for @invoiceMgmtConvertToInvoiceAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert to Invoice'**
+  String get invoiceMgmtConvertToInvoiceAction;
+
+  /// No description provided for @invoiceMgmtConvertAgainTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert again?'**
+  String get invoiceMgmtConvertAgainTitle;
+
+  /// No description provided for @invoiceMgmtConvertAgainBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Quotation {number} was already converted to an invoice. Create another invoice from it?'**
+  String invoiceMgmtConvertAgainBody(String number);
+
+  /// No description provided for @invoiceMgmtMarkAsSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as sent'**
+  String get invoiceMgmtMarkAsSent;
+
+  /// No description provided for @invoiceMgmtMarkAsAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as accepted'**
+  String get invoiceMgmtMarkAsAccepted;
+
+  /// No description provided for @invoiceMgmtMarkAsDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as declined'**
+  String get invoiceMgmtMarkAsDeclined;
+
+  /// No description provided for @quotationStatusDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get quotationStatusDraft;
+
+  /// No description provided for @quotationStatusSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent'**
+  String get quotationStatusSent;
+
+  /// No description provided for @quotationStatusAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get quotationStatusAccepted;
+
+  /// No description provided for @quotationStatusDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'Declined'**
+  String get quotationStatusDeclined;
+
+  /// No description provided for @quotationStatusConverted.
+  ///
+  /// In en, this message translates to:
+  /// **'Converted'**
+  String get quotationStatusConverted;
+
+  /// No description provided for @invoiceMgmtDeclineInvoiceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline invoice?'**
+  String get invoiceMgmtDeclineInvoiceTitle;
+
+  /// No description provided for @invoiceMgmtDeclineInvoiceBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This will mark invoice #{number} as declined and return its items to stock. This can\'t be undone.'**
+  String invoiceMgmtDeclineInvoiceBody(String number);
+
+  /// No description provided for @invoiceMgmtDeclineHasPaymentsMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice #{number} has payments recorded. Delete them in Apply Payment before declining.'**
+  String invoiceMgmtDeclineHasPaymentsMessage(String number);
+
+  /// No description provided for @invoiceMgmtDeclinedSuccessMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice declined, stock restored.'**
+  String get invoiceMgmtDeclinedSuccessMessage;
+
+  /// No description provided for @invoiceStatusDeclinedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Declined'**
+  String get invoiceStatusDeclinedBadge;
+
+  /// No description provided for @createInvoiceConvertTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert to Invoice'**
+  String get createInvoiceConvertTitle;
+
+  /// No description provided for @createInvoiceConvertedSuccessMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Converted to Invoice #{invoiceNumber}'**
+  String createInvoiceConvertedSuccessMessage(String invoiceNumber);
+
+  /// No description provided for @createInvoiceTrashQuotationAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Trash quote'**
+  String get createInvoiceTrashQuotationAction;
+
+  /// No description provided for @createInvoiceQuotationTrashedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Quotation moved to trash'**
+  String get createInvoiceQuotationTrashedMessage;
 
   /// No description provided for @invoiceMgmtOverdueBadge.
   ///
@@ -3480,6 +3720,12 @@ abstract class AppLocalizations {
   /// **'1/true if price already includes tax, default 0'**
   String get productMgmtCsvDescPriceIncludesTax;
 
+  /// No description provided for @productMgmtCsvDescLowStockLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Low-stock threshold for this product, blank = default 10'**
+  String get productMgmtCsvDescLowStockLimit;
+
   /// No description provided for @productMgmtCsvDescStorageLocation.
   ///
   /// In en, this message translates to:
@@ -3942,6 +4188,18 @@ abstract class AppLocalizations {
   /// **'Track infinite stock for this product'**
   String get productMgmtTrackInfiniteStockSubtitle;
 
+  /// No description provided for @productMgmtLowStockLimitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Low-stock limit'**
+  String get productMgmtLowStockLimitLabel;
+
+  /// No description provided for @productMgmtLowStockLimitHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Shown in Low Stock when stock is at or below this number. Leave blank for the default (10).'**
+  String get productMgmtLowStockLimitHelper;
+
   /// No description provided for @productMgmtTipEnableCustomFieldsMessage.
   ///
   /// In en, this message translates to:
@@ -4332,6 +4590,12 @@ abstract class AppLocalizations {
   /// **'Daily Report'**
   String get reportsNavDailyReportLabel;
 
+  /// No description provided for @reportsNavInventoryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory'**
+  String get reportsNavInventoryLabel;
+
   /// No description provided for @reportsNavInvoiceStatusLabel.
   ///
   /// In en, this message translates to:
@@ -4355,6 +4619,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tax'**
   String get reportsNavTaxLabel;
+
+  /// No description provided for @reportsInventoryBlockedValueLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory Value Blocked'**
+  String get reportsInventoryBlockedValueLabel;
+
+  /// No description provided for @reportsInventoryPotentialSaleValueLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Potential Sale Value'**
+  String get reportsInventoryPotentialSaleValueLabel;
+
+  /// No description provided for @reportsInventoryLockedProfitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Profit Locked in Stock'**
+  String get reportsInventoryLockedProfitLabel;
+
+  /// No description provided for @reportsInventoryTotalUnitsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Units'**
+  String get reportsInventoryTotalUnitsLabel;
+
+  /// No description provided for @reportsInventoryProductCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Products Tracked'**
+  String get reportsInventoryProductCountLabel;
+
+  /// No description provided for @reportsInventoryBreakdownTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Product Breakdown'**
+  String get reportsInventoryBreakdownTitle;
+
+  /// No description provided for @reportsNoInventoryDataMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No inventory data'**
+  String get reportsNoInventoryDataMessage;
+
+  /// No description provided for @reportsInventoryProductColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Product'**
+  String get reportsInventoryProductColumnLabel;
+
+  /// No description provided for @reportsInventoryStockColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock'**
+  String get reportsInventoryStockColumnLabel;
+
+  /// No description provided for @reportsInventoryPurchasePriceColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase Price'**
+  String get reportsInventoryPurchasePriceColumnLabel;
+
+  /// No description provided for @reportsInventoryStockValueColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock Value'**
+  String get reportsInventoryStockValueColumnLabel;
+
+  /// No description provided for @reportsInventorySaleValueColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sale Value'**
+  String get reportsInventorySaleValueColumnLabel;
+
+  /// No description provided for @reportsInventoryExcludedBannerMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item is excluded from inventory value — it\'s a service or has unlimited stock tracking on.} other{{count} items are excluded from inventory value — they\'re services or have unlimited stock tracking on.}}'**
+  String reportsInventoryExcludedBannerMessage(int count);
 
   /// No description provided for @reportsNoCustomerDataMessage.
   ///
@@ -5112,6 +5454,24 @@ abstract class AppLocalizations {
   /// **'Invoice Items'**
   String get invoiceSettingsSectionItems;
 
+  /// No description provided for @invoiceSettingsSectionSuppliers.
+  ///
+  /// In en, this message translates to:
+  /// **'Suppliers'**
+  String get invoiceSettingsSectionSuppliers;
+
+  /// No description provided for @settingsEnablePurchaseBillsSuppliersLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Purchase Bills & Suppliers'**
+  String get settingsEnablePurchaseBillsSuppliersLabel;
+
+  /// No description provided for @settingsEnablePurchaseBillsSuppliersSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shows Purchase Bills and Suppliers in the dashboard menu'**
+  String get settingsEnablePurchaseBillsSuppliersSubtitle;
+
   /// No description provided for @invoiceSettingsSectionCustomer.
   ///
   /// In en, this message translates to:
@@ -5157,14 +5517,26 @@ abstract class AppLocalizations {
   /// No description provided for @invoiceSettingsColumnTaxLabel.
   ///
   /// In en, this message translates to:
-  /// **'Tax column'**
+  /// **'Show tax column'**
   String get invoiceSettingsColumnTaxLabel;
 
   /// No description provided for @invoiceSettingsColumnTaxSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Print the per-item CGST/SGST, IGST % column'**
+  /// **'Show the tax % and amount for each item, for global and per-item tax'**
   String get invoiceSettingsColumnTaxSubtitle;
+
+  /// No description provided for @invoiceSettingsSplitCgstSgstLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Split CGST / SGST'**
+  String get invoiceSettingsSplitCgstSgstLabel;
+
+  /// No description provided for @invoiceSettingsSplitCgstSgstSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Split the tax into CGST/SGST, or IGST for interstate (India GST)'**
+  String get invoiceSettingsSplitCgstSgstSubtitle;
 
   /// No description provided for @invoiceSettingsColumnRequiredSubtitle.
   ///
@@ -5255,6 +5627,282 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Print the customer\'s GSTIN / tax id (requires GST fields on)'**
   String get invoiceSettingsShowCustomerGstinSubtitle;
+
+  /// No description provided for @invoiceSettingsCustomerFieldsHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer Fields'**
+  String get invoiceSettingsCustomerFieldsHeader;
+
+  /// No description provided for @invoiceSettingsCustomerFieldsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Extra details you can record on customers and invoices. Each one appears on the customer and invoice forms and prints on PDFs only when switched on.'**
+  String get invoiceSettingsCustomerFieldsHint;
+
+  /// No description provided for @invoiceSettingsShippingAddressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Separate Shipping Address'**
+  String get invoiceSettingsShippingAddressLabel;
+
+  /// No description provided for @invoiceSettingsShippingAddressSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a Ship To name, phone and address. When it\'s the same as billing, only one block prints'**
+  String get invoiceSettingsShippingAddressSubtitle;
+
+  /// No description provided for @invoiceSettingsCustomerDobLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Date of Birth'**
+  String get invoiceSettingsCustomerDobLabel;
+
+  /// No description provided for @invoiceSettingsCustomerDobSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Record the customer\'s date of birth. When set, age is calculated from it'**
+  String get invoiceSettingsCustomerDobSubtitle;
+
+  /// No description provided for @invoiceSettingsCustomerAgeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Age'**
+  String get invoiceSettingsCustomerAgeLabel;
+
+  /// No description provided for @invoiceSettingsCustomerAgeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Record the customer\'s age. Used only when no date of birth is entered'**
+  String get invoiceSettingsCustomerAgeSubtitle;
+
+  /// No description provided for @invoiceSettingsCustomerGenderLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Gender'**
+  String get invoiceSettingsCustomerGenderLabel;
+
+  /// No description provided for @invoiceSettingsCustomerGenderSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Record the customer\'s gender (Male / Female / Other)'**
+  String get invoiceSettingsCustomerGenderSubtitle;
+
+  /// No description provided for @invoiceSettingsCustomerCustomFieldsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer Custom Fields'**
+  String get invoiceSettingsCustomerCustomFieldsLabel;
+
+  /// No description provided for @invoiceSettingsCustomerCustomFieldsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Define your own customer fields (e.g. Patient ID, Blood Group) and fill them in on each customer'**
+  String get invoiceSettingsCustomerCustomFieldsSubtitle;
+
+  /// No description provided for @invoiceSettingsCustomerCustomFieldHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Patient ID'**
+  String get invoiceSettingsCustomerCustomFieldHint;
+
+  /// No description provided for @invoiceSettingsPrintOnPdfLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Print on PDF'**
+  String get invoiceSettingsPrintOnPdfLabel;
+
+  /// No description provided for @invoiceSettingsPrintOnPdfSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show this field on invoice PDFs and thermal receipts'**
+  String get invoiceSettingsPrintOnPdfSubtitle;
+
+  /// No description provided for @customFieldPrintedOnPdfTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Printed on PDF — click to hide'**
+  String get customFieldPrintedOnPdfTooltip;
+
+  /// No description provided for @customFieldNotPrintedOnPdfTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Not printed on PDF — click to print'**
+  String get customFieldNotPrintedOnPdfTooltip;
+
+  /// No description provided for @customFieldMaxReachedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You can add up to {max} fields.'**
+  String customFieldMaxReachedHint(int max);
+
+  /// No description provided for @customerFieldDobLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Date of Birth'**
+  String get customerFieldDobLabel;
+
+  /// No description provided for @customerFieldClearDobTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear date of birth'**
+  String get customerFieldClearDobTooltip;
+
+  /// No description provided for @customerFieldAgeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Age'**
+  String get customerFieldAgeLabel;
+
+  /// No description provided for @customerFieldAgeFromDobHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculated from date of birth'**
+  String get customerFieldAgeFromDobHelper;
+
+  /// No description provided for @customerFieldAgeInvalidMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an age between 0 and 150'**
+  String get customerFieldAgeInvalidMessage;
+
+  /// No description provided for @customerFieldGenderLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Gender'**
+  String get customerFieldGenderLabel;
+
+  /// No description provided for @customerFieldGenderNotSpecified.
+  ///
+  /// In en, this message translates to:
+  /// **'Not specified'**
+  String get customerFieldGenderNotSpecified;
+
+  /// No description provided for @customerFieldGenderMale.
+  ///
+  /// In en, this message translates to:
+  /// **'Male'**
+  String get customerFieldGenderMale;
+
+  /// No description provided for @customerFieldGenderFemale.
+  ///
+  /// In en, this message translates to:
+  /// **'Female'**
+  String get customerFieldGenderFemale;
+
+  /// No description provided for @customerFieldGenderOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get customerFieldGenderOther;
+
+  /// No description provided for @customerFieldShippingSameAsBillingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Shipping address same as billing'**
+  String get customerFieldShippingSameAsBillingLabel;
+
+  /// No description provided for @customerFieldShipToNotPrintedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the Bill To address prints on the PDF while this is ticked.'**
+  String get customerFieldShipToNotPrintedHint;
+
+  /// No description provided for @customerFieldShipToHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Ship To'**
+  String get customerFieldShipToHeader;
+
+  /// No description provided for @createInvoiceCustomerDetailsDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer Details'**
+  String get createInvoiceCustomerDetailsDialogTitle;
+
+  /// No description provided for @customerFieldPersonalDetailsHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal Details'**
+  String get customerFieldPersonalDetailsHeader;
+
+  /// No description provided for @customerFieldAdditionalDetailsHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional Details'**
+  String get customerFieldAdditionalDetailsHeader;
+
+  /// No description provided for @customerFieldCopyFromBillingButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy from billing'**
+  String get customerFieldCopyFromBillingButton;
+
+  /// No description provided for @customerFieldRecipientNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipient Name'**
+  String get customerFieldRecipientNameLabel;
+
+  /// No description provided for @customerFieldRecipientPhoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipient Phone'**
+  String get customerFieldRecipientPhoneLabel;
+
+  /// No description provided for @customerFieldShippingAddressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Shipping Address'**
+  String get customerFieldShippingAddressLabel;
+
+  /// No description provided for @customerFieldShippingAddressRequiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a shipping address, or tick \"same as billing\"'**
+  String get customerFieldShippingAddressRequiredMessage;
+
+  /// No description provided for @customerMgmtCsvDescShippingName.
+  ///
+  /// In en, this message translates to:
+  /// **'Ship To recipient name'**
+  String get customerMgmtCsvDescShippingName;
+
+  /// No description provided for @customerMgmtCsvDescShippingPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Ship To recipient phone'**
+  String get customerMgmtCsvDescShippingPhone;
+
+  /// No description provided for @customerMgmtCsvDescShippingAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Ship To address. Empty = same as billing'**
+  String get customerMgmtCsvDescShippingAddress;
+
+  /// No description provided for @customerMgmtCsvDescDob.
+  ///
+  /// In en, this message translates to:
+  /// **'Date of birth, yyyy-MM-dd (e.g. 1990-06-15)'**
+  String get customerMgmtCsvDescDob;
+
+  /// No description provided for @customerMgmtCsvDescAge.
+  ///
+  /// In en, this message translates to:
+  /// **'Age in years (used only when dob is empty)'**
+  String get customerMgmtCsvDescAge;
+
+  /// No description provided for @customerMgmtCsvDescGender.
+  ///
+  /// In en, this message translates to:
+  /// **'male, female or other'**
+  String get customerMgmtCsvDescGender;
+
+  /// No description provided for @customerMgmtCsvDescCustomField.
+  ///
+  /// In en, this message translates to:
+  /// **'One column per customer custom field, header custom:<field label> (e.g. custom:Patient ID)'**
+  String get customerMgmtCsvDescCustomField;
 
   /// No description provided for @invoiceSettingsShowTimeInPdfLabel.
   ///
@@ -5799,7 +6447,7 @@ abstract class AppLocalizations {
   /// No description provided for @pdfSettingsMetadataColumnsWarning.
   ///
   /// In en, this message translates to:
-  /// **'Metadata columns print only on Grid Classic at A4. Each one narrows the others — if the table looks cramped, switch to Landscape above. Values are captured when an item is added; editing the product later won\'t change past invoices.'**
+  /// **'Metadata columns print on any A4 template (not A5/A6 or thermal receipts). Each one narrows the others — if the table looks cramped, turn a few off, or switch Grid Classic to Landscape above. Values are captured when an item is added; editing the product later won\'t change past invoices.'**
   String get pdfSettingsMetadataColumnsWarning;
 
   /// No description provided for @pdfSettingsItemLayoutLabel.
@@ -5831,6 +6479,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Company name size'**
   String get pdfSettingsCompanyNameSizeLabel;
+
+  /// No description provided for @pdfSettingsFontSizeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF text size'**
+  String get pdfSettingsFontSizeLabel;
+
+  /// No description provided for @pdfSettingsSectionSizesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Section sizes'**
+  String get pdfSettingsSectionSizesLabel;
+
+  /// No description provided for @pdfSettingsDocTitleSizeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Document title size'**
+  String get pdfSettingsDocTitleSizeLabel;
+
+  /// No description provided for @pdfSettingsTableHeaderSizeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Table header size'**
+  String get pdfSettingsTableHeaderSizeLabel;
+
+  /// No description provided for @pdfSettingsTableItemsSizeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Table items size'**
+  String get pdfSettingsTableItemsSizeLabel;
+
+  /// No description provided for @pdfSettingsTotalsSizeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Totals size'**
+  String get pdfSettingsTotalsSizeLabel;
+
+  /// No description provided for @pdfFontSizeSameAsOverallLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Same as overall'**
+  String get pdfFontSizeSameAsOverallLabel;
 
   /// No description provided for @pdfSettingsThemeColorLabel.
   ///
@@ -6060,6 +6750,12 @@ abstract class AppLocalizations {
   /// **'TIN'**
   String get fieldTinLabel;
 
+  /// No description provided for @fieldVatRegNoLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'VAT Registration Number'**
+  String get fieldVatRegNoLabel;
+
   /// No description provided for @companyInfoFssaiCodeLabel.
   ///
   /// In en, this message translates to:
@@ -6156,11 +6852,29 @@ abstract class AppLocalizations {
   /// **'IFSC Code'**
   String get fieldIfscCodeLabel;
 
+  /// No description provided for @fieldIbanLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'IBAN'**
+  String get fieldIbanLabel;
+
   /// No description provided for @companyInfoAddBankAccountButton.
   ///
   /// In en, this message translates to:
   /// **'Add Bank Account'**
   String get companyInfoAddBankAccountButton;
+
+  /// No description provided for @companyInfoEditBankAccountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Bank Account'**
+  String get companyInfoEditBankAccountTitle;
+
+  /// No description provided for @fieldBankAccountNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Name'**
+  String get fieldBankAccountNameLabel;
 
   /// No description provided for @tooltipShowOnInvoicePdf.
   ///
@@ -6600,6 +7314,30 @@ abstract class AppLocalizations {
   /// **'Cost price, for margin tracking.'**
   String get productColumnsPurchasePriceSubtitle;
 
+  /// No description provided for @productColumnsPurchasePriceAdminOnlyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase Price: Admins Only'**
+  String get productColumnsPurchasePriceAdminOnlyLabel;
+
+  /// No description provided for @productColumnsPurchasePriceAdminOnlySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide purchase price, profit and stock value from non-admin users.'**
+  String get productColumnsPurchasePriceAdminOnlySubtitle;
+
+  /// No description provided for @productColumnsStockEditAdminOnlyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock Editing: Admins Only'**
+  String get productColumnsStockEditAdminOnlyLabel;
+
+  /// No description provided for @productColumnsStockEditAdminOnlySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Non-admin users can\'t set or change stock quantities, or import products from CSV.'**
+  String get productColumnsStockEditAdminOnlySubtitle;
+
   /// No description provided for @productColumnsDefaultDiscountLabel.
   ///
   /// In en, this message translates to:
@@ -6726,6 +7464,12 @@ abstract class AppLocalizations {
   /// **'Company Info'**
   String get settingsNavCompanyInfoLabel;
 
+  /// No description provided for @settingsNavCompaniesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Companies'**
+  String get settingsNavCompaniesLabel;
+
   /// No description provided for @settingsNavTeamLabel.
   ///
   /// In en, this message translates to:
@@ -6767,6 +7511,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Software Info'**
   String get settingsNavSoftwareInfoLabel;
+
+  /// No description provided for @companyMgmtTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage Companies'**
+  String get companyMgmtTitle;
+
+  /// No description provided for @companyMgmtActiveBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get companyMgmtActiveBadge;
+
+  /// No description provided for @companyMgmtSwitchButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch'**
+  String get companyMgmtSwitchButton;
+
+  /// No description provided for @companyMgmtSwitchConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch Company?'**
+  String get companyMgmtSwitchConfirmTitle;
+
+  /// No description provided for @companyMgmtSwitchConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoiso will restart to switch to \"{name}\".'**
+  String companyMgmtSwitchConfirmBody(String name);
+
+  /// No description provided for @companyMgmtNewCompanyButton.
+  ///
+  /// In en, this message translates to:
+  /// **'+ New Company'**
+  String get companyMgmtNewCompanyButton;
+
+  /// No description provided for @companyMgmtNewCompanyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New Company'**
+  String get companyMgmtNewCompanyTitle;
+
+  /// No description provided for @companyMgmtAdminAccountSectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin Account'**
+  String get companyMgmtAdminAccountSectionLabel;
+
+  /// No description provided for @companyMgmtCreateButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get companyMgmtCreateButton;
+
+  /// No description provided for @companyMgmtDeleteButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete This Company'**
+  String get companyMgmtDeleteButton;
+
+  /// No description provided for @companyMgmtDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete \"{name}\"?'**
+  String companyMgmtDeleteConfirmTitle(String name);
+
+  /// No description provided for @companyMgmtDeleteConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This permanently deletes all of this company\'s data and cannot be undone. Type the company name to confirm.'**
+  String get companyMgmtDeleteConfirmBody;
+
+  /// No description provided for @companyMgmtRenameTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get companyMgmtRenameTooltip;
+
+  /// No description provided for @companyMgmtRenameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename Company'**
+  String get companyMgmtRenameTitle;
+
+  /// No description provided for @companyMgmtNameTakenMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'A company with this name already exists'**
+  String get companyMgmtNameTakenMessage;
+
+  /// No description provided for @companyMgmtSwitchErrorMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to switch company: {error}'**
+  String companyMgmtSwitchErrorMessage(String error);
+
+  /// No description provided for @companyMgmtSwitchRestartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Company Switched'**
+  String get companyMgmtSwitchRestartTitle;
+
+  /// No description provided for @companyMgmtSwitchRestartBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoiso needs to restart to finish switching companies. Please close and reopen the application.'**
+  String get companyMgmtSwitchRestartBody;
+
+  /// No description provided for @companyMgmtCreateRestartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Company Created'**
+  String get companyMgmtCreateRestartTitle;
+
+  /// No description provided for @companyMgmtCreateRestartBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your new company is ready. Please close and reopen the application to continue.'**
+  String get companyMgmtCreateRestartBody;
+
+  /// No description provided for @companyMgmtDeletedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Company deleted'**
+  String get companyMgmtDeletedMessage;
+
+  /// No description provided for @companyMgmtDeleteRestartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Company Deleted'**
+  String get companyMgmtDeleteRestartTitle;
+
+  /// No description provided for @companyMgmtDeleteRestartBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The company was deleted and Invoiso switched to another one. Please close and reopen the application to continue.'**
+  String get companyMgmtDeleteRestartBody;
+
+  /// No description provided for @companyMgmtOnlyCompanyTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'You need at least one other company before you can delete this one'**
+  String get companyMgmtOnlyCompanyTooltip;
+
+  /// No description provided for @loginCompanyGearTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage companies'**
+  String get loginCompanyGearTooltip;
+
+  /// No description provided for @loginCompanySelectorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Company'**
+  String get loginCompanySelectorLabel;
 
   /// No description provided for @customizationEyebrowLabel.
   ///
@@ -7098,11 +7998,413 @@ abstract class AppLocalizations {
   /// **'Online'**
   String get paymentMethodOnline;
 
+  /// No description provided for @paymentMethodUpi.
+  ///
+  /// In en, this message translates to:
+  /// **'UPI'**
+  String get paymentMethodUpi;
+
   /// No description provided for @paymentMethodOther.
   ///
   /// In en, this message translates to:
   /// **'Other'**
   String get paymentMethodOther;
+
+  /// No description provided for @accessibilityOptionalFeaturesSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional features'**
+  String get accessibilityOptionalFeaturesSectionTitle;
+
+  /// No description provided for @accessibilityCashExchangeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash / UPI Exchange Service'**
+  String get accessibilityCashExchangeLabel;
+
+  /// No description provided for @accessibilityCashExchangeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Adds a Cash Exchange Services menu after New Invoice to record UPI ↔ Cash exchanges, service fees and cash movements, with Cash and UPI/Bank balances.'**
+  String get accessibilityCashExchangeSubtitle;
+
+  /// No description provided for @accessibilityReportsAdminOnlyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports: Admins Only'**
+  String get accessibilityReportsAdminOnlyLabel;
+
+  /// No description provided for @accessibilityReportsAdminOnlySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hides the Reports menu from non-admin users.'**
+  String get accessibilityReportsAdminOnlySubtitle;
+
+  /// No description provided for @cashExchangeCashLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash'**
+  String get cashExchangeCashLabel;
+
+  /// No description provided for @cashExchangeUpiBankLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'UPI/Bank'**
+  String get cashExchangeUpiBankLabel;
+
+  /// No description provided for @cashExchangeTotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total balance'**
+  String get cashExchangeTotalLabel;
+
+  /// No description provided for @cashExchangeIncomeTodayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Service income (today)'**
+  String get cashExchangeIncomeTodayLabel;
+
+  /// No description provided for @cashExchangeIncomeMonthLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Service income (this month)'**
+  String get cashExchangeIncomeMonthLabel;
+
+  /// No description provided for @reportsServiceIncomeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Service income'**
+  String get reportsServiceIncomeLabel;
+
+  /// No description provided for @reportsTxnsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Txns'**
+  String get reportsTxnsLabel;
+
+  /// No description provided for @reportsInvoiceProfitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice profit'**
+  String get reportsInvoiceProfitLabel;
+
+  /// No description provided for @reportsTransactionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Transactions'**
+  String get reportsTransactionsLabel;
+
+  /// No description provided for @reportsCashExchangeTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash exchange'**
+  String get reportsCashExchangeTypeLabel;
+
+  /// No description provided for @reportsCountColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Count'**
+  String get reportsCountColumnLabel;
+
+  /// No description provided for @cashExchangeExpensesMonthLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Expenses (this month)'**
+  String get cashExchangeExpensesMonthLabel;
+
+  /// No description provided for @cashExchangeSetupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set opening balances'**
+  String get cashExchangeSetupTitle;
+
+  /// No description provided for @cashExchangeSetupMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the cash and UPI/Bank money you have on this date. Invoice payments from this date on are added to the balances.'**
+  String get cashExchangeSetupMessage;
+
+  /// No description provided for @cashExchangeSetupAdminOnlyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask an admin to set the opening balances.'**
+  String get cashExchangeSetupAdminOnlyMessage;
+
+  /// No description provided for @cashExchangeUpiToCash.
+  ///
+  /// In en, this message translates to:
+  /// **'UPI → Cash'**
+  String get cashExchangeUpiToCash;
+
+  /// No description provided for @cashExchangeCashToUpi.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash → UPI'**
+  String get cashExchangeCashToUpi;
+
+  /// No description provided for @cashExchangeExpense.
+  ///
+  /// In en, this message translates to:
+  /// **'Expense'**
+  String get cashExchangeExpense;
+
+  /// No description provided for @cashExchangeWithdrawal.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdrawal'**
+  String get cashExchangeWithdrawal;
+
+  /// No description provided for @cashExchangeBankDeposit.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank deposit'**
+  String get cashExchangeBankDeposit;
+
+  /// No description provided for @cashExchangeOpeningBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening balance'**
+  String get cashExchangeOpeningBalance;
+
+  /// No description provided for @cashExchangeAdjustment.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjustment'**
+  String get cashExchangeAdjustment;
+
+  /// No description provided for @cashExchangeInvoicePayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice payment'**
+  String get cashExchangeInvoicePayment;
+
+  /// No description provided for @cashExchangeAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get cashExchangeAmountLabel;
+
+  /// No description provided for @cashExchangeFeeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Service fee'**
+  String get cashExchangeFeeLabel;
+
+  /// No description provided for @cashExchangeFeePaidByLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Service fee paid by'**
+  String get cashExchangeFeePaidByLabel;
+
+  /// No description provided for @cashExchangeFromAccountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid from'**
+  String get cashExchangeFromAccountLabel;
+
+  /// No description provided for @cashExchangeCustomerNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer name (optional)'**
+  String get cashExchangeCustomerNameLabel;
+
+  /// No description provided for @cashExchangeCustomerSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search customers or type a new name'**
+  String get cashExchangeCustomerSearchHint;
+
+  /// No description provided for @cashExchangeCustomerPhoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone (optional)'**
+  String get cashExchangeCustomerPhoneLabel;
+
+  /// No description provided for @cashExchangeNotesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes (optional)'**
+  String get cashExchangeNotesLabel;
+
+  /// No description provided for @cashExchangeDateTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Date & time'**
+  String get cashExchangeDateTimeLabel;
+
+  /// No description provided for @cashExchangeDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get cashExchangeDateLabel;
+
+  /// No description provided for @cashExchangeCashDeltaLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash change (+ / −)'**
+  String get cashExchangeCashDeltaLabel;
+
+  /// No description provided for @cashExchangeUpiDeltaLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'UPI/Bank change (+ / −)'**
+  String get cashExchangeUpiDeltaLabel;
+
+  /// No description provided for @cashExchangeDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete entry'**
+  String get cashExchangeDeleteTitle;
+
+  /// No description provided for @cashExchangeDeleteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this entry? Balances will be recalculated.'**
+  String get cashExchangeDeleteMessage;
+
+  /// No description provided for @cashExchangeEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit entry'**
+  String get cashExchangeEditTitle;
+
+  /// No description provided for @cashExchangeEdited.
+  ///
+  /// In en, this message translates to:
+  /// **'Edited'**
+  String get cashExchangeEdited;
+
+  /// No description provided for @cashExchangeHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Change history'**
+  String get cashExchangeHistoryTitle;
+
+  /// No description provided for @cashExchangeHistoryCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Current'**
+  String get cashExchangeHistoryCurrent;
+
+  /// No description provided for @cashExchangeHistoryEdited.
+  ///
+  /// In en, this message translates to:
+  /// **'Edited by {user} · {date}'**
+  String cashExchangeHistoryEdited(String user, String date);
+
+  /// No description provided for @cashExchangeHistoryDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted by {user} · {date}'**
+  String cashExchangeHistoryDeleted(String user, String date);
+
+  /// No description provided for @cashExchangeChangeLog.
+  ///
+  /// In en, this message translates to:
+  /// **'Change log'**
+  String get cashExchangeChangeLog;
+
+  /// No description provided for @cashExchangeDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted'**
+  String get cashExchangeDeleted;
+
+  /// No description provided for @cashExchangeNoChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'No changes recorded.'**
+  String get cashExchangeNoChanges;
+
+  /// No description provided for @cashExchangeChangeFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'This entry can no longer be changed. It may have been deleted, or the 24-hour edit window has passed.'**
+  String get cashExchangeChangeFailed;
+
+  /// No description provided for @cashExchangeEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No entries for this period.'**
+  String get cashExchangeEmpty;
+
+  /// No description provided for @cashExchangePeriodToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get cashExchangePeriodToday;
+
+  /// No description provided for @cashExchangePeriodMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'This month'**
+  String get cashExchangePeriodMonth;
+
+  /// No description provided for @cashExchangePeriodAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All time'**
+  String get cashExchangePeriodAll;
+
+  /// No description provided for @cashExchangePeriodCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom date'**
+  String get cashExchangePeriodCustom;
+
+  /// No description provided for @cashExchangeShowingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing'**
+  String get cashExchangeShowingLabel;
+
+  /// No description provided for @cashExchangeChangeDates.
+  ///
+  /// In en, this message translates to:
+  /// **'Change dates'**
+  String get cashExchangeChangeDates;
+
+  /// No description provided for @cashExchangeClosingBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Closing balance'**
+  String get cashExchangeClosingBalance;
+
+  /// No description provided for @cashExchangeShowBalances.
+  ///
+  /// In en, this message translates to:
+  /// **'Show balances'**
+  String get cashExchangeShowBalances;
+
+  /// No description provided for @cashExchangeHideBalances.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide balances'**
+  String get cashExchangeHideBalances;
+
+  /// No description provided for @cashExchangeAllTypes.
+  ///
+  /// In en, this message translates to:
+  /// **'All types'**
+  String get cashExchangeAllTypes;
+
+  /// No description provided for @cashExchangeSummaryUpiToCash.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer sends {amount} by UPI/Bank • You give {amount} cash • Fee {fee} by {method}'**
+  String cashExchangeSummaryUpiToCash(String amount, String fee, String method);
+
+  /// No description provided for @cashExchangeSummaryCashToUpi.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer gives {amount} cash • You send {amount} by UPI/Bank • Fee {fee} by {method}'**
+  String cashExchangeSummaryCashToUpi(String amount, String fee, String method);
+
+  /// No description provided for @cashExchangeLowBalanceWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Only {balance} available in {account}.'**
+  String cashExchangeLowBalanceWarning(String balance, String account);
 
   /// No description provided for @customerInfoButtonTooltip.
   ///
@@ -7206,6 +8508,12 @@ abstract class AppLocalizations {
   /// **'Large'**
   String get sizeLargeLabel;
 
+  /// No description provided for @sizeXLargeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Extra Large'**
+  String get sizeXLargeLabel;
+
   /// No description provided for @shortcutNewInvoiceDescription.
   ///
   /// In en, this message translates to:
@@ -7242,17 +8550,599 @@ abstract class AppLocalizations {
   /// **'Generate / print invoice PDF'**
   String get shortcutPrintPdfDescription;
 
-  /// No description provided for @invoiceSettingsCustomFieldsGridClassicNote.
+  /// No description provided for @supplierMgmtLoadErrorMessage.
   ///
   /// In en, this message translates to:
-  /// **'Note: Custom fields are only printed on the Grid Classic PDF template.'**
-  String get invoiceSettingsCustomFieldsGridClassicNote;
+  /// **'Failed to load suppliers: {error}'**
+  String supplierMgmtLoadErrorMessage(String error);
+
+  /// No description provided for @supplierMgmtAddedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier added successfully!'**
+  String get supplierMgmtAddedMessage;
+
+  /// No description provided for @supplierMgmtUpdatedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier updated successfully!'**
+  String get supplierMgmtUpdatedMessage;
+
+  /// No description provided for @supplierMgmtSaveErrorMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Error saving supplier: {error}'**
+  String supplierMgmtSaveErrorMessage(String error);
+
+  /// No description provided for @supplierMgmtOutstandingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Outstanding: {amount}'**
+  String supplierMgmtOutstandingLabel(String amount);
+
+  /// No description provided for @supplierMgmtMoveToTrashBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Move \"{name}\" to trash? Existing purchase bills keep showing their snapshotted supplier name.'**
+  String supplierMgmtMoveToTrashBody(String name);
+
+  /// No description provided for @supplierMgmtMovedToTrashMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier moved to trash.'**
+  String get supplierMgmtMovedToTrashMessage;
+
+  /// No description provided for @supplierMgmtRestoredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier restored.'**
+  String get supplierMgmtRestoredMessage;
+
+  /// No description provided for @supplierMgmtAddSupplierButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Supplier'**
+  String get supplierMgmtAddSupplierButton;
+
+  /// No description provided for @supplierMgmtTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Suppliers'**
+  String get supplierMgmtTitle;
+
+  /// No description provided for @supplierMgmtSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage the suppliers you purchase stock from'**
+  String get supplierMgmtSubtitle;
+
+  /// No description provided for @supplierMgmtSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search suppliers by name, phone, or GSTIN...'**
+  String get supplierMgmtSearchHint;
+
+  /// No description provided for @supplierMgmtColSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier'**
+  String get supplierMgmtColSupplier;
+
+  /// No description provided for @supplierMgmtColGstin.
+  ///
+  /// In en, this message translates to:
+  /// **'GSTIN'**
+  String get supplierMgmtColGstin;
+
+  /// No description provided for @supplierMgmtTotalCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total: {count}'**
+  String supplierMgmtTotalCountLabel(int count);
+
+  /// No description provided for @supplierMgmtNoSuppliersYetMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No suppliers yet'**
+  String get supplierMgmtNoSuppliersYetMessage;
+
+  /// No description provided for @supplierMgmtNoSuppliersMatchMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No suppliers match your search'**
+  String get supplierMgmtNoSuppliersMatchMessage;
+
+  /// No description provided for @supplierMgmtAddNewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add New Supplier'**
+  String get supplierMgmtAddNewTitle;
+
+  /// No description provided for @supplierMgmtEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Supplier'**
+  String get supplierMgmtEditTitle;
+
+  /// No description provided for @supplierMgmtSaveChangesButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Changes'**
+  String get supplierMgmtSaveChangesButton;
+
+  /// No description provided for @supplierMgmtTaxVatNumberLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax/VAT Number (GSTIN)'**
+  String get supplierMgmtTaxVatNumberLabel;
+
+  /// No description provided for @purchaseBillMgmtLoadErrorMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load purchase bills: {error}'**
+  String purchaseBillMgmtLoadErrorMessage(String error);
+
+  /// No description provided for @purchaseBillMgmtAlreadyFullyPaidMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This bill is already fully paid.'**
+  String get purchaseBillMgmtAlreadyFullyPaidMessage;
+
+  /// No description provided for @purchaseBillMgmtMoveToTrashBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Move bill \"{billNumber}\" to trash? Stock will be reversed.'**
+  String purchaseBillMgmtMoveToTrashBody(String billNumber);
+
+  /// No description provided for @purchaseBillMgmtMovedToTrashMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase bill moved to trash.'**
+  String get purchaseBillMgmtMovedToTrashMessage;
+
+  /// No description provided for @purchaseBillMgmtRestoredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase bill restored.'**
+  String get purchaseBillMgmtRestoredMessage;
+
+  /// No description provided for @purchaseBillMgmtSortByTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort By'**
+  String get purchaseBillMgmtSortByTitle;
+
+  /// No description provided for @purchaseBillMgmtSortDateNewest.
+  ///
+  /// In en, this message translates to:
+  /// **'Date (Newest First)'**
+  String get purchaseBillMgmtSortDateNewest;
+
+  /// No description provided for @purchaseBillMgmtSortDateOldest.
+  ///
+  /// In en, this message translates to:
+  /// **'Date (Oldest First)'**
+  String get purchaseBillMgmtSortDateOldest;
+
+  /// No description provided for @purchaseBillMgmtSortSupplierAZ.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier (A-Z)'**
+  String get purchaseBillMgmtSortSupplierAZ;
+
+  /// No description provided for @purchaseBillMgmtSortSupplierZA.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier (Z-A)'**
+  String get purchaseBillMgmtSortSupplierZA;
+
+  /// No description provided for @purchaseBillMgmtSortAmountHighest.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount (Highest First)'**
+  String get purchaseBillMgmtSortAmountHighest;
+
+  /// No description provided for @purchaseBillMgmtSortAmountLowest.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount (Lowest First)'**
+  String get purchaseBillMgmtSortAmountLowest;
+
+  /// No description provided for @purchaseBillMgmtFilterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter Purchase Bills'**
+  String get purchaseBillMgmtFilterTitle;
+
+  /// No description provided for @purchaseBillMgmtPaymentStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment Status'**
+  String get purchaseBillMgmtPaymentStatusLabel;
+
+  /// No description provided for @purchaseBillMgmtSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by bill number or supplier...'**
+  String get purchaseBillMgmtSearchHint;
+
+  /// No description provided for @purchaseBillMgmtNewBillButton.
+  ///
+  /// In en, this message translates to:
+  /// **'New Purchase Bill'**
+  String get purchaseBillMgmtNewBillButton;
+
+  /// No description provided for @purchaseBillMgmtColBill.
+  ///
+  /// In en, this message translates to:
+  /// **'Bill'**
+  String get purchaseBillMgmtColBill;
+
+  /// No description provided for @purchaseBillMgmtColBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance'**
+  String get purchaseBillMgmtColBalance;
+
+  /// No description provided for @purchaseBillMgmtTotalCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total: {count}'**
+  String purchaseBillMgmtTotalCountLabel(int count);
+
+  /// No description provided for @purchaseBillMgmtNoBillsFoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No purchase bills found'**
+  String get purchaseBillMgmtNoBillsFoundTitle;
+
+  /// No description provided for @purchaseBillMgmtCreateFirstMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your first purchase bill to get started'**
+  String get purchaseBillMgmtCreateFirstMessage;
+
+  /// No description provided for @purchaseBillMgmtTryAdjustingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Try adjusting your search or filters'**
+  String get purchaseBillMgmtTryAdjustingMessage;
+
+  /// No description provided for @purchaseBillMgmtTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase Bills'**
+  String get purchaseBillMgmtTitle;
+
+  /// No description provided for @purchaseBillMgmtUnknownSupplierLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown supplier'**
+  String get purchaseBillMgmtUnknownSupplierLabel;
+
+  /// No description provided for @purchaseBillMgmtNotesSectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get purchaseBillMgmtNotesSectionLabel;
+
+  /// No description provided for @purchaseBillMgmtItemsSectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Items'**
+  String get purchaseBillMgmtItemsSectionLabel;
+
+  /// No description provided for @purchaseBillMgmtGrandTotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Grand Total'**
+  String get purchaseBillMgmtGrandTotalLabel;
+
+  /// No description provided for @purchaseBillMgmtBillDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bill Details'**
+  String get purchaseBillMgmtBillDetailsTitle;
+
+  /// No description provided for @purchaseBillMgmtExistingSupplierLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing Supplier'**
+  String get purchaseBillMgmtExistingSupplierLabel;
+
+  /// No description provided for @purchaseBillMgmtWalkInSupplierLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Walk-in Supplier'**
+  String get purchaseBillMgmtWalkInSupplierLabel;
+
+  /// No description provided for @purchaseBillMgmtSupplierRequiredLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier *'**
+  String get purchaseBillMgmtSupplierRequiredLabel;
+
+  /// No description provided for @purchaseBillMgmtBillNumberOptionalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Bill Number (optional)'**
+  String get purchaseBillMgmtBillNumberOptionalLabel;
+
+  /// No description provided for @purchaseBillMgmtAutoGenerateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto generate'**
+  String get purchaseBillMgmtAutoGenerateHint;
+
+  /// No description provided for @purchaseBillMgmtBillDateRequiredLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Bill Date *'**
+  String get purchaseBillMgmtBillDateRequiredLabel;
+
+  /// No description provided for @purchaseBillMgmtPickDateTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick date'**
+  String get purchaseBillMgmtPickDateTooltip;
+
+  /// No description provided for @purchaseBillMgmtAddAnyNotesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add any notes'**
+  String get purchaseBillMgmtAddAnyNotesHint;
+
+  /// No description provided for @purchaseBillMgmtAttachmentOptionalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachment (optional)'**
+  String get purchaseBillMgmtAttachmentOptionalLabel;
+
+  /// No description provided for @purchaseBillMgmtAttachFileHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach file'**
+  String get purchaseBillMgmtAttachFileHint;
+
+  /// No description provided for @purchaseBillMgmtBrowseTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse'**
+  String get purchaseBillMgmtBrowseTooltip;
+
+  /// No description provided for @purchaseBillMgmtSelectSupplierMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a supplier or switch to walk-in.'**
+  String get purchaseBillMgmtSelectSupplierMessage;
+
+  /// No description provided for @purchaseBillMgmtEnterSupplierNameMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a supplier name.'**
+  String get purchaseBillMgmtEnterSupplierNameMessage;
+
+  /// No description provided for @purchaseBillMgmtAddAtLeastOneItemMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least one item.'**
+  String get purchaseBillMgmtAddAtLeastOneItemMessage;
+
+  /// No description provided for @purchaseBillMgmtUpdatedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase bill updated!'**
+  String get purchaseBillMgmtUpdatedMessage;
+
+  /// No description provided for @purchaseBillMgmtCreatedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase bill created!'**
+  String get purchaseBillMgmtCreatedMessage;
+
+  /// No description provided for @purchaseBillMgmtDraftSavedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft saved — stock not updated'**
+  String get purchaseBillMgmtDraftSavedMessage;
+
+  /// No description provided for @purchaseBillMgmtSaveErrorMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Error saving purchase bill: {error}'**
+  String purchaseBillMgmtSaveErrorMessage(String error);
+
+  /// No description provided for @purchaseBillMgmtEnterNameMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a name'**
+  String get purchaseBillMgmtEnterNameMessage;
+
+  /// No description provided for @purchaseBillMgmtAddCustomItemTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Custom Item'**
+  String get purchaseBillMgmtAddCustomItemTitle;
+
+  /// No description provided for @purchaseBillMgmtDescriptionOptionalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description (optional)'**
+  String get purchaseBillMgmtDescriptionOptionalLabel;
+
+  /// No description provided for @purchaseBillMgmtQuantityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity'**
+  String get purchaseBillMgmtQuantityLabel;
+
+  /// No description provided for @purchaseBillMgmtCostPerUnitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost/unit'**
+  String get purchaseBillMgmtCostPerUnitLabel;
+
+  /// No description provided for @purchaseBillMgmtCostIncludesTaxLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost/unit includes tax'**
+  String get purchaseBillMgmtCostIncludesTaxLabel;
+
+  /// No description provided for @purchaseBillMgmtEnterItemNameMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an item name'**
+  String get purchaseBillMgmtEnterItemNameMessage;
+
+  /// No description provided for @purchaseBillMgmtInvalidValueMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid'**
+  String get purchaseBillMgmtInvalidValueMessage;
+
+  /// No description provided for @purchaseBillMgmtEditItemTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Item'**
+  String get purchaseBillMgmtEditItemTitle;
+
+  /// No description provided for @purchaseBillMgmtEditItemTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit item'**
+  String get purchaseBillMgmtEditItemTooltip;
+
+  /// No description provided for @purchaseBillMgmtRemoveItemTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove item'**
+  String get purchaseBillMgmtRemoveItemTooltip;
+
+  /// No description provided for @purchaseBillMgmtNoItemsAddedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No items added yet'**
+  String get purchaseBillMgmtNoItemsAddedMessage;
+
+  /// No description provided for @purchaseBillMgmtLastCostLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Last cost: {amount}'**
+  String purchaseBillMgmtLastCostLabel(String amount);
+
+  /// No description provided for @purchaseBillMgmtSearchProductsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search products to add...'**
+  String get purchaseBillMgmtSearchProductsHint;
+
+  /// No description provided for @purchaseBillMgmtCustomBadgeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get purchaseBillMgmtCustomBadgeLabel;
+
+  /// No description provided for @purchaseBillMgmtQtyDetailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Qty'**
+  String get purchaseBillMgmtQtyDetailLabel;
+
+  /// No description provided for @purchaseBillMgmtUnitCostDetailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit Cost'**
+  String get purchaseBillMgmtUnitCostDetailLabel;
+
+  /// No description provided for @purchaseBillMgmtTaxInclusiveLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{rate}% Inclusive'**
+  String purchaseBillMgmtTaxInclusiveLabel(String rate);
+
+  /// No description provided for @purchaseBillMgmtNetCostDetailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Net Cost'**
+  String get purchaseBillMgmtNetCostDetailLabel;
+
+  /// No description provided for @purchaseBillMgmtEditPurchaseBillTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Purchase Bill'**
+  String get purchaseBillMgmtEditPurchaseBillTitle;
+
+  /// No description provided for @purchaseBillMgmtUpdateSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update this purchase bill'**
+  String get purchaseBillMgmtUpdateSubtitle;
+
+  /// No description provided for @purchaseBillMgmtCreateSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a new purchase bill for your supplier'**
+  String get purchaseBillMgmtCreateSubtitle;
+
+  /// No description provided for @purchaseBillMgmtSaveDraftButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Draft'**
+  String get purchaseBillMgmtSaveDraftButton;
+
+  /// No description provided for @purchaseBillMgmtSavePurchaseBillButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Purchase Bill'**
+  String get purchaseBillMgmtSavePurchaseBillButton;
+
+  /// No description provided for @purchaseBillMgmtSelectSupplierFromListMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a supplier from the list'**
+  String get purchaseBillMgmtSelectSupplierFromListMessage;
+
+  /// No description provided for @purchaseBillMgmtSearchSupplierHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search supplier'**
+  String get purchaseBillMgmtSearchSupplierHint;
+
+  /// No description provided for @purchaseBillMgmtColItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Item'**
+  String get purchaseBillMgmtColItem;
+
+  /// No description provided for @purchaseBillMgmtColCost.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost'**
+  String get purchaseBillMgmtColCost;
+
+  /// No description provided for @purchaseBillMgmtColTaxPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax %'**
+  String get purchaseBillMgmtColTaxPercent;
+
+  /// No description provided for @purchaseBillMgmtPaymentRecordedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment recorded.'**
+  String get purchaseBillMgmtPaymentRecordedMessage;
 
   /// No description provided for @invoiceSettingsMetadataColumnsGridClassicNote.
   ///
   /// In en, this message translates to:
-  /// **'Note: Metadata columns are only applied to the Grid Classic PDF template.'**
+  /// **'Note: Metadata columns print on A4 PDF templates only (not A5/A6 or thermal receipts).'**
   String get invoiceSettingsMetadataColumnsGridClassicNote;
+
+  /// No description provided for @invoiceSettingsCustomFieldsPageSupportNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom fields print on every PDF template except thermal receipts.'**
+  String get invoiceSettingsCustomFieldsPageSupportNote;
 
   /// No description provided for @docTypeCreditNote.
   ///

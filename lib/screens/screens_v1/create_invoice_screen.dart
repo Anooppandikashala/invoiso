@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:invoiso/common/common.dart';
+import 'package:invoiso/domain/invoice_calculator.dart';
 import 'package:invoiso/domain/invoice_totals_calculator.dart';
 import 'package:invoiso/providers/app_config_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
@@ -18,6 +19,8 @@ import 'package:invoiso/models/product.dart';
 import 'package:invoiso/models/additional_cost.dart';
 import 'package:invoiso/models/custom_field_def.dart';
 import 'package:invoiso/models/custom_field_value.dart';
+import 'package:invoiso/models/customer_field_settings.dart';
+import 'package:invoiso/widgets/customer_extra_fields.dart';
 import 'package:invoiso/services/invoice_pdf_services.dart';
 import 'package:invoiso/services/pdf_service.dart';
 import 'package:invoiso/common/constants.dart';
@@ -41,6 +44,10 @@ class CreateInvoiceScreen extends ConsumerStatefulWidget {
   /// | 'Receipt'). Ignored when editing or cloning.
   final String? initialType;
 
+  /// Set for a quotation→invoice conversion: id of the source quotation.
+  /// On save the quotation is stamped 'converted' and linked.
+  final String? convertFromQuotationId;
+
   /// Called when the user taps "New Invoice" while in edit mode.
   /// The parent (DashboardScreen) resets invoiceToEdit to null.
   final VoidCallback? onCreateNewInvoice;
@@ -52,6 +59,7 @@ class CreateInvoiceScreen extends ConsumerStatefulWidget {
     this.cloneFrom,
     this.cloneType,
     this.initialType,
+    this.convertFromQuotationId,
     this.onCreateNewInvoice,
     this.guard,
   });
@@ -113,6 +121,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   final addressController = TextEditingController();
   final gstinController = TextEditingController();
   final businessNameController = TextEditingController();
+  final _customerExtraFields = CustomerExtraFieldsController();
+  final _customerExtraFormKey = GlobalKey<FormState>();
+  final _customerCardScrollController = ScrollController();
+  CustomerFieldSettings _customerFieldSettings = const CustomerFieldSettings();
   final taxRateController = TextEditingController();
   final dateController = TextEditingController();
   final dueDateController = TextEditingController();
@@ -145,11 +157,16 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   String _quantityLabel = '';
   bool _showQuantity = true;
   bool _showPreviousBalance = false;
+  bool _showTimeInPdf = false; // order-time field shown only when PDFs print the time
+  String _pdfTimeFormat = '24'; // '12' | '24'
   bool _showAliasNameInPdf = false;
   bool _allowDuplicateInvoiceItems = false;
   double _previousBalanceDue = 0.0;
   bool _isPreviousBalanceLoading = false;
   bool _isSavingCustomer = false;
+  bool _customerFieldsUnlocked = false;
+  bool get _customerFieldsLocked =>
+      selectedCustomer != null && !_customerFieldsUnlocked;
   int _previousBalanceRequestSerial = 0;
   BusinessType _businessType = BusinessType.both;
   String _datePattern = 'dd/MM/yyyy';
@@ -193,6 +210,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       addressController.text = _invoice!.customer.address;
       gstinController.text = _invoice!.customer.gstin;
       businessNameController.text = _invoice!.customer.businessName;
+      _customerExtraFields.load(_invoice!.customer);
       taxRate = _invoice!.taxRate;
       taxRateController.text = (taxRate * 100).toStringAsFixed(1);
       _isTaxEnabled = _invoice!.taxMode != TaxMode.none;
@@ -241,6 +259,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 unit: i.unit,
                 description: i.description,
                 discountPerUnit: i.discountPerUnit,
+                discountIsPercent: i.discountIsPercent,
                 isProductSaved: i.isProductSaved,
               ))
           .toList();
@@ -250,6 +269,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       addressController.text = src.customer.address;
       gstinController.text = src.customer.gstin;
       businessNameController.text = src.customer.businessName;
+      _customerExtraFields.load(src.customer);
       taxRate = src.taxRate;
       taxRateController.text = (taxRate * 100).toStringAsFixed(1);
       _isTaxEnabled = src.taxMode != TaxMode.none;
@@ -337,6 +357,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     _invoiceItemsScrollController.dispose();
     gstinController.dispose();
     businessNameController.dispose();
+    _customerExtraFields.dispose();
+    _customerCardScrollController.dispose();
     for (final row in _additionalCostControllers) {
       row.label.dispose();
       row.amount.dispose();
@@ -380,6 +402,11 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         'gstin': gstinController.text.trim(),
         'businessName': businessNameController.text.trim(),
       },
+      'customerExtra': _customerExtraFields
+          .applyTo(
+              Customer(id: '', name: '', email: '', phone: '', address: '', gstin: ''),
+              _customerFieldSettings)
+          .toMap(),
       'items': invoiceItems.map((item) {
         final product = item.product;
         return {
@@ -389,6 +416,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           'quantity': item.quantity,
           'discount': item.discount,
           'discountPerUnit': item.discountPerUnit,
+          'discountIsPercent': item.discountIsPercent,
           'extraCost': item.extraCost ?? 0.0,
           'taxRate': product.tax_rate,
           'hsn': product.hsncode,
@@ -494,6 +522,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         settingsRepo.getHideInvoiceNumberByDefault(), // 18
         settingsRepo.getSetting(SettingKey.customFieldsEnabled), // 19
         settingsRepo.getCustomFieldDefs(), // 20
+        settingsRepo.getShowTimeInPdf(), // 21
+        settingsRepo.getPdfTimeFormat(), // 22
+        CustomerFieldSettings.load(settingsRepo), // 23
       ]);
 
       final c = results[0] as List<Customer>;
@@ -540,6 +571,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       final hideInvoiceNumberByDefault = results[18] as bool;
       final customFieldsEnabled = (results[19] as String?) == 'true';
       final customFieldDefs = results[20] as List<CustomFieldDef>;
+      final showTimeInPdf = results[21] as bool;
+      final pdfTimeFormat = results[22] as String;
+      final customerFieldSettings = results[23] as CustomerFieldSettings;
 
       // Determine which UPI to pre-select.
       String? existingUpiId;
@@ -610,6 +644,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         }
         _customFieldsEnabled = customFieldsEnabled;
         _customFieldDefs = customFieldDefs;
+        _customerFieldSettings = customerFieldSettings;
         _customFieldControllers.clear();
         for (final def in customFieldDefs) {
           _customFieldControllers[def.id] =
@@ -624,6 +659,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           invoiceTitle = invoiceType == 'Invoice' ? defaultInvoiceTitle : null;
         }
         _datePattern = dateFormatOpt.key;
+        _showTimeInPdf = showTimeInPdf;
+        _pdfTimeFormat = pdfTimeFormat;
         dateController.text =
             DateFormat(_datePattern).format(_selectedOrderDate);
         if (_selectedDueDate != null) {
@@ -680,6 +717,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         text: _showDescriptionInPdf ? product.description : '');
 
     bool discountPerUnit = true;
+    bool discountIsPercent = false;
     String dialogUnit = product.unit;
     int insertAt = invoiceItems.length + 1;
 
@@ -691,8 +729,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           ? (double.tryParse(quantityController.text) ?? 1.0)
           : (int.tryParse(quantityController.text) ?? 1)
           .toDouble();
-      final discount =
-          double.tryParse(discountController.text) ?? 0.0;
+      final discount = _clampLineDiscount(
+          double.tryParse(discountController.text) ?? 0.0, discountIsPercent);
       final parsedUnitPrice =
       double.tryParse(unitPriceController.text);
       final unitPrice = (parsedUnitPrice != null &&
@@ -739,7 +777,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   extraCost: extraCost,
                   unit: dialogUnit.trim(),
                   description: descriptionController.text.trim(),
-                  discountPerUnit: discountPerUnit),
+                  discountPerUnit: discountPerUnit,
+                  discountIsPercent: discountIsPercent),
               insertAt: insertAt);
         }
       } else if (!product.unlimitedStock && product.stock <= 0) {
@@ -775,7 +814,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   extraCost: extraCost,
                   unit: dialogUnit.trim(),
                   description: descriptionController.text.trim(),
-                  discountPerUnit: discountPerUnit),
+                  discountPerUnit: discountPerUnit,
+                  discountIsPercent: discountIsPercent),
               insertAt: insertAt);
         }
       } else {
@@ -789,7 +829,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 extraCost: extraCost,
                 unit: dialogUnit.trim(),
                 description: descriptionController.text.trim(),
-                discountPerUnit: discountPerUnit),
+                discountPerUnit: discountPerUnit,
+                discountIsPercent: discountIsPercent),
             insertAt: insertAt);
       }
     }
@@ -977,6 +1018,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     controller: discountController,
                     decoration: InputDecoration(
                       labelText: 'Discount',
+                      suffixIcon: _buildDiscountTypeSelector(discountIsPercent,
+                          (val) => setDialogState(() => discountIsPercent = val)),
                       border: OutlineInputBorder(
                           borderRadius:
                               BorderRadius.circular(AppBorderRadius.xsmall)),
@@ -989,9 +1032,11 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  _buildDiscountPerUnitToggle(discountPerUnit,
-                      (val) => setDialogState(() => discountPerUnit = val)),
+                  if (!discountIsPercent) ...[
+                    const SizedBox(height: 8),
+                    _buildDiscountPerUnitToggle(discountPerUnit,
+                        (val) => setDialogState(() => discountPerUnit = val)),
+                  ],
                   const SizedBox(height: 16),
                 ],
                 TextField(
@@ -1153,15 +1198,18 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   /// customer's id — doing so would link invoiceId -> customerId while the
   /// snapshot's name/address/etc silently disagree with that customer's
   /// actual row. Falls back to a fresh, unlinked id in that case.
+  /// Address is excluded (edited often, not identity-bearing) and the rest
+  /// compare case-insensitively so minor casing/whitespace edits don't
+  /// fragment the same customer into a new id.
   bool get _customerFormMatchesSelected {
     final sel = selectedCustomer;
-    return sel != null &&
-        sel.name == nameController.text &&
-        sel.email == emailController.text &&
-        sel.phone == phoneController.text &&
-        sel.address == addressController.text &&
-        sel.gstin == gstinController.text &&
-        sel.businessName == businessNameController.text;
+    if (sel == null) return false;
+    bool eq(String a, String b) => a.trim().toLowerCase() == b.trim().toLowerCase();
+    return eq(sel.name, nameController.text) &&
+        eq(sel.email, emailController.text) &&
+        eq(sel.phone, phoneController.text) &&
+        eq(sel.gstin, gstinController.text) &&
+        eq(sel.businessName, businessNameController.text);
   }
 
   Customer _resolveInvoiceCustomer() {
@@ -1175,7 +1223,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     final matchesSelected = _customerFormMatchesSelected;
     final sel = selectedCustomer;
 
-    return Customer(
+    return _customerExtraFields.applyTo(Customer(
       id: matchesSelected ? sel!.id : const Uuid().v4(),
       name: name,
       email: email,
@@ -1183,7 +1231,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       address: address,
       gstin: gstin,
       businessName: businessName,
-    );
+    ), _customerFieldSettings);
   }
 
   Future<bool> _createInvoice() async {
@@ -1206,6 +1254,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       );
       return false;
     }
+
+    // Ship To address required when not same-as-billing; age range.
+    if (!(_customerExtraFormKey.currentState?.validate() ?? true)) return false;
 
     if (invoiceItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1261,6 +1312,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         customInvoiceNumber: customInvoiceNumberController.text.trim().isEmpty
             ? null
             : customInvoiceNumberController.text.trim(),
+        convertedFromInvoiceId: widget.convertFromQuotationId,
       );
 
       await ref.read(invoiceRepositoryProvider).insertInvoice(invoice);
@@ -1315,10 +1367,16 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     final extraCostController = TextEditingController(
         text: item.extraCost != null ? item.extraCost.toString() : '');
     bool discountPerUnit = item.discountPerUnit;
+    bool discountIsPercent = item.discountIsPercent;
     final unitController = TextEditingController(text: item.effectiveUnit.toString());
     final descriptionController =
         TextEditingController(text: item.effectiveDescription);
     String dialogUnit = item.effectiveUnit.toString();
+    // Ad-hoc items have no catalog entry to fix a typo in, so their name is
+    // editable here. Catalog products keep their catalog name.
+    final isAdHoc = item.product.id.startsWith('custom-');
+    final nameController = TextEditingController(text: item.product.name);
+    String? nameError;
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -1392,6 +1450,25 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     ],
                   ),
                 ),
+                if (isAdHoc) ...[
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: nameController,
+                    decoration: InputDecoration(
+                      labelText: 'Item Name',
+                      errorText: nameError,
+                      border: OutlineInputBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppBorderRadius.xsmall)),
+                      prefixIcon: const Icon(Icons.label),
+                      filled: true,
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    ),
+                    onChanged: (_) {
+                      if (nameError != null) setDialogState(() => nameError = null);
+                    },
+                  ),
+                ],
                 Builder(builder: (context) {
                   if (!_columnsConfig.productMetadata) return const SizedBox.shrink();
                   final meta = _productMetadata[item.product.id];
@@ -1479,6 +1556,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     controller: discountController,
                     decoration: InputDecoration(
                       labelText: 'Discount',
+                      suffixIcon: _buildDiscountTypeSelector(discountIsPercent,
+                          (val) => setDialogState(() => discountIsPercent = val)),
                       border: OutlineInputBorder(
                           borderRadius:
                               BorderRadius.circular(AppBorderRadius.xsmall)),
@@ -1491,9 +1570,11 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  _buildDiscountPerUnitToggle(discountPerUnit,
-                      (val) => setDialogState(() => discountPerUnit = val)),
+                  if (!discountIsPercent) ...[
+                    const SizedBox(height: 8),
+                    _buildDiscountPerUnitToggle(discountPerUnit,
+                        (val) => setDialogState(() => discountPerUnit = val)),
+                  ],
                 ],
                 const SizedBox(height: 16),
                 TextField(
@@ -1557,6 +1638,11 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
               onPressed: () {
+                final newName = nameController.text.trim();
+                if (isAdHoc && newName.isEmpty) {
+                  setDialogState(() => nameError = 'Required');
+                  return;
+                }
                 final parsedUnitPrice = double.tryParse(unitPriceController.text);
                 final unitPrice = (parsedUnitPrice != null &&
                         parsedUnitPrice != item.product.price)
@@ -1564,7 +1650,11 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     : null;
                 final extraCost = double.tryParse(extraCostController.text);
                 final updatedItem = InvoiceItem(
-                  product: item.product,
+                  // Copy rather than mutate: the original Product may be
+                  // shared with the unsaved source invoice (edit/clone).
+                  product: isAdHoc && newName != item.product.name
+                      ? Product.fromMap({...item.product.toMap(), 'name': newName})
+                      : item.product,
                   quantity: !_showQuantity
                       ? 1.0
                       : _fractionalQuantity
@@ -1575,13 +1665,15 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                       ?.toInt() ??
                                   item.quantity.toInt())
                               .toDouble(),
-                  discount:
+                  discount: _clampLineDiscount(
                       double.tryParse(discountController.text) ?? item.discount,
+                      discountIsPercent),
                   unitPrice: unitPrice,
                   extraCost: extraCost,
                   unit: dialogUnit.trim(),
                   description: descriptionController.text.trim(),
                   discountPerUnit: discountPerUnit,
+                  discountIsPercent: discountIsPercent,
                 );
                 if(!mounted) return;
                 setState(() {
@@ -1781,6 +1873,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     final descriptionController = TextEditingController();
 
     bool discountPerUnit = true;
+    bool discountIsPercent = false;
     bool dialogPriceIncludesTax = false;
     String dialogItemType = _adHocItemType;
     int insertAt = invoiceItems.length + 1;
@@ -1837,11 +1930,14 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       ? (double.tryParse(quantityController.text) ?? 1.0)
                       : (int.tryParse(quantityController.text) ?? 1)
                           .toDouble(),
-              discount: double.tryParse(discountController.text) ?? 0.0,
+              discount: _clampLineDiscount(
+                  double.tryParse(discountController.text) ?? 0.0,
+                  discountIsPercent),
               extraCost: extraCost,
               unit: selectedUnit.trim(),
               description: descriptionController.text.trim(),
               discountPerUnit: discountPerUnit,
+              discountIsPercent: discountIsPercent,
             );
             Navigator.pop(context);
             addInvoiceProduct(item, insertAt: insertAt);
@@ -1975,6 +2071,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   controller: discountController,
                   decoration: InputDecoration(
                     labelText: 'Discount',
+                    suffixIcon: _buildDiscountTypeSelector(discountIsPercent,
+                        (val) => setDialogState(() => discountIsPercent = val)),
                     border: OutlineInputBorder(
                         borderRadius:
                             BorderRadius.circular(AppBorderRadius.xsmall)),
@@ -1987,9 +2085,11 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                   ],
                 ),
-                const SizedBox(height: 8),
-                _buildDiscountPerUnitToggle(discountPerUnit,
-                    (val) => setDialogState(() => discountPerUnit = val)),
+                if (!discountIsPercent) ...[
+                  const SizedBox(height: 8),
+                  _buildDiscountPerUnitToggle(discountPerUnit,
+                      (val) => setDialogState(() => discountPerUnit = val)),
+                ],
                 if (_columnsConfig.extraCost) ...[
                   const SizedBox(height: 16),
                   TextField(
@@ -2161,6 +2261,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       addressController.text = customer?.address ?? '';
       gstinController.text = customer?.gstin ?? '';
       businessNameController.text = customer?.businessName ?? '';
+      _customerExtraFields.load(customer);
+      _customerFieldsUnlocked = false;
     });
     await _loadPreviousBalanceDue(customer);
   }
@@ -2732,7 +2834,14 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       if (picked != null) {
                         if(!mounted) return;
                         setState(() {
-                          _selectedOrderDate = picked;
+                          // Keep the invoice's existing time — the picker returns midnight.
+                          _selectedOrderDate = DateTime(
+                              picked.year,
+                              picked.month,
+                              picked.day,
+                              _selectedOrderDate.hour,
+                              _selectedOrderDate.minute,
+                              _selectedOrderDate.second);
                           dateController.text =
                               DateFormat(_datePattern).format(picked);
                         });
@@ -2741,6 +2850,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     },
                   ),
                 ),
+                if (_showTimeInPdf) ...[
+                  const SizedBox(width: 12),
+                  Expanded(child: _orderTimeField()),
+                ],
                 const SizedBox(width: 12),
                 Expanded(
                   child: TextField(
@@ -2821,7 +2934,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                           child: Text('Receipt',
                               style: TextStyle(fontSize: AppFontSize.medium))),
                     ],
-                    onChanged: isEditing
+                    onChanged: (isEditing ||
+                            widget.convertFromQuotationId != null)
                         ? null
                         : (value) {
                             if (value != null) resetInvoiceType(value);
@@ -2952,6 +3066,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       addressController.clear();
       gstinController.clear();
       businessNameController.clear();
+      _customerExtraFields.load(null);
       taxRate = Tax.defaultTaxRate;
       _selectedOrderDate = DateTime.now();
       dateController.text = DateFormat(_datePattern).format(_selectedOrderDate);
@@ -3014,6 +3129,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       );
       return;
     }
+    if (!(_customerExtraFormKey.currentState?.validate() ?? true)) return;
 
     final phone = phoneController.text.trim();
 
@@ -3064,7 +3180,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           await _showPhoneTakenError(phoneOwner.name);
           return;
         }
-        final updated = Customer(
+        final updated = _customerExtraFields.applyTo(Customer(
           id: sel.id,
           name: name,
           email: emailController.text.trim(),
@@ -3072,7 +3188,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           address: addressController.text.trim(),
           gstin: gstinController.text.trim(),
           businessName: businessNameController.text.trim(),
-        );
+        ), _customerFieldSettings);
         await ref.read(customerRepositoryProvider).updateCustomer(updated);
         final reloaded = await ref.read(customerRepositoryProvider).getAllCustomers();
         if (!mounted) return;
@@ -3151,6 +3267,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           addressController.text = existing.address;
           gstinController.text = existing.gstin;
           businessNameController.text = existing.businessName;
+          _customerExtraFields.load(existing);
         });
         await _loadPreviousBalanceDue(existing);
         if (mounted) {
@@ -3165,7 +3282,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         return;
       }
 
-      final updated = Customer(
+      // keepFrom: the form wasn't loaded from `existing`, so switched-off
+      // fields must come from its stored row, not the form.
+      final updated = _customerExtraFields.applyTo(Customer(
         id: existing.id,
         name: name,
         email: emailController.text.trim(),
@@ -3173,7 +3292,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         address: addressController.text.trim(),
         gstin: gstinController.text.trim(),
         businessName: businessNameController.text.trim(),
-      );
+      ), _customerFieldSettings, keepFrom: existing);
       await ref.read(customerRepositoryProvider).updateCustomer(updated);
       final reloaded = await ref.read(customerRepositoryProvider).getAllCustomers();
       if(!mounted) return;
@@ -3193,7 +3312,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         );
       }
     } else {
-      final newCustomer = Customer(
+      final newCustomer = _customerExtraFields.applyTo(Customer(
         id: const Uuid().v4(),
         name: name,
         email: emailController.text.trim(),
@@ -3201,7 +3320,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         address: addressController.text.trim(),
         gstin: gstinController.text.trim(),
         businessName: businessNameController.text.trim(),
-      );
+      ), _customerFieldSettings);
       await ref.read(customerRepositoryProvider).insertCustomer(newCustomer);
       final reloaded = await ref.read(customerRepositoryProvider).getAllCustomers();
       if(!mounted) return;
@@ -3250,6 +3369,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       addressController.text = latest.address;
       gstinController.text = latest.gstin;
       businessNameController.text = latest.businessName;
+      _customerExtraFields.load(latest);
+      _customerFieldsUnlocked = false;
     });
     if(!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -3269,16 +3390,28 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       addressController.clear();
       gstinController.clear();
       businessNameController.clear();
+      _customerExtraFields.load(null);
       _previousBalanceDue = 0.0;
       _isPreviousBalanceLoading = false;
+      _customerFieldsUnlocked = false;
     });
   }
 
-  Widget _customerDetailsForm() {
+  // Desktop/tablet (cards side by side), when any extra customer field is on:
+  // fixed height, fields scroll under the fixed header. All extras off: null
+  // = exactly the pre-feature card (natural height).
+  double? get _customerCardHeight => _customerFieldSettings.any ? 280 : null;
+
+  // [height] set: fixed-height card, fields scroll under the fixed header
+  // with an always-visible scrollbar so users can tell there's more. Null
+  // (mobile / all extras off): natural height, the whole page scrolls.
+  Widget _customerDetailsForm({double? height}) {
+    final scroll = height != null;
     return Card(
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
+      child: Container(
+        height: height,
         padding: const EdgeInsets.all(AppPadding.medium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -3302,6 +3435,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
+                if (selectedCustomer != null || nameController.text.trim().isNotEmpty)
                 (selectedCustomer != null && _customerFormMatchesSelected)
                     ? Container(
                         padding: const EdgeInsets.symmetric(
@@ -3355,6 +3489,21 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                         ),
                       ),
                 if (selectedCustomer != null && selectedCustomer!.id.trim().isNotEmpty) ...[
+                  if (!_customerFieldsUnlocked)
+                    Tooltip(
+                      message: 'Edit customer details',
+                      child: OutlinedButton.icon(
+                        onPressed: () =>
+                            setState(() => _customerFieldsUnlocked = true),
+                        icon: const Icon(Icons.edit_outlined, size: 16),
+                        label: const Text('Edit',
+                            style: TextStyle(fontSize: AppFontSize.small)),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                        ),
+                      ),
+                    ),
                   Tooltip(
                     message: 'Reload this customer\'s latest saved details '
                         '(name, address, phone, etc.) — this invoice keeps its '
@@ -3389,13 +3538,27 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 ),
               ],
             ),
+            _customerCardBody(scroll, [
             const SizedBox(height: 16),
+            if (selectedCustomer == null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Text(
+                  'New or walk-in customer — enter their details below.',
+                  style: TextStyle(
+                    fontSize: AppFontSize.small,
+                    fontStyle: FontStyle.italic,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
             // Row 1: Customer Name | Business Name | Phone
             Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: nameController,
+                    readOnly: _customerFieldsLocked,
                     onChanged: (_) => setState(() {}),
                     style: TextStyle(fontSize: AppFontSize.medium),
                     decoration: InputDecoration(
@@ -3413,6 +3576,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 Expanded(
                   child: TextField(
                     controller: businessNameController,
+                    readOnly: _customerFieldsLocked,
                     onChanged: (_) => setState(() {}),
                     style: TextStyle(fontSize: AppFontSize.medium),
                     decoration: InputDecoration(
@@ -3430,6 +3594,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 Expanded(
                   child: TextField(
                     controller: phoneController,
+                    readOnly: _customerFieldsLocked,
                     onChanged: (_) => setState(() {}),
                     style: TextStyle(fontSize: AppFontSize.medium),
                     decoration: InputDecoration(
@@ -3452,6 +3617,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 Expanded(
                   child: TextField(
                     controller: emailController,
+                    readOnly: _customerFieldsLocked,
                     onChanged: (_) => setState(() {}),
                     style: TextStyle(fontSize: AppFontSize.medium),
                     decoration: InputDecoration(
@@ -3487,6 +3653,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   Expanded(
                     child: TextField(
                       controller: gstinController,
+                      readOnly: _customerFieldsLocked,
                       onChanged: (_) => setState(() {}),
                       style: TextStyle(fontSize: AppFontSize.medium),
                       decoration: InputDecoration(
@@ -3504,7 +3671,48 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   const Expanded(child: SizedBox()),
               ],
             ),
+            // Per-invoice values, never locked (like address): editing them
+            // changes only this invoice's snapshot, not the customer record.
+            Form(
+              key: _customerExtraFormKey,
+              child: CustomerExtraFields(
+                controller: _customerExtraFields,
+                settings: _customerFieldSettings,
+                inline: true,
+                decoration: (label) => InputDecoration(
+                  labelText: label,
+                  labelStyle: TextStyle(fontSize: AppFontSize.medium),
+                  border: OutlineInputBorder(
+                      borderRadius:
+                          BorderRadius.circular(AppBorderRadius.xsmall)),
+                  filled: true,
+                  fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                ),
+                billingName: nameController,
+                billingPhone: phoneController,
+                billingAddress: addressController,
+                datePattern: _datePattern,
+              ),
+            ),
+            ]),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _customerCardBody(bool scroll, List<Widget> children) {
+    final body =
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: children);
+    if (!scroll) return body;
+    return Expanded(
+      child: Scrollbar(
+        controller: _customerCardScrollController,
+        thumbVisibility: true,
+        child: SingleChildScrollView(
+          controller: _customerCardScrollController,
+          padding: const EdgeInsets.only(right: 12),
+          child: body,
         ),
       ),
     );
@@ -3895,6 +4103,38 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           //   },
           // ),
         ],
+      ),
+    );
+  }
+
+  // A % line discount above 100 would make the line total negative.
+  double _clampLineDiscount(double discount, bool isPercent) =>
+      isPercent ? discount.clamp(0.0, 100.0) : discount;
+
+  // % / Amount dropdown shown inside the line discount field — same control
+  // as the invoice-level discount type.
+  Widget _buildDiscountTypeSelector(bool isPercent, ValueChanged<bool> onChanged) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<bool>(
+          value: isPercent,
+          isDense: true,
+          // Button is only as wide as "%"/symbol; without this the menu
+          // matches that width and wraps "Amount".
+          menuWidth: 120,
+          selectedItemBuilder: (context) => [
+            const Center(child: Text('%')),
+            Center(child: Text(_currencySymbol)),
+          ],
+          items: [
+            const DropdownMenuItem(value: true, child: Text('%')),
+            DropdownMenuItem(value: false, child: Text('Amount')),
+          ],
+          onChanged: (v) {
+            if (v != null) onChanged(v);
+          },
+        ),
       ),
     );
   }
@@ -4470,8 +4710,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                         '${item.effectiveUnit.trim().isEmpty ? '' : ' ${item.effectiveUnit}'}'),
                                   if(_columnsConfig.defaultDiscount || item.discount > 0)
                                     _buildItemDetail('Discount',
-                                        '$_currencySymbol${item.discount.toStringAsFixed(2)}${item.discountPerUnit ? ' ×qty' : ''}'),
-                                  if (item.discountPerUnit && item.discount > 0)
+                                        item.discountIsPercent
+                                            ? '${item.discount.toStringAsFixed(2)}%'
+                                            : '$_currencySymbol${item.discount.toStringAsFixed(2)}${item.discountPerUnit ? ' ×qty' : ''}'),
+                                  if (!item.discountIsPercent && item.discountPerUnit && item.discount > 0)
                                     _buildItemDetail('Net',
                                         '$_currencySymbol${(item.effectivePrice - item.discount).toStringAsFixed(2)}/item',
                                         color: Colors.teal[700]),
@@ -5132,6 +5374,45 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     );
   }
 
+  // Order time, next to the order date. Uses the PDF's 12/24-hour setting.
+  Widget _orderTimeField() {
+    final text = DateFormat(_pdfTimeFormat == '12' ? 'h:mm a' : 'HH:mm', 'en_US')
+        .format(_selectedOrderDate);
+    return TextFormField(
+      key: ValueKey('order-time-$text'), // rebuild when the time changes
+      initialValue: text,
+      readOnly: true,
+      style: TextStyle(fontSize: AppFontSize.medium),
+      decoration: InputDecoration(
+        labelText: 'Order Time',
+        labelStyle: TextStyle(fontSize: AppFontSize.medium),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+        filled: true,
+        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+        suffixIcon: const Icon(Icons.access_time, size: 18),
+      ),
+      onTap: () async {
+        final picked = await showTimePicker(
+          context: context,
+          initialTime: TimeOfDay.fromDateTime(_selectedOrderDate),
+          builder: (ctx, child) => MediaQuery(
+            data: MediaQuery.of(ctx)
+                .copyWith(alwaysUse24HourFormat: _pdfTimeFormat != '12'),
+            child: child!,
+          ),
+        );
+        if (picked == null || !mounted) return;
+        setState(() => _selectedOrderDate = DateTime(
+            _selectedOrderDate.year,
+            _selectedOrderDate.month,
+            _selectedOrderDate.day,
+            picked.hour,
+            picked.minute));
+      },
+    );
+  }
+
   Future<bool> _updateInvoice() async {
     if (_invoice == null) return false;
 
@@ -5154,6 +5435,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       );
       return false;
     }
+
+    // Ship To address required when not same-as-billing; age range.
+    if (!(_customerExtraFormKey.currentState?.validate() ?? true)) return false;
 
     if (invoiceItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -5206,6 +5490,25 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             ? null
             : customInvoiceNumberController.text.trim(),
       );
+
+      // Block edits that drop the total below what's already been paid.
+      final paid = await ref
+          .read(paymentRepositoryProvider)
+          .getTotalPaidForInvoice(updatedInvoice.id);
+      if (paid - updatedInvoice.total > InvoiceCalculator.moneyEpsilon) {
+        if (!mounted) return false;
+        setState(() => isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('The new total is less than the '
+              '$_currencySymbol ${paid.toStringAsFixed(2)} already paid. '
+              'Delete payments in Apply Payment first, or keep the total at '
+              'or above that amount.'),
+          backgroundColor: Colors.red,
+          showCloseIcon: true,
+          behavior: SnackBarBehavior.floating,
+        ));
+        return false;
+      }
 
       await ref.read(invoiceRepositoryProvider).updateInvoice(updatedInvoice);
 
@@ -5425,7 +5728,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                 ? await ref.read(customerRepositoryProvider).findByPhone(phone)
                                 : null;
                             final newCustomer = existing ??
-                                Customer(
+                                _customerExtraFields.applyTo(Customer(
                                   id: const Uuid().v4(),
                                   name: nameController.text.trim(),
                                   email: emailController.text.trim(),
@@ -5434,7 +5737,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                                   gstin: gstinController.text.trim(),
                                   businessName:
                                       businessNameController.text.trim(),
-                                );
+                                ), _customerFieldSettings);
                             if (existing == null) {
                               await ref.read(customerRepositoryProvider).insertCustomer(newCustomer);
                             }
@@ -5554,6 +5857,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             quantity: item.quantity,
             discount: item.discount,
             discountPerUnit: item.discountPerUnit,
+            discountIsPercent: item.discountIsPercent,
             extraCost: item.extraCost ?? 0.0,
             taxRatePercent: item.product.tax_rate.toDouble(),
             priceIncludesTax: item.product.priceIncludesTax,
@@ -5786,7 +6090,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                 children: [
                   Expanded(flex: 2, child: _invoiceDetailsForm()),
                   AppSpacing.wSmall,
-                  Expanded(flex: 3, child: _customerDetailsForm()),
+                  Expanded(
+                      flex: 3,
+                      child: _customerDetailsForm(height: _customerCardHeight)),
                 ],
               ),
               AppSpacing.hSmall,
@@ -5835,7 +6141,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                     children: [
                       Expanded(flex: 2, child: _invoiceDetailsForm()),
                       const SizedBox(width: 16),
-                      Expanded(flex: 3, child: _customerDetailsForm()),
+                      Expanded(
+                          flex: 3,
+                          child:
+                              _customerDetailsForm(height: _customerCardHeight)),
                     ],
                   ),
                   const SizedBox(height: 16),

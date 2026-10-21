@@ -77,6 +77,10 @@ class InvoicePdfServices {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (invoice.status == 'declined')
+                const Text('DECLINED',
+                    style: TextStyle(
+                        color: Colors.red, fontWeight: FontWeight.bold)),
               Text('Customer: ${invoice.customer.name}'),
               Text('Date: ${AppFormatters.formatShortDate(invoice.date)}'),
               const SizedBox(height: 16),

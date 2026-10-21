@@ -1,15 +1,19 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_auth_repository.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_cash_ledger_repository.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_company_info_repository.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_customer_repository.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_invoice_item_repository.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_invoice_repository.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_payment_repository.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_product_repository.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_purchase_bill_repository.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_report_repository.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_return_repository.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_settings_repository.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_supplier_payment_repository.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_supplier_repository.dart';
 
 final sqliteRepositoryOverrides = <Override>[
   customerRepositoryProvider.overrideWith(
@@ -27,6 +31,9 @@ final sqliteRepositoryOverrides = <Override>[
   returnRepositoryProvider.overrideWith(
         (ref) => SqliteReturnRepository(),
   ),
+  cashLedgerRepositoryProvider.overrideWith(
+        (ref) => SqliteCashLedgerRepository(),
+  ),
   companyInfoRepositoryProvider.overrideWith(
         (ref) => SqliteCompanyInfoRepository(),
   ),
@@ -41,5 +48,14 @@ final sqliteRepositoryOverrides = <Override>[
   ),
   authRepositoryProvider.overrideWith(
         (ref) => SqliteAuthRepository(),
+  ),
+  supplierRepositoryProvider.overrideWith(
+        (ref) => SqliteSupplierRepository(),
+  ),
+  purchaseBillRepositoryProvider.overrideWith(
+        (ref) => SqlitePurchaseBillRepository(),
+  ),
+  supplierPaymentRepositoryProvider.overrideWith(
+        (ref) => SqliteSupplierPaymentRepository(),
   ),
 ];

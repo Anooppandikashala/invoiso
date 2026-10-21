@@ -75,6 +75,7 @@ enum SettingKey {
   descriptionNewLineInPdf, // when showDescriptionInPdf is on: print the description as a full-width row below the item instead of a line under the item name (default false)
   appLocale, // app UI language code, e.g. 'en' | 'ne' | 'bo' | 'fr' | 'es' | 'hi' | 'zh'; unset/empty = follow system locale
   onboardingCompleted, // '1' once the first-login onboarding wizard has been finished or skipped
+  enablePurchaseBillsAndSuppliers, // whether the Purchase Bills / Suppliers dashboard tabs are shown (default false, opt-in)
   showCustomerBusinessNameInPdf, // whether to show the customer's business name on PDFs/thermal receipts (default true; only shown when non-empty)
   showCustomerAddressInPdf, // whether to show the customer's address on PDFs (default true; only shown when non-empty)
   showCustomerPhoneInPdf, // whether to show the customer's phone on PDFs/thermal receipts (default true; only shown when non-empty)
@@ -89,6 +90,28 @@ enum SettingKey {
   returnsEnabled, // whether the Credit / Debit Notes (returns) feature is on (default false)
   creditNotePrefix, // number prefix for credit notes (default 'CN-')
   debitNotePrefix, // number prefix for debit notes (default 'DN-')
+  faqCache, // cached JSON string of the last successfully fetched faq.json, used offline/on fetch failure
+  lastFaqFetch, // ISO timestamp of last successful faq.json fetch
+  showTaxColumn, // whether to show the per-item Tax column on A4 PDFs, for both global and per-item tax modes (default true); showCgstSgst only matters when this is on
+  customerAgeEnabled, // whether customers have an Age field, in forms + PDFs (default false); only used when DOB is empty
+  customerDobEnabled, // whether customers have a Date of Birth field, in forms + PDFs (default false)
+  customerGenderEnabled, // whether customers have a Gender field, in forms + PDFs (default false)
+  shippingAddressEnabled, // whether customers/invoices have a separate Ship To (name, phone, address), in forms + PDFs (default false)
+  customerCustomFieldsEnabled, // whether the user-defined customer Custom Fields feature is on (default false)
+  customerCustomFieldDefs, // JSON list of CustomFieldDef objects for customers (separate from invoice customFieldDefs)
+  showCustomerAgeInPdf, // print customer Age on PDFs/receipts when customerAgeEnabled (default true)
+  showCustomerDobInPdf, // print customer DOB on PDFs/receipts when customerDobEnabled (default true)
+  showCustomerGenderInPdf, // print customer Gender on PDFs/receipts when customerGenderEnabled (default true)
+  showShipToInPdf, // print the Ship To block on PDFs/receipts when shippingAddressEnabled (default true)
+  cashUpiExchangeEnabled, // whether the Cash/UPI-Bank exchange Services tab is on (default false)
+  reportsAdminOnly, // whether Reports is hidden from non-admin users (default false)
+  pdfFontSize, // 'small' | 'medium' | 'large' | 'xlarge' — text size multiplier for non-thermal invoice PDFs; default 'medium'
+  pdfCompanyNameFontSize, // PdfFontSize key for the company name; empty/absent = same as pdfFontSize
+  pdfDocTitleFontSize, // PdfFontSize key for the document title; empty/absent = same as pdfFontSize
+  pdfTableHeaderFontSize, // PdfFontSize key for the items table header; empty/absent = same as pdfFontSize
+  pdfTableItemsFontSize, // PdfFontSize key for the items table rows; empty/absent = same as pdfFontSize
+  pdfTotalsFontSize, // PdfFontSize key for the totals block; empty/absent = same as pdfFontSize
+  purchaseBillsBannerDismissed, // '1' once user dismisses the purchase-bills/suppliers discovery banner
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -246,6 +269,8 @@ extension SettingKeyExtension on SettingKey {
         return 'app_locale';
       case SettingKey.onboardingCompleted:
         return 'onboarding_completed';
+      case SettingKey.enablePurchaseBillsAndSuppliers:
+        return 'enable_purchase_bills_and_suppliers';
       case SettingKey.showCustomerBusinessNameInPdf:
         return 'show_customer_business_name_in_pdf';
       case SettingKey.showCustomerAddressInPdf:
@@ -274,6 +299,50 @@ extension SettingKeyExtension on SettingKey {
         return 'credit_note_prefix';
       case SettingKey.debitNotePrefix:
         return 'debit_note_prefix';
+      case SettingKey.faqCache:
+        return 'faq_cache';
+      case SettingKey.lastFaqFetch:
+        return 'last_faq_fetch';
+      case SettingKey.showTaxColumn:
+        return 'show_tax_column';
+      case SettingKey.customerAgeEnabled:
+        return 'customer_age_enabled';
+      case SettingKey.customerDobEnabled:
+        return 'customer_dob_enabled';
+      case SettingKey.customerGenderEnabled:
+        return 'customer_gender_enabled';
+      case SettingKey.shippingAddressEnabled:
+        return 'shipping_address_enabled';
+      case SettingKey.customerCustomFieldsEnabled:
+        return 'customer_custom_fields_enabled';
+      case SettingKey.customerCustomFieldDefs:
+        return 'customer_custom_field_defs';
+      case SettingKey.showCustomerAgeInPdf:
+        return 'show_customer_age_in_pdf';
+      case SettingKey.showCustomerDobInPdf:
+        return 'show_customer_dob_in_pdf';
+      case SettingKey.showCustomerGenderInPdf:
+        return 'show_customer_gender_in_pdf';
+      case SettingKey.showShipToInPdf:
+        return 'show_ship_to_in_pdf';
+      case SettingKey.cashUpiExchangeEnabled:
+        return 'cash_upi_exchange_enabled';
+      case SettingKey.reportsAdminOnly:
+        return 'reports_admin_only';
+      case SettingKey.pdfFontSize:
+        return 'pdf_font_size';
+      case SettingKey.pdfCompanyNameFontSize:
+        return 'pdf_company_name_font_size';
+      case SettingKey.pdfDocTitleFontSize:
+        return 'pdf_doc_title_font_size';
+      case SettingKey.pdfTableHeaderFontSize:
+        return 'pdf_table_header_font_size';
+      case SettingKey.pdfTableItemsFontSize:
+        return 'pdf_table_items_font_size';
+      case SettingKey.pdfTotalsFontSize:
+        return 'pdf_totals_font_size';
+      case SettingKey.purchaseBillsBannerDismissed:
+        return 'purchase_bills_banner_dismissed';
 
     }
   }

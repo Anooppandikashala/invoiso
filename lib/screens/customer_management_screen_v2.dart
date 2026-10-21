@@ -10,9 +10,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/models/customer.dart';
+import 'package:invoiso/models/customer_list_stats.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/widgets/apply_customer_payment_dialog.dart';
+import 'package:invoiso/models/customer_field_settings.dart';
+import 'package:invoiso/widgets/customer_extra_fields.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:uuid/uuid.dart';
 import 'package:csv/csv.dart';
@@ -31,9 +34,15 @@ class CustomerManagementScreenV2 extends ConsumerStatefulWidget {
 }
 
 class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementScreenV2> {
-  List<Customer> _customers = [];
-  List<Customer> _filteredCustomers = [];
+  // Only the visible page is held in memory (Issues.md #43) — see _loadPageV2.
+  List<Customer> _pageCustomers = [];
+  int _filteredTotal = 0;
+  int _pageRequestId = 0;
+  CustomerListStats _statsV2 =
+      (all: 0, businesses: 0, individuals: 0, taxRegistered: 0);
+  int _withOutstandingCount = 0;
   String _searchQuery = '';
+  Timer? _searchDebounce;
   String _sortBy = 'name';
   bool _isAscending = true;
   int _pageSize = 10;
@@ -57,6 +66,8 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
   final _addressController = TextEditingController();
   final _gstinController = TextEditingController();
   final _businessNameController = TextEditingController();
+  final _extraFields = CustomerExtraFieldsController();
+  CustomerFieldSettings _fieldSettings = const CustomerFieldSettings();
   final _formKey = GlobalKey<FormState>();
 
   // ── V2 state ──────────────────────────────────────────────────────────
@@ -77,6 +88,12 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
     super.initState();
     _loadCustomers();
     _loadStatsCardsVisibilityV2();
+    _loadFieldSettings();
+  }
+
+  Future<void> _loadFieldSettings() async {
+    final s = await CustomerFieldSettings.load(ref.read(settingsRepositoryProvider));
+    if (mounted) setState(() => _fieldSettings = s);
   }
 
   Future<void> _loadStatsCardsVisibilityV2() async {
@@ -103,8 +120,10 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
     _addressController.dispose();
     _gstinController.dispose();
     _businessNameController.dispose();
+    _extraFields.dispose();
     _searchFocusNode.dispose();
     _horizontalScrollController.dispose();
+    _searchDebounce?.cancel();
     super.dispose();
   }
 
@@ -118,12 +137,12 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
       final settingsRepo = ref.read(settingsRepositoryProvider);
       final reportRepo = ref.read(reportRepositoryProvider);
       final results = await Future.wait([
-        customerRepo.getAllCustomers(),
+        customerRepo.getCustomerListStats(),
         companyRepo.getCompanyInfo(),
         settingsRepo.getCurrency(),
         reportRepo.getInvoiceCurrencies(),
       ]);
-      final data = results[0] as List<Customer>;
+      final stats = results[0] as CustomerListStats;
       final company = results[1] as CompanyInfo?;
       final defaultCurrency = results[2] as CurrencyOption;
       final currencies = results[3] as List<String>;
@@ -137,18 +156,22 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
               ? defaultCurrency.code
               : (currencies.isNotEmpty ? currencies.first : defaultCurrency.code));
       final outstanding = await reportRepo.getOutstandingByCustomer(currencyCode: selected);
+      final withOutstanding = await _countWithOutstanding(outstanding);
 
       if(!mounted) return;
       setState(() {
-        _customers = data;
+        _statsV2 = stats;
+        _withOutstandingCount = withOutstanding;
         _companyCountry = company?.country;
         _outstandingCurrencies = currencies;
         _selectedOutstandingCurrency = selected;
         _outstandingByCustomer = outstanding;
         _outstandingCurrencySymbol = SupportedCurrencies.fromCode(selected).symbol;
-        _filterAndSort();
+        _currentPage = 0;
       });
+      await _loadPageV2();
     } catch (e) {
+      if (!mounted) return;
       _showSnackBar(AppLocalizations.of(context)!.customerMgmtLoadErrorMessage(e.toString()), isError: true);
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -160,51 +183,106 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
     setState(() => _selectedOutstandingCurrency = code);
     final outstanding =
         await ref.read(reportRepositoryProvider).getOutstandingByCustomer(currencyCode: code);
+    final withOutstanding = await _countWithOutstanding(outstanding);
     if (!mounted) return;
     setState(() {
       _outstandingByCustomer = outstanding;
+      _withOutstandingCount = withOutstanding;
       _outstandingCurrencySymbol = SupportedCurrencies.fromCode(code).symbol;
-      _applyFilterV2();
+      _currentPage = 0;
     });
+    await _loadPageV2();
   }
 
-  void _filterAndSort() {
-    _filteredCustomers = _customers.where((c) {
-      final query = _searchQuery.toLowerCase();
-      return c.name.toLowerCase().contains(query) ||
-          c.email.toLowerCase().contains(query) ||
-          c.phone.toLowerCase().contains(query) ||
-          c.businessName.toLowerCase().contains(query) ||
-          c.address.toLowerCase().contains(query) ||
-          c.gstin.toLowerCase().contains(query);
-    }).toList();
+  // Saved customers whose outstanding (built from invoices — Issues.md #41)
+  // is non-zero. Loads ids only, not customer rows.
+  Future<int> _countWithOutstanding(Map<String, double> outstanding) async {
+    if (outstanding.isEmpty) return 0;
+    final ids = await ref.read(customerRepositoryProvider).getCustomerListIds();
+    return ids.where((id) => (outstanding[id] ?? 0) > 0.005).length;
+  }
 
-    _filteredCustomers.sort((a, b) {
-      int result;
-      switch (_sortBy) {
-        case 'name':
-          result = a.name.compareTo(b.name);
-          break;
-        case 'id':
-          result = a.id.compareTo(b.id);
-          break;
-        case 'outstanding':
-          result = (_outstandingByCustomer[a.id] ?? 0)
-              .compareTo(_outstandingByCustomer[b.id] ?? 0);
-          break;
-        default:
-          result = 0;
+  // _activeTabV2 index → CustomerService list tab key (5 = with outstanding,
+  // filtered in Dart on top of 'all').
+  String get _tabKeyV2 =>
+      const ['all', 'business', 'individual', 'tax', 'no_tax', 'all'][_activeTabV2];
+
+  bool get _needsOutstandingOrderV2 =>
+      _activeTabV2 == 5 || _sortBy == 'outstanding';
+
+  // Every matching customer id in list order (ids only). Outstanding tab and
+  // sort are applied here from _outstandingByCustomer until invoice totals
+  // are stored (Issues.md #41).
+  Future<List<String>> _orderedIdsV2() async {
+    var ids = await ref.read(customerRepositoryProvider).getCustomerListIds(
+        query: _searchQuery,
+        tab: _tabKeyV2,
+        orderBy: _sortBy,
+        ascending: _isAscending);
+    if (_activeTabV2 == 5) {
+      ids = ids.where((id) => (_outstandingByCustomer[id] ?? 0) > 0.005).toList();
+    }
+    if (_sortBy == 'outstanding') {
+      final pos = {for (var i = 0; i < ids.length; i++) ids[i]: i};
+      ids.sort((a, b) {
+        final r = (_outstandingByCustomer[a] ?? 0)
+            .compareTo(_outstandingByCustomer[b] ?? 0);
+        if (r != 0) return _isAscending ? r : -r;
+        return pos[a]!.compareTo(pos[b]!); // stable
+      });
+    }
+    return ids;
+  }
+
+  // Loads only the visible page (Issues.md #43): search, tab and name/id
+  // sort in SQL; outstanding tab/sort via _orderedIdsV2, then just this
+  // page's customers are fetched.
+  Future<void> _loadPageV2() async {
+    final requestId = ++_pageRequestId;
+    final repo = ref.read(customerRepositoryProvider);
+    try {
+      Future<(List<Customer>, int)> load() async {
+        if (_needsOutstandingOrderV2) {
+          final ids = await _orderedIdsV2();
+          final pageIds =
+              ids.skip(_currentPage * _pageSize).take(_pageSize).toList();
+          return (await repo.getCustomersByIds(pageIds), ids.length);
+        }
+        final results = await Future.wait([
+          repo.getCustomerListPage(
+              offset: _currentPage * _pageSize,
+              limit: _pageSize,
+              query: _searchQuery,
+              tab: _tabKeyV2,
+              orderBy: _sortBy,
+              ascending: _isAscending),
+          repo.getCustomerListCount(query: _searchQuery, tab: _tabKeyV2),
+        ]);
+        return (results[0] as List<Customer>, results[1] as int);
       }
-      return _isAscending ? result : -result;
-    });
 
-    // Reset to first page when filtering
-    _currentPage = 0;
+      var (page, total) = await load();
+      // Current page fell off the end (e.g. last row on the last page deleted).
+      final maxPage = total == 0 ? 0 : (total - 1) ~/ _pageSize;
+      if (_currentPage > maxPage) {
+        _currentPage = maxPage;
+        (page, total) = await load();
+      }
+      if (requestId != _pageRequestId || !mounted) return;
+      setState(() {
+        _pageCustomers = page;
+        _filteredTotal = total;
+      });
+    } catch (e) {
+      if (requestId != _pageRequestId || !mounted) return;
+      _showSnackBar(AppLocalizations.of(context)!.customerMgmtLoadErrorMessage(e.toString()), isError: true);
+    }
   }
 
   void _changePage(int page) {
     if(!mounted) return;
     setState(() => _currentPage = page);
+    _loadPageV2();
   }
 
   Future<void> _handleAddOrUpdateCustomer([Customer? customer]) async {
@@ -213,7 +291,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
 
     setState(() => _isLoading = true);
     try {
-      final newCustomer = Customer(
+      final newCustomer = _extraFields.applyTo(Customer(
         id: customer?.id ?? const Uuid().v4(),
         name: _nameController.text.trim(),
         email: _emailController.text.trim(),
@@ -221,7 +299,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
         address: _addressController.text.trim(),
         gstin: _gstinController.text.trim(),
         businessName: _businessNameController.text.trim(),
-      );
+      ), _fieldSettings);
 
       if (customer == null) {
         await ref.read(customerRepositoryProvider).insertCustomer(newCustomer);
@@ -248,6 +326,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
     _addressController.clear();
     _gstinController.clear();
     _businessNameController.clear();
+    _extraFields.load(null);
   }
 
   void _showSnackBar(String message, {bool isError = false}) {
@@ -280,6 +359,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
     final addressCtrl = TextEditingController(text: customer.address);
     final gstinCtrl = TextEditingController(text: customer.gstin);
     final businessNameCtrl = TextEditingController(text: customer.businessName);
+    final extraFields = CustomerExtraFieldsController()..load(customer);
     final dialogFormKey = GlobalKey<FormState>();
 
     await showDialog(
@@ -328,6 +408,14 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                   const SizedBox(height: 16),
                   _buildDialogTextField(addressCtrl, AppLocalizations.of(context)!.fieldAddressLabel, Icons.location_on,
                       readOnly: !isEdit, maxLines: 3, maxLength: 100),
+                  CustomerExtraFields(
+                    controller: extraFields,
+                    settings: _fieldSettings,
+                    readOnly: !isEdit,
+                    billingName: nameCtrl,
+                    billingPhone: phoneCtrl,
+                    billingAddress: addressCtrl,
+                  ),
                 ],
               ),
             ),
@@ -345,7 +433,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                 final l10n = AppLocalizations.of(context)!;
                 setDialogState(() => isSaving = true);
                 try {
-                  final updatedCustomer = Customer(
+                  final updatedCustomer = extraFields.applyTo(Customer(
                     id: customer.id,
                     name: nameCtrl.text.trim(),
                     email: emailCtrl.text.trim(),
@@ -353,7 +441,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                     address: addressCtrl.text.trim(),
                     gstin: gstinCtrl.text.trim(),
                     businessName: businessNameCtrl.text.trim(),
-                  );
+                  ), _fieldSettings);
 
                   await ref.read(customerRepositoryProvider).updateCustomer(updatedCustomer);
                   await _loadCustomers();
@@ -469,7 +557,10 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
   // ── CSV Import ────────────────────────────────────────────────────────────
 
   static const _csvMaxRows = 200;
-  static const _csvHeaders = ['name', 'email', 'phone', 'address', 'business_name', 'tax_number'];
+  static const _csvHeaders = [
+    'name', 'email', 'phone', 'address', 'business_name', 'tax_number',
+    'shipping_name', 'shipping_phone', 'shipping_address', 'dob', 'age', 'gender',
+  ];
 
   Future<void> _showImportDialog() async {
     final proceed = await showDialog<bool>(
@@ -516,6 +607,19 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                     _csvRuleRow(context, 'address',       AppLocalizations.of(context)!.commonNoLabel,  AppLocalizations.of(context)!.customerMgmtCsvDescAddress),
                     _csvRuleRow(context, 'business_name', AppLocalizations.of(context)!.commonNoLabel,  AppLocalizations.of(context)!.customerMgmtCsvDescBusinessName),
                     _csvRuleRow(context, 'tax_number',    AppLocalizations.of(context)!.commonNoLabel,  AppLocalizations.of(context)!.customerMgmtCsvDescTaxNumber),
+                    if (_fieldSettings.shipping) ...[
+                      _csvRuleRow(context, 'shipping_name',    AppLocalizations.of(context)!.commonNoLabel, AppLocalizations.of(context)!.customerMgmtCsvDescShippingName),
+                      _csvRuleRow(context, 'shipping_phone',   AppLocalizations.of(context)!.commonNoLabel, AppLocalizations.of(context)!.customerMgmtCsvDescShippingPhone),
+                      _csvRuleRow(context, 'shipping_address', AppLocalizations.of(context)!.commonNoLabel, AppLocalizations.of(context)!.customerMgmtCsvDescShippingAddress),
+                    ],
+                    if (_fieldSettings.dob)
+                      _csvRuleRow(context, 'dob',    AppLocalizations.of(context)!.commonNoLabel, AppLocalizations.of(context)!.customerMgmtCsvDescDob),
+                    if (_fieldSettings.age)
+                      _csvRuleRow(context, 'age',    AppLocalizations.of(context)!.commonNoLabel, AppLocalizations.of(context)!.customerMgmtCsvDescAge),
+                    if (_fieldSettings.gender)
+                      _csvRuleRow(context, 'gender', AppLocalizations.of(context)!.commonNoLabel, AppLocalizations.of(context)!.customerMgmtCsvDescGender),
+                    if (_fieldSettings.customFields && _fieldSettings.customFieldDefs.isNotEmpty)
+                      _csvRuleRow(context, '$customerCsvCustomPrefix…', AppLocalizations.of(context)!.commonNoLabel, AppLocalizations.of(context)!.customerMgmtCsvDescCustomField),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -631,8 +735,8 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
         return;
       }
       for (final col in headers) {
-        if (!_csvHeaders.contains(col)) {
-          _showSnackBar(l10n.customerMgmtUnknownColumnMessage(col, _csvHeaders.join(', ')), isError: true);
+        if (!_csvHeaders.contains(col) && !col.startsWith(customerCsvCustomPrefix)) {
+          _showSnackBar(l10n.customerMgmtUnknownColumnMessage(col, [..._csvHeaders, '$customerCsvCustomPrefix<field>'].join(', ')), isError: true);
           if(!mounted) return;
           setState(() => _isLoading = false);
           return;
@@ -651,7 +755,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
 
       String getField(List<dynamic> row, String col) {
         final i = headers.indexOf(col);
-        return i < 0 || i >= row.length ? '' : row[i].toString().trim();
+        return i < 0 || i >= row.length ? '' : stripCsvFormulaGuard(row[i].toString().trim());
       }
 
       // Categorise rows
@@ -710,6 +814,8 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
           gstin: getField(row, 'tax_number'),
           businessName: getField(row, 'business_name'),
         );
+        applyCustomerCsvExtraFields(customer, headers, (col) => getField(row, col),
+            existing, _fieldSettings.customFieldDefs);
         if (existing != null) {
           duplicates.add(customer);
         } else {
@@ -902,7 +1008,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
 
   Future<void> _confirmDeleteAll() async {
     final l10n = AppLocalizations.of(context)!;
-    if (_customers.isEmpty) {
+    if (_statsV2.all == 0) {
       _showSnackBar(l10n.customerMgmtNoCustomersToDeleteMessage);
       return;
     }
@@ -911,7 +1017,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
       builder: (ctx) => AlertDialog(
         title: Text(l10n.customerMgmtDeleteAllTitle),
         content: Text(
-          l10n.customerMgmtDeleteAllBody(_customers.length),
+          l10n.customerMgmtDeleteAllBody(_statsV2.all),
         ),
         actions: [
           TextButton(
@@ -939,18 +1045,48 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
     }
   }
 
+  // Export = every customer matching the current search/tab/sort, fetched
+  // only when the user exports (the screen itself holds one page).
+  Future<List<Customer>> _filteredForExportV2() async => ref
+      .read(customerRepositoryProvider)
+      .getCustomersByIds(await _orderedIdsV2());
+
   Future<void> _exportToCSV() async {
     final l10n = AppLocalizations.of(context)!;
     try {
+      final customers = await _filteredForExportV2();
+      // Optional columns only for fields switched on in settings; import
+      // accepts them regardless.
+      final s = _fieldSettings;
+      final customDefs = s.customFields ? s.customFieldDefs : const [];
       List<List<String>> csvData = [
-        ['name', 'email', 'phone', 'address', 'business_name', 'tax_number'],
-        ..._filteredCustomers.map((c) => [
+        [
+          'name', 'email', 'phone', 'address', 'business_name', 'tax_number',
+          if (s.shipping) ...['shipping_name', 'shipping_phone', 'shipping_address'],
+          if (s.dob) 'dob',
+          if (s.age) 'age',
+          if (s.gender) 'gender',
+          for (final d in customDefs) '$customerCsvCustomPrefix${d.label}',
+        ],
+        ...customers.map((c) => [
           c.name,
           c.email,
           c.phone,
           c.address,
           c.businessName,
           c.gstin,
+          // Same-as-billing exports an empty shipping_address, which
+          // re-imports as same-as-billing.
+          if (s.shipping) ...[
+            c.shippingName,
+            c.shippingPhone,
+            c.shippingSameAsBilling ? '' : c.shippingAddress,
+          ],
+          if (s.dob) c.dob,
+          if (s.age) c.age?.toString() ?? '',
+          if (s.gender) c.gender,
+          for (final d in customDefs)
+            c.customFields.where((v) => v.defId == d.id).firstOrNull?.value ?? '',
         ]),
       ];
 
@@ -972,7 +1108,8 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
   Future<void> _exportToPDF() async {
     final l10n = AppLocalizations.of(context)!;
     try {
-      final totalCount = _filteredCustomers.length;
+      final customers = await _filteredForExportV2();
+      final totalCount = customers.length;
       final pdf = pw.Document();
       pdf.addPage(
         pw.MultiPage(
@@ -1006,7 +1143,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
               context: context,
               data: [
                 ['#', 'Name', 'Business Name', 'Email', 'Phone', 'Tax/VAT No', 'Address'],
-                ..._filteredCustomers.indexed.map(((int, dynamic) e) => [
+                ...customers.indexed.map(((int, dynamic) e) => [
                       e.$1 + 1,
                       e.$2.name,
                       e.$2.businessName,
@@ -1040,53 +1177,29 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
 
   // ============================================================
   // V2 — flat / modern layout. Reuses all v1 state, controllers,
-  // validation, and repository calls (_customers, _filterAndSort,
-  // _handleAddOrUpdateCustomer, _showCustomerDialog, _confirmDelete,
-  // import/export methods are all untouched). New pieces: tab-based
-  // filtering layered on top of _filterAndSort, stat cards, a
-  // slide-out "New Customer" panel, and a flat table.
+  // validation, and repository calls (_handleAddOrUpdateCustomer,
+  // _showCustomerDialog, _confirmDelete, import/export). Tabs, search,
+  // sort and paging load one page at a time (_loadPageV2); stat cards come
+  // from one SQL aggregate (_statsV2). Also a slide-out "New Customer"
+  // panel and a flat table.
   // ============================================================
 
-  int get _businessesCountV2 =>
-      _customers.where((c) => c.businessName.trim().isNotEmpty).length;
-  int get _individualsCountV2 =>
-      _customers.where((c) => c.businessName.trim().isEmpty).length;
-  int get _gstRegisteredCountV2 =>
-      _customers.where((c) => c.gstin.trim().isNotEmpty).length;
-  int get _withoutGstCountV2 => _customers.length - _gstRegisteredCountV2;
-  int get _withOutstandingCountV2 =>
-      _customers.where((c) => (_outstandingByCustomer[c.id] ?? 0) > 0.005).length;
-
-  // Runs the existing search+sort (_filterAndSort) then layers the active
-  // tab's business/individual/GST filter on top of its result.
-  void _applyFilterV2() {
-    _filterAndSort();
-    Iterable<Customer> list = _filteredCustomers;
-    switch (_activeTabV2) {
-      case 1:
-        list = list.where((c) => c.businessName.trim().isNotEmpty);
-        break;
-      case 2:
-        list = list.where((c) => c.businessName.trim().isEmpty);
-        break;
-      case 3:
-        list = list.where((c) => c.gstin.trim().isNotEmpty);
-        break;
-      case 4:
-        list = list.where((c) => c.gstin.trim().isEmpty);
-        break;
-      case 5:
-        list = list.where((c) => (_outstandingByCustomer[c.id] ?? 0) > 0.005);
-        break;
-    }
-    _filteredCustomers = list.toList();
-  }
+  int get _businessesCountV2 => _statsV2.businesses;
+  int get _individualsCountV2 => _statsV2.individuals;
+  int get _gstRegisteredCountV2 => _statsV2.taxRegistered;
+  int get _withoutGstCountV2 => _statsV2.all - _gstRegisteredCountV2;
+  int get _withOutstandingCountV2 => _withOutstandingCount;
 
   void _onSearchChangedV2(String value) {
-    if (!mounted) return;
-    setState(() {
-      _searchQuery = value;
-      _applyFilterV2();
+    // Debounced: each change queries the database (Issues.md #43).
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+      setState(() {
+        _searchQuery = value;
+        _currentPage = 0;
+      });
+      _loadPageV2();
     });
   }
 
@@ -1095,8 +1208,9 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
     setState(() {
       _sortBy = field;
       _isAscending = ascending;
-      _applyFilterV2();
+      _currentPage = 0;
     });
+    _loadPageV2();
   }
 
   void _selectTabV2(int index) {
@@ -1104,8 +1218,8 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
     setState(() {
       _activeTabV2 = index;
       _currentPage = 0;
-      _applyFilterV2();
     });
+    _loadPageV2();
   }
 
   Future<void> _addCustomerV2() async {
@@ -1115,7 +1229,6 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
     if (succeeded) {
       if (!mounted) return;
       setState(() {
-        _applyFilterV2();
         if (!_addAnotherAfterSavingV2) _showAddPanelV2 = false;
       });
     }
@@ -1126,18 +1239,13 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
   }
 
   Future<void> _editCustomerV2(Customer c) async {
+    // _showCustomerDialog reloads via _loadCustomers on save, which keeps the
+    // active tab/search/sort.
     await _showCustomerDialog(c, true);
-    // _showCustomerDialog already reloads _customers + runs the plain
-    // _filterAndSort internally on save; re-apply the active tab filter
-    // on top so it doesn't get lost after an edit.
-    if (!mounted) return;
-    setState(_applyFilterV2);
   }
 
   Future<void> _deleteCustomerV2(Customer c) async {
-    await _confirmDelete(c);
-    if (!mounted) return;
-    setState(_applyFilterV2);
+    await _confirmDelete(c); // reloads via _loadCustomers
   }
 
   Future<void> _receivePayment(Customer c) async {
@@ -1235,7 +1343,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
     final cards = [
       _statCardV2(
         label: AppLocalizations.of(context)!.customerMgmtTotalCustomersLabel,
-        value: '${_customers.length}',
+        value: '${_statsV2.all}',
         subtitle: AppLocalizations.of(context)!.customerMgmtAllCustomersSubtitle,
         icon: Icons.groups_outlined,
         accent: Theme.of(context).primaryColor,
@@ -1442,8 +1550,8 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                       'no_gst' => 4,
                       _ => _activeTabV2 >= 3 ? 0 : _activeTabV2,
                     };
-                    _applyFilterV2();
                   });
+                  _loadPageV2();
                 },
                 itemBuilder: (ctx) => [
                   PopupMenuItem(value: 'all', child: Text(l10n.customerMgmtAllTaxStatusesLabel(_taxWord))),
@@ -1544,7 +1652,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          _tabChipV2(AppLocalizations.of(context)!.invoiceMgmtStatusAllLabel, _customers.length, 0),
+          _tabChipV2(AppLocalizations.of(context)!.invoiceMgmtStatusAllLabel, _statsV2.all, 0),
           _tabChipV2(AppLocalizations.of(context)!.customerMgmtBusinessesLabel, _businessesCountV2, 1),
           _tabChipV2(AppLocalizations.of(context)!.customerMgmtIndividualsLabel, _individualsCountV2, 2),
           _tabChipV2(AppLocalizations.of(context)!.customerMgmtTaxRegisteredLabel(_taxWord), _gstRegisteredCountV2, 3),
@@ -1753,7 +1861,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
   }
 
   Widget _paginationV2(List<Customer> pageItems, int totalPages) {
-    final total = _filteredCustomers.length;
+    final total = _filteredTotal;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
@@ -1799,6 +1907,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                     _pageSize = n;
                     _currentPage = 0;
                   });
+                  _loadPageV2();
                 },
               ),
               const SizedBox(width: 12),
@@ -1847,10 +1956,8 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
   // natural content (header + rows + pagination) doesn't fit the viewport.
   Widget _tableSectionV2() {
     final totalPages =
-        _filteredCustomers.isEmpty ? 1 : (_filteredCustomers.length / _pageSize).ceil();
-    final start = _currentPage * _pageSize;
-    final end = (start + _pageSize).clamp(0, _filteredCustomers.length);
-    final pageItems = start < end ? _filteredCustomers.sublist(start, end) : <Customer>[];
+        _filteredTotal == 0 ? 1 : (_filteredTotal / _pageSize).ceil();
+    final pageItems = _pageCustomers;
 
     return Container(
       decoration: _flatCardDecorationV2(context),
@@ -1859,7 +1966,7 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
         mainAxisSize: MainAxisSize.min,
         children: [
           _tableHeaderRowV2(),
-          _isLoading && _customers.isEmpty
+          _isLoading && _pageCustomers.isEmpty
               ? const SizedBox(
                   height: 240, child: Center(child: CircularProgressIndicator()))
               : pageItems.isEmpty
@@ -1934,6 +2041,13 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
                       _buildFormField(_addressController, AppLocalizations.of(context)!.fieldAddressLabel, Icons.location_on,
                           false,
                           maxLines: 3, maxLength: 500),
+                      CustomerExtraFields(
+                        controller: _extraFields,
+                        settings: _fieldSettings,
+                        billingName: _nameController,
+                        billingPhone: _phoneController,
+                        billingAddress: _addressController,
+                      ),
                     ],
                   ),
                 ),

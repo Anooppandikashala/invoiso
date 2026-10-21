@@ -8,9 +8,11 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:invoiso/common/app_config.dart';
 import 'package:invoiso/common/constants.dart';
+import 'package:invoiso/common/app_config.dart';
 import 'package:invoiso/providers/app_config_provider.dart';
+import 'package:invoiso/providers/cash_exchange_settings_provider.dart';
+import 'package:invoiso/providers/purchase_bills_settings_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/services/update_service.dart';
 import 'package:invoiso/widgets/update_dialog.dart';
@@ -20,6 +22,11 @@ import 'package:invoiso/common/invoiso_colors.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/product.dart';
 import 'package:invoiso/common/common.dart';
+import 'package:invoiso/database/company_registry_service.dart';
+import 'package:invoiso/models/company_profile.dart';
+import 'package:invoiso/screens/settings/company_management_screen.dart';
+import 'package:invoiso/utils/company_switch_navigation.dart';
+import 'package:invoiso/screens/help/help_search_screen.dart';
 import 'package:invoiso/screens/settings/settings_screen.dart';
 import 'package:invoiso/services/invoice_pdf_services.dart';
 import 'package:invoiso/services/pdf_service.dart';
@@ -38,8 +45,11 @@ import 'package:invoiso/screens/create_invoice_screen_v2.dart';
 import 'package:invoiso/screens/product_management_screen_v2.dart';
 // import 'package:invoiso/screens/invoice_management_screen.dart';
 import 'package:invoiso/screens/invoice_management_screen_v2.dart';
+import 'package:invoiso/screens/cash_exchange_screen.dart';
 import 'package:invoiso/screens/auth/login_screen.dart';
 import 'package:invoiso/screens/reports_screen.dart';
+import 'package:invoiso/screens/purchase_bill_management_screen.dart';
+import 'package:invoiso/screens/supplier_management_screen.dart';
 
 // invoice.type is a raw internal value ('Invoice'/'Quotation'/'Receipt') used
 // for comparisons throughout this file — only the displayed label is localized.
@@ -67,9 +77,15 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   int _selectedIndex = 0;
+  bool _reportsAdminOnly = false;
+  // Reports hidden for this user (Settings → Accessibility).
+  bool get _reportsLocked => _reportsAdminOnly && !_currentUser.isAdmin();
   bool _sidebarExpanded = true;
   late User _currentUser;
   String? _pendingReportsStatementCustomerKey;
+  String? _companyName;
+  List<CompanyProfile> _companies = [];
+  String? _activeCompanyId;
 
   Invoice? invoiceToEdit;
   Invoice? _invoiceToClone;
@@ -78,6 +94,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   // the "New {type}" button on each management screen. Reset to 'Invoice' by
   // the nav-rail New Invoice action.
   String _newInvoiceType = 'Invoice';
+  // Id of the quotation being converted to an invoice (drives the create
+  // form's convert mode). Null unless a conversion is in flight.
+  String? _convertSourceQuotationId;
   bool _hasUpdate = false;
   bool _returnsEnabled = false;
   String _createInvoiceLayout = 'v2';
@@ -91,6 +110,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     super.initState();
     _currentUser = widget.loggedInUser;
     _loadCreateInvoiceLayout();
+    _loadServicesEnabled();
+    _loadReportsAdminOnly();
+    _loadCompanies();
     SessionManager.initialize(_onSessionTimeout);
     if (ref.read(appEditionConfigProvider).enableUpdateCheck) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _checkForUpdates());
@@ -104,6 +126,83 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     }
   }
 
+  Future<void> _loadCompanies() async {
+    final companies = await CompanyRegistryService.listCompanies();
+    final activeId = await CompanyRegistryService.getActiveCompanyId();
+    if (!mounted) return;
+    setState(() {
+      _companies = companies;
+      _activeCompanyId = activeId;
+      _companyName = companies.where((c) => c.id == activeId).firstOrNull?.name;
+    });
+  }
+
+  Future<void> _switchCompany(CompanyProfile company) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.companyMgmtSwitchConfirmTitle),
+        content: Text(l10n.companyMgmtSwitchConfirmBody(company.name)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.actionCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.companyMgmtSwitchButton),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await CompanyRegistryService.switchToCompany(company.id);
+    } catch (e) {
+      if (!mounted) return;
+      _showErrorDialog(l10n.companyMgmtSwitchErrorMessage(e.toString()));
+      return;
+    }
+    if (!mounted) return;
+    await returnToLoginAfterCompanyChange(context, ref);
+  }
+
+  void _showErrorDialog(String message) {
+    final l10n = AppLocalizations.of(context)!;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.commonErrorTitle),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(l10n.actionOk),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Services nav item; the toggle lives in Settings → Accessibility.
+  Future<void> _loadServicesEnabled() async {
+    final v = await ref
+        .read(settingsRepositoryProvider)
+        .getSetting(SettingKey.cashUpiExchangeEnabled);
+    if (!mounted) return;
+    ref.read(cashUpiExchangeEnabledProvider.notifier).state = v == 'true';
+  }
+
+  Future<void> _loadReportsAdminOnly() async {
+    final v = await ref
+        .read(settingsRepositoryProvider)
+        .getSetting(SettingKey.reportsAdminOnly);
+    if (!mounted) return;
+    setState(() => _reportsAdminOnly = v == 'true');
+  }
+
   Future<void> _loadCreateInvoiceLayout() async {
     final settingsRepo = ref.read(settingsRepositoryProvider);
     final layout = await settingsRepo.getSetting(SettingKey.createInvoiceLayout);
@@ -113,6 +212,50 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       _createInvoiceLayout = layout ?? 'v2';
       _returnsEnabled = returns == 'true';
     });
+    if (_createInvoiceLayout == 'v1') {
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _showV1DeprecationNotice());
+    }
+  }
+
+  Future<void> _showV1DeprecationNotice() async {
+    if (!mounted) return;
+    final switchNow = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.info_outline, color: Theme.of(context).primaryColor),
+            const SizedBox(width: 12),
+            const Flexible(child: Text('Classic invoice layout is going away')),
+          ],
+        ),
+        content: const Text(
+          "You're using the classic Create Invoice layout. In an upcoming "
+          "release this will be removed and everyone moves to the new layout. "
+          "Try it now so you're comfortable with it before the switch — you "
+          "can always go back from Settings until then.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Maybe later'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Try new layout now'),
+          ),
+        ],
+      ),
+    );
+    if (switchNow == true && mounted) {
+      await ref
+          .read(settingsRepositoryProvider)
+          .setSetting(SettingKey.createInvoiceLayout, 'v2');
+      if (!mounted) return;
+      setState(() => _createInvoiceLayout = 'v2');
+    }
   }
 
   Future<void> _checkForUpdates() async {
@@ -140,9 +283,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   void _onSessionTimeout() {
     if (!mounted) return;
-    Navigator.pushReplacement(
-      context,
+    // Clear the whole stack — a dialog or pushed screen may be on top, and
+    // pushReplacement would leave the dashboard reachable behind Login.
+    Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => const LoginScreen()),
+      (_) => false,
     );
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -173,13 +318,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       case 1:
         final isNewDoc = invoiceToEdit == null && _invoiceToClone == null;
         final createInvoiceKey = ValueKey(
-            'create_invoice_${invoiceToEdit?.id ?? 'new'}_${_invoiceToClone?.id ?? ''}_${isNewDoc ? _newInvoiceType : ''}');
+            'create_invoice_${invoiceToEdit?.id ?? 'new'}_${_invoiceToClone?.id ?? ''}_${isNewDoc ? _newInvoiceType : ''}_${_convertSourceQuotationId ?? ''}');
         void onCreateNewInvoice() {
           if (!mounted) return;
           setState(() {
             invoiceToEdit = null;
             _invoiceToClone = null;
             _newInvoiceType = 'Invoice';
+            _convertSourceQuotationId = null;
           });
         }
         return _createInvoiceLayout == 'v1'
@@ -189,6 +335,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 cloneFrom: _invoiceToClone,
                 cloneType: _invoiceToClone != null ? _cloneType : null,
                 initialType: isNewDoc ? _newInvoiceType : null,
+                convertFromQuotationId: _convertSourceQuotationId,
                 guard: _invoiceFormGuardV1,
                 onCreateNewInvoice: onCreateNewInvoice,
               )
@@ -198,6 +345,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 cloneFrom: _invoiceToClone,
                 cloneType: _invoiceToClone != null ? _cloneType : null,
                 initialType: isNewDoc ? _newInvoiceType : null,
+                convertFromQuotationId: _convertSourceQuotationId,
                 guard: _invoiceFormGuard,
                 onCreateNewInvoice: onCreateNewInvoice,
               );
@@ -216,6 +364,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           onEditInvoice: editInvoice,
           onCloneInvoice: cloneInvoice,
           onCreateNew: _createDocumentOfType,
+          onConvertToInvoice: _convertQuotationToInvoice,
           user: _currentUser,
           filterType: 'Quotation',
         );
@@ -231,26 +380,44 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       case 5:
         return CustomerManagementScreenV2(
           user: _currentUser,
-          onViewCustomerStatement: (c) {
-            setState(() {
-              _pendingReportsStatementCustomerKey =
-                  CustomerIdentity.key(id: c.id, name: c.name);
-              _selectedIndex = 7;
-            });
-          },
+          onViewCustomerStatement: _reportsLocked
+              ? null
+              : (c) {
+                  setState(() {
+                    _pendingReportsStatementCustomerKey =
+                        CustomerIdentity.key(id: c.id, name: c.name);
+                    _selectedIndex = 7;
+                  });
+                },
         );
       case 6:
         return ProductManagementScreenV2(user: _currentUser);
-      case 7:
+      case 7 when !_reportsLocked:
         final statementCustomerKey = _pendingReportsStatementCustomerKey;
         _pendingReportsStatementCustomerKey = null;
-        return ReportsScreen(initialStatementCustomerKey: statementCustomerKey);
+        return ReportsScreen(
+            initialStatementCustomerKey: statementCustomerKey,
+            isAdmin: _currentUser.isAdmin());
       case 8:
         return SettingsScreen(
           currentUser: _currentUser,
           openAccessibilityToken: _accessibilityJumpToken,
         );
-      case 9:
+      case 9: // Services (Cash / UPI-Bank exchange); shown after New Invoice
+        return CashExchangeScreen(user: _currentUser);
+      case 10:
+        return ref.watch(enablePurchaseBillsAndSuppliersProvider)
+            ? PurchaseBillManagementScreen(user: _currentUser)
+            : Center(
+                child: Text(
+                    AppLocalizations.of(context)!.dashboardUnknownTabLabel));
+      case 11:
+        return ref.watch(enablePurchaseBillsAndSuppliersProvider)
+            ? SupplierManagementScreen(user: _currentUser)
+            : Center(
+                child: Text(
+                    AppLocalizations.of(context)!.dashboardUnknownTabLabel));
+      case 12:
         return InvoiceManagementScreenV2(
           key: const ValueKey('credit_note_list'),
           onEditInvoice: editInvoice,
@@ -259,7 +426,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           user: _currentUser,
           filterType: 'Credit Note',
         );
-      case 10:
+      case 13:
         return InvoiceManagementScreenV2(
           key: const ValueKey('debit_note_list'),
           onEditInvoice: editInvoice,
@@ -335,6 +502,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       _selectedIndex = 1;
       invoiceToEdit = invoice;
       _invoiceToClone = null;
+      _convertSourceQuotationId = null;
     });
     _shortcutsFocusNode.unfocus();
   }
@@ -351,6 +519,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       invoiceToEdit = null;
       _invoiceToClone = invoice;
       _cloneType = type;
+      _convertSourceQuotationId = null;
     });
     _shortcutsFocusNode.unfocus();
   }
@@ -366,6 +535,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       invoiceToEdit = null;
       _invoiceToClone = null;
       _newInvoiceType = type;
+      _convertSourceQuotationId = null;
+    });
+    _shortcutsFocusNode.unfocus();
+  }
+
+  // "Convert to Invoice" action on a quotation row — opens the create form
+  // pre-filled from the quotation, locked to Invoice type; on save the
+  // quotation is stamped 'converted' and the two are linked.
+  Future<void> _convertQuotationToInvoice(Invoice quotation) async {
+    if (!await _canLeaveInvoiceForm()) return;
+    await _loadCreateInvoiceLayout();
+    if (!mounted) return;
+    setState(() {
+      _selectedIndex = 1;
+      invoiceToEdit = null;
+      _invoiceToClone = quotation;
+      _cloneType = 'Invoice';
+      _convertSourceQuotationId = quotation.id;
     });
     _shortcutsFocusNode.unfocus();
   }
@@ -382,7 +569,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     if (_selectedIndex == 1 && !await _canLeaveInvoiceForm()) return;
     if (_selectedIndex == 7 && index != 7) await _refreshUser();
     // Leaving Settings — pick up toggles that change the nav (e.g. Returns).
-    if (_selectedIndex == 8 && index != 8) await _loadCreateInvoiceLayout();
+    if (_selectedIndex == 8 && index != 8) {
+      await _loadCreateInvoiceLayout();
+      await _loadServicesEnabled();
+      await _loadReportsAdminOnly();
+    }
     if (index == 1) await _loadCreateInvoiceLayout();
     if (!mounted) return;
     setState(() {
@@ -390,9 +581,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       if (index != 1) {
         invoiceToEdit = null;
         _invoiceToClone = null;
+        _convertSourceQuotationId = null;
       } else {
-        // Nav-rail "New Invoice" always means a plain invoice.
+        // Nav-rail "New Invoice" always means a plain, blank invoice.
         _newInvoiceType = 'Invoice';
+        _invoiceToClone = null;
+        _convertSourceQuotationId = null;
       }
     });
     // See initState: only hold shortcuts focus for non-create-invoice tabs.
@@ -449,6 +643,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final expanded = _sidebarExpanded;
     final primary = Theme.of(context).primaryColor;
     final cfg = ref.watch(appEditionConfigProvider);
+    final showPurchaseBillsAndSuppliers =
+        ref.watch(enablePurchaseBillsAndSuppliersProvider);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 220),
@@ -466,46 +662,166 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           children: [
             // ── Logo + toggle ──────────────────────────
             if (expanded)
-              SizedBox(
-                height: 76,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Positioned(
-                      left: 16,
-                      right: 36,
-                      child: Image.asset(
-                        Theme.of(context).brightness == Brightness.dark
-                            ? 'assets/images/logo_dark.png'
-                            : 'assets/images/logo.png',
-                        height: 36,
-                        fit: BoxFit.fitHeight,
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    height: 76,
+                    child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Positioned(
+                            left: 16,
+                            right: 36,
+                            child: Image.asset(
+                              Theme.of(context).brightness == Brightness.dark
+                                  ? 'assets/images/logo_dark.png'
+                                  : 'assets/images/logo.png',
+                              height: 36,
+                              fit: BoxFit.fitHeight,
+                            ),
+                          ),
+                          Positioned(
+                            right: 6,
+                            child: Tooltip(
+                              message: AppLocalizations.of(context)!
+                                  .dashboardCollapseSidebarTooltip,
+                              child: InkWell(
+                                onTap: () {
+                                  if (!mounted) return;
+                                  setState(() => _sidebarExpanded = false);
+                                },
+                                borderRadius: BorderRadius.circular(6),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(6),
+                                  child: Icon(Icons.chevron_left_rounded,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                      size: 20),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    Positioned(
-                      right: 6,
-                      child: Tooltip(
-                        message: AppLocalizations.of(context)!
-                            .dashboardCollapseSidebarTooltip,
-                        child: InkWell(
-                          onTap: () {
-                            if (!mounted) return;
-                            setState(() => _sidebarExpanded = false);
+                    if (_companyName?.isNotEmpty == true)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+                        child: PopupMenuButton<String>(
+                          tooltip: '',
+                          padding: EdgeInsets.zero,
+                          offset: const Offset(0, 40),
+                          itemBuilder: (context) => [
+                            for (final company in _companies)
+                              PopupMenuItem<String>(
+                                value: company.id,
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      company.id == _activeCompanyId
+                                          ? Icons.check_circle
+                                          : Icons.circle_outlined,
+                                      size: 18,
+                                      color: company.id == _activeCompanyId
+                                          ? Colors.green
+                                          : Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Flexible(
+                                        child: Text(company.name,
+                                            overflow: TextOverflow.ellipsis)),
+                                  ],
+                                ),
+                              ),
+                            const PopupMenuDivider(),
+                            PopupMenuItem<String>(
+                              value: '__manage__',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.settings_outlined,
+                                      size: 18,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant),
+                                  const SizedBox(width: 10),
+                                  Text(AppLocalizations.of(context)!
+                                      .companyMgmtTitle),
+                                ],
+                              ),
+                            ),
+                          ],
+                          onSelected: (value) {
+                            if (value == '__manage__') {
+                              Navigator.of(context).push(MaterialPageRoute(
+                                builder: (_) => CompanyManagementScreen(
+                                    currentUser: _currentUser),
+                              ));
+                            } else if (value != _activeCompanyId) {
+                              final company = _companies
+                                  .where((c) => c.id == value)
+                                  .firstOrNull;
+                              if (company != null) _switchCompany(company);
+                            }
                           },
-                          borderRadius: BorderRadius.circular(6),
-                          child: Padding(
-                            padding: const EdgeInsets.all(6),
-                            child: Icon(Icons.chevron_left_rounded,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
-                                size: 20),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            // `expanded` flips true while the sidebar is still ~64px
+                            // wide mid-animation; give the row a minimum width and
+                            // clip the excess instead of overflowing.
+                            child: LayoutBuilder(
+                              builder: (context, constraints) => UnconstrainedBox(
+                                constrainedAxis: Axis.vertical,
+                                alignment: Alignment.centerLeft,
+                                clipBehavior: Clip.hardEdge,
+                                child: SizedBox(
+                                  width: constraints.maxWidth < 60
+                                      ? 60
+                                      : constraints.maxWidth,
+                                  child: Row(
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 11,
+                                        backgroundColor: primary,
+                                        child: Text(
+                                          _companyName!.trim()[0].toUpperCase(),
+                                          style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          _companyName!,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 12.5,
+                                            fontWeight: FontWeight.w600,
+                                            color: primary,
+                                          ),
+                                        ),
+                                      ),
+                                      Icon(Icons.expand_more, size: 16, color: primary),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
+                ],
               )
             else
               SizedBox(
@@ -513,15 +829,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: Image.asset(
-                        Theme.of(context).brightness == Brightness.dark
-                            ? 'assets/images/logo_v_dark.png'
-                            : 'assets/images/logo_v.png',
-                        width: 38,
-                        height: 38,
-                        fit: BoxFit.cover,
+                    Tooltip(
+                      message: _companyName ?? '',
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.asset(
+                          Theme.of(context).brightness == Brightness.dark
+                              ? 'assets/images/logo_v_dark.png'
+                              : 'assets/images/logo_v.png',
+                          width: 38,
+                          height: 38,
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -563,6 +882,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         AppLocalizations.of(context)!.navDashboard),
                     _buildNavItem(1, Icons.receipt_outlined, Icons.receipt,
                         AppLocalizations.of(context)!.navNewInvoice),
+                    if (ref.watch(cashUpiExchangeEnabledProvider))
+                      _buildNavItem(9, Icons.currency_exchange,
+                          Icons.currency_exchange,
+                          AppLocalizations.of(context)!.navServices),
                     _buildNavItem(
                         2,
                         Icons.receipt_long_outlined,
@@ -580,12 +903,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         AppLocalizations.of(context)!.navReceipts),
                     if (_returnsEnabled) ...[
                       _buildNavItem(
-                          9,
+                          12,
                           Icons.assignment_return_outlined,
                           Icons.assignment_return,
                           AppLocalizations.of(context)!.navCreditNotes),
                       _buildNavItem(
-                          10,
+                          13,
                           Icons.assignment_late_outlined,
                           Icons.assignment_late,
                           AppLocalizations.of(context)!.navDebitNotes),
@@ -597,8 +920,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         Icons.inventory_2_outlined,
                         Icons.inventory_2,
                         AppLocalizations.of(context)!.navProducts),
-                    _buildNavItem(7, Icons.bar_chart_outlined, Icons.bar_chart,
-                        AppLocalizations.of(context)!.navReports),
+                    if (!_reportsLocked)
+                      _buildNavItem(7, Icons.bar_chart_outlined, Icons.bar_chart,
+                          AppLocalizations.of(context)!.navReports),
+                    if (showPurchaseBillsAndSuppliers) ...[
+                      _buildNavItem(10, Icons.shopping_cart_outlined,
+                          Icons.shopping_cart, AppLocalizations.of(context)!.navPurchaseBills),
+                      _buildNavItem(11, Icons.local_shipping_outlined,
+                          Icons.local_shipping, AppLocalizations.of(context)!.navSuppliers),
+                    ],
                     _buildNavItem(8, Icons.settings_outlined, Icons.settings,
                         AppLocalizations.of(context)!.navSettings,
                         showDot: _hasUpdate),
@@ -607,6 +937,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
             ),
 
+            // ── Search Help & Settings ──────────────────
+            _buildSearchNavItem(),
+            const SizedBox(height: 4),
+
             // ── User Info ──────────────────────────────
             Divider(
                 color: Theme.of(context).colorScheme.outlineVariant,
@@ -614,7 +948,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 thickness: 1),
             LayoutBuilder(
               builder: (context, constraints) {
-                final useExpanded = constraints.maxWidth > 110;
+                // Row below needs ~178px of fixed content (padding + avatar +
+                // 3 icon buttons) — switch only once it fits, not at 110.
+                final useExpanded = constraints.maxWidth > 180;
                 if (useExpanded) {
                   return Padding(
                     padding: const EdgeInsets.fromLTRB(14, 12, 10, 10),
@@ -670,11 +1006,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             ),
                             Tooltip(
                               message: AppLocalizations.of(context)!
-                                  .dashboardSupportTooltip,
+                                  .buyMeCoffeeLabel,
                               child: InkWell(
                                 onTap: () => launchUrl(
-                                    Uri.parse(AppConfig.supportForm),
+                                    Uri.parse(AppConfig.buyMeCoffee),
                                     mode: LaunchMode.externalApplication),
+                                borderRadius: BorderRadius.circular(6),
+                                child: const Padding(
+                                  padding: EdgeInsets.all(6),
+                                  child: Icon(Icons.coffee_outlined,
+                                      color: Color(0xFFD97706), size: 18),
+                                ),
+                              ),
+                            ),
+                            Tooltip(
+                              message: AppLocalizations.of(context)!
+                                  .dashboardSupportTooltip,
+                              child: InkWell(
+                                onTap: () => showHelpSearchDialog(context),
                                 borderRadius: BorderRadius.circular(6),
                                 child: Padding(
                                   padding: EdgeInsets.all(6),
@@ -769,11 +1118,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       Center(
                         child: Tooltip(
                           message: AppLocalizations.of(context)!
-                              .dashboardSupportTooltip,
+                              .buyMeCoffeeLabel,
                           child: InkWell(
                             onTap: () => launchUrl(
-                                Uri.parse(AppConfig.supportForm),
+                                Uri.parse(AppConfig.buyMeCoffee),
                                 mode: LaunchMode.externalApplication),
+                            borderRadius: BorderRadius.circular(6),
+                            child: const Padding(
+                              padding: EdgeInsets.all(6),
+                              child: Icon(Icons.coffee_outlined,
+                                  color: Color(0xFFD97706), size: 18),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Center(
+                        child: Tooltip(
+                          message: AppLocalizations.of(context)!
+                              .dashboardSupportTooltip,
+                          child: InkWell(
+                            onTap: () => showHelpSearchDialog(context),
                             borderRadius: BorderRadius.circular(6),
                             child: Padding(
                               padding: EdgeInsets.all(6),
@@ -1073,6 +1438,74 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       },
     );
   }
+
+  Widget _buildSearchNavItem() {
+    final primary = Theme.of(context).primaryColor;
+    final label = AppLocalizations.of(context)!.helpSearchTooltip;
+    final onSurfaceVariant = Theme.of(context).colorScheme.onSurfaceVariant;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useExpanded = constraints.maxWidth > 110;
+
+        if (!useExpanded) {
+          return Tooltip(
+            message: label,
+            preferBelow: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+                child: InkWell(
+                  onTap: () => showHelpSearchDialog(context),
+                  borderRadius: BorderRadius.circular(8),
+                  hoverColor: primary.withValues(alpha: 0.06),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Icon(Icons.search, color: onSurfaceVariant, size: 20),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            child: InkWell(
+              onTap: () => showHelpSearchDialog(context),
+              borderRadius: BorderRadius.circular(8),
+              hoverColor: primary.withValues(alpha: 0.06),
+              splashColor: primary.withValues(alpha: 0.1),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                child: Row(
+                  children: [
+                    Icon(Icons.search, color: onSurfaceVariant, size: 18),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                          color: onSurfaceVariant,
+                          fontWeight: FontWeight.w400,
+                          fontSize: 13.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
 
 class DashboardHome extends ConsumerStatefulWidget {
@@ -1100,6 +1533,9 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
   List<Invoice> recentInvoices = [];
   List<Invoice> dueSoonInvoices = [];
   List<Product> outOfStockProducts = [];
+  List<Product> lowStockProducts = [];
+  // Hides "Update stock" when stock editing is admin-only.
+  bool _stockLocked = false;
   List<Invoice> overdueInvoices = [];
   String _currencySymbol = '₹';
   bool isLoading = true;
@@ -1107,6 +1543,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
   bool _showLayoutBanner = false;
   bool _showThemeBanner = false;
   bool _showShortcutsBanner = false;
+  bool _showPurchaseBanner = false;
   bool _showSupportBanner = false;
   String _supportMilestone = '';
   List<Map<String, dynamic>> _monthlyRevenue = [];
@@ -1150,6 +1587,11 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
       ref
           .read(settingsRepositoryProvider)
           .getSetting(SettingKey.shortcutsBannerDismissed), // 15
+      ref.read(productRepositoryProvider).getLowStockProducts(), // 16
+      ref.read(settingsRepositoryProvider).getProductColumnsConfig(), // 17
+      ref
+          .read(settingsRepositoryProvider)
+          .getSetting(SettingKey.purchaseBillsBannerDismissed), // 18
     ]);
 
     final customerCount = results[0] as int;
@@ -1167,6 +1609,10 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     final bannerDismissed = results[11] as String?;
     final supportDismissed = results[12] as String?;
     final outOfStock = results[13] as List<Product>;
+    final lowStock = results[16] as List<Product>;
+    final stockLocked =
+        (results[17] as ProductColumnsConfig).stockEditAdminOnly &&
+            !widget.user.isAdmin();
     final themeBannerDismissed = results[14] as String?;
     final shortcutsBannerDismissed =
         Platform.isAndroid ? '1' : results[15] as String?;
@@ -1182,6 +1628,8 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
       totalCustomers = customerCount;
       totalProducts = productCount;
       outOfStockProducts = outOfStock;
+      lowStockProducts = lowStock;
+      _stockLocked = stockLocked;
       totalInvoices = financials.count;
       totalRevenue = financials.revenue;
       totalOutstanding = financials.outstanding;
@@ -1196,6 +1644,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
       _showLayoutBanner = bannerDismissed != '1';
       _showThemeBanner = themeBannerDismissed != '1';
       _showShortcutsBanner = shortcutsBannerDismissed != '1';
+      _showPurchaseBanner = (results[18] as String?) != '1';
       _supportMilestone = milestone;
       _showSupportBanner =
           milestone.isNotEmpty && supportDismissed != milestone;
@@ -1229,6 +1678,23 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
         .read(settingsRepositoryProvider)
         .setSetting(SettingKey.shortcutsBannerDismissed, '1');
     if (mounted) setState(() => _showShortcutsBanner = false);
+  }
+
+  Future<void> _dismissPurchaseBanner() async {
+    await ref
+        .read(settingsRepositoryProvider)
+        .setSetting(SettingKey.purchaseBillsBannerDismissed, '1');
+    if (mounted) setState(() => _showPurchaseBanner = false);
+  }
+
+  // Same as the Settings → Accessibility toggle; the sidebar picks it up
+  // from the provider immediately.
+  Future<void> _enablePurchaseBills() async {
+    await ref
+        .read(settingsRepositoryProvider)
+        .setSetting(SettingKey.enablePurchaseBillsAndSuppliers, 'true');
+    ref.read(enablePurchaseBillsAndSuppliersProvider.notifier).state = true;
+    await _dismissPurchaseBanner();
   }
 
   void _showShortcutsDialog() {
@@ -1313,6 +1779,36 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
       actionColor: const Color(0xFF059669),
       onDismiss: _dismissShortcutsBanner,
       dismissIconColor: const Color(0xFF6EE7B7),
+    );
+  }
+
+  // Admin-only (Settings, where the feature is toggled, is admin-only);
+  // hidden once the feature is on.
+  Widget _buildPurchaseDiscoveryBanner() {
+    return DiscoveryBanner(
+      visible: _showPurchaseBanner &&
+          widget.user.isAdmin() &&
+          !ref.watch(enablePurchaseBillsAndSuppliersProvider),
+      icon: Icons.local_shipping_outlined,
+      iconColor: const Color(0xFF0891B2),
+      backgroundColor: const Color(0xFFECFEFF),
+      borderColor: const Color(0xFFA5F3FC),
+      title: Text(
+        AppLocalizations.of(context)!.dashboardPurchaseBannerTitle,
+        style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+            color: Color(0xFF155E75)),
+      ),
+      subtitle: Text(
+        AppLocalizations.of(context)!.dashboardPurchaseBannerSubtitle,
+        style: const TextStyle(fontSize: 12, color: Color(0xFF0891B2)),
+      ),
+      actionLabel: AppLocalizations.of(context)!.dashboardPurchaseBannerAction,
+      onAction: _enablePurchaseBills,
+      actionColor: const Color(0xFF0891B2),
+      onDismiss: _dismissPurchaseBanner,
+      dismissIconColor: const Color(0xFF67E8F9),
     );
   }
 
@@ -1467,6 +1963,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _buildPurchaseDiscoveryBanner(),
               _buildLayoutDiscoveryBanner(),
               _buildThemeDiscoveryBanner(),
               _buildShortcutsDiscoveryBanner(),
@@ -1540,6 +2037,10 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
               if (outOfStockProducts.isNotEmpty) ...[
                 const SizedBox(height: 36),
                 _buildOutOfStockSection(),
+              ],
+              if (lowStockProducts.isNotEmpty) ...[
+                const SizedBox(height: 36),
+                _buildOutOfStockSection(low: true),
               ],
 
               // ── Overdue Invoices ──────────────────────────────
@@ -1921,8 +2422,10 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                               Colors.blue,
                                               AppLocalizations.of(context)!
                                                   .actionEdit,
-                                              () => widget
-                                                  .onEditInvoice(invoice)),
+                                              invoice.status == 'declined'
+                                                  ? null
+                                                  : () => widget
+                                                      .onEditInvoice(invoice)),
                                           _buildActionButton(
                                               Icons.copy_all_outlined,
                                               Colors.teal,
@@ -1957,7 +2460,11 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                               Colors.purple,
                                               AppLocalizations.of(context)!
                                                   .actionPayment,
-                                              invoice.type == 'Invoice'
+                                              invoice.type == 'Invoice' &&
+                                                      (invoice.status !=
+                                                              'declined' ||
+                                                          invoice.payments
+                                                              .isNotEmpty)
                                                   ? () => showDialog(
                                                         context: context,
                                                         barrierDismissible:
@@ -2478,7 +2985,10 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     controller.dispose();
   }
 
-  Widget _buildOutOfStockSection() {
+  // [low]: the same alert for in-stock items at/below their low-stock limit.
+  Widget _buildOutOfStockSection({bool low = false}) {
+    final products = low ? lowStockProducts : outOfStockProducts;
+    final MaterialColor alert = low ? Colors.orange : Colors.red;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2489,15 +2999,17 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
               width: 4,
               height: 24,
               decoration: BoxDecoration(
-                color: Colors.red[700],
+                color: alert[700],
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             const SizedBox(width: 12),
-            Icon(Icons.inventory_2, color: Colors.red[600], size: 22),
+            Icon(Icons.inventory_2, color: alert[600], size: 22),
             const SizedBox(width: 8),
             Text(
-              AppLocalizations.of(context)!.dashboardOutOfStockSectionTitle,
+              low
+                  ? AppLocalizations.of(context)!.productMgmtLowStockTabLabel
+                  : AppLocalizations.of(context)!.dashboardOutOfStockSectionTitle,
               style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -2507,17 +3019,17 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.10),
+                color: alert.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.red.withValues(alpha: 0.4)),
+                border: Border.all(color: alert.withValues(alpha: 0.4)),
               ),
               child: Text(
                 AppLocalizations.of(context)!
-                    .dashboardItemCountLabel(outOfStockProducts.length),
+                    .dashboardItemCountLabel(products.length),
                 style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: Colors.red[700]),
+                    color: alert[700]),
               ),
             ),
             const Spacer(),
@@ -2530,14 +3042,14 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
           ],
         ),
         const SizedBox(height: 16),
-        ...outOfStockProducts.map((product) => Container(
+        ...products.map((product) => Container(
               margin: const EdgeInsets.only(bottom: 10),
               child: Card(
                 elevation: 2,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                   side: BorderSide(
-                      color: Colors.red.withValues(alpha: 0.3), width: 1),
+                      color: alert.withValues(alpha: 0.3), width: 1),
                 ),
                 child: Padding(
                   padding:
@@ -2548,11 +3060,11 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.1),
+                          color: alert.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(Icons.inventory_2,
-                            color: Colors.red[600], size: 20),
+                            color: alert[600], size: 20),
                       ),
                       const SizedBox(width: 16),
                       // Name & type
@@ -2594,10 +3106,10 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.08),
+                          color: alert.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
-                              color: Colors.red.withValues(alpha: 0.4)),
+                              color: alert.withValues(alpha: 0.4)),
                         ),
                         child: Text(
                           AppLocalizations.of(context)!
@@ -2605,9 +3117,10 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                           style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: Colors.red[700]),
+                              color: alert[700]),
                         ),
                       ),
+                      if (!_stockLocked) ...[
                       const SizedBox(width: 12),
                       // Update stock button
                       _buildActionButton(
@@ -2616,6 +3129,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                         AppLocalizations.of(context)!.actionUpdateStock,
                         () => _showUpdateStockDialog(product),
                       ),
+                      ],
                     ],
                   ),
                 ),
@@ -2966,6 +3480,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _buildPurchaseDiscoveryBanner(),
               _buildLayoutDiscoveryBanner(),
               _buildThemeDiscoveryBanner(),
               _buildShortcutsDiscoveryBanner(),
@@ -3043,6 +3558,10 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                           _buildOutOfStockCard(),
                           const SizedBox(height: 14),
                         ],
+                        if (lowStockProducts.isNotEmpty) ...[
+                          _buildOutOfStockCard(low: true),
+                          const SizedBox(height: 14),
+                        ],
                         _buildQuickActionsCard(),
                       ],
                     ),
@@ -3068,6 +3587,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _buildPurchaseDiscoveryBanner(),
               _buildLayoutDiscoveryBanner(),
               _buildThemeDiscoveryBanner(),
               _buildShortcutsDiscoveryBanner(),
@@ -3150,6 +3670,10 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                         ],
                         if (outOfStockProducts.isNotEmpty)
                           _buildOutOfStockCard(),
+                        if (lowStockProducts.isNotEmpty) ...[
+                          const SizedBox(height: 14),
+                          _buildOutOfStockCard(low: true),
+                        ],
                       ],
                     ),
                   ),
@@ -3530,8 +4054,17 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
             child: Row(
               children: [
                 Expanded(
+                    flex: 3,
+                    child: Text(
+                        AppLocalizations.of(context)!.dashboardColDocumentNo,
+                        style: TextStyle(
+                            fontSize: 11,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600))),
+                Expanded(
                     flex: 2,
-                    child: Text(AppLocalizations.of(context)!.labelInvoice,
+                    child: Text(AppLocalizations.of(context)!.dashboardColType,
                         style: TextStyle(
                             fontSize: 11,
                             color:
@@ -3546,7 +4079,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                 Theme.of(context).colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w600))),
                 Expanded(
-                    flex: 2,
+                    flex: 3,
                     child: Text(AppLocalizations.of(context)!.labelAmount,
                         textAlign: TextAlign.right,
                         style: TextStyle(
@@ -3585,34 +4118,48 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     final Color statusColor;
     final String statusLabel;
     final l10n = AppLocalizations.of(context)!;
-    switch (status) {
-      case PaymentStatus.paid:
-        statusColor = const Color(0xFF2E7D32);
-        statusLabel = l10n.paymentStatusPaid;
-        break;
-      case PaymentStatus.partial:
-        statusColor = const Color(0xFFF57C00);
-        statusLabel = l10n.paymentStatusPartial;
-        break;
-      default:
-        final isOver = InvoiceCalculator.isOverdue(
-            dueDate: inv.dueDate, outstanding: inv.outstandingBalance);
-        statusColor =
-            isOver ? const Color(0xFFC62828) : const Color(0xFF546E7A);
-        statusLabel = isOver
-            ? l10n.dashboardOverdueSectionTitle
-            : l10n.paymentStatusUnpaid;
+    if (inv.status == 'declined') {
+      statusColor = const Color(0xFFC62828);
+      statusLabel = l10n.invoiceStatusDeclinedBadge;
+    } else {
+      switch (status) {
+        case PaymentStatus.paid:
+          statusColor = const Color(0xFF2E7D32);
+          statusLabel = l10n.paymentStatusPaid;
+          break;
+        case PaymentStatus.partial:
+          statusColor = const Color(0xFFF57C00);
+          statusLabel = l10n.paymentStatusPartial;
+          break;
+        default:
+          final isOver = InvoiceCalculator.isOverdue(
+              dueDate: inv.dueDate, outstanding: inv.outstandingBalance);
+          statusColor =
+              isOver ? const Color(0xFFC62828) : const Color(0xFF546E7A);
+          statusLabel = isOver
+              ? l10n.dashboardOverdueSectionTitle
+              : l10n.paymentStatusUnpaid;
+      }
     }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(
         children: [
           Expanded(
-            flex: 2,
+            flex: 3,
             child: Text(
-                '#${inv.id.length > 8 ? inv.id.substring(inv.id.length - 8) : inv.id}',
+                '#${inv.invoiceNumber ?? inv.id}',
                 style:
                     const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis),
+          ),
+          Expanded(
+            flex: 2,
+            child: Text(_invoiceTypeLabel(context, inv.type),
+                style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis),
           ),
@@ -3626,7 +4173,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                 overflow: TextOverflow.ellipsis),
           ),
           Expanded(
-            flex: 2,
+            flex: 3,
             child: Text('$_currencySymbol ${_fmtAmt(inv.total)}',
                 style:
                     const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
@@ -3646,20 +4193,22 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                     fontWeight: FontWeight.w700)),
           ),
           const SizedBox(width: 8),
-          Tooltip(
-            message: 'Edit',
-            child: InkWell(
-              onTap: () => widget.onEditInvoice(inv),
-              borderRadius: BorderRadius.circular(6),
-              child: Padding(
-                padding: const EdgeInsets.all(4),
-                child: Icon(Icons.edit_outlined,
-                    size: 15,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant),
+          if (inv.status != 'declined') ...[
+            Tooltip(
+              message: 'Edit',
+              child: InkWell(
+                onTap: () => widget.onEditInvoice(inv),
+                borderRadius: BorderRadius.circular(6),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(Icons.edit_outlined,
+                      size: 15,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant),
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 2),
+            const SizedBox(width: 2),
+          ],
           Tooltip(
             message: 'Download PDF',
             child: InkWell(
@@ -3752,13 +4301,16 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
 
   // ── Shared: Out of Stock Card ────────────────────────────────────────────────
 
-  Widget _buildOutOfStockCard() {
+  // [low]: see _buildOutOfStockSection.
+  Widget _buildOutOfStockCard({bool low = false}) {
+    final products = low ? lowStockProducts : outOfStockProducts;
+    final MaterialColor alert = low ? Colors.orange : Colors.red;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.red.withValues(alpha: 0.18), width: 1),
+        border: Border.all(color: alert.withValues(alpha: 0.18), width: 1),
         boxShadow: [
           BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
@@ -3775,14 +4327,16 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                    color: Colors.red.withValues(alpha: 0.1),
+                    color: alert.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8)),
-                child: const Icon(Icons.inventory_2_outlined,
-                    color: Colors.red, size: 15),
+                child: Icon(Icons.inventory_2_outlined,
+                    color: alert, size: 15),
               ),
               const SizedBox(width: 8),
               Text(
-                  AppLocalizations.of(context)!.dashboardOutOfStockSectionTitle,
+                  low
+                      ? AppLocalizations.of(context)!.productMgmtLowStockTabLabel
+                      : AppLocalizations.of(context)!.dashboardOutOfStockSectionTitle,
                   style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -3791,18 +4345,18 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
-                    color: Colors.red.withValues(alpha: 0.1),
+                    color: alert.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10)),
-                child: Text('${outOfStockProducts.length}',
-                    style: const TextStyle(
+                child: Text('${products.length}',
+                    style: TextStyle(
                         fontSize: 12,
-                        color: Colors.red,
+                        color: alert,
                         fontWeight: FontWeight.w700)),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          ...outOfStockProducts.take(5).map((p) => Padding(
+          ...products.take(5).map((p) => Padding(
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Row(
                   children: [
@@ -3811,11 +4365,16 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                             style: const TextStyle(fontSize: 12),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis)),
-                    Text(AppLocalizations.of(context)!.dashboardZeroLeftLabel,
-                        style: const TextStyle(
+                    Text(
+                        low
+                            ? AppLocalizations.of(context)!
+                                .dashboardStockLabel(p.stock)
+                            : AppLocalizations.of(context)!.dashboardZeroLeftLabel,
+                        style: TextStyle(
                             fontSize: 12,
-                            color: Colors.red,
+                            color: alert,
                             fontWeight: FontWeight.w600)),
+                    if (!_stockLocked) ...[
                     const SizedBox(width: 6),
                     Tooltip(
                       message: AppLocalizations.of(context)!.actionUpdateStock,
@@ -3845,6 +4404,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                         ),
                       ),
                     ),
+                    ],
                   ],
                 ),
               )),
@@ -4019,6 +4579,10 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                   ?._selectedIndex = 5;
             });
           }),
+          if (context
+                  .findAncestorStateOfType<_DashboardScreenState>()
+                  ?._reportsLocked !=
+              true) ...[
           const SizedBox(height: 4),
           _buildQuickActionRow(
               Icons.bar_chart_outlined,
@@ -4033,6 +4597,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                   ?._selectedIndex = 7;
             });
           }),
+          ],
         ],
       ),
     );
@@ -4093,6 +4658,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _buildPurchaseDiscoveryBanner(),
               _buildLayoutDiscoveryBanner(),
               _buildThemeDiscoveryBanner(),
               _buildShortcutsDiscoveryBanner(),
@@ -4217,6 +4783,10 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                           const SizedBox(height: 14),
                           _buildOutOfStockCard(),
                         ],
+                        if (lowStockProducts.isNotEmpty) ...[
+                          const SizedBox(height: 14),
+                          _buildOutOfStockCard(low: true),
+                        ],
                       ],
                     ),
                   ),
@@ -4303,16 +4873,17 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
         }
       },
       itemBuilder: (ctx) => [
-        PopupMenuItem(
-          value: 'payment',
-          child: Row(children: [
-            const Icon(Icons.payments_outlined,
-                size: 16, color: Color(0xFF6A1B9A)),
-            const SizedBox(width: 10),
-            Text(AppLocalizations.of(context)!.actionRecordPayment,
-                style: const TextStyle(fontSize: 13)),
-          ]),
-        ),
+        if (inv.status != 'declined')
+          PopupMenuItem(
+            value: 'payment',
+            child: Row(children: [
+              const Icon(Icons.payments_outlined,
+                  size: 16, color: Color(0xFF6A1B9A)),
+              const SizedBox(width: 10),
+              Text(AppLocalizations.of(context)!.actionRecordPayment,
+                  style: const TextStyle(fontSize: 13)),
+            ]),
+          ),
         PopupMenuItem(
           value: 'preview',
           child: Row(children: [

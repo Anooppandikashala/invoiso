@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
+import 'package:invoiso/providers/cash_exchange_settings_provider.dart';
+import 'package:invoiso/providers/purchase_bills_settings_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
 
 class AccessibilityScreen extends ConsumerStatefulWidget {
@@ -17,11 +19,48 @@ class AccessibilityScreen extends ConsumerStatefulWidget {
 
 class _AccessibilityScreenState extends ConsumerState<AccessibilityScreen> {
   String _createInvoiceLayout = 'v2';
+  bool _cashExchangeEnabled = false;
+  bool _reportsAdminOnly = false;
 
   @override
   void initState() {
     super.initState();
     _loadCreateInvoiceLayout();
+    _loadCashExchangeEnabled();
+    _loadReportsAdminOnly();
+  }
+
+  Future<void> _loadReportsAdminOnly() async {
+    final v = await ref
+        .read(settingsRepositoryProvider)
+        .getSetting(SettingKey.reportsAdminOnly);
+    if (!mounted) return;
+    setState(() => _reportsAdminOnly = v == 'true');
+  }
+
+  Future<void> _setReportsAdminOnly(bool value) async {
+    await ref
+        .read(settingsRepositoryProvider)
+        .setSetting(SettingKey.reportsAdminOnly, value.toString());
+    if (!mounted) return;
+    setState(() => _reportsAdminOnly = value);
+  }
+
+  Future<void> _loadCashExchangeEnabled() async {
+    final v = await ref
+        .read(settingsRepositoryProvider)
+        .getSetting(SettingKey.cashUpiExchangeEnabled);
+    if (!mounted) return;
+    setState(() => _cashExchangeEnabled = v == 'true');
+  }
+
+  Future<void> _setCashExchangeEnabled(bool value) async {
+    await ref
+        .read(settingsRepositoryProvider)
+        .setSetting(SettingKey.cashUpiExchangeEnabled, value.toString());
+    if (!mounted) return;
+    setState(() => _cashExchangeEnabled = value);
+    ref.read(cashUpiExchangeEnabledProvider.notifier).state = value;
   }
 
   Future<void> _loadCreateInvoiceLayout() async {
@@ -30,6 +69,15 @@ class _AccessibilityScreenState extends ConsumerState<AccessibilityScreen> {
         .getSetting(SettingKey.createInvoiceLayout);
     if (!mounted) return;
     setState(() => _createInvoiceLayout = layout ?? 'v2');
+  }
+
+  // Saved immediately and pushed to the provider so the dashboard sidebar
+  // shows/hides the Purchase Bills / Suppliers tabs without a restart.
+  Future<void> _setEnablePurchaseBills(bool value) async {
+    await ref
+        .read(settingsRepositoryProvider)
+        .setSetting(SettingKey.enablePurchaseBillsAndSuppliers, value.toString());
+    ref.read(enablePurchaseBillsAndSuppliersProvider.notifier).state = value;
   }
 
   Future<void> _setCreateInvoiceLayout(String value) async {
@@ -128,6 +176,87 @@ class _AccessibilityScreenState extends ConsumerState<AccessibilityScreen> {
                         ),
                       ],
                     ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(l10n.accessibilityOptionalFeaturesSectionTitle,
+                    style: const TextStyle(
+                        fontSize: AppFontSize.large,
+                        fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                Card(
+                  elevation: 0,
+                  color: Theme.of(context).colorScheme.surfaceContainer,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+                    side: BorderSide(
+                        color: Theme.of(context).colorScheme.outlineVariant),
+                  ),
+                  child: SwitchListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 8),
+                    secondary: const Icon(Icons.currency_exchange),
+                    title: Text(l10n.accessibilityCashExchangeLabel,
+                        style: const TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: Text(l10n.accessibilityCashExchangeSubtitle,
+                        style: TextStyle(
+                            fontSize: AppFontSize.xsmall,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant)),
+                    value: _cashExchangeEnabled,
+                    onChanged: _setCashExchangeEnabled,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Card(
+                  elevation: 0,
+                  color: Theme.of(context).colorScheme.surfaceContainer,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+                    side: BorderSide(
+                        color: Theme.of(context).colorScheme.outlineVariant),
+                  ),
+                  child: SwitchListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 8),
+                    secondary: const Icon(Icons.bar_chart_outlined),
+                    title: Text(l10n.accessibilityReportsAdminOnlyLabel,
+                        style: const TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: Text(l10n.accessibilityReportsAdminOnlySubtitle,
+                        style: TextStyle(
+                            fontSize: AppFontSize.xsmall,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant)),
+                    value: _reportsAdminOnly,
+                    onChanged: _setReportsAdminOnly,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Card(
+                  elevation: 0,
+                  color: Theme.of(context).colorScheme.surfaceContainer,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+                    side: BorderSide(
+                        color: Theme.of(context).colorScheme.outlineVariant),
+                  ),
+                  child: SwitchListTile(
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    secondary: const Icon(Icons.local_shipping_outlined),
+                    title: Text(l10n.settingsEnablePurchaseBillsSuppliersLabel,
+                        style: const TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: Text(
+                        l10n.settingsEnablePurchaseBillsSuppliersSubtitle,
+                        style: TextStyle(
+                            fontSize: AppFontSize.xsmall,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant)),
+                    value: ref.watch(enablePurchaseBillsAndSuppliersProvider),
+                    onChanged: _setEnablePurchaseBills,
                   ),
                 ),
                 const SizedBox(height: 24),

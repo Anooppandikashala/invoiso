@@ -16,6 +16,7 @@ import 'package:intl/intl.dart';
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/models/product.dart';
+import 'package:invoiso/models/product_list_stats.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/utils/formatters.dart';
 import 'package:invoiso/screens/settings/product_columns_settings_screen.dart';
@@ -56,6 +57,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
   final _priceController = TextEditingController();
   final _purchasePriceController = TextEditingController();
   final _stockController = TextEditingController(text: '0');
+  final _lowStockLimitController = TextEditingController();
   final _hsnCodeController = TextEditingController();
   final _taxRateController = TextEditingController();
   final _customUnitController = TextEditingController();
@@ -76,18 +78,22 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
 
   String _currencySymbol = '₹';
   BusinessType _businessType = BusinessType.both;
-  String _typeFilter = 'both'; // 'both' | 'product' | 'service'
   String _newItemType = 'product'; // type for the add-product form
   bool _unlimitedStock = false;
   bool _priceIncludesTax = false;
 
   // ── V2 state ──────────────────────────────────────────────────────────
-  // V2 loads the full product list once (for the stat cards / tab counts)
-  // and does all filtering, search, sort, and pagination against that
-  // in-memory list, rather than round-tripping to the paginated server
-  // query for every interaction. _products/_totalProducts/_currentPage/
-  // _pageSize are the same fields v1 uses — just populated differently.
-  List<Product> _allProductsV2 = [];
+  // Only the visible page is loaded (tab/search/sort/paging in SQL, see
+  // _loadProducts); stat cards / tab counts come from one aggregate query
+  // (_statsV2) — never the whole catalog (Issues.md #42).
+  ProductListStats _statsV2 = (
+    all: 0,
+    products: 0,
+    services: 0,
+    lowStock: 0,
+    outOfStock: 0,
+    expired: 0,
+  );
   Map<String, ProductMetadata> _productMetadataV2 = {};
   bool _statsLoadingV2 = false;
   int _activeTabV2 = 0; // 0 all, 1 products, 2 services, 3 low stock, 4 out of stock
@@ -111,6 +117,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     'unit',
     'unlimited_stock',
     'price_includes_tax',
+    'low_stock_limit',
     'storage_location',
     'container_number',
     'batch_number',
@@ -128,7 +135,6 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     _taxRateController.text = "18";
     _defaultDiscountController.text = "0";
     _loadBusinessType();
-    _loadProducts();
     _loadCurrency();
     _loadDateFormat();
     _loadStatsV2();
@@ -162,6 +168,10 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
   }
 
   ProductColumnsConfig _columnsConfig = const ProductColumnsConfig();
+  // Purchase price restricted to admins and this user isn't one.
+  bool _hidePurchasePrice = false;
+  // Stock editing admin-only: non-admins can't set stock or import CSV.
+  bool _stockLocked = false;
   bool _showColumnsBanner = false;
 
   // Which optional columns show in the list table. Independent of the
@@ -193,8 +203,11 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
   Future<void> _loadColumnsConfig() async {
     final config = await ref.read(settingsRepositoryProvider).getProductColumnsConfig();
     if (!mounted) return;
+    final hide = config.purchasePriceAdminOnly && !widget.user.isAdmin();
     setState(() {
-      _columnsConfig = config;
+      _hidePurchasePrice = hide;
+      _stockLocked = config.stockEditAdminOnly && !widget.user.isAdmin();
+      _columnsConfig = hide ? config.copyWith(purchasePrice: false) : config;
       if (!config.stock) _unlimitedStock = true;
     });
   }
@@ -356,7 +369,6 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     final bt = await ref.read(settingsRepositoryProvider).getBusinessType();
     setState(() {
       _businessType = bt;
-      _typeFilter = bt == BusinessType.both ? 'both' : bt.key;
       _newItemType = bt == BusinessType.service ? 'service' : 'product';
     });
   }
@@ -378,6 +390,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     _purchasePriceController.dispose();
     _defaultDiscountController.dispose();
     _stockController.dispose();
+    _lowStockLimitController.dispose();
     _taxRateController.dispose();
     _hsnCodeController.dispose();
     _customUnitController.dispose();
@@ -394,30 +407,42 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     super.dispose();
   }
 
+  // Loads just the visible page — active tab, search, sort and paging all
+  // in SQL — plus metadata for those rows only (Issues.md #42).
   Future<void> _loadProducts() async {
     final requestId = ++_loadRequestId;
     if(!mounted) return;
     setState(() => _isLoading = true);
     try {
       final productRepo = ref.read(productRepositoryProvider);
+      final tab = _tabKeyV2;
+      Future<List<Product>> page() => productRepo.getProductListPage(
+          offset: _currentPage * _pageSize,
+          limit: _pageSize,
+          query: _searchQuery,
+          tab: tab,
+          orderBy: _sortBy,
+          ascending: _isAscending);
       final results = await Future.wait([
-        productRepo.getProductsPaginated(
-            offset: _currentPage * _pageSize,
-            limit: _pageSize,
-            query: _searchQuery,
-            orderBy: _sortBy,
-            orderASC: _isAscending,
-            type: _typeFilter),
-        productRepo.getTotalProductCount(),
+        page(),
+        productRepo.getProductListCount(query: _searchQuery, tab: tab),
       ]);
-      final result = results[0] as List<Product>;
-      final allCount = results[1] as int;
+      var result = results[0] as List<Product>;
+      final total = results[1] as int;
+      // Current page fell off the end (e.g. last row on the last page deleted).
+      final maxPage = total == 0 ? 0 : (total - 1) ~/ _pageSize;
+      if (_currentPage > maxPage) {
+        _currentPage = maxPage;
+        result = await page();
+      }
+      final metadata = await productRepo
+          .getProductMetadataForIds(result.map((p) => p.id).toList());
 
       if (requestId != _loadRequestId || !mounted) return;
       setState(() {
         _products = result;
-        _totalProducts = allCount;
-        _allProductsCount = allCount;
+        _totalProducts = total;
+        _productMetadataV2 = metadata;
       });
     } catch (e) {
       if (requestId != _loadRequestId || !mounted) return;
@@ -444,7 +469,9 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
         price: price,
-        stock: _unlimitedStock ? 0 : int.parse(_stockController.text.trim()),
+        stock: _unlimitedStock || _stockLocked
+            ? 0
+            : int.parse(_stockController.text.trim()),
         hsncode: _hsnCodeController.text.trim(),
         tax_rate: int.parse(_taxRateController.text.trim()),
         type: _newItemType,
@@ -457,6 +484,9 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         unit: _selectedUnit.trim(),
         unlimitedStock: _unlimitedStock,
         priceIncludesTax: _priceIncludesTax,
+        lowStockLimit: _unlimitedStock || _stockLocked
+            ? null
+            : int.tryParse(_lowStockLimitController.text.trim()),
       );
 
       await ref.read(productRepositoryProvider).insertProduct(newProduct);
@@ -493,6 +523,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     _purchasePriceController.clear();
     _defaultDiscountController.clear();
     _stockController.clear();
+    _lowStockLimitController.clear();
     _hsnCodeController.clear();
     _taxRateController.clear();
     _taxRateController.text = "18";
@@ -548,7 +579,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
   /// cancel option) when purchase price exceeds sale price, since that
   /// means selling at a loss.
   Future<bool> _confirmIfSellingAtLoss(double price, double purchasePrice) async {
-    if (purchasePrice <= 0 || purchasePrice <= price) return true;
+    if (_hidePurchasePrice || purchasePrice <= 0 || purchasePrice <= price) return true;
     final l10n = AppLocalizations.of(context)!;
     final proceed = await showDialog<bool>(
       context: context,
@@ -796,10 +827,10 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
 
   Future<void> _downloadSampleCSV() async {
     const sample =
-        '"name","hsn_code","description","price","tax_rate","stock","type","default_discount","purchase_price","alias_name","unit","unlimited_stock","price_includes_tax","storage_location","container_number","batch_number","expiry_date","manufacture_date","manufacture_name","supplier_name","sku_code","notes"\n'
-        '"Wireless Mouse","84716010","Ergonomic wireless mouse","599.00","18","50","product","5.00","400.00","","pcs","0","0","Rack A1","","","","","","",""\n'
-        '"USB Hub","84734000","4-port USB 3.0 hub","299.00","18","100","product","0","180.00","","pcs","0","0","","CNT-1023","","","","","",""\n'
-        '"Annual Support","998314","Annual technical support plan","4999.00","18","0","service","10.00","0","","unit","1","1","","","","","","","",""\n';
+        '"name","hsn_code","description","price","tax_rate","stock","type","default_discount","purchase_price","alias_name","unit","unlimited_stock","price_includes_tax","low_stock_limit","storage_location","container_number","batch_number","expiry_date","manufacture_date","manufacture_name","supplier_name","sku_code","notes"\n'
+        '"Wireless Mouse","84716010","Ergonomic wireless mouse","599.00","18","50","product","5.00","400.00","","pcs","0","0","10","Rack A1","","","","","","",""\n'
+        '"USB Hub","84734000","4-port USB 3.0 hub","299.00","18","100","product","0","180.00","","pcs","0","0","5","","CNT-1023","","","","","",""\n'
+        '"Annual Support","998314","Annual technical support plan","4999.00","18","0","service","10.00","0","","unit","1","1","","","","","","","","",""\n';
 
     final l10n = AppLocalizations.of(context)!;
     final savePath = await FilePicker.platform.saveFile(
@@ -872,6 +903,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                     _csvRuleRow(context, 'unit', false, l10n.productMgmtCsvDescUnit),
                     _csvRuleRow(context, 'unlimited_stock', false, l10n.productMgmtCsvDescUnlimitedStock),
                     _csvRuleRow(context, 'price_includes_tax', false, l10n.productMgmtCsvDescPriceIncludesTax),
+                    _csvRuleRow(context, 'low_stock_limit', false, l10n.productMgmtCsvDescLowStockLimit),
                     _csvRuleRow(context, 'storage_location', false, l10n.productMgmtCsvDescStorageLocation),
                     _csvRuleRow(context, 'container_number', false, l10n.productMgmtCsvDescContainerNumber),
                     _csvRuleRow(context, 'batch_number', false, l10n.productMgmtCsvDescBatchNumber),
@@ -1036,7 +1068,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
 
       String getField(List<dynamic> row, String col) {
         final i = headers.indexOf(col);
-        return i < 0 || i >= row.length ? '' : row[i].toString().trim();
+        return i < 0 || i >= row.length ? '' : stripCsvFormulaGuard(row[i].toString().trim());
       }
 
       final List<Product> valid = [];
@@ -1100,6 +1132,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         final unitStr = getField(row, 'unit');
         final unlimitedStockStr = getField(row, 'unlimited_stock');
         final priceIncludesTaxStr = getField(row, 'price_includes_tax');
+        final lowStockLimit = int.tryParse(getField(row, 'low_stock_limit'));
         final taxRate = taxStr.isEmpty ? 0 : (int.tryParse(taxStr) ?? 0);
         final stock = stockStr.isEmpty ? 0 : (int.tryParse(stockStr) ?? 0);
         final unlimitedStock = unlimitedStockStr == '1' || unlimitedStockStr.toLowerCase() == 'true';
@@ -1119,11 +1152,16 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
           stock: stock < 0 ? 0 : stock,
           type: type,
           defaultDiscount: discount < 0 ? 0.0 : discount,
-          purchasePrice: purchasePrice < 0 ? 0.0 : purchasePrice,
+          purchasePrice: _hidePurchasePrice
+              ? (existing?.purchasePrice ?? 0.0)
+              : (purchasePrice < 0 ? 0.0 : purchasePrice),
           aliasName: aliasNameStr.isEmpty ? null : aliasNameStr,
           unit: unitStr,
           unlimitedStock: unlimitedStock,
           priceIncludesTax: priceIncludesTax,
+          lowStockLimit: (lowStockLimit != null && lowStockLimit >= 0)
+              ? lowStockLimit
+              : existing?.lowStockLimit,
         );
 
         metadataById[product.id] = ProductMetadata(
@@ -1390,7 +1428,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
       final allProducts = await repo.getAllProducts();
       final allMetadata = await repo.getAllProductMetadata();
       final List<List<dynamic>> rows = [
-        ['name', 'hsn_code', 'description', 'price', 'tax_rate', 'stock', 'type', 'default_discount', 'purchase_price', 'alias_name', 'unit', 'unlimited_stock', 'price_includes_tax', 'storage_location', 'container_number', 'batch_number', 'expiry_date', 'manufacture_date', 'manufacture_name', 'supplier_name', 'sku_code', 'notes'],
+        ['name', 'hsn_code', 'description', 'price', 'tax_rate', 'stock', 'type', 'default_discount', 'purchase_price', 'alias_name', 'unit', 'unlimited_stock', 'price_includes_tax', 'low_stock_limit', 'storage_location', 'container_number', 'batch_number', 'expiry_date', 'manufacture_date', 'manufacture_name', 'supplier_name', 'sku_code', 'notes'],
         ...allProducts.map((p) {
           final meta = allMetadata[p.id];
           return [
@@ -1402,11 +1440,12 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
               p.stock,
               p.type,
               p.defaultDiscount,
-              p.purchasePrice,
+              _hidePurchasePrice ? '' : p.purchasePrice,
               p.aliasName ?? '',
               p.unit,
               p.unlimitedStock ? 1 : 0,
               p.priceIncludesTax ? 1 : 0,
+              p.lowStockLimit ?? '',
               meta?.storageLocation ?? '',
               meta?.containerNumber ?? '',
               meta?.batchNumber ?? '',
@@ -1538,8 +1577,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
   // ============================================================
   // V2 — flat / modern layout. Reuses all v1 state, controllers,
   // validation, and repository calls. New pieces:
-  //  - stats loaded once as a full list, filtering/search/sort/paging
-  //    done in-memory against it (see _applyClientFilterV2)
+  //  - stat counts from one SQL aggregate; the table loads one page at a
+  //    time (see _loadProducts)
   //  - a slide-out "Add New Product" panel (Basic/Advanced tabs)
   //    instead of the always-visible left sidebar form
   //  - flat table/cards instead of Card/DataTable chrome
@@ -1549,15 +1588,16 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     if (!mounted) return;
     setState(() => _statsLoadingV2 = true);
     try {
-      final repo = ref.read(productRepositoryProvider);
-      final all = await repo.getAllProducts();
-      final metadata = await repo.getAllProductMetadata();
+      final results = await Future.wait([
+        ref.read(productRepositoryProvider).getProductListStats(),
+        _loadProducts(),
+      ]);
+      final stats = results[0] as ProductListStats;
       if (!mounted) return;
       setState(() {
-        _allProductsV2 = all;
-        _productMetadataV2 = metadata;
+        _statsV2 = stats;
+        _allProductsCount = stats.all;
       });
-      _applyClientFilterV2();
     } catch (e) {
       if (!mounted) return;
       _showSnackBar(AppLocalizations.of(context)!.productMgmtLoadErrorMessage(e.toString()), isError: true);
@@ -1572,71 +1612,16 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     return DateTime.tryParse(raw);
   }
 
-  bool _isExpiredV2(Product p) {
-    final d = _expiryDateOfV2(p);
-    return d != null && d.isBefore(DateTime.now());
-  }
+  int get _allCountV2 => _statsV2.all;
+  int get _productsCountV2 => _statsV2.products;
+  int get _servicesCountV2 => _statsV2.services;
+  int get _lowStockCountV2 => _statsV2.lowStock;
+  int get _outOfStockCountV2 => _statsV2.outOfStock;
+  int get _expiredCountV2 => _statsV2.expired;
 
-  int get _allCountV2 => _allProductsV2.length;
-  int get _productsCountV2 =>
-      _allProductsV2.where((p) => p.type == 'product').length;
-  int get _servicesCountV2 =>
-      _allProductsV2.where((p) => p.type == 'service').length;
-  int get _lowStockCountV2 => _allProductsV2
-      .where((p) => !p.unlimitedStock && p.stock > 0 && p.stock <= 10)
-      .length;
-  int get _outOfStockCountV2 =>
-      _allProductsV2.where((p) => !p.unlimitedStock && p.stock <= 0).length;
-  int get _expiredCountV2 => _allProductsV2.where(_isExpiredV2).length;
-
-  // Applies the active tab (type + stock-status), search text, and sort
-  // to the full in-memory list, then slices out the current page.
-  void _applyClientFilterV2() {
-    Iterable<Product> list = _allProductsV2;
-    if (_activeTabV2 == 1) list = list.where((p) => p.type == 'product');
-    if (_activeTabV2 == 2) list = list.where((p) => p.type == 'service');
-    if (_activeTabV2 == 3) {
-      list = list.where((p) => !p.unlimitedStock && p.stock > 0 && p.stock <= 10);
-    }
-    if (_activeTabV2 == 4) {
-      list = list.where((p) => !p.unlimitedStock && p.stock <= 0);
-    }
-    if (_activeTabV2 == 5) {
-      list = list.where(_isExpiredV2);
-    }
-    if (_searchQuery.trim().isNotEmpty) {
-      final q = _searchQuery.trim().toLowerCase();
-      list = list.where((p) =>
-          p.name.toLowerCase().contains(q) ||
-          (p.aliasName ?? '').toLowerCase().contains(q) ||
-          p.hsncode.toLowerCase().contains(q));
-    }
-    final sorted = list.toList()
-      ..sort((a, b) {
-        int cmp;
-        switch (_sortBy) {
-          case 'price':
-            cmp = a.price.compareTo(b.price);
-            break;
-          case 'stock':
-            cmp = a.stock.compareTo(b.stock);
-            break;
-          default:
-            cmp = a.name.toLowerCase().compareTo(b.name.toLowerCase());
-        }
-        return _isAscending ? cmp : -cmp;
-      });
-    final total = sorted.length;
-    final maxPage = total == 0 ? 0 : ((total - 1) / _pageSize).floor();
-    if (_currentPage > maxPage) _currentPage = maxPage;
-    final start = (_currentPage * _pageSize).clamp(0, total);
-    final end = (start + _pageSize).clamp(0, total);
-    if (!mounted) return;
-    setState(() {
-      _totalProducts = total;
-      _products = sorted.sublist(start, end);
-    });
-  }
+  // _activeTabV2 index → ProductService list tab key.
+  String get _tabKeyV2 =>
+      const ['all', 'product', 'service', 'low', 'out', 'expired'][_activeTabV2];
 
   void _selectTabV2(int index) {
     if (!mounted) return;
@@ -1644,7 +1629,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
       _activeTabV2 = index;
       _currentPage = 0;
     });
-    _applyClientFilterV2();
+    _loadProducts();
   }
 
   void _onSearchChangedV2(String query) {
@@ -1655,7 +1640,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     });
     _searchDebounce?.cancel();
     _searchDebounce =
-        Timer(const Duration(milliseconds: 300), _applyClientFilterV2);
+        Timer(const Duration(milliseconds: 300), _loadProducts);
   }
 
   // Combines v1's separate sort-field + sort-direction controls into the
@@ -1667,13 +1652,13 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
       _isAscending = ascending;
       _currentPage = 0;
     });
-    _applyClientFilterV2();
+    _loadProducts();
   }
 
   void _changePageV2(int page) {
     if (!mounted) return;
     setState(() => _currentPage = page);
-    _applyClientFilterV2();
+    _loadProducts();
   }
 
   Future<void> _addProductV2() async {
@@ -2089,6 +2074,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
           runSpacing: 8,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
+            if (!_stockLocked)
             OutlinedButton.icon(
               onPressed: () async {
                 await _showImportDialog();
@@ -2233,7 +2219,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                       _ => (_activeTabV2 >= 3 && _activeTabV2 <= 5) ? 0 : _activeTabV2,
                     };
                   });
-                  _applyClientFilterV2();
+                  _loadProducts();
                 },
                 itemBuilder: (ctx) => [
                   PopupMenuItem(value: 'all', child: Text(l10n.productMgmtAllStockLevelsLabel)),
@@ -2254,6 +2240,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                 child: _menuButtonLookV2(
                     Icons.swap_vert, l10n.customerMgmtSortWithLabel(currentLabel)),
               ),
+              if (widget.user.isAdmin())
               OutlinedButton.icon(
                 onPressed: _openColumnsSettingsV2,
                 icon: const Icon(Icons.tune, size: 16),
@@ -2359,7 +2346,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     if (p.unlimitedStock) {
       return const Text('∞');
     }
-    final color = p.stock > 10
+    final color = p.stock > (p.lowStockLimit ?? 10)
         ? null
         : p.stock > 0
             ? Colors.orange[700]
@@ -2493,7 +2480,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         mainAxisSize: MainAxisSize.min,
         children: [
           _tableHeaderRowV2(),
-          _statsLoadingV2 && _allProductsV2.isEmpty
+          _statsLoadingV2 && _products.isEmpty
               ? const SizedBox(
                   height: 240, child: Center(child: CircularProgressIndicator()))
               : _products.isEmpty
@@ -2563,7 +2550,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                     _pageSize = n;
                     _currentPage = 0;
                   });
-                  _applyClientFilterV2();
+                  _loadProducts();
                 },
               ),
               const SizedBox(width: 12),
@@ -2722,8 +2709,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                   child: _buildFormField(_stockController, l10n.labelStock, Icons.inventory,
                       keyboardType: TextInputType.number,
                       isStock: true,
-                      required: !_unlimitedStock,
-                      enabled: !_unlimitedStock),
+                      required: !_unlimitedStock && !_stockLocked,
+                      enabled: !_unlimitedStock && !_stockLocked),
                 ),
               if (_columnsConfig.stock && _columnsConfig.unit) const SizedBox(width: 12),
               if (_columnsConfig.unit)
@@ -2745,13 +2732,23 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
               controlAffinity: ListTileControlAffinity.leading,
               dense: true,
               value: _unlimitedStock,
-              onChanged: (v) {
-                if (!mounted) return;
-                setState(() => _unlimitedStock = v ?? false);
-              },
+              onChanged: _stockLocked
+                  ? null
+                  : (v) {
+                      if (!mounted) return;
+                      setState(() => _unlimitedStock = v ?? false);
+                    },
               title: Text(l10n.productMgmtUnlimitedStockLabel),
               subtitle: Text(l10n.productMgmtTrackInfiniteStockSubtitle),
             ),
+          if (_columnsConfig.stock && !_unlimitedStock)
+            _buildFormField(_lowStockLimitController,
+                l10n.productMgmtLowStockLimitLabel, Icons.notification_important_outlined,
+                keyboardType: TextInputType.number,
+                isStock: true,
+                required: false,
+                enabled: !_stockLocked,
+                helperText: l10n.productMgmtLowStockLimitHelper),
         ],
         if (_columnsConfig.productMetadata) ...[
           const SizedBox(height: 8),
@@ -2961,6 +2958,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         text: product.defaultDiscount > 0 ? product.defaultDiscount.toString() : '0.0');
     final taxCtrl = TextEditingController(text: product.tax_rate.toString());
     final stockCtrl = TextEditingController(text: product.stock.toString());
+    final lowStockLimitCtrl =
+        TextEditingController(text: product.lowStockLimit?.toString() ?? '');
     final customUnitCtrl = TextEditingController(
         text: ProductUnits.presets.contains(product.unit) ? '' : product.unit);
     final storageCtrl = TextEditingController(text: metadata?.storageLocation ?? '');
@@ -2992,6 +2991,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
       discountCtrl.dispose();
       taxCtrl.dispose();
       stockCtrl.dispose();
+      lowStockLimitCtrl.dispose();
       customUnitCtrl.dispose();
       storageCtrl.dispose();
       containerCtrl.dispose();
@@ -3018,12 +3018,13 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
             bool isTaxRate = false,
             bool isRequired = false,
             String? prefixText,
+            bool locked = false,
           }) {
             return _buildDialogTextField(
               controller,
               label,
               icon,
-              readOnly: !isEdit,
+              readOnly: !isEdit || locked,
               maxLines: maxLines,
               maxLength: maxLength,
               keyboardType: keyboardType,
@@ -3063,7 +3064,9 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                 name: nameCtrl.text.trim(),
                 description: descCtrl.text.trim(),
                 price: price,
-                stock: unlimitedStock ? 0 : int.parse(stockCtrl.text.trim()),
+                stock: _stockLocked
+                    ? product.stock
+                    : unlimitedStock ? 0 : int.parse(stockCtrl.text.trim()),
                 hsncode: hsnCtrl.text.trim(),
                 tax_rate: int.parse(taxCtrl.text.trim()),
                 type: itemType,
@@ -3071,8 +3074,12 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                 purchasePrice: purchasePrice,
                 aliasName: aliasCtrl.text.trim().isEmpty ? null : aliasCtrl.text.trim(),
                 unit: unit.trim(),
-                unlimitedStock: unlimitedStock,
+                unlimitedStock:
+                    _stockLocked ? product.unlimitedStock : unlimitedStock,
                 priceIncludesTax: priceIncludesTax,
+                lowStockLimit: _stockLocked
+                    ? product.lowStockLimit
+                    : int.tryParse(lowStockLimitCtrl.text.trim()),
               );
               await ref.read(productRepositoryProvider).updateProduct(updated);
               await ref.read(productRepositoryProvider).upsertProductMetadata(
@@ -3298,7 +3305,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                                       child: field(stockCtrl, l10n.labelStock, Icons.inventory,
                                           keyboardType: TextInputType.number,
                                           isStock: !unlimitedStock,
-                                          isRequired: !unlimitedStock),
+                                          isRequired: !unlimitedStock,
+                                          locked: _stockLocked),
                                     ),
                                   if (_columnsConfig.stock && _columnsConfig.unit)
                                     const SizedBox(width: 12),
@@ -3319,7 +3327,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                                   contentPadding: EdgeInsets.zero,
                                   controlAffinity: ListTileControlAffinity.leading,
                                   value: unlimitedStock,
-                                  onChanged: !isEdit
+                                  onChanged: !isEdit || _stockLocked
                                       ? null
                                       : (v) => setDialogState(
                                           () => unlimitedStock = v ?? false),
@@ -3327,6 +3335,12 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                                   subtitle:
                                       Text(l10n.productMgmtTrackInfiniteStockSubtitle),
                                 ),
+                              if (_columnsConfig.stock && !unlimitedStock)
+                                field(lowStockLimitCtrl,
+                                    l10n.productMgmtLowStockLimitLabel,
+                                    Icons.notification_important_outlined,
+                                    keyboardType: TextInputType.number,
+                                    locked: _stockLocked),
                             ],
                             if (_columnsConfig.productMetadata) ...[
                               const SizedBox(height: 8),
@@ -3482,7 +3496,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildColumnsDiscoveryBanner(),
+                            if (widget.user.isAdmin())
+                              _buildColumnsDiscoveryBanner(),
                             _headerBarV2(),
                             const SizedBox(height: 12),
                             if (_showStatsCardsV2) ...[

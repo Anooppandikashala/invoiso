@@ -66,6 +66,7 @@ class AdjustmentLabels {
   // User can still type any free-text label.
   static const presets = [
     'Advance adjustment',
+    'Charges',
     'Courier charges',
     'Delivery charges',
     'Deposit adjustment',

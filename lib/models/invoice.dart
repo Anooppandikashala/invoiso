@@ -35,6 +35,10 @@ class Invoice {
   bool hideInvoiceNumber; // hide real invoice number in PDF output only
   String? customInvoiceNumber; // shown instead of invoiceNumber in PDF when hideInvoiceNumber is true
   List<CustomFieldValue> customFields; // user-defined per-invoice fields (e.g. Vehicle No, Delivery Note)
+  String? status; // quotation lifecycle: 'draft'|'sent'|'accepted'|'declined'|'converted'; null == 'draft'.
+  // For type=='Invoice': only 'declined' is used (invoice voided, stock returned); null == active.
+  String? convertedToInvoiceId; // on a quotation → id of the invoice it was converted into
+  String? convertedFromInvoiceId; // on an invoice → id of the source quotation it was converted from
 
   // Return management — set only when type is 'Credit Note' or 'Debit Note'.
   String? originalInvoiceId; // linked invoice; null for a standalone note
@@ -74,7 +78,12 @@ class Invoice {
     this.originalInvoiceDate,
     this.returnReason,
     this.creditSettlement,
+    this.status,
+    this.convertedToInvoiceId,
+    this.convertedFromInvoiceId,
   });
+
+  bool get isConverted => status == 'converted';
 
   /// Text to render for the invoice number in PDF/receipt output, or null to omit the line entirely.
   String? pdfNumberText(String invoicePrefix, {bool showLeadingZeros = true}) {
@@ -133,6 +142,7 @@ extension _InvoiceItemTotals on InvoiceItem {
         quantity: quantity,
         discount: discount,
         discountPerUnit: discountPerUnit,
+        discountIsPercent: discountIsPercent,
         extraCost: extraCost ?? 0.0,
         taxRatePercent: product.tax_rate.toDouble(),
         priceIncludesTax: product.priceIncludesTax,
