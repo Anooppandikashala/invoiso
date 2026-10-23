@@ -19,7 +19,7 @@ class DatabaseHelper {
   static String? get path => _path;
   static Database? _database;
   static String _dbFileName = 'invoice_manager.db';
-  final dbVersion = 55;
+  final dbVersion = 56;
 
   /// Startup only, before anything has opened a connection yet — just points
   /// at the right file for the first `_initDB()` call. No close/reopen, so
@@ -56,6 +56,12 @@ class DatabaseHelper {
   @visibleForTesting
   Future<void> createDbForTest(Database db, int version) =>
       _createDB(db, version);
+
+  /// Point the shared helper at an already-open database (e.g. an in-memory
+  /// sqflite_common_ffi one) so service classes can be exercised in unit tests
+  /// without path_provider. Pass null in tearDown to clear it.
+  @visibleForTesting
+  static void setTestDatabase(Database? db) => _database = db;
 
   @visibleForTesting
   Future<void> upgradeDbForTest(Database db, int oldVersion, int newVersion) =>
@@ -160,7 +166,12 @@ class DatabaseHelper {
         custom_fields TEXT,
         status TEXT,
         converted_to_invoice_id TEXT,
-        converted_from_invoice_id TEXT
+        converted_from_invoice_id TEXT,
+        original_invoice_id TEXT,
+        original_invoice_number TEXT,
+        original_invoice_date TEXT,
+        return_reason TEXT,
+        credit_settlement TEXT
       )
     ''');
 
@@ -188,7 +199,8 @@ class DatabaseHelper {
         unit TEXT,
         product_price_includes_tax INTEGER DEFAULT 0,
         description TEXT,
-        line_metadata TEXT
+        line_metadata TEXT,
+        restocked INTEGER DEFAULT 1
       )
     ''');
 
@@ -335,6 +347,36 @@ class DatabaseHelper {
     await db.execute(_cashLedgerTableSql);
     await db.execute(_cashLedgerHistoryTableSql);
 
+    // Returns: stored customer credit balance from credit notes
+    await db.execute('''
+      CREATE TABLE customer_credits (
+        id             TEXT PRIMARY KEY,
+        customer_id    TEXT,
+        customer_name  TEXT NOT NULL,
+        currency_code  TEXT NOT NULL,
+        source_type    TEXT NOT NULL,
+        source_id      TEXT NOT NULL,
+        amount         REAL NOT NULL,
+        applied_amount REAL NOT NULL DEFAULT 0,
+        created_at     TEXT NOT NULL
+      )
+    ''');
+
+    // Returns: money paid back to a customer against a credit note
+    await db.execute('''
+      CREATE TABLE refunds (
+        id                 TEXT PRIMARY KEY,
+        credit_note_id     TEXT NOT NULL,
+        credit_note_number TEXT NOT NULL,
+        receipt_number     TEXT NOT NULL,
+        amount             REAL NOT NULL,
+        tax_amount         REAL NOT NULL DEFAULT 0,
+        refund_method      TEXT,
+        date_refunded      TEXT NOT NULL,
+        notes              TEXT
+      )
+    ''');
+
     // Indexes
     await db.execute('CREATE INDEX idx_invoices_customer ON invoices(customer_name)');
     await db.execute('CREATE INDEX idx_invoices_date ON invoices(date)');
@@ -363,6 +405,10 @@ class DatabaseHelper {
     await db.execute('CREATE INDEX idx_cash_ledger_date ON cash_ledger(date_time)');
     await db.execute('CREATE INDEX idx_cash_ledger_history_entry ON cash_ledger_history(entry_id)');
     await db.execute('CREATE INDEX idx_cash_ledger_history_action ON cash_ledger_history(action, changed_at)');
+    await db.execute('CREATE INDEX idx_customer_credits_customer ON customer_credits(customer_id, currency_code)');
+    await db.execute('CREATE INDEX idx_customer_credits_source ON customer_credits(source_id)');
+    await db.execute('CREATE INDEX idx_refunds_credit_note ON refunds(credit_note_id)');
+    await db.execute('CREATE INDEX idx_refunds_date ON refunds(date_refunded)');
 
     // Insert dummy company info
     await db.insert('company_info', {
@@ -391,6 +437,10 @@ class DatabaseHelper {
 
     // Insert default currency
     await db.insert('settings', {'key': 'currency', 'value': 'INR'});
+
+    // Returns: credit / debit note number prefixes
+    await db.insert('settings', {'key': 'credit_note_prefix', 'value': 'CN-'});
+    await db.insert('settings', {'key': 'debit_note_prefix', 'value': 'DN-'});
   }
 
   Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
@@ -1195,6 +1245,81 @@ class DatabaseHelper {
               'ALTER TABLE invoices ADD COLUMN customer_$name $type');
         });
       }
+    }
+    if (oldVersion < 56) {
+      // (Was v47 on the returns branch — renumbered on merging main, whose v47
+      // is the custom-fields re-run. All steps are idempotent, so branch dev DBs
+      // already at old-v47 just log them as already applied.)
+      // Return management. Credit / Debit Notes are stored as invoices rows with
+      // type IN ('Credit Note','Debit Note') — like Quotation/Receipt already
+      // are. New columns are NULL on every pre-v56 row and only meaningful for
+      // those types, so every existing "type = 'Invoice'" query is unchanged.
+      await _runMigrationStep(db, 56, 'add_return_fields_to_invoices', () async {
+        await db.execute(
+            'ALTER TABLE invoices ADD COLUMN original_invoice_id TEXT');
+        await db.execute(
+            'ALTER TABLE invoices ADD COLUMN original_invoice_number TEXT');
+        await db.execute(
+            'ALTER TABLE invoices ADD COLUMN original_invoice_date TEXT');
+        await db.execute('ALTER TABLE invoices ADD COLUMN return_reason TEXT');
+        await db
+            .execute('ALTER TABLE invoices ADD COLUMN credit_settlement TEXT');
+      });
+
+      // Per-line "return to sellable stock" flag on a credit note's items.
+      // DEFAULT 1 so a plain invoice/quotation row reads back unchanged.
+      await _runMigrationStep(
+          db, 56, 'add_restocked_to_invoice_items', () async {
+        await db.execute(
+            'ALTER TABLE invoice_items ADD COLUMN restocked INTEGER DEFAULT 1');
+      });
+
+      await _runMigrationStep(db, 56, 'create_customer_credits_table', () async {
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS customer_credits (
+            id             TEXT PRIMARY KEY,
+            customer_id    TEXT,
+            customer_name  TEXT NOT NULL,
+            currency_code  TEXT NOT NULL,
+            source_type    TEXT NOT NULL,
+            source_id      TEXT NOT NULL,
+            amount         REAL NOT NULL,
+            applied_amount REAL NOT NULL DEFAULT 0,
+            created_at     TEXT NOT NULL
+          )
+        ''');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_customer_credits_customer ON customer_credits(customer_id, currency_code)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_customer_credits_source ON customer_credits(source_id)');
+      });
+
+      await _runMigrationStep(db, 56, 'create_refunds_table', () async {
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS refunds (
+            id                 TEXT PRIMARY KEY,
+            credit_note_id     TEXT NOT NULL,
+            credit_note_number TEXT NOT NULL,
+            receipt_number     TEXT NOT NULL,
+            amount             REAL NOT NULL,
+            tax_amount         REAL NOT NULL DEFAULT 0,
+            refund_method      TEXT,
+            date_refunded      TEXT NOT NULL,
+            notes              TEXT
+          )
+        ''');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_refunds_credit_note ON refunds(credit_note_id)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_refunds_date ON refunds(date_refunded)');
+      });
+
+      await _runMigrationStep(db, 56, 'seed_return_prefixes', () async {
+        await db.insert('settings', {'key': 'credit_note_prefix', 'value': 'CN-'},
+            conflictAlgorithm: ConflictAlgorithm.ignore);
+        await db.insert('settings', {'key': 'debit_note_prefix', 'value': 'DN-'},
+            conflictAlgorithm: ConflictAlgorithm.ignore);
+      });
     }
   }
 

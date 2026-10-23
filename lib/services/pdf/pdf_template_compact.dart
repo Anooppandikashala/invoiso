@@ -420,6 +420,17 @@ pw.MultiPage buildCompactTemplate(
         ),
       ),
 
+      // ── Credit / Debit Note info (against invoice, reason, refunds) ──
+      if (returnInfoLines(invoice).isNotEmpty) ...[
+        pw.SizedBox(height: 4),
+        for (final l in returnInfoLines(invoice))
+          pw.Text(l,
+              style: pw.TextStyle(
+                  fontSize: tableFontSize,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.grey700)),
+      ],
+
       // ── Signature + UPI/Bank ──
       if (signatureImage != null || (showUpiQr && upiId != null) || bankAccount != null) ...[
         pw.SizedBox(height: compactPdfLayoutStyle.signatureTopGap),

@@ -9,6 +9,7 @@ import 'package:invoiso/repositories/payment_repository.dart';
 import 'package:invoiso/repositories/product_repository.dart';
 import 'package:invoiso/repositories/purchase_bill_repository.dart';
 import 'package:invoiso/repositories/report_repository.dart';
+import 'package:invoiso/repositories/return_repository.dart';
 import 'package:invoiso/repositories/settings_repository.dart';
 import 'package:invoiso/repositories/supplier_payment_repository.dart';
 import 'package:invoiso/repositories/supplier_repository.dart';
@@ -34,6 +35,12 @@ final productRepositoryProvider = Provider<ProductRepository>((ref) {
 final paymentRepositoryProvider = Provider<PaymentRepository>((ref) {
   throw UnimplementedError(
     'paymentRepositoryProvider must be overridden.',
+  );
+});
+
+final returnRepositoryProvider = Provider<ReturnRepository>((ref) {
+  throw UnimplementedError(
+    'returnRepositoryProvider must be overridden.',
   );
 });
 

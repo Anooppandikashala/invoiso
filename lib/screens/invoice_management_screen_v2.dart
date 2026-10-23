@@ -11,18 +11,24 @@ import 'package:invoiso/models/customer.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/invoice_list_filter.dart';
 import 'package:invoiso/providers/repositories.dart';
+import 'package:invoiso/providers/returns_settings_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:invoiso/services/backend_services.dart';
 import 'package:invoiso/services/export_service.dart';
 import 'package:invoiso/services/invoice_pdf_services.dart';
 import 'package:invoiso/services/pdf_service.dart';
 import 'package:invoiso/widgets/apply_payment_dialog.dart';
+import 'package:invoiso/screens/create_return_screen.dart';
+import 'package:invoiso/widgets/record_refund_dialog.dart';
+import 'package:invoiso/models/refund.dart';
+import 'package:invoiso/services/refund_receipt_service.dart';
 import 'package:invoiso/utils/error_handler.dart';
 import 'package:intl/intl.dart';
 import 'package:open_file/open_file.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/widgets/customer_info_button.dart';
 import 'package:invoiso/utils/formatters.dart';
+import 'package:invoiso/widgets/discovery_banner.dart';
 
 class InvoiceManagementScreenV2 extends ConsumerStatefulWidget {
   final Function(Invoice) onEditInvoice;
@@ -59,10 +65,19 @@ class _InvoiceManagementScreenV2State
         return l10n.labelQuotation;
       case 'Receipt':
         return l10n.labelReceipt;
+      case 'Credit Note':
+        return l10n.docTypeCreditNote;
+      case 'Debit Note':
+        return l10n.docTypeDebitNote;
       default:
         return l10n.labelInvoice;
     }
   }
+
+  // Credit / Debit Notes: editing or cloning via the invoice form makes no
+  // sense, so those row actions are hidden and a Void action is offered.
+  bool get _isReturnType =>
+      widget.filterType == 'Credit Note' || widget.filterType == 'Debit Note';
 
   int _currentPage = 0;
   int _pageSize = 10;
@@ -70,6 +85,7 @@ class _InvoiceManagementScreenV2State
   String? _selectedCustomerId;
   String? _selectedCustomerName;
   bool _isLoadingPage = false;
+  bool _showReturnsBanner = false;
   bool _isBulkLoading = false;
   bool _hidePaid = false;
   bool _hideDeclined = false;
@@ -85,6 +101,8 @@ class _InvoiceManagementScreenV2State
   String _datePattern = 'dd/MM/yyyy';
   int _totalCount = 0;
   List<Invoice> _pageInvoices = [];
+  // Credit / debit notes raised against this page's invoices, by invoice id.
+  Map<String, List<Invoice>> _notesByInvoice = {};
   final Set<String> _selectedIds = {};
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
@@ -118,6 +136,23 @@ class _InvoiceManagementScreenV2State
     super.initState();
     _loadPage();
     _loadDateFormat();
+    _loadReturnsBanner();
+  }
+
+  // One-time "product returns" notice, Invoices list only.
+  Future<void> _loadReturnsBanner() async {
+    if (widget.filterType != 'Invoice') return;
+    final dismissed = await ref
+        .read(settingsRepositoryProvider)
+        .getSetting(SettingKey.returnsBannerDismissed);
+    if (mounted) setState(() => _showReturnsBanner = dismissed != '1');
+  }
+
+  Future<void> _dismissReturnsBanner() async {
+    await ref
+        .read(settingsRepositoryProvider)
+        .setSetting(SettingKey.returnsBannerDismissed, '1');
+    if (mounted) setState(() => _showReturnsBanner = false);
   }
 
   Future<void> _loadDateFormat() async {
@@ -173,9 +208,17 @@ class _InvoiceManagementScreenV2State
           filter: filter,
         ),
       ]);
+      final pageInvoices = results[0] as List<Invoice>;
+      final notes =
+          widget.filterType == 'Invoice'
+              ? await ref
+                  .read(returnRepositoryProvider)
+                  .getNotesForInvoices(pageInvoices.map((i) => i.id).toList())
+              : <String, List<Invoice>>{};
       if (mounted) {
         setState(() {
-          _pageInvoices = results[0] as List<Invoice>;
+          _pageInvoices = pageInvoices;
+          _notesByInvoice = notes;
           _totalCount = results[1] as int;
           _isLoadingPage = false;
         });
@@ -1735,7 +1778,7 @@ class _InvoiceManagementScreenV2State
     return [
       if (!isWide) ...[
         PopupMenuItem(value: 'view', child: _MenuRow(Icons.visibility_outlined, l10n.actionView, Colors.green)),
-        if (!isDeclined)
+        if (!_isReturnType && !isDeclined)
           PopupMenuItem(value: 'edit', child: _MenuRow(Icons.edit_outlined, l10n.actionEdit, Colors.blue)),
         if (widget.filterType == 'Invoice' && !isDeclined)
           PopupMenuItem(
@@ -1777,13 +1820,53 @@ class _InvoiceManagementScreenV2State
         ],
         const PopupMenuDivider(),
       ],
-      PopupMenuItem(value: 'duplicate', child: _MenuRow(Icons.copy_all_outlined, l10n.actionDuplicate, Colors.teal)),
+      if (!_isReturnType)
+        PopupMenuItem(value: 'duplicate', child: _MenuRow(Icons.copy_all_outlined, l10n.actionDuplicate, Colors.teal)),
+      if (widget.filterType == 'Invoice')
+        PopupMenuItem(
+            value: 'credit_note',
+            child: _MenuRow(
+                Icons.assignment_return_outlined,
+                ref.read(returnsEnabledProvider)
+                    ? l10n.actionCreateCreditNoteSalesReturn
+                    : l10n.actionReturnItems,
+                Colors.brown)),
+      // Debit notes are advanced — only with Credit / Debit Notes enabled.
+      if (widget.filterType == 'Invoice' &&
+          !isDeclined &&
+          ref.read(returnsEnabledProvider))
+        PopupMenuItem(
+            value: 'debit_note',
+            child: _MenuRow(Icons.note_add_outlined,
+                l10n.actionCreateDebitNote, Colors.indigo)),
+      if (widget.filterType == 'Invoice' &&
+          !isDeclined &&
+          invoice.outstandingBalance > 0)
+        PopupMenuItem(
+            value: 'apply_credit',
+            child: _MenuRow(Icons.account_balance_wallet_outlined,
+                l10n.returnApplyCustomerCreditAction, Colors.teal)),
       if (!isWide) ...[
         PopupMenuItem(
             value: 'preview', child: _MenuRow(Icons.picture_as_pdf_outlined, l10n.actionPdfPreview, Colors.orange)),
         PopupMenuItem(
             value: 'download', child: _MenuRow(Icons.download_outlined, l10n.actionDownloadPdf, Colors.deepPurple)),
         PopupMenuItem(value: 'print', child: _MenuRow(Icons.print_outlined, l10n.actionPrint, Colors.blueGrey)),
+      ],
+      if (widget.filterType == 'Credit Note') ...[
+        PopupMenuItem(
+            value: 'refund',
+            child: _MenuRow(
+                Icons.currency_exchange_outlined, l10n.actionRefund, Colors.green)),
+        PopupMenuItem(
+            value: 'print_voucher',
+            child: _MenuRow(Icons.receipt_long_outlined,
+                l10n.actionPrintRefundVoucher, Colors.blueGrey)),
+        if (widget.user.isAdmin())
+          PopupMenuItem(
+              value: 'void',
+              child: _MenuRow(
+                  Icons.block_outlined, l10n.actionCancelVoid, Colors.red)),
       ],
       if (widget.user.isAdmin())
         PopupMenuItem(
@@ -1794,7 +1877,7 @@ class _InvoiceManagementScreenV2State
   void _handleRowActionV2(String action, Invoice invoice) {
     switch (action) {
       case 'view':
-        InvoicePdfServices.showInvoiceDetails(context, invoice);
+        _viewInvoice(invoice);
       case 'edit':
         widget.onEditInvoice(invoice);
       case 'pay':
@@ -1811,6 +1894,18 @@ class _InvoiceManagementScreenV2State
         _setQuotationStatus(invoice, 'declined');
       case 'duplicate':
         _showCloneDialog(invoice);
+      case 'credit_note':
+        _openReturnScreen(invoice);
+      case 'debit_note':
+        _openDebitNote(invoice);
+      case 'apply_credit':
+        _applyCustomerCredit(invoice);
+      case 'void':
+        _voidCreditNote(invoice);
+      case 'refund':
+        _showRecordRefundDialog(invoice);
+      case 'print_voucher':
+        _showRefundVouchers(invoice);
       case 'preview':
         InvoicePdfServices.previewPDF(context, invoice);
       case 'download':
@@ -1839,8 +1934,8 @@ class _InvoiceManagementScreenV2State
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         _buildActionButton(Icons.visibility_outlined, Colors.green, l10n.actionView,
-            () => InvoicePdfServices.showInvoiceDetails(context, invoice)),
-        if (!isDeclined)
+            () => _viewInvoice(invoice)),
+        if (!_isReturnType && !isDeclined)
           _buildActionButton(
               Icons.edit_outlined, Colors.blue, l10n.actionEdit, () => widget.onEditInvoice(invoice)),
         if (widget.filterType == 'Invoice' && !isDeclined)
@@ -1983,6 +2078,19 @@ class _InvoiceManagementScreenV2State
                       CustomerInfoButton(customer: invoice.customer),
                     ],
                   ),
+                  if (_isReturnType && invoice.originalInvoiceNumber != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                        AppLocalizations.of(context)!
+                            .returnAgainstInvoiceShort(invoice.originalInvoiceNumber!),
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                  ],
+                  if (_notesByInvoice.containsKey(invoice.id)) ...[
+                    const SizedBox(height: 4),
+                    _linkedNotesChips(invoice, _notesByInvoice[invoice.id]!),
+                  ],
                   // Narrow mode drops the fixed 110px Date column (it, plus
                   // the checkbox/Sl.No/status/actions columns all fixed at
                   // once, overflowed on narrower windows) — folded in here
@@ -2284,6 +2392,36 @@ class _InvoiceManagementScreenV2State
                       child: _bulkActionsBarV2(),
                     ),
             ),
+            Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: AppLayout.maxWidthWide),
+                child: DiscoveryBanner(
+                  visible: _showReturnsBanner,
+                  margin: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                  icon: Icons.assignment_return_outlined,
+                  iconColor: const Color(0xFFEA580C),
+                  backgroundColor: const Color(0xFFFFF7ED),
+                  borderColor: const Color(0xFFFED7AA),
+                  title: Text(
+                    AppLocalizations.of(context)!.returnsBannerTitle,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: Color(0xFF9A3412)),
+                  ),
+                  subtitle: Text(
+                    AppLocalizations.of(context)!.returnsBannerSubtitle,
+                    style: const TextStyle(fontSize: 12, color: Color(0xFFC2410C)),
+                  ),
+                  actionLabel: AppLocalizations.of(context)!.actionGotIt,
+                  onAction: _dismissReturnsBanner,
+                  actionColor: const Color(0xFFEA580C),
+                  onDismiss: _dismissReturnsBanner,
+                  dismissIconColor: const Color(0xFFFDBA74),
+                ),
+              ),
+            ),
             const SizedBox(height: 16),
             _isLoadingPage
                 ? const Expanded(child: Center(child: CircularProgressIndicator()))
@@ -2485,6 +2623,27 @@ class _InvoiceManagementScreenV2State
     return _statusPill(label, color);
   }
 
+  // "CN −₹X" / "DN +₹X" under an invoice that has notes raised against it.
+  Widget _linkedNotesChips(Invoice invoice, List<Invoice> notes) {
+    final l10n = AppLocalizations.of(context)!;
+    Widget chip(String type, Color color,
+        String Function(String amount) label) {
+      final ofType = notes.where((n) => n.type == type).toList();
+      if (ofType.isEmpty) return const SizedBox.shrink();
+      final sum = ofType.fold<double>(0.0, (t, n) => t + n.total);
+      return Tooltip(
+        message: ofType.map((n) => '#${n.invoiceNumber ?? n.id}').join(', '),
+        child: _statusPill(
+            label('${invoice.currencySymbol}${sum.toStringAsFixed(2)}'), color),
+      );
+    }
+
+    return Wrap(spacing: 4, runSpacing: 4, children: [
+      chip('Credit Note', Colors.brown, l10n.returnBadgeCreditNote),
+      chip('Debit Note', Colors.indigo, l10n.returnBadgeDebitNote),
+    ]);
+  }
+
   Widget _statusPill(String label, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
@@ -2513,6 +2672,252 @@ class _InvoiceManagementScreenV2State
       ),
     );
   }
+
+  // Spend the customer's stored credit (from credit notes) on this invoice,
+  // capped at what's still owed.
+  Future<void> _applyCustomerCredit(Invoice invoice) async {
+    final l10n = AppLocalizations.of(context)!;
+    final returns = ref.read(returnRepositoryProvider);
+    final sources = await returns.getCustomerCreditSources(
+      customerId: invoice.customer.id,
+      customerName: invoice.customer.name,
+      currencyCode: invoice.currencyCode,
+    );
+    if (!mounted) return;
+    final credit = sources.fold<double>(0.0, (t, s) => t + s.remaining);
+    if (credit <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.returnNoCustomerCreditMessage)));
+      return;
+    }
+    final outstanding = invoice.outstandingBalance;
+    final amount = credit < outstanding ? credit : outstanding;
+    String money(double v) => '${invoice.currencySymbol}${v.toStringAsFixed(2)}';
+    final amountText = money(amount);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.returnApplyCustomerCreditAction),
+        // Where the credit came from — it's the customer's, not this
+        // invoice's, so name the credit note(s) and their invoices.
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.returnCreditAvailableLabel(money(credit)),
+                style: const TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 4),
+            for (final s in sources)
+              Text(
+                  s.againstNumber == null
+                      ? l10n.returnCreditFromNote(
+                          s.noteNumber, money(s.remaining))
+                      : l10n.returnCreditFromNoteAgainst(
+                          s.noteNumber, s.againstNumber!, money(s.remaining)),
+                  style: TextStyle(
+                      fontSize: 12.5,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            const SizedBox(height: 12),
+            Text(l10n.returnApplyCreditConfirmBody(
+                amountText, invoice.invoiceNumber ?? invoice.id)),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.actionCancel)),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(l10n.returnApplyCreditAction(amountText))),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await returns.applyCustomerCreditToInvoice(
+          invoice: invoice, amount: amount);
+      _loadPage();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.returnCreditAppliedMessage)));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+                l10n.returnCreditApplyErrorMessage(e.toString()))));
+      }
+    }
+  }
+
+  Future<void> _voidCreditNote(Invoice creditNote) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.voidCreditNoteTitle),
+        content: Text(l10n.voidCreditNoteBody(
+            creditNote.invoiceNumber ?? creditNote.id)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.voidCreditNoteKeep)),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(l10n.actionCancelVoid)),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await ref.read(returnRepositoryProvider).voidCreditNote(creditNote.id);
+      _loadPage();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.creditNoteCancelledMessage)));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.creditNoteCancelError('$e'))));
+      }
+    }
+  }
+
+  // View dialog, with the invoice's linked notes and each credit note's
+  // refunds (for voucher reprint).
+  Future<void> _viewInvoice(Invoice invoice) async {
+    final notes = _notesByInvoice[invoice.id] ?? const <Invoice>[];
+    final repo = ref.read(returnRepositoryProvider);
+    final refundsByNote = <String, List<Refund>>{
+      for (final n in notes.where((n) => n.type == 'Credit Note'))
+        n.id: await repo.getRefundsForCreditNote(n.id),
+    };
+    if (!mounted) return;
+    InvoicePdfServices.showInvoiceDetails(context, invoice,
+        notes: notes,
+        onVoidNote: widget.user.isAdmin() ? _voidCreditNote : null,
+        refundsByNote: refundsByNote,
+        onVoucherAction: _voucherAction);
+  }
+
+  // Refund voucher PDF for one refund: 'preview' | 'download' | 'print'.
+  Future<void> _voucherAction(
+      Invoice creditNote, Refund refund, String action) async {
+    final full = await ref
+        .read(invoiceRepositoryProvider)
+        .getInvoiceById(creditNote.id);
+    final remaining = await ref
+        .read(returnRepositoryProvider)
+        .getRemainingCustomerCredit(
+          customerId: creditNote.customer.id,
+          customerName: creditNote.customer.name,
+          currencyCode: creditNote.currencyCode,
+        );
+    if (!mounted) return;
+    final cn = full ?? creditNote;
+    switch (action) {
+      case 'preview':
+        await RefundReceiptService.preview(context, cn, refund,
+            remainingCredit: remaining);
+      case 'download':
+        await RefundReceiptService.download(context, cn, refund,
+            remainingCredit: remaining);
+      default:
+        await RefundReceiptService.printVoucher(context, cn, refund,
+            remainingCredit: remaining);
+    }
+  }
+
+  // Credit Notes list menu: every refund of the note, each with PDF preview /
+  // download / print.
+  Future<void> _showRefundVouchers(Invoice creditNote) async {
+    final l10n = AppLocalizations.of(context)!;
+    final refunds = await ref
+        .read(returnRepositoryProvider)
+        .getRefundsForCreditNote(creditNote.id);
+    if (!mounted) return;
+    if (refunds.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.returnNoRefundsMessage)));
+      return;
+    }
+    await showDialog(
+      context: context,
+      builder: (ctx) {
+        Widget action(Refund r, String a, IconData icon, String tip) =>
+            IconButton(
+              icon: Icon(icon, size: 20),
+              tooltip: tip,
+              onPressed: () {
+                Navigator.pop(ctx);
+                _voucherAction(creditNote, r, a);
+              },
+            );
+        return SimpleDialog(
+          title: Text(l10n.returnPickRefundTitle),
+          children: [
+            for (final r in refunds)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  children: [
+                    Expanded(child: Text(_refundLabel(creditNote, r))),
+                    action(r, 'preview', Icons.picture_as_pdf_outlined,
+                        l10n.actionPdfPreview),
+                    action(r, 'download', Icons.download_outlined,
+                        l10n.actionDownloadPdf),
+                    action(r, 'print', Icons.print_outlined, l10n.actionPrint),
+                  ],
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _refundLabel(Invoice creditNote, Refund r) =>
+      '${r.receiptNumber}  ·  ${AppFormatters.formatShortDate(r.dateRefunded)}'
+      '  ·  ${creditNote.currencySymbol}${r.amount.toStringAsFixed(2)}';
+
+  Future<void> _showRecordRefundDialog(Invoice creditNote) async {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => RecordRefundDialog(
+        creditNote: creditNote,
+        onRefunded: () {
+          _loadPage();
+        },
+      ),
+    );
+  }
+
+  // New debit note linked to [invoice] — opens the create form (clone path,
+  // which for 'Debit Note' carries only the customer + invoice link).
+  Future<void> _openDebitNote(Invoice invoice) async {
+    final full = await ref
+        .read(invoiceRepositoryProvider)
+        .getInvoiceById(invoice.id);
+    if (!mounted || full == null) return;
+    widget.onCloneInvoice(full, 'Debit Note');
+  }
+
+  Future<void> _openReturnScreen(Invoice invoice) async {
+    final full = await ref
+        .read(invoiceRepositoryProvider)
+        .getInvoiceById(invoice.id);
+    if (!mounted || full == null) return;
+    await Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => CreateReturnScreen(
+        invoice: full,
+        onCreated: () {
+          _loadPage();
+        },
+      ),
+    ));
+  }
 }
 
 // Silence the unawaited future lint for the showDialog call used to drive the
@@ -2534,7 +2939,7 @@ class _MenuRow extends StatelessWidget {
       children: [
         Icon(icon, size: 18, color: color),
         const SizedBox(width: 10),
-        Text(label),
+        Flexible(child: Text(label)),
       ],
     );
   }

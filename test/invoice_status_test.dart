@@ -260,6 +260,31 @@ void main() {
     expect(top.single['total_qty'], 3.0);
   });
 
+  test('search matches invoice_number, not just id', () async {
+    final p = await addProduct();
+    await InvoiceService.insertInvoice(Invoice(
+      id: 'i1',
+      invoiceNumber: '00000042',
+      customer: customer,
+      items: [InvoiceItem(product: p, quantity: 1)],
+      date: DateTime(2026, 1, 1),
+      dueDate: DateTime(2026, 1, 15),
+      type: 'Invoice',
+    ));
+    Future<List<String>> ids(String q) async =>
+        (await InvoiceService.getInvoicesPaginated(
+                searchQuery: q, filterType: 'Invoice', customerId: 'c1'))
+            .map((i) => i.id)
+            .toList();
+
+    expect(await ids('42'), ['i1']);
+    expect(
+        await InvoiceService.getInvoiceCount(
+            searchQuery: '42', filterType: 'Invoice'),
+        1);
+    expect(await ids('99'), isEmpty);
+  });
+
   test('unpaid / overdue list filters skip declined; "all" keeps them',
       () async {
     await seedActiveAndDeclined();

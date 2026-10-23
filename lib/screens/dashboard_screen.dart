@@ -14,6 +14,7 @@ import 'package:invoiso/providers/app_config_provider.dart';
 import 'package:invoiso/providers/cash_exchange_settings_provider.dart';
 import 'package:invoiso/providers/purchase_bills_settings_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
+import 'package:invoiso/providers/returns_settings_provider.dart';
 import 'package:invoiso/services/update_service.dart';
 import 'package:invoiso/widgets/update_dialog.dart';
 import 'package:invoiso/domain/invoice_calculator.dart';
@@ -110,6 +111,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     _currentUser = widget.loggedInUser;
     _loadCreateInvoiceLayout();
     _loadServicesEnabled();
+    _loadReturnsEnabled();
     _loadReportsAdminOnly();
     _loadCompanies();
     SessionManager.initialize(_onSessionTimeout);
@@ -192,6 +194,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         .getSetting(SettingKey.cashUpiExchangeEnabled);
     if (!mounted) return;
     ref.read(cashUpiExchangeEnabledProvider.notifier).state = v == 'true';
+  }
+
+  // Credit / Debit Notes nav items; the toggle lives in Settings → Accessibility.
+  Future<void> _loadReturnsEnabled() async {
+    final v = await ref
+        .read(settingsRepositoryProvider)
+        .getSetting(SettingKey.returnsEnabled);
+    if (!mounted) return;
+    ref.read(returnsEnabledProvider.notifier).state = v == 'true';
   }
 
   Future<void> _loadReportsAdminOnly() async {
@@ -413,6 +424,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             : Center(
                 child: Text(
                     AppLocalizations.of(context)!.dashboardUnknownTabLabel));
+      case 12:
+        return InvoiceManagementScreenV2(
+          key: const ValueKey('credit_note_list'),
+          onEditInvoice: editInvoice,
+          onCloneInvoice: cloneInvoice,
+          onCreateNew: _createDocumentOfType,
+          user: _currentUser,
+          filterType: 'Credit Note',
+        );
+      case 13:
+        return InvoiceManagementScreenV2(
+          key: const ValueKey('debit_note_list'),
+          onEditInvoice: editInvoice,
+          onCloneInvoice: cloneInvoice,
+          onCreateNew: _createDocumentOfType,
+          user: _currentUser,
+          filterType: 'Debit Note',
+        );
       default:
         return Center(
             child:
@@ -548,6 +577,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     if (_selectedIndex == 7 && index != 7) await _refreshUser();
     if (_selectedIndex == 8 && index != 8) {
       await _loadServicesEnabled();
+      await _loadReturnsEnabled();
       await _loadReportsAdminOnly();
     }
     if (index == 1) await _loadCreateInvoiceLayout();
@@ -877,6 +907,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         Icons.point_of_sale_outlined,
                         Icons.point_of_sale,
                         AppLocalizations.of(context)!.navReceipts),
+                    if (ref.watch(returnsEnabledProvider)) ...[
+                      _buildNavItem(
+                          12,
+                          Icons.assignment_return_outlined,
+                          Icons.assignment_return,
+                          AppLocalizations.of(context)!.navCreditNotes),
+                      _buildNavItem(
+                          13,
+                          Icons.assignment_late_outlined,
+                          Icons.assignment_late,
+                          AppLocalizations.of(context)!.navDebitNotes),
+                    ],
                     _buildNavItem(5, Icons.people_outline, Icons.people,
                         AppLocalizations.of(context)!.navCustomers),
                     _buildNavItem(
@@ -884,15 +926,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         Icons.inventory_2_outlined,
                         Icons.inventory_2,
                         AppLocalizations.of(context)!.navProducts),
-                    if (!_reportsLocked)
-                      _buildNavItem(7, Icons.bar_chart_outlined, Icons.bar_chart,
-                          AppLocalizations.of(context)!.navReports),
                     if (showPurchaseBillsAndSuppliers) ...[
                       _buildNavItem(10, Icons.shopping_cart_outlined,
                           Icons.shopping_cart, AppLocalizations.of(context)!.navPurchaseBills),
                       _buildNavItem(11, Icons.local_shipping_outlined,
                           Icons.local_shipping, AppLocalizations.of(context)!.navSuppliers),
                     ],
+                    if (!_reportsLocked)
+                      _buildNavItem(7, Icons.bar_chart_outlined, Icons.bar_chart,
+                          AppLocalizations.of(context)!.navReports),
                     _buildNavItem(8, Icons.settings_outlined, Icons.settings,
                         AppLocalizations.of(context)!.navSettings,
                         showDot: _hasUpdate),

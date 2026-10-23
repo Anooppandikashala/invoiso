@@ -10,6 +10,7 @@ import 'package:invoiso/repositories/sqlite/sqlite_payment_repository.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_product_repository.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_purchase_bill_repository.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_report_repository.dart';
+import 'package:invoiso/repositories/sqlite/sqlite_return_repository.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_settings_repository.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_supplier_payment_repository.dart';
 import 'package:invoiso/repositories/sqlite/sqlite_supplier_repository.dart';
@@ -26,6 +27,9 @@ final sqliteRepositoryOverrides = <Override>[
   ),
   paymentRepositoryProvider.overrideWith(
         (ref) => SqlitePaymentRepository(),
+  ),
+  returnRepositoryProvider.overrideWith(
+        (ref) => SqliteReturnRepository(),
   ),
   cashLedgerRepositoryProvider.overrideWith(
         (ref) => SqliteCashLedgerRepository(),

@@ -645,6 +645,40 @@ extension InvoiceDiscountTypeExtension on InvoiceDiscountType {
   }
 }
 
+/// How a credit note's value is settled with the customer.
+/// Null on invoices / quotations / receipts / debit notes.
+enum CreditSettlement {
+  reduceInvoice, // lower the linked invoice's outstanding balance
+  refund, // money paid back to the customer
+  customerCredit, // parked as a credit balance for a future invoice
+}
+
+extension CreditSettlementExtension on CreditSettlement {
+  String get key {
+    switch (this) {
+      case CreditSettlement.reduceInvoice:
+        return 'reduce_invoice';
+      case CreditSettlement.refund:
+        return 'refund';
+      case CreditSettlement.customerCredit:
+        return 'customer_credit';
+    }
+  }
+
+  static CreditSettlement? fromKey(String? key) {
+    switch (key) {
+      case 'reduce_invoice':
+        return CreditSettlement.reduceInvoice;
+      case 'refund':
+        return CreditSettlement.refund;
+      case 'customer_credit':
+        return CreditSettlement.customerCredit;
+      default:
+        return null;
+    }
+  }
+}
+
 enum ThermalCompanyNameSize { xsmall, small, medium, large }
 
 extension ThermalCompanyNameSizeExtension on ThermalCompanyNameSize {

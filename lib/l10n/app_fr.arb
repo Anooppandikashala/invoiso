@@ -57,6 +57,8 @@
   "navInvoices": "Factures",
   "navQuotations": "Devis",
   "navReceipts": "Reçus",
+  "navCreditNotes": "Avoirs",
+  "navDebitNotes": "Notes de débit",
   "navCustomers": "Clients",
   "navProducts": "Produits",
   "navReports": "Rapports",

@@ -8,6 +8,7 @@ import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/providers/cash_exchange_settings_provider.dart';
 import 'package:invoiso/providers/purchase_bills_settings_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
+import 'package:invoiso/providers/returns_settings_provider.dart';
 
 class AccessibilityScreen extends ConsumerStatefulWidget {
   const AccessibilityScreen({super.key});
@@ -28,6 +29,15 @@ class _AccessibilityScreenState extends ConsumerState<AccessibilityScreen> {
     _loadCreateInvoiceLayout();
     _loadCashExchangeEnabled();
     _loadReportsAdminOnly();
+  }
+
+  // Saved immediately and pushed to the provider so the dashboard sidebar
+  // shows/hides the Credit Notes / Debit Notes tabs without a restart.
+  Future<void> _setReturnsEnabled(bool value) async {
+    await ref
+        .read(settingsRepositoryProvider)
+        .setSetting(SettingKey.returnsEnabled, value.toString());
+    ref.read(returnsEnabledProvider.notifier).state = value;
   }
 
   Future<void> _loadReportsAdminOnly() async {
@@ -257,6 +267,31 @@ class _AccessibilityScreenState extends ConsumerState<AccessibilityScreen> {
                                 .onSurfaceVariant)),
                     value: ref.watch(enablePurchaseBillsAndSuppliersProvider),
                     onChanged: _setEnablePurchaseBills,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Card(
+                  elevation: 0,
+                  color: Theme.of(context).colorScheme.surfaceContainer,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+                    side: BorderSide(
+                        color: Theme.of(context).colorScheme.outlineVariant),
+                  ),
+                  child: SwitchListTile(
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    secondary: const Icon(Icons.assignment_return_outlined),
+                    title: Text(l10n.returnsSettingTitle,
+                        style: const TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: Text(l10n.returnsSettingSubtitle,
+                        style: TextStyle(
+                            fontSize: AppFontSize.xsmall,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant)),
+                    value: ref.watch(returnsEnabledProvider),
+                    onChanged: _setReturnsEnabled,
                   ),
                 ),
                 const SizedBox(height: 24),

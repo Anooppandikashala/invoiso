@@ -297,7 +297,7 @@ pw.Page buildThermalTemplate(
         children: [
           if (invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros) != null)
             pw.Text(
-                'Inv No: ${invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros)}',
+                '${invoice.thermalNumberLabel}: ${invoice.pdfNumberText(invoicePrefix, showLeadingZeros: showLeadingZeros)}',
                 style: const pw.TextStyle(fontSize: bodyFs)),
           pw.Text('Date: $dateStr',
               style: const pw.TextStyle(fontSize: bodyFs)),
@@ -492,6 +492,16 @@ pw.Page buildThermalTemplate(
 
       // ── Tax summary ──
       ...buildTaxSummary(),
+
+      // ── Credit / Debit Note info (against invoice, reason, refunds) ──
+      if (returnInfoLines(invoice).isNotEmpty) ...[
+        pw.SizedBox(height: 4),
+        dashedSep(),
+        for (final l in returnInfoLines(invoice))
+          pw.Text(l,
+              style: pw.TextStyle(
+                  fontSize: smallFs, fontWeight: pw.FontWeight.bold)),
+      ],
 
       // ── Notes ──
       if ((invoice.notes ?? '').isNotEmpty) ...[

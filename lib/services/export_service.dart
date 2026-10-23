@@ -23,7 +23,8 @@ class ExportService {
     final csv = await _buildInvoicesCsv(invoices, type: type);
     // Prepend UTF-8 BOM so Excel and other apps render Unicode correctly.
     final bytes = Uint8List.fromList(utf8.encode('\uFEFF$csv'));
-    final prefix = '${type.toLowerCase()}s'; // 'invoices' or 'quotations'
+    final prefix =
+        '${type.toLowerCase().replaceAll(' ', '_')}s'; // 'invoices', 'credit_notes'
     final filename = '${prefix}_${DateTime.now().millisecondsSinceEpoch}.csv';
 
     final savePath = await FilePicker.platform.saveFile(
@@ -125,6 +126,7 @@ class ExportService {
       final previousBalanceDue = s.showPreviousBalance
           ? await BackendServices.invoices.getPreviousBalanceDueForInvoice(invoice)
           : 0.0;
+      await PDFService.attachRefunds(invoice);
       final pdf = PDFService.generateInvoicePDFWithSettings(
         invoice,
         s,
@@ -157,6 +159,7 @@ class ExportService {
       final previousBalanceDue = s.showPreviousBalance
           ? await BackendServices.invoices.getPreviousBalanceDueForInvoice(invoice)
           : 0.0;
+      await PDFService.attachRefunds(invoice);
       final pdf = PDFService.generateInvoicePDFWithSettings(
         invoice,
         s,
