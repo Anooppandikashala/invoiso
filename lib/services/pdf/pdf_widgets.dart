@@ -1349,6 +1349,12 @@ List<String> returnInfoLines(Invoice invoice) {
     case null:
       break;
   }
+  for (final r in invoice.refunds) {
+    lines.add('Refund ${r.receiptNumber}: '
+        '${invoice.currencySymbol}${r.amount.toStringAsFixed(2)} on '
+        '${formatPdfDate(r.dateRefunded, 'dd MMM yyyy')}'
+        '${(r.refundMethod ?? '').isNotEmpty ? ' via ${r.refundMethod}' : ''}');
+  }
   return lines;
 }
 

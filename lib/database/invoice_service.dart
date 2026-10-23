@@ -701,8 +701,8 @@ class InvoiceService {
     final whereArgs = <Object?>[];
 
     if (searchQuery.isNotEmpty) {
-      whereParts.add('(customer_name LIKE ? OR id LIKE ?)');
-      whereArgs.addAll(['%$searchQuery%', '%$searchQuery%']);
+      whereParts.add('(customer_name LIKE ? OR id LIKE ? OR invoice_number LIKE ?)');
+      whereArgs.addAll(['%$searchQuery%', '%$searchQuery%', '%$searchQuery%']);
     }
     if (filterType != null && filterType.isNotEmpty) {
       whereParts.add('type = ?');

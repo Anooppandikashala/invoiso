@@ -3,18 +3,104 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:invoiso/common/common.dart';
+import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/refund.dart';
 import 'package:invoiso/services/backend_services.dart';
 import 'package:invoiso/services/pdf/pdf_font_service.dart';
+import 'package:invoiso/services/pdf_service.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 
 /// Single-page "REFUND VOUCHER" — the money-out mirror of a payment receipt.
 /// [creditNote] is the `Invoice` row with `type == 'Credit Note'`.
 class RefundReceiptService {
-  static Future<void> printOrDownload(
+  /// Shows the voucher in a preview dialog with a Print button (the system
+  /// print dialog also offers Save as PDF).
+  static Future<void> preview(
+    BuildContext context,
+    Invoice creditNote,
+    Refund refund, {
+    double remainingCredit = 0,
+  }) async {
+    try {
+      final pdf = await _generate(creditNote, refund, remainingCredit);
+      final bytes = await pdf.save();
+      if (!context.mounted) return;
+      await showDialog(
+        context: context,
+        builder: (dialogContext) => Dialog(
+          insetPadding: const EdgeInsets.all(16),
+          child: SizedBox(
+            width: (MediaQuery.sizeOf(dialogContext).width * 0.8)
+                .clamp(300.0, AppLayout.maxWidthNarrow),
+            height: (MediaQuery.sizeOf(dialogContext).height * 0.9)
+                .clamp(400.0, 1000.0),
+            child: Column(
+              children: [
+                AppBar(
+                  automaticallyImplyLeading: false,
+                  title: Text('Refund Voucher ${refund.receiptNumber}'),
+                  actions: [
+                    IconButton(
+                      icon: const Icon(Icons.print_outlined),
+                      tooltip: 'Print',
+                      onPressed: () => Printing.layoutPdf(
+                        onLayout: (_) async => bytes,
+                        name: '${refund.receiptNumber}.pdf',
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.download_outlined),
+                      tooltip: 'Download',
+                      onPressed: () => PDFService.savePdfWithPicker(
+                          context, bytes, '${refund.receiptNumber}.pdf'),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      tooltip: 'Close',
+                      onPressed: () => Navigator.pop(dialogContext),
+                    ),
+                  ],
+                ),
+                Expanded(
+                  child: SfPdfViewer.memory(
+                    bytes,
+                    pageLayoutMode: PdfPageLayoutMode.continuous,
+                    canShowPageLoadingIndicator: false,
+                    canShowScrollStatus: false,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (context.mounted) _showError(context, e);
+    }
+  }
+
+  static Future<void> download(
+    BuildContext context,
+    Invoice creditNote,
+    Refund refund, {
+    double remainingCredit = 0,
+  }) async {
+    try {
+      final pdf = await _generate(creditNote, refund, remainingCredit);
+      final bytes = await pdf.save();
+      if (!context.mounted) return;
+      await PDFService.savePdfWithPicker(
+          context, bytes, '${refund.receiptNumber}.pdf');
+    } catch (e) {
+      if (context.mounted) _showError(context, e);
+    }
+  }
+
+  static Future<void> printVoucher(
     BuildContext context,
     Invoice creditNote,
     Refund refund, {
@@ -27,12 +113,14 @@ class RefundReceiptService {
         name: '${refund.receiptNumber}.pdf',
       );
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error generating refund voucher: $e')),
-        );
-      }
+      if (context.mounted) _showError(context, e);
     }
+  }
+
+  static void _showError(BuildContext context, Object e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error generating refund voucher: $e')),
+    );
   }
 
   static Future<pw.Document> _generate(

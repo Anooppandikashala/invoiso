@@ -1,4 +1,5 @@
 import 'package:invoiso/database/return_service.dart';
+import 'package:invoiso/models/customer_credit.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/refund.dart';
 import 'package:invoiso/repositories/return_repository.dart';
@@ -77,6 +78,11 @@ class SqliteReturnRepository implements ReturnRepository {
       ReturnService.getNotesForInvoice(invoiceId);
 
   @override
+  Future<Map<String, List<Invoice>>> getNotesForInvoices(
+          List<String> invoiceIds) =>
+      ReturnService.getNotesForInvoices(invoiceIds);
+
+  @override
   Future<Map<String, double>> getReturnedQtyByLine(String originalInvoiceId) =>
       ReturnService.getReturnedQtyByLine(originalInvoiceId);
 
@@ -87,6 +93,18 @@ class SqliteReturnRepository implements ReturnRepository {
     required String currencyCode,
   }) =>
       ReturnService.getRemainingCustomerCredit(
+        customerId: customerId,
+        customerName: customerName,
+        currencyCode: currencyCode,
+      );
+
+  @override
+  Future<List<CustomerCreditSource>> getCustomerCreditSources({
+    required String customerId,
+    String? customerName,
+    required String currencyCode,
+  }) =>
+      ReturnService.getCustomerCreditSources(
         customerId: customerId,
         customerName: customerName,
         currencyCode: currencyCode,

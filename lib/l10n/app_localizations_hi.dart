@@ -5367,9 +5367,55 @@ class AppLocalizationsHi extends AppLocalizations {
   String get docTypeDebitNote => 'Debit Note';
 
   @override
-  String returnDialogTitle(String number) {
-    return 'Create Credit Note — $number';
+  String returnScreenTitleReturnItems(String number) {
+    return 'Return Items — $number';
   }
+
+  @override
+  String returnScreenTitleSalesReturn(String number) {
+    return 'Credit Note (Sales Return) — $number';
+  }
+
+  @override
+  String returnSelectedCount(int count, String amount) {
+    return '$count items · $amount';
+  }
+
+  @override
+  String get returnSearchHint => 'Search product or HSN';
+
+  @override
+  String get returnAllButton => 'Return all';
+
+  @override
+  String get returnOnlySelectedChip => 'Only selected';
+
+  @override
+  String get returnColProduct => 'Product';
+
+  @override
+  String get returnColSold => 'Sold';
+
+  @override
+  String get returnColReturned => 'Returned';
+
+  @override
+  String get returnColLeft => 'Left';
+
+  @override
+  String get returnColToStock => 'To stock';
+
+  @override
+  String get returnDetailsSection => 'Totals, reason & settlement';
+
+  @override
+  String get returnDiscardTitle => 'Discard this return?';
+
+  @override
+  String get returnDiscardBody => 'The quantities you entered will be lost.';
+
+  @override
+  String get returnVoidNoteTooltip => 'Void this note';
 
   @override
   String returnCustomerLabel(String name) {
@@ -5475,7 +5521,27 @@ class AppLocalizationsHi extends AppLocalizations {
   }
 
   @override
-  String get returnPrintVoucher => 'Print voucher';
+  String get returnPrintVoucher => 'Refund voucher';
+
+  @override
+  String get returnsBannerTitle => 'New: Product returns';
+
+  @override
+  String get returnsBannerSubtitle =>
+      'Use “Return Items” in an invoice\'s menu to take goods back, refund the customer or keep it as credit. Advanced Credit / Debit Notes can be turned on in Settings → Accessibility.';
+
+  @override
+  String get returnNotePdfTooltip => 'Note PDF';
+
+  @override
+  String get actionPrintRefundVoucher => 'Refund vouchers';
+
+  @override
+  String get returnNoRefundsMessage =>
+      'No refunds recorded for this credit note';
+
+  @override
+  String get returnPickRefundTitle => 'Refund vouchers';
 
   @override
   String get returnCreateButton => 'Create';
@@ -5490,6 +5556,108 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get returnCreditAppliedMessage => 'Customer credit applied.';
+
+  @override
+  String get returnNotesSectionTitle => 'Credit / Debit Notes';
+
+  @override
+  String returnCreditFromNote(String note, String amount) {
+    return 'From Credit Note #$note: $amount';
+  }
+
+  @override
+  String returnCreditFromNoteAgainst(
+      String note, String invoice, String amount) {
+    return 'From Credit Note #$note (against #$invoice): $amount';
+  }
+
+  @override
+  String returnAgainstInvoiceShort(String number) {
+    return 'Against #$number';
+  }
+
+  @override
+  String returnAgainstInvoiceNotFound(String number) {
+    return 'Invoice #$number not found for this customer';
+  }
+
+  @override
+  String get returnPickInvoiceTitle => 'Select invoice';
+
+  @override
+  String get returnPickInvoiceSearchHint => 'Search invoice number';
+
+  @override
+  String get returnPickInvoiceEmpty => 'No invoices for this customer';
+
+  @override
+  String get returnSelectCustomerFirst => 'Select a customer first';
+
+  @override
+  String get returnGstAgainstInvoiceWarning =>
+      'GST: a note for a registered customer should reference the original invoice';
+
+  @override
+  String returnAgainstInvoiceFull(String number) {
+    return 'Against Invoice #$number';
+  }
+
+  @override
+  String get returnCopyInvoiceNumberTooltip => 'Copy invoice number';
+
+  @override
+  String get returnInvoiceNumberCopiedMessage => 'Invoice number copied';
+
+  @override
+  String get returnCopyNoteNumberTooltip => 'Copy note number';
+
+  @override
+  String get returnNoteNumberCopiedMessage => 'Note number copied';
+
+  @override
+  String returnBadgeCreditNote(String amount) {
+    return 'CN −$amount';
+  }
+
+  @override
+  String returnBadgeDebitNote(String amount) {
+    return 'DN +$amount';
+  }
+
+  @override
+  String get returnSettledCustomerCredit => 'Kept as customer credit';
+
+  @override
+  String get returnSettledRefund => 'Refunded';
+
+  @override
+  String get returnSettledReduceInvoice => 'Reduced this invoice\'s balance';
+
+  @override
+  String get returnApplyCreditToInvoiceLabel =>
+      'Apply customer credit to this invoice';
+
+  @override
+  String returnCreditAvailableLabel(String amount) {
+    return 'Credit available: $amount';
+  }
+
+  @override
+  String get returnApplyCustomerCreditAction => 'Apply customer credit';
+
+  @override
+  String get returnNoCustomerCreditMessage =>
+      'This customer has no credit available.';
+
+  @override
+  String returnApplyCreditConfirmBody(String amount, String number) {
+    return 'Apply $amount of this customer\'s credit to $number?';
+  }
+
+  @override
+  String returnCreditApplyErrorMessage(String error) {
+    return 'Could not apply credit: $error';
+  }
 
   @override
   String refundDialogTitle(String number) {
@@ -5529,11 +5697,11 @@ class AppLocalizationsHi extends AppLocalizations {
   }
 
   @override
-  String get returnsSettingTitle => 'Enable Returns (Credit / Debit Notes)';
+  String get returnsSettingTitle => 'Credit / Debit Notes (advanced)';
 
   @override
   String get returnsSettingSubtitle =>
-      'Adds a Credit / Debit Notes screen and a “Create Credit Note” action on invoices';
+      'Adds Credit Notes and Debit Notes screens, debit notes, standalone notes and number prefixes. Returns are always available from the invoice menu.';
 
   @override
   String get creditNotePrefixLabel => 'Credit note prefix';
@@ -5542,7 +5710,24 @@ class AppLocalizationsHi extends AppLocalizations {
   String get debitNotePrefixLabel => 'Debit note prefix';
 
   @override
-  String get actionCreateCreditNote => 'Create Credit Note';
+  String get quotationPrefixLabel => 'Quotation prefix';
+
+  @override
+  String get receiptPrefixLabel => 'Receipt prefix';
+
+  @override
+  String get prefixSameAsInvoiceHelper =>
+      'Leave empty to use the invoice prefix';
+
+  @override
+  String get actionReturnItems => 'Return Items';
+
+  @override
+  String get actionCreateDebitNote => 'Create Debit Note';
+
+  @override
+  String get actionCreateCreditNoteSalesReturn =>
+      'Create Credit Note (Sales Return)';
 
   @override
   String get actionRefund => 'Refund';

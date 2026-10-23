@@ -1,3 +1,4 @@
+import 'package:invoiso/common/common.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 
 /// Shared label helpers for return management — maps the canonical (stored)
@@ -23,6 +24,17 @@ String returnReasonLabel(AppLocalizations l10n, String reason) {
       return l10n.returnReasonGoodwill;
     default:
       return l10n.returnReasonOther;
+  }
+}
+
+String creditSettlementLabel(AppLocalizations l10n, CreditSettlement s) {
+  switch (s) {
+    case CreditSettlement.reduceInvoice:
+      return l10n.returnSettledReduceInvoice;
+    case CreditSettlement.refund:
+      return l10n.returnSettledRefund;
+    case CreditSettlement.customerCredit:
+      return l10n.returnSettledCustomerCredit;
   }
 }
 

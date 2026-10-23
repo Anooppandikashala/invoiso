@@ -1,3 +1,4 @@
+import 'package:invoiso/models/customer_credit.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/refund.dart';
 
@@ -41,9 +42,20 @@ abstract class ReturnRepository {
 
   Future<List<Invoice>> getNotesForInvoice(String invoiceId);
 
+  /// Credit / debit notes keyed by the invoice they were raised against.
+  Future<Map<String, List<Invoice>>> getNotesForInvoices(
+      List<String> invoiceIds);
+
   Future<Map<String, double>> getReturnedQtyByLine(String originalInvoiceId);
 
   Future<double> getRemainingCustomerCredit({
+    required String customerId,
+    String? customerName,
+    required String currencyCode,
+  });
+
+  /// Open credit per source credit note, oldest first.
+  Future<List<CustomerCreditSource>> getCustomerCreditSources({
     required String customerId,
     String? customerName,
     required String currencyCode,

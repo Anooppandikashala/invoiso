@@ -10,6 +10,7 @@ import 'package:invoiso/models/custom_field_def.dart';
 import 'package:invoiso/widgets/custom_field_defs_editor.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/providers/repositories.dart';
+import 'package:invoiso/providers/returns_settings_provider.dart';
 import 'package:invoiso/common/constants.dart';
 
 class InvoiceSettingsScreenV2 extends ConsumerStatefulWidget {
@@ -37,8 +38,11 @@ class _InvoiceSettingsScreenV2State
       TextEditingController();
   final TextEditingController debitNotePrefixController =
       TextEditingController();
+  final TextEditingController quotationPrefixController =
+      TextEditingController();
+  final TextEditingController receiptPrefixController =
+      TextEditingController();
 
-  bool _returnsEnabled = false;
 
   String _selectedLogoPosition = 'left';
   String _selectedCurrencyCode = 'INR';
@@ -174,12 +178,14 @@ class _InvoiceSettingsScreenV2State
     final customFieldsEnabledStr =
         await settingsRepo.getSetting(SettingKey.customFieldsEnabled);
     final customFieldDefs = await settingsRepo.getCustomFieldDefs();
-    final returnsEnabledStr =
-        await settingsRepo.getSetting(SettingKey.returnsEnabled);
     final creditNotePrefix =
         await settingsRepo.getSetting(SettingKey.creditNotePrefix);
     final debitNotePrefix =
         await settingsRepo.getSetting(SettingKey.debitNotePrefix);
+    final quotationPrefix =
+        await settingsRepo.getSetting(SettingKey.quotationPrefix);
+    final receiptPrefix =
+        await settingsRepo.getSetting(SettingKey.receiptPrefix);
     final customerFieldFlags = await Future.wait([
       settingsRepo.getSetting(SettingKey.customerAgeEnabled),
       settingsRepo.getSetting(SettingKey.customerDobEnabled),
@@ -245,7 +251,6 @@ class _InvoiceSettingsScreenV2State
       };
       _customFieldsEnabled = customFieldsEnabledStr == 'true';
       _customFieldDefs = customFieldDefs;
-      _returnsEnabled = returnsEnabledStr == 'true';
       creditNotePrefixController.text =
           (creditNotePrefix == null || creditNotePrefix.isEmpty)
               ? 'CN-'
@@ -254,6 +259,8 @@ class _InvoiceSettingsScreenV2State
           (debitNotePrefix == null || debitNotePrefix.isEmpty)
               ? 'DN-'
               : debitNotePrefix;
+      quotationPrefixController.text = quotationPrefix ?? '';
+      receiptPrefixController.text = receiptPrefix ?? '';
       _customerAgeEnabled = customerFieldFlags[0] == 'true';
       _customerDobEnabled = customerFieldFlags[1] == 'true';
       _customerGenderEnabled = customerFieldFlags[2] == 'true';
@@ -283,6 +290,10 @@ class _InvoiceSettingsScreenV2State
         settingsRepo.setSetting(SettingKey.logoPosition, _selectedLogoPosition),
         settingsRepo.setSetting(
             SettingKey.invoicePrefix, invoicePrefixController.text),
+        settingsRepo.setSetting(
+            SettingKey.quotationPrefix, quotationPrefixController.text.trim()),
+        settingsRepo.setSetting(
+            SettingKey.receiptPrefix, receiptPrefixController.text.trim()),
         if (_invoiceCount == 0)
           settingsRepo.setSetting(
               SettingKey.invoiceStartingNumber,
@@ -343,8 +354,6 @@ class _InvoiceSettingsScreenV2State
         settingsRepo.setSetting(
             SettingKey.customFieldsEnabled, _customFieldsEnabled.toString()),
         settingsRepo.setCustomFieldDefs(_customFieldDefs),
-        settingsRepo.setSetting(
-            SettingKey.returnsEnabled, _returnsEnabled.toString()),
         settingsRepo.setSetting(
             SettingKey.creditNotePrefix,
             creditNotePrefixController.text.trim().isEmpty
@@ -698,6 +707,22 @@ class _InvoiceSettingsScreenV2State
               label: l10n.invoiceSettingsPrefixLabel,
               prefixIcon: const Icon(Icons.confirmation_number)),
         ),
+        TextField(
+          controller: quotationPrefixController,
+          maxLength: 25,
+          decoration: _fieldDecorationV2(context,
+              label: l10n.quotationPrefixLabel,
+              prefixIcon: const Icon(Icons.confirmation_number_outlined),
+              helperText: l10n.prefixSameAsInvoiceHelper),
+        ),
+        TextField(
+          controller: receiptPrefixController,
+          maxLength: 25,
+          decoration: _fieldDecorationV2(context,
+              label: l10n.receiptPrefixLabel,
+              prefixIcon: const Icon(Icons.confirmation_number_outlined),
+              helperText: l10n.prefixSameAsInvoiceHelper),
+        ),
         _invoiceCount == 0
             ? TextField(
                 controller: invoiceStartingNumberController,
@@ -741,14 +766,9 @@ class _InvoiceSettingsScreenV2State
           value: _invoiceLeadingZeros,
           onChanged: (val) => setState(() => _invoiceLeadingZeros = val),
         ),
-        _toggleCardV2(
-          title: l10n.returnsSettingTitle,
-          subtitle: l10n.returnsSettingSubtitle,
-          icon: Icons.assignment_return_outlined,
-          value: _returnsEnabled,
-          onChanged: (val) => setState(() => _returnsEnabled = val),
-        ),
-        if (_returnsEnabled) ...[
+        // Returns on/off lives in Settings → Accessibility; only its number
+        // prefixes are edited here.
+        if (ref.watch(returnsEnabledProvider)) ...[
           TextField(
             controller: creditNotePrefixController,
             maxLength: 25,

@@ -14,6 +14,8 @@ import 'package:invoiso/models/customer.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/models/invoice_item.dart';
 import 'package:invoiso/models/product.dart';
+import 'package:invoiso/services/pdf/pdf_service.dart';
+import 'package:invoiso/services/pdf/pdf_widgets.dart';
 
 Customer _cust({String id = 'c1', String name = 'Ramesh Stores'}) => Customer(
       id: id,
@@ -162,6 +164,19 @@ void main() {
     expect((await ProductService.getProductById('p1'))!.stock, 40);
   });
 
+  test('sales-return title stamped on the credit note is persisted', () async {
+    final original = await seedPaidInvoice(stock: 50, qty: 10);
+    final cn = _creditNote(
+      id: 'cn1',
+      original: original,
+      items: [_item(original.items.first.product, 2)],
+      settlement: CreditSettlement.customerCredit,
+    )..invoiceTitle = 'Credit Note (Sales Return)';
+    await ReturnService.createCreditNote(creditNote: cn, originalInvoice: original);
+    expect((await InvoiceService.getInvoiceById('cn1'))!.invoiceTitle,
+        'Credit Note (Sales Return)');
+  });
+
   test('unlimited-stock product is never restocked', () async {
     final original = await seedPaidInvoice(stock: 0, qty: 5, unlimited: true);
     final cn = _creditNote(
@@ -260,6 +275,31 @@ void main() {
     final refunds = await ReturnService.getRefundsForCreditNote('cn1');
     expect(refunds, hasLength(1));
     expect(refunds.first.amount, 500);
+  });
+
+  test('credit note PDF notes list each refund', () async {
+    final original = await seedPaidInvoice(price: 100, qty: 10);
+    final cn = _creditNote(
+      id: 'cn1',
+      original: original,
+      items: [_item(original.items.first.product, 5)], // 500
+      settlement: CreditSettlement.refund,
+    );
+    await ReturnService.createCreditNote(
+      creditNote: cn,
+      originalInvoice: original,
+      immediateRefund: (
+        amount: 500,
+        method: 'Cash',
+        date: DateTime(2026, 3, 10),
+        notes: null,
+      ),
+    );
+    final loaded = (await InvoiceService.getInvoiceById('cn1'))!;
+    await PDFService.attachRefunds(loaded);
+    final refundLine =
+        returnInfoLines(loaded).where((l) => l.startsWith('Refund ')).single;
+    expect(refundLine, contains('500.00 on 10 Mar 2026 via Cash'));
   });
 
   test('partial refund then convert the rest', () async {
@@ -688,5 +728,51 @@ void main() {
     expect(notes.first.type, 'Credit Note');
     expect(notes.first.originalInvoiceId, 'i1');
     expect(notes.first.creditSettlement, CreditSettlement.customerCredit);
+  });
+
+  test('getNotesForInvoices groups notes by invoice, skips ones without',
+      () async {
+    final original = await seedPaidInvoice(stock: 50, qty: 10);
+    await ReturnService.createCreditNote(
+      creditNote: _creditNote(
+        id: 'cn1',
+        original: original,
+        items: [_item(original.items.first.product, 3)],
+        settlement: CreditSettlement.customerCredit,
+      ),
+      originalInvoice: original,
+    );
+    final byInvoice =
+        await ReturnService.getNotesForInvoices(['i1', 'no-such-invoice']);
+    expect(byInvoice.keys, ['i1']);
+    expect(byInvoice['i1']!.single.id, 'cn1');
+    expect(await ReturnService.getNotesForInvoices([]), isEmpty);
+  });
+
+  test('getCustomerCreditSources names the credit note and its invoice',
+      () async {
+    final original = await seedPaidInvoice(stock: 50, qty: 10);
+    await ReturnService.createCreditNote(
+      creditNote: _creditNote(
+        id: 'cn1',
+        original: original,
+        items: [_item(original.items.first.product, 3)],
+        settlement: CreditSettlement.customerCredit,
+      ),
+      originalInvoice: original,
+    );
+    final sources = await ReturnService.getCustomerCreditSources(
+        customerId: 'c1', currencyCode: 'INR');
+    expect(sources, hasLength(1));
+    expect(sources.single.noteNumber, 'CN-cn1');
+    expect(sources.single.againstNumber, original.invoiceNumber);
+    expect(
+        sources.single.remaining,
+        await ReturnService.getRemainingCustomerCredit(
+            customerId: 'c1', currencyCode: 'INR'));
+    expect(
+        await ReturnService.getCustomerCreditSources(
+            customerId: 'c1', currencyCode: 'USD'),
+        isEmpty);
   });
 }

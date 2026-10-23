@@ -307,6 +307,30 @@ class ReturnService {
     return out;
   }
 
+  /// [getNotesForInvoice] for a page of invoices: one lookup query, then full
+  /// loads only for the invoices that actually have notes.
+  static Future<Map<String, List<Invoice>>> getNotesForInvoices(
+      List<String> invoiceIds) async {
+    if (invoiceIds.isEmpty) return {};
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      'invoices',
+      columns: ['id', 'original_invoice_id'],
+      where: "original_invoice_id IN (${List.filled(invoiceIds.length, '?').join(',')}) "
+          "AND type IN ('Credit Note', 'Debit Note') AND deleted_at IS NULL",
+      whereArgs: invoiceIds,
+      orderBy: 'date ASC, rowid ASC',
+    );
+    final out = <String, List<Invoice>>{};
+    for (final r in rows) {
+      final inv = await InvoiceService.getInvoiceById(r['id'] as String);
+      if (inv != null) {
+        (out[r['original_invoice_id'] as String] ??= []).add(inv);
+      }
+    }
+    return out;
+  }
+
   /// Cumulative returned quantity per product across every credit note raised
   /// against [originalInvoiceId] — caps how much more a line can be returned.
   static Future<Map<String, double>> getReturnedQtyByLine(
@@ -344,6 +368,38 @@ class ReturnService {
       [..._customerArgs(customerId, customerName ?? ''), currencyCode],
     );
     return (r.first['c'] as num).toDouble();
+  }
+
+  /// Open credit broken down by the credit note it came from, oldest first —
+  /// the order [applyCustomerCreditToInvoice] draws it down in.
+  static Future<List<CustomerCreditSource>> getCustomerCreditSources({
+    required String customerId,
+    String? customerName,
+    required String currencyCode,
+  }) async {
+    if (customerId.trim().isEmpty &&
+        (customerName == null || customerName.trim().isEmpty)) {
+      return [];
+    }
+    final db = await _dbHelper.database;
+    final rows = await db.rawQuery(
+      'SELECT amount - applied_amount AS remaining, source_id, '
+      '(SELECT invoice_number FROM invoices WHERE id = source_id) AS note_number, '
+      '(SELECT original_invoice_number FROM invoices WHERE id = source_id) AS against_number '
+      'FROM customer_credits '
+      'WHERE ${_customerWhere(customerId, customerName ?? '')} AND currency_code = ? '
+      'AND amount - applied_amount > ? '
+      'ORDER BY created_at ASC, rowid ASC',
+      [..._customerArgs(customerId, customerName ?? ''), currencyCode, _eps],
+    );
+    return [
+      for (final r in rows)
+        (
+          noteNumber: (r['note_number'] ?? r['source_id']) as String,
+          againstNumber: r['against_number'] as String?,
+          remaining: (r['remaining'] as num).toDouble(),
+        )
+    ];
   }
 
   static Future<List<Refund>> getRefundsForCreditNote(

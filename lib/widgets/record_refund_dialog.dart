@@ -96,14 +96,16 @@ class _RecordRefundDialogState extends ConsumerState<RecordRefundDialog> {
         currencyCode: widget.creditNote.currencyCode,
       );
       if (!mounted) return;
+      // The snackbar outlives this dialog; print with the navigator's context.
+      final hostContext = Navigator.of(context).context;
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(l10n
             .refundRecordedMessage('$_sym${amount.toStringAsFixed(2)}')),
         action: SnackBarAction(
           label: l10n.returnPrintVoucher,
-          onPressed: () => RefundReceiptService.printOrDownload(
-              context, widget.creditNote, refund,
+          onPressed: () => RefundReceiptService.preview(
+              hostContext, widget.creditNote, refund,
               remainingCredit: remainingAfter),
         ),
       ));

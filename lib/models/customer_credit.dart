@@ -1,3 +1,11 @@
+/// Unused credit from one credit note: its number, the invoice it was raised
+/// against (null when standalone), and what's left of it.
+typedef CustomerCreditSource = ({
+  String noteNumber,
+  String? againstNumber,
+  double remaining,
+});
+
 /// A stored credit balance a customer holds with the business, created when a
 /// credit note is settled as "keep as customer credit". Drawn down (via
 /// [appliedAmount]) by later invoices or by converting the credit to a refund.

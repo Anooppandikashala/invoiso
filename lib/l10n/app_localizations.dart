@@ -9156,11 +9156,95 @@ abstract class AppLocalizations {
   /// **'Debit Note'**
   String get docTypeDebitNote;
 
-  /// No description provided for @returnDialogTitle.
+  /// No description provided for @returnScreenTitleReturnItems.
   ///
   /// In en, this message translates to:
-  /// **'Create Credit Note — {number}'**
-  String returnDialogTitle(String number);
+  /// **'Return Items — {number}'**
+  String returnScreenTitleReturnItems(String number);
+
+  /// No description provided for @returnScreenTitleSalesReturn.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit Note (Sales Return) — {number}'**
+  String returnScreenTitleSalesReturn(String number);
+
+  /// No description provided for @returnSelectedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} items · {amount}'**
+  String returnSelectedCount(int count, String amount);
+
+  /// No description provided for @returnSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search product or HSN'**
+  String get returnSearchHint;
+
+  /// No description provided for @returnAllButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Return all'**
+  String get returnAllButton;
+
+  /// No description provided for @returnOnlySelectedChip.
+  ///
+  /// In en, this message translates to:
+  /// **'Only selected'**
+  String get returnOnlySelectedChip;
+
+  /// No description provided for @returnColProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Product'**
+  String get returnColProduct;
+
+  /// No description provided for @returnColSold.
+  ///
+  /// In en, this message translates to:
+  /// **'Sold'**
+  String get returnColSold;
+
+  /// No description provided for @returnColReturned.
+  ///
+  /// In en, this message translates to:
+  /// **'Returned'**
+  String get returnColReturned;
+
+  /// No description provided for @returnColLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Left'**
+  String get returnColLeft;
+
+  /// No description provided for @returnColToStock.
+  ///
+  /// In en, this message translates to:
+  /// **'To stock'**
+  String get returnColToStock;
+
+  /// No description provided for @returnDetailsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Totals, reason & settlement'**
+  String get returnDetailsSection;
+
+  /// No description provided for @returnDiscardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard this return?'**
+  String get returnDiscardTitle;
+
+  /// No description provided for @returnDiscardBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The quantities you entered will be lost.'**
+  String get returnDiscardBody;
+
+  /// No description provided for @returnVoidNoteTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Void this note'**
+  String get returnVoidNoteTooltip;
 
   /// No description provided for @returnCustomerLabel.
   ///
@@ -9339,8 +9423,44 @@ abstract class AppLocalizations {
   /// No description provided for @returnPrintVoucher.
   ///
   /// In en, this message translates to:
-  /// **'Print voucher'**
+  /// **'Refund voucher'**
   String get returnPrintVoucher;
+
+  /// No description provided for @returnsBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New: Product returns'**
+  String get returnsBannerTitle;
+
+  /// No description provided for @returnsBannerSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use “Return Items” in an invoice\'s menu to take goods back, refund the customer or keep it as credit. Advanced Credit / Debit Notes can be turned on in Settings → Accessibility.'**
+  String get returnsBannerSubtitle;
+
+  /// No description provided for @returnNotePdfTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Note PDF'**
+  String get returnNotePdfTooltip;
+
+  /// No description provided for @actionPrintRefundVoucher.
+  ///
+  /// In en, this message translates to:
+  /// **'Refund vouchers'**
+  String get actionPrintRefundVoucher;
+
+  /// No description provided for @returnNoRefundsMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No refunds recorded for this credit note'**
+  String get returnNoRefundsMessage;
+
+  /// No description provided for @returnPickRefundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Refund vouchers'**
+  String get returnPickRefundTitle;
 
   /// No description provided for @returnCreateButton.
   ///
@@ -9365,6 +9485,163 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Customer credit applied.'**
   String get returnCreditAppliedMessage;
+
+  /// No description provided for @returnNotesSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit / Debit Notes'**
+  String get returnNotesSectionTitle;
+
+  /// No description provided for @returnCreditFromNote.
+  ///
+  /// In en, this message translates to:
+  /// **'From Credit Note #{note}: {amount}'**
+  String returnCreditFromNote(String note, String amount);
+
+  /// No description provided for @returnCreditFromNoteAgainst.
+  ///
+  /// In en, this message translates to:
+  /// **'From Credit Note #{note} (against #{invoice}): {amount}'**
+  String returnCreditFromNoteAgainst(
+      String note, String invoice, String amount);
+
+  /// No description provided for @returnAgainstInvoiceShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Against #{number}'**
+  String returnAgainstInvoiceShort(String number);
+
+  /// No description provided for @returnAgainstInvoiceNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice #{number} not found for this customer'**
+  String returnAgainstInvoiceNotFound(String number);
+
+  /// No description provided for @returnPickInvoiceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select invoice'**
+  String get returnPickInvoiceTitle;
+
+  /// No description provided for @returnPickInvoiceSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search invoice number'**
+  String get returnPickInvoiceSearchHint;
+
+  /// No description provided for @returnPickInvoiceEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No invoices for this customer'**
+  String get returnPickInvoiceEmpty;
+
+  /// No description provided for @returnSelectCustomerFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a customer first'**
+  String get returnSelectCustomerFirst;
+
+  /// No description provided for @returnGstAgainstInvoiceWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'GST: a note for a registered customer should reference the original invoice'**
+  String get returnGstAgainstInvoiceWarning;
+
+  /// No description provided for @returnAgainstInvoiceFull.
+  ///
+  /// In en, this message translates to:
+  /// **'Against Invoice #{number}'**
+  String returnAgainstInvoiceFull(String number);
+
+  /// No description provided for @returnCopyInvoiceNumberTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy invoice number'**
+  String get returnCopyInvoiceNumberTooltip;
+
+  /// No description provided for @returnInvoiceNumberCopiedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice number copied'**
+  String get returnInvoiceNumberCopiedMessage;
+
+  /// No description provided for @returnCopyNoteNumberTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy note number'**
+  String get returnCopyNoteNumberTooltip;
+
+  /// No description provided for @returnNoteNumberCopiedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Note number copied'**
+  String get returnNoteNumberCopiedMessage;
+
+  /// No description provided for @returnBadgeCreditNote.
+  ///
+  /// In en, this message translates to:
+  /// **'CN −{amount}'**
+  String returnBadgeCreditNote(String amount);
+
+  /// No description provided for @returnBadgeDebitNote.
+  ///
+  /// In en, this message translates to:
+  /// **'DN +{amount}'**
+  String returnBadgeDebitNote(String amount);
+
+  /// No description provided for @returnSettledCustomerCredit.
+  ///
+  /// In en, this message translates to:
+  /// **'Kept as customer credit'**
+  String get returnSettledCustomerCredit;
+
+  /// No description provided for @returnSettledRefund.
+  ///
+  /// In en, this message translates to:
+  /// **'Refunded'**
+  String get returnSettledRefund;
+
+  /// No description provided for @returnSettledReduceInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Reduced this invoice\'s balance'**
+  String get returnSettledReduceInvoice;
+
+  /// No description provided for @returnApplyCreditToInvoiceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply customer credit to this invoice'**
+  String get returnApplyCreditToInvoiceLabel;
+
+  /// No description provided for @returnCreditAvailableLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit available: {amount}'**
+  String returnCreditAvailableLabel(String amount);
+
+  /// No description provided for @returnApplyCustomerCreditAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply customer credit'**
+  String get returnApplyCustomerCreditAction;
+
+  /// No description provided for @returnNoCustomerCreditMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This customer has no credit available.'**
+  String get returnNoCustomerCreditMessage;
+
+  /// No description provided for @returnApplyCreditConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply {amount} of this customer\'s credit to {number}?'**
+  String returnApplyCreditConfirmBody(String amount, String number);
+
+  /// No description provided for @returnCreditApplyErrorMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not apply credit: {error}'**
+  String returnCreditApplyErrorMessage(String error);
 
   /// No description provided for @refundDialogTitle.
   ///
@@ -9423,13 +9700,13 @@ abstract class AppLocalizations {
   /// No description provided for @returnsSettingTitle.
   ///
   /// In en, this message translates to:
-  /// **'Enable Returns (Credit / Debit Notes)'**
+  /// **'Credit / Debit Notes (advanced)'**
   String get returnsSettingTitle;
 
   /// No description provided for @returnsSettingSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Adds a Credit / Debit Notes screen and a “Create Credit Note” action on invoices'**
+  /// **'Adds Credit Notes and Debit Notes screens, debit notes, standalone notes and number prefixes. Returns are always available from the invoice menu.'**
   String get returnsSettingSubtitle;
 
   /// No description provided for @creditNotePrefixLabel.
@@ -9444,11 +9721,41 @@ abstract class AppLocalizations {
   /// **'Debit note prefix'**
   String get debitNotePrefixLabel;
 
-  /// No description provided for @actionCreateCreditNote.
+  /// No description provided for @quotationPrefixLabel.
   ///
   /// In en, this message translates to:
-  /// **'Create Credit Note'**
-  String get actionCreateCreditNote;
+  /// **'Quotation prefix'**
+  String get quotationPrefixLabel;
+
+  /// No description provided for @receiptPrefixLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt prefix'**
+  String get receiptPrefixLabel;
+
+  /// No description provided for @prefixSameAsInvoiceHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave empty to use the invoice prefix'**
+  String get prefixSameAsInvoiceHelper;
+
+  /// No description provided for @actionReturnItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Return Items'**
+  String get actionReturnItems;
+
+  /// No description provided for @actionCreateDebitNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Debit Note'**
+  String get actionCreateDebitNote;
+
+  /// No description provided for @actionCreateCreditNoteSalesReturn.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Credit Note (Sales Return)'**
+  String get actionCreateCreditNoteSalesReturn;
 
   /// No description provided for @actionRefund.
   ///

@@ -6,6 +6,7 @@ import 'custom_field_value.dart';
 import 'customer.dart';
 import 'invoice_item.dart';
 import 'invoice_payment.dart';
+import 'refund.dart';
 
 class Invoice {
   String id;
@@ -46,6 +47,9 @@ class Invoice {
   DateTime? originalInvoiceDate; // snapshot of the linked invoice's date
   String? returnReason; // e.g. "Damaged", "Wrong item", "Price revision"
   CreditSettlement? creditSettlement; // credit note only; how its value is settled
+  // Credit note only, PDF-only: refunds paid against it, loaded just before
+  // rendering (PDFService.attachRefunds). Not stored on the invoices row.
+  List<Refund> refunds = const [];
 
   Invoice({
     required this.id,
@@ -84,6 +88,22 @@ class Invoice {
   });
 
   bool get isConverted => status == 'converted';
+
+  /// Short number label for thermal receipts, by document type.
+  String get thermalNumberLabel {
+    switch (type) {
+      case 'Quotation':
+        return 'Quote No';
+      case 'Receipt':
+        return 'Receipt No';
+      case 'Credit Note':
+        return 'CN No';
+      case 'Debit Note':
+        return 'DN No';
+      default:
+        return 'Inv No';
+    }
+  }
 
   /// Text to render for the invoice number in PDF/receipt output, or null to omit the line entirely.
   String? pdfNumberText(String invoicePrefix, {bool showLeadingZeros = true}) {

@@ -90,6 +90,8 @@ enum SettingKey {
   returnsEnabled, // whether the Credit / Debit Notes (returns) feature is on (default false)
   creditNotePrefix, // number prefix for credit notes (default 'CN-')
   debitNotePrefix, // number prefix for debit notes (default 'DN-')
+  quotationPrefix, // number prefix for quotations; empty/null = use invoicePrefix
+  receiptPrefix, // number prefix for receipts; empty/null = use invoicePrefix
   faqCache, // cached JSON string of the last successfully fetched faq.json, used offline/on fetch failure
   lastFaqFetch, // ISO timestamp of last successful faq.json fetch
   showTaxColumn, // whether to show the per-item Tax column on A4 PDFs, for both global and per-item tax modes (default true); showCgstSgst only matters when this is on
@@ -112,6 +114,7 @@ enum SettingKey {
   pdfTableItemsFontSize, // PdfFontSize key for the items table rows; empty/absent = same as pdfFontSize
   pdfTotalsFontSize, // PdfFontSize key for the totals block; empty/absent = same as pdfFontSize
   purchaseBillsBannerDismissed, // '1' once user dismisses the purchase-bills/suppliers discovery banner
+  returnsBannerDismissed, // '1' once user dismisses the product-returns notice on the Invoices list
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -299,6 +302,10 @@ extension SettingKeyExtension on SettingKey {
         return 'credit_note_prefix';
       case SettingKey.debitNotePrefix:
         return 'debit_note_prefix';
+      case SettingKey.quotationPrefix:
+        return 'quotation_prefix';
+      case SettingKey.receiptPrefix:
+        return 'receipt_prefix';
       case SettingKey.faqCache:
         return 'faq_cache';
       case SettingKey.lastFaqFetch:
@@ -343,6 +350,8 @@ extension SettingKeyExtension on SettingKey {
         return 'pdf_totals_font_size';
       case SettingKey.purchaseBillsBannerDismissed:
         return 'purchase_bills_banner_dismissed';
+      case SettingKey.returnsBannerDismissed:
+        return 'returns_banner_dismissed';
 
     }
   }

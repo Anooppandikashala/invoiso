@@ -11,6 +11,10 @@ class PdfGenerationSettings {
   final CompanyInfo? company;
   final InvoiceTemplate template;
   final String invoicePrefix;
+  final String creditNotePrefix;
+  final String debitNotePrefix;
+  final String? quotationPrefix; // null = use invoicePrefix
+  final String? receiptPrefix; // null = use invoicePrefix
   final bool showGst;
   final bool showQuantity;
   final bool showDiscount;
@@ -81,6 +85,10 @@ class PdfGenerationSettings {
     required this.company,
     required this.template,
     required this.invoicePrefix,
+    this.creditNotePrefix = 'CN-',
+    this.debitNotePrefix = 'DN-',
+    this.quotationPrefix,
+    this.receiptPrefix,
     required this.showGst,
     required this.showQuantity,
     required this.showDiscount,
@@ -143,4 +151,21 @@ class PdfGenerationSettings {
     this.tableItemsScale = 1.0,
     this.totalsScale = 1.0,
   });
+
+  /// Number prefix for a document [type]; quotation/receipt fall back to the
+  /// invoice prefix when not set.
+  String prefixFor(String type) {
+    switch (type) {
+      case 'Credit Note':
+        return creditNotePrefix;
+      case 'Debit Note':
+        return debitNotePrefix;
+      case 'Quotation':
+        return quotationPrefix ?? invoicePrefix;
+      case 'Receipt':
+        return receiptPrefix ?? invoicePrefix;
+      default:
+        return invoicePrefix;
+    }
+  }
 }

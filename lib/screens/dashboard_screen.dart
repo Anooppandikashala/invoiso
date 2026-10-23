@@ -14,6 +14,7 @@ import 'package:invoiso/providers/app_config_provider.dart';
 import 'package:invoiso/providers/cash_exchange_settings_provider.dart';
 import 'package:invoiso/providers/purchase_bills_settings_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
+import 'package:invoiso/providers/returns_settings_provider.dart';
 import 'package:invoiso/services/update_service.dart';
 import 'package:invoiso/widgets/update_dialog.dart';
 import 'package:invoiso/domain/invoice_calculator.dart';
@@ -98,7 +99,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   // form's convert mode). Null unless a conversion is in flight.
   String? _convertSourceQuotationId;
   bool _hasUpdate = false;
-  bool _returnsEnabled = false;
   String _createInvoiceLayout = 'v2';
   int? _accessibilityJumpToken;
   final InvoiceFormGuard _invoiceFormGuard = InvoiceFormGuard();
@@ -111,6 +111,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     _currentUser = widget.loggedInUser;
     _loadCreateInvoiceLayout();
     _loadServicesEnabled();
+    _loadReturnsEnabled();
     _loadReportsAdminOnly();
     _loadCompanies();
     SessionManager.initialize(_onSessionTimeout);
@@ -195,6 +196,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     ref.read(cashUpiExchangeEnabledProvider.notifier).state = v == 'true';
   }
 
+  // Credit / Debit Notes nav items; the toggle lives in Settings → Accessibility.
+  Future<void> _loadReturnsEnabled() async {
+    final v = await ref
+        .read(settingsRepositoryProvider)
+        .getSetting(SettingKey.returnsEnabled);
+    if (!mounted) return;
+    ref.read(returnsEnabledProvider.notifier).state = v == 'true';
+  }
+
   Future<void> _loadReportsAdminOnly() async {
     final v = await ref
         .read(settingsRepositoryProvider)
@@ -204,14 +214,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Future<void> _loadCreateInvoiceLayout() async {
-    final settingsRepo = ref.read(settingsRepositoryProvider);
-    final layout = await settingsRepo.getSetting(SettingKey.createInvoiceLayout);
-    final returns = await settingsRepo.getSetting(SettingKey.returnsEnabled);
+    final layout = await ref
+        .read(settingsRepositoryProvider)
+        .getSetting(SettingKey.createInvoiceLayout);
     if (!mounted) return;
-    setState(() {
-      _createInvoiceLayout = layout ?? 'v2';
-      _returnsEnabled = returns == 'true';
-    });
+    setState(() => _createInvoiceLayout = layout ?? 'v2');
     if (_createInvoiceLayout == 'v1') {
       WidgetsBinding.instance
           .addPostFrameCallback((_) => _showV1DeprecationNotice());
@@ -568,10 +575,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     if (_selectedIndex == index) return;
     if (_selectedIndex == 1 && !await _canLeaveInvoiceForm()) return;
     if (_selectedIndex == 7 && index != 7) await _refreshUser();
-    // Leaving Settings — pick up toggles that change the nav (e.g. Returns).
     if (_selectedIndex == 8 && index != 8) {
-      await _loadCreateInvoiceLayout();
       await _loadServicesEnabled();
+      await _loadReturnsEnabled();
       await _loadReportsAdminOnly();
     }
     if (index == 1) await _loadCreateInvoiceLayout();
@@ -901,7 +907,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         Icons.point_of_sale_outlined,
                         Icons.point_of_sale,
                         AppLocalizations.of(context)!.navReceipts),
-                    if (_returnsEnabled) ...[
+                    if (ref.watch(returnsEnabledProvider)) ...[
                       _buildNavItem(
                           12,
                           Icons.assignment_return_outlined,
@@ -920,15 +926,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         Icons.inventory_2_outlined,
                         Icons.inventory_2,
                         AppLocalizations.of(context)!.navProducts),
-                    if (!_reportsLocked)
-                      _buildNavItem(7, Icons.bar_chart_outlined, Icons.bar_chart,
-                          AppLocalizations.of(context)!.navReports),
                     if (showPurchaseBillsAndSuppliers) ...[
                       _buildNavItem(10, Icons.shopping_cart_outlined,
                           Icons.shopping_cart, AppLocalizations.of(context)!.navPurchaseBills),
                       _buildNavItem(11, Icons.local_shipping_outlined,
                           Icons.local_shipping, AppLocalizations.of(context)!.navSuppliers),
                     ],
+                    if (!_reportsLocked)
+                      _buildNavItem(7, Icons.bar_chart_outlined, Icons.bar_chart,
+                          AppLocalizations.of(context)!.navReports),
                     _buildNavItem(8, Icons.settings_outlined, Icons.settings,
                         AppLocalizations.of(context)!.navSettings,
                         showDot: _hasUpdate),
