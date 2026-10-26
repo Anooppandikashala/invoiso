@@ -2349,8 +2349,9 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                                           invoice: invoice,
                                                           onPaymentRecorded:
                                                               () {
-                                                            if (!mounted)
+                                                            if (!mounted) {
                                                               return;
+                                                            }
                                                             setState(() {});
                                                           },
                                                         ),

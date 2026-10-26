@@ -530,7 +530,6 @@ class _InvoiceSettingsScreenV2State
     String? hint,
     String? helperText,
     Widget? prefixIcon,
-    int? counter,
   }) {
     final outlineVariant = Theme.of(context).colorScheme.outlineVariant;
     return InputDecoration(
@@ -1953,8 +1952,9 @@ class _InvoiceSettingsScreenV2State
   }
 
   Widget _promoCardV2() {
-    if (widget.onNavigateToCustomization == null)
+    if (widget.onNavigateToCustomization == null) {
       return const SizedBox.shrink();
+    }
     final primaryColor = Theme.of(context).primaryColor;
     return Container(
       padding: const EdgeInsets.all(14),

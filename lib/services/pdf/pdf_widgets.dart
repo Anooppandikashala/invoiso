@@ -23,7 +23,7 @@ class _WatermarkCursor {
 /// apart so a row straddling the image's repeat seam is still covered
 /// seamlessly by the clip.
 class _WatermarkStripeImage extends pw.DecorationGraphic {
-  _WatermarkStripeImage({
+  const _WatermarkStripeImage({
     required this.image,
     required this.opacity,
     required this.cursor,
