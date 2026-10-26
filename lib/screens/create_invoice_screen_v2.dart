@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -16,8 +17,11 @@ import 'package:invoiso/providers/repositories.dart';
 import 'package:uuid/uuid.dart';
 import 'package:invoiso/models/customer.dart';
 import 'package:invoiso/models/invoice.dart';
+import 'package:invoiso/models/invoice_list_filter.dart';
+import 'package:invoiso/utils/formatters.dart';
 import 'package:invoiso/models/invoice_item.dart';
 import 'package:invoiso/models/product.dart';
+import 'package:invoiso/models/refund.dart';
 import 'package:invoiso/models/additional_cost.dart';
 import 'package:invoiso/models/custom_field_def.dart';
 import 'package:invoiso/models/custom_field_value.dart';
@@ -27,6 +31,11 @@ import 'package:invoiso/services/invoice_pdf_services.dart';
 import 'package:invoiso/services/pdf_service.dart';
 import 'package:invoiso/widgets/apply_payment_dialog.dart';
 import 'package:invoiso/common/constants.dart';
+import 'package:invoiso/widgets/return_l10n.dart';
+import 'package:invoiso/services/refund_receipt_service.dart';
+
+/// Stamped on a credit note that puts at least one line back into stock.
+const salesReturnTitle = 'Credit Note (Sales Return)';
 
 class InvoiceFormGuard {
   Future<bool> Function()? canLeave;
@@ -174,6 +183,20 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
 
   String invoiceType = 'Invoice';
   String? invoiceTitle;
+
+  // Standalone Credit / Debit Note fields (only used when _isReturnDoc).
+  // Invoice the note is linked to — set from the Invoices row action (locked)
+  // or picked from the customer's invoices. Null = standalone note.
+  Invoice? _againstInvoice;
+  String _returnReason = '';
+  CreditSettlement _creditSettlement = CreditSettlement.customerCredit;
+  String _refundMethod = 'Cash';
+  // Credit note against an invoice: qty already returned per product, for the
+  // Left cap. Loaded with the invoice's lines by _prefillCreditNoteFrom.
+  Map<String, double> _returnedByProduct = const {};
+  // Editing an invoice that has credit notes: customer and everything that
+  // moves the total is locked (InvoiceService.updateInvoice enforces it too).
+  bool _lockedByCreditNotes = false;
   double taxRate = Tax.defaultTaxRate;
   Invoice? _invoice;
   String currentInvoiceNumber = "";
@@ -194,6 +217,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   bool _allowDuplicateInvoiceItems = false;
   double _previousBalanceDue = 0.0;
   bool _isPreviousBalanceLoading = false;
+  double _customerCreditAvailable = 0.0;
+  bool _applyCustomerCredit = false;
   bool _isSavingCustomer = false;
   bool _customerFieldsUnlocked = false;
   bool get _customerFieldsLocked =>
@@ -252,6 +277,16 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     if (widget.invoiceToEdit != null) {
       _invoice = widget.invoiceToEdit;
       isEditing = true;
+      if (_invoice!.type == 'Invoice' || _invoice!.type == 'Receipt') {
+        ref
+            .read(returnRepositoryProvider)
+            .getNotesForInvoice(_invoice!.id)
+            .then((notes) {
+          if (mounted && notes.any((n) => n.type == 'Credit Note')) {
+            setState(() => _lockedByCreditNotes = true);
+          }
+        });
+      }
       selectedCustomer = _invoice!.customer;
       invoiceItems = List.from(_invoice!.items);
       nameController.text = _invoice!.customer.name;
@@ -299,7 +334,24 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       // isEditing stays false → _createInvoice() will be called on save.
       final src = widget.cloneFrom!;
       selectedCustomer = src.customer;
-      invoiceItems = src.items
+      // "Create Debit Note" from an invoice row: a new note linked to it —
+      // items are the extra charge, not a copy of the invoice.
+      final debitNoteFor = widget.cloneType == 'Debit Note' && src.type == 'Invoice';
+      if (debitNoteFor) {
+        _againstInvoice = src;
+      }
+      // Credit note from an invoice row: lines / extra costs / discount are
+      // filled async from what's still returnable (_prefillCreditNoteFrom).
+      final creditNoteFor = widget.cloneType == 'Credit Note' &&
+          (src.type == 'Invoice' || src.type == 'Receipt');
+      if (creditNoteFor) {
+        _pendingInitialLoads++;
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          await _prefillCreditNoteFrom(src);
+          _completeInitialLoad();
+        });
+      }
+      invoiceItems = (debitNoteFor || creditNoteFor) ? [] : src.items
           .map((i) => InvoiceItem(
                 product: i.product,
                 quantity: i.quantity,
@@ -332,7 +384,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       // Custom PDF number is invoice-specific; don't carry it into a clone.
       // Same reasoning for custom fields (Vehicle No, Delivery Note, etc.) —
       // shipment-specific, left blank for the user to fill fresh.
-      for (final c in src.additionalCosts) {
+      for (final c in (debitNoteFor || creditNoteFor)
+          ? const <AdditionalCost>[]
+          : src.additionalCosts) {
         _additionalCostControllers.add((
           label: TextEditingController(text: c.label),
           amount: TextEditingController(text: c.amount.toStringAsFixed(2)),
@@ -340,7 +394,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       }
       if (_additionalCostControllers.isNotEmpty) _showAdditionalCosts = true;
       _invoiceDiscountType = src.invoiceDiscountType;
-      if (src.invoiceDiscountValue > 0) {
+      if (src.invoiceDiscountValue > 0 && !debitNoteFor && !creditNoteFor) {
         _invoiceDiscountController.text =
             src.invoiceDiscountValue.toStringAsFixed(2);
       }
@@ -1316,6 +1370,27 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     // when the customer card is collapsed — render falls back to one block.
     if (!(_customerExtraFormKey.currentState?.validate() ?? true)) return false;
 
+    // Linked credit note: per product, no more than is still returnable.
+    if (invoiceType == 'Credit Note' && _againstInvoice != null) {
+      final qty = <String, double>{};
+      for (final i in invoiceItems) {
+        qty[i.product.id] = (qty[i.product.id] ?? 0) + i.quantity;
+      }
+      for (final i in invoiceItems) {
+        final left = math.max(0.0, _creditNoteLeft(i.product.id));
+        if (qty[i.product.id]! > left + InvoiceCalculator.moneyEpsilon) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(AppLocalizations.of(context)!
+                .returnValidationMaxQty(i.product.name, _fmtQty(left))),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            showCloseIcon: true,
+          ));
+          return false;
+        }
+      }
+    }
+
     if (invoiceItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1346,14 +1421,21 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       final invoice = Invoice(
         id: invoiceId,
         invoiceNumber: invoiceNumber,
-        customer: _resolveInvoiceCustomer(),
+        customer: _isReturnDoc && _againstInvoice != null
+            ? _againstInvoice!.customer
+            : _resolveInvoiceCustomer(),
         items: List.from(invoiceItems),
         date: _selectedOrderDate,
         dueDate: _selectedDueDate,
         notes: notesController.text.isNotEmpty ? notesController.text : null,
         taxRate: _taxMode == TaxMode.global ? taxRate : 0.0,
         type: invoiceType,
-        invoiceTitle: invoiceType == 'Invoice' ? invoiceTitle : null,
+        invoiceTitle: invoiceType == 'Invoice'
+            ? invoiceTitle
+            : invoiceType == 'Credit Note' &&
+                    invoiceItems.any((i) => i.restocked && _canRestock(i))
+                ? salesReturnTitle
+                : null,
         currencyCode: _currencyCode,
         currencySymbol: _currencySymbol,
         taxMode: _taxMode,
@@ -1370,6 +1452,15 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         customInvoiceNumber: customInvoiceNumberController.text.trim().isEmpty
             ? null
             : customInvoiceNumberController.text.trim(),
+        originalInvoiceId: _isReturnDoc ? _againstInvoice?.id : null,
+        originalInvoiceNumber: _isReturnDoc && _againstInvoice != null
+            ? (_againstInvoice!.invoiceNumber ?? _againstInvoice!.id)
+            : null,
+        originalInvoiceDate: _isReturnDoc ? _againstInvoice?.date : null,
+        returnReason:
+            _isReturnDoc && _returnReason.trim().isNotEmpty ? _returnReason : null,
+        creditSettlement:
+            invoiceType == 'Credit Note' ? _creditSettlement : null,
         convertedFromInvoiceId: widget.convertFromQuotationId,
       );
 
@@ -1398,7 +1489,44 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         return false;
       }
 
-      await ref.read(invoiceRepositoryProvider).insertInvoice(invoice);
+      SnackBarAction? voucherAction;
+      if (invoiceType == 'Credit Note') {
+        final returnRepo = ref.read(returnRepositoryProvider);
+        await returnRepo.createCreditNote(
+              creditNote: invoice,
+              originalInvoice: _againstInvoice,
+              immediateRefund: _creditSettlement == CreditSettlement.refund
+                  ? (
+                      amount: invoice.total,
+                      method: _refundMethod,
+                      date: invoice.date,
+                      notes: null,
+                    )
+                  : null,
+            );
+        final refunds = _creditSettlement == CreditSettlement.refund
+            ? await returnRepo.getRefundsForCreditNote(invoice.id)
+            : const <Refund>[];
+        if (refunds.isNotEmpty && mounted) {
+          final remaining = await returnRepo.getRemainingCustomerCredit(
+            customerId: invoice.customer.id,
+            customerName: invoice.customer.name,
+            currencyCode: invoice.currencyCode,
+          );
+          if (!mounted) return true;
+          voucherAction = SnackBarAction(
+            label: AppLocalizations.of(context)!.returnPrintVoucher,
+            textColor: Colors.white,
+            onPressed: () => RefundReceiptService.preview(
+                context, invoice, refunds.last,
+                remainingCredit: remaining),
+          );
+        }
+      } else if (invoiceType == 'Debit Note') {
+        await ref.read(returnRepositoryProvider).createDebitNote(debitNote: invoice);
+      } else {
+        await ref.read(invoiceRepositoryProvider).insertInvoice(invoice);
+      }
 
       // Separate transaction from the invoice insert: if it fails the
       // invoice is kept and the user adds the payment from the Invoices list.
@@ -1418,11 +1546,29 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         }
       }
 
+      // "Apply credit to this invoice" ticked — capped at what's still owed.
+      final unpaid = invoice.total - payAmount;
+      final creditToApply = _applyCustomerCredit && invoiceType == 'Invoice'
+          ? (_customerCreditAvailable < unpaid ? _customerCreditAvailable : unpaid)
+          : 0.0;
+      if (creditToApply > 0) {
+        try {
+          await ref.read(returnRepositoryProvider).applyCustomerCreditToInvoice(
+              invoice: invoice, amount: creditToApply);
+        } catch (e) {
+          payError ??= e.toString();
+        }
+      }
+
       if (!mounted) return true;
       setState(() {
         _invoice = invoice;
         currentInvoiceNumber = invoice.invoiceNumber ?? invoice.id;
         isLoading = false;
+        if (creditToApply > 0) {
+          _customerCreditAvailable -= creditToApply;
+          _applyCustomerCredit = false;
+        }
       });
       _markFormClean();
 
@@ -1450,7 +1596,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               ? const Duration(seconds: 8)
               : const Duration(seconds: 4),
           action: convertedFromId == null
-              ? null
+              ? voucherAction
               : SnackBarAction(
                   label: l10n.createInvoiceTrashQuotationAction,
                   textColor: Colors.white,
@@ -1816,6 +1962,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   metadata: item.metadata,
                   discountPerUnit: discountPerUnit,
                   discountIsPercent: discountIsPercent,
+                  restocked: item.restocked,
                 );
                 if(!mounted) return;
                 setState(() {
@@ -2244,14 +2391,14 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   Future<void> _loadPreviousBalanceDue(Customer? customer) async {
     final requestId = ++_previousBalanceRequestSerial;
 
-    if (!_showPreviousBalance ||
-        customer == null ||
+    if (customer == null ||
         customer.id.trim().isEmpty ||
         invoiceType != 'Invoice')
     {
       if (!mounted) return;
       setState(() {
         _previousBalanceDue = 0.0;
+        _customerCreditAvailable = 0.0;
         _isPreviousBalanceLoading = false;
       });
       return;
@@ -2259,7 +2406,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     if(!mounted) return;
     setState(() => _isPreviousBalanceLoading = true);
     try {
-      final balance = await ref.read(invoiceRepositoryProvider).getPreviousBalanceDueForCustomer(
+      // Credit below loads even with Previous Balance off (Apply credit uses it).
+      final balance = !_showPreviousBalance
+          ? 0.0
+          : await ref.read(invoiceRepositoryProvider).getPreviousBalanceDueForCustomer(
         customerId: customer.id,
         currencyCode: _currencyCode,
         asOfDate: _selectedOrderDate,
@@ -2267,15 +2417,24 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
             ? currentInvoiceNumber
             : _invoice?.id,
       );
+      final credit = invoiceType == 'Invoice'
+          ? await ref.read(returnRepositoryProvider).getRemainingCustomerCredit(
+                customerId: customer.id,
+                customerName: customer.name,
+                currencyCode: _currencyCode,
+              )
+          : 0.0;
       if (!mounted || requestId != _previousBalanceRequestSerial) return;
       setState(() {
         _previousBalanceDue = balance;
+        _customerCreditAvailable = credit;
         _isPreviousBalanceLoading = false;
       });
     } catch (_) {
       if (!mounted || requestId != _previousBalanceRequestSerial) return;
       setState(() {
         _previousBalanceDue = 0.0;
+        _customerCreditAvailable = 0.0;
         _isPreviousBalanceLoading = false;
       });
     }
@@ -2327,6 +2486,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       dueDateController.clear();
       _previousBalanceDue = 0.0;
       _isPreviousBalanceLoading = false;
+      _customerCreditAvailable = 0.0;
+      _applyCustomerCredit = false;
       _payStatus = PaymentStatus.unpaid;
       _payAmountController.clear();
     });
@@ -4219,11 +4380,17 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         return AppLocalizations.of(context)!.labelQuotation;
       case 'Receipt':
         return AppLocalizations.of(context)!.labelReceipt;
+      case 'Credit Note':
+        return AppLocalizations.of(context)!.docTypeCreditNote;
+      case 'Debit Note':
+        return AppLocalizations.of(context)!.docTypeDebitNote;
       default:
         return AppLocalizations.of(context)!.labelInvoice;
     }
   }
 
+  bool get _isReturnDoc =>
+      invoiceType == 'Credit Note' || invoiceType == 'Debit Note';
   // Order time, next to the order date. Uses the PDF's 12/24-hour setting.
   Widget _orderTimeFieldV2() {
     final text = DateFormat(_pdfTimeFormat == '12' ? 'h:mm a' : 'HH:mm', 'en_US')
@@ -4255,6 +4422,256 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       },
     );
   }
+
+  String _againstInvoiceText(Invoice inv) =>
+      '#${inv.invoiceNumber ?? inv.id}  ·  ${AppFormatters.formatShortDate(inv.date)}'
+      '  ·  ${inv.currencySymbol}${inv.total.toStringAsFixed(2)}';
+
+  // "Against invoice" picker for credit / debit notes: the selected
+  // customer's invoices, searchable. Optional (empty = standalone note);
+  // locked when the note was started from an invoice row. GST + registered
+  // customer + nothing picked → soft warning (Rule 53 wants the reference).
+  Widget _againstInvoiceFieldV2() {
+    final l10n = AppLocalizations.of(context)!;
+    final inv = _againstInvoice;
+    final locked =
+        widget.cloneFrom != null && inv?.id == widget.cloneFrom!.id;
+    final gstWarning =
+        inv == null && _showGstFields && gstinController.text.trim().isNotEmpty;
+    return InkWell(
+      onTap: locked ? null : _pickAgainstInvoice,
+      child: InputDecorator(
+        isEmpty: inv == null,
+        decoration: _flatFieldDecorationV2(
+          inv?.type == 'Receipt'
+              ? l10n.returnAgainstReceiptLabel
+              : l10n.returnAgainstInvoiceLabel,
+          helperText: gstWarning ? l10n.returnGstAgainstInvoiceWarning : null,
+          suffixIcon: inv != null && !locked
+              ? IconButton(
+                  icon: const Icon(Icons.clear, size: 18),
+                  onPressed: () => setState(() {
+                    _againstInvoice = null;
+                    _returnedByProduct = const {};
+                    if (_creditSettlement == CreditSettlement.reduceInvoice) {
+                      _creditSettlement = CreditSettlement.customerCredit;
+                    }
+                  }),
+                )
+              : const Icon(Icons.arrow_drop_down),
+        ).copyWith(
+          enabled: !locked,
+          helperMaxLines: 2,
+          helperStyle: TextStyle(color: Colors.orange[800]),
+        ),
+        child: inv == null ? null : Text(_againstInvoiceText(inv)),
+      ),
+    );
+  }
+
+  Future<void> _pickAgainstInvoice() async {
+    final l10n = AppLocalizations.of(context)!;
+    final customerId = selectedCustomer?.id ?? '';
+    if (customerId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.returnSelectCustomerFirst)));
+      return;
+    }
+    // DB search (newest 50 matches) so every invoice is reachable.
+    Future<List<Invoice>> search(String q) =>
+        ref.read(invoiceRepositoryProvider).getInvoicesPaginated(
+              searchQuery: q.trim(),
+              filterType: 'Invoice',
+              customerId: customerId,
+              filter: const InvoiceListFilter(hideDeclined: true),
+            );
+    var shown = await search('');
+    if (!mounted) return;
+    var query = '';
+    Timer? debounce;
+    final picked = await showDialog<Invoice>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setLocal) {
+        return AlertDialog(
+          title: Text(l10n.returnPickInvoiceTitle),
+          content: SizedBox(
+            width: 440,
+            height: 420,
+            child: Column(
+              children: [
+                TextField(
+                  autofocus: true,
+                  decoration: _flatFieldDecorationV2(
+                      l10n.returnPickInvoiceSearchHint,
+                      prefixIcon: const Icon(Icons.search)),
+                  onChanged: (v) {
+                    query = v;
+                    debounce?.cancel();
+                    debounce = Timer(const Duration(milliseconds: 300), () async {
+                      final result = await search(v);
+                      if (ctx.mounted && v == query) {
+                        setLocal(() => shown = result);
+                      }
+                    });
+                  },
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: shown.isEmpty
+                      ? Center(child: Text(l10n.returnPickInvoiceEmpty))
+                      : ListView.builder(
+                          itemCount: shown.length,
+                          itemBuilder: (_, i) => ListTile(
+                            dense: true,
+                            title: Text(_againstInvoiceText(shown[i])),
+                            onTap: () => Navigator.pop(ctx, shown[i]),
+                          ),
+                        ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(l10n.actionCancel),
+            ),
+          ],
+        );
+      }),
+    );
+    debounce?.cancel();
+    if (picked == null || !mounted) return;
+    if (invoiceType == 'Credit Note') {
+      final full =
+          await ref.read(invoiceRepositoryProvider).getInvoiceById(picked.id);
+      if (full == null || !mounted) return;
+      await _prefillCreditNoteFrom(full);
+      return;
+    }
+    setState(() => _againstInvoice = picked);
+  }
+
+  /// Credit note against [inv]: link it and fill its lines at the qty still
+  /// returnable (Left), with the invoice's discounts and extra costs. A flat
+  /// line discount / extra cost and a flat invoice discount scale with the
+  /// returned share; % discounts carry over as-is.
+  Future<void> _prefillCreditNoteFrom(Invoice inv) async {
+    final returned =
+        await ref.read(returnRepositoryProvider).getReturnedQtyByLine(inv.id);
+    if (!mounted) return;
+    final left = <String, double>{};
+    for (final i in inv.items) {
+      left[i.product.id] = (left[i.product.id] ?? 0) + i.quantity;
+    }
+    returned.forEach((pid, q) => left[pid] = (left[pid] ?? 0) - q);
+    final lines = <InvoiceItem>[];
+    for (final i in inv.items) {
+      final qty = math.min(i.quantity, left[i.product.id] ?? 0.0);
+      if (qty <= InvoiceCalculator.moneyEpsilon) continue;
+      left[i.product.id] = left[i.product.id]! - qty;
+      final ratio = qty / i.quantity;
+      lines.add(InvoiceItem(
+        product: i.product,
+        quantity: qty,
+        discount: i.discountPerUnit || i.discountIsPercent
+            ? i.discount
+            : i.discount * ratio,
+        unitPrice: i.unitPrice,
+        extraCost: i.extraCost == null ? null : i.extraCost! * ratio,
+        unit: i.unit,
+        description: i.description,
+        metadata: i.metadata,
+        discountPerUnit: i.discountPerUnit,
+        discountIsPercent: i.discountIsPercent,
+        isProductSaved: i.isProductSaved,
+      ));
+    }
+    if (lines.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(AppLocalizations.of(context)!
+            .returnNothingLeft(inv.invoiceNumber ?? inv.id)),
+        behavior: SnackBarBehavior.floating,
+        showCloseIcon: true,
+      ));
+      return;
+    }
+    final soldValue = inv.items.fold<double>(0, (s, i) => s + i.total);
+    final returnValue = lines.fold<double>(0, (s, i) => s + i.total);
+    final discountValue =
+        inv.invoiceDiscountType == InvoiceDiscountType.percent ||
+                soldValue <= InvoiceCalculator.moneyEpsilon
+            ? inv.invoiceDiscountValue
+            : inv.invoiceDiscountValue * returnValue / soldValue;
+    setState(() {
+      _againstInvoice = inv;
+      _returnedByProduct = returned;
+      invoiceItems = lines;
+      _currencyCode = inv.currencyCode;
+      _currencySymbol = inv.currencySymbol;
+      taxRate = inv.taxRate;
+      taxRateController.text = (taxRate * 100).toStringAsFixed(1);
+      _isTaxEnabled = inv.taxMode != TaxMode.none;
+      _isPerItem = inv.taxMode == TaxMode.perItem;
+      _isInterState = inv.isInterState;
+      for (final row in _additionalCostControllers) {
+        row.label.dispose();
+        row.amount.dispose();
+      }
+      _additionalCostControllers.clear();
+      // Extra costs (shipping…) go back once — only on the first return.
+      for (final c in returned.isEmpty ? inv.additionalCosts : const <AdditionalCost>[]) {
+        _additionalCostControllers.add((
+          label: TextEditingController(text: c.label),
+          amount: TextEditingController(text: c.amount.toStringAsFixed(2)),
+        ));
+      }
+      _showAdditionalCosts = _additionalCostControllers.isNotEmpty;
+      _invoiceDiscountType = inv.invoiceDiscountType;
+      _invoiceDiscountController.text =
+          discountValue > 0 ? discountValue.toStringAsFixed(2) : '';
+      _returnReason = 'Goods returned';
+      _creditSettlement = _canReduceInvoice
+          ? CreditSettlement.reduceInvoice
+          : CreditSettlement.refund;
+    });
+  }
+
+  /// Linked credit note: qty of [productId] still returnable on top of what
+  /// earlier credit notes took back.
+  double _creditNoteLeft(String productId) {
+    final sold = _againstInvoice!.items
+        .where((i) => i.product.id == productId)
+        .fold<double>(0, (s, i) => s + i.quantity);
+    return sold - (_returnedByProduct[productId] ?? 0);
+  }
+
+  // Greys out and disables a section while _lockedByCreditNotes.
+  Widget _lockedV2(Widget child, {bool? locked}) =>
+      (locked ?? _lockedByCreditNotes)
+          ? AbsorbPointer(child: Opacity(opacity: 0.55, child: child))
+          : child;
+
+  // A note linked to an invoice belongs to that invoice's customer — the card
+  // is read-only until the link is cleared.
+  bool get _customerLocked =>
+      _lockedByCreditNotes || (_isReturnDoc && _againstInvoice != null);
+
+  // "Reduce invoice balance" only makes sense while the linked invoice is owed.
+  // Receipts are paid on the spot, so they never have a balance to reduce.
+  bool get _canReduceInvoice =>
+      _againstInvoice != null &&
+      _againstInvoice!.type == 'Invoice' &&
+      _againstInvoice!.outstandingBalance > InvoiceCalculator.moneyEpsilon;
+
+  // Only catalogue goods with tracked stock can go back on the shelf.
+  bool _canRestock(InvoiceItem i) =>
+      i.product.type != 'service' &&
+      !i.product.unlimitedStock &&
+      !i.product.id.startsWith('custom-');
+
+  String _fmtQty(double q) =>
+      q == q.roundToDouble() ? q.toInt().toString() : q.toString();
 
   InputDecoration _flatFieldDecorationV2(
     String label, {
@@ -4343,7 +4760,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Wrap(
+                child: _lockedV2(locked: _customerLocked, Wrap(
                   alignment: WrapAlignment.end,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   spacing: 4,
@@ -4404,7 +4821,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                       ),
                     ],
                   ],
-                ),
+                )),
               ),
               if (_customerFieldSettings.any)
                 IconButton(
@@ -4412,7 +4829,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   tooltip:
                       AppLocalizations.of(context)!.tooltipEditInLargerView,
                   visualDensity: VisualDensity.compact,
-                  onPressed: _showCustomerDetailsDialogV2,
+                  onPressed:
+                      _customerLocked ? null : _showCustomerDetailsDialogV2,
                 ),
               IconButton(
                 icon: Icon(
@@ -4653,8 +5071,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   }
 
   Widget _customerCardBodyV2(bool scroll, List<Widget> children) {
-    final body =
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: children);
+    // Lock sits inside the scroll view so a locked card still scrolls.
+    final body = _lockedV2(
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
+        locked: _customerLocked);
     if (!scroll) return body;
     return Expanded(
       child: Scrollbar(
@@ -4662,7 +5082,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         thumbVisibility: true,
         child: SingleChildScrollView(
           controller: _customerCardScrollController,
-          padding: const EdgeInsets.only(right: 12),
+          // Top room for the first row's floating labels, which sit above
+          // the field and would be clipped by the scroll viewport.
+          padding: const EdgeInsets.only(top: 8, right: 12),
           child: body,
         ),
       ),
@@ -4793,26 +5215,113 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           ),
           if (_invoiceDetailsExpanded) ...[
           const SizedBox(height: 14),
-          DropdownButtonFormField<String>(
-            isExpanded: true,
-            value: invoiceType,
-            decoration: _flatFieldDecorationV2(
-              AppLocalizations.of(context)!.createInvoiceTypeFieldLabel,
-              helperText: (isEditing || widget.convertFromQuotationId != null)
-                  ? AppLocalizations.of(context)!.createInvoiceTypeLockedHelperText
-                  : null,
+          if (_isReturnDoc)
+            TextField(
+              enabled: false,
+              controller:
+                  TextEditingController(text: _invoiceTypeLabel(invoiceType)),
+              decoration: _flatFieldDecorationV2(
+                  AppLocalizations.of(context)!.createInvoiceTypeFieldLabel),
+            )
+          else
+            DropdownButtonFormField<String>(
+              isExpanded: true,
+              value: invoiceType,
+              decoration: _flatFieldDecorationV2(
+                AppLocalizations.of(context)!.createInvoiceTypeFieldLabel,
+                helperText: (isEditing || widget.convertFromQuotationId != null)
+                    ? AppLocalizations.of(context)!.createInvoiceTypeLockedHelperText
+                    : null,
+              ),
+              items: [
+                DropdownMenuItem(value: 'Invoice', child: Text(AppLocalizations.of(context)!.labelInvoice)),
+                DropdownMenuItem(value: 'Quotation', child: Text(AppLocalizations.of(context)!.labelQuotation)),
+                DropdownMenuItem(value: 'Receipt', child: Text(AppLocalizations.of(context)!.labelReceipt)),
+              ],
+              onChanged: (isEditing || widget.convertFromQuotationId != null)
+                  ? null
+                  : (value) {
+                      if (value != null) resetInvoiceType(value);
+                    },
             ),
-            items: [
-              DropdownMenuItem(value: 'Invoice', child: Text(AppLocalizations.of(context)!.labelInvoice)),
-              DropdownMenuItem(value: 'Quotation', child: Text(AppLocalizations.of(context)!.labelQuotation)),
-              DropdownMenuItem(value: 'Receipt', child: Text(AppLocalizations.of(context)!.labelReceipt)),
+          if (_isReturnDoc) ...[
+            const SizedBox(height: 12),
+            _againstInvoiceFieldV2(),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              isExpanded: true,
+              value: _returnReason.isEmpty ? 'Other' : _returnReason,
+              decoration: _flatFieldDecorationV2(
+                  AppLocalizations.of(context)!.returnReasonLabel),
+              items: [
+                for (final r in const [
+                  'Price revision',
+                  'Goods returned',
+                  'Billing correction',
+                  'Goodwill / discount',
+                  'Other'
+                ])
+                  DropdownMenuItem(
+                      value: r,
+                      child: Text(returnReasonLabel(
+                          AppLocalizations.of(context)!, r))),
+              ],
+              onChanged: (v) => setState(() => _returnReason = v ?? 'Other'),
+            ),
+            if (invoiceType == 'Credit Note') ...[
+              const SizedBox(height: 12),
+              DropdownButtonFormField<CreditSettlement>(
+                isExpanded: true,
+                value: _creditSettlement == CreditSettlement.reduceInvoice &&
+                        !_canReduceInvoice
+                    ? CreditSettlement.customerCredit
+                    : _creditSettlement,
+                decoration: _flatFieldDecorationV2(
+                    AppLocalizations.of(context)!.returnSettlementLabel),
+                items: [
+                  if (_canReduceInvoice)
+                    DropdownMenuItem(
+                        value: CreditSettlement.reduceInvoice,
+                        child: Text(AppLocalizations.of(context)!
+                            .returnSettlementReduceInvoice(
+                                '$_currencySymbol${_againstInvoice!.outstandingBalance.toStringAsFixed(2)}'))),
+                  DropdownMenuItem(
+                      value: CreditSettlement.customerCredit,
+                      child: Text(AppLocalizations.of(context)!
+                          .returnSettlementKeepCredit)),
+                  DropdownMenuItem(
+                      value: CreditSettlement.refund,
+                      child: Text(AppLocalizations.of(context)!
+                          .returnSettlementRefundNow)),
+                ],
+                onChanged: (v) => setState(() =>
+                    _creditSettlement = v ?? CreditSettlement.customerCredit),
+              ),
+              if (_creditSettlement == CreditSettlement.refund) ...[
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  isExpanded: true,
+                  value: _refundMethod,
+                  decoration: _flatFieldDecorationV2(
+                      AppLocalizations.of(context)!.returnRefundMethodLabel),
+                  items: [
+                    for (final m in const [
+                      'Cash',
+                      'Bank Transfer',
+                      'Check',
+                      'Online',
+                      'Other'
+                    ])
+                      DropdownMenuItem(
+                          value: m,
+                          child: Text(refundMethodLabel(
+                              AppLocalizations.of(context)!, m))),
+                  ],
+                  onChanged: (v) => setState(() => _refundMethod = v ?? 'Cash'),
+                ),
+              ],
             ],
-            onChanged: (isEditing || widget.convertFromQuotationId != null)
-                ? null
-                : (value) {
-                    if (value != null) resetInvoiceType(value);
-                  },
-          ),
+          ],
           const SizedBox(height: 12),
           Row(
             children: [
@@ -4909,10 +5418,14 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                     child: Text(AppLocalizations.of(context)!.gstTitleInvoiceCumBillLabel)),
                 DropdownMenuItem(
                     value: 'Cash Bill', child: Text(AppLocalizations.of(context)!.gstTitleCashBillLabel)),
-                DropdownMenuItem(
-                    value: 'Credit Note', child: Text(AppLocalizations.of(context)!.gstTitleCreditNoteLabel)),
-                DropdownMenuItem(
-                    value: 'Debit Note', child: Text(AppLocalizations.of(context)!.gstTitleDebitNoteLabel)),
+                // Real Credit / Debit Notes are their own types now; kept only
+                // so invoices saved with these titles still show them.
+                if (invoiceTitle == 'Credit Note')
+                  DropdownMenuItem(
+                      value: 'Credit Note', child: Text(AppLocalizations.of(context)!.gstTitleCreditNoteLabel)),
+                if (invoiceTitle == 'Debit Note')
+                  DropdownMenuItem(
+                      value: 'Debit Note', child: Text(AppLocalizations.of(context)!.gstTitleDebitNoteLabel)),
                 DropdownMenuItem(
                     value: 'Revised Invoice', child: Text(AppLocalizations.of(context)!.gstTitleRevisedInvoiceLabel)),
               ],
@@ -5346,6 +5859,39 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                         _buildItemDetail('Extra',
                             '+$_currencySymbol${item.extraCost!.toStringAsFixed(2)}',
                             color: Colors.teal[700]),
+                      // Credit note: qty still returnable (linked invoice)
+                      // and whether this line goes back into stock.
+                      if (invoiceType == 'Credit Note' && _againstInvoice != null)
+                        _buildItemDetail(
+                            AppLocalizations.of(context)!.returnColLeft,
+                            _fmtQty(math.max(
+                                0.0, _creditNoteLeft(item.product.id))),
+                            color: Colors.orange[800]),
+                      if (invoiceType == 'Credit Note' && _canRestock(item))
+                        InkWell(
+                          onTap: () =>
+                              setState(() => item.restocked = !item.restocked),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: Checkbox(
+                                  value: item.restocked,
+                                  materialTapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                  visualDensity: VisualDensity.compact,
+                                  onChanged: (v) => setState(
+                                      () => item.restocked = v ?? true),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(AppLocalizations.of(context)!.returnColToStock,
+                                  style: const TextStyle(fontSize: 13)),
+                            ],
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -5357,32 +5903,34 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
             '$_currencySymbol${item.total.toStringAsFixed(2)}',
             style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
           ),
-          if (item.product.id.startsWith('custom-') &&
-              !_savedAdHocIds.contains(item.product.id)) ...[
-            const SizedBox(width: 6),
+          if (!_lockedByCreditNotes) ...[
+            if (item.product.id.startsWith('custom-') &&
+                !_savedAdHocIds.contains(item.product.id)) ...[
+              const SizedBox(width: 6),
+              IconButton(
+                icon: const Icon(Icons.bookmark_add_outlined, size: 18),
+                tooltip: AppLocalizations.of(context)!.createInvoiceSaveToProductListTooltip,
+                visualDensity: VisualDensity.compact,
+                onPressed: () => _saveAdHocItemV2(item),
+              ),
+            ],
             IconButton(
-              icon: const Icon(Icons.bookmark_add_outlined, size: 18),
-              tooltip: AppLocalizations.of(context)!.createInvoiceSaveToProductListTooltip,
+              icon: const Icon(Icons.edit_outlined, size: 18),
+              tooltip: AppLocalizations.of(context)!.tooltipEditItem,
               visualDensity: VisualDensity.compact,
-              onPressed: () => _saveAdHocItemV2(item),
+              onPressed: () => _editInvoiceItem(index),
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline, size: 18),
+              tooltip: AppLocalizations.of(context)!.tooltipRemoveItem,
+              visualDensity: VisualDensity.compact,
+              color: Theme.of(context).colorScheme.error,
+              onPressed: () {
+                if (!mounted) return;
+                setState(() => invoiceItems.removeAt(index));
+              },
             ),
           ],
-          IconButton(
-            icon: const Icon(Icons.edit_outlined, size: 18),
-            tooltip: AppLocalizations.of(context)!.tooltipEditItem,
-            visualDensity: VisualDensity.compact,
-            onPressed: () => _editInvoiceItem(index),
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline, size: 18),
-            tooltip: AppLocalizations.of(context)!.tooltipRemoveItem,
-            visualDensity: VisualDensity.compact,
-            color: Theme.of(context).colorScheme.error,
-            onPressed: () {
-              if (!mounted) return;
-              setState(() => invoiceItems.removeAt(index));
-            },
-          ),
         ],
       ),
     );
@@ -5446,6 +5994,15 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   ),
                 ],
               ),
+              if (_lockedByCreditNotes)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    AppLocalizations.of(context)!.createInvoiceLockedByCreditNotes,
+                    style: TextStyle(
+                        fontSize: AppFontSize.small, color: Colors.orange[800]),
+                  ),
+                ),
               const SizedBox(height: 12),
               if (expand)
                 Expanded(
@@ -5487,7 +6044,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                       color: Theme.of(context).primaryColor.withValues(alpha: 0.4),
                       width: 1.4),
                 ),
-                child: _productQuickAddBarV2(),
+                child: _lockedV2(_productQuickAddBarV2()),
               ),
             ],
           ),
@@ -5592,7 +6149,11 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         : _payStatus == PaymentStatus.partial
             ? (double.tryParse(_payAmountController.text.trim()) ?? 0.0)
             : 0.0;
-    final balanceDue = total - paid;
+    final balanceDue = total -
+        paid -
+        (_applyCustomerCredit
+            ? _customerCreditAvailable
+            : 0.0);
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
@@ -5660,6 +6221,18 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
             _buildTotalRow(l10n.createInvoiceBalanceDueLabel,
                 balanceDue < 0 ? 0 : balanceDue, false),
           ],
+          if (_customerCreditAvailable > 0)
+            CheckboxListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+              value: _applyCustomerCredit,
+              onChanged: (v) =>
+                  setState(() => _applyCustomerCredit = v ?? false),
+              title: Text(l10n.returnApplyCreditToInvoiceLabel),
+              subtitle: Text(l10n.returnCreditAvailableLabel(
+                  '$_currencySymbol${_customerCreditAvailable.toStringAsFixed(2)}')),
+            ),
         ],
       ),
     );
@@ -6100,48 +6673,56 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
 
   Widget _rightPanelV2(double tax, double subtotal, double total,
       double grossSubtotal, double totalDiscount, double invoiceDiscountAmount) {
-    return Column(
-      children: [
-        _invoiceDetailsFormV2(),
-        AppSpacing.hSmall,
-        Expanded(
-          child: Container(
-            decoration: _flatCardDecorationV2(context),
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(AppPadding.medium),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildAdditionalCostsSection(),
-                        const SizedBox(height: 12),
-                        _invoiceDiscountSectionV2(),
-                        if (!isEditing && invoiceType == 'Invoice') ...[
+    return LayoutBuilder(
+      builder: (context, constraints) => Column(
+        children: [
+          // Tall details (a credit note's link / reason / settlement / refund
+          // method) scroll here instead of squeezing out the totals footer.
+          ConstrainedBox(
+            constraints:
+                BoxConstraints(maxHeight: constraints.maxHeight * 0.45),
+            child: SingleChildScrollView(child: _invoiceDetailsFormV2()),
+          ),
+          AppSpacing.hSmall,
+          Expanded(
+            child: Container(
+              decoration: _flatCardDecorationV2(context),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(AppPadding.medium),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _lockedV2(_buildAdditionalCostsSection()),
+                          const SizedBox(height: 12),
+                          _lockedV2(_invoiceDiscountSectionV2()),
+                          if (!isEditing && invoiceType == 'Invoice') ...[
+                            const SizedBox(height: 18),
+                            _sectionLabelV2(AppLocalizations.of(context)!
+                                .createInvoicePaymentSectionLabel),
+                            _paymentSectionV2(total),
+                          ],
                           const SizedBox(height: 18),
-                          _sectionLabelV2(AppLocalizations.of(context)!
-                              .createInvoicePaymentSectionLabel),
-                          _paymentSectionV2(total),
+                          _sectionLabelV2('Notes'),
+                          _notesFieldV2(),
+                          const SizedBox(height: 18),
+                          _sectionLabelV2('Tax settings'),
+                          _lockedV2(_taxSettingsSectionV2()),
                         ],
-                        const SizedBox(height: 18),
-                        _sectionLabelV2('Notes'),
-                        _notesFieldV2(),
-                        const SizedBox(height: 18),
-                        _sectionLabelV2('Tax settings'),
-                        _taxSettingsSectionV2(),
-                      ],
+                      ),
                     ),
                   ),
-                ),
-                _totalsFooterV2(tax, subtotal, total, grossSubtotal,
-                    totalDiscount, invoiceDiscountAmount),
-              ],
+                  _totalsFooterV2(tax, subtotal, total, grossSubtotal,
+                      totalDiscount, invoiceDiscountAmount),
+                ],
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -6321,9 +6902,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildAdditionalCostsSection(),
+              _lockedV2(_buildAdditionalCostsSection()),
               const SizedBox(height: 12),
-              _invoiceDiscountSectionV2(),
+              _lockedV2(_invoiceDiscountSectionV2()),
               if (!isEditing && invoiceType == 'Invoice') ...[
                 const SizedBox(height: 18),
                 _sectionLabelV2(AppLocalizations.of(context)!
@@ -6335,7 +6916,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               _notesFieldV2(),
               const SizedBox(height: 18),
               _sectionLabelV2('Tax settings'),
-              _taxSettingsSectionV2(),
+              _lockedV2(_taxSettingsSectionV2()),
             ],
           ),
         ),

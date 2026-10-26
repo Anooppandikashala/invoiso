@@ -32,6 +32,8 @@ class BackupManager {
     'invoices',
     'invoice_items',
     'invoice_payments',
+    'customer_credits',
+    'refunds',
     'suppliers',
     'purchase_bills',
     'purchase_bill_items',

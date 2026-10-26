@@ -14,6 +14,7 @@ import 'package:invoiso/providers/app_config_provider.dart';
 import 'package:invoiso/providers/cash_exchange_settings_provider.dart';
 import 'package:invoiso/providers/purchase_bills_settings_provider.dart';
 import 'package:invoiso/providers/repositories.dart';
+import 'package:invoiso/providers/returns_settings_provider.dart';
 import 'package:invoiso/services/update_service.dart';
 import 'package:invoiso/widgets/update_dialog.dart';
 import 'package:invoiso/domain/invoice_calculator.dart';
@@ -39,7 +40,6 @@ import 'package:invoiso/models/user.dart';
 // import 'package:invoiso/screens/customer_management_screen.dart';
 import 'package:invoiso/screens/customer_management_screen_v2.dart';
 import 'package:invoiso/database/database_helper.dart';
-import 'package:invoiso/screens/screens_v1/create_invoice_screen.dart' as v1;
 import 'package:invoiso/screens/create_invoice_screen_v2.dart';
 // import 'package:invoiso/screens/product_management_screen.dart';
 import 'package:invoiso/screens/product_management_screen_v2.dart';
@@ -98,18 +98,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   // form's convert mode). Null unless a conversion is in flight.
   String? _convertSourceQuotationId;
   bool _hasUpdate = false;
-  String _createInvoiceLayout = 'v2';
   int? _accessibilityJumpToken;
   final InvoiceFormGuard _invoiceFormGuard = InvoiceFormGuard();
-  final v1.InvoiceFormGuard _invoiceFormGuardV1 = v1.InvoiceFormGuard();
   final FocusNode _shortcutsFocusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
     _currentUser = widget.loggedInUser;
-    _loadCreateInvoiceLayout();
     _loadServicesEnabled();
+    _loadReturnsEnabled();
     _loadReportsAdminOnly();
     _loadCompanies();
     SessionManager.initialize(_onSessionTimeout);
@@ -194,64 +192,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     ref.read(cashUpiExchangeEnabledProvider.notifier).state = v == 'true';
   }
 
+  // Credit / Debit Notes nav items; the toggle lives in Settings → Accessibility.
+  Future<void> _loadReturnsEnabled() async {
+    final v = await ref
+        .read(settingsRepositoryProvider)
+        .getSetting(SettingKey.returnsEnabled);
+    if (!mounted) return;
+    ref.read(returnsEnabledProvider.notifier).state = v == 'true';
+  }
+
   Future<void> _loadReportsAdminOnly() async {
     final v = await ref
         .read(settingsRepositoryProvider)
         .getSetting(SettingKey.reportsAdminOnly);
     if (!mounted) return;
     setState(() => _reportsAdminOnly = v == 'true');
-  }
-
-  Future<void> _loadCreateInvoiceLayout() async {
-    final layout = await ref
-        .read(settingsRepositoryProvider)
-        .getSetting(SettingKey.createInvoiceLayout);
-    if (!mounted) return;
-    setState(() => _createInvoiceLayout = layout ?? 'v2');
-    if (_createInvoiceLayout == 'v1') {
-      WidgetsBinding.instance
-          .addPostFrameCallback((_) => _showV1DeprecationNotice());
-    }
-  }
-
-  Future<void> _showV1DeprecationNotice() async {
-    if (!mounted) return;
-    final switchNow = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Icon(Icons.info_outline, color: Theme.of(context).primaryColor),
-            const SizedBox(width: 12),
-            const Flexible(child: Text('Classic invoice layout is going away')),
-          ],
-        ),
-        content: const Text(
-          "You're using the classic Create Invoice layout. In an upcoming "
-          "release this will be removed and everyone moves to the new layout. "
-          "Try it now so you're comfortable with it before the switch — you "
-          "can always go back from Settings until then.",
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Maybe later'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Try new layout now'),
-          ),
-        ],
-      ),
-    );
-    if (switchNow == true && mounted) {
-      await ref
-          .read(settingsRepositoryProvider)
-          .setSetting(SettingKey.createInvoiceLayout, 'v2');
-      if (!mounted) return;
-      setState(() => _createInvoiceLayout = 'v2');
-    }
   }
 
   Future<void> _checkForUpdates() async {
@@ -324,27 +279,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             _convertSourceQuotationId = null;
           });
         }
-        return _createInvoiceLayout == 'v1'
-            ? v1.CreateInvoiceScreen(
-                key: createInvoiceKey,
-                invoiceToEdit: invoiceToEdit,
-                cloneFrom: _invoiceToClone,
-                cloneType: _invoiceToClone != null ? _cloneType : null,
-                initialType: isNewDoc ? _newInvoiceType : null,
-                convertFromQuotationId: _convertSourceQuotationId,
-                guard: _invoiceFormGuardV1,
-                onCreateNewInvoice: onCreateNewInvoice,
-              )
-            : CreateInvoiceScreenV2(
-                key: createInvoiceKey,
-                invoiceToEdit: invoiceToEdit,
-                cloneFrom: _invoiceToClone,
-                cloneType: _invoiceToClone != null ? _cloneType : null,
-                initialType: isNewDoc ? _newInvoiceType : null,
-                convertFromQuotationId: _convertSourceQuotationId,
-                guard: _invoiceFormGuard,
-                onCreateNewInvoice: onCreateNewInvoice,
-              );
+        return CreateInvoiceScreenV2(
+          key: createInvoiceKey,
+          invoiceToEdit: invoiceToEdit,
+          cloneFrom: _invoiceToClone,
+          cloneType: _invoiceToClone != null ? _cloneType : null,
+          initialType: isNewDoc ? _newInvoiceType : null,
+          convertFromQuotationId: _convertSourceQuotationId,
+          guard: _invoiceFormGuard,
+          onCreateNewInvoice: onCreateNewInvoice,
+        );
       case 2:
         return InvoiceManagementScreenV2(
           key: const ValueKey('invoice_list'),
@@ -413,60 +357,29 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             : Center(
                 child: Text(
                     AppLocalizations.of(context)!.dashboardUnknownTabLabel));
+      case 12:
+        return InvoiceManagementScreenV2(
+          key: const ValueKey('credit_note_list'),
+          onEditInvoice: editInvoice,
+          onCloneInvoice: cloneInvoice,
+          onCreateNew: _createDocumentOfType,
+          user: _currentUser,
+          filterType: 'Credit Note',
+        );
+      case 13:
+        return InvoiceManagementScreenV2(
+          key: const ValueKey('debit_note_list'),
+          onEditInvoice: editInvoice,
+          onCloneInvoice: cloneInvoice,
+          onCreateNew: _createDocumentOfType,
+          user: _currentUser,
+          filterType: 'Debit Note',
+        );
       default:
         return Center(
             child:
                 Text(AppLocalizations.of(context)!.dashboardUnknownTabLabel));
     }
-  }
-
-  Widget _buildCreateInvoiceLayoutToggle() {
-    final isV2 = _createInvoiceLayout == 'v2';
-    final l10n = AppLocalizations.of(context)!;
-    return Material(
-      color: Theme.of(context).colorScheme.surface,
-      shape: CircleBorder(
-          side:
-              BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
-      elevation: 2,
-      child: IconButton(
-        icon: Icon(isV2 ? Icons.auto_awesome : Icons.history, size: 20),
-        tooltip: l10n.dashboardInvoiceLayoutTooltip(
-            isV2 ? l10n.dashboardLayoutNew : l10n.dashboardLayoutClassic),
-        onPressed: _showCreateInvoiceLayoutInfo,
-      ),
-    );
-  }
-
-  void _showCreateInvoiceLayoutInfo() {
-    final l10n = AppLocalizations.of(context)!;
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.dashboardInvoiceLayoutDialogTitle),
-        content: Text(l10n.dashboardInvoiceLayoutDialogBody(
-            _createInvoiceLayout == 'v1'
-                ? l10n.dashboardLayoutClassic
-                : l10n.dashboardLayoutNew)),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(l10n.actionClose)),
-          FilledButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              if (!await _canLeaveInvoiceForm()) return;
-              if (!mounted) return;
-              setState(() {
-                _selectedIndex = 8;
-                _accessibilityJumpToken = (_accessibilityJumpToken ?? 0) + 1;
-              });
-            },
-            child: Text(l10n.dashboardOpenSettingsAction),
-          ),
-        ],
-      ),
-    );
   }
 
   void editInvoice(Invoice invoice) {
@@ -506,7 +419,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   // — opens the create form with that document type preselected.
   Future<void> _createDocumentOfType(String type) async {
     if (!await _canLeaveInvoiceForm()) return;
-    await _loadCreateInvoiceLayout();
     if (!mounted) return;
     setState(() {
       _selectedIndex = 1;
@@ -523,7 +435,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   // quotation is stamped 'converted' and the two are linked.
   Future<void> _convertQuotationToInvoice(Invoice quotation) async {
     if (!await _canLeaveInvoiceForm()) return;
-    await _loadCreateInvoiceLayout();
     if (!mounted) return;
     setState(() {
       _selectedIndex = 1;
@@ -536,9 +447,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Future<bool> _canLeaveInvoiceForm() async {
-    if (_createInvoiceLayout == 'v1') {
-      return await _invoiceFormGuardV1.canLeave?.call() ?? true;
-    }
     return await _invoiceFormGuard.canLeave?.call() ?? true;
   }
 
@@ -548,9 +456,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     if (_selectedIndex == 7 && index != 7) await _refreshUser();
     if (_selectedIndex == 8 && index != 8) {
       await _loadServicesEnabled();
+      await _loadReturnsEnabled();
       await _loadReportsAdminOnly();
     }
-    if (index == 1) await _loadCreateInvoiceLayout();
     if (!mounted) return;
     setState(() {
       _selectedIndex = index;
@@ -596,16 +504,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               children: [
                 _buildSidebar(),
                 Expanded(
-                  child: Stack(
-                    children: [
-                      buildScreen(),
-                      if (_selectedIndex == 1)
-                        Positioned(
-                            bottom: 16,
-                            right: 16,
-                            child: _buildCreateInvoiceLayoutToggle()),
-                    ],
-                  ),
+                  child: buildScreen(),
                 ),
               ],
             ),
@@ -877,6 +776,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         Icons.point_of_sale_outlined,
                         Icons.point_of_sale,
                         AppLocalizations.of(context)!.navReceipts),
+                    if (ref.watch(returnsEnabledProvider)) ...[
+                      _buildNavItem(
+                          12,
+                          Icons.assignment_return_outlined,
+                          Icons.assignment_return,
+                          AppLocalizations.of(context)!.navCreditNotes),
+                      _buildNavItem(
+                          13,
+                          Icons.assignment_late_outlined,
+                          Icons.assignment_late,
+                          AppLocalizations.of(context)!.navDebitNotes),
+                    ],
                     _buildNavItem(5, Icons.people_outline, Icons.people,
                         AppLocalizations.of(context)!.navCustomers),
                     _buildNavItem(
@@ -884,15 +795,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         Icons.inventory_2_outlined,
                         Icons.inventory_2,
                         AppLocalizations.of(context)!.navProducts),
-                    if (!_reportsLocked)
-                      _buildNavItem(7, Icons.bar_chart_outlined, Icons.bar_chart,
-                          AppLocalizations.of(context)!.navReports),
                     if (showPurchaseBillsAndSuppliers) ...[
                       _buildNavItem(10, Icons.shopping_cart_outlined,
                           Icons.shopping_cart, AppLocalizations.of(context)!.navPurchaseBills),
                       _buildNavItem(11, Icons.local_shipping_outlined,
                           Icons.local_shipping, AppLocalizations.of(context)!.navSuppliers),
                     ],
+                    if (!_reportsLocked)
+                      _buildNavItem(7, Icons.bar_chart_outlined, Icons.bar_chart,
+                          AppLocalizations.of(context)!.navReports),
                     _buildNavItem(8, Icons.settings_outlined, Icons.settings,
                         AppLocalizations.of(context)!.navSettings,
                         showDot: _hasUpdate),
@@ -2438,8 +2349,9 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                                           invoice: invoice,
                                                           onPaymentRecorded:
                                                               () {
-                                                            if (!mounted)
+                                                            if (!mounted) {
                                                               return;
+                                                            }
                                                             setState(() {});
                                                           },
                                                         ),

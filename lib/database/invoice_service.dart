@@ -70,6 +70,11 @@ class InvoiceService {
         'hide_invoice_number': invoice.hideInvoiceNumber ? 1 : 0,
         'custom_invoice_number': invoice.customInvoiceNumber,
         'custom_fields': CustomFieldValue.listToJson(invoice.customFields),
+        'original_invoice_id': invoice.originalInvoiceId,
+        'original_invoice_number': invoice.originalInvoiceNumber,
+        'original_invoice_date': invoice.originalInvoiceDate?.toIso8601String(),
+        'return_reason': invoice.returnReason,
+        'credit_settlement': invoice.creditSettlement?.key,
         'status': invoice.status,
         'converted_to_invoice_id': invoice.convertedToInvoiceId,
         'converted_from_invoice_id': invoice.convertedFromInvoiceId,
@@ -102,6 +107,7 @@ class InvoiceService {
           'line_metadata': item.metadata == null
               ? null
               : jsonEncode(item.metadata!.toMap()),
+          'restocked': item.restocked ? 1 : 0,
         });
       }
 
@@ -139,6 +145,32 @@ class InvoiceService {
     if (paid - invoice.total > InvoiceCalculator.moneyEpsilon) {
       throw StateError(
           'Invoice total ${invoice.total} is below amount paid $paid');
+    }
+
+    // Credit notes were priced and restocked against the saved invoice —
+    // once it has any, its customer, lines and total can't change.
+    final hasCreditNotes = (await db.rawQuery(
+      "SELECT 1 FROM invoices WHERE original_invoice_id = ? "
+      "AND type = 'Credit Note' AND deleted_at IS NULL LIMIT 1",
+      [invoice.id],
+    ))
+        .isNotEmpty;
+    if (hasCreditNotes) {
+      final saved = await getInvoiceById(invoice.id);
+      String lines(Invoice i) => (i.items
+              .map((l) => '${l.product.id}|${l.quantity}|${l.effectivePrice}|'
+                  '${l.discount}|${l.discountPerUnit}|${l.discountIsPercent}')
+              .toList()
+            ..sort())
+          .join(';');
+      if (saved != null &&
+          (saved.customer.id != invoice.customer.id ||
+              lines(saved) != lines(invoice) ||
+              (saved.total - invoice.total).abs() >
+                  InvoiceCalculator.moneyEpsilon)) {
+        throw StateError(
+            'Invoice ${invoice.id} has credit notes: customer, items and total are locked');
+      }
     }
 
     // Fetch existing items before transaction (to restore stock)
@@ -188,6 +220,12 @@ class InvoiceService {
           'hide_invoice_number': invoice.hideInvoiceNumber ? 1 : 0,
           'custom_invoice_number': invoice.customInvoiceNumber,
           'custom_fields': CustomFieldValue.listToJson(invoice.customFields),
+          'original_invoice_id': invoice.originalInvoiceId,
+          'original_invoice_number': invoice.originalInvoiceNumber,
+          'original_invoice_date':
+              invoice.originalInvoiceDate?.toIso8601String(),
+          'return_reason': invoice.returnReason,
+          'credit_settlement': invoice.creditSettlement?.key,
         },
         where: 'id = ?',
         whereArgs: [invoice.id],
@@ -228,6 +266,7 @@ class InvoiceService {
           'line_metadata': item.metadata == null
               ? null
               : jsonEncode(item.metadata!.toMap()),
+          'restocked': item.restocked ? 1 : 0,
         });
       }
     });
@@ -291,15 +330,17 @@ class InvoiceService {
         ? <Object>[invoiceDateKey]
         : <Object>[invoiceDateKey, invoiceDateKey, sameDayId];
 
+    // Debit Notes are supplementary charges — they raise what the customer owes
+    // and carry the same total/payment shape as an invoice, so they fold into
+    // this calculation exactly like an invoice row does.
     final invoiceWhere = 'customer_id = ? '
-        'AND type = ? '
+        "AND type IN ('Invoice', 'Debit Note') "
         'AND deleted_at IS NULL '
         "AND (status IS NULL OR status != 'declined') "
         'AND currency_code = ? '
         'AND $dateFilter';
     final invoiceArgs = [
       normalizedCustomerId,
-      'Invoice',
       currencyCode,
       ...dateArgs,
     ];
@@ -316,6 +357,16 @@ class InvoiceService {
       where: invoiceWhere,
       whereArgs: invoiceArgs,
     );
+
+    // Unused customer credit (from credit notes) offsets the balance.
+    final creditRow = await db.rawQuery(
+      'SELECT COALESCE(SUM(amount - applied_amount), 0.0) AS c '
+      'FROM customer_credits '
+      'WHERE customer_id = ? AND currency_code = ? '
+      'AND substr(created_at, 1, 10) <= ?',
+      [normalizedCustomerId, currencyCode, invoiceDateKey],
+    );
+    final unusedCredit = (creditRow.first['c'] as num).toDouble();
 
     if (invoiceRows.isEmpty) return 0.0;
 
@@ -374,7 +425,11 @@ class InvoiceService {
       );
     }
 
-    return previousBalanceDue;
+    // Net off unused customer credit; never report a negative carried balance
+    // here (a customer in overall credit shows as 0 on the invoice — the
+    // signed position lives in the customer statement).
+    final net = previousBalanceDue - unusedCredit;
+    return net > InvoiceCalculator.moneyEpsilon ? net : 0.0;
   }
 
   // ─────────────────────────────────────────────
@@ -443,6 +498,7 @@ class InvoiceService {
           unit: row['unit'] as String?,
           description: row['description'] as String?,
           metadata: ProductMetadata.fromJsonString(row['line_metadata']),
+          restocked: (row['restocked'] as int? ?? 1) == 1,
         ));
       } catch (e, stackTrace) {
         AppLogger.e(_tag, 'Error parsing invoice item row', e, stackTrace);
@@ -488,6 +544,14 @@ class InvoiceService {
       convertedToInvoiceId: i['converted_to_invoice_id'] as String?,
       convertedFromInvoiceId: i['converted_from_invoice_id'] as String?,
       payments: payments,
+      originalInvoiceId: i['original_invoice_id'] as String?,
+      originalInvoiceNumber: i['original_invoice_number'] as String?,
+      originalInvoiceDate: i['original_invoice_date'] != null
+          ? DateTime.tryParse(i['original_invoice_date'] as String)
+          : null,
+      returnReason: i['return_reason'] as String?,
+      creditSettlement:
+          CreditSettlementExtension.fromKey(i['credit_settlement'] as String?),
     );
   }
 
@@ -663,8 +727,8 @@ class InvoiceService {
     final whereArgs = <Object?>[];
 
     if (searchQuery.isNotEmpty) {
-      whereParts.add('(customer_name LIKE ? OR id LIKE ?)');
-      whereArgs.addAll(['%$searchQuery%', '%$searchQuery%']);
+      whereParts.add('(customer_name LIKE ? OR id LIKE ? OR invoice_number LIKE ?)');
+      whereArgs.addAll(['%$searchQuery%', '%$searchQuery%', '%$searchQuery%']);
     }
     if (filterType != null && filterType.isNotEmpty) {
       whereParts.add('type = ?');
@@ -834,10 +898,16 @@ class InvoiceService {
   static Future<void> softDeleteInvoice(String id) async {
     final db = await dbHelper.database;
     await db.transaction((txn) async {
+      // Credit notes are removed only by ReturnService.voidCreditNote, which
+      // also reverses their stock and credit.
+      // An invoice with active credit / debit notes waits until they're gone.
       await txn.update(
         'invoices',
         {'deleted_at': DateTime.now().toIso8601String()},
-        where: 'id = ?',
+        where: "id = ? AND type != 'Credit Note' "
+            'AND NOT EXISTS (SELECT 1 FROM invoices cn '
+            'WHERE cn.original_invoice_id = invoices.id '
+            "AND cn.type IN ('Credit Note', 'Debit Note') AND cn.deleted_at IS NULL)",
         whereArgs: [id],
       );
       await _unlinkSourceQuotation(txn, id);
@@ -847,10 +917,16 @@ class InvoiceService {
   static Future<void> restoreInvoice(String id) async {
     final db = await dbHelper.database;
     await db.transaction((txn) async {
+      // A trashed credit note was voided — restoring it would revive a note
+      // with no stock or credit behind it. A debit note stays in trash while
+      // its invoice is declined or trashed.
       await txn.update(
         'invoices',
         {'deleted_at': null},
-        where: 'id = ?',
+        where: "id = ? AND type != 'Credit Note' "
+            "AND NOT (type = 'Debit Note' AND original_invoice_id IN "
+            "(SELECT id FROM invoices WHERE deleted_at IS NOT NULL "
+            "OR status = 'declined'))",
         whereArgs: [id],
       );
       // Re-link the source quotation — unless the invoice is declined or the
@@ -906,7 +982,12 @@ class InvoiceService {
             "AND (status IS NULL OR status != 'declined') "
             // Paid money must be removed first — see _declineInvoice in the list.
             'AND NOT EXISTS (SELECT 1 FROM invoice_payments '
-            'WHERE invoice_payments.invoice_id = invoices.id)',
+            'WHERE invoice_payments.invoice_id = invoices.id) '
+            // Active notes must go first: a credit note's qty is already
+            // restocked, and a debit note would stay owed on a void sale.
+            'AND NOT EXISTS (SELECT 1 FROM invoices cn '
+            "WHERE cn.original_invoice_id = invoices.id "
+            "AND cn.type IN ('Credit Note', 'Debit Note') AND cn.deleted_at IS NULL)",
         whereArgs: [id],
       );
       if (changed == 0) return;
@@ -928,10 +1009,22 @@ class InvoiceService {
 
   static Future<void> permanentDeleteInvoice(String id) async {
     final db = await dbHelper.database;
+    final hasNotes = (await db.rawQuery(
+      "SELECT 1 FROM invoices WHERE original_invoice_id = ? "
+      "AND type IN ('Credit Note', 'Debit Note') AND deleted_at IS NULL LIMIT 1",
+      [id],
+    ))
+        .isNotEmpty;
+    if (hasNotes) {
+      throw StateError('Invoice $id has credit / debit notes: remove them first');
+    }
     await db.transaction((txn) async {
       await _unlinkSourceQuotation(txn, id);
       await txn.delete('invoice_items', where: 'invoice_id = ?', whereArgs: [id]);
       await txn.delete('invoice_payments', where: 'invoice_id = ?', whereArgs: [id]);
+      // A credit note's leftover credit / refund rows go with it.
+      await txn.delete('customer_credits', where: 'source_id = ?', whereArgs: [id]);
+      await txn.delete('refunds', where: 'credit_note_id = ?', whereArgs: [id]);
       await txn.delete('invoices', where: 'id = ?', whereArgs: [id]);
     });
   }
@@ -1025,6 +1118,14 @@ class InvoiceService {
           customInvoiceNumber: map['custom_invoice_number'] as String?,
           customFields:
               CustomFieldValue.listFromJson(map['custom_fields'] as String?),
+          originalInvoiceId: map['original_invoice_id'] as String?,
+          originalInvoiceNumber: map['original_invoice_number'] as String?,
+          originalInvoiceDate: map['original_invoice_date'] != null
+              ? DateTime.tryParse(map['original_invoice_date'] as String)
+              : null,
+          returnReason: map['return_reason'] as String?,
+          creditSettlement: CreditSettlementExtension.fromKey(
+              map['credit_settlement'] as String?),
           status: map['status'] as String?,
           convertedToInvoiceId: map['converted_to_invoice_id'] as String?,
           convertedFromInvoiceId: map['converted_from_invoice_id'] as String?,
@@ -1355,8 +1456,11 @@ class InvoiceService {
   /// be scoped by type.
   static Future<String> generateNextId() async {
     final db = await dbHelper.database;
-    final result =
-        await db.rawQuery("SELECT id FROM invoices ORDER BY id DESC LIMIT 1");
+    // Only all-digit ids form the sequence (UUID ids from older builds are
+    // skipped); compare as numbers so '100000000' sorts above '99999999'.
+    final result = await db.rawQuery(
+        "SELECT id FROM invoices WHERE id NOT GLOB '*[^0-9]*' "
+        "ORDER BY CAST(id AS INTEGER) DESC LIMIT 1");
 
     int nextNumber;
     if (result.isNotEmpty) {

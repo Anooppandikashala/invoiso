@@ -10,6 +10,7 @@ import 'package:invoiso/models/custom_field_def.dart';
 import 'package:invoiso/widgets/custom_field_defs_editor.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/providers/repositories.dart';
+import 'package:invoiso/providers/returns_settings_provider.dart';
 import 'package:invoiso/common/constants.dart';
 
 class InvoiceSettingsScreenV2 extends ConsumerStatefulWidget {
@@ -33,6 +34,15 @@ class _InvoiceSettingsScreenV2State
   final TextEditingController quantityLabelController = TextEditingController();
   final TextEditingController defaultTaxRateController =
       TextEditingController();
+  final TextEditingController creditNotePrefixController =
+      TextEditingController();
+  final TextEditingController debitNotePrefixController =
+      TextEditingController();
+  final TextEditingController quotationPrefixController =
+      TextEditingController();
+  final TextEditingController receiptPrefixController =
+      TextEditingController();
+
 
   String _selectedLogoPosition = 'left';
   String _selectedCurrencyCode = 'INR';
@@ -168,6 +178,14 @@ class _InvoiceSettingsScreenV2State
     final customFieldsEnabledStr =
         await settingsRepo.getSetting(SettingKey.customFieldsEnabled);
     final customFieldDefs = await settingsRepo.getCustomFieldDefs();
+    final creditNotePrefix =
+        await settingsRepo.getSetting(SettingKey.creditNotePrefix);
+    final debitNotePrefix =
+        await settingsRepo.getSetting(SettingKey.debitNotePrefix);
+    final quotationPrefix =
+        await settingsRepo.getSetting(SettingKey.quotationPrefix);
+    final receiptPrefix =
+        await settingsRepo.getSetting(SettingKey.receiptPrefix);
     final customerFieldFlags = await Future.wait([
       settingsRepo.getSetting(SettingKey.customerAgeEnabled),
       settingsRepo.getSetting(SettingKey.customerDobEnabled),
@@ -233,6 +251,16 @@ class _InvoiceSettingsScreenV2State
       };
       _customFieldsEnabled = customFieldsEnabledStr == 'true';
       _customFieldDefs = customFieldDefs;
+      creditNotePrefixController.text =
+          (creditNotePrefix == null || creditNotePrefix.isEmpty)
+              ? 'CN-'
+              : creditNotePrefix;
+      debitNotePrefixController.text =
+          (debitNotePrefix == null || debitNotePrefix.isEmpty)
+              ? 'DN-'
+              : debitNotePrefix;
+      quotationPrefixController.text = quotationPrefix ?? '';
+      receiptPrefixController.text = receiptPrefix ?? '';
       _customerAgeEnabled = customerFieldFlags[0] == 'true';
       _customerDobEnabled = customerFieldFlags[1] == 'true';
       _customerGenderEnabled = customerFieldFlags[2] == 'true';
@@ -262,6 +290,10 @@ class _InvoiceSettingsScreenV2State
         settingsRepo.setSetting(SettingKey.logoPosition, _selectedLogoPosition),
         settingsRepo.setSetting(
             SettingKey.invoicePrefix, invoicePrefixController.text),
+        settingsRepo.setSetting(
+            SettingKey.quotationPrefix, quotationPrefixController.text.trim()),
+        settingsRepo.setSetting(
+            SettingKey.receiptPrefix, receiptPrefixController.text.trim()),
         if (_invoiceCount == 0)
           settingsRepo.setSetting(
               SettingKey.invoiceStartingNumber,
@@ -322,6 +354,16 @@ class _InvoiceSettingsScreenV2State
         settingsRepo.setSetting(
             SettingKey.customFieldsEnabled, _customFieldsEnabled.toString()),
         settingsRepo.setCustomFieldDefs(_customFieldDefs),
+        settingsRepo.setSetting(
+            SettingKey.creditNotePrefix,
+            creditNotePrefixController.text.trim().isEmpty
+                ? 'CN-'
+                : creditNotePrefixController.text.trim()),
+        settingsRepo.setSetting(
+            SettingKey.debitNotePrefix,
+            debitNotePrefixController.text.trim().isEmpty
+                ? 'DN-'
+                : debitNotePrefixController.text.trim()),
         settingsRepo.setSetting(
             SettingKey.customerAgeEnabled, _customerAgeEnabled.toString()),
         settingsRepo.setSetting(
@@ -488,7 +530,6 @@ class _InvoiceSettingsScreenV2State
     String? hint,
     String? helperText,
     Widget? prefixIcon,
-    int? counter,
   }) {
     final outlineVariant = Theme.of(context).colorScheme.outlineVariant;
     return InputDecoration(
@@ -665,6 +706,22 @@ class _InvoiceSettingsScreenV2State
               label: l10n.invoiceSettingsPrefixLabel,
               prefixIcon: const Icon(Icons.confirmation_number)),
         ),
+        TextField(
+          controller: quotationPrefixController,
+          maxLength: 25,
+          decoration: _fieldDecorationV2(context,
+              label: l10n.quotationPrefixLabel,
+              prefixIcon: const Icon(Icons.confirmation_number_outlined),
+              helperText: l10n.prefixSameAsInvoiceHelper),
+        ),
+        TextField(
+          controller: receiptPrefixController,
+          maxLength: 25,
+          decoration: _fieldDecorationV2(context,
+              label: l10n.receiptPrefixLabel,
+              prefixIcon: const Icon(Icons.confirmation_number_outlined),
+              helperText: l10n.prefixSameAsInvoiceHelper),
+        ),
         _invoiceCount == 0
             ? TextField(
                 controller: invoiceStartingNumberController,
@@ -708,6 +765,24 @@ class _InvoiceSettingsScreenV2State
           value: _invoiceLeadingZeros,
           onChanged: (val) => setState(() => _invoiceLeadingZeros = val),
         ),
+        // Returns on/off lives in Settings → Accessibility; only its number
+        // prefixes are edited here.
+        if (ref.watch(returnsEnabledProvider)) ...[
+          TextField(
+            controller: creditNotePrefixController,
+            maxLength: 25,
+            decoration: _fieldDecorationV2(context,
+                label: l10n.creditNotePrefixLabel,
+                prefixIcon: const Icon(Icons.confirmation_number_outlined)),
+          ),
+          TextField(
+            controller: debitNotePrefixController,
+            maxLength: 25,
+            decoration: _fieldDecorationV2(context,
+                label: l10n.debitNotePrefixLabel,
+                prefixIcon: const Icon(Icons.confirmation_number_outlined)),
+          ),
+        ],
         _buildCurrencyField(),
         DropdownButtonFormField<DateFormatOption>(
           isExpanded: true,
@@ -934,12 +1009,15 @@ class _InvoiceSettingsScreenV2State
                   DropdownMenuItem(
                       value: 'Cash Bill',
                       child: Text(l10n.gstTitleCashBillLabel)),
-                  DropdownMenuItem(
-                      value: 'Credit Note',
-                      child: Text(l10n.gstTitleCreditNoteLabel)),
-                  DropdownMenuItem(
-                      value: 'Debit Note',
-                      child: Text(l10n.gstTitleDebitNoteLabel)),
+                  // Kept only for users whose saved default is one of these.
+                  if (_defaultInvoiceTitle == 'Credit Note')
+                    DropdownMenuItem(
+                        value: 'Credit Note',
+                        child: Text(l10n.gstTitleCreditNoteLabel)),
+                  if (_defaultInvoiceTitle == 'Debit Note')
+                    DropdownMenuItem(
+                        value: 'Debit Note',
+                        child: Text(l10n.gstTitleDebitNoteLabel)),
                   DropdownMenuItem(
                       value: 'Revised Invoice',
                       child: Text(l10n.gstTitleRevisedInvoiceLabel)),
@@ -1874,8 +1952,9 @@ class _InvoiceSettingsScreenV2State
   }
 
   Widget _promoCardV2() {
-    if (widget.onNavigateToCustomization == null)
+    if (widget.onNavigateToCustomization == null) {
       return const SizedBox.shrink();
+    }
     final primaryColor = Theme.of(context).primaryColor;
     return Container(
       padding: const EdgeInsets.all(14),

@@ -259,6 +259,18 @@ void main() {
     expect(companyInfo['pan_number'], '');
     expect(companyInfo['fssai_code'], '');
 
+    // v56 — return management. New invoice columns are NULL on legacy rows,
+    // invoice_items.restocked defaults to 1, and the two new tables exist.
+    expect(invoice.containsKey('original_invoice_id'), isTrue);
+    expect(invoice['original_invoice_id'], isNull);
+    expect(invoice['credit_settlement'], isNull);
+    expect(item['restocked'], 1);
+    expect(await db.query('customer_credits'), isEmpty);
+    expect(await db.query('refunds'), isEmpty);
+    final cnPrefix = (await db.query('settings',
+            where: 'key = ?', whereArgs: ['credit_note_prefix']))
+        .first;
+    expect(cnPrefix['value'], 'CN-');
     // v49: exchange ledger table and per-product low-stock limit (NULL =
     // default, so old products keep the old threshold of 10).
     final ledgerCols = (await db.rawQuery('PRAGMA table_info(cash_ledger)'))
@@ -289,6 +301,9 @@ void main() {
     // v55 adds customer columns to customers + invoices.
     await db.execute('CREATE TABLE customers (id TEXT PRIMARY KEY)');
     await db.execute('CREATE TABLE invoices (id TEXT PRIMARY KEY)');
+    // v56 seeds the credit/debit note prefixes.
+    await db.execute(
+        'CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT)');
     await db.insert('users', {'id': 'user-001', 'username': 'admin'});
     await db.insert('users', {'id': '[#a1b2c]', 'username': 'staff'});
     for (final (id, by) in [('1', 'staff'), ('2', 'admin'), ('3', 'gone'), ('4', null)]) {

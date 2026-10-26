@@ -260,6 +260,43 @@ void main() {
     expect(top.single['total_qty'], 3.0);
   });
 
+  test('generateNextId skips UUID ids and compares numerically', () async {
+    final p = await addProduct();
+    await InvoiceService.insertInvoice(doc('99999999', 'Invoice', p, qty: 1));
+    await InvoiceService.insertInvoice(
+        doc('100000000', 'Invoice', p, qty: 1));
+    // UUID ids came from an unreleased return page; must not drive the sequence.
+    await InvoiceService.insertInvoice(doc(
+        'aa284e4b-da00-4abf-8cf3-28b7e01348a7', 'Invoice', p, qty: 1));
+
+    expect(await InvoiceService.generateNextId(), '100000001');
+  });
+
+  test('search matches invoice_number, not just id', () async {
+    final p = await addProduct();
+    await InvoiceService.insertInvoice(Invoice(
+      id: 'i1',
+      invoiceNumber: '00000042',
+      customer: customer,
+      items: [InvoiceItem(product: p, quantity: 1)],
+      date: DateTime(2026, 1, 1),
+      dueDate: DateTime(2026, 1, 15),
+      type: 'Invoice',
+    ));
+    Future<List<String>> ids(String q) async =>
+        (await InvoiceService.getInvoicesPaginated(
+                searchQuery: q, filterType: 'Invoice', customerId: 'c1'))
+            .map((i) => i.id)
+            .toList();
+
+    expect(await ids('42'), ['i1']);
+    expect(
+        await InvoiceService.getInvoiceCount(
+            searchQuery: '42', filterType: 'Invoice'),
+        1);
+    expect(await ids('99'), isEmpty);
+  });
+
   test('unpaid / overdue list filters skip declined; "all" keeps them',
       () async {
     await seedActiveAndDeclined();

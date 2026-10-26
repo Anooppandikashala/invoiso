@@ -208,7 +208,7 @@ pw.MultiPage buildMinimalTemplate(
           children: [
         if(showPhone && (company?.phone ?? '').isNotEmpty)
           pw.Text(
-            company?.phone != null && company!.phone!.isNotEmpty
+            company?.phone != null && company!.phone.isNotEmpty
                 ? 'Ph: ${company.phone}'
                 : '',
             style: pw.TextStyle(fontSize: style.bodyFontSize),

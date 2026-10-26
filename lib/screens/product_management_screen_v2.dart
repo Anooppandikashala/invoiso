@@ -98,7 +98,6 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
   bool _statsLoadingV2 = false;
   int _activeTabV2 = 0; // 0 all, 1 products, 2 services, 3 low stock, 4 out of stock
   bool _showAddPanelV2 = false;
-  int _addPanelTabV2 = 0; // 0 Basic Information, 1 Advanced
   bool _addAnotherAfterSavingV2 = false;
   bool _showStatsCardsV2 = true;
 
@@ -2142,7 +2141,6 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
               onPressed: () {
                 setState(() {
                   _showAddPanelV2 = true;
-                  _addPanelTabV2 = 0;
                 });
               },
               icon: const Icon(Icons.add, size: 18),

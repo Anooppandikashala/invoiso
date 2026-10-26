@@ -207,6 +207,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get navReceipts => '收据';
 
   @override
+  String get navCreditNotes => '贷记单';
+
+  @override
+  String get navDebitNotes => '借记单';
+
+  @override
   String get navCustomers => '客户';
 
   @override
@@ -5125,4 +5131,430 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get invoiceSettingsCustomFieldsPageSupportNote =>
       'Custom fields print on every PDF template except thermal receipts.';
+
+  @override
+  String get docTypeCreditNote => 'Credit Note';
+
+  @override
+  String get docTypeDebitNote => 'Debit Note';
+
+  @override
+  String returnScreenTitleReturnItems(String number) {
+    return 'Return Items — $number';
+  }
+
+  @override
+  String returnScreenTitleSalesReturn(String number) {
+    return 'Credit Note (Sales Return) — $number';
+  }
+
+  @override
+  String returnSelectedCount(int count, String amount) {
+    return '$count items · $amount';
+  }
+
+  @override
+  String get returnSearchHint => 'Search product or HSN';
+
+  @override
+  String get returnAllButton => 'Return all';
+
+  @override
+  String get returnOnlySelectedChip => 'Only selected';
+
+  @override
+  String get returnColProduct => 'Product';
+
+  @override
+  String get returnColSold => 'Sold';
+
+  @override
+  String get returnColReturned => 'Returned';
+
+  @override
+  String get returnColLeft => 'Left';
+
+  @override
+  String get returnColToStock => 'To stock';
+
+  @override
+  String get returnDetailsSection => 'Totals, reason & settlement';
+
+  @override
+  String get returnDiscardTitle => 'Discard this return?';
+
+  @override
+  String get returnDiscardBody => 'The quantities you entered will be lost.';
+
+  @override
+  String get returnVoidNoteTooltip => 'Void this note';
+
+  @override
+  String returnCustomerLabel(String name) {
+    return 'Customer: $name';
+  }
+
+  @override
+  String returnLineSold(String qty) {
+    return 'Sold $qty';
+  }
+
+  @override
+  String returnLineReturned(String qty) {
+    return 'returned $qty';
+  }
+
+  @override
+  String returnLineLeft(String qty) {
+    return 'left $qty';
+  }
+
+  @override
+  String get returnFieldReturn => 'Return';
+
+  @override
+  String get returnToStockTooltip => 'Return to stock';
+
+  @override
+  String get returnSubtotalLabel => 'Return subtotal';
+
+  @override
+  String get returnTotalLabel => 'Credit note total';
+
+  @override
+  String get returnReasonLabel => 'Reason';
+
+  @override
+  String get returnReasonNoteLabel => 'Reason note (optional)';
+
+  @override
+  String get returnReasonDamaged => 'Damaged / defective';
+
+  @override
+  String get returnReasonWrongItem => 'Wrong item delivered';
+
+  @override
+  String get returnReasonNotRequired => 'Not required';
+
+  @override
+  String get returnReasonQualityIssue => 'Quality issue';
+
+  @override
+  String get returnReasonOther => 'Other';
+
+  @override
+  String get returnReasonPriceRevision => 'Price revision';
+
+  @override
+  String get returnReasonGoodsReturned => 'Goods returned';
+
+  @override
+  String get returnReasonBillingCorrection => 'Billing correction';
+
+  @override
+  String get returnReasonGoodwill => 'Goodwill / discount';
+
+  @override
+  String get returnSettlementLabel => 'Settlement';
+
+  @override
+  String returnSettlementReduceInvoice(String amount) {
+    return 'Reduce invoice balance (owes $amount)';
+  }
+
+  @override
+  String get returnSettlementRefundNow => 'Refund now';
+
+  @override
+  String get returnSettlementRefundCash => 'Refund now (cash)';
+
+  @override
+  String get returnSettlementKeepCredit => 'Keep as customer credit';
+
+  @override
+  String get returnRefundMethodLabel => 'Refund method';
+
+  @override
+  String get returnValidationNoQty => 'Enter a quantity for at least one line.';
+
+  @override
+  String returnValidationMaxQty(String product, String qty) {
+    return '$product: cannot return more than $qty.';
+  }
+
+  @override
+  String returnCreatedMessage(String amount) {
+    return 'Credit note created for $amount.';
+  }
+
+  @override
+  String returnCreateError(String error) {
+    return 'Could not create credit note: $error';
+  }
+
+  @override
+  String get returnPrintVoucher => 'Refund voucher';
+
+  @override
+  String get returnsBannerTitle => 'New: Product returns';
+
+  @override
+  String get returnsBannerSubtitle =>
+      'Use “Return Items” in an invoice\'s menu to take goods back, refund the customer or keep it as credit. Advanced Credit / Debit Notes can be turned on in Settings → Accessibility.';
+
+  @override
+  String get returnNotePdfTooltip => 'Note PDF';
+
+  @override
+  String get actionPrintRefundVoucher => 'Refund vouchers';
+
+  @override
+  String get returnNoRefundsMessage =>
+      'No refunds recorded for this credit note';
+
+  @override
+  String get returnPickRefundTitle => 'Refund vouchers';
+
+  @override
+  String get returnCreateButton => 'Create';
+
+  @override
+  String get returnAgainstInvoiceLabel => 'Against invoice # (optional)';
+
+  @override
+  String get returnAgainstReceiptLabel => 'Against receipt #';
+
+  @override
+  String returnApplyCreditAction(String amount) {
+    return 'Apply $amount credit';
+  }
+
+  @override
+  String get returnCreditAppliedMessage => 'Customer credit applied.';
+
+  @override
+  String get returnNotesSectionTitle => 'Credit / Debit Notes';
+
+  @override
+  String returnCreditFromNote(String note, String amount) {
+    return 'From Credit Note #$note: $amount';
+  }
+
+  @override
+  String returnCreditFromNoteAgainst(
+      String note, String invoice, String amount) {
+    return 'From Credit Note #$note (against #$invoice): $amount';
+  }
+
+  @override
+  String returnAgainstInvoiceShort(String number) {
+    return 'Against #$number';
+  }
+
+  @override
+  String returnAgainstInvoiceNotFound(String number) {
+    return 'Invoice #$number not found for this customer';
+  }
+
+  @override
+  String get returnPickInvoiceTitle => 'Select invoice';
+
+  @override
+  String get returnPickInvoiceSearchHint => 'Search invoice number';
+
+  @override
+  String get returnPickInvoiceEmpty => 'No invoices for this customer';
+
+  @override
+  String get returnSelectCustomerFirst => 'Select a customer first';
+
+  @override
+  String get createInvoiceLockedByCreditNotes =>
+      'This invoice has credit notes, so customer, items, extra costs, discount and tax are locked. Void the credit notes to change them.';
+
+  @override
+  String returnNothingLeft(String number) {
+    return 'Everything on invoice #$number has already been returned.';
+  }
+
+  @override
+  String invoiceMgmtDebitNoteRestoreBlocked(String number) {
+    return 'Invoice #$number is declined or in trash, so its debit note can\'t be restored.';
+  }
+
+  @override
+  String invoiceMgmtHasCreditNotesMessage(String number) {
+    return 'Invoice #$number has credit or debit notes. Void its credit notes and trash its debit notes first.';
+  }
+
+  @override
+  String invoiceMgmtDeclineHasCreditNotesMessage(String number) {
+    return 'Invoice #$number has credit or debit notes. Void its credit notes and trash its debit notes before declining.';
+  }
+
+  @override
+  String get returnGstAgainstInvoiceWarning =>
+      'GST: a note for a registered customer should reference the original invoice';
+
+  @override
+  String returnAgainstInvoiceFull(String number) {
+    return 'Against Invoice #$number';
+  }
+
+  @override
+  String returnAgainstReceiptFull(String number) {
+    return 'Against Receipt #$number';
+  }
+
+  @override
+  String get returnCopyInvoiceNumberTooltip => 'Copy invoice number';
+
+  @override
+  String get returnInvoiceNumberCopiedMessage => 'Invoice number copied';
+
+  @override
+  String get returnCopyNoteNumberTooltip => 'Copy note number';
+
+  @override
+  String get returnNoteNumberCopiedMessage => 'Note number copied';
+
+  @override
+  String returnBadgeCreditNote(String amount) {
+    return 'CN −$amount';
+  }
+
+  @override
+  String returnBadgeDebitNote(String amount) {
+    return 'DN +$amount';
+  }
+
+  @override
+  String get returnSettledCustomerCredit => 'Kept as customer credit';
+
+  @override
+  String get returnSettledRefund => 'Refunded';
+
+  @override
+  String get returnSettledReduceInvoice => 'Reduced this invoice\'s balance';
+
+  @override
+  String get returnApplyCreditToInvoiceLabel =>
+      'Apply customer credit to this invoice';
+
+  @override
+  String returnCreditAvailableLabel(String amount) {
+    return 'Credit available: $amount';
+  }
+
+  @override
+  String get returnApplyCustomerCreditAction => 'Apply customer credit';
+
+  @override
+  String get returnNoCustomerCreditMessage =>
+      'This customer has no credit available.';
+
+  @override
+  String returnApplyCreditConfirmBody(String amount, String number) {
+    return 'Apply $amount of this customer\'s credit to $number?';
+  }
+
+  @override
+  String returnCreditApplyErrorMessage(String error) {
+    return 'Could not apply credit: $error';
+  }
+
+  @override
+  String refundDialogTitle(String number) {
+    return 'Refund — $number';
+  }
+
+  @override
+  String refundAvailableCredit(String amount) {
+    return 'Available credit: $amount';
+  }
+
+  @override
+  String get refundAmountLabel => 'Amount';
+
+  @override
+  String get refundMethodLabel => 'Method';
+
+  @override
+  String get refundNotesLabel => 'Notes (optional)';
+
+  @override
+  String get refundRecordButton => 'Record';
+
+  @override
+  String refundValidationRange(String max) {
+    return 'Enter an amount between 0 and $max.';
+  }
+
+  @override
+  String refundRecordedMessage(String amount) {
+    return 'Refund of $amount recorded.';
+  }
+
+  @override
+  String refundRecordError(String error) {
+    return 'Could not record refund: $error';
+  }
+
+  @override
+  String get returnsSettingTitle => 'Credit / Debit Notes (advanced)';
+
+  @override
+  String get returnsSettingSubtitle =>
+      'Adds Credit Notes and Debit Notes screens, debit notes, standalone notes and number prefixes. Returns are always available from the invoice menu.';
+
+  @override
+  String get creditNotePrefixLabel => 'Credit note prefix';
+
+  @override
+  String get debitNotePrefixLabel => 'Debit note prefix';
+
+  @override
+  String get quotationPrefixLabel => 'Quotation prefix';
+
+  @override
+  String get receiptPrefixLabel => 'Receipt prefix';
+
+  @override
+  String get prefixSameAsInvoiceHelper =>
+      'Leave empty to use the invoice prefix';
+
+  @override
+  String get actionReturnItems => 'Return Items';
+
+  @override
+  String get actionCreateDebitNote => 'Create Debit Note';
+
+  @override
+  String get actionCreateCreditNoteSalesReturn =>
+      'Create Credit Note (Sales Return)';
+
+  @override
+  String get actionRefund => 'Refund';
+
+  @override
+  String get actionCancelVoid => 'Cancel / Void';
+
+  @override
+  String get voidCreditNoteTitle => 'Cancel this credit note?';
+
+  @override
+  String voidCreditNoteBody(String number) {
+    return 'Reverses the restock and settlement for $number and moves it to trash. Blocked if any of its credit was already applied to an invoice or refunded.';
+  }
+
+  @override
+  String get voidCreditNoteKeep => 'Keep';
+
+  @override
+  String get creditNoteCancelledMessage => 'Credit note cancelled.';
+
+  @override
+  String creditNoteCancelError(String error) {
+    return 'Could not cancel: $error';
+  }
 }

@@ -16,6 +16,7 @@ import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/models/company_info.dart';
 import 'package:invoiso/models/customer_field_settings.dart';
 import 'package:invoiso/models/invoice.dart';
+import 'package:invoiso/database/return_service.dart';
 import 'package:invoiso/services/pdf/pdf_font_service.dart';
 import 'package:invoiso/services/thermal_printer_service_v1.dart';
 import 'pdf_settings.dart';
@@ -139,9 +140,20 @@ class PDFService {
       BackendServices.settings.getSetting(SettingKey.pdfTableItemsFontSize), // 58
       BackendServices.settings.getSetting(SettingKey.pdfTotalsFontSize), // 59
       CustomerFieldSettings.load(BackendServices.settings), // 60
+      BackendServices.settings.getSetting(SettingKey.creditNotePrefix), // 61
+      BackendServices.settings.getSetting(SettingKey.debitNotePrefix), // 62
+      BackendServices.settings.getSetting(SettingKey.quotationPrefix), // 63
+      BackendServices.settings.getSetting(SettingKey.receiptPrefix), // 64
     ]);
 
     final rawPrefix = (results[2] as String?) ?? 'INV';
+    String dashed(String raw) {
+      final p = raw.replaceFirst(RegExp(r'-+$'), '');
+      return p.isNotEmpty ? '$p-' : '';
+    }
+    // Quotation/receipt prefix: empty or unset → null → invoice prefix.
+    String? optionalDashed(String? raw) =>
+        (raw == null || raw.trim().isEmpty) ? null : dashed(raw.trim());
     final pageSize = results[21] as PageSize;
     final template = effectiveInvoiceTemplateForPageSize(
       results[1] as InvoiceTemplate,
@@ -160,6 +172,10 @@ class PDFService {
       company: results[0] as CompanyInfo?,
       template: template,
       invoicePrefix: rawPrefix.isNotEmpty ? '$rawPrefix-' : '',
+      creditNotePrefix: dashed((results[61] as String?) ?? 'CN'),
+      debitNotePrefix: dashed((results[62] as String?) ?? 'DN'),
+      quotationPrefix: optionalDashed(results[63] as String?),
+      receiptPrefix: optionalDashed(results[64] as String?),
       showGst: results[3] as bool,
       showQuantity: results[4] as bool,
       showDiscount: results[5] as bool,
@@ -273,7 +289,7 @@ class PDFService {
           invoice,
           s.company,
           currencySymbol,
-          s.invoicePrefix,
+          s.prefixFor(invoice.type),
           showCustomerBusinessName: s.showCustomerBusinessName,
           showCustomerAddress: s.showCustomerAddress,
           showCustomerPhone: s.showCustomerPhone,
@@ -336,7 +352,7 @@ class PDFService {
           invoice,
           s.company,
           currencySymbol,
-          s.invoicePrefix,
+          s.prefixFor(invoice.type),
           showCustomerBusinessName: s.showCustomerBusinessName,
           showCustomerAddress: s.showCustomerAddress,
           showCustomerPhone: s.showCustomerPhone,
@@ -399,7 +415,7 @@ class PDFService {
           invoice,
           s.company,
           currencySymbol,
-          s.invoicePrefix,
+          s.prefixFor(invoice.type),
           showCustomerBusinessName: s.showCustomerBusinessName,
           showCustomerAddress: s.showCustomerAddress,
           showCustomerPhone: s.showCustomerPhone,
@@ -462,7 +478,7 @@ class PDFService {
           invoice,
           s.company,
           currencySymbol,
-          s.invoicePrefix,
+          s.prefixFor(invoice.type),
           showCustomerBusinessName: s.showCustomerBusinessName,
           showCustomerAddress: s.showCustomerAddress,
           showCustomerPhone: s.showCustomerPhone,
@@ -525,7 +541,7 @@ class PDFService {
           invoice,
           s.company,
           currencySymbol,
-          s.invoicePrefix,
+          s.prefixFor(invoice.type),
           showCustomerBusinessName: s.showCustomerBusinessName,
           showCustomerAddress: s.showCustomerAddress,
           showCustomerGstin: s.showCustomerGstin,
@@ -585,7 +601,7 @@ class PDFService {
           invoice,
           s.company,
           currencySymbol,
-          s.invoicePrefix,
+          s.prefixFor(invoice.type),
           showCustomerBusinessName: s.showCustomerBusinessName,
           showCustomerPhone: s.showCustomerPhone,
           showCustomerGstin: s.showCustomerGstin,
@@ -618,7 +634,7 @@ class PDFService {
           invoice,
           s.company,
           currencySymbol,
-          s.invoicePrefix,
+          s.prefixFor(invoice.type),
           showCustomerBusinessName: s.showCustomerBusinessName,
           showCustomerAddress: s.showCustomerAddress,
           showCustomerPhone: s.showCustomerPhone,
@@ -690,9 +706,22 @@ class PDFService {
     return pdf;
   }
 
+  /// Credit notes print their refunds in the notes block — load them onto
+  /// [invoice] before rendering. No-op for other document types.
+  static Future<void> attachReturnInfo(Invoice invoice) async {
+    if (invoice.type != 'Credit Note' && invoice.type != 'Debit Note') return;
+    if (invoice.originalInvoiceId != null) {
+      invoice.originalInvoiceType =
+          await ReturnService.getDocumentType(invoice.originalInvoiceId!);
+    }
+    if (invoice.type != 'Credit Note') return;
+    invoice.refunds = await ReturnService.getRefundsForCreditNote(invoice.id);
+  }
+
   static Future<pw.Document> generateInvoicePDF(Invoice invoice,
       {String datePattern = 'dd/MM/yyyy'}) async {
     final settings = await fetchPdfSettings(datePattern: datePattern);
+    await attachReturnInfo(invoice);
     final previousBalanceDue = settings.showPreviousBalance
         ? await BackendServices.invoices.getPreviousBalanceDueForInvoice(invoice)
         : 0.0;
@@ -719,8 +748,12 @@ class PDFService {
   }
 
   static Future<void> _downloadWithPicker(
-      BuildContext context, Uint8List pdfBytes, Invoice invoice) async {
-    final filename = buildPdfFilename(invoice);
+          BuildContext context, Uint8List pdfBytes, Invoice invoice) =>
+      savePdfWithPicker(context, pdfBytes, buildPdfFilename(invoice));
+
+  /// Save-as picker for any PDF bytes, then opens the saved file.
+  static Future<void> savePdfWithPicker(
+      BuildContext context, Uint8List pdfBytes, String filename) async {
     final savePath = await FilePicker.platform.saveFile(
       dialogTitle: 'Save Invoice PDF',
       fileName: filename,
