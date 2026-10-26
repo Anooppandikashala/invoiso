@@ -9547,6 +9547,85 @@ abstract class AppLocalizations {
   /// **'Select a customer first'**
   String get returnSelectCustomerFirst;
 
+  /// No description provided for @invoiceDraftBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'DRAFT'**
+  String get invoiceDraftBadge;
+
+  /// No description provided for @createInvoiceStockShortTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough stock'**
+  String get createInvoiceStockShortTitle;
+
+  /// No description provided for @createInvoiceStockShortMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Some items have less stock than this invoice needs:'**
+  String get createInvoiceStockShortMessage;
+
+  /// No description provided for @createInvoiceStockShortLine.
+  ///
+  /// In en, this message translates to:
+  /// **'{product}: in stock {available}, on invoice {needed} (short by {short})'**
+  String createInvoiceStockShortLine(
+      String product, String available, String needed, String short);
+
+  /// No description provided for @createInvoiceStockShortFooter.
+  ///
+  /// In en, this message translates to:
+  /// **'If you save, stock will go below zero.'**
+  String get createInvoiceStockShortFooter;
+
+  /// No description provided for @createInvoiceGoBackButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Go back'**
+  String get createInvoiceGoBackButton;
+
+  /// No description provided for @createInvoiceSaveAnywayButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save anyway'**
+  String get createInvoiceSaveAnywayButton;
+
+  /// No description provided for @createInvoiceSaveDraftButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Draft'**
+  String get createInvoiceSaveDraftButton;
+
+  /// No description provided for @createInvoiceDraftSavedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft saved'**
+  String get createInvoiceDraftSavedMessage;
+
+  /// No description provided for @createInvoiceFinalizeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Finalize {type}'**
+  String createInvoiceFinalizeButton(String type);
+
+  /// No description provided for @createInvoiceFinalizedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Finalized — {type} #{number}'**
+  String createInvoiceFinalizedMessage(String type, String number);
+
+  /// No description provided for @createInvoiceDraftPreviewTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Finalize the draft to get an invoice number before previewing the PDF'**
+  String get createInvoiceDraftPreviewTooltip;
+
+  /// No description provided for @createInvoiceDraftPrintTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Finalize the draft to get an invoice number before printing'**
+  String get createInvoiceDraftPrintTooltip;
+
   /// No description provided for @createInvoiceLockedByCreditNotes.
   ///
   /// In en, this message translates to:

@@ -5369,6 +5369,56 @@ class AppLocalizationsZh extends AppLocalizations {
   String get returnSelectCustomerFirst => 'Select a customer first';
 
   @override
+  String get invoiceDraftBadge => 'DRAFT';
+
+  @override
+  String get createInvoiceStockShortTitle => 'Not enough stock';
+
+  @override
+  String get createInvoiceStockShortMessage =>
+      'Some items have less stock than this invoice needs:';
+
+  @override
+  String createInvoiceStockShortLine(
+      String product, String available, String needed, String short) {
+    return '$product: in stock $available, on invoice $needed (short by $short)';
+  }
+
+  @override
+  String get createInvoiceStockShortFooter =>
+      'If you save, stock will go below zero.';
+
+  @override
+  String get createInvoiceGoBackButton => 'Go back';
+
+  @override
+  String get createInvoiceSaveAnywayButton => 'Save anyway';
+
+  @override
+  String get createInvoiceSaveDraftButton => 'Save Draft';
+
+  @override
+  String get createInvoiceDraftSavedMessage => 'Draft saved';
+
+  @override
+  String createInvoiceFinalizeButton(String type) {
+    return 'Finalize $type';
+  }
+
+  @override
+  String createInvoiceFinalizedMessage(String type, String number) {
+    return 'Finalized — $type #$number';
+  }
+
+  @override
+  String get createInvoiceDraftPreviewTooltip =>
+      'Finalize the draft to get an invoice number before previewing the PDF';
+
+  @override
+  String get createInvoiceDraftPrintTooltip =>
+      'Finalize the draft to get an invoice number before printing';
+
+  @override
   String get createInvoiceLockedByCreditNotes =>
       'This invoice has credit notes, so customer, items, extra costs, discount and tax are locked. Void the credit notes to change them.';
 

@@ -3094,6 +3094,52 @@
   "returnPickInvoiceSearchHint": "Search invoice number",
   "returnPickInvoiceEmpty": "No invoices for this customer",
   "returnSelectCustomerFirst": "Select a customer first",
+  "invoiceDraftBadge": "DRAFT",
+  "createInvoiceStockShortTitle": "Not enough stock",
+  "createInvoiceStockShortMessage": "Some items have less stock than this invoice needs:",
+  "createInvoiceStockShortLine": "{product}: in stock {available}, on invoice {needed} (short by {short})",
+  "@createInvoiceStockShortLine": {
+    "placeholders": {
+      "product": {
+        "type": "String"
+      },
+      "available": {
+        "type": "String"
+      },
+      "needed": {
+        "type": "String"
+      },
+      "short": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceStockShortFooter": "If you save, stock will go below zero.",
+  "createInvoiceGoBackButton": "Go back",
+  "createInvoiceSaveAnywayButton": "Save anyway",
+  "createInvoiceSaveDraftButton": "Save Draft",
+  "createInvoiceDraftSavedMessage": "Draft saved",
+  "createInvoiceFinalizeButton": "Finalize {type}",
+  "@createInvoiceFinalizeButton": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceFinalizedMessage": "Finalized — {type} #{number}",
+  "@createInvoiceFinalizedMessage": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceDraftPreviewTooltip": "Finalize the draft to get an invoice number before previewing the PDF",
+  "createInvoiceDraftPrintTooltip": "Finalize the draft to get an invoice number before printing",
   "createInvoiceLockedByCreditNotes": "This invoice has credit notes, so customer, items, extra costs, discount and tax are locked. Void the credit notes to change them.",
   "returnNothingLeft": "Everything on invoice #{number} has already been returned.",
   "@returnNothingLeft": {

@@ -1411,6 +1411,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       return false;
     }
 
+    if (!await _confirmStockForSave()) return false;
+
     if(!mounted) return false;
     setState(() => isLoading = true);
 
@@ -1724,7 +1726,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
             children: [
               const Icon(Icons.check_circle, color: Colors.white),
               const SizedBox(width: 12),
-              const Text('Draft saved'),
+              Text(AppLocalizations.of(context)!.createInvoiceDraftSavedMessage),
             ],
           ),
           backgroundColor: Colors.green,
@@ -3836,6 +3838,11 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       );
       return false;
     }
+    // Re-saving a draft as a draft takes no stock, so nothing to check.
+    if ((finalize || !_invoice!.isDraft) && !await _confirmStockForSave()) {
+      return false;
+    }
+
     if(!mounted) return false;
     setState(() => isLoading = true);
 
@@ -3913,7 +3920,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               const Icon(Icons.check_circle, color: Colors.white),
               const SizedBox(width: 12),
               Text(finalize
-                  ? 'Finalized — $invoiceType #${updatedInvoice.invoiceNumber}'
+                  ? AppLocalizations.of(context)!.createInvoiceFinalizedMessage(
+                      _invoiceTypeLabel(invoiceType), updatedInvoice.invoiceNumber ?? '')
                   : AppLocalizations.of(context)!.createInvoiceUpdatedSuccessMessage(_invoiceTypeLabel(invoiceType))),
             ],
           ),
@@ -4805,6 +4813,66 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
 
   String _fmtQty(double q) =>
       q == q.roundToDouble() ? q.toInt().toString() : q.toString();
+
+  /// Save-time stock check for Create / Update / Finalize. "Add anyway" only
+  /// ran when a line was added; a draft finalized later, another sale in the
+  /// meantime, or a raised qty on edit can still take stock below zero. Same
+  /// warn-but-allow rule: lists the short products, user saves anyway or not.
+  Future<bool> _confirmStockForSave() async {
+    // Only sales take stock (quotations, notes and drafts don't).
+    if (invoiceType != 'Invoice' && invoiceType != 'Receipt') return true;
+    final l10n = AppLocalizations.of(context)!;
+    final need = <String, double>{};
+    for (final i in invoiceItems) {
+      need[i.product.id] = (need[i.product.id] ?? 0) + i.quantity;
+    }
+    // An already-final invoice gets its own saved qty back before re-deducting.
+    final saved = _invoice != null && !_invoice!.isDraft
+        ? _invoice!.items
+        : const <InvoiceItem>[];
+    final shortLines = <String>[];
+    for (final e in need.entries) {
+      if (e.key.startsWith('custom-')) continue;
+      final product =
+          await ref.read(productRepositoryProvider).getProductById(e.key);
+      if (product == null || product.unlimitedStock) continue;
+      final available = product.stock +
+          saved
+              .where((i) => i.product.id == e.key)
+              .fold<double>(0, (s, i) => s + i.quantity);
+      if (e.value > available + InvoiceCalculator.moneyEpsilon) {
+        final unit = product.unit.trim().isEmpty ? '' : ' ${product.unit.trim()}';
+        shortLines.add(l10n.createInvoiceStockShortLine(
+            product.name,
+            '${_fmtQty(available)}$unit',
+            '${_fmtQty(e.value)}$unit',
+            '${_fmtQty(e.value - available)}$unit'));
+      }
+    }
+    if (shortLines.isEmpty || !mounted) return mounted;
+    final go = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.createInvoiceStockShortTitle),
+        content: Text('${l10n.createInvoiceStockShortMessage}\n'
+            '${shortLines.map((l) => '• $l').join('\n')}\n\n'
+            '${l10n.createInvoiceStockShortFooter}'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.createInvoiceGoBackButton),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange, foregroundColor: Colors.white),
+            child: Text(l10n.createInvoiceSaveAnywayButton),
+          ),
+        ],
+      ),
+    );
+    return go == true;
+  }
 
   InputDecoration _flatFieldDecorationV2(
     String label, {
@@ -6907,7 +6975,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                       icon: Icons.picture_as_pdf_outlined,
                       label: AppLocalizations.of(context)!.createInvoicePreviewLabel,
                       tooltip: isDraftRow
-                          ? 'Finalize the draft to get an invoice number before previewing the PDF'
+                          ? AppLocalizations.of(context)!.createInvoiceDraftPreviewTooltip
                           : AppLocalizations.of(context)!.createInvoicePreviewTooltip,
                       color: Colors.purple,
                       onPressed: hasSavedRow && !isDraftRow
@@ -6926,7 +6994,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                       icon: Icons.print_outlined,
                       label: AppLocalizations.of(context)!.actionPrint,
                       tooltip: isDraftRow
-                          ? 'Finalize the draft to get an invoice number before printing'
+                          ? AppLocalizations.of(context)!.createInvoiceDraftPrintTooltip
                           : AppLocalizations.of(context)!.createInvoicePrintTooltip,
                       color: Colors.blue,
                       onPressed: hasSavedRow && !isDraftRow
@@ -6953,7 +7021,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                     ),
                     icon: const Icon(Icons.drafts_outlined),
                     label: Text(
-                      'Save Draft',
+                      AppLocalizations.of(context)!.createInvoiceSaveDraftButton,
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
                       style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
@@ -7000,7 +7068,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                           : (!hasSavedRow
                               ? (compact ? 'Create $invoiceType' : 'Create $invoiceType (Ctrl+S)')
                               : isDraftRow
-                                  ? (compact ? 'Finalize $invoiceType' : 'Finalize $invoiceType (Ctrl+S)')
+                                  ? (compact
+                                      ? AppLocalizations.of(context)!.createInvoiceFinalizeButton(_invoiceTypeLabel(invoiceType))
+                                      : '${AppLocalizations.of(context)!.createInvoiceFinalizeButton(_invoiceTypeLabel(invoiceType))} (Ctrl+S)')
                                   : (compact ? 'Update $invoiceType' : 'Update $invoiceType (Ctrl+S)')),
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,

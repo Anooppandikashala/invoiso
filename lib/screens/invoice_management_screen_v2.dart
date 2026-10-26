@@ -2108,7 +2108,7 @@ class _InvoiceManagementScreenV2State
                             color: Colors.orange.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
                           ),
-                          child: Text('DRAFT',
+                          child: Text(AppLocalizations.of(context)!.invoiceDraftBadge,
                               style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
