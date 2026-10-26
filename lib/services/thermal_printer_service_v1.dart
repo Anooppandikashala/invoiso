@@ -97,7 +97,7 @@ class ThermalPrinterService {
   static Future<List<int>> _buildReceiptBytes(Invoice invoice) async {
     final dateFmt = await BackendServices.settings.getDateFormat();
     final settings = await PDFService.fetchPdfSettings(datePattern: dateFmt.key);
-    await PDFService.attachRefunds(invoice);
+    await PDFService.attachReturnInfo(invoice);
     final previousBalanceDue = settings.showPreviousBalance
         ? await BackendServices.invoices.getPreviousBalanceDueForInvoice(invoice)
         : 0.0;

@@ -1333,7 +1333,9 @@ List<String> returnInfoLines(Invoice invoice) {
   final lines = <String>[];
   if ((invoice.originalInvoiceNumber ?? '').isNotEmpty) {
     final date = invoice.originalInvoiceDate;
-    lines.add('Against Invoice: ${invoice.originalInvoiceNumber}'
+    final against =
+        invoice.originalInvoiceType == 'Receipt' ? 'Receipt' : 'Invoice';
+    lines.add('Against $against: ${invoice.originalInvoiceNumber}'
         '${date != null ? ' dated ${formatPdfDate(date, 'dd MMM yyyy')}' : ''}');
   }
   if ((invoice.returnReason ?? '').trim().isNotEmpty) {

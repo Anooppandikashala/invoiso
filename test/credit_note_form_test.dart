@@ -84,6 +84,28 @@ void main() {
     }
   }
 
+  // Opens the form as "Credit Note against [inv]" and taps Save.
+  Future<void> saveCreditNoteFor(WidgetTester tester, Invoice inv) async {
+    tester.view.physicalSize = const Size(1800, 1400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(ProviderScope(
+      overrides: sqliteRepositoryOverrides,
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+            body: CreateInvoiceScreenV2(
+                cloneFrom: inv, cloneType: 'Credit Note')),
+      ),
+    ));
+    await settle(tester);
+
+    await tester.tap(find.byIcon(Icons.save_outlined));
+    await tester.pump();
+    await settle(tester);
+  }
+
   testWidgets(
       'credit note from invoice: Left qty, % line + flat invoice discount, '
       'restock, reduce invoice', (tester) async {
@@ -124,24 +146,7 @@ void main() {
       return InvoiceService.getInvoiceById('i1');
     }))!;
 
-    tester.view.physicalSize = const Size(1800, 1400);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.reset);
-    await tester.pumpWidget(ProviderScope(
-      overrides: sqliteRepositoryOverrides,
-      child: MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-            body: CreateInvoiceScreenV2(
-                cloneFrom: inv, cloneType: 'Credit Note')),
-      ),
-    ));
-    await settle(tester);
-
-    await tester.tap(find.byIcon(Icons.save_outlined));
-    await tester.pump();
-    await settle(tester);
+    await saveCreditNoteFor(tester, inv);
 
     await tester.runAsync(() async {
       final notes = await ReturnService.getNotesForInvoice('i1');
@@ -152,7 +157,8 @@ void main() {
       expect(line.discount, 10);
       // Flat invoice discount scaled to the returned share: 40 × 270 / 360.
       expect(cn.invoiceDiscountValue, closeTo(30, 0.001));
-      expect(cn.additionalCosts.single.amount, 20);
+      // Extra costs go back only on the first return (cn0 was first).
+      expect(cn.additionalCosts, isEmpty);
       expect(cn.invoiceTitle, salesReturnTitle);
       expect(cn.creditSettlement, CreditSettlement.reduceInvoice);
 
@@ -163,6 +169,74 @@ void main() {
       final cnPayment =
           original.payments.singleWhere((p) => p.paymentMethod == 'Credit Note');
       expect(cnPayment.amountPaid, closeTo(cn.total, 0.001));
+    });
+  });
+
+  testWidgets(
+      'first credit note: invoice customer kept even if no longer saved, '
+      'extra costs and currency carried', (tester) async {
+    // Customer c9 was never saved (or was deleted) in Customers.
+    final gone = Customer(
+      id: 'c9',
+      name: 'Walk-in Buyer',
+      email: '',
+      phone: '',
+      address: '',
+      gstin: '',
+    );
+    final inv = (await tester.runAsync(() async {
+      await InvoiceService.insertInvoice(Invoice(
+        id: 'i2',
+        invoiceNumber: '00000002',
+        customer: gone,
+        items: [InvoiceItem(product: product, quantity: 2)],
+        date: DateTime(2026, 1, 5),
+        type: 'Invoice',
+        additionalCosts: const [AdditionalCost(label: 'Shipping', amount: 15)],
+        currencyCode: 'USD',
+        currencySymbol: r'$',
+      ));
+      return InvoiceService.getInvoiceById('i2');
+    }))!;
+
+    await saveCreditNoteFor(tester, inv);
+
+    await tester.runAsync(() async {
+      final cn = (await ReturnService.getNotesForInvoice('i2')).single;
+      expect(cn.customer.id, 'c9');
+      expect(cn.items.single.quantity, 2);
+      expect(cn.additionalCosts.single.amount, 15);
+      expect(cn.currencyCode, 'USD');
+    });
+  });
+
+  testWidgets('credit note against a receipt: refund, never reduce balance',
+      (tester) async {
+    final receipt = (await tester.runAsync(() async {
+      await InvoiceService.insertInvoice(Invoice(
+        id: 'r1',
+        invoiceNumber: '00000001',
+        customer: customer,
+        items: [InvoiceItem(product: product, quantity: 1)],
+        date: DateTime(2026, 1, 6),
+        type: 'Receipt',
+      ));
+      return InvoiceService.getInvoiceById('r1');
+    }))!;
+    final stockBefore = (await tester
+        .runAsync(() => ProductService.getProductById('p1')))!
+        .stock;
+
+    await saveCreditNoteFor(tester, receipt);
+
+    await tester.runAsync(() async {
+      final cn = (await ReturnService.getNotesForInvoice('r1')).single;
+      expect(cn.items.single.quantity, 1);
+      expect(cn.creditSettlement, CreditSettlement.refund);
+      expect(await ReturnService.getRefundsForCreditNote(cn.id), hasLength(1));
+      expect((await InvoiceService.getInvoiceById('r1'))!.payments, isEmpty);
+      expect((await ProductService.getProductById('p1'))!.stock,
+          stockBefore + 1);
     });
   });
 }

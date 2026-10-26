@@ -408,6 +408,15 @@ class ReturnService {
     ];
   }
 
+  /// 'Invoice' / 'Receipt' / … for [id], trashed rows included (a note keeps
+  /// its label even if its document was trashed later).
+  static Future<String?> getDocumentType(String id) async {
+    final db = await _dbHelper.database;
+    final rows = await db.query('invoices',
+        columns: ['type'], where: 'id = ?', whereArgs: [id], limit: 1);
+    return rows.isEmpty ? null : rows.first['type'] as String?;
+  }
+
   static Future<List<Refund>> getRefundsForCreditNote(
       String creditNoteId) async {
     final db = await _dbHelper.database;

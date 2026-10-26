@@ -9474,6 +9474,12 @@ abstract class AppLocalizations {
   /// **'Against invoice # (optional)'**
   String get returnAgainstInvoiceLabel;
 
+  /// No description provided for @returnAgainstReceiptLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Against receipt #'**
+  String get returnAgainstReceiptLabel;
+
   /// No description provided for @returnApplyCreditAction.
   ///
   /// In en, this message translates to:
@@ -9547,10 +9553,28 @@ abstract class AppLocalizations {
   /// **'This invoice has credit notes, so customer, items, extra costs, discount and tax are locked. Void the credit notes to change them.'**
   String get createInvoiceLockedByCreditNotes;
 
+  /// No description provided for @returnNothingLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything on invoice #{number} has already been returned.'**
+  String returnNothingLeft(String number);
+
+  /// No description provided for @invoiceMgmtDebitNoteRestoreBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice #{number} is declined or in trash, so its debit note can\'t be restored.'**
+  String invoiceMgmtDebitNoteRestoreBlocked(String number);
+
+  /// No description provided for @invoiceMgmtHasCreditNotesMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice #{number} has credit or debit notes. Void its credit notes and trash its debit notes first.'**
+  String invoiceMgmtHasCreditNotesMessage(String number);
+
   /// No description provided for @invoiceMgmtDeclineHasCreditNotesMessage.
   ///
   /// In en, this message translates to:
-  /// **'Invoice #{number} has credit notes. Void them before declining.'**
+  /// **'Invoice #{number} has credit or debit notes. Void its credit notes and trash its debit notes before declining.'**
   String invoiceMgmtDeclineHasCreditNotesMessage(String number);
 
   /// No description provided for @returnGstAgainstInvoiceWarning.
@@ -9564,6 +9588,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Against Invoice #{number}'**
   String returnAgainstInvoiceFull(String number);
+
+  /// No description provided for @returnAgainstReceiptFull.
+  ///
+  /// In en, this message translates to:
+  /// **'Against Receipt #{number}'**
+  String returnAgainstReceiptFull(String number);
 
   /// No description provided for @returnCopyInvoiceNumberTooltip.
   ///

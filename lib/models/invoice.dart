@@ -48,8 +48,11 @@ class Invoice {
   String? returnReason; // e.g. "Damaged", "Wrong item", "Price revision"
   CreditSettlement? creditSettlement; // credit note only; how its value is settled
   // Credit note only, PDF-only: refunds paid against it, loaded just before
-  // rendering (PDFService.attachRefunds). Not stored on the invoices row.
+  // rendering (PDFService.attachReturnInfo). Not stored on the invoices row.
   List<Refund> refunds = const [];
+  // Credit / debit note, display-only: type of the linked document ('Invoice'
+  // or 'Receipt'), loaded with [refunds] so labels say "Against Receipt".
+  String? originalInvoiceType;
 
   Invoice({
     required this.id,

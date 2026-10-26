@@ -126,7 +126,7 @@ class ExportService {
       final previousBalanceDue = s.showPreviousBalance
           ? await BackendServices.invoices.getPreviousBalanceDueForInvoice(invoice)
           : 0.0;
-      await PDFService.attachRefunds(invoice);
+      await PDFService.attachReturnInfo(invoice);
       final pdf = PDFService.generateInvoicePDFWithSettings(
         invoice,
         s,
@@ -159,7 +159,7 @@ class ExportService {
       final previousBalanceDue = s.showPreviousBalance
           ? await BackendServices.invoices.getPreviousBalanceDueForInvoice(invoice)
           : 0.0;
-      await PDFService.attachRefunds(invoice);
+      await PDFService.attachReturnInfo(invoice);
       final pdf = PDFService.generateInvoicePDFWithSettings(
         invoice,
         s,

@@ -5322,6 +5322,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get returnAgainstInvoiceLabel => 'Against invoice # (optional)';
 
   @override
+  String get returnAgainstReceiptLabel => 'Against receipt #';
+
+  @override
   String returnApplyCreditAction(String amount) {
     return 'Apply $amount credit';
   }
@@ -5370,8 +5373,23 @@ class AppLocalizationsZh extends AppLocalizations {
       'This invoice has credit notes, so customer, items, extra costs, discount and tax are locked. Void the credit notes to change them.';
 
   @override
+  String returnNothingLeft(String number) {
+    return 'Everything on invoice #$number has already been returned.';
+  }
+
+  @override
+  String invoiceMgmtDebitNoteRestoreBlocked(String number) {
+    return 'Invoice #$number is declined or in trash, so its debit note can\'t be restored.';
+  }
+
+  @override
+  String invoiceMgmtHasCreditNotesMessage(String number) {
+    return 'Invoice #$number has credit or debit notes. Void its credit notes and trash its debit notes first.';
+  }
+
+  @override
   String invoiceMgmtDeclineHasCreditNotesMessage(String number) {
-    return 'Invoice #$number has credit notes. Void them before declining.';
+    return 'Invoice #$number has credit or debit notes. Void its credit notes and trash its debit notes before declining.';
   }
 
   @override
@@ -5381,6 +5399,11 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String returnAgainstInvoiceFull(String number) {
     return 'Against Invoice #$number';
+  }
+
+  @override
+  String returnAgainstReceiptFull(String number) {
+    return 'Against Receipt #$number';
   }
 
   @override

@@ -78,6 +78,8 @@ class InvoicePdfServices {
       Map<String, List<Refund>> refundsByNote = const {},
       void Function(Invoice note, Refund refund, String action)?
           onVoucherAction}) async {
+    await PDFService.attachReturnInfo(invoice);
+    if (!context.mounted) return;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -98,8 +100,11 @@ class InvoicePdfServices {
               if (invoice.originalInvoiceNumber != null)
                 Row(children: [
                   Text(
-                      AppLocalizations.of(context)!
-                          .returnAgainstInvoiceFull(invoice.originalInvoiceNumber!),
+                      invoice.originalInvoiceType == 'Receipt'
+                          ? AppLocalizations.of(context)!
+                              .returnAgainstReceiptFull(invoice.originalInvoiceNumber!)
+                          : AppLocalizations.of(context)!
+                              .returnAgainstInvoiceFull(invoice.originalInvoiceNumber!),
                       style: TextStyle(
                           color: Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.bold)),

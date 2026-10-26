@@ -209,7 +209,7 @@ class _InvoiceManagementScreenV2State
       ]);
       final pageInvoices = results[0] as List<Invoice>;
       final notes =
-          widget.filterType == 'Invoice'
+          widget.filterType == 'Invoice' || widget.filterType == 'Receipt'
               ? await ref
                   .read(returnRepositoryProvider)
                   .getNotesForInvoices(pageInvoices.map((i) => i.id).toList())
@@ -347,6 +347,18 @@ class _InvoiceManagementScreenV2State
 
   Future<void> _softDelete(Invoice invoice) async {
     final l10n = AppLocalizations.of(context)!;
+    // Wait until the invoice's credit / debit notes are removed.
+    if (invoice.type == 'Invoice' || invoice.type == 'Receipt') {
+      final notes = await ref
+          .read(returnRepositoryProvider)
+          .getNotesForInvoice(invoice.id);
+      if (!mounted) return;
+      if (notes.isNotEmpty) {
+        AppError.show(context,
+            l10n.invoiceMgmtHasCreditNotesMessage(invoice.invoiceNumber ?? invoice.id));
+        return;
+      }
+    }
     final confirmed = await AppError.confirm(
       context,
       title: l10n.invoiceMgmtMoveToTrashTitle,
@@ -373,7 +385,7 @@ class _InvoiceManagementScreenV2State
     final notes =
         await ref.read(returnRepositoryProvider).getNotesForInvoice(invoice.id);
     if (!mounted) return;
-    if (notes.any((n) => n.type == 'Credit Note')) {
+    if (notes.isNotEmpty) {
       AppError.show(context,
           l10n.invoiceMgmtDeclineHasCreditNotesMessage(invoice.invoiceNumber ?? invoice.id));
       return;
@@ -568,6 +580,18 @@ class _InvoiceManagementScreenV2State
 
   Future<void> _bulkSoftDelete() async {
     final l10n = AppLocalizations.of(context)!;
+    final notes = await ref
+        .read(returnRepositoryProvider)
+        .getNotesForInvoices(_selectedIds.toList());
+    if (!mounted) return;
+    final withCreditNotes = _pageInvoices.where((i) =>
+        (notes[i.id] ?? const <Invoice>[]).isNotEmpty);
+    if (withCreditNotes.isNotEmpty) {
+      final first = withCreditNotes.first;
+      AppError.show(context,
+          l10n.invoiceMgmtHasCreditNotesMessage(first.invoiceNumber ?? first.id));
+      return;
+    }
     final count = _selectedIds.length;
     final confirmed = await AppError.confirm(
       context,
@@ -1830,7 +1854,8 @@ class _InvoiceManagementScreenV2State
       ],
       if (!_isReturnType)
         PopupMenuItem(value: 'duplicate', child: _MenuRow(Icons.copy_all_outlined, l10n.actionDuplicate, Colors.teal)),
-      if (widget.filterType == 'Invoice' && !isDeclined)
+      if ((widget.filterType == 'Invoice' || widget.filterType == 'Receipt') &&
+          !isDeclined)
         PopupMenuItem(
             value: 'credit_note',
             child: _MenuRow(
@@ -2917,6 +2942,20 @@ class _InvoiceManagementScreenV2State
         .read(invoiceRepositoryProvider)
         .getInvoiceById(invoice.id);
     if (!mounted || full == null) return;
+    final returned = await ref
+        .read(returnRepositoryProvider)
+        .getReturnedQtyByLine(full.id);
+    if (!mounted) return;
+    final sold = <String, double>{};
+    for (final i in full.items) {
+      sold[i.product.id] = (sold[i.product.id] ?? 0) + i.quantity;
+    }
+    if (sold.entries.every((e) =>
+        e.value - (returned[e.key] ?? 0) <= InvoiceCalculator.moneyEpsilon)) {
+      AppError.show(context,
+          AppLocalizations.of(context)!.returnNothingLeft(full.invoiceNumber ?? full.id));
+      return;
+    }
     widget.onCloneInvoice(full, 'Credit Note');
   }
 }
@@ -2972,6 +3011,19 @@ class _TrashDialogState extends ConsumerState<_TrashDialog> {
   }
 
   Future<void> _restore(Invoice invoice) async {
+    // A debit note can't come back onto a declined / trashed invoice.
+    if (invoice.type == 'Debit Note' && invoice.originalInvoiceId != null) {
+      final original = await ref
+          .read(invoiceRepositoryProvider)
+          .getInvoiceById(invoice.originalInvoiceId!);
+      if (!mounted) return;
+      if (original == null || original.status == 'declined') {
+        AppError.show(context,
+            AppLocalizations.of(context)!.invoiceMgmtDebitNoteRestoreBlocked(
+                invoice.originalInvoiceNumber ?? invoice.originalInvoiceId!));
+        return;
+      }
+    }
     await ref.read(invoiceRepositoryProvider).restoreInvoice(invoice.id);
     setState(() => _invoices.removeWhere((i) => i.id == invoice.id));
     widget.onRestored();
@@ -2988,6 +3040,18 @@ class _TrashDialogState extends ConsumerState<_TrashDialog> {
 
   Future<void> _permanentDelete(Invoice invoice) async {
     final l10n = AppLocalizations.of(context)!;
+    // Wait until the invoice's credit / debit notes are removed.
+    if (invoice.type == 'Invoice' || invoice.type == 'Receipt') {
+      final notes = await ref
+          .read(returnRepositoryProvider)
+          .getNotesForInvoice(invoice.id);
+      if (!mounted) return;
+      if (notes.isNotEmpty) {
+        AppError.show(context,
+            l10n.invoiceMgmtHasCreditNotesMessage(invoice.invoiceNumber ?? invoice.id));
+        return;
+      }
+    }
     final confirmed = await AppError.confirm(
       context,
       title: l10n.invoiceMgmtPermanentlyDeleteTitle,

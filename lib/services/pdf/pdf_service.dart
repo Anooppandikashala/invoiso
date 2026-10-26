@@ -708,7 +708,12 @@ class PDFService {
 
   /// Credit notes print their refunds in the notes block — load them onto
   /// [invoice] before rendering. No-op for other document types.
-  static Future<void> attachRefunds(Invoice invoice) async {
+  static Future<void> attachReturnInfo(Invoice invoice) async {
+    if (invoice.type != 'Credit Note' && invoice.type != 'Debit Note') return;
+    if (invoice.originalInvoiceId != null) {
+      invoice.originalInvoiceType =
+          await ReturnService.getDocumentType(invoice.originalInvoiceId!);
+    }
     if (invoice.type != 'Credit Note') return;
     invoice.refunds = await ReturnService.getRefundsForCreditNote(invoice.id);
   }
@@ -716,7 +721,7 @@ class PDFService {
   static Future<pw.Document> generateInvoicePDF(Invoice invoice,
       {String datePattern = 'dd/MM/yyyy'}) async {
     final settings = await fetchPdfSettings(datePattern: datePattern);
-    await attachRefunds(invoice);
+    await attachReturnInfo(invoice);
     final previousBalanceDue = settings.showPreviousBalance
         ? await BackendServices.invoices.getPreviousBalanceDueForInvoice(invoice)
         : 0.0;

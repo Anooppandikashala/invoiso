@@ -3038,6 +3038,7 @@
   "returnPickRefundTitle": "Refund vouchers",
   "returnCreateButton": "Create",
   "returnAgainstInvoiceLabel": "Against invoice # (optional)",
+  "returnAgainstReceiptLabel": "Against receipt #",
   "returnApplyCreditAction": "Apply {amount} credit",
   "@returnApplyCreditAction": {
     "placeholders": {
@@ -3094,7 +3095,31 @@
   "returnPickInvoiceEmpty": "No invoices for this customer",
   "returnSelectCustomerFirst": "Select a customer first",
   "createInvoiceLockedByCreditNotes": "This invoice has credit notes, so customer, items, extra costs, discount and tax are locked. Void the credit notes to change them.",
-  "invoiceMgmtDeclineHasCreditNotesMessage": "Invoice #{number} has credit notes. Void them before declining.",
+  "returnNothingLeft": "Everything on invoice #{number} has already been returned.",
+  "@returnNothingLeft": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtDebitNoteRestoreBlocked": "Invoice #{number} is declined or in trash, so its debit note can't be restored.",
+  "@invoiceMgmtDebitNoteRestoreBlocked": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtHasCreditNotesMessage": "Invoice #{number} has credit or debit notes. Void its credit notes and trash its debit notes first.",
+  "@invoiceMgmtHasCreditNotesMessage": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtDeclineHasCreditNotesMessage": "Invoice #{number} has credit or debit notes. Void its credit notes and trash its debit notes before declining.",
   "@invoiceMgmtDeclineHasCreditNotesMessage": {
     "placeholders": {
       "number": {
@@ -3105,6 +3130,14 @@
   "returnGstAgainstInvoiceWarning": "GST: a note for a registered customer should reference the original invoice",
   "returnAgainstInvoiceFull": "Against Invoice #{number}",
   "@returnAgainstInvoiceFull": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "returnAgainstReceiptFull": "Against Receipt #{number}",
+  "@returnAgainstReceiptFull": {
     "placeholders": {
       "number": {
         "type": "String"

@@ -277,7 +277,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     if (widget.invoiceToEdit != null) {
       _invoice = widget.invoiceToEdit;
       isEditing = true;
-      if (_invoice!.type == 'Invoice') {
+      if (_invoice!.type == 'Invoice' || _invoice!.type == 'Receipt') {
         ref
             .read(returnRepositoryProvider)
             .getNotesForInvoice(_invoice!.id)
@@ -342,8 +342,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       }
       // Credit note from an invoice row: lines / extra costs / discount are
       // filled async from what's still returnable (_prefillCreditNoteFrom).
-      final creditNoteFor =
-          widget.cloneType == 'Credit Note' && src.type == 'Invoice';
+      final creditNoteFor = widget.cloneType == 'Credit Note' &&
+          (src.type == 'Invoice' || src.type == 'Receipt');
       if (creditNoteFor) {
         _pendingInitialLoads++;
         WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -1370,20 +1370,6 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     // when the customer card is collapsed — render falls back to one block.
     if (!(_customerExtraFormKey.currentState?.validate() ?? true)) return false;
 
-    // Picked invoice must still belong to the selected customer.
-    if (_isReturnDoc &&
-        _againstInvoice != null &&
-        _againstInvoice!.customer.id != (selectedCustomer?.id ?? '')) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(AppLocalizations.of(context)!.returnAgainstInvoiceNotFound(
-            _againstInvoice!.invoiceNumber ?? _againstInvoice!.id)),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-        showCloseIcon: true,
-      ));
-      return false;
-    }
-
     // Linked credit note: per product, no more than is still returnable.
     if (invoiceType == 'Credit Note' && _againstInvoice != null) {
       final qty = <String, double>{};
@@ -1435,7 +1421,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       final invoice = Invoice(
         id: invoiceId,
         invoiceNumber: invoiceNumber,
-        customer: _resolveInvoiceCustomer(),
+        customer: _isReturnDoc && _againstInvoice != null
+            ? _againstInvoice!.customer
+            : _resolveInvoiceCustomer(),
         items: List.from(invoiceItems),
         date: _selectedOrderDate,
         dueDate: _selectedDueDate,
@@ -4455,7 +4443,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       child: InputDecorator(
         isEmpty: inv == null,
         decoration: _flatFieldDecorationV2(
-          l10n.returnAgainstInvoiceLabel,
+          inv?.type == 'Receipt'
+              ? l10n.returnAgainstReceiptLabel
+              : l10n.returnAgainstInvoiceLabel,
           helperText: gstWarning ? l10n.returnGstAgainstInvoiceWarning : null,
           suffixIcon: inv != null && !locked
               ? IconButton(
@@ -4597,6 +4587,15 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         isProductSaved: i.isProductSaved,
       ));
     }
+    if (lines.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(AppLocalizations.of(context)!
+            .returnNothingLeft(inv.invoiceNumber ?? inv.id)),
+        behavior: SnackBarBehavior.floating,
+        showCloseIcon: true,
+      ));
+      return;
+    }
     final soldValue = inv.items.fold<double>(0, (s, i) => s + i.total);
     final returnValue = lines.fold<double>(0, (s, i) => s + i.total);
     final discountValue =
@@ -4608,6 +4607,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       _againstInvoice = inv;
       _returnedByProduct = returned;
       invoiceItems = lines;
+      _currencyCode = inv.currencyCode;
+      _currencySymbol = inv.currencySymbol;
       taxRate = inv.taxRate;
       taxRateController.text = (taxRate * 100).toStringAsFixed(1);
       _isTaxEnabled = inv.taxMode != TaxMode.none;
@@ -4618,7 +4619,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         row.amount.dispose();
       }
       _additionalCostControllers.clear();
-      for (final c in inv.additionalCosts) {
+      // Extra costs (shipping…) go back once — only on the first return.
+      for (final c in returned.isEmpty ? inv.additionalCosts : const <AdditionalCost>[]) {
         _additionalCostControllers.add((
           label: TextEditingController(text: c.label),
           amount: TextEditingController(text: c.amount.toStringAsFixed(2)),
@@ -4629,10 +4631,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       _invoiceDiscountController.text =
           discountValue > 0 ? discountValue.toStringAsFixed(2) : '';
       _returnReason = 'Goods returned';
-      _creditSettlement =
-          inv.outstandingBalance > InvoiceCalculator.moneyEpsilon
-              ? CreditSettlement.reduceInvoice
-              : CreditSettlement.refund;
+      _creditSettlement = _canReduceInvoice
+          ? CreditSettlement.reduceInvoice
+          : CreditSettlement.refund;
     });
   }
 
@@ -4646,13 +4647,21 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   }
 
   // Greys out and disables a section while _lockedByCreditNotes.
-  Widget _lockedV2(Widget child) => _lockedByCreditNotes
-      ? AbsorbPointer(child: Opacity(opacity: 0.55, child: child))
-      : child;
+  Widget _lockedV2(Widget child, {bool? locked}) =>
+      (locked ?? _lockedByCreditNotes)
+          ? AbsorbPointer(child: Opacity(opacity: 0.55, child: child))
+          : child;
+
+  // A note linked to an invoice belongs to that invoice's customer — the card
+  // is read-only until the link is cleared.
+  bool get _customerLocked =>
+      _lockedByCreditNotes || (_isReturnDoc && _againstInvoice != null);
 
   // "Reduce invoice balance" only makes sense while the linked invoice is owed.
+  // Receipts are paid on the spot, so they never have a balance to reduce.
   bool get _canReduceInvoice =>
       _againstInvoice != null &&
+      _againstInvoice!.type == 'Invoice' &&
       _againstInvoice!.outstandingBalance > InvoiceCalculator.moneyEpsilon;
 
   // Only catalogue goods with tracked stock can go back on the shelf.
@@ -4751,7 +4760,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Wrap(
+                child: _lockedV2(locked: _customerLocked, Wrap(
                   alignment: WrapAlignment.end,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   spacing: 4,
@@ -4812,7 +4821,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                       ),
                     ],
                   ],
-                ),
+                )),
               ),
               if (_customerFieldSettings.any)
                 IconButton(
@@ -4820,7 +4829,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   tooltip:
                       AppLocalizations.of(context)!.tooltipEditInLargerView,
                   visualDensity: VisualDensity.compact,
-                  onPressed: _showCustomerDetailsDialogV2,
+                  onPressed:
+                      _customerLocked ? null : _showCustomerDetailsDialogV2,
                 ),
               IconButton(
                 icon: Icon(
@@ -5061,8 +5071,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   }
 
   Widget _customerCardBodyV2(bool scroll, List<Widget> children) {
-    final body =
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: children);
+    // Lock sits inside the scroll view so a locked card still scrolls.
+    final body = _lockedV2(
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
+        locked: _customerLocked);
     if (!scroll) return body;
     return Expanded(
       child: Scrollbar(
@@ -5070,7 +5082,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         thumbVisibility: true,
         child: SingleChildScrollView(
           controller: _customerCardScrollController,
-          padding: const EdgeInsets.only(right: 12),
+          // Top room for the first row's floating labels, which sit above
+          // the field and would be clipped by the scroll viewport.
+          padding: const EdgeInsets.only(top: 8, right: 12),
           child: body,
         ),
       ),
@@ -6659,48 +6673,56 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
 
   Widget _rightPanelV2(double tax, double subtotal, double total,
       double grossSubtotal, double totalDiscount, double invoiceDiscountAmount) {
-    return Column(
-      children: [
-        _invoiceDetailsFormV2(),
-        AppSpacing.hSmall,
-        Expanded(
-          child: Container(
-            decoration: _flatCardDecorationV2(context),
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(AppPadding.medium),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _lockedV2(_buildAdditionalCostsSection()),
-                        const SizedBox(height: 12),
-                        _lockedV2(_invoiceDiscountSectionV2()),
-                        if (!isEditing && invoiceType == 'Invoice') ...[
+    return LayoutBuilder(
+      builder: (context, constraints) => Column(
+        children: [
+          // Tall details (a credit note's link / reason / settlement / refund
+          // method) scroll here instead of squeezing out the totals footer.
+          ConstrainedBox(
+            constraints:
+                BoxConstraints(maxHeight: constraints.maxHeight * 0.45),
+            child: SingleChildScrollView(child: _invoiceDetailsFormV2()),
+          ),
+          AppSpacing.hSmall,
+          Expanded(
+            child: Container(
+              decoration: _flatCardDecorationV2(context),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(AppPadding.medium),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _lockedV2(_buildAdditionalCostsSection()),
+                          const SizedBox(height: 12),
+                          _lockedV2(_invoiceDiscountSectionV2()),
+                          if (!isEditing && invoiceType == 'Invoice') ...[
+                            const SizedBox(height: 18),
+                            _sectionLabelV2(AppLocalizations.of(context)!
+                                .createInvoicePaymentSectionLabel),
+                            _paymentSectionV2(total),
+                          ],
                           const SizedBox(height: 18),
-                          _sectionLabelV2(AppLocalizations.of(context)!
-                              .createInvoicePaymentSectionLabel),
-                          _paymentSectionV2(total),
+                          _sectionLabelV2('Notes'),
+                          _notesFieldV2(),
+                          const SizedBox(height: 18),
+                          _sectionLabelV2('Tax settings'),
+                          _lockedV2(_taxSettingsSectionV2()),
                         ],
-                        const SizedBox(height: 18),
-                        _sectionLabelV2('Notes'),
-                        _notesFieldV2(),
-                        const SizedBox(height: 18),
-                        _sectionLabelV2('Tax settings'),
-                        _lockedV2(_taxSettingsSectionV2()),
-                      ],
+                      ),
                     ),
                   ),
-                ),
-                _totalsFooterV2(tax, subtotal, total, grossSubtotal,
-                    totalDiscount, invoiceDiscountAmount),
-              ],
+                  _totalsFooterV2(tax, subtotal, total, grossSubtotal,
+                      totalDiscount, invoiceDiscountAmount),
+                ],
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -6834,13 +6856,13 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   children: [
                     Expanded(
                         flex: 2,
-                        child: _lockedV2(_customerDetailsFormV2(height: _topCardHeightV2))),
+                        child: _customerDetailsFormV2(height: _topCardHeightV2)),
                     AppSpacing.wSmall,
                     Expanded(flex: 1, child: _customFieldsSummaryCardV2()),
                   ],
                 )
               else
-                _lockedV2(_customerDetailsFormV2(height: _topCardHeightV2)),
+                _customerDetailsFormV2(height: _topCardHeightV2),
               AppSpacing.hSmall,
               Expanded(child: _itemsTableSectionV2()),
             ],
@@ -6866,7 +6888,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _lockedV2(_customerDetailsFormV2()),
+        _customerDetailsFormV2(),
         if (_customFieldsEnabled && _customFieldDefs.isNotEmpty) ...[
           AppSpacing.hSmall,
           _customFieldsSummaryCardV2(),

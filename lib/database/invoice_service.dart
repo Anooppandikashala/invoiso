@@ -900,10 +900,14 @@ class InvoiceService {
     await db.transaction((txn) async {
       // Credit notes are removed only by ReturnService.voidCreditNote, which
       // also reverses their stock and credit.
+      // An invoice with active credit / debit notes waits until they're gone.
       await txn.update(
         'invoices',
         {'deleted_at': DateTime.now().toIso8601String()},
-        where: "id = ? AND type != 'Credit Note'",
+        where: "id = ? AND type != 'Credit Note' "
+            'AND NOT EXISTS (SELECT 1 FROM invoices cn '
+            'WHERE cn.original_invoice_id = invoices.id '
+            "AND cn.type IN ('Credit Note', 'Debit Note') AND cn.deleted_at IS NULL)",
         whereArgs: [id],
       );
       await _unlinkSourceQuotation(txn, id);
@@ -914,11 +918,15 @@ class InvoiceService {
     final db = await dbHelper.database;
     await db.transaction((txn) async {
       // A trashed credit note was voided — restoring it would revive a note
-      // with no stock or credit behind it.
+      // with no stock or credit behind it. A debit note stays in trash while
+      // its invoice is declined or trashed.
       await txn.update(
         'invoices',
         {'deleted_at': null},
-        where: "id = ? AND type != 'Credit Note'",
+        where: "id = ? AND type != 'Credit Note' "
+            "AND NOT (type = 'Debit Note' AND original_invoice_id IN "
+            "(SELECT id FROM invoices WHERE deleted_at IS NOT NULL "
+            "OR status = 'declined'))",
         whereArgs: [id],
       );
       // Re-link the source quotation — unless the invoice is declined or the
@@ -975,11 +983,11 @@ class InvoiceService {
             // Paid money must be removed first — see _declineInvoice in the list.
             'AND NOT EXISTS (SELECT 1 FROM invoice_payments '
             'WHERE invoice_payments.invoice_id = invoices.id) '
-            // Active credit notes must be voided first, or decline would
-            // return their already-restocked qty a second time.
+            // Active notes must go first: a credit note's qty is already
+            // restocked, and a debit note would stay owed on a void sale.
             'AND NOT EXISTS (SELECT 1 FROM invoices cn '
             "WHERE cn.original_invoice_id = invoices.id "
-            "AND cn.type = 'Credit Note' AND cn.deleted_at IS NULL)",
+            "AND cn.type IN ('Credit Note', 'Debit Note') AND cn.deleted_at IS NULL)",
         whereArgs: [id],
       );
       if (changed == 0) return;
@@ -1001,6 +1009,15 @@ class InvoiceService {
 
   static Future<void> permanentDeleteInvoice(String id) async {
     final db = await dbHelper.database;
+    final hasNotes = (await db.rawQuery(
+      "SELECT 1 FROM invoices WHERE original_invoice_id = ? "
+      "AND type IN ('Credit Note', 'Debit Note') AND deleted_at IS NULL LIMIT 1",
+      [id],
+    ))
+        .isNotEmpty;
+    if (hasNotes) {
+      throw StateError('Invoice $id has credit / debit notes: remove them first');
+    }
     await db.transaction((txn) async {
       await _unlinkSourceQuotation(txn, id);
       await txn.delete('invoice_items', where: 'invoice_id = ?', whereArgs: [id]);

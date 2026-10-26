@@ -128,6 +128,7 @@ class RefundReceiptService {
     Refund refund,
     double remainingCredit,
   ) async {
+    await PDFService.attachReturnInfo(cn);
     final pdfTheme = await PdfFontService.loadTheme();
     final pdf = pw.Document(theme: pdfTheme);
     final company = await BackendServices.companyInfo.getCompanyInfo();
@@ -232,7 +233,11 @@ class RefundReceiptService {
                   _meta('Credit Note #', refund.creditNoteNumber),
                   if ((cn.originalInvoiceNumber ?? '').isNotEmpty) ...[
                     pw.SizedBox(height: 4),
-                    _meta('Against Invoice', cn.originalInvoiceNumber!),
+                    _meta(
+                        cn.originalInvoiceType == 'Receipt'
+                            ? 'Against Receipt'
+                            : 'Against Invoice',
+                        cn.originalInvoiceNumber!),
                   ],
                 ],
               ),

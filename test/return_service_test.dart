@@ -296,10 +296,34 @@ void main() {
       ),
     );
     final loaded = (await InvoiceService.getInvoiceById('cn1'))!;
-    await PDFService.attachRefunds(loaded);
+    await PDFService.attachReturnInfo(loaded);
     final refundLine =
         returnInfoLines(loaded).where((l) => l.startsWith('Refund ')).single;
     expect(refundLine, contains('500.00 on 10 Mar 2026 via Cash'));
+  });
+
+  test('credit note PDF says "Against Receipt" for a receipt', () async {
+    final p = _prod(stock: 50);
+    await ProductService.insertProduct(p);
+    final receipt = _invoice(
+        id: 'r1',
+        number: '00000001',
+        customer: _cust(),
+        items: [_item(p, 2)],
+        type: 'Receipt');
+    await InvoiceService.insertInvoice(receipt);
+    await ReturnService.createCreditNote(
+      creditNote: _creditNote(
+        id: 'cn1',
+        original: receipt,
+        items: [_item(p, 1)],
+        settlement: CreditSettlement.customerCredit,
+      ),
+      originalInvoice: receipt,
+    );
+    final loaded = (await InvoiceService.getInvoiceById('cn1'))!;
+    await PDFService.attachReturnInfo(loaded);
+    expect(returnInfoLines(loaded).first, startsWith('Against Receipt: 00000001'));
   });
 
   test('partial refund then convert the rest', () async {
@@ -539,6 +563,64 @@ void main() {
     await InvoiceService.permanentDeleteInvoice('cn1');
     expect(await db.query('customer_credits', where: "source_id = 'cn1'"),
         isEmpty);
+  });
+
+  test('invoice with an active credit note cannot be trashed or deleted',
+      () async {
+    final original = await seedPaidInvoice(stock: 50, qty: 10);
+    await ReturnService.createCreditNote(
+      creditNote: _creditNote(
+        id: 'cn1',
+        original: original,
+        items: [_item(original.items.first.product, 2)],
+        settlement: CreditSettlement.customerCredit,
+      ),
+      originalInvoice: original,
+    );
+
+    await InvoiceService.softDeleteInvoice('i1');
+    expect(await InvoiceService.getInvoiceById('i1'), isNotNull);
+    await expectLater(InvoiceService.permanentDeleteInvoice('i1'),
+        throwsA(isA<StateError>()));
+
+    await ReturnService.voidCreditNote('cn1');
+    await InvoiceService.softDeleteInvoice('i1');
+    expect(await InvoiceService.getInvoiceById('i1'), isNull);
+  });
+
+  test('active debit note blocks decline and trash; no restore onto a '
+      'declined invoice', () async {
+    final p = _prod(stock: 50);
+    await ProductService.insertProduct(p);
+    final inv = _invoice(
+        id: 'i1', number: '00000001', customer: _cust(), items: [_item(p, 5)]);
+    await InvoiceService.insertInvoice(inv);
+    await ReturnService.createDebitNote(
+      debitNote: Invoice(
+        id: 'dn1',
+        invoiceNumber: 'DN-1',
+        customer: inv.customer,
+        items: [_item(p, 1)],
+        date: DateTime(2026, 3, 10),
+        type: 'Debit Note',
+        taxMode: TaxMode.perItem,
+        originalInvoiceId: 'i1',
+        originalInvoiceNumber: '00000001',
+      ),
+    );
+
+    await InvoiceService.declineInvoice('i1');
+    expect((await InvoiceService.getInvoiceById('i1'))!.status, isNot('declined'));
+    await InvoiceService.softDeleteInvoice('i1');
+    expect(await InvoiceService.getInvoiceById('i1'), isNotNull);
+
+    // Trash the debit note, then the invoice can be declined…
+    await InvoiceService.softDeleteInvoice('dn1');
+    await InvoiceService.declineInvoice('i1');
+    expect((await InvoiceService.getInvoiceById('i1'))!.status, 'declined');
+    // …and the debit note stays in trash.
+    await InvoiceService.restoreInvoice('dn1');
+    expect(await InvoiceService.getInvoiceById('dn1'), isNull);
   });
 
   test('updateInvoice locks customer / lines / total once credit notes exist',
