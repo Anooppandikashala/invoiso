@@ -260,6 +260,18 @@ void main() {
     expect(top.single['total_qty'], 3.0);
   });
 
+  test('generateNextId skips UUID ids and compares numerically', () async {
+    final p = await addProduct();
+    await InvoiceService.insertInvoice(doc('99999999', 'Invoice', p, qty: 1));
+    await InvoiceService.insertInvoice(
+        doc('100000000', 'Invoice', p, qty: 1));
+    // UUID ids came from an unreleased return page; must not drive the sequence.
+    await InvoiceService.insertInvoice(doc(
+        'aa284e4b-da00-4abf-8cf3-28b7e01348a7', 'Invoice', p, qty: 1));
+
+    expect(await InvoiceService.generateNextId(), '100000001');
+  });
+
   test('search matches invoice_number, not just id', () async {
     final p = await addProduct();
     await InvoiceService.insertInvoice(Invoice(

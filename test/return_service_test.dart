@@ -459,6 +459,115 @@ void main() {
     );
   });
 
+  test('voidCreditNote is blocked once a refund was paid', () async {
+    final original = await seedPaidInvoice(stock: 50, qty: 10); // stock 40
+    await ReturnService.createCreditNote(
+      creditNote: _creditNote(
+        id: 'cn1',
+        original: original,
+        items: [_item(original.items.first.product, 2)],
+        settlement: CreditSettlement.refund,
+      ),
+      originalInvoice: original,
+      immediateRefund: (
+        amount: 200,
+        method: 'Cash',
+        date: DateTime(2026, 3, 10),
+        notes: null
+      ),
+    );
+
+    await expectLater(
+        ReturnService.voidCreditNote('cn1'), throwsA(isA<StateError>()));
+    expect((await ProductService.getProductById('p1'))!.stock, 42);
+    expect(await ReturnService.getRefundsForCreditNote('cn1'), hasLength(1));
+  });
+
+  test('declineInvoice refuses while an active credit note exists', () async {
+    final p = _prod(stock: 50);
+    await ProductService.insertProduct(p);
+    final inv = _invoice(
+        id: 'i1', number: '00000001', customer: _cust(), items: [_item(p, 5)]);
+    await InvoiceService.insertInvoice(inv); // stock 45
+    await ReturnService.createCreditNote(
+      creditNote: _creditNote(
+        id: 'cn1',
+        original: inv,
+        items: [_item(p, 2)],
+        settlement: CreditSettlement.customerCredit,
+      ),
+      originalInvoice: inv,
+    ); // stock 47
+
+    await InvoiceService.declineInvoice('i1');
+    expect((await InvoiceService.getInvoiceById('i1'))!.status, isNot('declined'));
+    expect((await ProductService.getProductById('p1'))!.stock, 47);
+
+    // Void first, then decline returns only what's still out.
+    await ReturnService.voidCreditNote('cn1'); // stock 45
+    await InvoiceService.declineInvoice('i1'); // stock 50
+    expect((await InvoiceService.getInvoiceById('i1'))!.status, 'declined');
+    expect((await ProductService.getProductById('p1'))!.stock, 50);
+  });
+
+  test('credit notes leave only via void: no trash, no restore, delete cleans',
+      () async {
+    final original = await seedPaidInvoice(stock: 50, qty: 10);
+    await ReturnService.createCreditNote(
+      creditNote: _creditNote(
+        id: 'cn1',
+        original: original,
+        items: [_item(original.items.first.product, 3)],
+        settlement: CreditSettlement.customerCredit,
+      ),
+      originalInvoice: original,
+    );
+    Future<double> credit() => ReturnService.getRemainingCustomerCredit(
+        customerId: 'c1', currencyCode: 'INR');
+    expect(await credit(), 300);
+
+    await InvoiceService.softDeleteInvoice('cn1');
+    expect(await InvoiceService.getInvoiceById('cn1'), isNotNull);
+
+    // A note trashed by an older build: its credit is not spendable.
+    await db.update('invoices', {'deleted_at': '2026-03-11T00:00:00'},
+        where: 'id = ?', whereArgs: ['cn1']);
+    expect(await credit(), 0);
+    await InvoiceService.restoreInvoice('cn1');
+    expect(await InvoiceService.getInvoiceById('cn1'), isNull);
+
+    await InvoiceService.permanentDeleteInvoice('cn1');
+    expect(await db.query('customer_credits', where: "source_id = 'cn1'"),
+        isEmpty);
+  });
+
+  test('updateInvoice locks customer / lines / total once credit notes exist',
+      () async {
+    final original = await seedPaidInvoice(stock: 50, qty: 10);
+    await ReturnService.createCreditNote(
+      creditNote: _creditNote(
+        id: 'cn1',
+        original: original,
+        items: [_item(original.items.first.product, 3)],
+        settlement: CreditSettlement.customerCredit,
+      ),
+      originalInvoice: original,
+    );
+
+    final changed = (await InvoiceService.getInvoiceById('i1'))!
+      ..items = [_item(original.items.first.product, 12)];
+    await expectLater(
+        InvoiceService.updateInvoice(changed), throwsA(isA<StateError>()));
+    expect((await InvoiceService.getInvoiceById('i1'))!.items.single.quantity,
+        10);
+
+    // Notes-only edit still saves.
+    final noted = (await InvoiceService.getInvoiceById('i1'))!
+      ..notes = 'delivered late';
+    await InvoiceService.updateInvoice(noted);
+    expect((await InvoiceService.getInvoiceById('i1'))!.notes, 'delivered late');
+  });
+
   group('getPreviousBalanceDueForCustomer with returns', () {
     Future<Invoice> seedPartlyPaid() async {
       final p = _prod(price: 100, stock: 50);

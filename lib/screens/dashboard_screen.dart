@@ -40,7 +40,6 @@ import 'package:invoiso/models/user.dart';
 // import 'package:invoiso/screens/customer_management_screen.dart';
 import 'package:invoiso/screens/customer_management_screen_v2.dart';
 import 'package:invoiso/database/database_helper.dart';
-import 'package:invoiso/screens/screens_v1/create_invoice_screen.dart' as v1;
 import 'package:invoiso/screens/create_invoice_screen_v2.dart';
 // import 'package:invoiso/screens/product_management_screen.dart';
 import 'package:invoiso/screens/product_management_screen_v2.dart';
@@ -99,17 +98,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   // form's convert mode). Null unless a conversion is in flight.
   String? _convertSourceQuotationId;
   bool _hasUpdate = false;
-  String _createInvoiceLayout = 'v2';
   int? _accessibilityJumpToken;
   final InvoiceFormGuard _invoiceFormGuard = InvoiceFormGuard();
-  final v1.InvoiceFormGuard _invoiceFormGuardV1 = v1.InvoiceFormGuard();
   final FocusNode _shortcutsFocusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
     _currentUser = widget.loggedInUser;
-    _loadCreateInvoiceLayout();
     _loadServicesEnabled();
     _loadReturnsEnabled();
     _loadReportsAdminOnly();
@@ -213,58 +209,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     setState(() => _reportsAdminOnly = v == 'true');
   }
 
-  Future<void> _loadCreateInvoiceLayout() async {
-    final layout = await ref
-        .read(settingsRepositoryProvider)
-        .getSetting(SettingKey.createInvoiceLayout);
-    if (!mounted) return;
-    setState(() => _createInvoiceLayout = layout ?? 'v2');
-    if (_createInvoiceLayout == 'v1') {
-      WidgetsBinding.instance
-          .addPostFrameCallback((_) => _showV1DeprecationNotice());
-    }
-  }
-
-  Future<void> _showV1DeprecationNotice() async {
-    if (!mounted) return;
-    final switchNow = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Icon(Icons.info_outline, color: Theme.of(context).primaryColor),
-            const SizedBox(width: 12),
-            const Flexible(child: Text('Classic invoice layout is going away')),
-          ],
-        ),
-        content: const Text(
-          "You're using the classic Create Invoice layout. In an upcoming "
-          "release this will be removed and everyone moves to the new layout. "
-          "Try it now so you're comfortable with it before the switch — you "
-          "can always go back from Settings until then.",
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Maybe later'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Try new layout now'),
-          ),
-        ],
-      ),
-    );
-    if (switchNow == true && mounted) {
-      await ref
-          .read(settingsRepositoryProvider)
-          .setSetting(SettingKey.createInvoiceLayout, 'v2');
-      if (!mounted) return;
-      setState(() => _createInvoiceLayout = 'v2');
-    }
-  }
-
   Future<void> _checkForUpdates() async {
     final info = await UpdateService.checkForUpdate();
     if (info == null) return;
@@ -335,27 +279,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             _convertSourceQuotationId = null;
           });
         }
-        return _createInvoiceLayout == 'v1'
-            ? v1.CreateInvoiceScreen(
-                key: createInvoiceKey,
-                invoiceToEdit: invoiceToEdit,
-                cloneFrom: _invoiceToClone,
-                cloneType: _invoiceToClone != null ? _cloneType : null,
-                initialType: isNewDoc ? _newInvoiceType : null,
-                convertFromQuotationId: _convertSourceQuotationId,
-                guard: _invoiceFormGuardV1,
-                onCreateNewInvoice: onCreateNewInvoice,
-              )
-            : CreateInvoiceScreenV2(
-                key: createInvoiceKey,
-                invoiceToEdit: invoiceToEdit,
-                cloneFrom: _invoiceToClone,
-                cloneType: _invoiceToClone != null ? _cloneType : null,
-                initialType: isNewDoc ? _newInvoiceType : null,
-                convertFromQuotationId: _convertSourceQuotationId,
-                guard: _invoiceFormGuard,
-                onCreateNewInvoice: onCreateNewInvoice,
-              );
+        return CreateInvoiceScreenV2(
+          key: createInvoiceKey,
+          invoiceToEdit: invoiceToEdit,
+          cloneFrom: _invoiceToClone,
+          cloneType: _invoiceToClone != null ? _cloneType : null,
+          initialType: isNewDoc ? _newInvoiceType : null,
+          convertFromQuotationId: _convertSourceQuotationId,
+          guard: _invoiceFormGuard,
+          onCreateNewInvoice: onCreateNewInvoice,
+        );
       case 2:
         return InvoiceManagementScreenV2(
           key: const ValueKey('invoice_list'),
@@ -449,55 +382,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     }
   }
 
-  Widget _buildCreateInvoiceLayoutToggle() {
-    final isV2 = _createInvoiceLayout == 'v2';
-    final l10n = AppLocalizations.of(context)!;
-    return Material(
-      color: Theme.of(context).colorScheme.surface,
-      shape: CircleBorder(
-          side:
-              BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
-      elevation: 2,
-      child: IconButton(
-        icon: Icon(isV2 ? Icons.auto_awesome : Icons.history, size: 20),
-        tooltip: l10n.dashboardInvoiceLayoutTooltip(
-            isV2 ? l10n.dashboardLayoutNew : l10n.dashboardLayoutClassic),
-        onPressed: _showCreateInvoiceLayoutInfo,
-      ),
-    );
-  }
-
-  void _showCreateInvoiceLayoutInfo() {
-    final l10n = AppLocalizations.of(context)!;
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.dashboardInvoiceLayoutDialogTitle),
-        content: Text(l10n.dashboardInvoiceLayoutDialogBody(
-            _createInvoiceLayout == 'v1'
-                ? l10n.dashboardLayoutClassic
-                : l10n.dashboardLayoutNew)),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(l10n.actionClose)),
-          FilledButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              if (!await _canLeaveInvoiceForm()) return;
-              if (!mounted) return;
-              setState(() {
-                _selectedIndex = 8;
-                _accessibilityJumpToken = (_accessibilityJumpToken ?? 0) + 1;
-              });
-            },
-            child: Text(l10n.dashboardOpenSettingsAction),
-          ),
-        ],
-      ),
-    );
-  }
-
   void editInvoice(Invoice invoice) {
     _openEditInvoice(invoice);
   }
@@ -535,7 +419,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   // — opens the create form with that document type preselected.
   Future<void> _createDocumentOfType(String type) async {
     if (!await _canLeaveInvoiceForm()) return;
-    await _loadCreateInvoiceLayout();
     if (!mounted) return;
     setState(() {
       _selectedIndex = 1;
@@ -552,7 +435,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   // quotation is stamped 'converted' and the two are linked.
   Future<void> _convertQuotationToInvoice(Invoice quotation) async {
     if (!await _canLeaveInvoiceForm()) return;
-    await _loadCreateInvoiceLayout();
     if (!mounted) return;
     setState(() {
       _selectedIndex = 1;
@@ -565,9 +447,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Future<bool> _canLeaveInvoiceForm() async {
-    if (_createInvoiceLayout == 'v1') {
-      return await _invoiceFormGuardV1.canLeave?.call() ?? true;
-    }
     return await _invoiceFormGuard.canLeave?.call() ?? true;
   }
 
@@ -580,7 +459,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       await _loadReturnsEnabled();
       await _loadReportsAdminOnly();
     }
-    if (index == 1) await _loadCreateInvoiceLayout();
     if (!mounted) return;
     setState(() {
       _selectedIndex = index;
@@ -626,16 +504,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               children: [
                 _buildSidebar(),
                 Expanded(
-                  child: Stack(
-                    children: [
-                      buildScreen(),
-                      if (_selectedIndex == 1)
-                        Positioned(
-                            bottom: 16,
-                            right: 16,
-                            child: _buildCreateInvoiceLayoutToggle()),
-                    ],
-                  ),
+                  child: buildScreen(),
                 ),
               ],
             ),

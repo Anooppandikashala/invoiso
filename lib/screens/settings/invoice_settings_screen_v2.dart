@@ -1010,12 +1010,15 @@ class _InvoiceSettingsScreenV2State
                   DropdownMenuItem(
                       value: 'Cash Bill',
                       child: Text(l10n.gstTitleCashBillLabel)),
-                  DropdownMenuItem(
-                      value: 'Credit Note',
-                      child: Text(l10n.gstTitleCreditNoteLabel)),
-                  DropdownMenuItem(
-                      value: 'Debit Note',
-                      child: Text(l10n.gstTitleDebitNoteLabel)),
+                  // Kept only for users whose saved default is one of these.
+                  if (_defaultInvoiceTitle == 'Credit Note')
+                    DropdownMenuItem(
+                        value: 'Credit Note',
+                        child: Text(l10n.gstTitleCreditNoteLabel)),
+                  if (_defaultInvoiceTitle == 'Debit Note')
+                    DropdownMenuItem(
+                        value: 'Debit Note',
+                        child: Text(l10n.gstTitleDebitNoteLabel)),
                   DropdownMenuItem(
                       value: 'Revised Invoice',
                       child: Text(l10n.gstTitleRevisedInvoiceLabel)),

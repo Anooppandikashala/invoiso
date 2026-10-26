@@ -147,6 +147,32 @@ class InvoiceService {
           'Invoice total ${invoice.total} is below amount paid $paid');
     }
 
+    // Credit notes were priced and restocked against the saved invoice —
+    // once it has any, its customer, lines and total can't change.
+    final hasCreditNotes = (await db.rawQuery(
+      "SELECT 1 FROM invoices WHERE original_invoice_id = ? "
+      "AND type = 'Credit Note' AND deleted_at IS NULL LIMIT 1",
+      [invoice.id],
+    ))
+        .isNotEmpty;
+    if (hasCreditNotes) {
+      final saved = await getInvoiceById(invoice.id);
+      String lines(Invoice i) => (i.items
+              .map((l) => '${l.product.id}|${l.quantity}|${l.effectivePrice}|'
+                  '${l.discount}|${l.discountPerUnit}|${l.discountIsPercent}')
+              .toList()
+            ..sort())
+          .join(';');
+      if (saved != null &&
+          (saved.customer.id != invoice.customer.id ||
+              lines(saved) != lines(invoice) ||
+              (saved.total - invoice.total).abs() >
+                  InvoiceCalculator.moneyEpsilon)) {
+        throw StateError(
+            'Invoice ${invoice.id} has credit notes: customer, items and total are locked');
+      }
+    }
+
     // Fetch existing items before transaction (to restore stock)
     final oldItems = await db.query(
       'invoice_items',
@@ -872,10 +898,12 @@ class InvoiceService {
   static Future<void> softDeleteInvoice(String id) async {
     final db = await dbHelper.database;
     await db.transaction((txn) async {
+      // Credit notes are removed only by ReturnService.voidCreditNote, which
+      // also reverses their stock and credit.
       await txn.update(
         'invoices',
         {'deleted_at': DateTime.now().toIso8601String()},
-        where: 'id = ?',
+        where: "id = ? AND type != 'Credit Note'",
         whereArgs: [id],
       );
       await _unlinkSourceQuotation(txn, id);
@@ -885,10 +913,12 @@ class InvoiceService {
   static Future<void> restoreInvoice(String id) async {
     final db = await dbHelper.database;
     await db.transaction((txn) async {
+      // A trashed credit note was voided — restoring it would revive a note
+      // with no stock or credit behind it.
       await txn.update(
         'invoices',
         {'deleted_at': null},
-        where: 'id = ?',
+        where: "id = ? AND type != 'Credit Note'",
         whereArgs: [id],
       );
       // Re-link the source quotation — unless the invoice is declined or the
@@ -944,7 +974,12 @@ class InvoiceService {
             "AND (status IS NULL OR status != 'declined') "
             // Paid money must be removed first — see _declineInvoice in the list.
             'AND NOT EXISTS (SELECT 1 FROM invoice_payments '
-            'WHERE invoice_payments.invoice_id = invoices.id)',
+            'WHERE invoice_payments.invoice_id = invoices.id) '
+            // Active credit notes must be voided first, or decline would
+            // return their already-restocked qty a second time.
+            'AND NOT EXISTS (SELECT 1 FROM invoices cn '
+            "WHERE cn.original_invoice_id = invoices.id "
+            "AND cn.type = 'Credit Note' AND cn.deleted_at IS NULL)",
         whereArgs: [id],
       );
       if (changed == 0) return;
@@ -970,6 +1005,9 @@ class InvoiceService {
       await _unlinkSourceQuotation(txn, id);
       await txn.delete('invoice_items', where: 'invoice_id = ?', whereArgs: [id]);
       await txn.delete('invoice_payments', where: 'invoice_id = ?', whereArgs: [id]);
+      // A credit note's leftover credit / refund rows go with it.
+      await txn.delete('customer_credits', where: 'source_id = ?', whereArgs: [id]);
+      await txn.delete('refunds', where: 'credit_note_id = ?', whereArgs: [id]);
       await txn.delete('invoices', where: 'id = ?', whereArgs: [id]);
     });
   }
@@ -1401,8 +1439,11 @@ class InvoiceService {
   /// be scoped by type.
   static Future<String> generateNextId() async {
     final db = await dbHelper.database;
-    final result =
-        await db.rawQuery("SELECT id FROM invoices ORDER BY id DESC LIMIT 1");
+    // Only all-digit ids form the sequence (UUID ids from older builds are
+    // skipped); compare as numbers so '100000000' sorts above '99999999'.
+    final result = await db.rawQuery(
+        "SELECT id FROM invoices WHERE id NOT GLOB '*[^0-9]*' "
+        "ORDER BY CAST(id AS INTEGER) DESC LIMIT 1");
 
     int nextNumber;
     if (result.isNotEmpty) {

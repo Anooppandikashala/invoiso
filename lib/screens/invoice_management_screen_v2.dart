@@ -18,7 +18,6 @@ import 'package:invoiso/services/export_service.dart';
 import 'package:invoiso/services/invoice_pdf_services.dart';
 import 'package:invoiso/services/pdf_service.dart';
 import 'package:invoiso/widgets/apply_payment_dialog.dart';
-import 'package:invoiso/screens/create_return_screen.dart';
 import 'package:invoiso/widgets/record_refund_dialog.dart';
 import 'package:invoiso/models/refund.dart';
 import 'package:invoiso/services/refund_receipt_service.dart';
@@ -369,6 +368,14 @@ class _InvoiceManagementScreenV2State
     if (invoice.payments.isNotEmpty) {
       AppError.show(context,
           l10n.invoiceMgmtDeclineHasPaymentsMessage(invoice.invoiceNumber ?? invoice.id));
+      return;
+    }
+    final notes =
+        await ref.read(returnRepositoryProvider).getNotesForInvoice(invoice.id);
+    if (!mounted) return;
+    if (notes.any((n) => n.type == 'Credit Note')) {
+      AppError.show(context,
+          l10n.invoiceMgmtDeclineHasCreditNotesMessage(invoice.invoiceNumber ?? invoice.id));
       return;
     }
     final confirmed = await AppError.confirm(
@@ -1754,7 +1761,8 @@ class _InvoiceManagementScreenV2State
             label: AppLocalizations.of(context)!.invoiceMgmtPdfsLabel,
             onPressed: _isBulkLoading ? null : _bulkExportPdfs,
           ),
-          if (widget.user.isAdmin())
+          // Credit notes leave only via Void (reverses stock + credit).
+          if (widget.user.isAdmin() && widget.filterType != 'Credit Note')
             _buildBulkButton(
               icon: Icons.delete_outline,
               label: AppLocalizations.of(context)!.invoiceMgmtTrashLabel,
@@ -1822,7 +1830,7 @@ class _InvoiceManagementScreenV2State
       ],
       if (!_isReturnType)
         PopupMenuItem(value: 'duplicate', child: _MenuRow(Icons.copy_all_outlined, l10n.actionDuplicate, Colors.teal)),
-      if (widget.filterType == 'Invoice')
+      if (widget.filterType == 'Invoice' && !isDeclined)
         PopupMenuItem(
             value: 'credit_note',
             child: _MenuRow(
@@ -1868,7 +1876,7 @@ class _InvoiceManagementScreenV2State
               child: _MenuRow(
                   Icons.block_outlined, l10n.actionCancelVoid, Colors.red)),
       ],
-      if (widget.user.isAdmin())
+      if (widget.user.isAdmin() && widget.filterType != 'Credit Note')
         PopupMenuItem(
             value: 'delete', child: _MenuRow(Icons.delete_outline, l10n.invoiceMgmtMoveToTrashTitle, Colors.red)),
     ];
@@ -1895,7 +1903,7 @@ class _InvoiceManagementScreenV2State
       case 'duplicate':
         _showCloneDialog(invoice);
       case 'credit_note':
-        _openReturnScreen(invoice);
+        _openCreditNote(invoice);
       case 'debit_note':
         _openDebitNote(invoice);
       case 'apply_credit':
@@ -2904,19 +2912,12 @@ class _InvoiceManagementScreenV2State
     widget.onCloneInvoice(full, 'Debit Note');
   }
 
-  Future<void> _openReturnScreen(Invoice invoice) async {
+  Future<void> _openCreditNote(Invoice invoice) async {
     final full = await ref
         .read(invoiceRepositoryProvider)
         .getInvoiceById(invoice.id);
     if (!mounted || full == null) return;
-    await Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => CreateReturnScreen(
-        invoice: full,
-        onCreated: () {
-          _loadPage();
-        },
-      ),
-    ));
+    widget.onCloneInvoice(full, 'Credit Note');
   }
 }
 
@@ -3101,13 +3102,16 @@ class _TrashDialogState extends ConsumerState<_TrashDialog> {
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          TextButton.icon(
-                            onPressed: () => _restore(inv),
-                            icon: const Icon(Icons.restore, size: 16),
-                            label: Text(AppLocalizations.of(context)!.actionRestore),
-                            style: TextButton.styleFrom(
-                                foregroundColor: Colors.green),
-                          ),
+                          // Trashed credit note = voided; its stock and
+                          // credit are already reversed, so no restore.
+                          if (inv.type != 'Credit Note')
+                            TextButton.icon(
+                              onPressed: () => _restore(inv),
+                              icon: const Icon(Icons.restore, size: 16),
+                              label: Text(AppLocalizations.of(context)!.actionRestore),
+                              style: TextButton.styleFrom(
+                                  foregroundColor: Colors.green),
+                            ),
                           const SizedBox(width: 4),
                           TextButton.icon(
                             onPressed: () => _permanentDelete(inv),

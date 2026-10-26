@@ -3093,6 +3093,15 @@
   "returnPickInvoiceSearchHint": "Search invoice number",
   "returnPickInvoiceEmpty": "No invoices for this customer",
   "returnSelectCustomerFirst": "Select a customer first",
+  "createInvoiceLockedByCreditNotes": "This invoice has credit notes, so customer, items, extra costs, discount and tax are locked. Void the credit notes to change them.",
+  "invoiceMgmtDeclineHasCreditNotesMessage": "Invoice #{number} has credit notes. Void them before declining.",
+  "@invoiceMgmtDeclineHasCreditNotesMessage": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
   "returnGstAgainstInvoiceWarning": "GST: a note for a registered customer should reference the original invoice",
   "returnAgainstInvoiceFull": "Against Invoice #{number}",
   "@returnAgainstInvoiceFull": {
@@ -3212,7 +3221,7 @@
   "actionRefund": "Refund",
   "actionCancelVoid": "Cancel / Void",
   "voidCreditNoteTitle": "Cancel this credit note?",
-  "voidCreditNoteBody": "Reverses the restock and settlement for {number} and moves it to trash. Blocked if any of its credit was already applied to an invoice.",
+  "voidCreditNoteBody": "Reverses the restock and settlement for {number} and moves it to trash. Blocked if any of its credit was already applied to an invoice or refunded.",
   "@voidCreditNoteBody": {
     "placeholders": {
       "number": {

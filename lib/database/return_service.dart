@@ -212,7 +212,7 @@ class ReturnService {
       final rows = await txn.query(
         'customer_credits',
         where:
-            '${_customerWhere(invoice.customer.id, invoice.customer.name)} AND currency_code = ?',
+            '${_customerWhere(invoice.customer.id, invoice.customer.name)} AND currency_code = ? AND $_liveSource',
         whereArgs: [
           ..._customerArgs(invoice.customer.id, invoice.customer.name),
           invoice.currencyCode,
@@ -236,7 +236,8 @@ class ReturnService {
 
   // ─────────────────────────────────────────────────────────────────────
   // Void a credit note (admin). Reverses stock and settlement, then
-  // soft-deletes. Blocked once any of its credit was spent on an invoice.
+  // soft-deletes. Blocked once any of its credit was spent on an invoice or
+  // refunded.
   // ─────────────────────────────────────────────────────────────────────
   static Future<void> voidCreditNote(String creditNoteId) async {
     final db = await _dbHelper.database;
@@ -256,6 +257,11 @@ class ReturnService {
     if (applied - refunded > _eps) {
       throw StateError(
           'Cannot void: some of this credit note has already been applied to an invoice');
+    }
+    // Paid-out cash can't be un-recorded — void would erase the refund rows.
+    if (refunded > _eps) {
+      throw StateError(
+          'Cannot void: a refund was already paid against this credit note');
     }
 
     await _restock(cn, direction: -1);
@@ -364,7 +370,7 @@ class ReturnService {
     final r = await db.rawQuery(
       'SELECT COALESCE(SUM(amount - applied_amount), 0.0) AS c '
       'FROM customer_credits '
-      'WHERE ${_customerWhere(customerId, customerName ?? '')} AND currency_code = ?',
+      'WHERE ${_customerWhere(customerId, customerName ?? '')} AND currency_code = ? AND $_liveSource',
       [..._customerArgs(customerId, customerName ?? ''), currencyCode],
     );
     return (r.first['c'] as num).toDouble();
@@ -388,7 +394,7 @@ class ReturnService {
       '(SELECT original_invoice_number FROM invoices WHERE id = source_id) AS against_number '
       'FROM customer_credits '
       'WHERE ${_customerWhere(customerId, customerName ?? '')} AND currency_code = ? '
-      'AND amount - applied_amount > ? '
+      'AND $_liveSource AND amount - applied_amount > ? '
       'ORDER BY created_at ASC, rowid ASC',
       [..._customerArgs(customerId, customerName ?? ''), currencyCode, _eps],
     );
@@ -415,6 +421,10 @@ class ReturnService {
   // ─────────────────────────────────────────────────────────────────────
   // Internals
   // ─────────────────────────────────────────────────────────────────────
+
+  // Credit from a trashed (voided) note is never spendable.
+  static const _liveSource =
+      'source_id NOT IN (SELECT id FROM invoices WHERE deleted_at IS NOT NULL)';
 
   static String _creditNoteRef(Invoice cn) =>
       'Credit Note ${cn.invoiceNumber ?? cn.id}';
@@ -492,6 +502,16 @@ class ReturnService {
         'customer_address': inv.customer.address,
         'customer_gstin': inv.customer.gstin,
         'customer_business_name': inv.customer.businessName,
+        'customer_shipping_same_as_billing':
+            inv.customer.shippingSameAsBilling ? 1 : 0,
+        'customer_shipping_name': inv.customer.shippingName,
+        'customer_shipping_phone': inv.customer.shippingPhone,
+        'customer_shipping_address': inv.customer.shippingAddress,
+        'customer_dob': inv.customer.dob,
+        'customer_age': inv.customer.ageOn(inv.date),
+        'customer_gender': inv.customer.gender,
+        'customer_custom_fields':
+            CustomFieldValue.listToJson(inv.customer.customFields),
         'date': inv.date.toIso8601String(),
         'notes': inv.notes,
         'tax_rate': inv.taxRate,
@@ -531,6 +551,7 @@ class ReturnService {
         'quantity': item.quantity,
         'discount': item.discount,
         'discount_per_unit': item.discountPerUnit ? 1 : 0,
+        'discount_is_percent': item.discountIsPercent ? 1 : 0,
         'unit_price': item.unitPrice,
         'extra_cost': item.extraCost,
         'is_product_saved': item.isProductSaved ? 1 : 0,

@@ -5687,6 +5687,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get returnSelectCustomerFirst => 'Select a customer first';
 
   @override
+  String get createInvoiceLockedByCreditNotes =>
+      'This invoice has credit notes, so customer, items, extra costs, discount and tax are locked. Void the credit notes to change them.';
+
+  @override
+  String invoiceMgmtDeclineHasCreditNotesMessage(String number) {
+    return 'Invoice #$number has credit notes. Void them before declining.';
+  }
+
+  @override
   String get returnGstAgainstInvoiceWarning =>
       'GST: a note for a registered customer should reference the original invoice';
 
@@ -5833,7 +5842,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String voidCreditNoteBody(String number) {
-    return 'Reverses the restock and settlement for $number and moves it to trash. Blocked if any of its credit was already applied to an invoice.';
+    return 'Reverses the restock and settlement for $number and moves it to trash. Blocked if any of its credit was already applied to an invoice or refunded.';
   }
 
   @override

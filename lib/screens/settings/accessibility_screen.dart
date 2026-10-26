@@ -19,14 +19,12 @@ class AccessibilityScreen extends ConsumerStatefulWidget {
 }
 
 class _AccessibilityScreenState extends ConsumerState<AccessibilityScreen> {
-  String _createInvoiceLayout = 'v2';
   bool _cashExchangeEnabled = false;
   bool _reportsAdminOnly = false;
 
   @override
   void initState() {
     super.initState();
-    _loadCreateInvoiceLayout();
     _loadCashExchangeEnabled();
     _loadReportsAdminOnly();
   }
@@ -73,14 +71,6 @@ class _AccessibilityScreenState extends ConsumerState<AccessibilityScreen> {
     ref.read(cashUpiExchangeEnabledProvider.notifier).state = value;
   }
 
-  Future<void> _loadCreateInvoiceLayout() async {
-    final layout = await ref
-        .read(settingsRepositoryProvider)
-        .getSetting(SettingKey.createInvoiceLayout);
-    if (!mounted) return;
-    setState(() => _createInvoiceLayout = layout ?? 'v2');
-  }
-
   // Saved immediately and pushed to the provider so the dashboard sidebar
   // shows/hides the Purchase Bills / Suppliers tabs without a restart.
   Future<void> _setEnablePurchaseBills(bool value) async {
@@ -88,15 +78,6 @@ class _AccessibilityScreenState extends ConsumerState<AccessibilityScreen> {
         .read(settingsRepositoryProvider)
         .setSetting(SettingKey.enablePurchaseBillsAndSuppliers, value.toString());
     ref.read(enablePurchaseBillsAndSuppliersProvider.notifier).state = value;
-  }
-
-  Future<void> _setCreateInvoiceLayout(String value) async {
-    if (value == _createInvoiceLayout) return;
-    await ref
-        .read(settingsRepositoryProvider)
-        .setSetting(SettingKey.createInvoiceLayout, value);
-    if (!mounted) return;
-    setState(() => _createInvoiceLayout = value);
   }
 
   @override
@@ -124,71 +105,6 @@ class _AccessibilityScreenState extends ConsumerState<AccessibilityScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(l10n.accessibilityCreateInvoiceLayoutSectionTitle,
-                    style: const TextStyle(
-                        fontSize: AppFontSize.large,
-                        fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                // Text(
-                //   'Switching mid-edit discards any unsaved changes on the invoice form — save or finish the invoice first.',
-                //   style: TextStyle(
-                //       fontSize: AppFontSize.small,
-                //       color: Theme.of(context).colorScheme.onSurfaceVariant),
-                // ),
-                const SizedBox(height: 16),
-                Card(
-                  elevation: 0,
-                  color: Theme.of(context).colorScheme.surfaceContainer,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppBorderRadius.medium),
-                    side: BorderSide(
-                        color: Theme.of(context).colorScheme.outlineVariant),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                  _createInvoiceLayout == 'v1'
-                                      ? l10n.accessibilityClassicLayoutLabel
-                                      : l10n.accessibilityNewLayoutLabel,
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.w600)),
-                              const SizedBox(height: 2),
-                              Text(l10n.accessibilityLayoutDescription,
-                                  style: TextStyle(
-                                      fontSize: AppFontSize.xsmall,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurfaceVariant)),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        SegmentedButton<String>(
-                          segments: [
-                            ButtonSegment(
-                                value: 'v2',
-                                icon: const Icon(Icons.auto_awesome, size: 16),
-                                label: Text(l10n.dashboardLayoutNew)),
-                            ButtonSegment(
-                                value: 'v1',
-                                icon: const Icon(Icons.history, size: 16),
-                                label: Text(l10n.dashboardLayoutClassic)),
-                          ],
-                          selected: {_createInvoiceLayout},
-                          onSelectionChanged: (selection) =>
-                              _setCreateInvoiceLayout(selection.first),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
                 Text(l10n.accessibilityOptionalFeaturesSectionTitle,
                     style: const TextStyle(
                         fontSize: AppFontSize.large,

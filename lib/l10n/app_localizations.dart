@@ -9541,6 +9541,18 @@ abstract class AppLocalizations {
   /// **'Select a customer first'**
   String get returnSelectCustomerFirst;
 
+  /// No description provided for @createInvoiceLockedByCreditNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'This invoice has credit notes, so customer, items, extra costs, discount and tax are locked. Void the credit notes to change them.'**
+  String get createInvoiceLockedByCreditNotes;
+
+  /// No description provided for @invoiceMgmtDeclineHasCreditNotesMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice #{number} has credit notes. Void them before declining.'**
+  String invoiceMgmtDeclineHasCreditNotesMessage(String number);
+
   /// No description provided for @returnGstAgainstInvoiceWarning.
   ///
   /// In en, this message translates to:
@@ -9778,7 +9790,7 @@ abstract class AppLocalizations {
   /// No description provided for @voidCreditNoteBody.
   ///
   /// In en, this message translates to:
-  /// **'Reverses the restock and settlement for {number} and moves it to trash. Blocked if any of its credit was already applied to an invoice.'**
+  /// **'Reverses the restock and settlement for {number} and moves it to trash. Blocked if any of its credit was already applied to an invoice or refunded.'**
   String voidCreditNoteBody(String number);
 
   /// No description provided for @voidCreditNoteKeep.
