@@ -111,7 +111,18 @@ class OnboardingStepCompany extends ConsumerWidget {
                 style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurfaceVariant)),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 8),
+          Center(
+            child: Text(
+              l10n.companyInfoLogoRequirementsHint,
+              style: TextStyle(
+                  fontSize: 11,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  height: 1.6),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(height: 16),
           TextField(
             controller: nameController,
             decoration: InputDecoration(

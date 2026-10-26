@@ -6,6 +6,7 @@ import 'custom_field_value.dart';
 import 'customer.dart';
 import 'invoice_item.dart';
 import 'invoice_payment.dart';
+import 'refund.dart';
 
 class Invoice {
   String id;
@@ -35,7 +36,24 @@ class Invoice {
   bool hideInvoiceNumber; // hide real invoice number in PDF output only
   String? customInvoiceNumber; // shown instead of invoiceNumber in PDF when hideInvoiceNumber is true
   List<CustomFieldValue> customFields; // user-defined per-invoice fields (e.g. Vehicle No, Delivery Note)
-  bool isDraft; // saved as a draft — no invoiceNumber yet, excluded from revenue/tax aggregates
+  String? status; // quotation lifecycle: 'draft'|'sent'|'accepted'|'declined'|'converted'; null == 'draft'.
+  // For type=='Invoice': only 'declined' is used (invoice voided, stock returned); null == active.
+  String? convertedToInvoiceId; // on a quotation → id of the invoice it was converted into
+  String? convertedFromInvoiceId; // on an invoice → id of the source quotation it was converted from
+
+  // Return management — set only when type is 'Credit Note' or 'Debit Note'.
+  String? originalInvoiceId; // linked invoice; null for a standalone note
+  String? originalInvoiceNumber; // snapshot of the linked invoice's number
+  DateTime? originalInvoiceDate; // snapshot of the linked invoice's date
+  String? returnReason; // e.g. "Damaged", "Wrong item", "Price revision"
+  CreditSettlement? creditSettlement; // credit note only; how its value is settled
+  // Credit note only, PDF-only: refunds paid against it, loaded just before
+  // rendering (PDFService.attachReturnInfo). Not stored on the invoices row.
+  List<Refund> refunds = const [];
+  // Credit / debit note, display-only: type of the linked document ('Invoice'
+  // or 'Receipt'), loaded with [refunds] so labels say "Against Receipt".
+  String? originalInvoiceType;
+  bool isDraft; // saved as a draft — no invoiceNumber yet, excluded from revenue/tax/stock
 
   Invoice({
     required this.id,
@@ -63,8 +81,34 @@ class Invoice {
     this.hideInvoiceNumber = false,
     this.customInvoiceNumber,
     this.customFields = const [],
+    this.originalInvoiceId,
+    this.originalInvoiceNumber,
+    this.originalInvoiceDate,
+    this.returnReason,
+    this.creditSettlement,
+    this.status,
+    this.convertedToInvoiceId,
+    this.convertedFromInvoiceId,
     this.isDraft = false,
   });
+
+  bool get isConverted => status == 'converted';
+
+  /// Short number label for thermal receipts, by document type.
+  String get thermalNumberLabel {
+    switch (type) {
+      case 'Quotation':
+        return 'Quote No';
+      case 'Receipt':
+        return 'Receipt No';
+      case 'Credit Note':
+        return 'CN No';
+      case 'Debit Note':
+        return 'DN No';
+      default:
+        return 'Inv No';
+    }
+  }
 
   /// Text to render for the invoice number in PDF/receipt output, or null to omit the line entirely.
   String? pdfNumberText(String invoicePrefix, {bool showLeadingZeros = true}) {
@@ -124,6 +168,7 @@ extension _InvoiceItemTotals on InvoiceItem {
         quantity: quantity,
         discount: discount,
         discountPerUnit: discountPerUnit,
+        discountIsPercent: discountIsPercent,
         extraCost: extraCost ?? 0.0,
         taxRatePercent: product.tax_rate.toDouble(),
         priceIncludesTax: product.priceIncludesTax,

@@ -1,16 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:intl/number_symbols_data.dart' as intl_number_data;
 
 /// Default is English — the only fully-reviewed language. Every other
 /// supported language is machine-translated and marked Beta in the picker.
 final localeProvider = StateProvider<Locale>((ref) => const Locale('en'));
 
+/// `flutter gen-l10n` generates `NumberFormat.decimalPattern(localeName)`
+/// calls inside `AppLocalizationsBo` itself for every ARB message with a
+/// plural/number placeholder (e.g. `reportsInvoiceCountInPeriodLabel`) —
+/// `localeName` there is hardcoded to `'bo'` and can't be swapped without
+/// hand-editing generated code, which `generate: true` (pubspec.yaml)
+/// overwrites on every build. `intl` ships zero locale data for `bo`, so
+/// those calls throw `ArgumentError: Invalid locale "bo"` regardless of
+/// [Intl.defaultLocale] (that only covers calls with no explicit locale —
+/// see [applyAppLocale]).
+///
+/// Fix: `numberFormatSymbols` is a plain mutable top-level `Map`, not a
+/// `const`, so register `'bo'` with English's number symbols (Western
+/// digits, `.`/`,` separators) before any of those generated calls run.
+/// Call once, at app startup.
+void registerFallbackNumberSymbols() {
+  intl_number_data.numberFormatSymbols.putIfAbsent(
+      'bo', () => intl_number_data.numberFormatSymbols['en']!);
+}
+
 /// Updates the live app locale (provider state + [Intl.defaultLocale], so
 /// NumberFormat/DateFormat calls with no explicit locale follow it too).
 /// Callers are responsible for persisting the choice via SettingsRepository.
+///
+/// [Intl.defaultLocale] only falls back to English when the `intl` package
+/// has zero locale data for [locale] (true for `bo`/Tibetan's DateFormat
+/// data, even after [registerFallbackNumberSymbols] — hence requiring both,
+/// not either) — any no-explicit-locale `DateFormat`/`NumberFormat` call
+/// would otherwise throw `ArgumentError: Invalid locale "bo"` app-wide. The
+/// app's own UI strings ([localeProvider]/`AppLocalizations`) stay on the
+/// requested locale either way.
 void applyAppLocale(WidgetRef ref, Locale locale) {
-  Intl.defaultLocale = locale.toString();
+  final key = locale.toString();
+  Intl.defaultLocale =
+      DateFormat.localeExists(key) && NumberFormat.localeExists(key)
+          ? key
+          : 'en';
   ref.read(localeProvider.notifier).state = locale;
 }
 

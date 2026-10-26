@@ -8,6 +8,7 @@ import 'package:invoiso/domain/customer_identity.dart';
 import 'package:invoiso/domain/invoice_calculator.dart';
 import 'package:invoiso/domain/invoice_totals_calculator.dart';
 import 'package:invoiso/models/additional_cost.dart';
+import 'package:invoiso/models/cash_ledger_entry.dart';
 import 'package:invoiso/utils/app_date.dart';
 import 'package:invoiso/utils/formatters.dart';
 import 'package:invoiso/models/report_models.dart';
@@ -76,12 +77,17 @@ class _StatementLineDraft {
 
 class ReportService {
   static final _db = DatabaseHelper();
-  static const _invoiceItemNetSql = 'CASE WHEN ii.discount_per_unit = 1 '
+  static const _invoiceItemNetSql = 'CASE WHEN ii.discount_is_percent = 1 '
+      'THEN COALESCE(ii.unit_price, ii.product_price) * ii.quantity '
+      '* (1 - ii.discount / 100.0) + COALESCE(ii.extra_cost, 0) '
+      'WHEN ii.discount_per_unit = 1 '
       'THEN (COALESCE(ii.unit_price, ii.product_price) - ii.discount) * ii.quantity '
       '+ COALESCE(ii.extra_cost, 0) '
       'ELSE COALESCE(ii.unit_price, ii.product_price) * ii.quantity '
       '- ii.discount + COALESCE(ii.extra_cost, 0) END';
-  static const _invoiceItemDiscountSql = 'CASE WHEN ii.discount_per_unit = 1 '
+  static const _invoiceItemDiscountSql = 'CASE WHEN ii.discount_is_percent = 1 '
+      'THEN COALESCE(ii.unit_price, ii.product_price) * ii.quantity * ii.discount / 100.0 '
+      'WHEN ii.discount_per_unit = 1 '
       'THEN ii.discount * ii.quantity ELSE ii.discount END';
   // Revenue basis for P&L/dashboard: backs out embedded tax for
   // tax-inclusive-priced items so "revenue" stays a tax-exclusive figure,
@@ -106,7 +112,8 @@ class ReportService {
   }) async {
     final db = await _db.database;
 
-    final sb = StringBuffer('type = ? AND deleted_at IS NULL AND is_draft = 0');
+    final sb = StringBuffer(
+        "type = ? AND deleted_at IS NULL AND is_draft = 0 AND (status IS NULL OR status != 'declined')");
     final args = <dynamic>[type];
     if (from != null) {
       sb.write(' AND date >= ?');
@@ -146,22 +153,22 @@ class ReportService {
     );
     if (invRows.isEmpty) return [];
 
-    final ids = invRows.map((r) => r['id'] as String).toList();
-    final ph = List.filled(ids.length, '?').join(',');
+    // Subquery instead of one `?` per id — see Issues.md #36.
+    final invSubquery = '(SELECT id FROM invoices WHERE $sb)';
 
     final itemRows = await db.rawQuery(
       'SELECT invoice_id, quantity, unit_price, product_price, discount, '
-      'discount_per_unit, extra_cost, product_tax_rate, product_price_includes_tax, '
+      'discount_per_unit, discount_is_percent, extra_cost, product_tax_rate, product_price_includes_tax, '
       'product_purchase_price '
-      'FROM invoice_items WHERE invoice_id IN ($ph)',
-      ids,
+      'FROM invoice_items WHERE invoice_id IN $invSubquery',
+      args,
     );
 
     final payRows = await db.rawQuery(
       'SELECT invoice_id, COALESCE(SUM(amount_paid), 0.0) AS paid '
-      'FROM invoice_payments WHERE invoice_id IN ($ph) '
+      'FROM invoice_payments WHERE invoice_id IN $invSubquery '
       'GROUP BY invoice_id',
-      ids,
+      args,
     );
 
     final itemsByInv = <String, List<Map<String, dynamic>>>{};
@@ -237,13 +244,72 @@ class ReportService {
     }).toList();
   }
 
+  // ── Return adjustments (shared by the money reports) ───────────────────────
+
+  /// Period totals for credit notes (to subtract) and debit notes (to add),
+  /// plus refunds paid out (to subtract from collected). Same date/currency
+  /// filters as [_loadRows]. `refunds` are matched to their credit note's
+  /// currency.
+  static Future<
+      ({
+        double cnTotal,
+        double cnMargin,
+        double dnTotal,
+        double dnMargin,
+        double dnPaid,
+        double refunds,
+      })> _returnAdjustments(DateTime from, DateTime to,
+      {String? currencyCode}) async {
+    final cn = await _loadRows(
+        type: 'Credit Note', from: from, to: to, currencyCode: currencyCode);
+    final dn = await _loadRows(
+        type: 'Debit Note', from: from, to: to, currencyCode: currencyCode);
+    double cnTotal = 0, cnMargin = 0, dnTotal = 0, dnMargin = 0, dnPaid = 0;
+    for (final r in cn) {
+      cnTotal += r.total;
+      cnMargin += r.netRevenue - r.cogs;
+    }
+    for (final r in dn) {
+      dnTotal += r.total;
+      dnMargin += r.netRevenue - r.cogs;
+      dnPaid += r.paid;
+    }
+
+    final db = await _db.database;
+    final f = AppDate.dateKeyStart(from);
+    final t = AppDate.dateKeyEnd(to);
+    final cc = currencyCode != null
+        ? 'AND (i.currency_code = ? OR i.currency_code IS NULL) '
+        : '';
+    final refRows = await db.rawQuery(
+      'SELECT COALESCE(SUM(r.amount), 0.0) AS s '
+      'FROM refunds r JOIN invoices i ON i.id = r.credit_note_id '
+      'WHERE r.date_refunded >= ? AND r.date_refunded <= ? $cc',
+      [f, t, if (currencyCode != null) currencyCode],
+    );
+    final refunds = (refRows.first['s'] as num).toDouble();
+
+    return (
+      cnTotal: cnTotal,
+      cnMargin: cnMargin,
+      dnTotal: dnTotal,
+      dnMargin: dnMargin,
+      dnPaid: dnPaid,
+      refunds: refunds,
+    );
+  }
+
   // ── 1. Revenue KPIs ────────────────────────────────────────────────────────
 
   static Future<RevenueKpi> getRevenueSummary(DateTime from, DateTime to,
       {String? currencyCode}) async {
     final rows =
         await _loadRows(from: from, to: to, currencyCode: currencyCode);
-    if (rows.isEmpty) return RevenueKpi.empty;
+    final adj =
+        await _returnAdjustments(from, to, currencyCode: currencyCode);
+    if (rows.isEmpty && adj.cnTotal == 0 && adj.dnTotal == 0) {
+      return RevenueKpi.empty;
+    }
 
     double billed = 0,
         collected = 0,
@@ -260,12 +326,41 @@ class ReportService {
           r.total > 0 ? (r.paid / r.total).clamp(0.0, 1.0) : 0.0;
       realizedProfit += margin * collectedRatio;
     }
+
+    // Net off returns. "collected" is cash — back out the synthetic credit-note
+    // / customer-credit payments (paper settlements, not money in) and the
+    // refunds paid out.
+    final db = await _db.database;
+    final cc = currencyCode != null
+        ? 'AND (i.currency_code = ? OR i.currency_code IS NULL) '
+        : '';
+    final synthRows = await db.rawQuery(
+      "SELECT COALESCE(SUM(ip.amount_paid), 0.0) AS s "
+      "FROM invoice_payments ip JOIN invoices i ON i.id = ip.invoice_id "
+      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "AND ip.payment_method IN ('Credit Note', 'Customer Credit') $cc"
+      "AND ip.date_paid >= ? AND ip.date_paid <= ?",
+      [
+        if (currencyCode != null) currencyCode,
+        AppDate.dateKeyStart(from),
+        AppDate.dateKeyEnd(to),
+      ],
+    );
+    final syntheticPaid = (synthRows.first['s'] as num).toDouble();
+
+    billed += adj.dnTotal - adj.cnTotal;
+    collected -= syntheticPaid + adj.refunds;
+    if (collected < 0) collected = 0;
+    profit += adj.dnMargin - adj.cnMargin;
+    realizedProfit += adj.dnMargin - adj.cnMargin;
+
+    final count = rows.length;
     return RevenueKpi(
-      invoiceCount: rows.length,
+      invoiceCount: count,
       billed: billed,
       collected: collected,
       outstanding: outstanding,
-      avgInvoiceValue: billed / rows.length,
+      avgInvoiceValue: count > 0 ? billed / count : 0,
       profit: profit,
       realizedProfit: realizedProfit,
     );
@@ -292,7 +387,9 @@ class ReportService {
       "SELECT COUNT(*) AS cnt "
       "FROM invoice_items ii "
       "JOIN invoices i ON i.id = ii.invoice_id "
-      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' AND i.is_draft = 0 "
+      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "AND i.is_draft = 0 "
+      "AND (i.status IS NULL OR i.status != 'declined') "
       "AND (ii.product_purchase_price IS NULL OR ii.product_purchase_price = 0) "
       "$ccFilter"
       "AND i.date >= ? AND i.date <= ?",
@@ -321,16 +418,33 @@ class ReportService {
       t,
     ];
 
-    // Collected grouped by payment date (more accurate for cash-flow view)
+    // Collected grouped by payment date (more accurate for cash-flow view).
+    // Excludes synthetic credit-note / customer-credit settlements (not cash).
     final collectedRows = await db.rawQuery(
       "SELECT strftime('%Y-%m', ip.date_paid) AS month, "
       "COALESCE(SUM(ip.amount_paid), 0.0) AS collected "
       "FROM invoice_payments ip "
       "JOIN invoices i ON ip.invoice_id = i.id "
-      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' AND i.is_draft = 0 "
+      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "AND i.is_draft = 0 "
+      "AND (ip.payment_method IS NULL "
+      "OR ip.payment_method NOT IN ('Credit Note', 'Customer Credit')) "
+      "AND (i.status IS NULL OR i.status != 'declined') "
       "$currencyFilter"
       "AND ip.date_paid >= ? AND ip.date_paid <= ? "
       "GROUP BY month ORDER BY month",
+      args,
+    );
+
+    // Refunds paid out, grouped by refund month — reduce net cash collected.
+    final refundRows = await db.rawQuery(
+      "SELECT strftime('%Y-%m', r.date_refunded) AS month, "
+      "COALESCE(SUM(r.amount), 0.0) AS refunded "
+      "FROM refunds r JOIN invoices i ON i.id = r.credit_note_id "
+      "WHERE i.deleted_at IS NULL "
+      "$currencyFilter"
+      "AND r.date_refunded >= ? AND r.date_refunded <= ? "
+      "GROUP BY month",
       args,
     );
 
@@ -338,6 +452,11 @@ class ReportService {
       for (final r in collectedRows)
         r['month'] as String: (r['collected'] as num).toDouble()
     };
+    for (final r in refundRows) {
+      final m = r['month'] as String;
+      collectedByMonth[m] =
+          (collectedByMonth[m] ?? 0) - (r['refunded'] as num).toDouble();
+    }
 
     // Billed / net sales / COGS / outstanding / count grouped by invoice date
     final billedByMonth = <String, double>{};
@@ -353,6 +472,20 @@ class ReportService {
       cogsByMonth[m] = (cogsByMonth[m] ?? 0) + r.cogs;
       outstandingByMonth[m] = (outstandingByMonth[m] ?? 0) + r.outstanding;
       countByMonth[m] = (countByMonth[m] ?? 0) + 1;
+    }
+
+    // Net off credit notes (−) and debit notes (+) by their own date.
+    for (final entry in {'Credit Note': -1.0, 'Debit Note': 1.0}.entries) {
+      final sign = entry.value;
+      final noteRows = await _loadRows(
+          type: entry.key, from: from, to: to, currencyCode: currencyCode);
+      for (final r in noteRows) {
+        if (r.date.length < 7) continue;
+        final m = r.date.substring(0, 7);
+        billedByMonth[m] = (billedByMonth[m] ?? 0) + sign * r.total;
+        netByMonth[m] = (netByMonth[m] ?? 0) + sign * r.netRevenue;
+        cogsByMonth[m] = (cogsByMonth[m] ?? 0) + sign * r.cogs;
+      }
     }
 
     final allMonths = {...billedByMonth.keys, ...collectedByMonth.keys}.toList()
@@ -393,6 +526,20 @@ class ReportService {
       cogsByDay[d] = (cogsByDay[d] ?? 0) + r.cogs;
     }
 
+    // Net off credit notes (−) and debit notes (+) by their own date.
+    for (final entry in {'Credit Note': -1.0, 'Debit Note': 1.0}.entries) {
+      final sign = entry.value;
+      final noteRows = await _loadRows(
+          type: entry.key, from: from, to: to, currencyCode: currencyCode);
+      for (final r in noteRows) {
+        if (r.date.length < 10) continue;
+        final d = r.date.substring(0, 10);
+        netByDay[d] = (netByDay[d] ?? 0) + sign * r.netRevenue;
+        cogsByDay[d] = (cogsByDay[d] ?? 0) + sign * r.cogs;
+        countByDay.putIfAbsent(d, () => 0);
+      }
+    }
+
     final days = countByDay.keys.toList()..sort();
     return days
         .map((d) => DailyPoint(
@@ -402,6 +549,62 @@ class ReportService {
               cogs: cogsByDay[d] ?? 0.0,
             ))
         .toList();
+  }
+
+  /// Adds each day's net Cash / UPI-Bank change to [rows]. Days with only
+  /// ledger activity get a row with no invoices; the result stays date-sorted.
+  static List<DailyPoint> mergeDailyCashUpi(
+      List<DailyPoint> rows, Map<String, CashDailyNet> net) {
+    final byDate = {for (final d in rows) d.date: d};
+    final days = {...byDate.keys, ...net.keys}.toList()..sort();
+    return days.map((day) {
+      final d = byDate[day];
+      final n = net[day];
+      return DailyPoint(
+        date: day,
+        invoiceCount: d?.invoiceCount ?? 0,
+        billed: d?.billed ?? 0,
+        cogs: d?.cogs ?? 0,
+        cash: n?.cash ?? 0,
+        upiBank: n?.upiBank ?? 0,
+        paidCash: n?.payCash ?? 0,
+        paidUpi: n?.payUpi ?? 0,
+        serviceIncome: n?.fee ?? 0,
+        exchangeCount: n?.exchanges ?? 0,
+      );
+    }).toList();
+  }
+
+  /// Daily Report table lines: per day, an invoice line and/or a cash-exchange
+  /// line, each only when the day has that activity and its type is wanted.
+  static List<DailyLine> dailyLines(List<DailyPoint> rows,
+          {bool invoices = true, bool exchanges = false}) =>
+      [
+        for (final d in rows) ...[
+          if (invoices && d.hasInvoiceActivity) (d: d, exchange: false),
+          if (exchanges && d.hasExchangeActivity) (d: d, exchange: true),
+        ],
+      ];
+
+  /// Cells after the date for one line. With [cashUpi]: Type, Count, Sales,
+  /// COGS, Profit, Margin %, Cash, UPI/Bank — an exchange line's profit is its
+  /// service fee and its Cash / UPI-Bank the ledger movements; an invoice
+  /// line's are the payments received. Without: Invoices .. Margin %.
+  static List<String> _dailyLineCells(DailyLine l, bool cashUpi,
+      String Function(double) money, String Function(double) pct) {
+    final d = l.d;
+    if (l.exchange) {
+      return [
+        'Cash exchange', '${d.exchangeCount}', '', '', money(d.serviceIncome),
+        '', money(d.cash), money(d.upiBank),
+      ];
+    }
+    return [
+      if (cashUpi) 'Invoices',
+      '${d.invoiceCount}', money(d.billed), money(d.cogs), money(d.profit),
+      pct(d.marginPercent),
+      if (cashUpi) ...[money(d.paidCash), money(d.paidUpi)],
+    ];
   }
 
   // ── 3. Payment status breakdown ────────────────────────────────────────────
@@ -549,19 +752,25 @@ class ReportService {
     final taxByRate = <double, double>{};
     final taxableByRate = <double, double>{};
 
+    // Returns net off tax: a credit note subtracts, a debit note adds.
+    const typeSign = "(CASE WHEN i.type = 'Credit Note' THEN -1 ELSE 1 END)";
+    const salesDocTypes = "i.type IN ('Invoice', 'Credit Note', 'Debit Note')";
+
     // Per-item mode: tax computed per line item's product_tax_rate
     final perItemRows = await db.rawQuery(
       "SELECT ii.product_tax_rate AS rate, "
-      "SUM(CASE WHEN ii.product_price_includes_tax = 1 "
+      "SUM($typeSign * CASE WHEN ii.product_price_includes_tax = 1 "
       "THEN $_invoiceItemNetSql * ii.product_tax_rate / (100 + ii.product_tax_rate) "
       "ELSE $_invoiceItemNetSql * ii.product_tax_rate / 100 "
       "END) AS tax_amount, "
-      "SUM(CASE WHEN ii.product_price_includes_tax = 1 "
+      "SUM($typeSign * CASE WHEN ii.product_price_includes_tax = 1 "
       "THEN $_invoiceItemNetSql * 100.0 / (100 + ii.product_tax_rate) "
       "ELSE $_invoiceItemNetSql END) AS taxable_amount "
       "FROM invoice_items ii "
       "JOIN invoices i ON i.id = ii.invoice_id "
-      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' AND i.is_draft = 0 "
+      "WHERE i.deleted_at IS NULL AND $salesDocTypes "
+      "AND i.is_draft = 0 "
+      "AND (i.status IS NULL OR i.status != 'declined') "
       "AND i.tax_mode = 'per_item' "
       "$ccFilter"
       "AND i.date >= ? AND i.date <= ? "
@@ -579,9 +788,11 @@ class ReportService {
 
     // Global mode: single tax rate applied to the invoice subtotal
     final globalInvRows = await db.rawQuery(
-      "SELECT i.id, i.tax_rate, i.additional_costs "
+      "SELECT i.id, i.type, i.tax_rate, i.additional_costs "
       "FROM invoices i "
-      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' AND i.is_draft = 0 "
+      "WHERE i.deleted_at IS NULL AND $salesDocTypes "
+      "AND i.is_draft = 0 "
+      "AND (i.status IS NULL OR i.status != 'declined') "
       "AND i.tax_mode = 'global' AND i.tax_rate > 0 "
       "$ccFilter"
       "AND i.date >= ? AND i.date <= ?",
@@ -589,13 +800,19 @@ class ReportService {
     );
 
     if (globalInvRows.isNotEmpty) {
-      final ids = globalInvRows.map((r) => r['id'] as String).toList();
-      final ph = List.filled(ids.length, '?').join(',');
+      // Subquery instead of one `?` per id — see Issues.md #36.
       final itemRows = await db.rawQuery(
         "SELECT invoice_id, quantity, unit_price, product_price, discount, "
-        "discount_per_unit, extra_cost, product_tax_rate, product_price_includes_tax "
-        "FROM invoice_items WHERE invoice_id IN ($ph)",
-        ids,
+        "discount_per_unit, discount_is_percent, extra_cost, product_tax_rate, product_price_includes_tax "
+        "FROM invoice_items WHERE invoice_id IN ("
+        "SELECT i.id FROM invoices i "
+        "WHERE i.deleted_at IS NULL AND $salesDocTypes "
+        "AND i.is_draft = 0 "
+        "AND (i.status IS NULL OR i.status != 'declined') "
+        "AND i.tax_mode = 'global' AND i.tax_rate > 0 "
+        "$ccFilter"
+        "AND i.date >= ? AND i.date <= ?)",
+        dateArgs,
       );
       final itemsByInv = <String, List<Map<String, dynamic>>>{};
       for (final r in itemRows) {
@@ -604,6 +821,7 @@ class ReportService {
       }
       for (final inv in globalInvRows) {
         final id = inv['id'] as String;
+        final sign = (inv['type'] as String?) == 'Credit Note' ? -1.0 : 1.0;
         final taxRate = (inv['tax_rate'] as num?)?.toDouble() ?? 0.0;
         final totals = InvoiceTotalsCalculator.totals(
           lines: (itemsByInv[id] ?? []).map((r) =>
@@ -617,9 +835,9 @@ class ReportService {
         final tax = totals.tax;
         final ratePercent = taxRate * 100;
         if (tax > 0) {
-          taxByRate[ratePercent] = (taxByRate[ratePercent] ?? 0) + tax;
+          taxByRate[ratePercent] = (taxByRate[ratePercent] ?? 0) + sign * tax;
           taxableByRate[ratePercent] =
-              (taxableByRate[ratePercent] ?? 0) + totals.subtotal;
+              (taxableByRate[ratePercent] ?? 0) + sign * totals.subtotal;
         }
       }
     }
@@ -650,16 +868,35 @@ class ReportService {
       (byCustomer[r.customerKey] ??= []).add(r);
     }
 
-    final result = byCustomer.entries.map((e) {
+    // Net a customer's billed total: − credit notes, + debit notes.
+    final noteAdjByCustomer = <String, double>{};
+    final noteNameByCustomer = <String, String>{};
+    for (final entry in {'Credit Note': -1.0, 'Debit Note': 1.0}.entries) {
+      final sign = entry.value;
+      final noteRows = await _loadRows(
+          type: entry.key, from: from, to: to, currencyCode: currencyCode);
+      for (final r in noteRows) {
+        noteAdjByCustomer[r.customerKey] =
+            (noteAdjByCustomer[r.customerKey] ?? 0) + sign * r.total;
+        noteNameByCustomer[r.customerKey] = r.customerName;
+      }
+    }
+
+    final keys = {...byCustomer.keys, ...noteAdjByCustomer.keys};
+    final result = keys.map((key) {
+      final invRows = byCustomer[key] ?? const <_InvRow>[];
       double billed = 0, collected = 0, outstanding = 0;
-      for (final r in e.value) {
+      for (final r in invRows) {
         billed += r.total;
         collected += r.paid;
         outstanding += r.outstanding;
       }
+      billed += noteAdjByCustomer[key] ?? 0;
       return TopCustomer(
-        name: e.value.first.customerName,
-        invoiceCount: e.value.length,
+        name: invRows.isNotEmpty
+            ? invRows.first.customerName
+            : (noteNameByCustomer[key] ?? key),
+        invoiceCount: invRows.length,
         billed: billed,
         collected: collected,
         outstanding: outstanding,
@@ -727,17 +964,35 @@ class ReportService {
       (byCurrency[row.currencyCode] ??= []).add(row);
     }
 
+    // Credit / Debit notes for this customer — same total/date shape as an
+    // invoice row, so they reuse the loader. A credit note lowers the balance
+    // (credit line), a debit note raises it (debit line).
+    final creditNotes = await _loadRows(
+        type: 'Credit Note', customerKey: customerKey, currencyCode: currencyCode);
+    final debitNotes = await _loadRows(
+        type: 'Debit Note', customerKey: customerKey, currencyCode: currencyCode);
+    final creditNotesByCurrency = <String, List<_InvRow>>{};
+    for (final r in creditNotes) {
+      (creditNotesByCurrency[r.currencyCode] ??= []).add(r);
+    }
+    final debitNotesByCurrency = <String, List<_InvRow>>{};
+    for (final r in debitNotes) {
+      (debitNotesByCurrency[r.currencyCode] ??= []).add(r);
+    }
+
     final statements = <CustomerStatement>[];
     for (final entry in byCurrency.entries) {
       final currencyRows = entry.value;
       final ids = currencyRows.map((r) => r.id).toList();
-      final ph = List.filled(ids.length, '?').join(',');
-      final paymentRows = await db.rawQuery(
-        'SELECT invoice_id, receipt_number, amount_paid, date_paid, '
-        'payment_method, notes '
-        'FROM invoice_payments WHERE invoice_id IN ($ph) '
-        'ORDER BY date_paid ASC, rowid ASC',
+      final paymentRows = await queryInChunks(
         ids,
+        (chunk, ph) => db.rawQuery(
+          'SELECT invoice_id, receipt_number, amount_paid, date_paid, '
+          'payment_method, notes '
+          'FROM invoice_payments WHERE invoice_id IN ($ph) '
+          'ORDER BY date_paid ASC, rowid ASC',
+          chunk,
+        ),
       );
       final invoicesById = {for (final r in currencyRows) r.id: r};
       final drafts = <_StatementLineDraft>[];
@@ -792,6 +1047,75 @@ class ReportService {
             debit: 0,
             credit: amount,
           ));
+        }
+      }
+
+      // Credit notes → credit lines (customer owes less)
+      final cnRows = creditNotesByCurrency[entry.key] ?? const <_InvRow>[];
+      for (final cn in cnRows) {
+        if (cn.date.compareTo(f) < 0) {
+          opening -= cn.total;
+        } else if (cn.date.compareTo(t) <= 0) {
+          drafts.add(_StatementLineDraft(
+            date: cn.date,
+            order: 2,
+            type: 'Credit Note',
+            reference: cn.id,
+            description: 'Credit note',
+            debit: 0,
+            credit: cn.total,
+          ));
+        }
+      }
+
+      // Debit notes → debit lines (customer owes more)
+      final dnRows = debitNotesByCurrency[entry.key] ?? const <_InvRow>[];
+      for (final dn in dnRows) {
+        if (dn.date.compareTo(f) < 0) {
+          opening += dn.total;
+        } else if (dn.date.compareTo(t) <= 0) {
+          invoiced += dn.total;
+          drafts.add(_StatementLineDraft(
+            date: dn.date,
+            order: 2,
+            type: 'Debit Note',
+            reference: dn.id,
+            description: 'Debit note',
+            debit: dn.total,
+            credit: 0,
+          ));
+        }
+      }
+
+      // Refunds against those credit notes → debit lines (cash paid back)
+      if (cnRows.isNotEmpty) {
+        final cnIds = cnRows.map((r) => r.id).toList();
+        final cnPh = List.filled(cnIds.length, '?').join(',');
+        final refundRows = await db.rawQuery(
+          'SELECT credit_note_id, amount, date_refunded, refund_method '
+          'FROM refunds WHERE credit_note_id IN ($cnPh) '
+          'ORDER BY date_refunded ASC, rowid ASC',
+          cnIds,
+        );
+        for (final r in refundRows) {
+          final date = r['date_refunded'] as String? ?? '';
+          final amount = (r['amount'] as num?)?.toDouble() ?? 0;
+          if (date.compareTo(f) < 0) {
+            opening += amount;
+          } else if (date.compareTo(t) <= 0) {
+            final method = r['refund_method'] as String?;
+            drafts.add(_StatementLineDraft(
+              date: date,
+              order: 3,
+              type: 'Refund',
+              reference: r['credit_note_id'] as String? ?? '',
+              description: method == null || method.isEmpty
+                  ? 'Refund'
+                  : 'Refund ($method)',
+              debit: amount,
+              credit: 0,
+            ));
+          }
         }
       }
 
@@ -854,18 +1178,23 @@ class ReportService {
       t,
       limit,
     ];
+    // A credit note's lines subtract from a product's totals; a debit note's add.
+    const s = "(CASE WHEN i.type = 'Credit Note' THEN -1 ELSE 1 END)";
     final orderBy = rankByProfit
-        ? '(SUM($_invoiceItemTaxableNetSql) - SUM(ii.quantity * ii.product_purchase_price))'
+        ? '(SUM($s * ($_invoiceItemTaxableNetSql)) - SUM($s * ii.quantity * ii.product_purchase_price))'
         : 'revenue';
     final rows = await db.rawQuery(
       "SELECT ii.product_name, "
-      "SUM(ii.quantity) AS units_sold, "
-      "SUM($_invoiceItemTaxableNetSql) AS revenue, "
-      "SUM($_invoiceItemDiscountSql) AS discount_given, "
-      "SUM(ii.quantity * ii.product_purchase_price) AS cogs "
+      "SUM($s * ii.quantity) AS units_sold, "
+      "SUM($s * ($_invoiceItemTaxableNetSql)) AS revenue, "
+      "SUM($s * ($_invoiceItemDiscountSql)) AS discount_given, "
+      "SUM($s * ii.quantity * ii.product_purchase_price) AS cogs "
       "FROM invoice_items ii "
       "JOIN invoices i ON i.id = ii.invoice_id "
-      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' AND i.is_draft = 0 "
+      "WHERE i.deleted_at IS NULL "
+      "AND i.is_draft = 0 "
+      "AND i.type IN ('Invoice', 'Credit Note', 'Debit Note') "
+      "AND (i.status IS NULL OR i.status != 'declined') "
       "$ccFilter"
       "AND i.date >= ? AND i.date <= ? "
       "GROUP BY ii.product_name ORDER BY $orderBy DESC LIMIT ?",
@@ -880,6 +1209,186 @@ class ReportService {
               cogs: (r['cogs'] as num?)?.toDouble() ?? 0.0,
             ))
         .toList();
+  }
+
+  // ── 7b. Inventory valuation ───────────────────────────────────────────────
+  // "Tracked" products = type='product' AND unlimited_stock=0 — the only rows
+  // with a meaningful "capital blocked in stock" figure. Services and
+  // unlimited-stock items are excluded from the totals (counted separately).
+
+  static const _trackedProductWhere =
+      "type = 'product' AND unlimited_stock = 0";
+
+  static Future<InventoryValuationSummary> getInventoryValuationSummary() async {
+    final db = await _db.database;
+    final rows = await db.rawQuery(
+      'SELECT COALESCE(SUM(stock * purchase_price), 0) AS stock_value, '
+      'COALESCE(SUM(stock * price), 0) AS retail_value, '
+      'COALESCE(SUM(stock), 0) AS total_units, '
+      'COUNT(*) AS product_count '
+      'FROM products WHERE $_trackedProductWhere',
+    );
+    final excludedRows = await db.rawQuery(
+      "SELECT COUNT(*) AS excluded_count FROM products "
+      "WHERE NOT ($_trackedProductWhere)",
+    );
+    final r = rows.first;
+    return InventoryValuationSummary(
+      stockValue: (r['stock_value'] as num).toDouble(),
+      retailValue: (r['retail_value'] as num).toDouble(),
+      totalUnits: (r['total_units'] as num).toInt(),
+      productCount: (r['product_count'] as num).toInt(),
+      excludedCount: (excludedRows.first['excluded_count'] as num).toInt(),
+    );
+  }
+
+  /// [limit] caps the row list for on-screen display; pass null for exports
+  /// so the file always contains every tracked product, never a partial set.
+  static Future<List<InventoryValuationRow>> getInventoryValuationRows({
+    int? limit = 500,
+  }) async {
+    final db = await _db.database;
+    final rows = await db.rawQuery(
+      'SELECT id, name, stock, purchase_price, price, unit FROM products '
+      'WHERE $_trackedProductWhere '
+      'ORDER BY (stock * purchase_price) DESC'
+      '${limit != null ? ' LIMIT $limit' : ''}',
+    );
+    return rows
+        .map((r) => InventoryValuationRow(
+              productId: r['id'] as String? ?? '',
+              name: r['name'] as String? ?? '',
+              stock: (r['stock'] as num?)?.toInt() ?? 0,
+              purchasePrice: (r['purchase_price'] as num?)?.toDouble() ?? 0.0,
+              price: (r['price'] as num?)?.toDouble() ?? 0.0,
+              unit: r['unit'] as String? ?? '',
+            ))
+        .toList();
+  }
+
+  static String exportInventoryValuationCsv(
+    List<InventoryValuationRow> rows,
+    InventoryValuationSummary summary,
+  ) {
+    return buildQuotedCsv([
+      ['SL', 'Product', 'Stock', 'Purchase Price', 'Stock Value', 'Sale Value'],
+      for (var i = 0; i < rows.length; i++)
+        [
+          i + 1,
+          rows[i].name,
+          rows[i].stock,
+          rows[i].purchasePrice.toStringAsFixed(2),
+          rows[i].stockValue.toStringAsFixed(2),
+          rows[i].retailValue.toStringAsFixed(2),
+        ],
+      [
+        '',
+        'Total',
+        summary.totalUnits,
+        '',
+        summary.stockValue.toStringAsFixed(2),
+        summary.retailValue.toStringAsFixed(2),
+      ],
+    ]);
+  }
+
+  static Future<Uint8List> exportInventoryValuationPdf(
+    List<InventoryValuationRow> rows,
+    InventoryValuationSummary summary, {
+    required String currencySymbol,
+    bool showFooterBranding = true,
+  }) async {
+    final theme = await PdfFontService.loadTheme();
+    final doc = pw.Document(theme: theme);
+    final company = await BackendServices.companyInfo.getCompanyInfo();
+    final dateFmt = (await BackendServices.settings.getDateFormat()).key;
+    final generatedOn = DateFormat(dateFmt).format(DateTime.now());
+
+    String money(double v) => '$currencySymbol ${v.toStringAsFixed(2)}';
+
+    doc.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(24),
+        header: (context) => pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            PdfReportHeader.build(
+                company: company,
+                title: 'INVENTORY VALUATION',
+                generatedOn: generatedOn),
+            pw.Text(
+                'Blocked value: ${money(summary.stockValue)}   •   '
+                '${summary.productCount} product(s)',
+                style: const pw.TextStyle(
+                    fontSize: 10, color: PdfColors.grey700)),
+            pw.SizedBox(height: 12),
+          ],
+        ),
+        footer: (context) => pw.Container(
+          alignment: pw.Alignment.centerRight,
+          margin: const pw.EdgeInsets.only(top: 16),
+          child: pw.Text(
+            showFooterBranding
+                ? "Page ${context.pageNumber} of ${context.pagesCount}  -  Generated by Invoiso"
+                : "Page ${context.pageNumber} of ${context.pagesCount}",
+            style: pw.TextStyle(
+                fontSize: PdfLayout.footerBrandingFontSize,
+                color: PdfColors.grey600),
+          ),
+        ),
+        build: (context) => [
+          pw.TableHelper.fromTextArray(
+            headers: [
+              'SL',
+              'Product',
+              'Stock',
+              'Purchase Price',
+              'Stock Value',
+              'Sale Value',
+            ],
+            data: [
+              for (var i = 0; i < rows.length; i++)
+                [
+                  '${i + 1}',
+                  rows[i].name,
+                  '${rows[i].stock}',
+                  money(rows[i].purchasePrice),
+                  money(rows[i].stockValue),
+                  money(rows[i].retailValue),
+                ],
+              [
+                '',
+                'Total',
+                '${summary.totalUnits}',
+                '',
+                money(summary.stockValue),
+                money(summary.retailValue),
+              ],
+            ],
+            headerStyle: pw.TextStyle(
+                fontWeight: pw.FontWeight.bold,
+                fontSize: 9,
+                color: PdfColors.white),
+            cellStyle: const pw.TextStyle(fontSize: 9),
+            headerDecoration:
+                const pw.BoxDecoration(color: PdfReportHeader.accentColor),
+            cellAlignments: {
+              0: pw.Alignment.centerRight,
+              1: pw.Alignment.centerLeft,
+              2: pw.Alignment.centerRight,
+              3: pw.Alignment.centerRight,
+              4: pw.Alignment.centerRight,
+              5: pw.Alignment.centerRight,
+            },
+            cellHeight: 22,
+            oddRowDecoration:
+                const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF8FAFC)),
+          ),
+        ],
+      ),
+    );
+    return doc.save();
   }
 
   // ── 8. Quotation conversion ───────────────────────────────────────────────
@@ -932,17 +1441,20 @@ class ReportService {
 
   // ── CSV export helpers ─────────────────────────────────────────────────────
 
-  static String exportDailyReportCsv(List<DailyPoint> rows) {
+  /// [cashUpi] adds the Type column and Cash / UPI-Bank columns, see
+  /// [_dailyLineCells].
+  static String exportDailyReportCsv(List<DailyLine> lines,
+      {bool cashUpi = false}) {
     return buildQuotedCsv([
-      ['Date', 'Invoices', 'Sales', 'COGS', 'Profit', 'Margin %'],
-      for (final d in rows)
+      cashUpi
+          ? ['Date', 'Type', 'Count', 'Sales', 'COGS', 'Profit', 'Margin %',
+              'Cash', 'UPI/Bank']
+          : ['Date', 'Invoices', 'Sales', 'COGS', 'Profit', 'Margin %'],
+      for (final l in lines)
         [
-          d.date,
-          d.invoiceCount,
-          d.billed.toStringAsFixed(2),
-          d.cogs.toStringAsFixed(2),
-          d.profit.toStringAsFixed(2),
-          d.marginPercent.toStringAsFixed(1),
+          l.d.date,
+          ..._dailyLineCells(l, cashUpi, (v) => v.toStringAsFixed(2),
+              (v) => v.toStringAsFixed(1)),
         ],
     ]);
   }
@@ -1262,10 +1774,11 @@ class ReportService {
   // ── PDF export ──────────────────────────────────────────────────────────────
 
   static Future<Uint8List> exportDailyReportPdf(
-    List<DailyPoint> rows, {
+    List<DailyLine> lines, {
     required String currencySymbol,
     required String dateRangeLabel,
     bool showFooterBranding = true,
+    bool cashUpi = false,
   }) async {
     final theme = await PdfFontService.loadTheme();
     final doc = pw.Document(theme: theme);
@@ -1279,11 +1792,19 @@ class ReportService {
       return d == null ? v : DateFormat(dateFmt).format(d);
     }
 
-    final totalInvoices = rows.fold<int>(0, (a, d) => a + d.invoiceCount);
-    final totalSales = rows.fold<double>(0, (a, d) => a + d.billed);
-    final totalCogs = rows.fold<double>(0, (a, d) => a + d.cogs);
+    final inv = [for (final l in lines) if (!l.exchange) l.d];
+    final exc = [for (final l in lines) if (l.exchange) l.d];
+    final totalInvoices = inv.fold<int>(0, (a, d) => a + d.invoiceCount);
+    final totalSales = inv.fold<double>(0, (a, d) => a + d.billed);
+    final totalCogs = inv.fold<double>(0, (a, d) => a + d.cogs);
     final totalProfit = totalSales - totalCogs;
     final totalMargin = totalSales == 0 ? 0.0 : (totalProfit / totalSales) * 100;
+    final paidCash = inv.fold<double>(0, (a, d) => a + d.paidCash);
+    final paidUpi = inv.fold<double>(0, (a, d) => a + d.paidUpi);
+    final totalCash = exc.fold<double>(0, (a, d) => a + d.cash);
+    final totalUpi = exc.fold<double>(0, (a, d) => a + d.upiBank);
+    final totalTxns = exc.fold<int>(0, (a, d) => a + d.exchangeCount);
+    final totalFees = exc.fold<double>(0, (a, d) => a + d.serviceIncome);
 
     doc.addPage(
       pw.MultiPage(
@@ -1311,30 +1832,31 @@ class ReportService {
         ),
         build: (context) => [
           pw.TableHelper.fromTextArray(
-            headers: ['SL', 'Date', 'Invoices', 'Sales', 'COGS', 'Profit', 'Margin %'],
-            data: List<List<String>>.generate(rows.length, (i) {
-              final d = rows[i];
-              return [
-                '${i + 1}',
-                fmtDate(d.date),
-                '${d.invoiceCount}',
-                money(d.billed),
-                money(d.cogs),
-                money(d.profit),
-                '${d.marginPercent.toStringAsFixed(1)}%',
-              ];
-            }),
+            headers: cashUpi
+                ? ['SL', 'Date', 'Type', 'Count', 'Sales', 'COGS', 'Profit',
+                    'Margin %', 'Cash', 'UPI/Bank']
+                : ['SL', 'Date', 'Invoices', 'Sales', 'COGS', 'Profit',
+                    'Margin %'],
+            data: List<List<String>>.generate(lines.length, (i) => [
+                  '${i + 1}',
+                  fmtDate(lines[i].d.date),
+                  ..._dailyLineCells(lines[i], cashUpi, money,
+                      (v) => '${v.toStringAsFixed(1)}%'),
+                ]),
             headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9, color: PdfColors.white),
             cellStyle: const pw.TextStyle(fontSize: 9),
             headerDecoration: const pw.BoxDecoration(color: PdfReportHeader.accentColor),
             cellAlignments: {
               0: pw.Alignment.centerRight,
               1: pw.Alignment.centerLeft,
-              2: pw.Alignment.centerRight,
+              2: cashUpi ? pw.Alignment.centerLeft : pw.Alignment.centerRight,
               3: pw.Alignment.centerRight,
               4: pw.Alignment.centerRight,
               5: pw.Alignment.centerRight,
               6: pw.Alignment.centerRight,
+              7: pw.Alignment.centerRight,
+              8: pw.Alignment.centerRight,
+              9: pw.Alignment.centerRight,
             },
             cellHeight: 22,
             oddRowDecoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF8FAFC)),
@@ -1346,15 +1868,28 @@ class ReportService {
               color: PdfColors.grey100,
               borderRadius: pw.BorderRadius.circular(4),
             ),
-            child: pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.end,
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.end,
               children: [
-                pw.Text(
-                  'Total — Invoices: $totalInvoices   Sales: ${money(totalSales)}   '
-                  'COGS: ${money(totalCogs)}   Profit: ${money(totalProfit)}   '
-                  'Margin: ${totalMargin.toStringAsFixed(1)}%',
-                  style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
-                ),
+                if (inv.isNotEmpty || exc.isEmpty)
+                  pw.Text(
+                    'Invoices: $totalInvoices   Sales: ${money(totalSales)}   '
+                    'COGS: ${money(totalCogs)}   Profit: ${money(totalProfit)}   '
+                    'Margin: ${totalMargin.toStringAsFixed(1)}%'
+                    '${cashUpi ? '   Cash: ${money(paidCash)}   UPI/Bank: ${money(paidUpi)}' : ''}',
+                    style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+                  ),
+                if (exc.isNotEmpty)
+                  pw.Text(
+                    'Cash exchange — Txns: $totalTxns   Service fee: ${money(totalFees)}   '
+                    'Cash: ${money(totalCash)}   UPI/Bank: ${money(totalUpi)}',
+                    style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+                  ),
+                if (inv.isNotEmpty && exc.isNotEmpty)
+                  pw.Text(
+                    'Total profit: ${money(totalProfit + totalFees)}',
+                    style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+                  ),
               ],
             ),
           ),

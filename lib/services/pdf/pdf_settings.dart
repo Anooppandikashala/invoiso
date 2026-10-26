@@ -3,6 +3,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/models/company_info.dart';
+import 'package:invoiso/models/customer_field_settings.dart';
 
 /// All per-session settings needed to render a PDF.
 /// Fetch once via [PDFService.fetchPdfSettings], reuse for every invoice in a batch.
@@ -10,6 +11,10 @@ class PdfGenerationSettings {
   final CompanyInfo? company;
   final InvoiceTemplate template;
   final String invoicePrefix;
+  final String creditNotePrefix;
+  final String debitNotePrefix;
+  final String? quotationPrefix; // null = use invoicePrefix
+  final String? receiptPrefix; // null = use invoicePrefix
   final bool showGst;
   final bool showQuantity;
   final bool showDiscount;
@@ -58,17 +63,32 @@ class PdfGenerationSettings {
   final double watermarkOpacity;
   final bool watermarkFullPage;
   final bool showCgstSgst;
+  final bool showTaxColumn;
   final bool showRoundOff;
   final bool showLeadingZeros;
   final bool showSlNo;
   final bool landscape;
   // Which product-metadata columns print in the Grid Classic A4 items table.
   final Map<String, bool> metadataColumns;
+  // Optional customer fields (Ship To, age/DOB/gender, custom fields).
+  final CustomerFieldSettings customerFields;
+  // Multiplier for every font in non-thermal templates (PdfFontSize.scale).
+  final double fontSizeScale;
+  // Resolved per-section scales (section preset, else fontSizeScale).
+  final double companyNameScale;
+  final double docTitleScale;
+  final double tableHeaderScale;
+  final double tableItemsScale;
+  final double totalsScale;
 
   const PdfGenerationSettings({
     required this.company,
     required this.template,
     required this.invoicePrefix,
+    this.creditNotePrefix = 'CN-',
+    this.debitNotePrefix = 'DN-',
+    this.quotationPrefix,
+    this.receiptPrefix,
     required this.showGst,
     required this.showQuantity,
     required this.showDiscount,
@@ -91,6 +111,7 @@ class PdfGenerationSettings {
     required this.showTotalQuantity,
     required this.pdfTheme,
     required this.showCgstSgst,
+    this.showTaxColumn = true,
     this.thermalItemLayout = 'table',
     this.thermalCompanyNameSize = 'medium',
     this.signatureBytes,
@@ -122,5 +143,29 @@ class PdfGenerationSettings {
     this.showSlNo = true,
     this.landscape = false,
     this.metadataColumns = const {},
+    this.customerFields = const CustomerFieldSettings(),
+    this.fontSizeScale = 1.0,
+    this.companyNameScale = 1.0,
+    this.docTitleScale = 1.0,
+    this.tableHeaderScale = 1.0,
+    this.tableItemsScale = 1.0,
+    this.totalsScale = 1.0,
   });
+
+  /// Number prefix for a document [type]; quotation/receipt fall back to the
+  /// invoice prefix when not set.
+  String prefixFor(String type) {
+    switch (type) {
+      case 'Credit Note':
+        return creditNotePrefix;
+      case 'Debit Note':
+        return debitNotePrefix;
+      case 'Quotation':
+        return quotationPrefix ?? invoicePrefix;
+      case 'Receipt':
+        return receiptPrefix ?? invoicePrefix;
+      default:
+        return invoicePrefix;
+    }
+  }
 }

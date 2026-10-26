@@ -6,7 +6,13 @@ import 'package:intl/intl.dart';
 import 'package:invoiso/common/common.dart';
 import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/services/pdf/pdf_service.dart';
-import 'package:invoiso/services/pdf/pdf_widgets.dart' show invoiceTaxLabel;
+import 'package:invoiso/services/pdf/pdf_widgets.dart'
+    show
+        invoiceTaxLabel,
+        customerExtraLines,
+        shipToLines,
+        showShipTo,
+        returnInfoLines;
 import 'package:thermal_printer/thermal_printer.dart';
 
 /// Prints receipts as raw ESC/POS commands sent directly to the printer,
@@ -91,6 +97,7 @@ class ThermalPrinterService {
   static Future<List<int>> _buildReceiptBytes(Invoice invoice) async {
     final dateFmt = await BackendServices.settings.getDateFormat();
     final settings = await PDFService.fetchPdfSettings(datePattern: dateFmt.key);
+    await PDFService.attachReturnInfo(invoice);
     final previousBalanceDue = settings.showPreviousBalance
         ? await BackendServices.invoices.getPreviousBalanceDueForInvoice(invoice)
         : 0.0;
@@ -182,6 +189,9 @@ class ThermalPrinterService {
     }
     hr();
     line(invoice.type.toUpperCase(), align: PosAlign.center, bold: true);
+    if (invoice.status == 'declined') {
+      line('*** DECLINED ***', align: PosAlign.center, bold: true);
+    }
     hr();
 
     // ── Invoice meta ──
@@ -189,9 +199,9 @@ class ThermalPrinterService {
     final dateStr = settings.showTimeInPdf
         ? '${dateFormatter.format(invoice.date)} ${DateFormat(settings.pdfTimeFormat == '12' ? 'h:mm a' : 'HH:mm', 'en_US').format(invoice.date)}'
         : dateFormatter.format(invoice.date);
-    final numberText = invoice.pdfNumberText(settings.invoicePrefix,
+    final numberText = invoice.pdfNumberText(settings.prefixFor(invoice.type),
         showLeadingZeros: settings.showLeadingZeros);
-    twoCol(numberText != null ? 'Inv No: $numberText' : '', 'Date: $dateStr');
+    twoCol(numberText != null ? '${invoice.thermalNumberLabel}: $numberText' : '', 'Date: $dateStr');
     if (invoice.dueDate != null) {
       twoCol('Due:', dateFormatter.format(invoice.dueDate!));
     }
@@ -210,6 +220,18 @@ class ThermalPrinterService {
         settings.showCustomerGstin &&
         invoice.customer.gstin.isNotEmpty) {
       line('${taxLabel(company?.country)}: ${invoice.customer.gstin}');
+    }
+    // ASCII separator: '·' isn't in every ESC/POS code page.
+    for (final l in customerExtraLines(invoice.customer,
+        settings.customerFields, invoice.date, settings.datePattern,
+        separator: ' | ')) {
+      line(l);
+    }
+    if (showShipTo(invoice.customer, settings.customerFields)) {
+      line('Ship To:', bold: true);
+      for (final l in shipToLines(invoice.customer, phonePrefix: 'Ph: ')) {
+        line(l);
+      }
     }
     hr();
 
@@ -319,6 +341,15 @@ class ThermalPrinterService {
       } else {
         twoCol('Balance Due', '$currency ${invoice.outstandingBalance.toStringAsFixed(2)}',
             bold: true);
+      }
+    }
+
+    // ── Credit / Debit Note info (against invoice, reason, refunds) ──
+    final returnLines = returnInfoLines(invoice);
+    if (returnLines.isNotEmpty) {
+      hr();
+      for (final l in returnLines) {
+        line(l, bold: true);
       }
     }
 

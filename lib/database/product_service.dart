@@ -1,5 +1,6 @@
 import 'package:invoiso/models/product.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:invoiso/models/product_list_stats.dart';
 import 'database_helper.dart';
 
 class ProductService {
@@ -39,6 +40,17 @@ class ProductService {
       orderBy: 'name COLLATE NOCASE ASC',
     );
 
+    return maps.map((p) => Product.fromMap(p)).toList();
+  }
+
+  /// In stock but at or below the product's own low-stock limit (default 10).
+  static Future<List<Product>> getLowStockProducts() async {
+    final db = await dbHelper.database;
+    final maps = await db.query(
+      'products',
+      where: _lowStockWhere,
+      orderBy: 'name COLLATE NOCASE ASC',
+    );
     return maps.map((p) => Product.fromMap(p)).toList();
   }
 
@@ -157,6 +169,113 @@ class ProductService {
         await db.rawQuery("SELECT COUNT(*) FROM products"))!;
   }
 
+  // ─────────────────────────────────────────────
+  // Product management list (Issues.md #42) — one page + counts in SQL,
+  // instead of loading the whole catalog into memory. COALESCE defaults
+  // mirror Product.fromMap so SQL and Dart agree on NULL legacy rows.
+
+  static const _typeExpr = "COALESCE(type, 'product')";
+  static const _trackedExpr = 'COALESCE(unlimited_stock, 0) = 0';
+  static const _stockExpr = 'COALESCE(stock, 0)';
+  static const _lowStockWhere = '$_trackedExpr AND $_stockExpr > 0 '
+      'AND $_stockExpr <= COALESCE(low_stock_limit, 10)';
+  // Only ISO-looking dates count (DateTime.tryParse fails on others).
+  static const _expiredIdsSql = 'SELECT product_id FROM product_metadata '
+      "WHERE expiry_date GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]*' "
+      'AND expiry_date < ?';
+
+  /// [tab]: 'all' | 'product' | 'service' | 'low' | 'out' | 'expired'.
+  static (String?, List<Object?>) _productListWhere(String query, String tab) {
+    final parts = <String>[];
+    final args = <Object?>[];
+    if (query.trim().isNotEmpty) {
+      final q = query
+          .trim()
+          .replaceAll(r'\', r'\\')
+          .replaceAll('%', r'\%')
+          .replaceAll('_', r'\_');
+      parts.add(r"(name LIKE ? ESCAPE '\' OR alias_name LIKE ? ESCAPE '\' "
+          r"OR hsncode LIKE ? ESCAPE '\')");
+      args.addAll(['%$q%', '%$q%', '%$q%']);
+    }
+    switch (tab) {
+      case 'product':
+      case 'service':
+        parts.add('$_typeExpr = ?');
+        args.add(tab);
+      case 'low':
+        parts.add(_lowStockWhere);
+      case 'out':
+        parts.add('$_trackedExpr AND $_stockExpr <= 0');
+      case 'expired':
+        parts.add('id IN ($_expiredIdsSql)');
+        args.add(DateTime.now().toIso8601String());
+    }
+    return (parts.isEmpty ? null : parts.join(' AND '), args);
+  }
+
+  static Future<List<Product>> getProductListPage({
+    required int offset,
+    required int limit,
+    String query = '',
+    String tab = 'all',
+    String orderBy = 'name', // 'name' | 'price' | 'stock'
+    bool ascending = true,
+  }) async {
+    final db = await dbHelper.database;
+    final (where, args) = _productListWhere(query, tab);
+    final dir = ascending ? 'ASC' : 'DESC';
+    final order = switch (orderBy) {
+      'price' => 'COALESCE(price, 0) $dir',
+      'stock' => '$_stockExpr $dir',
+      _ => 'name COLLATE NOCASE $dir',
+    };
+    final maps = await db.query(
+      'products',
+      where: where,
+      whereArgs: args,
+      orderBy: '$order, id ASC', // id tie-break keeps pages stable
+      limit: limit,
+      offset: offset,
+    );
+    return maps.map((m) => Product.fromMap(m)).toList();
+  }
+
+  static Future<int> getProductListCount(
+      {String query = '', String tab = 'all'}) async {
+    final db = await dbHelper.database;
+    final (where, args) = _productListWhere(query, tab);
+    final rows = await db.rawQuery(
+      'SELECT COUNT(*) FROM products${where == null ? '' : ' WHERE $where'}',
+      args,
+    );
+    return Sqflite.firstIntValue(rows) ?? 0;
+  }
+
+  static Future<ProductListStats> getProductListStats() async {
+    final db = await dbHelper.database;
+    final r = (await db.rawQuery(
+      'SELECT COUNT(*) AS all_count, '
+      "COALESCE(SUM($_typeExpr = 'product'), 0) AS products, "
+      "COALESCE(SUM($_typeExpr = 'service'), 0) AS services, "
+      'COALESCE(SUM($_lowStockWhere), 0) AS low_stock, '
+      'COALESCE(SUM($_trackedExpr AND $_stockExpr <= 0), 0) AS out_of_stock, '
+      'COALESCE(SUM(id IN ($_expiredIdsSql)), 0) AS expired '
+      'FROM products',
+      [DateTime.now().toIso8601String()],
+    ))
+        .first;
+    int v(String k) => (r[k] as num?)?.toInt() ?? 0;
+    return (
+      all: v('all_count'),
+      products: v('products'),
+      services: v('services'),
+      lowStock: v('low_stock'),
+      outOfStock: v('out_of_stock'),
+      expired: v('expired'),
+    );
+  }
+
   static Future<void> deleteProduct(String id) async {
     final db = await dbHelper.database;
     await db.delete('products', where: 'id = ?', whereArgs: [id]);
@@ -187,10 +306,13 @@ class ProductService {
       List<String> productIds) async {
     if (productIds.isEmpty) return {};
     final db = await dbHelper.database;
-    final maps = await db.query(
-      'product_metadata',
-      where: 'product_id IN (${List.filled(productIds.length, '?').join(',')})',
-      whereArgs: productIds,
+    final maps = await queryInChunks(
+      productIds,
+      (chunk, placeholders) => db.query(
+        'product_metadata',
+        where: 'product_id IN ($placeholders)',
+        whereArgs: chunk,
+      ),
     );
     return {
       for (final m in maps) m['product_id'] as String: ProductMetadata.fromMap(m)
@@ -219,6 +341,23 @@ class ProductService {
     final db = await dbHelper.database;
     await db.update('products', {'stock': newStock},
         where: 'id = ?', whereArgs: [id]);
+  }
+
+  static Future<void> updatePurchaseInfo(
+    String id, {
+    required double purchasePrice,
+    required DateTime lastPurchaseDate,
+  }) async {
+    final db = await dbHelper.database;
+    await db.update(
+      'products',
+      {
+        'purchase_price': purchasePrice,
+        'last_purchase_date': lastPurchaseDate.toIso8601String(),
+      },
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 
   static Future<bool> hasSufficientStock(String productId, int quantity) async {

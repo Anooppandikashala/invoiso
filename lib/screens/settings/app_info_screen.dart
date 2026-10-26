@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:invoiso/common/app_config.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/providers/app_config_provider.dart';
@@ -157,6 +159,27 @@ class _AppInfoScreenState extends ConsumerState<AppInfoScreen> {
                       ]),
                     ),
                   ],
+                ),
+
+                const SizedBox(height: 20),
+
+                // ── Buy me a coffee ──────────────────────────────────────
+                Center(
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFFFFDD00),
+                      foregroundColor: Colors.black,
+                    ),
+                    icon: SvgPicture.asset('assets/images/bmc_logo.svg',
+                        height: 20),
+                    label: Text(l10n.buyMeCoffeeLabel,
+                        style: const TextStyle(
+                            fontFamily: 'Cookie', fontSize: 22)),
+                    onPressed: () => launchUrl(
+                      Uri.parse(AppConfig.buyMeCoffee),
+                      mode: LaunchMode.externalApplication,
+                    ),
+                  ),
                 ),
 
                 const SizedBox(height: 20),

@@ -33,6 +33,48 @@ void main() {
       expect(perUnit.lineTotal, 175);
     });
 
+    test('percent discount applies to price x qty, ignores per-unit flag', () {
+      for (final perUnitFlag in [true, false]) {
+        final pct = InvoiceTotalsCalculator.line(
+          price: 100,
+          quantity: 3,
+          discount: 10,
+          discountPerUnit: perUnitFlag,
+          discountIsPercent: true,
+          extraCost: 5,
+          taxRatePercent: 10,
+        );
+        expect(pct.discountTotal, 30);
+        expect(pct.grossTotal, 305);
+        expect(pct.lineTotal, 275);
+        expect(pct.itemTax, closeTo(27.5, 1e-9));
+      }
+
+      final inclusive = InvoiceTotalsCalculator.line(
+        price: 110,
+        quantity: 2,
+        discount: 50,
+        discountPerUnit: false,
+        discountIsPercent: true,
+        taxRatePercent: 10,
+        priceIncludesTax: true,
+      );
+      expect(inclusive.discountTotal, 110);
+      expect(inclusive.displayTotal, 110);
+      expect(inclusive.lineTotal, closeTo(100, 1e-9));
+
+      final fromRow = InvoiceTotalsCalculator.lineFromDbRow({
+        'unit_price': null,
+        'product_price': 200,
+        'quantity': 1,
+        'discount': 25,
+        'discount_per_unit': 1,
+        'discount_is_percent': 1,
+      });
+      expect(fromRow.discountTotal, 50);
+      expect(fromRow.lineTotal, 150);
+    });
+
     test('keeps fraction and percent global tax rates explicit', () {
       final line = InvoiceTotalsCalculator.line(
         price: 100,

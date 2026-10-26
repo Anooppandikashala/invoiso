@@ -24,6 +24,10 @@ class PaymentService {
     String? paymentMethod,
     String? notes,
   }) async {
+    // A draft isn't a committed sale — it takes money once finalized.
+    if (invoice.isDraft) {
+      throw StateError('Draft ${invoice.id} cannot take payments; finalize it first');
+    }
     final db = await _dbHelper.database;
     late InvoicePayment saved;
 
@@ -91,6 +95,7 @@ class PaymentService {
     int count = 0;
     await db.transaction((txn) async {
       for (final invoice in invoices) {
+        if (invoice.isDraft) continue;
         final amountPaid = invoice.outstandingBalance;
         if (amountPaid <= InvoiceCalculator.moneyEpsilon) continue;
 
@@ -229,13 +234,15 @@ class PaymentService {
       List<String> invoiceIds) async {
     if (invoiceIds.isEmpty) return {};
     final db = await _dbHelper.database;
-    final placeholders = List.filled(invoiceIds.length, '?').join(',');
-    final rows = await db.rawQuery(
-      'SELECT invoice_id, COALESCE(SUM(amount_paid), 0.0) AS total '
-      'FROM invoice_payments '
-      'WHERE invoice_id IN ($placeholders) '
-      'GROUP BY invoice_id',
+    final rows = await queryInChunks(
       invoiceIds,
+      (chunk, placeholders) => db.rawQuery(
+        'SELECT invoice_id, COALESCE(SUM(amount_paid), 0.0) AS total '
+        'FROM invoice_payments '
+        'WHERE invoice_id IN ($placeholders) '
+        'GROUP BY invoice_id',
+        chunk,
+      ),
     );
     return {
       for (final row in rows)

@@ -8,10 +8,14 @@ import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/services/payment_receipt_service.dart';
 import 'package:invoiso/utils/app_date.dart';
 
-String _paymentMethodLabel(AppLocalizations l10n, String method) {
+const paymentMethods = ['Cash', 'UPI', 'Bank Transfer', 'Check', 'Online', 'Other'];
+
+String paymentMethodLabel(AppLocalizations l10n, String method) {
   switch (method) {
     case 'Cash':
       return l10n.paymentMethodCash;
+    case 'UPI':
+      return l10n.paymentMethodUpi;
     case 'Bank Transfer':
       return l10n.paymentMethodBankTransfer;
     case 'Check':
@@ -38,6 +42,8 @@ class ApplyPaymentDialog extends ConsumerStatefulWidget {
 }
 
 class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
+  // Declined invoices: history only — no new payments, no deletes.
+  bool get _readOnly => widget.invoice.status == 'declined';
   final _amountController = TextEditingController();
   final _notesController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -48,7 +54,7 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
   bool _isLoadingPayments = true;
   List<InvoicePayment> _payments = [];
 
-  static const _methods = ['Cash', 'Bank Transfer', 'Check', 'Online', 'Other'];
+  static const _methods = paymentMethods;
 
   @override
   void initState() {
@@ -200,7 +206,10 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(l10n.actionRecordPayment,
+                        Text(
+                            _readOnly
+                                ? l10n.paymentDialogHistoryTitle
+                                : l10n.actionRecordPayment,
                             style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
@@ -298,7 +307,8 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
                       _buildPaymentHistoryTable(sym, l10n),
 
                     // Paid-in-full banner
-                    if (!_isLoadingPayments &&
+                    if (!_readOnly &&
+                        !_isLoadingPayments &&
                         _outstanding <= InvoiceCalculator.moneyEpsilon) ...[
                       const SizedBox(height: 16),
                       Container(
@@ -327,7 +337,8 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
                     ],
 
                     // New payment form (only if outstanding > 0)
-                    if (!_isLoadingPayments &&
+                    if (!_readOnly &&
+                        !_isLoadingPayments &&
                         _outstanding > InvoiceCalculator.moneyEpsilon) ...[
                       const SizedBox(height: 20),
                       const Divider(),
@@ -424,7 +435,7 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
                                         .map((m) => DropdownMenuItem(
                                             value: m,
                                             child: Text(
-                                                _paymentMethodLabel(l10n, m))))
+                                                paymentMethodLabel(l10n, m))))
                                         .toList(),
                                     onChanged: (v) =>
                                         setState(() => _selectedMethod = v),
@@ -488,7 +499,8 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
                     onPressed: () => Navigator.pop(context),
                     child: Text(l10n.actionClose),
                   ),
-                  if (!_isLoadingPayments &&
+                  if (!_readOnly &&
+                      !_isLoadingPayments &&
                       _outstanding > InvoiceCalculator.moneyEpsilon) ...[
                     const SizedBox(width: 12),
                     ElevatedButton.icon(
@@ -624,7 +636,7 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
             child: Text(
               payment.paymentMethod == null
                   ? '—'
-                  : _paymentMethodLabel(l10n, payment.paymentMethod!),
+                  : paymentMethodLabel(l10n, payment.paymentMethod!),
               style: TextStyle(
                   fontSize: 13,
                   color: Theme.of(context).colorScheme.onSurfaceVariant),
@@ -648,18 +660,19 @@ class _ApplyPaymentDialogState extends ConsumerState<ApplyPaymentDialog> {
                     ),
                   ),
                 ),
-                Tooltip(
-                  message: l10n.paymentDialogDeletePaymentTooltip,
-                  child: InkWell(
-                    onTap: () => _deletePayment(payment),
-                    borderRadius: BorderRadius.circular(4),
-                    child: Padding(
-                      padding: const EdgeInsets.all(6),
-                      child: Icon(Icons.delete_outline,
-                          size: 17, color: Colors.red[400]),
+                if (!_readOnly)
+                  Tooltip(
+                    message: l10n.paymentDialogDeletePaymentTooltip,
+                    child: InkWell(
+                      onTap: () => _deletePayment(payment),
+                      borderRadius: BorderRadius.circular(4),
+                      child: Padding(
+                        padding: const EdgeInsets.all(6),
+                        child: Icon(Icons.delete_outline,
+                            size: 17, color: Colors.red[400]),
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ),

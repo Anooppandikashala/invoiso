@@ -97,6 +97,25 @@ class PdfTemplateStyle {
   final double sectionPadding;
   final double headerGap;
   final double typeFont;
+
+  /// Copy with every font size multiplied by [f] (user's PDF text size).
+  /// Paddings/gaps stay unchanged so bigger text doesn't push extra pages.
+  PdfTemplateStyle scaled(double f) => PdfTemplateStyle(
+        titleFontSize: titleFontSize * f,
+        subtitleFontSize: subtitleFontSize * f,
+        labelFontSize: labelFontSize * f,
+        bodyFontSize: bodyFontSize * f,
+        tableHeaderFontSize: tableHeaderFontSize * f,
+        tableFontSize: tableFontSize * f,
+        totalsFontSize: totalsFontSize * f,
+        totalsHighlightFontSize: totalsHighlightFontSize * f,
+        footerFontSize: footerFontSize * f,
+        cellPaddingH: cellPaddingH,
+        cellPaddingV: cellPaddingV,
+        sectionPadding: sectionPadding,
+        headerGap: headerGap,
+        typeFont: typeFont * f,
+      );
 }
 
 const classicPdfStyle = PdfTemplateStyle(
