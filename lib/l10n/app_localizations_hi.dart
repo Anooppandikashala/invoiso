@@ -4744,6 +4744,14 @@ class AppLocalizationsHi extends AppLocalizations {
       'गैर-एडमिन उपयोगकर्ताओं से रिपोर्ट मेनू छिपाएँ।';
 
   @override
+  String get accessibilityPurchaseBillsAdminOnlyLabel =>
+      'Purchase Bills & Suppliers: Admins Only';
+
+  @override
+  String get accessibilityPurchaseBillsAdminOnlySubtitle =>
+      'Hides the Purchase Bills and Suppliers menus from non-admin users.';
+
+  @override
   String get cashExchangeCashLabel => 'नकद';
 
   @override

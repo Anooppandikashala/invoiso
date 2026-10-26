@@ -4544,6 +4544,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accessibilityReportsAdminOnlySubtitle => '对非管理员用户隐藏报表菜单。';
 
   @override
+  String get accessibilityPurchaseBillsAdminOnlyLabel =>
+      'Purchase Bills & Suppliers: Admins Only';
+
+  @override
+  String get accessibilityPurchaseBillsAdminOnlySubtitle =>
+      'Hides the Purchase Bills and Suppliers menus from non-admin users.';
+
+  @override
   String get cashExchangeCashLabel => '现金';
 
   @override

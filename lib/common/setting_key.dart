@@ -106,6 +106,7 @@ enum SettingKey {
   showShipToInPdf, // print the Ship To block on PDFs/receipts when shippingAddressEnabled (default true)
   cashUpiExchangeEnabled, // whether the Cash/UPI-Bank exchange Services tab is on (default false)
   reportsAdminOnly, // whether Reports is hidden from non-admin users (default false)
+  purchaseBillsAndSuppliersAdminOnly, // whether Purchase Bills + Suppliers are hidden from non-admin users (default false)
   pdfFontSize, // 'small' | 'medium' | 'large' | 'xlarge' — text size multiplier for non-thermal invoice PDFs; default 'medium'
   pdfCompanyNameFontSize, // PdfFontSize key for the company name; empty/absent = same as pdfFontSize
   pdfDocTitleFontSize, // PdfFontSize key for the document title; empty/absent = same as pdfFontSize
@@ -333,6 +334,8 @@ extension SettingKeyExtension on SettingKey {
         return 'cash_upi_exchange_enabled';
       case SettingKey.reportsAdminOnly:
         return 'reports_admin_only';
+      case SettingKey.purchaseBillsAndSuppliersAdminOnly:
+        return 'purchase_bills_and_suppliers_admin_only';
       case SettingKey.pdfFontSize:
         return 'pdf_font_size';
       case SettingKey.pdfCompanyNameFontSize:

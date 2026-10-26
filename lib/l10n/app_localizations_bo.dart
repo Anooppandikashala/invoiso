@@ -4730,6 +4730,14 @@ class AppLocalizationsBo extends AppLocalizations {
       'དོ་དམ་པ་མ་ཡིན་པའི་སྤྱོད་མཁན་ལ་སྙན་ཐོའི་འདེམས་ཐོ་སྦས།';
 
   @override
+  String get accessibilityPurchaseBillsAdminOnlyLabel =>
+      'Purchase Bills & Suppliers: Admins Only';
+
+  @override
+  String get accessibilityPurchaseBillsAdminOnlySubtitle =>
+      'Hides the Purchase Bills and Suppliers menus from non-admin users.';
+
+  @override
   String get cashExchangeCashLabel => 'དངུལ་ལག';
 
   @override

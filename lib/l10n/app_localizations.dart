@@ -8040,6 +8040,18 @@ abstract class AppLocalizations {
   /// **'Hides the Reports menu from non-admin users.'**
   String get accessibilityReportsAdminOnlySubtitle;
 
+  /// No description provided for @accessibilityPurchaseBillsAdminOnlyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase Bills & Suppliers: Admins Only'**
+  String get accessibilityPurchaseBillsAdminOnlyLabel;
+
+  /// No description provided for @accessibilityPurchaseBillsAdminOnlySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hides the Purchase Bills and Suppliers menus from non-admin users.'**
+  String get accessibilityPurchaseBillsAdminOnlySubtitle;
+
   /// No description provided for @cashExchangeCashLabel.
   ///
   /// In en, this message translates to:

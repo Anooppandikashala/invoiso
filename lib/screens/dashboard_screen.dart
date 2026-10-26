@@ -80,6 +80,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   bool _reportsAdminOnly = false;
   // Reports hidden for this user (Settings → Accessibility).
   bool get _reportsLocked => _reportsAdminOnly && !_currentUser.isAdmin();
+  bool _purchaseBillsAdminOnly = false;
+  // Purchase Bills + Suppliers hidden for this user (Settings → Accessibility).
+  bool get _purchaseBillsLocked =>
+      _purchaseBillsAdminOnly && !_currentUser.isAdmin();
   bool _sidebarExpanded = true;
   late User _currentUser;
   String? _pendingReportsStatementCustomerKey;
@@ -109,6 +113,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     _loadServicesEnabled();
     _loadReturnsEnabled();
     _loadReportsAdminOnly();
+    _loadPurchaseBillsAdminOnly();
     _loadCompanies();
     SessionManager.initialize(_onSessionTimeout);
     if (ref.read(appEditionConfigProvider).enableUpdateCheck) {
@@ -207,6 +212,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         .getSetting(SettingKey.reportsAdminOnly);
     if (!mounted) return;
     setState(() => _reportsAdminOnly = v == 'true');
+  }
+
+  Future<void> _loadPurchaseBillsAdminOnly() async {
+    final v = await ref
+        .read(settingsRepositoryProvider)
+        .getSetting(SettingKey.purchaseBillsAndSuppliersAdminOnly);
+    if (!mounted) return;
+    setState(() => _purchaseBillsAdminOnly = v == 'true');
   }
 
   Future<void> _checkForUpdates() async {
@@ -345,13 +358,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         );
       case 9: // Services (Cash / UPI-Bank exchange); shown after New Invoice
         return CashExchangeScreen(user: _currentUser);
-      case 10:
+      case 10 when !_purchaseBillsLocked:
         return ref.watch(enablePurchaseBillsAndSuppliersProvider)
             ? PurchaseBillManagementScreen(user: _currentUser)
             : Center(
                 child: Text(
                     AppLocalizations.of(context)!.dashboardUnknownTabLabel));
-      case 11:
+      case 11 when !_purchaseBillsLocked:
         return ref.watch(enablePurchaseBillsAndSuppliersProvider)
             ? SupplierManagementScreen(user: _currentUser)
             : Center(
@@ -458,6 +471,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       await _loadServicesEnabled();
       await _loadReturnsEnabled();
       await _loadReportsAdminOnly();
+      await _loadPurchaseBillsAdminOnly();
     }
     if (!mounted) return;
     setState(() {
@@ -795,7 +809,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         Icons.inventory_2_outlined,
                         Icons.inventory_2,
                         AppLocalizations.of(context)!.navProducts),
-                    if (showPurchaseBillsAndSuppliers) ...[
+                    if (showPurchaseBillsAndSuppliers && !_purchaseBillsLocked) ...[
                       _buildNavItem(10, Icons.shopping_cart_outlined,
                           Icons.shopping_cart, AppLocalizations.of(context)!.navPurchaseBills),
                       _buildNavItem(11, Icons.local_shipping_outlined,

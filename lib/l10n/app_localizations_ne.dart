@@ -4770,6 +4770,14 @@ class AppLocalizationsNe extends AppLocalizations {
       'गैर-एडमिन प्रयोगकर्ताहरूबाट रिपोर्ट मेनु लुकाउनुहोस्।';
 
   @override
+  String get accessibilityPurchaseBillsAdminOnlyLabel =>
+      'Purchase Bills & Suppliers: Admins Only';
+
+  @override
+  String get accessibilityPurchaseBillsAdminOnlySubtitle =>
+      'Hides the Purchase Bills and Suppliers menus from non-admin users.';
+
+  @override
   String get cashExchangeCashLabel => 'नगद';
 
   @override

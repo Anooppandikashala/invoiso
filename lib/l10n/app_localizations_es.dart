@@ -4827,6 +4827,14 @@ class AppLocalizationsEs extends AppLocalizations {
       'Oculta el menú Informes a los usuarios que no son administradores.';
 
   @override
+  String get accessibilityPurchaseBillsAdminOnlyLabel =>
+      'Purchase Bills & Suppliers: Admins Only';
+
+  @override
+  String get accessibilityPurchaseBillsAdminOnlySubtitle =>
+      'Hides the Purchase Bills and Suppliers menus from non-admin users.';
+
+  @override
   String get cashExchangeCashLabel => 'Efectivo';
 
   @override

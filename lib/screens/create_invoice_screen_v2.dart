@@ -1772,6 +1772,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     // editable here. Catalog products keep their catalog name.
     final isAdHoc = item.product.id.startsWith('custom-');
     final nameController = TextEditingController(text: item.product.name);
+    final hsnController = TextEditingController(text: item.product.hsncode);
     String? nameError;
     showDialog(
       context: context,
@@ -1864,6 +1865,21 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                       if (nameError != null) setDialogState(() => nameError = null);
                     },
                   ),
+                  if (_columnsConfig.hsncode) ...[
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: hsnController,
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context)!.productMgmtHsnSacLabel,
+                        border: OutlineInputBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppBorderRadius.xsmall)),
+                        prefixIcon: const Icon(Icons.qr_code_2),
+                        filled: true,
+                        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      ),
+                    ),
+                  ],
                 ],
                 Builder(builder: (context) {
                   if (!_columnsConfig.productMetadata) return const SizedBox.shrink();
@@ -2035,6 +2051,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               ),
               onPressed: () {
                 final newName = nameController.text.trim();
+                final newHsn = hsnController.text.trim();
                 if (isAdHoc && newName.isEmpty) {
                   setDialogState(() => nameError = 'Required');
                   return;
@@ -2048,8 +2065,14 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                 final updatedItem = InvoiceItem(
                   // Copy rather than mutate: the original Product may be
                   // shared with the unsaved source invoice (edit/clone).
-                  product: isAdHoc && newName != item.product.name
-                      ? Product.fromMap({...item.product.toMap(), 'name': newName})
+                  product: isAdHoc &&
+                          (newName != item.product.name ||
+                              newHsn != item.product.hsncode)
+                      ? Product.fromMap({
+                          ...item.product.toMap(),
+                          'name': newName,
+                          'hsncode': newHsn,
+                        })
                       : item.product,
                   quantity: !_showQuantity
                       ? 1.0
@@ -2091,6 +2114,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   void _addAdHocItemDialog() {
     final nameController = TextEditingController();
     final aliasNameController = TextEditingController();
+    final hsnController = TextEditingController();
     final priceController = TextEditingController();
     final quantityController = TextEditingController();
     final discountController = TextEditingController(text: '0');
@@ -2139,7 +2163,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               description: '',
               price: price,
               stock: 0,
-              hsncode: '',
+              hsncode: hsnController.text.trim(),
               tax_rate: taxRate,
               unit: selectedUnit.trim(),
               type: dialogItemType,
@@ -2234,6 +2258,21 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                           borderRadius:
                               BorderRadius.circular(AppBorderRadius.xsmall)),
                       prefixIcon: const Icon(Icons.translate),
+                      filled: true,
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    ),
+                  ),
+                ],
+                if (_columnsConfig.hsncode) ...[
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: hsnController,
+                    decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context)!.productMgmtHsnSacLabel,
+                      border: OutlineInputBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppBorderRadius.xsmall)),
+                      prefixIcon: const Icon(Icons.qr_code_2),
                       filled: true,
                       fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                     ),
