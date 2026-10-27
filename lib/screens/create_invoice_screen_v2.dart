@@ -3745,7 +3745,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         const SizedBox(width: 8),
         Flexible(
           child: Text(
-            '$_currencySymbol${amount.toStringAsFixed(2)}',
+            '$_currencySymbol${AmountFormat.money(amount)}',
             textAlign: TextAlign.end,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
@@ -3773,7 +3773,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                 ),
               )
             : Text(
-                '$_currencySymbol${_previousBalanceDue.toStringAsFixed(2)}',
+                '$_currencySymbol${AmountFormat.money(_previousBalanceDue)}',
                 textAlign: TextAlign.end,
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
@@ -3855,7 +3855,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               Flexible(
                 flex: compact ? 2 : 1,
                 child: Text(
-                  '$_currencySymbol${totalDue.toStringAsFixed(2)}',
+                  '$_currencySymbol${AmountFormat.money(totalDue)}',
                   textAlign: TextAlign.end,
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
@@ -3892,7 +3892,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               ),
             ),
             Text(
-              '$_currencySymbol${amountPaid.toStringAsFixed(2)}',
+              '$_currencySymbol${AmountFormat.money(amountPaid)}',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
@@ -3931,7 +3931,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                 ),
               ),
               Text(
-                '$_currencySymbol${outstanding.toStringAsFixed(2)}',
+                '$_currencySymbol${AmountFormat.money(outstanding)}',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
@@ -4086,7 +4086,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(AppLocalizations.of(context)!
               .createInvoiceTotalBelowPaidMessage(
-                  '$_currencySymbol ${paid.toStringAsFixed(2)}')),
+                  '$_currencySymbol ${AmountFormat.money(paid)}')),
           backgroundColor: Colors.red,
           showCloseIcon: true,
           behavior: SnackBarBehavior.floating,
@@ -4787,7 +4787,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
 
   String _againstInvoiceText(Invoice inv) =>
       '#${inv.invoiceNumber ?? inv.id}  ·  ${AppFormatters.formatShortDate(inv.date)}'
-      '  ·  ${inv.currencySymbol}${inv.total.toStringAsFixed(2)}';
+      '  ·  ${inv.currencySymbol}${AmountFormat.money(inv.total)}';
 
   // "Against invoice" picker for credit / debit notes: the selected
   // customer's invoices, searchable. Optional (empty = standalone note);
@@ -5715,7 +5715,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                         value: CreditSettlement.reduceInvoice,
                         child: Text(AppLocalizations.of(context)!
                             .returnSettlementReduceInvoice(
-                                '$_currencySymbol${_againstInvoice!.outstandingBalance.toStringAsFixed(2)}'))),
+                                '$_currencySymbol${AmountFormat.money(_againstInvoice!.outstandingBalance)}'))),
                   DropdownMenuItem(
                       value: CreditSettlement.customerCredit,
                       child: Text(AppLocalizations.of(context)!
@@ -6086,7 +6086,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                           children: [
                             TextSpan(
                                 text:
-                                    '$_currencySymbol${product.price.toStringAsFixed(2)}  ·  Stock: ${product.stock}'
+                                    '$_currencySymbol${AmountFormat.money(product.price)}  ·  Stock: ${product.stock}'
                                     '${product.hsncode.trim().isEmpty ? '' : '  ·  HSN ${product.hsncode}'}'),
                             if (hasStorage) ...[
                               const TextSpan(text: '  ·  '),
@@ -6285,11 +6285,11 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                     children: [
                       if (item.unitPrice != null)
                         _buildItemDetail('Price',
-                            '$_currencySymbol${item.effectivePrice.toStringAsFixed(2)} *',
+                            '$_currencySymbol${AmountFormat.money(item.effectivePrice)} *',
                             color: Colors.orange[700])
                       else
                         _buildItemDetail('Price',
-                            '$_currencySymbol${item.product.price.toStringAsFixed(2)}'),
+                            '$_currencySymbol${AmountFormat.money(item.product.price)}'),
                       if (_taxMode == TaxMode.perItem)
                         _buildItemDetail(
                             'Tax', '${item.product.tax_rate}%'),
@@ -6299,7 +6299,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                             'Inclusive',
                             color: Colors.teal[700]),
                         _buildItemDetail('Net Price',
-                            '$_currencySymbol${InvoiceTotalsCalculator.netPrice(price: item.effectivePrice, taxRatePercent: item.product.tax_rate.toDouble(), priceIncludesTax: true).toStringAsFixed(2)}',
+                            '$_currencySymbol${AmountFormat.money(InvoiceTotalsCalculator.netPrice(price: item.effectivePrice, taxRatePercent: item.product.tax_rate.toDouble(), priceIncludesTax: true))}',
                             color: Colors.teal[700]),
                       ],
                       if (_columnsConfig.hsncode)
@@ -6316,14 +6316,14 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                         _buildItemDetail('Discount',
                             item.discountIsPercent
                                 ? '${item.discount.toStringAsFixed(2)}%'
-                                : '$_currencySymbol${item.discount.toStringAsFixed(2)}${item.discountPerUnit ? ' ×qty' : ''}'),
+                                : '$_currencySymbol${AmountFormat.money(item.discount)}${item.discountPerUnit ? ' ×qty' : ''}'),
                       if (!item.discountIsPercent && item.discountPerUnit && item.discount > 0)
                         _buildItemDetail('Net',
-                            '$_currencySymbol${(item.effectivePrice - item.discount).toStringAsFixed(2)}/item',
+                            '$_currencySymbol${AmountFormat.money(item.effectivePrice - item.discount)}/item',
                             color: Colors.teal[700]),
                       if (item.extraCost != null && item.extraCost! > 0)
                         _buildItemDetail('Extra',
-                            '+$_currencySymbol${item.extraCost!.toStringAsFixed(2)}',
+                            '+$_currencySymbol${AmountFormat.money(item.extraCost!)}',
                             color: Colors.teal[700]),
                       // Credit note: qty still returnable (linked invoice)
                       // and whether this line goes back into stock.
@@ -6366,7 +6366,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           ),
           const SizedBox(width: 12),
           Text(
-            '$_currencySymbol${item.total.toStringAsFixed(2)}',
+            '$_currencySymbol${AmountFormat.money(item.total)}',
             style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
           ),
           if (!_lockedByCreditNotes) ...[
@@ -6697,7 +6697,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   setState(() => _applyCustomerCredit = v ?? false),
               title: Text(l10n.returnApplyCreditToInvoiceLabel),
               subtitle: Text(l10n.returnCreditAvailableLabel(
-                  '$_currencySymbol${_customerCreditAvailable.toStringAsFixed(2)}')),
+                  '$_currencySymbol${AmountFormat.money(_customerCreditAvailable)}')),
             ),
         ],
       ),
@@ -7075,7 +7075,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               children: [
                 Text(AppLocalizations.of(context)!.createInvoiceDiscountColonLabel,
                     style: TextStyle(fontSize: 14, color: Colors.orange[700])),
-                Text('-$_currencySymbol${totalDiscount.toStringAsFixed(2)}',
+                Text('-$_currencySymbol${AmountFormat.money(totalDiscount)}',
                     style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -7105,7 +7105,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                 ),
                 Flexible(
                   child: Text(
-                      '-$_currencySymbol${invoiceDiscountAmount.toStringAsFixed(2)}',
+                      '-$_currencySymbol${AmountFormat.money(invoiceDiscountAmount)}',
                       style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,

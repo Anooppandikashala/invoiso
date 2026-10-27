@@ -3362,5 +3362,9 @@
   "invoiceMgmtDeclineReturnStockLabel": "Return all items to stock",
   "invoiceMgmtDeclineReturnStockHint": "Untick if the goods didn't come back (damaged, used or kept).",
   "invoiceMgmtDeclinedNoStockMessage": "Sale cancelled (void). Stock unchanged.",
-  "invoiceMgmtTrashNoStockHint": "Trash doesn't return stock. To cancel a sale, use Cancel / Void."
+  "invoiceMgmtTrashNoStockHint": "Trash doesn't return stock. To cancel a sale, use Cancel / Void.",
+  "amountSeparatorLabel": "Number format",
+  "amountSeparatorNoneLabel": "No separator  (1234567.89)",
+  "amountSeparatorInternationalLabel": "International  (1,234,567.89)",
+  "amountSeparatorIndianLabel": "Indian  (12,34,567.89)"
 }

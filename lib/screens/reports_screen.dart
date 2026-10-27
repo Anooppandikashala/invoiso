@@ -16,6 +16,7 @@ import 'package:invoiso/services/customer_statement_pdf_service.dart';
 import 'package:invoiso/providers/repositories.dart';
 
 import '../common/supported_currencies.dart';
+import 'package:invoiso/utils/formatters.dart';
 
 // ─── Date preset enum ─────────────────────────────────────────────────────────
 
@@ -123,7 +124,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   bool _showFooterBranding = true;
 
   // Formatting
-  final _fmt = NumberFormat('#,##0.00');
   final _fmtInt = NumberFormat('#,##0');
 
   String? get _reportCurrencyCode =>
@@ -136,12 +136,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       };
 
   String _money(num value) {
-    final amount = _fmt.format(value);
+    final amount = AmountFormat.money(value.toDouble());
     return _currencyScope == _CurrencyScope.selected ? '$_sym $amount' : amount;
   }
 
   String _statementMoney(CustomerStatement statement, num value) =>
-      '${statement.currencySymbol} ${_fmt.format(value)}';
+      '${statement.currencySymbol} ${AmountFormat.money(value.toDouble())}';
 
   CustomerStatementCustomer? get _selectedStatementCustomer {
     final key = _statementCustomerKey;

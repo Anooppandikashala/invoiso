@@ -5882,4 +5882,17 @@ class AppLocalizationsBo extends AppLocalizations {
   @override
   String get invoiceMgmtTrashNoStockHint =>
       'Trash doesn\'t return stock. To cancel a sale, use Cancel / Void.';
+
+  @override
+  String get amountSeparatorLabel => 'Number format';
+
+  @override
+  String get amountSeparatorNoneLabel => 'No separator  (1234567.89)';
+
+  @override
+  String get amountSeparatorInternationalLabel =>
+      'International  (1,234,567.89)';
+
+  @override
+  String get amountSeparatorIndianLabel => 'Indian  (12,34,567.89)';
 }

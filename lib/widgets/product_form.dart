@@ -9,6 +9,7 @@ import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/models/product.dart';
 import 'package:invoiso/models/user.dart';
 import 'package:invoiso/providers/repositories.dart';
+import 'package:invoiso/utils/formatters.dart';
 
 /// The "add product" form, shared by Product Management (side panel) and the
 /// "New product" dialog on the Create Invoice / Purchase Bill pages, so every
@@ -707,8 +708,8 @@ Future<bool> confirmSellingAtLoss(
       title: Text(l10n.productMgmtSellingAtLossTitle),
       content: Text(
         l10n.productMgmtSellingAtLossMessage(
-          '$currencySymbol${purchasePrice.toStringAsFixed(2)}',
-          '$currencySymbol${price.toStringAsFixed(2)}',
+          '$currencySymbol${AmountFormat.money(purchasePrice)}',
+          '$currencySymbol${AmountFormat.money(price)}',
         ),
       ),
       actions: [

@@ -211,6 +211,11 @@ class SqliteSettingsRepository implements SettingsRepository {
   @override
   Future<void> setDateFormat(DateFormatOption option) => SettingsService.setDateFormat(option);
   @override
+  Future<AmountSeparator> getAmountSeparator() => SettingsService.getAmountSeparator();
+  @override
+  Future<void> setAmountSeparator(AmountSeparator option) =>
+      SettingsService.setAmountSeparator(option);
+  @override
   Future<PageSize> getPageSize() => SettingsService.getPageSize();
   @override
   Future<void> setPageSize(PageSize size) => SettingsService.setPageSize(size);

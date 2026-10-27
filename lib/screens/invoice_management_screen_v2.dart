@@ -2275,7 +2275,7 @@ class _InvoiceManagementScreenV2State
           ],
           Expanded(
             child: Text(
-              '${invoice.currencySymbol} ${invoice.total.toStringAsFixed(2)}',
+              '${invoice.currencySymbol} ${AmountFormat.money(invoice.total)}',
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Colors.green),
             ),
@@ -2294,7 +2294,7 @@ class _InvoiceManagementScreenV2State
               child: invoice.status == 'declined' || invoice.paymentStatus == PaymentStatus.paid
                   ? Text('—', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))
                   : Text(
-                      '${invoice.currencySymbol} ${invoice.outstandingBalance.toStringAsFixed(2)}',
+                      '${invoice.currencySymbol} ${AmountFormat.money(invoice.outstandingBalance)}',
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 13,
@@ -2780,7 +2780,7 @@ class _InvoiceManagementScreenV2State
       return Tooltip(
         message: ofType.map((n) => '#${n.invoiceNumber ?? n.id}').join(', '),
         child: _statusPill(
-            label('${invoice.currencySymbol}${sum.toStringAsFixed(2)}'), color),
+            label('${invoice.currencySymbol}${AmountFormat.money(sum)}'), color),
       );
     }
 
@@ -2838,7 +2838,7 @@ class _InvoiceManagementScreenV2State
     }
     final outstanding = invoice.outstandingBalance;
     final amount = credit < outstanding ? credit : outstanding;
-    String money(double v) => '${invoice.currencySymbol}${v.toStringAsFixed(2)}';
+    String money(double v) => '${invoice.currencySymbol}${AmountFormat.money(v)}';
     final amountText = money(amount);
     final confirmed = await showDialog<bool>(
       context: context,
@@ -3025,7 +3025,7 @@ class _InvoiceManagementScreenV2State
 
   String _refundLabel(Invoice creditNote, Refund r) =>
       '${r.receiptNumber}  ·  ${AppFormatters.formatShortDate(r.dateRefunded)}'
-      '  ·  ${creditNote.currencySymbol}${r.amount.toStringAsFixed(2)}';
+      '  ·  ${creditNote.currencySymbol}${AmountFormat.money(r.amount)}';
 
   Future<void> _showRecordRefundDialog(Invoice creditNote) async {
     await showDialog(

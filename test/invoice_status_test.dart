@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:invoiso/common/common.dart';
 import 'package:invoiso/database/database_helper.dart';
 import 'package:invoiso/database/invoice_service.dart';
 import 'package:invoiso/database/payment_service.dart';
@@ -15,6 +16,7 @@ import 'package:invoiso/database/product_service.dart';
 import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/models/customer.dart';
 import 'package:invoiso/models/invoice.dart';
+import 'package:invoiso/utils/formatters.dart';
 import 'package:invoiso/models/invoice_item.dart';
 import 'package:invoiso/models/invoice_list_filter.dart';
 import 'package:invoiso/models/product.dart';
@@ -593,6 +595,24 @@ void main() {
       expect(await stockOf('p1'), 7);
     });
     expect(find.text('Declined'), findsOneWidget); // receipt row pill
+  });
+
+  testWidgets('invoice list shows amounts in the Number format', (tester) async {
+    AmountFormat.style = AmountSeparator.indian;
+    addTearDown(() => AmountFormat.style = AmountSeparator.none);
+    await pumpInvoiceList(tester, seed: () async {
+      final p = await addProduct();
+      await InvoiceService.insertInvoice(Invoice(
+        id: 'big',
+        customer: customer,
+        items: [InvoiceItem(product: p, quantity: 12345, unitPrice: 100)],
+        date: DateTime(2026, 1, 1),
+        type: 'Invoice',
+      ));
+    });
+    // 12345 × 100 = 12,34,500.00 (total and outstanding).
+    expect(find.textContaining('12,34,500.00'), findsWidgets);
+    expect(find.textContaining('1234500.00'), findsNothing);
   });
 
   testWidgets('declined invoice with payments opens read-only history',

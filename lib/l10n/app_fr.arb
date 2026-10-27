@@ -1478,5 +1478,9 @@
   "invoiceMgmtDeclineReturnStockLabel": "Remettre tous les articles en stock",
   "invoiceMgmtDeclineReturnStockHint": "Décochez si la marchandise n'est pas revenue (abîmée, utilisée ou conservée).",
   "invoiceMgmtDeclinedNoStockMessage": "Vente annulée. Stock inchangé.",
-  "invoiceMgmtTrashNoStockHint": "La corbeille ne remet pas le stock. Pour annuler une vente, utilisez Annuler / Invalider."
+  "invoiceMgmtTrashNoStockHint": "La corbeille ne remet pas le stock. Pour annuler une vente, utilisez Annuler / Invalider.",
+  "amountSeparatorLabel": "Format des nombres",
+  "amountSeparatorNoneLabel": "Sans séparateur  (1234567.89)",
+  "amountSeparatorInternationalLabel": "International  (1,234,567.89)",
+  "amountSeparatorIndianLabel": "Indien  (12,34,567.89)"
 }

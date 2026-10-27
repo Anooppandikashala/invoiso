@@ -28,6 +28,7 @@ import 'pdf_template_executive.dart';
 import 'pdf_template_compact.dart';
 import 'pdf_template_thermal.dart';
 import 'pdf_template_gridclassic.dart';
+import 'package:invoiso/utils/formatters.dart';
 
 class PDFService {
   static Uint8List? _logoBytesCache;
@@ -78,6 +79,7 @@ class PDFService {
   static Future<PdfGenerationSettings> fetchPdfSettings({
     String datePattern = 'dd/MM/yyyy',
   }) async {
+    await AmountFormat.load(); // Number format setting
     final results = await Future.wait<dynamic>([
       BackendServices.companyInfo.getCompanyInfo(), // 0
       BackendServices.settings.getInvoiceTemplate(), // 1

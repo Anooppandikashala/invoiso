@@ -12,6 +12,7 @@ import 'package:invoiso/l10n/app_localizations.dart';
 import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/providers/returns_settings_provider.dart';
 import 'package:invoiso/common/constants.dart';
+import 'package:invoiso/utils/formatters.dart';
 
 class InvoiceSettingsScreenV2 extends ConsumerStatefulWidget {
   final VoidCallback? onNavigateToCustomization;
@@ -48,6 +49,7 @@ class _InvoiceSettingsScreenV2State
   String _selectedCurrencyCode = 'INR';
   String _selectedLogoSize = 'medium';
   DateFormatOption _selectedDateFormat = DateFormatOption.ddmmyyyy;
+  AmountSeparator _amountSeparator = AmountSeparator.none;
   bool _showTimeInPdf = true;
   String _pdfTimeFormat = '24';
   bool _showGstFields = true;
@@ -171,6 +173,7 @@ class _InvoiceSettingsScreenV2State
       settingsRepo.getWatermarkFullPage(),
       settingsRepo.getInvoicePdfMetadataColumns(),
       settingsRepo.getSetting(SettingKey.showTaxColumn),
+      settingsRepo.getAmountSeparator(), // 44
     ]);
 
     if (!mounted) return;
@@ -272,6 +275,7 @@ class _InvoiceSettingsScreenV2State
       _showShipToInPdf = customerFieldFlags[8] != 'false';
       _customerCustomFieldDefs = customerCustomFieldDefs;
       _showTaxColumn = (results[43] as String?) != 'false';
+      _amountSeparator = results[44] as AmountSeparator;
       _isLoading = false;
     });
   }
@@ -308,6 +312,7 @@ class _InvoiceSettingsScreenV2State
             SettingKey.thankYouNote, thankYouController.text),
         settingsRepo.setCurrency(_selectedCurrencyCode),
         settingsRepo.setDateFormat(_selectedDateFormat),
+        settingsRepo.setAmountSeparator(_amountSeparator),
         settingsRepo.setSetting(
             SettingKey.showGstFields, _showGstFields.toString()),
         settingsRepo.setSetting(
@@ -384,6 +389,8 @@ class _InvoiceSettingsScreenV2State
         settingsRepo.setSetting(
             SettingKey.showShipToInPdf, _showShipToInPdf.toString()),
       ]);
+      // Screens read the cached Number format; PDFs reload it themselves.
+      AmountFormat.style = _amountSeparator;
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -806,6 +813,24 @@ class _InvoiceSettingsScreenV2State
           onChanged: (value) {
             if (!mounted) return;
             setState(() => _selectedDateFormat = value!);
+          },
+        ),
+        DropdownButtonFormField<AmountSeparator>(
+          isExpanded: true,
+          value: _amountSeparator,
+          decoration: _fieldDecorationV2(context,
+              label: l10n.amountSeparatorLabel,
+              prefixIcon: const Icon(Icons.pin_outlined)),
+          items: AmountSeparator.values
+              .map((opt) => DropdownMenuItem<AmountSeparator>(
+                    value: opt,
+                    child: Text(amountSeparatorLabel(context, opt),
+                        maxLines: 1, overflow: TextOverflow.ellipsis),
+                  ))
+              .toList(),
+          onChanged: (value) {
+            if (!mounted) return;
+            setState(() => _amountSeparator = value!);
           },
         ),
         DropdownButtonFormField<String>(

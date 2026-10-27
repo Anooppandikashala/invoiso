@@ -10,6 +10,7 @@ import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/utils/amount_in_words.dart';
 import 'package:invoiso/models/customer_field_settings.dart';
 import 'pdf_widgets.dart';
+import 'package:invoiso/utils/formatters.dart';
 
 /// Bordered, tabular "old style" bill — the boxed grid layout common on
 /// legacy retail billing software (SI/Item/HSN/Qty/Rate/Total table inside
@@ -514,58 +515,58 @@ pw.MultiPage buildGridClassicTemplate(
                   children: [
                     totalsRow(
                         'Subtotal',
-                        '$currencySymbol ${(invoice.totalDiscount > 0 ? invoice.grossSubtotal : invoice.subtotal).toStringAsFixed(2)}'),
+                        '$currencySymbol ${AmountFormat.money(invoice.totalDiscount > 0 ? invoice.grossSubtotal : invoice.subtotal)}'),
                     if (invoice.totalDiscount > 0)
                       totalsRow('Discount',
-                          '-$currencySymbol ${invoice.totalDiscount.toStringAsFixed(2)}'),
+                          '-$currencySymbol ${AmountFormat.money(invoice.totalDiscount)}'),
                     if (invoice.taxMode != TaxMode.none && !showIgst)
                       totalsRow(invoiceTaxLabel(invoice),
-                          '$currencySymbol ${invoice.tax.toStringAsFixed(2)}'),
+                          '$currencySymbol ${AmountFormat.money(invoice.tax)}'),
                     if (invoice.taxMode != TaxMode.none && showIgst)
                       totalsRow('IGST',
-                          '$currencySymbol ${invoice.tax.toStringAsFixed(2)}'),
+                          '$currencySymbol ${AmountFormat.money(invoice.tax)}'),
                     if (invoice.taxMode != TaxMode.none && showCgstSgst) ...[
                       totalsRow('CGST',
-                          '$currencySymbol ${(invoice.tax / 2).toStringAsFixed(2)}'),
+                          '$currencySymbol ${AmountFormat.money(invoice.tax / 2)}'),
                       totalsRow('SGST',
-                          '$currencySymbol ${(invoice.tax / 2).toStringAsFixed(2)}'),
+                          '$currencySymbol ${AmountFormat.money(invoice.tax / 2)}'),
                     ],
                     ...invoice.additionalCosts.map((c) => totalsRow(
                         c.label.isEmpty ? 'Extra Cost' : c.label,
                         c.amount < 0
-                            ? '-$currencySymbol ${(-c.amount).toStringAsFixed(2)}'
-                            : '$currencySymbol ${c.amount.toStringAsFixed(2)}')),
+                            ? '-$currencySymbol ${AmountFormat.money(-c.amount)}'
+                            : '$currencySymbol ${AmountFormat.money(c.amount)}')),
                     if (invoice.invoiceDiscountAmount > 0)
                       totalsRow(invoice.invoiceDiscountType == InvoiceDiscountType.percent
                           ? "Extra Discount (${invoice.invoiceDiscountValue.toStringAsFixed(1)}%)"
                           : "Extra Discount ",
-                          "-$currencySymbol ${invoice.invoiceDiscountAmount.toStringAsFixed(2)}"
+                          "-$currencySymbol ${AmountFormat.money(invoice.invoiceDiscountAmount)}"
                       ),
                     pw.Divider(thickness: 0.5, color: borderColor,height: 5),
                     totalsRow('Total',
-                        '$currencySymbol ${invoice.total.toStringAsFixed(2)}',
+                        '$currencySymbol ${AmountFormat.money(invoice.total)}',
                         bold: true),
                     if (hasPreviousBalance) ...[
                       totalsRow('Previous Balance Due',
-                          '$currencySymbol ${previousBalanceDue.toStringAsFixed(2)}'),
+                          '$currencySymbol ${AmountFormat.money(previousBalanceDue)}'),
                       totalsRow('Total Due',
-                          '$currencySymbol ${(invoice.total + previousBalanceDue).toStringAsFixed(2)}',
+                          '$currencySymbol ${AmountFormat.money(invoice.total + previousBalanceDue)}',
                           bold: true),
                     ],
                     if (showRoundOff) ...[
                       totalsRow('Round off',
-                          '$currencySymbol ${roundOff.toStringAsFixed(2)}'),
+                          '$currencySymbol ${AmountFormat.money(roundOff)}'),
                       pw.Divider(thickness: 0.5, color: borderColor,height: 5),
                       totalsRow('Net Amount',
-                          '$currencySymbol ${roundedNet.toStringAsFixed(2)}',
+                          '$currencySymbol ${AmountFormat.money(roundedNet)}',
                           bold: true, size: netAmountFont),
                     ],
                     if (hasPaid) ...[
                       pw.SizedBox(height: 4 * fontScale),
                       totalsRow('Amount Paid',
-                          '$currencySymbol ${invoice.amountPaid.toStringAsFixed(2)}'),
+                          '$currencySymbol ${AmountFormat.money(invoice.amountPaid)}'),
                       totalsRow('Balance',
-                          '$currencySymbol ${invoice.outstandingBalance.toStringAsFixed(2)}'),
+                          '$currencySymbol ${AmountFormat.money(invoice.outstandingBalance)}'),
                     ],
                   ],
                 ),

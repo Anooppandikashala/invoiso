@@ -130,7 +130,7 @@ class InvoicePdfServices {
                         Text(
                             '${item.product.name} x${item.quantity == item.quantity.roundToDouble() ? item.quantity.toInt() : item.quantity}'),
                         Text(
-                            '${invoice.currencySymbol} ${item.total.toStringAsFixed(2)}'),
+                            '${invoice.currencySymbol} ${AmountFormat.money(item.total)}'),
                       ],
                     ),
                   )),
@@ -141,7 +141,7 @@ class InvoicePdfServices {
                   const Text('Subtotal:',
                       style: TextStyle(fontWeight: FontWeight.bold)),
                   Text(
-                      '${invoice.currencySymbol} ${invoice.subtotal.toStringAsFixed(2)}'),
+                      '${invoice.currencySymbol} ${AmountFormat.money(invoice.subtotal)}'),
                 ],
               ),
               Row(
@@ -150,7 +150,7 @@ class InvoicePdfServices {
                   Text(_taxLabel(invoice),
                       style: const TextStyle(fontWeight: FontWeight.bold)),
                   Text(
-                      '${invoice.currencySymbol} ${invoice.tax.toStringAsFixed(2)}'),
+                      '${invoice.currencySymbol} ${AmountFormat.money(invoice.tax)}'),
                 ],
               ),
               Row(
@@ -159,7 +159,7 @@ class InvoicePdfServices {
                   const Text('Total:',
                       style: TextStyle(fontWeight: FontWeight.bold)),
                   Text(
-                      '${invoice.currencySymbol} ${invoice.total.toStringAsFixed(2)}',
+                      '${invoice.currencySymbol} ${AmountFormat.money(invoice.total)}',
                       style: const TextStyle(fontWeight: FontWeight.bold)),
                 ],
               ),
@@ -224,7 +224,7 @@ class InvoicePdfServices {
             ),
           ),
           Text(
-              '${isCredit ? '−' : '+'}${note.currencySymbol} ${note.total.toStringAsFixed(2)}',
+              '${isCredit ? '−' : '+'}${note.currencySymbol} ${AmountFormat.money(note.total)}',
               style: TextStyle(
                   fontWeight: FontWeight.w600,
                   color: isCredit ? Colors.brown : Colors.indigo)),
@@ -262,7 +262,7 @@ class InvoicePdfServices {
                     PopupMenuItem(
                       enabled: false,
                       child: Text(
-                          '${r.receiptNumber}  ·  ${note.currencySymbol}${r.amount.toStringAsFixed(2)}'),
+                          '${r.receiptNumber}  ·  ${note.currencySymbol}${AmountFormat.money(r.amount)}'),
                     ),
                   PopupMenuItem(
                       value: (r, 'preview'), child: Text(l10n.actionPdfPreview)),

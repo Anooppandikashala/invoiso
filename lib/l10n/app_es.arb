@@ -1478,5 +1478,9 @@
   "invoiceMgmtDeclineReturnStockLabel": "Devolver todos los artículos al stock",
   "invoiceMgmtDeclineReturnStockHint": "Desmárquelo si la mercancía no se devolvió (dañada, usada o conservada).",
   "invoiceMgmtDeclinedNoStockMessage": "Venta anulada. Stock sin cambios.",
-  "invoiceMgmtTrashNoStockHint": "La papelera no devuelve el stock. Para cancelar una venta, use Cancelar / Anular."
+  "invoiceMgmtTrashNoStockHint": "La papelera no devuelve el stock. Para cancelar una venta, use Cancelar / Anular.",
+  "amountSeparatorLabel": "Formato de número",
+  "amountSeparatorNoneLabel": "Sin separador  (1234567.89)",
+  "amountSeparatorInternationalLabel": "Internacional  (1,234,567.89)",
+  "amountSeparatorIndianLabel": "Indio  (12,34,567.89)"
 }

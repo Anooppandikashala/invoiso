@@ -6005,4 +6005,17 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get invoiceMgmtTrashNoStockHint =>
       'La corbeille ne remet pas le stock. Pour annuler une vente, utilisez Annuler / Invalider.';
+
+  @override
+  String get amountSeparatorLabel => 'Format des nombres';
+
+  @override
+  String get amountSeparatorNoneLabel => 'Sans séparateur  (1234567.89)';
+
+  @override
+  String get amountSeparatorInternationalLabel =>
+      'International  (1,234,567.89)';
+
+  @override
+  String get amountSeparatorIndianLabel => 'Indien  (12,34,567.89)';
 }

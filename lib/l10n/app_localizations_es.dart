@@ -5994,4 +5994,17 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get invoiceMgmtTrashNoStockHint =>
       'La papelera no devuelve el stock. Para cancelar una venta, use Cancelar / Anular.';
+
+  @override
+  String get amountSeparatorLabel => 'Formato de número';
+
+  @override
+  String get amountSeparatorNoneLabel => 'Sin separador  (1234567.89)';
+
+  @override
+  String get amountSeparatorInternationalLabel =>
+      'Internacional  (1,234,567.89)';
+
+  @override
+  String get amountSeparatorIndianLabel => 'Indio  (12,34,567.89)';
 }

@@ -115,6 +115,7 @@ enum SettingKey {
   pdfTotalsFontSize, // PdfFontSize key for the totals block; empty/absent = same as pdfFontSize
   purchaseBillsBannerDismissed, // '1' once user dismisses the purchase-bills/suppliers discovery banner
   returnsBannerDismissed, // '1' once user dismisses the product-returns notice on the Invoices list
+  amountSeparator, // AmountSeparator.key: 'none' | 'international' | 'indian'
 }
 
 extension SettingKeyExtension on SettingKey {
@@ -352,6 +353,8 @@ extension SettingKeyExtension on SettingKey {
         return 'purchase_bills_banner_dismissed';
       case SettingKey.returnsBannerDismissed:
         return 'returns_banner_dismissed';
+      case SettingKey.amountSeparator:
+        return 'amount_separator';
 
     }
   }

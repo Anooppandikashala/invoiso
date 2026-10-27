@@ -1050,7 +1050,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                             dense: true,
                             title: Text(p.name),
                             subtitle: Text(
-                                '$_currencySymbol${p.price.toStringAsFixed(2)} · HSN/SAC: ${p.hsncode.isEmpty ? '—' : p.hsncode}'),
+                                '$_currencySymbol${AmountFormat.money(p.price)} · HSN/SAC: ${p.hsncode.isEmpty ? '—' : p.hsncode}'),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -1312,11 +1312,11 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                       e.$2.name,
                       e.$2.hsncode,
                       e.$2.description,
-                      e.$2.price.toStringAsFixed(2),
+                      AmountFormat.money(e.$2.price),
                       '${e.$2.tax_rate}%',
                       e.$2.unlimitedStock ? 'Unlimited' : e.$2.stock,
                       e.$2.type,
-                      e.$2.defaultDiscount > 0 ? e.$2.defaultDiscount.toStringAsFixed(2) : '-',
+                      e.$2.defaultDiscount > 0 ? AmountFormat.money(e.$2.defaultDiscount) : '-',
                       e.$2.unit,
                     ]),
               ],
@@ -1596,7 +1596,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
           break;
         case 'purchasePrice':
           child = text(p.purchasePrice > 0
-              ? '$_currencySymbol${p.purchasePrice.toStringAsFixed(2)}'
+              ? '$_currencySymbol${AmountFormat.money(p.purchasePrice)}'
               : '');
           break;
         case 'stock':
@@ -1610,7 +1610,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
           break;
         case 'defaultDiscount':
           child = text(p.defaultDiscount > 0
-              ? p.defaultDiscount.toStringAsFixed(2)
+              ? AmountFormat.money(p.defaultDiscount)
               : '');
           break;
         case 'storageLocation':
@@ -2157,7 +2157,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
           ),
           Expanded(
             flex: 2,
-            child: Text('$_currencySymbol${p.price.toStringAsFixed(2)}',
+            child: Text('$_currencySymbol${AmountFormat.money(p.price)}',
                 style: const TextStyle(fontWeight: FontWeight.w600)),
           ),
           ..._optionalRowCellsV2(p),

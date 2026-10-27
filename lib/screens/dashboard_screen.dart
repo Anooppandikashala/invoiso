@@ -118,6 +118,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     _loadReturnsEnabled();
     _loadReportsAdminOnly();
     _loadPurchaseBillsAdminOnly();
+    // Number format for every screen's amounts (cached; see AmountFormat).
+    AmountFormat.load().then((_) {
+      if (mounted) setState(() {});
+    });
     _loadCompanies();
     SessionManager.initialize(_onSessionTimeout);
     if (ref.read(appEditionConfigProvider).enableUpdateCheck) {
@@ -1900,14 +1904,14 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                     _buildStatCard(
                       AppLocalizations.of(context)!
                           .dashboardRevenueCollectedLabel,
-                      '$_currencySymbol ${totalRevenue.toStringAsFixed(2)}',
+                      '$_currencySymbol ${AmountFormat.money(totalRevenue)}',
                       const Color(0xFF6A1B9A),
                       Icons.account_balance_wallet_outlined,
                     ),
                     const SizedBox(width: 16),
                     _buildStatCard(
                       AppLocalizations.of(context)!.dashboardOutstandingLabel,
-                      '$_currencySymbol ${totalOutstanding.toStringAsFixed(2)}',
+                      '$_currencySymbol ${AmountFormat.money(totalOutstanding)}',
                       const Color(0xFFC62828),
                       Icons.hourglass_top_outlined,
                       subtitle: overdueInvoices.isNotEmpty
@@ -2291,7 +2295,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                               BorderRadius.circular(8),
                                         ),
                                         child: Text(
-                                          '${invoice.currencySymbol} ${invoice.total.toStringAsFixed(2)}',
+                                          '${invoice.currencySymbol} ${AmountFormat.money(invoice.total)}',
                                           style: const TextStyle(
                                             fontSize: 20,
                                             fontWeight: FontWeight.bold,
@@ -2615,7 +2619,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
-                        '$_currencySymbol ${invoice.outstandingBalance.toStringAsFixed(2)}',
+                        '$_currencySymbol ${AmountFormat.money(invoice.outstandingBalance)}',
                         style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
@@ -2793,7 +2797,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
-                        '$_currencySymbol ${invoice.outstandingBalance.toStringAsFixed(2)}',
+                        '$_currencySymbol ${AmountFormat.money(invoice.outstandingBalance)}',
                         style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
@@ -2997,7 +3001,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                       const SizedBox(width: 16),
                       // Price
                       Text(
-                        '$_currencySymbol${product.price.toStringAsFixed(2)}',
+                        '$_currencySymbol${AmountFormat.money(product.price)}',
                         style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -4550,7 +4554,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
     }
     if (amount >= 100000) return '${(amount / 100000).toStringAsFixed(2)}L';
     if (amount >= 1000) return '${(amount / 1000).toStringAsFixed(1)}K';
-    return amount.toStringAsFixed(2);
+    return AmountFormat.money(amount);
   }
 
   // ── Layout: Bento Grid ──────────────────────────────────────────────────────

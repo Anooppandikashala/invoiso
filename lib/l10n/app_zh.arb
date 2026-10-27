@@ -1478,5 +1478,9 @@
   "invoiceMgmtDeclineReturnStockLabel": "将所有商品归还库存",
   "invoiceMgmtDeclineReturnStockHint": "如果货物未退回（损坏、已使用或客户保留），请取消勾选。",
   "invoiceMgmtDeclinedNoStockMessage": "销售已作废，库存未变。",
-  "invoiceMgmtTrashNoStockHint": "移至回收站不会归还库存。要取消销售，请使用“取消 / 作废”。"
+  "invoiceMgmtTrashNoStockHint": "移至回收站不会归还库存。要取消销售，请使用“取消 / 作废”。",
+  "amountSeparatorLabel": "数字格式",
+  "amountSeparatorNoneLabel": "无分隔符（1234567.89）",
+  "amountSeparatorInternationalLabel": "国际（1,234,567.89）",
+  "amountSeparatorIndianLabel": "印度（12,34,567.89）"
 }

@@ -5669,4 +5669,16 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get invoiceMgmtTrashNoStockHint => '移至回收站不会归还库存。要取消销售，请使用“取消 / 作废”。';
+
+  @override
+  String get amountSeparatorLabel => '数字格式';
+
+  @override
+  String get amountSeparatorNoneLabel => '无分隔符（1234567.89）';
+
+  @override
+  String get amountSeparatorInternationalLabel => '国际（1,234,567.89）';
+
+  @override
+  String get amountSeparatorIndianLabel => '印度（12,34,567.89）';
 }

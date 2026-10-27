@@ -36,19 +36,33 @@ enum InvoiceTemplate {
 class ProductUnits {
   static const List<String> presets = [
     'pcs',
+    'nos',
     'kg',
     'gm',
+    'qtl',
+    'ton',
     'ltr',
     'ml',
     'mtr',
     'cm',
+    'ft',
     'box',
+    'ctn',
+    'pack',
     'bag',
+    'btl',
+    'can',
+    'drum',
+    'tube',
+    'bdl',
+    'tab',
+    'strip',
     'dozen',
     'set',
     'pair',
     'roll',
     'sqft',
+    'sqm',
     'unit',
   ];
 }
@@ -192,6 +206,36 @@ String dateFormatOptionLabel(BuildContext context, DateFormatOption option) {
       return l10n.dateFormatDdMmmyyyyLabel;
     case DateFormatOption.yyyymmdd:
       return l10n.dateFormatYyyymmddLabel;
+  }
+}
+
+/// Thousands grouping for displayed amounts (inputs / exports stay raw).
+enum AmountSeparator {
+  none, // 1234567.89 — default for existing installs
+  international, // 1,234,567.89
+  indian, // 12,34,567.89
+}
+
+extension AmountSeparatorExtension on AmountSeparator {
+  String get key => name;
+
+  static AmountSeparator fromKey(String? key) => AmountSeparator.values
+      .firstWhere((s) => s.name == key, orElse: () => AmountSeparator.none);
+
+  /// Default for a new install: lakh grouping for INR, else international.
+  static AmountSeparator defaultFor(String currencyCode) =>
+      currencyCode == 'INR' ? AmountSeparator.indian : AmountSeparator.international;
+}
+
+String amountSeparatorLabel(BuildContext context, AmountSeparator option) {
+  final l10n = AppLocalizations.of(context)!;
+  switch (option) {
+    case AmountSeparator.none:
+      return l10n.amountSeparatorNoneLabel;
+    case AmountSeparator.international:
+      return l10n.amountSeparatorInternationalLabel;
+    case AmountSeparator.indian:
+      return l10n.amountSeparatorIndianLabel;
   }
 }
 

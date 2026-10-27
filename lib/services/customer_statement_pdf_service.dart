@@ -8,12 +8,14 @@ import 'package:invoiso/services/pdf/pdf_font_service.dart';
 import 'package:invoiso/services/pdf/pdf_report_header.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:invoiso/utils/formatters.dart';
 
 class CustomerStatementPdfService {
   static Future<Uint8List> export(
     List<CustomerStatement> statements, {
     bool showFooterBranding = true,
   }) async {
+    await AmountFormat.load(); // Number format setting
     final theme = await PdfFontService.loadTheme();
     final doc = pw.Document(theme: theme);
     final company = await BackendServices.companyInfo.getCompanyInfo();
@@ -26,7 +28,8 @@ class CustomerStatementPdfService {
     }
 
     for (final statement in statements) {
-      String money(num v) => '${statement.currencySymbol} ${v.toStringAsFixed(2)}';
+      String money(num v) =>
+          '${statement.currencySymbol} ${AmountFormat.money(v.toDouble())}';
 
       doc.addPage(
         pw.MultiPage(

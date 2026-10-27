@@ -10021,6 +10021,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Trash doesn\'t return stock. To cancel a sale, use Cancel / Void.'**
   String get invoiceMgmtTrashNoStockHint;
+
+  /// No description provided for @amountSeparatorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Number format'**
+  String get amountSeparatorLabel;
+
+  /// No description provided for @amountSeparatorNoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'No separator  (1234567.89)'**
+  String get amountSeparatorNoneLabel;
+
+  /// No description provided for @amountSeparatorInternationalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'International  (1,234,567.89)'**
+  String get amountSeparatorInternationalLabel;
+
+  /// No description provided for @amountSeparatorIndianLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Indian  (12,34,567.89)'**
+  String get amountSeparatorIndianLabel;
 }
 
 class _AppLocalizationsDelegate

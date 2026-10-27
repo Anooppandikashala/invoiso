@@ -5931,4 +5931,17 @@ class AppLocalizationsNe extends AppLocalizations {
   @override
   String get invoiceMgmtTrashNoStockHint =>
       'ट्र्यासले स्टक फिर्ता गर्दैन। बिक्री रद्द गर्न रद्द / शून्य गर्नुहोस् प्रयोग गर्नुहोस्।';
+
+  @override
+  String get amountSeparatorLabel => 'संख्या ढाँचा';
+
+  @override
+  String get amountSeparatorNoneLabel => 'विभाजक बिना  (1234567.89)';
+
+  @override
+  String get amountSeparatorInternationalLabel =>
+      'अन्तर्राष्ट्रिय  (1,234,567.89)';
+
+  @override
+  String get amountSeparatorIndianLabel => 'भारतीय  (12,34,567.89)';
 }

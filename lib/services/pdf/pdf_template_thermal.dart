@@ -7,6 +7,7 @@ import 'package:invoiso/models/invoice.dart';
 import 'package:invoiso/utils/amount_in_words.dart';
 import 'package:invoiso/models/customer_field_settings.dart';
 import 'pdf_widgets.dart';
+import 'package:invoiso/utils/formatters.dart';
 
 const double _thermalMargin = 4 * PdfPageFormat.mm;
 
@@ -101,8 +102,8 @@ pw.Page buildThermalTemplate(
       final qty = '${item.quantity == item.quantity.roundToDouble() ? item.quantity.toInt().toString() : item.quantity.toStringAsFixed(2)}'
           '${item.effectiveUnit.trim().isEmpty ? '' : ' ${item.effectiveUnit}'}';
       totalQuantity += item.quantity;
-      final rate = item.effectivePrice.toStringAsFixed(2);
-      final total = item.total.toStringAsFixed(2);
+      final rate = AmountFormat.money(item.effectivePrice);
+      final total = AmountFormat.money(item.total);
 
       if (useDetailedLayout) {
         // Detailed: line1 = sl+name, line2 = qty/rate/gst%/total
@@ -163,7 +164,7 @@ pw.Page buildThermalTemplate(
                 pw.Padding(
                   padding: const pw.EdgeInsets.only(left: 12),
                   child: pw.Text(
-                    'Disc: -${item.totalDiscount.toStringAsFixed(2)}',
+                    'Disc: -${AmountFormat.money(item.totalDiscount)}',
                     style: const pw.TextStyle(
                         fontSize: smallFs, color: PdfColors.orange800),
                   ),
@@ -228,7 +229,7 @@ pw.Page buildThermalTemplate(
                 pw.Padding(
                   padding: const pw.EdgeInsets.only(left: 14),
                   child: pw.Text(
-                    'Discount: -${item.totalDiscount.toStringAsFixed(2)}',
+                    'Discount: -${AmountFormat.money(item.totalDiscount)}',
                     style: const pw.TextStyle(
                         fontSize: smallFs, color: PdfColors.orange800),
                   ),
@@ -253,18 +254,18 @@ pw.Page buildThermalTemplate(
       centerText('=== TAX SUMMARY ===', fontSize: smallFs, bold: true),
       pw.SizedBox(height: 2),
       labelValue('Taxable Amt:',
-          '$currencySymbol ${totalTaxable.toStringAsFixed(2)}',
+          '$currencySymbol ${AmountFormat.money(totalTaxable)}',
           fontSize: smallFs),
       if (isIndia && invoice.isInterState)
-        labelValue('IGST:', '$currencySymbol ${totalTax.toStringAsFixed(2)}',
+        labelValue('IGST:', '$currencySymbol ${AmountFormat.money(totalTax)}',
             fontSize: smallFs)
       else if (isIndia) ...[
-        labelValue('SGST:', '$currencySymbol ${(totalTax / 2).toStringAsFixed(2)}',
+        labelValue('SGST:', '$currencySymbol ${AmountFormat.money(totalTax / 2)}',
             fontSize: smallFs),
-        labelValue('CGST:', '$currencySymbol ${(totalTax / 2).toStringAsFixed(2)}',
+        labelValue('CGST:', '$currencySymbol ${AmountFormat.money(totalTax / 2)}',
             fontSize: smallFs),
       ],
-      labelValue('Total Tax:', '$currencySymbol ${totalTax.toStringAsFixed(2)}',
+      labelValue('Total Tax:', '$currencySymbol ${AmountFormat.money(totalTax)}',
           fontSize: smallFs),
     ];
   }
@@ -407,24 +408,24 @@ pw.Page buildThermalTemplate(
       pw.SizedBox(height: 2),
       if (invoice.totalDiscount > 0)
         labelValue('Subtotal:',
-            '$currencySymbol ${invoice.grossSubtotal.toStringAsFixed(2)}'),
+            '$currencySymbol ${AmountFormat.money(invoice.grossSubtotal)}'),
       if (invoice.totalDiscount > 0)
         labelValue('Discount:',
-            '-$currencySymbol ${invoice.totalDiscount.toStringAsFixed(2)}'),
+            '-$currencySymbol ${AmountFormat.money(invoice.totalDiscount)}'),
       if (invoice.taxMode != TaxMode.none)
         labelValue(invoiceTaxLabel(invoice),
-            '$currencySymbol ${invoice.tax.toStringAsFixed(2)}'),
+            '$currencySymbol ${AmountFormat.money(invoice.tax)}'),
       for (final c in invoice.additionalCosts)
         labelValue(c.label.isEmpty ? 'Extra Cost' : c.label,
-            '$currencySymbol ${c.amount.toStringAsFixed(2)}'),
+            '$currencySymbol ${AmountFormat.money(c.amount)}'),
       if (invoice.invoiceDiscountAmount > 0)
         labelValue(invoice.invoiceDiscountType == InvoiceDiscountType.percent
             ? "Extra Discount (${invoice.invoiceDiscountValue.toStringAsFixed(1)}%)"
             : "Extra Discount ",
-          "-$currencySymbol ${invoice.invoiceDiscountAmount.toStringAsFixed(2)}",),
+          "-$currencySymbol ${AmountFormat.money(invoice.invoiceDiscountAmount)}",),
       if (previousBalanceDue > 0)
         labelValue('Prev Balance:',
-            '$currencySymbol ${previousBalanceDue.toStringAsFixed(2)}'),
+            '$currencySymbol ${AmountFormat.money(previousBalanceDue)}'),
 
       pw.SizedBox(height: 2),
       pw.Row(
@@ -443,7 +444,7 @@ pw.Page buildThermalTemplate(
                   style: pw.TextStyle(
                       fontSize: boldFs, fontWeight: pw.FontWeight.bold))),
           pw.Text(
-              '$currencySymbol ${(invoice.total + previousBalanceDue).toStringAsFixed(2)}',
+              '$currencySymbol ${AmountFormat.money(invoice.total + previousBalanceDue)}',
               style: pw.TextStyle(
                   fontSize: boldFs, fontWeight: pw.FontWeight.bold)),
         ],
@@ -451,14 +452,14 @@ pw.Page buildThermalTemplate(
       if (showRoundOff) ...[
         pw.SizedBox(height: 2),
         labelValue('Round off:',
-            '$currencySymbol ${netTotal.roundOff.toStringAsFixed(2)}'),
+            '$currencySymbol ${AmountFormat.money(netTotal.roundOff)}'),
         pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
             pw.Text('NET AMOUNT',
                 style: pw.TextStyle(
                     fontSize: boldFs, fontWeight: pw.FontWeight.bold)),
-            pw.Text('$currencySymbol ${netTotal.rounded.toStringAsFixed(2)}',
+            pw.Text('$currencySymbol ${AmountFormat.money(netTotal.rounded)}',
                 style: pw.TextStyle(
                     fontSize: boldFs, fontWeight: pw.FontWeight.bold)),
           ],
@@ -473,7 +474,7 @@ pw.Page buildThermalTemplate(
       if (invoice.amountPaid > 0) ...[
         pw.SizedBox(height: 2),
         labelValue('Paid:',
-            '$currencySymbol ${invoice.amountPaid.toStringAsFixed(2)}'),
+            '$currencySymbol ${AmountFormat.money(invoice.amountPaid)}'),
         pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
@@ -483,7 +484,7 @@ pw.Page buildThermalTemplate(
                     fontSize: bodyFs, fontWeight: pw.FontWeight.bold)),
             if (invoice.outstandingBalance > 0)
               pw.Text(
-                  '$currencySymbol ${invoice.outstandingBalance.toStringAsFixed(2)}',
+                  '$currencySymbol ${AmountFormat.money(invoice.outstandingBalance)}',
                   style: pw.TextStyle(
                       fontSize: bodyFs, fontWeight: pw.FontWeight.bold)),
           ],
