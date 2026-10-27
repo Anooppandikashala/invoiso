@@ -139,6 +139,20 @@ void main() {
     expect(await stockOf('p1'), 7);
   });
 
+  test('editing an invoice moves stock by the qty difference', () async {
+    final p = await addProduct(stock: 20);
+    await InvoiceService.insertInvoice(doc('i1', 'Invoice', p, qty: 10));
+    expect((await ProductService.getProductById('p1'))!.stock, 10);
+
+    // 10 → 5: the 5 not sold any more go back.
+    await InvoiceService.updateInvoice(doc('i1', 'Invoice', p, qty: 5));
+    expect((await ProductService.getProductById('p1'))!.stock, 15);
+
+    // 5 → 12: 7 more taken.
+    await InvoiceService.updateInvoice(doc('i1', 'Invoice', p, qty: 12));
+    expect((await ProductService.getProductById('p1'))!.stock, 8);
+  });
+
   test('draft: no stock until finalized; finalize deducts once', () async {
     final p = await addProduct(stock: 10);
     await InvoiceService.insertInvoice(doc('d1', 'Invoice', p)..isDraft = true);
@@ -177,6 +191,16 @@ void main() {
     expect(await InvoiceService.getOverdueInvoices(), isEmpty);
     expect(await InvoiceService.getOpenInvoicesForCustomer('c1'), isEmpty);
     expect((await InvoiceService.getDashboardFinancials()).count, 0);
+  });
+
+  test('export skips drafts', () async {
+    final p = await addProduct(stock: 10);
+    await InvoiceService.insertInvoice(doc('i1', 'Invoice', p));
+    await InvoiceService.insertInvoice(doc('d1', 'Invoice', p)..isDraft = true);
+
+    expect((await InvoiceService.getInvoicesForExport()).map((i) => i.id),
+        ['i1']);
+    expect(await InvoiceService.countInvoicesForExport(), 1);
   });
 
   test('declineInvoice ignores quotations', () async {

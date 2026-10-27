@@ -151,6 +151,16 @@ void main() {
     expect(await ledgerRows(), 3); // purchase + reversal + restore
   });
 
+  test('a repeat restore (double-tap) applies stock once', () async {
+    await PurchaseBillService.insertPurchaseBill(bill('b1'));
+    await PurchaseBillService.softDeletePurchaseBill('b1');
+    await PurchaseBillService.restorePurchaseBill('b1');
+    await PurchaseBillService.restorePurchaseBill('b1');
+
+    expect((await product()).stock, 15);
+    expect(await ledgerRows(), 3);
+  });
+
   test('restoring a trashed draft leaves stock alone', () async {
     await PurchaseBillService.insertPurchaseBill(bill('d1', draft: true));
     await PurchaseBillService.softDeletePurchaseBill('d1');

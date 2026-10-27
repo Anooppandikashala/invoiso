@@ -32,6 +32,8 @@ import 'package:invoiso/services/pdf_service.dart';
 import 'package:invoiso/widgets/apply_payment_dialog.dart';
 import 'package:invoiso/common/constants.dart';
 import 'package:invoiso/widgets/return_l10n.dart';
+import 'package:invoiso/widgets/product_form.dart';
+import 'package:invoiso/models/user.dart';
 import 'package:invoiso/services/refund_receipt_service.dart';
 
 /// Stamped on a credit note that puts at least one line back into stock.
@@ -67,6 +69,10 @@ class CreateInvoiceScreenV2 extends ConsumerStatefulWidget {
   final VoidCallback? onCreateNewInvoice;
   final InvoiceFormGuard? guard;
 
+  /// Logged-in user — admin-only rules of the "New product" form. Null →
+  /// non-admin rules.
+  final User? user;
+
   const CreateInvoiceScreenV2({
     super.key,
     this.invoiceToEdit,
@@ -76,6 +82,7 @@ class CreateInvoiceScreenV2 extends ConsumerStatefulWidget {
     this.convertFromQuotationId,
     this.onCreateNewInvoice,
     this.guard,
+    this.user,
   });
 
   @override
@@ -282,10 +289,34 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
             .read(returnRepositoryProvider)
             .getNotesForInvoice(_invoice!.id)
             .then((notes) {
-          if (mounted && notes.any((n) => n.type == 'Credit Note')) {
+          if (mounted &&
+              notes.any((n) => n.type == 'Credit Note' && !n.isDraft)) {
             setState(() => _lockedByCreditNotes = true);
           }
         });
+      }
+      // A draft credit / debit note reopened: note fields + linked invoice
+      // (with what's already returned, for the Left cap).
+      if (_invoice!.type == 'Credit Note' || _invoice!.type == 'Debit Note') {
+        _returnReason = _invoice!.returnReason ?? '';
+        _creditSettlement =
+            _invoice!.creditSettlement ?? CreditSettlement.customerCredit;
+        final originalId = _invoice!.originalInvoiceId;
+        if (originalId != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            final original = await ref
+                .read(invoiceRepositoryProvider)
+                .getInvoiceById(originalId);
+            final returned = await ref
+                .read(returnRepositoryProvider)
+                .getReturnedQtyByLine(originalId);
+            if (!mounted || original == null) return;
+            setState(() {
+              _againstInvoice = original;
+              _returnedByProduct = returned;
+            });
+          });
+        }
       }
       selectedCustomer = _invoice!.customer;
       invoiceItems = List.from(_invoice!.items);
@@ -1346,6 +1377,21 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   }
 
   Future<bool> _createInvoice() async {
+    // Reopened draft note finalized before its linked invoice finished
+    // loading — load it now so the link and Left cap aren't lost.
+    final draftLinkId = _invoice?.isDraft == true && _isReturnDoc
+        ? _invoice!.originalInvoiceId
+        : null;
+    if (draftLinkId != null && _againstInvoice == null) {
+      final original =
+          await ref.read(invoiceRepositoryProvider).getInvoiceById(draftLinkId);
+      final returned = await ref
+          .read(returnRepositoryProvider)
+          .getReturnedQtyByLine(draftLinkId);
+      if (!mounted) return false;
+      _againstInvoice = original;
+      _returnedByProduct = returned;
+    }
     if (nameController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1417,7 +1463,12 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     setState(() => isLoading = true);
 
     try {
-      final invoiceId = await InvoicePdfServices.generateNextId();
+      // Finalizing a saved draft note keeps its id; the draft row is swapped
+      // for the final note when it's created below.
+      final draftNoteId =
+          _isReturnDoc && (_invoice?.isDraft ?? false) ? _invoice!.id : null;
+      final invoiceId =
+          draftNoteId ?? await InvoicePdfServices.generateNextId();
       final invoiceNumber =
           await InvoicePdfServices.generateNextInvoiceNumber(invoiceType);
       final invoice = Invoice(
@@ -1466,30 +1517,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         convertedFromInvoiceId: widget.convertFromQuotationId,
       );
 
-      final payAmount = invoiceType != 'Invoice'
-          ? 0.0
-          : _payStatus == PaymentStatus.paid
-              ? invoice.total
-              : _payStatus == PaymentStatus.partial
-                  ? (double.tryParse(_payAmountController.text.trim()) ?? 0.0)
-                  : 0.0;
-      if (invoiceType == 'Invoice' &&
-          _payStatus == PaymentStatus.partial &&
-          (payAmount <= 0 || payAmount > invoice.total)) {
-        if (!mounted) return false;
-        setState(() => isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(payAmount <= 0
-                ? AppLocalizations.of(context)!.paymentDialogInvalidAmountError
-                : AppLocalizations.of(context)!.paymentDialogExceedsOutstandingError),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            showCloseIcon: true,
-          ),
-        );
-        return false;
-      }
+      final payAmount = _paymentChoiceAmount(invoice.total);
+      if (payAmount == null) return false;
 
       SnackBarAction? voucherAction;
       if (invoiceType == 'Credit Note') {
@@ -1497,6 +1526,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         await returnRepo.createCreditNote(
               creditNote: invoice,
               originalInvoice: _againstInvoice,
+              replaceDraft: draftNoteId != null,
               immediateRefund: _creditSettlement == CreditSettlement.refund
                   ? (
                       amount: invoice.total,
@@ -1525,48 +1555,22 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           );
         }
       } else if (invoiceType == 'Debit Note') {
-        await ref.read(returnRepositoryProvider).createDebitNote(debitNote: invoice);
+        await ref.read(returnRepositoryProvider).createDebitNote(
+            debitNote: invoice, replaceDraft: draftNoteId != null);
       } else {
         await ref.read(invoiceRepositoryProvider).insertInvoice(invoice);
       }
 
-      // Separate transaction from the invoice insert: if it fails the
-      // invoice is kept and the user adds the payment from the Invoices list.
-      String? payError;
-      if (payAmount > 0) {
-        try {
-          invoice.payments = [
-            await ref.read(paymentRepositoryProvider).addPayment(
-                  invoice: invoice,
-                  amountPaid: payAmount,
-                  datePaid: DateTime.now(),
-                  paymentMethod: _payMethod,
-                )
-          ];
-        } catch (e) {
-          payError = e.toString();
-        }
-      }
-
-      // "Apply credit to this invoice" ticked — capped at what's still owed.
-      final unpaid = invoice.total - payAmount;
-      final creditToApply = _applyCustomerCredit && invoiceType == 'Invoice'
-          ? (_customerCreditAvailable < unpaid ? _customerCreditAvailable : unpaid)
-          : 0.0;
-      if (creditToApply > 0) {
-        try {
-          await ref.read(returnRepositoryProvider).applyCustomerCreditToInvoice(
-              invoice: invoice, amount: creditToApply);
-        } catch (e) {
-          payError ??= e.toString();
-        }
-      }
+      final (:payError, :creditToApply) =
+          await _applyPaymentChoice(invoice, payAmount);
 
       if (!mounted) return true;
       setState(() {
         _invoice = invoice;
         currentInvoiceNumber = invoice.invoiceNumber ?? invoice.id;
         isLoading = false;
+        // A finalized note is never edited — show the success screen.
+        if (draftNoteId != null) isEditing = false;
         if (creditToApply > 0) {
           _customerCreditAvailable -= creditToApply;
           _applyCustomerCredit = false;
@@ -1641,6 +1645,73 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
     }
   }
 
+  /// Payment section: amount to record on save, or null (error shown) when
+  /// the partial amount is invalid.
+  double? _paymentChoiceAmount(double total) {
+    final payAmount = invoiceType != 'Invoice'
+        ? 0.0
+        : _payStatus == PaymentStatus.paid
+            ? total
+            : _payStatus == PaymentStatus.partial
+                ? (double.tryParse(_payAmountController.text.trim()) ?? 0.0)
+                : 0.0;
+    if (invoiceType == 'Invoice' &&
+        _payStatus == PaymentStatus.partial &&
+        (payAmount <= 0 || payAmount > total)) {
+      if (!mounted) return null;
+      setState(() => isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(payAmount <= 0
+              ? AppLocalizations.of(context)!.paymentDialogInvalidAmountError
+              : AppLocalizations.of(context)!.paymentDialogExceedsOutstandingError),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          showCloseIcon: true,
+        ),
+      );
+      return null;
+    }
+    return payAmount;
+  }
+
+  /// Records the Payment section's choice on a just-saved [invoice].
+  /// Separate transactions from the invoice save: if one fails the invoice
+  /// is kept and the user adds the payment from the Invoices list.
+  Future<({String? payError, double creditToApply})> _applyPaymentChoice(
+      Invoice invoice, double payAmount) async {
+    String? payError;
+    if (payAmount > 0) {
+      try {
+        invoice.payments = [
+          await ref.read(paymentRepositoryProvider).addPayment(
+                invoice: invoice,
+                amountPaid: payAmount,
+                datePaid: DateTime.now(),
+                paymentMethod: _payMethod,
+              )
+        ];
+      } catch (e) {
+        payError = e.toString();
+      }
+    }
+
+    // "Apply credit to this invoice" ticked — capped at what's still owed.
+    final unpaid = invoice.total - payAmount;
+    final creditToApply = _applyCustomerCredit && invoiceType == 'Invoice'
+        ? (_customerCreditAvailable < unpaid ? _customerCreditAvailable : unpaid)
+        : 0.0;
+    if (creditToApply > 0) {
+      try {
+        await ref.read(returnRepositoryProvider).applyCustomerCreditToInvoice(
+            invoice: invoice, amount: creditToApply);
+      } catch (e) {
+        payError ??= e.toString();
+      }
+    }
+    return (payError: payError, creditToApply: creditToApply);
+  }
+
   /// Draft is a scratchpad: customer name still required, items are not, and
   /// it never touches the numbered sequence (invoiceNumber stays null until
   /// _updateInvoice(finalize: true) assigns one). Handles both the first
@@ -1674,14 +1745,21 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       final invoice = Invoice(
         id: isNewRow ? await InvoicePdfServices.generateNextId() : _invoice!.id,
         invoiceNumber: null,
-        customer: _resolveInvoiceCustomer(),
+        customer: _isReturnDoc && _againstInvoice != null
+            ? _againstInvoice!.customer
+            : _resolveInvoiceCustomer(),
         items: List.from(invoiceItems),
         date: _selectedOrderDate,
         dueDate: _selectedDueDate,
         notes: notesController.text.isNotEmpty ? notesController.text : null,
         taxRate: _taxMode == TaxMode.global ? taxRate : 0.0,
         type: invoiceType,
-        invoiceTitle: invoiceType == 'Invoice' ? invoiceTitle : null,
+        invoiceTitle: invoiceType == 'Invoice'
+            ? invoiceTitle
+            : invoiceType == 'Credit Note' &&
+                    invoiceItems.any((i) => i.restocked && _canRestock(i))
+                ? salesReturnTitle
+                : null,
         currencyCode: _currencyCode,
         currencySymbol: _currencySymbol,
         taxMode: _taxMode,
@@ -1698,6 +1776,15 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         customInvoiceNumber: customInvoiceNumberController.text.trim().isEmpty
             ? null
             : customInvoiceNumberController.text.trim(),
+        originalInvoiceId: _isReturnDoc ? _againstInvoice?.id : null,
+        originalInvoiceNumber: _isReturnDoc && _againstInvoice != null
+            ? (_againstInvoice!.invoiceNumber ?? _againstInvoice!.id)
+            : null,
+        originalInvoiceDate: _isReturnDoc ? _againstInvoice?.date : null,
+        returnReason:
+            _isReturnDoc && _returnReason.trim().isNotEmpty ? _returnReason : null,
+        creditSettlement:
+            invoiceType == 'Credit Note' ? _creditSettlement : null,
         isDraft: true,
       );
 
@@ -3937,7 +4024,16 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
         return false;
       }
 
+      // Finalizing a draft records the Payment section's choice, like create.
+      final payNow = finalize && _invoice!.isDraft;
+      final payAmount = payNow ? _paymentChoiceAmount(updatedInvoice.total) : 0.0;
+      if (payAmount == null) return false;
+
       await ref.read(invoiceRepositoryProvider).updateInvoice(updatedInvoice);
+
+      final (:payError, :creditToApply) = payNow
+          ? await _applyPaymentChoice(updatedInvoice, payAmount)
+          : (payError: null, creditToApply: 0.0);
 
       final refreshedInvoice =
           await ref.read(invoiceRepositoryProvider).getInvoiceById(updatedInvoice.id);
@@ -3949,6 +4045,10 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
             ? 'DRAFT'
             : (_invoice!.invoiceNumber ?? _invoice!.id);
         isLoading = false;
+        if (creditToApply > 0) {
+          _customerCreditAvailable -= creditToApply;
+          _applyCustomerCredit = false;
+        }
       });
       _markFormClean();
 
@@ -3972,6 +4072,17 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
         ),
       );
+      if (payError != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!
+                .createInvoicePaymentNotRecordedMessage(payError)),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            showCloseIcon: true,
+          ),
+        );
+      }
       return true;
     } catch (e) {
       if (!mounted) return false;
@@ -4318,7 +4429,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
             if (_invoice == null) {
               _createInvoice();
             } else if (_invoice!.isDraft) {
-              _updateInvoice(finalize: true);
+              // Notes finalize through the create path (settle + restock).
+              _isReturnDoc ? _createInvoice() : _updateInvoice(finalize: true);
             } else {
               _updateInvoice();
             }
@@ -4739,6 +4851,11 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
   Future<void> _prefillCreditNoteFrom(Invoice inv) async {
     final returned =
         await ref.read(returnRepositoryProvider).getReturnedQtyByLine(inv.id);
+    // Drafts skip the Left cap but still hold the extra costs.
+    final hasEarlierNote = (await ref
+            .read(returnRepositoryProvider)
+            .getNotesForInvoice(inv.id))
+        .any((n) => n.type == 'Credit Note' && n.id != _invoice?.id);
     if (!mounted) return;
     final left = <String, double>{};
     for (final i in inv.items) {
@@ -4800,7 +4917,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       }
       _additionalCostControllers.clear();
       // Extra costs (shipping…) go back once — only on the first return.
-      for (final c in returned.isEmpty ? inv.additionalCosts : const <AdditionalCost>[]) {
+      for (final c in hasEarlierNote ? const <AdditionalCost>[] : inv.additionalCosts) {
         _additionalCostControllers.add((
           label: TextEditingController(text: c.label),
           amount: TextEditingController(text: c.amount.toStringAsFixed(2)),
@@ -5763,8 +5880,40 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                 borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
           ),
         ),
+        const SizedBox(width: 8),
+        OutlinedButton.icon(
+          onPressed: _addNewProductV2,
+          icon: const Icon(Icons.inventory_2_outlined, size: 16),
+          label: Text(AppLocalizations.of(context)!.productFormNewProductButton),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+          ),
+        ),
       ],
     );
+  }
+
+  // Saves a real catalogue product (same form and rules as Product
+  // Management), then adds it as a line like any picked product.
+  Future<void> _addNewProductV2() async {
+    final product = await showNewProductDialog(context,
+        user: widget.user, initialName: searchController.text);
+    if (product == null || !mounted) return;
+    // Its custom fields (batch, expiry…) snapshot onto the line like search.
+    final metadata = await ref
+        .read(productRepositoryProvider)
+        .getProductMetadataForIds([product.id]);
+    if (!mounted) return;
+    searchController.clear();
+    setState(() {
+      products = [...products, product];
+      filteredProducts = [...filteredProducts, product];
+      _productMetadata = {..._productMetadata, ...metadata};
+      _showProductDropdownV2 = false;
+    });
+    addInvoiceProductPrompt(product);
   }
 
   void _ensureHighlightedProductVisibleV2() {
@@ -6939,7 +7088,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                           _lockedV2(_buildAdditionalCostsSection()),
                           const SizedBox(height: 12),
                           _lockedV2(_invoiceDiscountSectionV2()),
-                          if (!isEditing && invoiceType == 'Invoice') ...[
+                          if ((!isEditing || (_invoice?.isDraft ?? false)) &&
+                              invoiceType == 'Invoice') ...[
                             const SizedBox(height: 18),
                             _sectionLabelV2(AppLocalizations.of(context)!
                                 .createInvoicePaymentSectionLabel),
@@ -7043,10 +7193,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                   ],
                 ),
               ),
-              // Credit / debit notes settle and restock on create, and a
-              // quotation conversion links on create — neither can be a draft.
+              // A quotation conversion links on create, so it can't be a
+              // draft. Draft notes stay inert until finalized (_createInvoice).
               if ((!hasSavedRow || isDraftRow) &&
-                  !_isReturnDoc &&
                   widget.convertFromQuotationId == null) ...[
                 const SizedBox(width: 12),
                 Flexible(
@@ -7077,7 +7226,9 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                         ? (!hasSavedRow
                             ? _createInvoice
                             : isDraftRow
-                                ? () => _updateInvoice(finalize: true)
+                                ? (_isReturnDoc
+                                    ? _createInvoice
+                                    : () => _updateInvoice(finalize: true))
                                 : _updateInvoice)
                         : null,
                     style: ElevatedButton.styleFrom(
@@ -7190,7 +7341,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
               _lockedV2(_buildAdditionalCostsSection()),
               const SizedBox(height: 12),
               _lockedV2(_invoiceDiscountSectionV2()),
-              if (!isEditing && invoiceType == 'Invoice') ...[
+              if ((!isEditing || (_invoice?.isDraft ?? false)) &&
+                  invoiceType == 'Invoice') ...[
                 const SizedBox(height: 18),
                 _sectionLabelV2(AppLocalizations.of(context)!
                     .createInvoicePaymentSectionLabel),

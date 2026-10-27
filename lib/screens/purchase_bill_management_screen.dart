@@ -21,6 +21,7 @@ import 'package:invoiso/providers/repositories.dart';
 import 'package:invoiso/providers/supplier_provider.dart';
 import 'package:invoiso/utils/app_date.dart';
 import 'package:invoiso/utils/error_handler.dart';
+import 'package:invoiso/widgets/product_form.dart';
 import 'package:uuid/uuid.dart';
 
 // ─────────────────────────────────────────────
@@ -68,6 +69,7 @@ class _PurchaseBillManagementScreenState
         key: ValueKey('purchase_bill_form_${_billToEdit?.id ?? 'new'}'),
         billToEdit: _billToEdit,
         onDone: _closeForm,
+        user: widget.user,
       );
     }
     return _PurchaseBillListView(
@@ -1581,8 +1583,11 @@ class _RecordPaymentDialogState extends ConsumerState<_RecordPaymentDialog> {
 class _PurchaseBillFormScreen extends ConsumerStatefulWidget {
   final PurchaseBill? billToEdit;
   final VoidCallback onDone;
+  // Admin-only rules of the "New product" form.
+  final User user;
 
-  const _PurchaseBillFormScreen({super.key, required this.billToEdit, required this.onDone});
+  const _PurchaseBillFormScreen(
+      {super.key, required this.billToEdit, required this.onDone, required this.user});
 
   @override
   ConsumerState<_PurchaseBillFormScreen> createState() => _PurchaseBillFormScreenState();
@@ -1919,6 +1924,22 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
         _supplierFieldGen++;
       });
     }
+  }
+
+  // Saves a real catalogue product (same form and rules as Product
+  // Management), then opens the usual line dialog for it.
+  Future<void> _addNewProduct() async {
+    final product = await showNewProductDialog(context,
+        user: widget.user,
+        initialName: _productSearchController.text,
+        stockHelperText:
+            AppLocalizations.of(context)!.productFormPurchaseStockHelper);
+    if (product == null || !mounted) return;
+    _productSearchController.clear();
+    setState(() => _productQuery = '');
+    await ref.read(productsProvider.notifier).refresh();
+    if (!mounted) return;
+    _addProductItemDialog(product);
   }
 
   void _addAdHocItemDialog() {
@@ -2547,6 +2568,12 @@ class _PurchaseBillFormScreenState extends ConsumerState<_PurchaseBillFormScreen
                         color: Theme.of(context).colorScheme.onSurfaceVariant)),
               ),
               const Spacer(),
+              TextButton.icon(
+                onPressed: _addNewProduct,
+                icon: const Icon(Icons.inventory_2_outlined, size: 16),
+                label: Text(l10n.productFormNewProductButton),
+                style: TextButton.styleFrom(foregroundColor: Theme.of(context).primaryColor),
+              ),
               TextButton.icon(
                 onPressed: _addAdHocItemDialog,
                 icon: const Icon(Icons.add, size: 16),

@@ -142,6 +142,18 @@ class InvoiceService {
   static Future<void> updateInvoice(Invoice invoice) async {
     final db = await dbHelper.database;
 
+    // A final credit / debit note settled its stock and credit when created;
+    // re-saving would run sale stock maths on it. Drafts stay editable.
+    final finalNote = (await db.query('invoices',
+            columns: ['id'],
+            where: "id = ? AND type IN ('Credit Note', 'Debit Note') "
+                'AND is_draft = 0',
+            whereArgs: [invoice.id]))
+        .isNotEmpty;
+    if (finalNote) {
+      throw StateError('Note ${invoice.id} is final and can\'t be edited');
+    }
+
     // Never let an edit drop the total below what's already been paid.
     final paid = await PaymentService.getTotalPaidForInvoice(invoice.id);
     if (paid - invoice.total > InvoiceCalculator.moneyEpsilon) {
@@ -153,7 +165,7 @@ class InvoiceService {
     // once it has any, its customer, lines and total can't change.
     final hasCreditNotes = (await db.rawQuery(
       "SELECT 1 FROM invoices WHERE original_invoice_id = ? "
-      "AND type = 'Credit Note' AND deleted_at IS NULL LIMIT 1",
+      "AND type = 'Credit Note' AND deleted_at IS NULL AND is_draft = 0 LIMIT 1",
       [invoice.id],
     ))
         .isNotEmpty;
@@ -591,7 +603,8 @@ class InvoiceService {
     String? filterType,
   }) async {
     final db = await dbHelper.database;
-    final whereParts = <String>['deleted_at IS NULL'];
+    // Drafts have no number yet — not exportable documents.
+    final whereParts = <String>['deleted_at IS NULL', 'is_draft = 0'];
     final whereArgs = <dynamic>[];
 
     if (filterType != null && filterType.isNotEmpty) {
@@ -634,7 +647,8 @@ class InvoiceService {
     String? filterType,
   }) async {
     final db = await dbHelper.database;
-    final whereParts = <String>['deleted_at IS NULL'];
+    // Drafts have no number yet — not exportable documents.
+    final whereParts = <String>['deleted_at IS NULL', 'is_draft = 0'];
     final whereArgs = <dynamic>[];
 
     if (filterType != null && filterType.isNotEmpty) {
@@ -918,13 +932,13 @@ class InvoiceService {
   static Future<void> softDeleteInvoice(String id) async {
     final db = await dbHelper.database;
     await db.transaction((txn) async {
-      // Credit notes are removed only by ReturnService.voidCreditNote, which
-      // also reverses their stock and credit.
+      // Final credit notes are removed only by ReturnService.voidCreditNote,
+      // which also reverses their stock and credit; a draft has neither.
       // An invoice with active credit / debit notes waits until they're gone.
       await txn.update(
         'invoices',
         {'deleted_at': DateTime.now().toIso8601String()},
-        where: "id = ? AND type != 'Credit Note' "
+        where: "id = ? AND (type != 'Credit Note' OR is_draft = 1) "
             'AND NOT EXISTS (SELECT 1 FROM invoices cn '
             'WHERE cn.original_invoice_id = invoices.id '
             "AND cn.type IN ('Credit Note', 'Debit Note') AND cn.deleted_at IS NULL)",
@@ -937,14 +951,15 @@ class InvoiceService {
   static Future<void> restoreInvoice(String id) async {
     final db = await dbHelper.database;
     await db.transaction((txn) async {
-      // A trashed credit note was voided — restoring it would revive a note
-      // with no stock or credit behind it. A debit note stays in trash while
+      // A trashed final credit note was voided — restoring it would revive a
+      // note with no stock or credit behind it (drafts restore fine). A debit
+      // note or draft credit note stays in trash while
       // its invoice is declined or trashed.
       await txn.update(
         'invoices',
         {'deleted_at': null},
-        where: "id = ? AND type != 'Credit Note' "
-            "AND NOT (type = 'Debit Note' AND original_invoice_id IN "
+        where: "id = ? AND (type != 'Credit Note' OR is_draft = 1) "
+            "AND NOT (type IN ('Credit Note', 'Debit Note') AND original_invoice_id IN "
             "(SELECT id FROM invoices WHERE deleted_at IS NOT NULL "
             "OR status = 'declined'))",
         whereArgs: [id],

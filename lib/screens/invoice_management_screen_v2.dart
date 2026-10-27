@@ -580,14 +580,18 @@ class _InvoiceManagementScreenV2State
 
   Future<void> _bulkSoftDelete() async {
     final l10n = AppLocalizations.of(context)!;
-    final notes = await ref
-        .read(returnRepositoryProvider)
-        .getNotesForInvoices(_selectedIds.toList());
+    // Per-invoice lookup: draft notes block trashing too, and
+    // getNotesForInvoices skips them.
+    Invoice? first;
+    for (final i in _pageInvoices.where((i) => _selectedIds.contains(i.id))) {
+      if ((await ref.read(returnRepositoryProvider).getNotesForInvoice(i.id))
+          .isNotEmpty) {
+        first = i;
+        break;
+      }
+    }
     if (!mounted) return;
-    final withCreditNotes = _pageInvoices.where((i) =>
-        (notes[i.id] ?? const <Invoice>[]).isNotEmpty);
-    if (withCreditNotes.isNotEmpty) {
-      final first = withCreditNotes.first;
+    if (first != null) {
       AppError.show(context,
           l10n.invoiceMgmtHasCreditNotesMessage(first.invoiceNumber ?? first.id));
       return;
@@ -622,8 +626,10 @@ class _InvoiceManagementScreenV2State
   }
 
   Future<void> _bulkExportCsv() async {
-    final selected =
-        _pageInvoices.where((inv) => _selectedIds.contains(inv.id)).toList();
+    // Drafts have no number yet — skipped, like bulk mark-paid.
+    final selected = _pageInvoices
+        .where((inv) => _selectedIds.contains(inv.id) && !inv.isDraft)
+        .toList();
     if (selected.isEmpty) return;
 
     setState(() => _isBulkLoading = true);
@@ -645,8 +651,10 @@ class _InvoiceManagementScreenV2State
   }
 
   Future<void> _bulkExportPdfs() async {
-    final selected =
-        _pageInvoices.where((inv) => _selectedIds.contains(inv.id)).toList();
+    // Drafts have no number yet — skipped, like bulk mark-paid.
+    final selected = _pageInvoices
+        .where((inv) => _selectedIds.contains(inv.id) && !inv.isDraft)
+        .toList();
     if (selected.isEmpty) return;
 
     // Ask the user: save as folder or as a ZIP?
@@ -1813,7 +1821,7 @@ class _InvoiceManagementScreenV2State
     return [
       if (!isWide) ...[
         PopupMenuItem(value: 'view', child: _MenuRow(Icons.visibility_outlined, l10n.actionView, Colors.green)),
-        if (!_isReturnType && !isDeclined)
+        if ((!_isReturnType || isDraft) && !isDeclined)
           PopupMenuItem(value: 'edit', child: _MenuRow(Icons.edit_outlined, l10n.actionEdit, Colors.blue)),
         if (widget.filterType == 'Invoice' && !isDeclined && !isDraft)
           PopupMenuItem(
@@ -1892,7 +1900,8 @@ class _InvoiceManagementScreenV2State
             value: 'download', child: _MenuRow(Icons.download_outlined, l10n.actionDownloadPdf, Colors.deepPurple)),
         PopupMenuItem(value: 'print', child: _MenuRow(Icons.print_outlined, l10n.actionPrint, Colors.blueGrey)),
       ],
-      if (widget.filterType == 'Credit Note') ...[
+      // A draft note hasn't settled anything yet — nothing to refund or void.
+      if (widget.filterType == 'Credit Note' && !isDraft) ...[
         PopupMenuItem(
             value: 'refund',
             child: _MenuRow(
@@ -1907,7 +1916,8 @@ class _InvoiceManagementScreenV2State
               child: _MenuRow(
                   Icons.block_outlined, l10n.actionCancelVoid, Colors.red)),
       ],
-      if (widget.user.isAdmin() && widget.filterType != 'Credit Note')
+      if (widget.user.isAdmin() &&
+          (widget.filterType != 'Credit Note' || isDraft))
         PopupMenuItem(
             value: 'delete', child: _MenuRow(Icons.delete_outline, l10n.invoiceMgmtMoveToTrashTitle, Colors.red)),
     ];
@@ -1975,7 +1985,7 @@ class _InvoiceManagementScreenV2State
       children: [
         _buildActionButton(Icons.visibility_outlined, Colors.green, l10n.actionView,
             () => _viewInvoice(invoice)),
-        if (!_isReturnType && !isDeclined)
+        if ((!_isReturnType || isDraft) && !isDeclined)
           _buildActionButton(
               Icons.edit_outlined, Colors.blue, l10n.actionEdit, () => widget.onEditInvoice(invoice)),
         if (widget.filterType == 'Invoice' && !isDeclined && !isDraft)
@@ -3034,8 +3044,10 @@ class _TrashDialogState extends ConsumerState<_TrashDialog> {
   }
 
   Future<void> _restore(Invoice invoice) async {
-    // A debit note can't come back onto a declined / trashed invoice.
-    if (invoice.type == 'Debit Note' && invoice.originalInvoiceId != null) {
+    // A debit / draft credit note can't come back onto a declined / trashed
+    // invoice.
+    if ((invoice.type == 'Debit Note' || invoice.type == 'Credit Note') &&
+        invoice.originalInvoiceId != null) {
       final original = await ref
           .read(invoiceRepositoryProvider)
           .getInvoiceById(invoice.originalInvoiceId!);
@@ -3189,9 +3201,9 @@ class _TrashDialogState extends ConsumerState<_TrashDialog> {
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Trashed credit note = voided; its stock and
-                          // credit are already reversed, so no restore.
-                          if (inv.type != 'Credit Note')
+                          // A trashed final credit note was voided (stock and
+                          // credit reversed), so no restore; drafts restore.
+                          if (inv.type != 'Credit Note' || inv.isDraft)
                             TextButton.icon(
                               onPressed: () => _restore(inv),
                               icon: const Icon(Icons.restore, size: 16),

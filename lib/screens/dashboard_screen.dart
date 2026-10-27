@@ -65,6 +65,10 @@ String _invoiceTypeLabel(BuildContext context, String type) {
   }
 }
 
+// Final credit / debit notes are settled at creation and never edited.
+bool _isFinalNote(Invoice inv) =>
+    (inv.type == 'Credit Note' || inv.type == 'Debit Note') && !inv.isDraft;
+
 // Dashboard Screen
 class DashboardScreen extends ConsumerStatefulWidget {
   final User loggedInUser;
@@ -301,6 +305,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           convertFromQuotationId: _convertSourceQuotationId,
           guard: _invoiceFormGuard,
           onCreateNewInvoice: onCreateNewInvoice,
+          user: _currentUser,
         );
       case 2:
         return InvoiceManagementScreenV2(
@@ -2311,7 +2316,8 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                               Colors.blue,
                                               AppLocalizations.of(context)!
                                                   .actionEdit,
-                                              invoice.status == 'declined'
+                                              invoice.status == 'declined' ||
+                                                      _isFinalNote(invoice)
                                                   ? null
                                                   : () => widget
                                                       .onEditInvoice(invoice)),
@@ -2350,6 +2356,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                               AppLocalizations.of(context)!
                                                   .actionPayment,
                                               invoice.type == 'Invoice' &&
+                                                      !invoice.isDraft &&
                                                       (invoice.status !=
                                                               'declined' ||
                                                           invoice.payments
@@ -4083,7 +4090,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                     fontWeight: FontWeight.w700)),
           ),
           const SizedBox(width: 8),
-          if (inv.status != 'declined') ...[
+          if (inv.status != 'declined' && !_isFinalNote(inv)) ...[
             Tooltip(
               message: 'Edit',
               child: InkWell(

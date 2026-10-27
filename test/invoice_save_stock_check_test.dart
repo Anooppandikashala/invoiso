@@ -145,4 +145,53 @@ void main() {
       expect((await ProductService.getProductById('pA'))!.stock, -3);
     });
   });
+
+  testWidgets('finalizing a draft records the Payment section choice',
+      (tester) async {
+    final draft = (await tester.runAsync(() async {
+      await InvoiceService.insertInvoice(Invoice(
+        id: '00000003',
+        customer: customer,
+        items: [InvoiceItem(product: product, quantity: 1)],
+        date: DateTime(2026, 1, 3),
+        type: 'Invoice',
+        isDraft: true,
+      ));
+      return InvoiceService.getInvoiceById('00000003');
+    }))!;
+
+    tester.view.physicalSize = const Size(1800, 1400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(ProviderScope(
+      overrides: sqliteRepositoryOverrides,
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(body: CreateInvoiceScreenV2(invoiceToEdit: draft)),
+      ),
+    ));
+    await settle(tester);
+
+    await tester.ensureVisible(find.text('Paid'));
+    await tester.tap(find.text('Paid'));
+    await tester.pump();
+    await tester.tap(find.byIcon(Icons.task_alt));
+    await tester.pump();
+    // Stock is negative from the first test — accept the warning.
+    for (var i = 0; i < 100 && find.text('Save anyway').evaluate().isEmpty; i++) {
+      await settle(tester);
+    }
+    await tester.tap(find.text('Save anyway'));
+    await tester.pump();
+    Invoice? saved;
+    for (var i = 0; i < 100; i++) {
+      await settle(tester);
+      saved = await tester.runAsync<Invoice?>(
+          () => InvoiceService.getInvoiceById('00000003'));
+      if (saved!.outstandingBalance == 0) break;
+    }
+    expect(saved!.isDraft, isFalse);
+    expect(saved.outstandingBalance, 0);
+  });
 }

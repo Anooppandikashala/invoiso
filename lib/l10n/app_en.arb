@@ -3096,6 +3096,18 @@
   "returnPickInvoiceSearchHint": "Search invoice number",
   "returnPickInvoiceEmpty": "No invoices for this customer",
   "returnSelectCustomerFirst": "Select a customer first",
+  "productFormDuplicateTitle": "Product already exists",
+  "productFormDuplicateMessage": "A product named \"{name}\" already exists. Create another one anyway?",
+  "@productFormDuplicateMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "productFormCreateAnywayButton": "Create anyway",
+  "productFormNewProductButton": "New product",
+  "productFormPurchaseStockHelper": "Opening stock. Finalizing this purchase bill adds the purchased quantity on top.",
   "invoiceDraftBadge": "DRAFT",
   "createInvoiceStockShortTitle": "Not enough stock",
   "createInvoiceStockShortMessage": "Some items have less stock than this invoice needs:",
@@ -3151,7 +3163,7 @@
       }
     }
   },
-  "invoiceMgmtDebitNoteRestoreBlocked": "Invoice #{number} is declined or in trash, so its debit note can't be restored.",
+  "invoiceMgmtDebitNoteRestoreBlocked": "Invoice #{number} is declined or in trash, so this note can't be restored.",
   "@invoiceMgmtDebitNoteRestoreBlocked": {
     "placeholders": {
       "number": {

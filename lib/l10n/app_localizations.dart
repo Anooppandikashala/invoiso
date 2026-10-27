@@ -9559,6 +9559,36 @@ abstract class AppLocalizations {
   /// **'Select a customer first'**
   String get returnSelectCustomerFirst;
 
+  /// No description provided for @productFormDuplicateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Product already exists'**
+  String get productFormDuplicateTitle;
+
+  /// No description provided for @productFormDuplicateMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'A product named \"{name}\" already exists. Create another one anyway?'**
+  String productFormDuplicateMessage(String name);
+
+  /// No description provided for @productFormCreateAnywayButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create anyway'**
+  String get productFormCreateAnywayButton;
+
+  /// No description provided for @productFormNewProductButton.
+  ///
+  /// In en, this message translates to:
+  /// **'New product'**
+  String get productFormNewProductButton;
+
+  /// No description provided for @productFormPurchaseStockHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening stock. Finalizing this purchase bill adds the purchased quantity on top.'**
+  String get productFormPurchaseStockHelper;
+
   /// No description provided for @invoiceDraftBadge.
   ///
   /// In en, this message translates to:
@@ -9653,7 +9683,7 @@ abstract class AppLocalizations {
   /// No description provided for @invoiceMgmtDebitNoteRestoreBlocked.
   ///
   /// In en, this message translates to:
-  /// **'Invoice #{number} is declined or in trash, so its debit note can\'t be restored.'**
+  /// **'Invoice #{number} is declined or in trash, so this note can\'t be restored.'**
   String invoiceMgmtDebitNoteRestoreBlocked(String number);
 
   /// No description provided for @invoiceMgmtHasCreditNotesMessage.
